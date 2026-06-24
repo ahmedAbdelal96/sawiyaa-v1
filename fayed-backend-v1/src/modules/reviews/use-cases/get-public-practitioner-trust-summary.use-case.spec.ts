@@ -2,17 +2,21 @@ import { NotFoundException } from '@nestjs/common';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
 import { BuildPractitionerCredibilitySummaryService } from '../services/build-practitioner-credibility-summary.service';
+import { SessionReviewRatingAggregationService } from '../services/session-review-rating-aggregation.service';
 import { GetPublicPractitionerTrustSummaryUseCase } from './get-public-practitioner-trust-summary.use-case';
 
 describe('GetPublicPractitionerTrustSummaryUseCase', () => {
   const reviewRepository = {
     findPublicPractitionerBySlug: jest.fn(),
-    aggregatePublicVisibleReviews: jest.fn(),
   } as unknown as ReviewRepository;
+  const sessionReviewRatingAggregationService = {
+    aggregateByPractitionerId: jest.fn(),
+  } as unknown as SessionReviewRatingAggregationService;
 
   const useCase = new GetPublicPractitionerTrustSummaryUseCase(
     reviewRepository,
     new BuildPractitionerCredibilitySummaryService(),
+    sessionReviewRatingAggregationService,
     new ReviewPresenter(),
   );
 
@@ -49,11 +53,18 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
       },
     });
     (
-      reviewRepository.aggregatePublicVisibleReviews as jest.Mock
+      sessionReviewRatingAggregationService.aggregateByPractitionerId as jest.Mock
     ).mockResolvedValue({
-      _count: { id: 4 },
-      _avg: { ratingValue: 4.25 },
-      _max: { publishedAt: new Date('2026-03-15T00:00:00.000Z') },
+      averageRating: 4.25,
+      ratingsCount: 4,
+      publishedRatingsCount: 4,
+      writtenReviewsCount: 3,
+      rating1Count: 0,
+      rating2Count: 0,
+      rating3Count: 1,
+      rating4Count: 1,
+      rating5Count: 2,
+      latestPublishedReviewAt: '2026-03-15T00:00:00.000Z',
     });
 
     const result = await useCase.execute({ slug: 'dr-one' });
@@ -66,6 +77,9 @@ describe('GetPublicPractitionerTrustSummaryUseCase', () => {
       },
       summary: {
         averageOverallRating: 4.25,
+        ratingsCount: 4,
+        publishedRatingsCount: 4,
+        writtenReviewsCount: 3,
         totalPublicReviews: 4,
         totalPublishedReviews: 4,
         totalSubmittedReviews: 4,

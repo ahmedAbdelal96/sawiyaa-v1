@@ -8,6 +8,7 @@ import { useCreateAdminAcademyCourseLecture } from "../hooks/use-academy";
 import { getAdminAcademyErrorKey } from "../lib/academy-errors";
 import { getAcademyLectureFieldIssues, type AcademyLectureFieldKey } from "../lib/academy-lecture-form-errors";
 import type { AcademyCourseItem } from "../types/academy.types";
+import { toAppError } from "@/lib/api/errors";
 
 type Props = {
   isOpen: boolean;
@@ -120,35 +121,38 @@ function AdminAcademyLectureCreateForm({ course, onClose, onSuccess }: Omit<Prop
 
     const order = Number.parseInt(form.lectureOrder.trim(), 10);
     if (!Number.isInteger(order) || order < 1) {
-      setFieldErrors({ lectureOrder: "required" });
+      setFieldErrors({ lectureOrder: getFieldIssueMessage(t, "lectureOrder", "required") ?? "required" });
       return;
     }
 
     if (!form.startsAt.trim()) {
-      setFieldErrors({ startsAt: "required" });
+      setFieldErrors({ startsAt: getFieldIssueMessage(t, "startsAt", "required") ?? "required" });
       return;
     }
 
     const startsAt = inputToIso(form.startsAt);
     if (!startsAt || !endPreview) {
-      setFieldErrors({ startsAt: "invalidWindow" });
+      setFieldErrors({ startsAt: getFieldIssueMessage(t, "startsAt", "invalidWindow") ?? "invalidWindow" });
       return;
     }
 
     const startsAtDate = new Date(startsAt);
     const endsAtDate = new Date(endPreview);
     if (!(startsAtDate < endsAtDate)) {
-      setFieldErrors({ startsAt: "invalidWindow", endsAt: "invalidWindow" });
+      setFieldErrors({
+        startsAt: getFieldIssueMessage(t, "startsAt", "invalidWindow") ?? "invalidWindow",
+        endsAt: getFieldIssueMessage(t, "endsAt", "invalidWindow") ?? "invalidWindow",
+      });
       return;
     }
 
     if (course.startsAt && startsAtDate < new Date(course.startsAt)) {
-      setFieldErrors({ startsAt: "invalidWindow" });
+      setFieldErrors({ startsAt: getFieldIssueMessage(t, "startsAt", "invalidWindow") ?? "invalidWindow" });
       return;
     }
 
     if (course.endsAt && endsAtDate > new Date(course.endsAt)) {
-      setFieldErrors({ endsAt: "invalidWindow" });
+      setFieldErrors({ endsAt: getFieldIssueMessage(t, "endsAt", "invalidWindow") ?? "invalidWindow" });
       return;
     }
 
@@ -179,7 +183,12 @@ function AdminAcademyLectureCreateForm({ course, onClose, onSuccess }: Omit<Prop
         setFieldErrors(nextFieldErrors);
         if (Object.keys(nextFieldErrors).length > 0) return;
       }
-      setFeedback(t(getAdminAcademyErrorKey(error) as Parameters<typeof t>[0]));
+      const errorKey = getAdminAcademyErrorKey(error);
+      if (errorKey && errorKey !== "admin.errors.generic") {
+        setFeedback(t(errorKey as Parameters<typeof t>[0]));
+      } else {
+        setFeedback(toAppError(error).message);
+      }
     }
   };
 

@@ -15,7 +15,7 @@ const resources = {
 
 export type AppLanguage = "ar" | "en";
 
-const APP_LANGUAGE_STORAGE_KEY = "fayed.app.language";
+const APP_LANGUAGE_STORAGE_KEY = "sawiyaa.app.language";
 const DEFAULT_LANGUAGE: AppLanguage = "ar";
 
 function normalizeLanguage(value: string | null | undefined): AppLanguage {

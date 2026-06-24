@@ -10,6 +10,7 @@ import { OtpCodeGeneratorService } from '../services/otp-code-generator.service'
 import { OtpHashService } from '../services/otp-hash.service';
 import { OtpPolicyResolverService } from '../services/otp-policy-resolver.service';
 import { maskTarget } from '../utils/mask-target.util';
+import { OtpResendCooldownException } from '../exceptions/otp-cooldown.exception';
 
 /**
  * Creates an OTP challenge according to policy and persists it with hashed code.
@@ -54,10 +55,15 @@ export class CreateOtpChallengeUseCase {
           cooldownStart,
         );
       if (recentChallenges.length > 0) {
-        throw new BadRequestException({
-          messageKey: 'auth.errors.otpResendTooSoon',
-          error: 'OTP_RESEND_COOLDOWN',
-        });
+        const mostRecent = recentChallenges[0];
+        const resendAvailableAt = new Date(
+          mostRecent.createdAt.getTime() + policy.resendCooldownSeconds * 1000,
+        );
+        const retryAfterSeconds = Math.max(
+          0,
+          Math.ceil((resendAvailableAt.getTime() - Date.now()) / 1000),
+        );
+        throw new OtpResendCooldownException(retryAfterSeconds, resendAvailableAt);
       }
     }
 

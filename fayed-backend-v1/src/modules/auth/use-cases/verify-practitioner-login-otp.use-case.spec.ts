@@ -27,12 +27,16 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
   const practitionerPresenceRepository = {
     markOnline: jest.fn(),
   };
+  const securityAuditService = {
+    logAsync: jest.fn(),
+  };
 
   const useCase = new VerifyPractitionerLoginOtpUseCase(
     verifyOtpChallengeUseCase as any,
     issueAuthTokensUseCase as any,
     userRepository as any,
     practitionerPresenceRepository as any,
+    securityAuditService as any,
   );
 
   beforeEach(() => {

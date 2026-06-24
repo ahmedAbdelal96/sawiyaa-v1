@@ -52,7 +52,7 @@ describe('PublicAcademyController', () => {
       {
         token: 'public-token',
         returnUrl:
-          'fayed://academy/enrollments/enrollment_1/payment-return?token=public-token',
+          'sawiyaa://academy/enrollments/enrollment_1/payment-return?token=public-token',
       } as never,
       {
         headers: {

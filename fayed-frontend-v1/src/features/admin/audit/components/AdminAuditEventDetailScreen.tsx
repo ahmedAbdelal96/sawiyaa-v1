@@ -108,6 +108,25 @@ export default function AdminAuditEventDetailScreen({ eventId }: { eventId: stri
 
   const noValue = t("audit.fallback.noValue");
 
+  const actionKey = `actions.${item.action}` as Parameters<typeof t>[0];
+  const hasActionTranslation = t.has(actionKey);
+  const translatedAction = hasActionTranslation ? t(actionKey) : item.action;
+
+  const roleKey = `roles.${item.actor.role}` as Parameters<typeof t>[0];
+  const translatedRole = t.has(roleKey) ? t(roleKey) : item.actor.role;
+
+  const sevKey = `severities.${item.severity}` as Parameters<typeof t>[0];
+  const translatedSeverity = t.has(sevKey) ? t(sevKey) : item.severity;
+
+  const catKey = `categories.${item.category}` as Parameters<typeof t>[0];
+  const translatedCategory = t.has(catKey) ? t(catKey) : item.category;
+
+  const srcKey = `sources.${item.source}` as Parameters<typeof t>[0];
+  const translatedSource = t.has(srcKey) ? t(srcKey) : item.source;
+
+  const targetKey = `categories.${item.target.entityType}` as Parameters<typeof t>[0];
+  const translatedTargetType = t.has(targetKey) ? t(targetKey) : item.target.entityType;
+
   return (
     <div className="space-y-5">
       <section className="app-panel rounded-[30px] p-6 sm:p-7">
@@ -123,16 +142,19 @@ export default function AdminAuditEventDetailScreen({ eventId }: { eventId: stri
         <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
           {t("audit.detail.title")}
         </h1>
-        <p className="mt-2 break-all text-sm text-text-muted">
-          {item.action}
+        <p className="mt-2 text-sm font-semibold text-text-muted">
+          {translatedAction}
         </p>
+        {hasActionTranslation && (
+          <p className="mt-1 font-mono text-xs text-text-muted select-all">{item.action}</p>
+        )}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <BadgeValue label={t("audit.fields.status")} value={item.status} />
-        <BadgeValue label={t("audit.fields.severity")} value={item.severity} />
-        <BadgeValue label={t("audit.fields.category")} value={item.category} />
-        <BadgeValue label={t("audit.fields.source")} value={item.source} />
+        <BadgeValue label={t("audit.fields.severity")} value={translatedSeverity} />
+        <BadgeValue label={t("audit.fields.category")} value={translatedCategory} />
+        <BadgeValue label={t("audit.fields.source")} value={translatedSource} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
@@ -141,7 +163,7 @@ export default function AdminAuditEventDetailScreen({ eventId }: { eventId: stri
             {t("audit.sections.event")}
           </h2>
           <div className="mt-4 grid gap-3">
-            <FieldCard label={t("audit.fields.action")} value={item.action} />
+            <FieldCard label={t("audit.fields.action")} value={translatedAction} />
             <FieldCard label={t("audit.fields.eventFamily")} value={item.eventFamily} />
             <FieldCard
               label={t("audit.fields.occurredAt")}
@@ -152,22 +174,20 @@ export default function AdminAuditEventDetailScreen({ eventId }: { eventId: stri
 
         <div className="app-panel rounded-[28px] p-5">
           <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-            {t("audit.sections.actorTarget")}
+            {t("audit.sections.actor")}
           </h2>
           <div className="mt-4 grid gap-3">
             <FieldCard label={t("audit.fields.actorName")} value={item.actor.displayName ?? noValue} />
-            <FieldCard label={t("audit.fields.actorRole")} value={item.actor.role ?? noValue} />
-            <FieldCard label={t("audit.fields.actorUserId")} value={item.actor.userId ?? noValue} mono />
+            <FieldCard label={t("audit.fields.actorRole")} value={translatedRole ?? noValue} />
           </div>
         </div>
 
         <div className="app-panel rounded-[28px] p-5">
           <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
-            {t("audit.fields.targetType")}
+            {t("audit.sections.target")}
           </h2>
           <div className="mt-4 grid gap-3">
-            <FieldCard label={t("audit.fields.targetType")} value={item.target.entityType ?? noValue} />
-            <FieldCard label={t("audit.fields.targetId")} value={item.target.entityId ?? noValue} mono />
+            <FieldCard label={t("audit.fields.targetType")} value={translatedTargetType ?? noValue} />
             <FieldCard
               label={t("audit.fields.createdAt")}
               value={formatAdminNotificationDateTime(item.createdAt, locale)}

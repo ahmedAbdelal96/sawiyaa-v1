@@ -214,3 +214,35 @@ The first pilot application of these principles is implemented on the patient po
 * Appends `sawiyaa-hover-lift` on cards and `sawiyaa-btn-press` on CTAs.
 * Wraps the loaded template in a `sawiyaa-animate-fade-in` container.
 
+---
+
+## 11. Copywriting, Font Sizes, and Space Optimization Rules
+
+To deliver a premium experience that matches user expectations, all layouts and texts must follow these guidelines:
+
+### A. Copywriting & Wording (طريقة الكلام)
+* **Keep Wording Simple & Natural**: Use straightforward, clean, and conversational phrasing. Avoid clinical jargon, legalistic terminology, or exaggerated labels.
+* **No Exaggerated Terminology**: Never use words like `"مؤمنة"` (secured) for normal payment statuses. Instead, use simple confirmation terms like:
+  * `"تم استلام الدفع وتأكيد الجلسة بنجاح."` (Payment received and session confirmed successfully.)
+  * `"تم استلام الدفع وتأكيد الجلسة بالفعل."` (Payment received and session confirmed already.)
+* **Zero Text Redundancy**: Do not duplicate descriptions or labels. Every note or state message should be rendered exactly once.
+
+### B. Presentation Layout (طريقة العرض)
+* **Above-the-Fold Priority**: Design page elements compactly so that all key actions, dates, and information fit above the fold without forcing the user to scroll.
+* **Unified Horizontal Profile Cards**: Instead of rendering multiple separate nested cards, group profile and status information horizontally.
+* **Non-Card Text Grids**: Display parameters (dates, codes, duration) in simple text grids (`grid grid-cols-2 md:grid-cols-3`) with muted labels and bold values, avoiding legacy borders and nested card boxes.
+* **Merged Operations**: Group communication buttons and live session actions (e.g. Chat and Join Room) inside a unified section inside a single card.
+
+### C. Fonts & Typography (الخطوط)
+* **Balanced Sizes**: Avoid tiny fonts (`text-xs` or `text-[10px]`) for main body text, buttons, and metadata values, which can make the screen feel empty and unreadable.
+* **Standard Size Scales**:
+  * **Metadata Labels**: `text-xs font-semibold text-text-muted` (plus tracking/uppercase for LTR).
+  * **Metadata Values**: `text-sm sm:text-base font-bold text-text-primary`.
+  * **Interactive Actions / CTAs**: `text-sm font-bold`.
+  * **Descriptions & Notes**: `text-sm text-text-secondary`.
+
+### D. Space Utilization (استغلال المساحات)
+* **Responsive Column Layout**: Use balanced desktop columns (e.g., `lg:grid-cols-[minmax(0,1.5fr)_400px]` or `xl:grid-cols-[minmax(0,1.72fr)_360px]`) to fill the screen width gracefully.
+* **Standard Card Paddings**: Use standard Tailwind responsive classes `p-4 sm:p-5` instead of arbitrary padding variables.
+
+

@@ -34,11 +34,6 @@ export class InstantBookingPractitionerRepository {
   }) {
     return this.prisma.practitionerProfile.findMany({
       where: this.buildEligibleDiscoveryWhere(input),
-      orderBy: [
-        { ratingSummary: { averageRating: 'desc' } },
-        { yearsOfExperience: 'desc' },
-        { createdAt: 'desc' },
-      ],
       select: {
         id: true,
         publicSlug: true,
@@ -48,6 +43,7 @@ export class InstantBookingPractitionerRepository {
         bio: true,
         avatarUrl: true,
         yearsOfExperience: true,
+        createdAt: true,
         instantBookingPrice30Egp: true,
         instantBookingPrice30Usd: true,
         instantBookingPrice60Egp: true,
@@ -96,12 +92,6 @@ export class InstantBookingPractitionerRepository {
             },
           },
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-        },
-        ratingSummary: {
-          select: {
-            averageRating: true,
-            publishedReviewsCount: true,
-          },
         },
       } satisfies Prisma.PractitionerProfileSelect,
     });

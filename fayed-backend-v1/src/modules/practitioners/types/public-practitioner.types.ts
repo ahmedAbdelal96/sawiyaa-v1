@@ -41,6 +41,9 @@ export interface PublicPractitionerListItemViewModel {
   yearsExperience: number | null;
   ratingSummary: {
     averageRating: number | null;
+    ratingsCount: number;
+    publishedRatingsCount: number;
+    writtenReviewsCount: number;
     totalReviews: number;
   };
   avatarUrl: string | null;
@@ -79,6 +82,9 @@ export interface PublicPractitionerDetailsViewModel {
   displaySessionPrice60: number | null;
   ratingSummary: {
     averageRating: number | null;
+    ratingsCount: number;
+    publishedRatingsCount: number;
+    writtenReviewsCount: number;
     totalReviews: number;
   };
   credentialsSummary: {

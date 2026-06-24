@@ -21,7 +21,7 @@ export function buildAcademyEnrollmentPaymentReturnBaseUrl() {
 
   return ensureTrailingSlash(
     Linking.createURL(academyEnrollmentsPath, {
-      scheme: "fayed",
+      scheme: "sawiyaa",
     }),
   );
 }

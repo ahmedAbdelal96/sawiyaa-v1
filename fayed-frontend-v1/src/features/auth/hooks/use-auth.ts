@@ -4,12 +4,18 @@ import {
   adminLogout,
   adminRefresh,
   getAuthMe,
+  patientForgotPassword,
+  patientVerifyPasswordResetOtp,
+  patientConfirmPasswordReset,
   patientGoogleAuth,
   patientLogin,
   patientLogout,
   patientRefresh,
   patientRegister,
+  patientResetPassword,
   practitionerForgotPassword,
+  practitionerVerifyPasswordResetOtp,
+  practitionerConfirmPasswordReset,
   practitionerLogin,
   practitionerLogout,
   practitionerRefresh,
@@ -98,6 +104,30 @@ export function usePatientLogout() {
   });
 }
 
+export function usePatientForgotPassword() {
+  return useMutation({
+    mutationFn: patientForgotPassword,
+  });
+}
+
+export function usePatientResetPassword() {
+  return useMutation({
+    mutationFn: patientResetPassword,
+  });
+}
+
+export function usePatientVerifyPasswordResetOtp() {
+  return useMutation({
+    mutationFn: patientVerifyPasswordResetOtp,
+  });
+}
+
+export function usePatientConfirmPasswordReset() {
+  return useMutation({
+    mutationFn: patientConfirmPasswordReset,
+  });
+}
+
 export function usePractitionerRegister() {
   return useMutation({
     mutationFn: practitionerRegister,
@@ -156,6 +186,18 @@ export function usePractitionerForgotPassword() {
 export function usePractitionerResetPassword() {
   return useMutation({
     mutationFn: practitionerResetPassword,
+  });
+}
+
+export function usePractitionerVerifyPasswordResetOtp() {
+  return useMutation({
+    mutationFn: practitionerVerifyPasswordResetOtp,
+  });
+}
+
+export function usePractitionerConfirmPasswordReset() {
+  return useMutation({
+    mutationFn: practitionerConfirmPasswordReset,
   });
 }
 

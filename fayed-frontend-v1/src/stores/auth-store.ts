@@ -243,7 +243,7 @@ export const useAuthStore = create<AuthStore>()(
       reset: () => set(initialState),
     }),
     {
-      name: "fayed-auth",
+      name: "sawiyaa-auth",
       storage: createJSONStorage(() => sessionStorage),
       // فقط نحفظ بيانات المستخدم العامة (بدون tokens)
       partialize: (state) => ({

@@ -45,7 +45,7 @@ describe('GetPublicAcademyEnrollmentPaymentRedirectUseCase', () => {
       }
 
       if (
-        value.startsWith('fayed://') ||
+        value.startsWith('sawiyaa://') ||
         value.startsWith('http://localhost:3000') ||
         value.startsWith('http://localhost:8081') ||
         value.startsWith('https://app.fayed.example')
@@ -149,7 +149,7 @@ describe('GetPublicAcademyEnrollmentPaymentRedirectUseCase', () => {
       enrollmentId: 'enrollment_1',
       token: 'public-token',
       locale: 'ar',
-      returnUrl: 'fayed://academy/enrollments/enrollment_1/payment-return?token=public-token',
+      returnUrl: 'sawiyaa://academy/enrollments/enrollment_1/payment-return?token=public-token',
     });
 
     expect(result.redirectUrl).toBe('https://paymob.example/checkout/fresh');
@@ -204,7 +204,7 @@ describe('GetPublicAcademyEnrollmentPaymentRedirectUseCase', () => {
       enrollmentId: 'missing',
       token: 'public-token',
       locale: 'ar',
-      returnUrl: 'fayed://academy/enrollments/missing/payment-return?token=public-token',
+      returnUrl: 'sawiyaa://academy/enrollments/missing/payment-return?token=public-token',
     });
 
     expect(result.redirectUrl).toContain('redirect_status=payment_unavailable');
@@ -240,7 +240,7 @@ describe('GetPublicAcademyEnrollmentPaymentRedirectUseCase', () => {
       enrollmentId: 'enrollment_1',
       token: 'public-token',
       locale: 'ar',
-      returnUrl: 'fayed://academy/enrollments/enrollment_1/payment-return?token=public-token',
+      returnUrl: 'sawiyaa://academy/enrollments/enrollment_1/payment-return?token=public-token',
     });
 
     expect(result.redirectUrl).toContain('redirect_status=succeeded');

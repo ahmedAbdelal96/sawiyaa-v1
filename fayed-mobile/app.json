@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Sawiyaa",
-    "slug": "fayed-mobile",
-    "scheme": "fayed",
+    "slug": "sawiyaa-mobile",
+    "scheme": "sawiyaa",
     "description": "A mobile care platform for patients and practitioners.",
     "version": "1.0.0",
     "orientation": "portrait",

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await, @typescript-eslint/unbound-method */
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import {
   CourseScheduleStatus,
@@ -43,8 +44,8 @@ describe('CreateTrainingEnrollmentUseCase', () => {
     resolveProvider: jest.fn(),
   } as unknown as PaymentProviderResolverService;
   const paymentRuntimeConfigService = {
-    resolveTrustedReturnUrl: jest.fn((value: string | null | undefined) =>
-      value?.trim() ?? null,
+    resolveTrustedReturnUrl: jest.fn(
+      (value: string | null | undefined) => value?.trim() ?? null,
     ),
     getAppBaseUrl: jest.fn(() => 'http://localhost:3000'),
   } as unknown as PaymentRuntimeConfigService;
@@ -364,13 +365,120 @@ describe('CreateTrainingEnrollmentUseCase', () => {
       locale: 'en',
       scheduleId: 'schedule_1',
       payload: {
-        returnUrl: 'http://localhost:3000/en/patient/training/enr_1/payment-return',
+        returnUrl:
+          'http://localhost:3000/en/patient/training/enr_1/payment-return',
       },
     });
 
     expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
       expect.objectContaining({
-        redirectionUrl: 'http://localhost:3000/en/patient/training/enr_1/payment-return',
+        redirectionUrl:
+          'http://localhost:3000/en/patient/training/enr_1/payment-return',
+      }),
+    );
+  });
+
+  it('routes USD training payments to Paymob and never Stripe', async () => {
+    (
+      trainingRepository.findPatientProfileByUserId as jest.Mock
+    ).mockResolvedValue({
+      id: 'patient_1',
+      country: { isoCode: 'USA' },
+      user: { emails: [{ email: 'p@x.com' }] },
+    });
+    (trainingRepository.findScheduleById as jest.Mock).mockResolvedValue({
+      id: 'schedule_1',
+      scheduleCode: 'SCH1',
+      status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
+      enrollmentOpenAt: new Date('2026-04-01T08:00:00.000Z'),
+      enrollmentCloseAt: new Date('2026-04-02T08:00:00.000Z'),
+      startsAt: new Date('2026-04-03T08:00:00.000Z'),
+      priceOverrideAmount: { toString: () => '100.00' },
+      currencyCodeOverride: 'USD',
+      maxEnrollmentsOverride: null,
+      course: {
+        id: 'course_1',
+        status: CourseStatus.PUBLISHED,
+        visibility: CourseVisibility.PUBLIC,
+        maxEnrollments: 20,
+      },
+    });
+    (
+      trainingRepository.countEnrollmentsByScheduleIds as jest.Mock
+    ).mockResolvedValue({
+      schedule_1: 0,
+    });
+    (
+      resolveTrainingScheduleEnrollmentAvailabilityService.resolve as jest.Mock
+    ).mockReturnValue({
+      isEnrollmentOpen: true,
+      reason: 'OPEN',
+    });
+    (
+      trainingRepository.findEnrollmentByScheduleAndUser as jest.Mock
+    ).mockResolvedValue(null);
+    (trainingRepository.createEnrollment as jest.Mock).mockResolvedValue({
+      id: 'enr_1',
+    });
+    (
+      paymentProviderResolverService.resolveProvider as jest.Mock
+    ).mockReturnValue(PaymentProvider.PAYMOB);
+    (paymentRepository.createPayment as jest.Mock).mockResolvedValue({
+      id: 'pay_1',
+      status: PaymentStatus.CREATED,
+    });
+    const providerAdapter = {
+      initiateSessionPayment: jest.fn().mockResolvedValue({
+        providerPaymentRef: 'provider_1',
+        status: PaymentStatus.PENDING,
+      }),
+    };
+    (paymentProviderRegistryService.get as jest.Mock).mockReturnValue(
+      providerAdapter,
+    );
+    (paymentRepository.updateStatus as jest.Mock).mockResolvedValue({
+      id: 'pay_1',
+      status: PaymentStatus.PENDING,
+    });
+    (
+      trainingRepository.findEnrollmentByIdForUser as jest.Mock
+    ).mockResolvedValue({
+      id: 'enr_1',
+      courseId: 'course_1',
+      courseScheduleId: 'schedule_1',
+      enrollmentStatus: 'PENDING_PAYMENT',
+      paymentStatus: 'PENDING',
+      enrolledAt: new Date(),
+      cancelledAt: null,
+      refundedAt: null,
+      completedAt: null,
+      course: { translations: [{ locale: 'en', title: 'Training' }] },
+      courseSchedule: { scheduleCode: 'SCH1', startsAt: null, endsAt: null },
+      payment: null,
+    });
+    (trainingPresenter.presentEnrollmentItem as jest.Mock).mockReturnValue({
+      id: 'enr_1',
+    });
+
+    await useCase.execute({
+      userId: 'user_1',
+      locale: 'en',
+      scheduleId: 'schedule_1',
+      payload: {},
+    });
+
+    expect(paymentProviderResolverService.resolveProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currencyCode: 'USD',
+        commissionMarketType: 'CROSS_BORDER',
+        checkoutCountryIsoCode: 'USA',
+      }),
+    );
+    expect(paymentProviderRegistryService.get).toHaveBeenCalledWith(
+      PaymentProvider.PAYMOB,
+      expect.objectContaining({
+        currencyCode: 'USD',
+        checkoutCountryIsoCode: 'USA',
       }),
     );
   });
@@ -473,7 +581,8 @@ describe('CreateTrainingEnrollmentUseCase', () => {
       scheduleId: 'schedule_1',
       payload: {
         forceRefreshPayment: true,
-        returnUrl: 'http://localhost:3000/en/patient/training/enr_1/payment-return',
+        returnUrl:
+          'http://localhost:3000/en/patient/training/enr_1/payment-return',
       },
     });
 

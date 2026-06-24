@@ -315,6 +315,17 @@ exports.Prisma.OtpChallengeScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.PasswordResetSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  role: 'role',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  invalidatedAt: 'invalidatedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.TwoFactorSettingScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -732,12 +743,39 @@ exports.Prisma.AvailabilitySlotScalarFieldEnum = {
 exports.Prisma.AvailabilityExceptionScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
+  availabilityWeekId: 'availabilityWeekId',
   type: 'type',
   startsAtUtc: 'startsAtUtc',
   endsAtUtc: 'endsAtUtc',
   reason: 'reason',
   source: 'source',
   isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerAvailabilityWeekScalarFieldEnum = {
+  id: 'id',
+  practitionerId: 'practitionerId',
+  weekStartDate: 'weekStartDate',
+  weekEndDate: 'weekEndDate',
+  timezone: 'timezone',
+  status: 'status',
+  copiedFromWeekId: 'copiedFromWeekId',
+  publishedAt: 'publishedAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerAvailabilityWeekSlotScalarFieldEnum = {
+  id: 'id',
+  weekId: 'weekId',
+  weekday: 'weekday',
+  startMinuteOfDay: 'startMinuteOfDay',
+  endMinuteOfDay: 'endMinuteOfDay',
+  durationMinutes: 'durationMinutes',
+  timezone: 'timezone',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1928,22 +1966,6 @@ exports.Prisma.ReviewModerationEntryScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.PractitionerRatingSummaryScalarFieldEnum = {
-  id: 'id',
-  practitionerId: 'practitionerId',
-  totalReviews: 'totalReviews',
-  publishedReviewsCount: 'publishedReviewsCount',
-  averageRating: 'averageRating',
-  rating1Count: 'rating1Count',
-  rating2Count: 'rating2Count',
-  rating3Count: 'rating3Count',
-  rating4Count: 'rating4Count',
-  rating5Count: 'rating5Count',
-  lastReviewAt: 'lastReviewAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.TrainingInstructorScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2658,6 +2680,12 @@ exports.AvailabilityExceptionSource = exports.$Enums.AvailabilityExceptionSource
   MANUAL: 'MANUAL',
   ADMIN: 'ADMIN',
   SYSTEM: 'SYSTEM'
+};
+
+exports.AvailabilityWeekStatus = exports.$Enums.AvailabilityWeekStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
 };
 
 exports.PresenceStatus = exports.$Enums.PresenceStatus = {
@@ -3554,6 +3582,7 @@ exports.Prisma.ModelName = {
   UserPermissionOverride: 'UserPermissionOverride',
   UserSession: 'UserSession',
   OtpChallenge: 'OtpChallenge',
+  PasswordResetSession: 'PasswordResetSession',
   TwoFactorSetting: 'TwoFactorSetting',
   Country: 'Country',
   Language: 'Language',
@@ -3583,6 +3612,8 @@ exports.Prisma.ModelName = {
   PractitionerPayoutDestination: 'PractitionerPayoutDestination',
   AvailabilitySlot: 'AvailabilitySlot',
   AvailabilityException: 'AvailabilityException',
+  PractitionerAvailabilityWeek: 'PractitionerAvailabilityWeek',
+  PractitionerAvailabilityWeekSlot: 'PractitionerAvailabilityWeekSlot',
   PractitionerPresence: 'PractitionerPresence',
   Session: 'Session',
   SessionReminderQueue: 'SessionReminderQueue',
@@ -3658,7 +3689,6 @@ exports.Prisma.ModelName = {
   FeatureFlag: 'FeatureFlag',
   SessionReview: 'SessionReview',
   ReviewModerationEntry: 'ReviewModerationEntry',
-  PractitionerRatingSummary: 'PractitionerRatingSummary',
   TrainingInstructor: 'TrainingInstructor',
   CourseCategory: 'CourseCategory',
   CourseCategoryTranslation: 'CourseCategoryTranslation',

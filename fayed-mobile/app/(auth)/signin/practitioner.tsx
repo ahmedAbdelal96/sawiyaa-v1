@@ -24,7 +24,7 @@ function validateEmail(email: string) {
 const DEV_ACCOUNTS = [
   {
     label: "dr.mohamed",
-    email: "dr.mohamed@hesba.local",
+    email: "amohamef206@gmail.com",
     password: "Practitioner2@12345",
   },
   {

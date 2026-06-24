@@ -34,11 +34,26 @@
       "note": "Reports use direct tables today. Later we can switch providers to database views/read models without changing the screens."
     },
     "cards": {
-      "sessions": { "title": "Sessions report", "note": "Volume and status trends." },
-      "paymentsRevenue": { "title": "Payments & revenue", "note": "Accounting-based finance truth." },
-      "support": { "title": "Support report", "note": "Tickets workload and closure speed." },
-      "careRequests": { "title": "Care requests", "note": "Approvals and pending aging." },
-      "payouts": { "title": "Payouts report", "note": "Paid amounts, fees, and missing proof." }
+      "sessions": {
+        "title": "Sessions report",
+        "note": "Volume and status trends."
+      },
+      "paymentsRevenue": {
+        "title": "Payments & revenue",
+        "note": "Accounting-based finance truth."
+      },
+      "support": {
+        "title": "Support report",
+        "note": "Tickets workload and closure speed."
+      },
+      "careRequests": {
+        "title": "Care requests",
+        "note": "Approvals and pending aging."
+      },
+      "payouts": {
+        "title": "Payouts report",
+        "note": "Paid amounts, fees, and missing proof."
+      }
     }
   },
   "filters": {
@@ -82,7 +97,9 @@
       "status": "Status",
       "scheduledStartAt": "Scheduled start",
       "patientId": "Patient id",
-      "practitionerId": "Practitioner id"
+      "practitionerId": "Practitioner id",
+      "patientName": "Patient",
+      "practitionerName": "Practitioner"
     }
   },
   "paymentsRevenue": {
@@ -189,11 +206,13 @@
     },
     "table": {
       "title": "Requests list",
-      "note": "A paginated list of requests for drill-down.",
+      "note": "A paginated list of chat requests for drill-down.",
       "status": "Status",
-      "requestedAt": "Requested",
+      "requestedAt": "Requested date",
       "patientId": "Patient id",
       "practitionerId": "Practitioner id",
+      "patientName": "Patient",
+      "practitionerName": "Practitioner",
       "approvalRef": "Approval ref"
     }
   },
@@ -222,10 +241,11 @@
       }
     },
     "table": {
-      "title": "Payout operations",
-      "note": "A paginated list of payout operations for drill-down.",
+      "title": "Payouts operations",
+      "note": "A paginated list of payouts for drill-down.",
       "effectiveAt": "Effective date",
       "practitionerId": "Practitioner id",
+      "practitionerName": "Practitioner",
       "amountPaid": "Amount",
       "payoutMethod": "Method",
       "proof": "Proof",
@@ -233,4 +253,3 @@
     }
   }
 }
-

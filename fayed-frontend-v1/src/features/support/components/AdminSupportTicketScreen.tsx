@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { Loader2, Lock, StickyNote, ArrowLeft } from "lucide-react";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
+import { useAdminUsersList, useAdminUser } from "@/features/admin/users/hooks/use-admin-users";
 import { toAppError } from "@/lib/api/errors";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
@@ -100,9 +101,12 @@ function OperationsPanel({
   currentUserId: string | null;
 }) {
   const t = useTranslations("support.admin");
+  const locale = useLocale();
   const ticket = useAdminSupportTicket(ticketId);
   const updateStatus = useUpdateAdminSupportTicketStatus(ticketId);
   const assign = useAssignAdminSupportTicket(ticketId);
+  const usersQuery = useAdminUsersList({ page: 1, limit: 100 });
+  const adminUsers = usersQuery.data?.items ?? [];
 
   const [selectedStatus, setSelectedStatus] = useState<SupportTicketStatus | "">("");
   const [assigneeInput, setAssigneeInput] = useState("");
@@ -114,6 +118,9 @@ function OperationsPanel({
 
   const item = ticket.data?.item;
   const isClosed = item?.status === "CLOSED";
+  const assignedAdminUserId = item?.assignedAdminUserId || null;
+  const assigneeQuery = useAdminUser(assignedAdminUserId!, !!assignedAdminUserId);
+  const assigneeUser = assigneeQuery.data?.item;
 
   const handleStatusSave = async () => {
     if (!selectedStatus) return;
@@ -222,10 +229,23 @@ function OperationsPanel({
         {item?.assignedAdminUserId && (
           <p className="mt-2 text-[11px] text-text-secondary font-semibold">
             {t("operations.assign.currentLabel")}:{" "}
-            <span className="font-mono text-teal-600 dark:text-teal-400">
-              {item.assignedAdminUserId === currentUserId
-                ? t("operations.assign.assignedToYou")
-                : item.assignedAdminUserId.slice(0, 8)}
+            <span className="text-teal-600 dark:text-teal-400 font-bold">
+              {(() => {
+                if (item.assignedAdminUserId === currentUserId) {
+                  return t("operations.assign.assignedToYou");
+                }
+                const match = adminUsers.find((u) => u.id === item.assignedAdminUserId);
+                if (match) {
+                  return match.displayName || match.primaryEmail || t("operations.assign.fallbackAgent");
+                }
+                if (assigneeQuery.isLoading) {
+                  return locale === "ar" ? "جارٍ التحميل..." : "Loading...";
+                }
+                if (assigneeUser) {
+                  return assigneeUser.displayName || assigneeUser.emails?.[0] || t("operations.assign.fallbackAgent");
+                }
+                return t("operations.assign.fallbackAgent");
+              })()}
             </span>
           </p>
         )}
@@ -235,13 +255,18 @@ function OperationsPanel({
         )}
 
         <div className="mt-3.5 space-y-3">
-          <input
-            type="text"
+          <select
             value={assigneeInput}
             onChange={(e) => setAssigneeInput(e.target.value)}
-            placeholder={t("operations.assign.placeholder")}
-            className="w-full h-11 px-3 text-xs rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/20 outline-none focus:border-teal-500 font-semibold text-text-primary dark:text-white"
-          />
+            className="w-full h-11 px-3 text-xs rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-950/20 outline-none focus:border-teal-500 font-bold text-text-primary dark:text-white cursor-pointer"
+          >
+            <option value="">{t("operations.assign.placeholder")}</option>
+            {adminUsers.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.displayName || user.primaryEmail || t("operations.assign.fallbackAgent")}
+              </option>
+            ))}
+          </select>
 
           {assignFeedback === "success" && (
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400">

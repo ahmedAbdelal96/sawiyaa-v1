@@ -1,5 +1,5 @@
 /**
- * React Query key factory for active Fayed modules.
+ * React Query key factory for active Sawiyaa modules.
  */
 
 export const authKeys = {

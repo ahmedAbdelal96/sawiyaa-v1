@@ -1,5 +1,5 @@
 "use client";
-
+ 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -36,6 +36,7 @@ import {
 import { formatViewerDateTime } from "@/lib/time-formatting";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { Skeleton } from "@/components/shared/LoadingStates";
+import { DataTable } from "@/components/ui/data-table";
 
 function formatScheduledAt(isoString: string | null, numLocale: string): string {
   return formatViewerDateTime(isoString, { locale: numLocale });
@@ -432,102 +433,6 @@ function SessionsEmptyState({ locale }: { locale: string }) {
   );
 }
 
-function PatientSessionTimelineCard({
-  session,
-  locale,
-  t,
-  copy,
-}: {
-  session: SessionListItem;
-  locale: string;
-  t: any;
-  copy: any;
-}) {
-  const isRtl = locale.startsWith("ar");
-  const bucket = getBucket(session.presentationStatus);
-
-  const borderTone =
-    session.presentationStatus === "UNAVAILABLE"
-      ? "border-s-warning-500"
-      : bucket === "action"
-        ? "border-s-warning-500"
-        : bucket === "live"
-          ? "border-s-primary"
-          : "border-s-text-muted";
-
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-
-  return (
-    <SurfaceCard
-      variant="compact"
-      className={`border-s-4 ${borderTone} sawiyaa-hover-lift sawiyaa-animate-fade-in transition-all duration-300`}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <Avatar
-            src={null}
-            alt={session.practitioner.displayName ?? session.practitioner.slug}
-            size="medium"
-            className="shrink-0"
-          />
-          <div className="space-y-1">
-            <h4 className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("card.with")} {session.practitioner.displayName ?? session.practitioner.slug}
-            </h4>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-              <span className="font-mono text-text-muted bg-surface-tertiary/60 px-2 py-0.5 rounded">
-                {session.sessionCode}
-              </span>
-              <span aria-hidden="true" className="text-border-light">•</span>
-              <span>{t(`detail.mode.${session.sessionMode}` as any)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <SessionStatusBadge
-            status={session.status}
-            presentationStatus={session.presentationStatus}
-            labelOverride={
-              session.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined
-            }
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 border-t border-border-light/60 pt-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="flex items-center gap-2 text-sm text-text-primary dark:text-white/90">
-          <CalendarDays className="h-4 w-4 shrink-0 text-text-muted" />
-          <span>
-            {session.scheduledStartAt
-              ? formatScheduledAt(session.scheduledStartAt, numLocale)
-              : copy.table.noSchedule}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 text-sm text-text-primary dark:text-white/90">
-          <Clock className="h-4 w-4 shrink-0 text-text-muted" />
-          <span>{t("card.duration", { n: session.durationMinutes })}</span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-col gap-3 border-t border-border-light/60 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-text-secondary leading-normal">
-          {t(`list.presentationHints.${session.presentationStatus}` as any)}
-        </p>
-
-        <Link
-          href={`/patient/sessions/${session.id}` as never}
-          className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:bg-surface-tertiary/20 hover:text-primary dark:bg-white/5 dark:text-white/90 shrink-0 self-end sm:self-auto hover:-translate-y-0.5"
-        >
-          <span>{copy.table.open}</span>
-          {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </Link>
-      </div>
-    </SurfaceCard>
-  );
-}
-
 export default function PatientSessionsPanel() {
   const t = useTranslations("sessions");
   const locale = useLocale();
@@ -629,160 +534,238 @@ export default function PatientSessionsPanel() {
     { id: "cancelled", label: copy.tabs.cancelled },
   ] as const;
 
-  return (
-    <div className="space-y-5">
-      <SurfaceCard as="section" variant="page" className="overflow-hidden">
-        <SurfaceHeader
-          eyebrow={copy.eyebrow}
-          title={copy.title}
-          description={copy.note}
-          meta={
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <SurfaceStatCard
-                label={copy.summary.total.label}
-                value={String(totalItems)}
-                hint={copy.summary.total.hint}
-                tone="primary"
-                icon={<CalendarDays className="h-4 w-4" />}
-              />
-              <SurfaceStatCard
-                label={copy.summary.action.label}
-                value={String(totalAction)}
-                hint={copy.summary.action.hint}
-                tone="warning"
-                icon={<AlertCircle className="h-4 w-4" />}
-              />
-              <SurfaceStatCard
-                label={copy.summary.active.label}
-                value={String(totalActive)}
-                hint={copy.summary.active.hint}
-                tone="success"
-                icon={<CheckCircle2 className="h-4 w-4" />}
-              />
-              <SurfaceStatCard
-                label={copy.summary.history.label}
-                value={String(totalArchive)}
-                hint={copy.summary.history.hint}
-                tone="neutral"
-                icon={<History className="h-4 w-4" />}
-              />
-            </div>
+  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+
+  const columns = [
+    {
+      id: "sessionCode",
+      align: "start" as const,
+      header: copy.table.reference,
+      cell: (row: SessionListItem) => (
+        <span className="font-mono text-xs font-semibold text-text-muted bg-surface-tertiary/60 px-2 py-0.5 rounded">
+          {row.sessionCode}
+        </span>
+      ),
+    },
+    {
+      id: "practitioner",
+      align: "start" as const,
+      header: copy.table.practitioner,
+      cell: (row: SessionListItem) => (
+        <div className="flex items-center gap-3 text-start">
+          <Avatar
+            src={null}
+            name={row.practitioner.displayName ?? row.practitioner.slug}
+            size="small"
+            className="shrink-0"
+          />
+          <span className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {row.practitioner.displayName ?? row.practitioner.slug}
+          </span>
+        </div>
+      ),
+    },
+    {
+      id: "scheduledStartAt",
+      align: "start" as const,
+      header: copy.table.scheduledAt,
+      cell: (row: SessionListItem) => (
+        <span className="text-sm text-text-secondary">
+          {row.scheduledStartAt
+            ? formatScheduledAt(row.scheduledStartAt, numLocale)
+            : copy.table.noSchedule}
+        </span>
+      ),
+    },
+    {
+      id: "durationMinutes",
+      align: "start" as const,
+      header: copy.table.duration,
+      cell: (row: SessionListItem) => (
+        <span className="text-sm text-text-secondary">
+          {t("card.duration", { n: row.durationMinutes })}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      align: "start" as const,
+      header: copy.table.status,
+      cell: (row: SessionListItem) => (
+        <SessionStatusBadge
+          status={row.status}
+          presentationStatus={row.presentationStatus}
+          labelOverride={
+            row.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined
           }
         />
-      </SurfaceCard>
+      ),
+    },
+    {
+      id: "actions",
+      align: "end" as const,
+      header: "",
+      cell: (row: SessionListItem) => (
+        <div className="text-end">
+          <Link
+            href={`/patient/sessions/${row.id}` as never}
+            className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-primary/30 hover:bg-surface-tertiary/20 hover:text-primary dark:bg-white/5 dark:text-white/90 hover:-translate-y-0.5"
+          >
+            <span>{copy.table.open}</span>
+            {locale === "ar" ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+          </Link>
+        </div>
+      ),
+    },
+  ];
 
-      {/* Tab Segment Pills */}
-      <div className="flex items-center gap-1.5 overflow-x-auto rounded-[20px] bg-surface-tertiary/60 p-1.5 dark:bg-white/5">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => handleTabChange(tab.id)}
-              className={`sawiyaa-btn-press inline-flex items-center justify-center rounded-[14px] px-4 py-2.5 text-sm font-semibold transition-all duration-200 shrink-0 ${
-                isActive
-                  ? "bg-white text-text-primary shadow-sm dark:bg-surface-secondary dark:text-white"
-                  : "text-text-secondary hover:bg-white/40 hover:text-text-primary dark:hover:bg-white/5"
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+  const paginationConfig = pagination
+    ? {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalItems: pagination.totalItems,
+        totalPages: pagination.totalPages,
+        hasNextPage: pagination.page < pagination.totalPages,
+        hasPrevPage: pagination.page > 1,
+      }
+    : undefined;
+
+  return (
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{copy.summary.total.label}</p>
+            <p className="text-2xl font-bold text-text-primary dark:text-white">{totalItems}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light text-primary dark:bg-primary/20 dark:text-primary-light">
+            <CalendarDays className="h-4 w-4" />
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{copy.summary.action.label}</p>
+            <p className="text-2xl font-bold text-warning">{totalAction}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-warning-light text-warning dark:bg-warning/20 dark:text-warning-light">
+            <AlertCircle className="h-4 w-4" />
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{copy.summary.active.label}</p>
+            <p className="text-2xl font-bold text-success">{totalActive}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success-light text-success dark:bg-success/20 dark:text-success-light">
+            <CheckCircle2 className="h-4 w-4" />
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{copy.summary.history.label}</p>
+            <p className="text-2xl font-bold text-text-primary dark:text-white">{totalArchive}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/40">
+            <History className="h-4 w-4" />
+          </span>
+        </div>
       </div>
 
-      <SurfaceToolbar className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1.5">
-          <p className="text-sm font-medium text-text-primary dark:text-white/90">
-            {copy.paymentExpiredNote}
-          </p>
-          <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
-            <span>
-              {copy.summary.expired.label}: {String(totalExpired)}
-            </span>
-            <span aria-hidden="true" className="text-border-light">•</span>
-            <span>{copy.pageLabel(page, totalPages)}</span>
+      {/* Main Table Panel */}
+      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-border-light/60">
+          {/* Tab Segment Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto rounded-xl bg-surface-tertiary p-1 dark:bg-white/5">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`sawiyaa-btn-press inline-flex items-center justify-center rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 shrink-0 ${
+                    isActive
+                      ? "bg-white text-text-primary shadow-sm dark:bg-surface-secondary dark:text-white"
+                      : "text-text-secondary hover:bg-white/40 hover:text-text-primary dark:hover:bg-white/5"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filters & Sorting */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Sort Order */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-secondary font-medium">
+                {locale === "ar" ? "الترتيب:" : "Sort:"}
+              </span>
+              <select
+                value={sortOrder}
+                onChange={(event) => {
+                  setSortOrder(event.target.value as "newest" | "oldest");
+                  setPage(1);
+                }}
+                className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-1.5 text-xs font-semibold text-text-primary focus:border-primary focus:ring-1 focus:ring-primary dark:bg-white/5 dark:text-white/90"
+                aria-label={copy.sortLabel}
+              >
+                <option value="newest">{copy.sortNewest}</option>
+                <option value="oldest">{copy.sortOldest}</option>
+              </select>
+            </div>
+
+            {/* Page Size */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-secondary font-medium">
+                {locale === "ar" ? "عدد الصفوف:" : "Rows:"}
+              </span>
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setPage(1);
+                }}
+                className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-1.5 text-xs font-semibold text-text-primary focus:border-primary focus:ring-1 focus:ring-primary dark:bg-white/5 dark:text-white/90"
+                aria-label={copy.rowsPerPage}
+              >
+                {[10, 20, 50].map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
-          <label className="flex w-full flex-col gap-1 sm:w-auto">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {copy.sortLabel}
-            </span>
-            <select
-              value={sortOrder}
-              onChange={(event) => {
-                setSortOrder(event.target.value as "newest" | "oldest");
-                setPage(1);
-              }}
-              className="app-control h-11 min-w-[170px] px-3 py-2"
-              aria-label={copy.sortLabel}
-            >
-              <option value="newest">{copy.sortNewest}</option>
-              <option value="oldest">{copy.sortOldest}</option>
-            </select>
-          </label>
-
-          <label className="flex w-full flex-col gap-1 sm:w-auto">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {copy.rowsPerPage}
-            </span>
-            <select
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setPage(1);
-              }}
-              className="app-control h-11 min-w-[120px] px-3 py-2"
-              aria-label={copy.rowsPerPage}
-            >
-              {[10, 20, 50].map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </SurfaceToolbar>
-
-      {sessions.length === 0 ? (
-        <StateCard
-          title={copy.emptyTabTitle}
-          note={copy.emptyTabNote}
-          centered={true}
-          className="sawiyaa-animate-fade-in"
-        />
-      ) : (
-        <div className="space-y-4">
-          {sessions.map((session) => (
-            <PatientSessionTimelineCard
-              key={session.id}
-              session={session}
-              locale={locale}
-              t={t}
-              copy={copy}
-            />
-          ))}
-
-          {totalPages > 1 ? (
-            <div className="rounded-[28px] border border-border-light bg-white shadow-theme-xs dark:bg-white/5">
-              <TablePagination
-                page={page}
-                totalPages={totalPages}
-                onPageChange={(nextPage) => {
-                  if (nextPage < 1 || nextPage > totalPages) return;
-                  setPage(nextPage);
-                }}
-                pageLabel={copy.pageLabel}
-                locale={locale}
-              />
-            </div>
+        {/* Note and expired status info */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-text-secondary">
+          <p className="font-medium text-text-primary dark:text-white/90">
+            {copy.paymentExpiredNote} ( {copy.summary.expired.label}: {String(totalExpired)} )
+          </p>
+          {pagination?.totalPages && pagination.totalPages > 1 ? (
+            <span>{copy.pageLabel(page, pagination.totalPages)}</span>
           ) : null}
         </div>
-      )}
+
+        <div className="mt-4">
+          <DataTable
+            data={sessions}
+            columns={columns}
+            getRowId={(row) => row.id}
+            loading={isLoading}
+            pagination={paginationConfig}
+            onPageChange={(newPage) => setPage(newPage)}
+          />
+        </div>
+      </section>
     </div>
   );
 }
+

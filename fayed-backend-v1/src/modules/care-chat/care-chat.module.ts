@@ -13,6 +13,7 @@ import { CareChatConversationRepository } from './repositories/care-chat-convers
 import { CareChatLinkedSessionRepository } from './repositories/care-chat-linked-session.repository';
 import { CareChatRequestRepository } from './repositories/care-chat-request.repository';
 import { ResolveCareChatActivityStateService } from './services/resolve-care-chat-activity-state.service';
+import { CareChatExpirySweeperService } from './services/care-chat-expiry-sweeper.service';
 import { ValidateCareChatApprovalTransitionService } from './services/validate-care-chat-approval-transition.service';
 import { ValidateCareChatSendMessageService } from './services/validate-care-chat-send-message.service';
 import { CreateCareChatRequestUseCase } from './use-cases/create-care-chat-request.use-case';
@@ -45,6 +46,7 @@ import { CareChatAccessPolicy } from './policies/care-chat-access.policy';
     CareChatConversationRepository,
     CareChatLinkedSessionRepository,
     ResolveCareChatActivityStateService,
+    CareChatExpirySweeperService,
     ValidateCareChatApprovalTransitionService,
     ValidateCareChatSendMessageService,
     CreateCareChatRequestUseCase,

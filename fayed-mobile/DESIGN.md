@@ -1,4 +1,4 @@
-# Sawiyaa Mobile Design System
+﻿# Sawiyaa Mobile Design System
 
 ## Purpose
 This document defines the mobile-first design system and UX rules for the Sawiyaa React Native patient app. It is the foundation for the redesign, not a screen-by-screen spec.
@@ -9,15 +9,15 @@ This is not a generic hospital app. It is not a fitness app. It is not a cold ad
 
 ## Brand Lock
 
-The current brand name is **Sawiyaa** in English and **سويّة** in Arabic.
+The current brand name is **Sawiyaa** in English and **Ø³ÙˆÙŠÙ‘Ø©** in Arabic.
 
 - **English name:** `Sawiyaa`
-- **Arabic name:** `سويّة`
+- **Arabic name:** `Ø³ÙˆÙŠÙ‘Ø©`
 - **Domain:** `sawiyaa.com`
 - **Core tagline EN:** `Care for mind, body, and balance`
-- **Core tagline AR:** `رعاية للعقل والجسم والتوازن`
+- **Core tagline AR:** `Ø±Ø¹Ø§ÙŠØ© Ù„Ù„Ø¹Ù‚Ù„ ÙˆØ§Ù„Ø¬Ø³Ù… ÙˆØ§Ù„ØªÙˆØ§Ø²Ù†`
 
-Do not use the old `Fayed` name in new user-facing UI, brand copy, visual prompts, onboarding screens, app metadata, or marketing surfaces unless the task is explicitly about legacy migration.
+Do not use the old `Sawiyaa` name in new user-facing UI, brand copy, visual prompts, onboarding screens, app metadata, or marketing surfaces unless the task is explicitly about legacy migration.
 
 The product meaning behind Sawiyaa is balance, wellbeing, guided care, and a healthier emotional and physical journey. The visual identity should support mental health, nutrition, and psychological coaching without looking like a generic hospital, fitness tracker, or luxury spa.
 
@@ -76,7 +76,7 @@ Visual direction:
 - Soft Sage used for supportive surfaces, icons, quiet highlights, and gentle wellbeing cues.
 - Warm Gold used as a restrained premium accent only.
 - Muted Sand used for dividers, subtle surfaces, and soft section separation.
-- No loud gradients, neon colors, heavy glassmorphism, or decorative medical clichés.
+- No loud gradients, neon colors, heavy glassmorphism, or decorative medical clichÃ©s.
 - No random ECG, heartbeat, cross, hospital, or fitness-device visual language.
 - Every screen should feel related to the same calm brand system, without becoming repetitive.
 
@@ -125,9 +125,9 @@ Elevation should be light, tonal, and based on the Sawiyaa Deep Teal shadow fami
 
 Equivalent alpha HEX references:
 
-- `rgba(36, 86, 79, 0.06)` ≈ `#24564F0F`
-- `rgba(36, 86, 79, 0.08)` ≈ `#24564F14`
-- `rgba(36, 86, 79, 0.10)` ≈ `#24564F1A`
+- `rgba(36, 86, 79, 0.06)` â‰ˆ `#24564F0F`
+- `rgba(36, 86, 79, 0.08)` â‰ˆ `#24564F14`
+- `rgba(36, 86, 79, 0.10)` â‰ˆ `#24564F1A`
 
 Do not use dark black shadows, stacked shadows, or sharp drop shadows. Depth should support hierarchy, not decoration.
 
@@ -613,9 +613,10 @@ Every UI phase must pass this checklist before it is considered complete:
 
 ## Rebrand Maintenance Rule
 
-The platform was previously documented as `Fayed`. New design work should use `Sawiyaa` / `سويّة` in brand-facing contexts.
+The platform was previously documented as `Sawiyaa`. New design work should use `Sawiyaa` / `Ø³ÙˆÙŠÙ‘Ø©` in brand-facing contexts.
 
 Do not rename code folders, backend modules, app package identifiers, environment variables, or technical paths unless a separate engineering migration task explicitly requests it. This document controls visual identity and agent guidance, not repository renaming.
 
 ## Maintenance Rule
 If a screen cannot be understood without a paragraph of explanation, the layout is probably wrong. Fix the structure first, then the copy.
+

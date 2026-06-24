@@ -22,7 +22,9 @@ function buildResolver(config: {
   paymobIntentionBaseUrl?: string;
   paymobCheckoutBaseUrl?: string;
   paymobCheckoutFlow?: 'legacy' | 'intention';
-  paymobIntegrationIdCard?: string;
+  paymobEgpCardIntegrationId?: string | null;
+  paymobEgpWalletIntegrationId?: string | null;
+  paymobUsdCardIntegrationId?: string | null;
   paymobIframeId?: string;
 }) {
   const capabilitiesService = new PaymentProviderCapabilitiesService({
@@ -46,28 +48,78 @@ function buildResolver(config: {
       checkoutBaseUrl:
         config.paymobCheckoutBaseUrl ?? 'https://flashapi.paymob.com',
       checkoutFlow: config.paymobCheckoutFlow ?? 'legacy',
-      integrationIdCard: config.paymobIntegrationIdCard ?? 'paymob_integration',
+      egpCardIntegrationId:
+        config.paymobEgpCardIntegrationId === undefined
+          ? 'paymob_egp_card'
+          : config.paymobEgpCardIntegrationId,
+      egpWalletIntegrationId:
+        config.paymobEgpWalletIntegrationId === undefined
+          ? null
+          : config.paymobEgpWalletIntegrationId,
+      usdCardIntegrationId:
+        config.paymobUsdCardIntegrationId === undefined
+          ? 'paymob_usd_card'
+          : config.paymobUsdCardIntegrationId,
+      integrationIdCard: config.paymobEgpCardIntegrationId ?? 'paymob_egp_card',
       integrationIdWallet: null,
       iframeId: config.paymobIframeId ?? 'paymob_iframe',
       defaultCheckoutMethod: 'CARD',
     }),
     getPaymobCheckoutFlow: () => config.paymobCheckoutFlow ?? 'legacy',
-    getPaymobEnabledMethods: () =>
-      (config.paymobIntegrationIdCard ?? 'paymob_integration')
-        ? [
-            {
-              key: 'CARD',
-              label: 'Card',
-              type: 'CARD',
-              enabled: true,
-              priority: 100,
-              integrationId:
-                config.paymobIntegrationIdCard ?? 'paymob_integration',
-              supportedCheckoutFlows: ['legacy', 'intention'] as const,
-              countryIsoCodes: [],
-            },
-          ]
-        : [],
+    getPaymobEnabledMethods: (context?: { currencyCode?: string | null }) => {
+      const normalizedCurrency = context?.currencyCode?.trim().toUpperCase();
+
+      if (normalizedCurrency === 'USD') {
+        return config.paymobUsdCardIntegrationId === null
+          ? []
+          : [
+              {
+                key: 'CARD',
+                label: 'Card',
+                type: 'CARD',
+                enabled: true,
+                priority: 100,
+                integrationId:
+                  config.paymobUsdCardIntegrationId ?? 'paymob_usd_card',
+                currencyCodes: ['USD'],
+                supportedCheckoutFlows: ['legacy', 'intention'] as const,
+                countryIsoCodes: [],
+              },
+            ];
+      }
+
+      const methods = [];
+
+      if (config.paymobEgpCardIntegrationId !== null) {
+        methods.push({
+          key: 'CARD',
+          label: 'Card',
+          type: 'CARD',
+          enabled: true,
+          priority: 100,
+          integrationId: config.paymobEgpCardIntegrationId ?? 'paymob_egp_card',
+          currencyCodes: ['EGP'],
+          supportedCheckoutFlows: ['legacy', 'intention'] as const,
+          countryIsoCodes: [],
+        });
+      }
+
+      if (config.paymobEgpWalletIntegrationId) {
+        methods.push({
+          key: 'WALLET',
+          label: 'Wallet',
+          type: 'WALLET',
+          enabled: true,
+          priority: 90,
+          integrationId: config.paymobEgpWalletIntegrationId,
+          currencyCodes: ['EGP'],
+          supportedCheckoutFlows: ['legacy', 'intention'] as const,
+          countryIsoCodes: ['EG', 'EGY'],
+        });
+      }
+
+      return methods;
+    },
     getPaymobDefaultCheckoutMethod: () => 'CARD',
   } as never);
 
@@ -109,7 +161,7 @@ describe('PaymentProviderResolverService', () => {
     ).toBe(PaymentProvider.PAYMOB);
   });
 
-  it('routes international USD payments to Stripe', () => {
+  it('routes international USD payments to Paymob', () => {
     const service = buildResolver({});
 
     expect(
@@ -119,7 +171,7 @@ describe('PaymentProviderResolverService', () => {
         operatingCountryIsoCode: 'EGY',
         checkoutCountryIsoCode: 'USA',
       }),
-    ).toBe(PaymentProvider.STRIPE);
+    ).toBe(PaymentProvider.PAYMOB);
   });
 
   it('routes international EGP payments to Paymob', () => {
@@ -163,7 +215,7 @@ describe('PaymentProviderResolverService', () => {
     ).toThrow(ServiceUnavailableException);
   });
 
-  it('routes local non-Egypt USD flow to Stripe', () => {
+  it('routes local non-Egypt USD flow to Paymob', () => {
     const service = buildResolver({});
 
     expect(
@@ -173,6 +225,21 @@ describe('PaymentProviderResolverService', () => {
         operatingCountryIsoCode: 'USA',
         checkoutCountryIsoCode: 'USA',
       }),
-    ).toBe(PaymentProvider.STRIPE);
+    ).toBe(PaymentProvider.PAYMOB);
+  });
+
+  it('fails closed for USD when USD card config is missing', () => {
+    const service = buildResolver({
+      paymobUsdCardIntegrationId: null,
+    });
+
+    expect(() =>
+      service.resolveProvider({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        operatingCountryIsoCode: 'EGY',
+        checkoutCountryIsoCode: 'USA',
+      }),
+    ).toThrow(ServiceUnavailableException);
   });
 });

@@ -20,9 +20,6 @@ export default async function PatientSessionPayPage({ params }: Props) {
   setRequestLocale(locale);
   return (
     <div className="app-max-content mx-auto space-y-5 px-4 py-6 sm:space-y-6">
-      <section className="app-panel-soft rounded-[28px] p-4 sm:p-5">
-        <PatientQuickNav />
-      </section>
       <PaySessionPanel sessionId={id} />
     </div>
   );

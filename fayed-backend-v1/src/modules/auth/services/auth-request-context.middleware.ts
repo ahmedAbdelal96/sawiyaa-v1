@@ -28,13 +28,13 @@ export class AuthRequestContextMiddleware implements NestMiddleware {
       this.configService.get<boolean>('auth.cookieAuthEnabled') === true;
     const cookieAccessToken =
       cookieAuthEnabled &&
-      typeof request.cookies?.fayed_access_token === 'string'
-        ? request.cookies.fayed_access_token
+      typeof request.cookies?.sawiyaa_access_token === 'string'
+        ? request.cookies.sawiyaa_access_token
         : null;
     const cookieRefreshToken =
       cookieAuthEnabled &&
-      typeof request.cookies?.fayed_refresh_token === 'string'
-        ? request.cookies.fayed_refresh_token
+      typeof request.cookies?.sawiyaa_refresh_token === 'string'
+        ? request.cookies.sawiyaa_refresh_token
         : null;
     const bodyRefreshToken =
       typeof request.body?.refreshToken === 'string'

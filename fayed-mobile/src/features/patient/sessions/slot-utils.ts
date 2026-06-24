@@ -8,7 +8,7 @@ import {
 export interface SelectableSlot {
   startsAt: string;
   windowEndsAt: string;
-  maxDuration: 30 | 60;
+  durationMinutes: 30 | 60 | null;
 }
 
 export interface DayGroup {
@@ -41,37 +41,23 @@ export function getWeekRange(weekOffset: number) {
 }
 
 export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
-  const halfHourMs = 30 * 60 * 1000;
-  const hourMs = 60 * 60 * 1000;
   const slots: SelectableSlot[] = [];
   const earliestAllowedStart = Date.now() + MIN_BOOKING_LEAD_MS;
 
   for (const window of windows) {
     const startMs = new Date(window.startsAt).getTime();
-    const endMs = new Date(window.endsAt).getTime();
+    if (startMs <= earliestAllowedStart) {
+      continue;
+    }
 
-    for (
-      let cursor = startMs;
-      cursor + halfHourMs <= endMs;
-      cursor += halfHourMs
-    ) {
-      if (cursor <= earliestAllowedStart) {
-        continue;
-      }
-
-      const remainingMs = endMs - cursor;
-      const maxDuration: 30 | 60 =
+    slots.push({
+      startsAt: new Date(startMs).toISOString(),
+      windowEndsAt: window.endsAt,
+      durationMinutes:
         window.durationMinutes === 30 || window.durationMinutes === 60
           ? window.durationMinutes
-          : remainingMs >= hourMs
-            ? 60
-            : 30;
-      slots.push({
-        startsAt: new Date(cursor).toISOString(),
-        windowEndsAt: window.endsAt,
-        maxDuration,
-      });
-    }
+          : null,
+    });
   }
 
   return slots;

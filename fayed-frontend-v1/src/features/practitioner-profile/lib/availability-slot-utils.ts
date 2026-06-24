@@ -38,7 +38,7 @@ export function formatFullDatetime(isoString: string | null, numLocale: string):
 export type SelectableSlot = {
   startsAt: string;
   windowEndsAt: string;
-  maxDuration: 30 | 60;
+  durationMinutes: 30 | 60 | null;
 };
 
 const MIN_BOOKING_LEAD_MS = 60 * 1000;
@@ -79,27 +79,18 @@ export function formatNoDurationSlotsLabel(durationMinutes: 30 | 60, locale: str
 }
 
 export function buildSlotsFromWindow(window: PublicAvailabilityWindow): SelectableSlot[] {
-  const slots: SelectableSlot[] = [];
   const startTime = new Date(window.startsAt).getTime();
-  const endTime = new Date(window.endsAt).getTime();
-  const halfHourMs = 30 * 60 * 1000;
-  const hourMs = 60 * 60 * 1000;
-  const earliestAllowedStart = Date.now() + MIN_BOOKING_LEAD_MS;
-
-  for (let current = startTime; current + halfHourMs <= endTime; current += halfHourMs) {
-    if (current <= earliestAllowedStart) {
-      continue;
-    }
-
-    const remaining = endTime - current;
-    slots.push({
-      startsAt: new Date(current).toISOString(),
-      windowEndsAt: window.endsAt,
-      maxDuration: remaining >= hourMs ? 60 : 30,
-    });
+  if (startTime <= Date.now() + MIN_BOOKING_LEAD_MS) {
+    return [];
   }
 
-  return slots;
+  return [
+    {
+      startsAt: new Date(startTime).toISOString(),
+      windowEndsAt: window.endsAt,
+      durationMinutes: window.durationMinutes,
+    },
+  ];
 }
 
 export function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string): DayGroup[] {
@@ -139,13 +130,17 @@ export function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: 
       }
 
       if (
-        slot.maxDuration > existingSlot.maxDuration ||
+        (slot.durationMinutes ?? 0) > (existingSlot.durationMinutes ?? 0) ||
         new Date(slot.windowEndsAt).getTime() > new Date(existingSlot.windowEndsAt).getTime()
       ) {
         dayGroup.slots.set(slot.startsAt, {
           ...existingSlot,
           windowEndsAt: slot.windowEndsAt,
-          maxDuration: Math.max(existingSlot.maxDuration, slot.maxDuration) as 30 | 60,
+          durationMinutes:
+            (Math.max(
+              existingSlot.durationMinutes ?? 0,
+              slot.durationMinutes ?? 0,
+            ) || null) as 30 | 60 | null,
         });
       }
     }

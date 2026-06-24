@@ -13,6 +13,7 @@ import { PatientAuthController } from './controllers/patient-auth.controller';
 import { PractitionerAuthController } from './controllers/practitioner-auth.controller';
 import { AuthUserContextMapper } from './mappers/auth-user-context.mapper';
 import { AuthIdentityRepository } from './repositories/auth-identity.repository';
+import { PasswordResetSessionRepository } from './repositories/password-reset-session.repository';
 import { TwoFactorSettingRepository } from './repositories/two-factor-setting.repository';
 import { UserEmailRepository } from './repositories/user-email.repository';
 import { UserPhoneRepository } from './repositories/user-phone.repository';
@@ -24,6 +25,7 @@ import { AuthSessionService } from './services/auth-session.service';
 import { AuthTokenService } from './services/auth-token.service';
 import { GoogleIdentityService } from './services/google-identity.service';
 import { PasswordHashService } from './services/password-hash.service';
+import { PasswordResetTokenService } from './services/password-reset-token.service';
 import { PractitionerOtpChannelService } from './services/practitioner-otp-channel.service';
 import { PatientOtpChannelService } from './services/patient-otp-channel.service';
 import { StepUpService } from './services/step-up.service';
@@ -48,6 +50,10 @@ import { RequestPractitionerPasswordResetUseCase } from './use-cases/request-pra
 import { ResetPractitionerPasswordUseCase } from './use-cases/reset-practitioner-password.use-case';
 import { RequestPatientPasswordResetUseCase } from './use-cases/request-patient-password-reset.use-case';
 import { ResetPatientPasswordUseCase } from './use-cases/reset-patient-password.use-case';
+import { VerifyPatientPasswordResetOtpUseCase } from './use-cases/verify-patient-password-reset-otp.use-case';
+import { ConfirmPatientPasswordResetUseCase } from './use-cases/confirm-patient-password-reset.use-case';
+import { VerifyPractitionerPasswordResetOtpUseCase } from './use-cases/verify-practitioner-password-reset-otp.use-case';
+import { ConfirmPractitionerPasswordResetUseCase } from './use-cases/confirm-practitioner-password-reset.use-case';
 import { RevokeAuthSessionUseCase } from './use-cases/revoke-auth-session.use-case';
 import { VerifyAdminStepUpUseCase } from './use-cases/verify-admin-step-up.use-case';
 import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
@@ -70,11 +76,13 @@ import { CountryRepository } from '../patients/repositories/country.repository';
     AuthUserContextMapper,
     UserRepository,
     UserEmailRepository,
+    PasswordResetSessionRepository,
     UserPhoneRepository,
     AuthIdentityRepository,
     UserSessionRepository,
     TwoFactorSettingRepository,
     PasswordHashService,
+    PasswordResetTokenService,
     AuthTokenService,
     AuthSessionService,
     GoogleIdentityService,
@@ -97,11 +105,15 @@ import { CountryRepository } from '../patients/repositories/country.repository';
     RefreshPatientTokenUseCase,
     LogoutPatientUseCase,
     RequestPatientPasswordResetUseCase,
+    VerifyPatientPasswordResetOtpUseCase,
+    ConfirmPatientPasswordResetUseCase,
     ResetPatientPasswordUseCase,
     RegisterPractitionerAccountUseCase,
     LoginPractitionerPasswordUseCase,
     VerifyPractitionerLoginOtpUseCase,
     RequestPractitionerPasswordResetUseCase,
+    VerifyPractitionerPasswordResetOtpUseCase,
+    ConfirmPractitionerPasswordResetUseCase,
     ResetPractitionerPasswordUseCase,
     RefreshPractitionerTokenUseCase,
     LogoutPractitionerUseCase,

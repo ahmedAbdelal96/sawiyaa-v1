@@ -23,6 +23,7 @@ export type PayoutsReportRow = {
   settlementId: string;
   batchId: string;
   practitionerId: string;
+  practitionerName: string | null;
   amountPaid: string;
   currencyCode: string;
   payoutMethod: string;

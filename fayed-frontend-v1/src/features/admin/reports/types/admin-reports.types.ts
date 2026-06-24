@@ -50,6 +50,8 @@ export type SessionsReportRow = {
   createdAt: string;
   patientId: string;
   practitionerId: string;
+  patientName: string | null;
+  practitionerName: string | null;
 };
 
 export type PaymentsRevenueReportOverview = {
@@ -159,6 +161,8 @@ export type CareRequestsReportRow = {
   revokedAt: string | null;
   patientId: string;
   practitionerId: string;
+  patientName: string | null;
+  practitionerName: string | null;
   requestedByUserId: string;
   reviewedByUserId: string | null;
   approvalRef: string | null;
@@ -189,6 +193,7 @@ export type PayoutsReportRow = {
   settlementId: string;
   batchId: string;
   practitionerId: string;
+  practitionerName: string | null;
   amountPaid: string;
   currencyCode: string;
   payoutMethod: string;

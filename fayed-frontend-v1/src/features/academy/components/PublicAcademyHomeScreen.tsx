@@ -57,22 +57,26 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
   );
 
   return (
-    <div className="space-y-8">
-      <section className="overflow-hidden rounded-[32px] border border-border-light bg-[linear-gradient(135deg,rgba(68,161,148,0.12),rgba(255,255,255,0.96))] p-6 shadow-[0_22px_50px_-36px_rgba(34,52,56,0.25)] md:p-8">
+    <div className="app-max-content mx-auto space-y-8 px-4 py-6 sm:py-8">
+      {/* Clinically warm, flat hero section compliant with Sawiyaa design system */}
+      <section className="overflow-hidden rounded-[24px] border border-border-light bg-surface-tertiary p-6 sm:p-8">
         <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white px-4 py-2 text-xs font-semibold text-primary">
-              <Sparkles className="h-4 w-4" />
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
               {t("public.badge")}
             </div>
+            
             <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight text-text-primary md:text-5xl">
+              <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-4xl">
                 {t("public.hero.title")}
               </h1>
-              <p className="max-w-2xl text-sm leading-7 text-text-secondary md:text-base">
+              <p className="max-w-2xl text-sm leading-relaxed text-text-secondary">
                 {t("public.hero.subtitle")}
               </p>
             </div>
+
+            {/* Flat stats grid */}
             <div className="grid gap-3 sm:grid-cols-3">
               {[
                 { label: t("public.stats.courses"), value: String(stats.totalCourses), icon: GraduationCap },
@@ -83,15 +87,15 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
                 return (
                   <div
                     key={item.label}
-                    className="rounded-3xl border border-border-light bg-white/90 p-4 shadow-[0_16px_30px_-24px_rgba(34,52,56,0.28)]"
+                    className="rounded-[16px] border border-border-light bg-white p-4"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" />
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
+                        <Icon className="h-4.5 w-4.5" />
                       </span>
-                      <div>
-                        <div className="text-2xl font-bold text-text-primary">{item.value}</div>
-                        <div className="text-xs font-medium text-text-muted">{item.label}</div>
+                      <div className="min-w-0">
+                        <div className="text-xl font-bold text-text-primary font-mono">{item.value}</div>
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{item.label}</div>
                       </div>
                     </div>
                   </div>
@@ -100,7 +104,8 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-border-light bg-white/90 p-5 shadow-[0_18px_36px_-28px_rgba(34,52,56,0.22)]">
+          {/* Clean, flat search form container */}
+          <div className="rounded-[20px] border border-border-light bg-white p-5">
             <form
               className="space-y-4"
               onSubmit={(event) => {
@@ -111,7 +116,7 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
               <div className="flex items-center gap-3 text-text-primary">
                 <Search className="h-5 w-5 text-primary" />
                 <div>
-                  <div className="text-base font-semibold">{t("public.search.title")}</div>
+                  <div className="text-sm font-bold">{t("public.search.title")}</div>
                   <div className="text-xs text-text-muted">{t("public.search.subtitle")}</div>
                 </div>
               </div>
@@ -119,8 +124,9 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t("public.search.placeholder")}
+                className="w-full"
               />
-              <Button type="submit" className="w-full" disabled={isFetching}>
+              <Button type="submit" className="w-full rounded-[14px]" disabled={isFetching}>
                 {isFetching ? t("public.search.loading") : t("public.search.action")}
               </Button>
             </form>
@@ -136,70 +142,75 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
             label: t("errors.retry"),
             onClick: () => refetch(),
           }}
-          className="rounded-[28px]"
+          className="rounded-[20px]"
         />
       ) : null}
 
       {!isError ? (
         <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-text-primary">{t("public.list.title")}</h2>
-            <p className="text-sm text-text-muted">{t("public.list.subtitle")}</p>
+          <div className="flex items-end justify-between gap-4 border-b border-border-light pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-text-primary">{t("public.list.title")}</h2>
+              <p className="text-xs text-text-muted mt-0.5">{t("public.list.subtitle")}</p>
+            </div>
+            <div className="text-xs font-semibold text-text-muted bg-surface-tertiary px-3 py-1 rounded-full border border-border-light">
+              {t("public.list.count", { count: data?.pagination.totalItems ?? 0 })}
+            </div>
           </div>
-          <div className="text-sm text-text-muted">
-            {t("public.list.count", { count: data?.pagination.totalItems ?? 0 })}
-          </div>
-        </div>
 
-        {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-56 animate-pulse rounded-[28px] border border-border-light bg-white/80"
-              />
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items.map((item) => {
-              const displayCurrency =
-                resolvePatientCurrencyCode({
-                  currencyCode: item.currencyCode,
-                  regionalPricingMode: item.regionalPricingMode,
-                  resolvedCountryIsoCode: item.resolvedCountryIsoCode,
-                }) ?? item.currencyCode;
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-56 animate-pulse rounded-[20px] border border-border-light bg-surface-tertiary"
+                />
+              ))}
+            </div>
+          ) : items.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((item) => {
+                const displayCurrency =
+                  resolvePatientCurrencyCode({
+                    currencyCode: item.currencyCode,
+                    regionalPricingMode: item.regionalPricingMode,
+                    resolvedCountryIsoCode: item.resolvedCountryIsoCode,
+                  }) ?? item.currencyCode;
 
-              return (
-                <article
-                  key={item.id}
-                  className="group overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_16px_34px_-26px_rgba(34,52,56,0.28)] transition hover:-translate-y-1 hover:shadow-[0_24px_50px_-30px_rgba(34,52,56,0.32)]"
-                >
-                  <div className="h-40 bg-[radial-gradient(circle_at_top_right,rgba(68,161,148,0.24),transparent_35%),linear-gradient(135deg,rgba(235,246,244,0.9),rgba(255,255,255,0.96))] p-5">
-                    <div className="flex h-full flex-col justify-between">
+                return (
+                  <article
+                    key={item.id}
+                    className="group flex flex-col justify-between overflow-hidden rounded-[20px] border border-border-light bg-white transition hover:border-primary/25 hover:shadow-[0_8px_24px_rgba(36,86,79,0.06)]"
+                  >
+                    {/* Header: Clean layout without busy colors */}
+                    <div className="border-b border-border-light bg-surface-tertiary p-5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-primary border border-primary/10 shadow-sm">
                           {item.stats?.totalEnrollments ?? 0} {t("public.card.enrollments")}
                         </span>
-                        <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-text-muted">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-text-muted border border-border-light/70">
                           {item.publishedAt ? t("public.card.published") : t("public.card.draft")}
                         </span>
                       </div>
-                      <div className="text-sm text-text-muted">
+                      <div className="mt-4 text-base font-bold text-primary font-mono">
                         {formatCurrency(item.priceAmount, displayCurrency, locale) ?? t("public.card.free")}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-4 p-5">
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-bold text-text-primary">{item.title}</h3>
-                      <p className="line-clamp-3 text-sm leading-6 text-text-secondary">
-                        {item.shortDescription ?? t("public.card.noDescription")}
-                      </p>
+                    {/* Body */}
+                    <div className="flex-1 space-y-4 p-5">
+                      <div className="space-y-2">
+                        <h3 className="text-base font-bold text-text-primary transition group-hover:text-primary">
+                          {item.title}
+                        </h3>
+                        <p className="line-clamp-3 text-sm leading-relaxed text-text-secondary">
+                          {item.shortDescription ?? t("public.card.noDescription")}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between gap-3 border-t border-border-light/40 px-5 py-4 bg-white">
                       <div className="text-xs text-text-muted">
                         {item.startsAt
                           ? new Date(item.startsAt).toLocaleDateString(locale)
@@ -207,22 +218,21 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
                       </div>
                       <Link
                         href={`/${locale}/academy/${item.slug}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                        className="inline-flex items-center gap-1.5 rounded-[12px] bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
                       >
                         {t("public.card.open")}
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
                       </Link>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-[28px] border border-dashed border-border-light bg-white px-6 py-12 text-center text-text-muted">
-            {submittedSearch ? t("public.empty.filtered") : t("public.empty.default")}
-          </div>
-        )}
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-[20px] border border-dashed border-border-light bg-white px-6 py-12 text-center text-text-muted">
+              {submittedSearch ? t("public.empty.filtered") : t("public.empty.default")}
+            </div>
+          )}
         </section>
       ) : null}
     </div>

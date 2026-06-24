@@ -47,9 +47,9 @@
       "admin": "Read-only conversation"
     },
     "requestStateNotes": {
-      "pending": "Your message request is waiting for review before the conversation opens.",
+      "pending": "Your message request is being reviewed by the Sawiyaa team before the conversation opens.",
       "approved": "Your message request was approved. You can use the conversation while it stays active.",
-      "rejected": "This request was not approved. Use support if you still need help.",
+      "rejected": "This request was not approved by the Sawiyaa team. Use support if you still need help.",
       "expired": "This request expired before messaging could stay available.",
       "cancelled": "This request was cancelled and messaging is not available from it anymore.",
       "revoked": "Messaging access was revoked for this request."
@@ -147,11 +147,11 @@
     "home": {
       "eyebrow": "Practitioner messages",
       "title": "Request messaging with a practitioner when it is the right next step",
-      "note": "Submit a request when you need follow-up messaging with a practitioner. Messaging opens after approval."
+      "note": "Submit a request when you need follow-up messaging with a practitioner. The Sawiyaa team reviews it before messaging opens."
     },
     "create": {
       "heading": "Start a message request",
-      "note": "Choose the practitioner and send a short note. Messaging opens after approval.",
+      "note": "Choose the practitioner and send a short note. Messaging opens after the Sawiyaa team approves it.",
       "fields": {
         "practitionerSlug": "Practitioner",
         "relatedSessionId": "Session (optional)",
@@ -209,7 +209,7 @@
     "home": {
       "eyebrow": "Practitioner messages",
       "title": "Review approved and pending message requests",
-      "note": "This area shows only the approval-based messaging flow. It is not a general messaging inbox."
+      "note": "This area shows requests addressed to a practitioner and reviewed by the Sawiyaa team. It is not a general messaging inbox."
     },
     "list": {
       "heading": "Message requests",

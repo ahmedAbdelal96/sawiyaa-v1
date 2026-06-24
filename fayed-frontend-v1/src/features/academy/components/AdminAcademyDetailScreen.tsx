@@ -10,6 +10,9 @@ import {
   Pencil,
   Plus,
   Sparkles,
+  AlertTriangle,
+  Copy,
+  Check,
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
@@ -71,6 +74,54 @@ function getStatusTone(status: string) {
   if (status === "PUBLISHED") return "text-emerald-700 bg-emerald-50";
   if (status === "ARCHIVED") return "text-slate-600 bg-slate-100";
   return "text-amber-700 bg-amber-50";
+}
+
+function CopyableLink({
+  label,
+  value,
+  fallback,
+}: {
+  label: string;
+  value: string | null | undefined;
+  fallback: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border-light bg-surface-tertiary/70 p-4 transition-all duration-200 hover:bg-surface-tertiary dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.04]">
+      <span className="text-xs font-medium text-text-muted">{label}</span>
+      <div className="mt-1.5 flex items-center justify-between gap-3">
+        <span className="min-w-0 break-all text-sm font-semibold text-text-primary dark:text-white/90">
+          {value ?? fallback}
+        </span>
+        {value ? (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border-light bg-white text-text-secondary shadow-sm transition-all hover:bg-surface-tertiary hover:text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
+            title="نسخ الرابط"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export default function AdminAcademyDetailScreen({ courseId }: Props) {
@@ -209,7 +260,7 @@ export default function AdminAcademyDetailScreen({ courseId }: Props) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[32px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.18)]">
+      <SurfaceCard as="section" variant="page">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-semibold text-primary">
@@ -254,173 +305,100 @@ export default function AdminAcademyDetailScreen({ courseId }: Props) {
               value={String(stats.confirmedEnrollments)}
               tone="brand"
             />
-              <SurfaceStatCard
-                label={t("admin.detail.stats.pendingPayments")}
-                value={String(stats.pendingPayments)}
-                tone="warning"
-              />
-              <SurfaceStatCard
-                label={t("admin.detail.stats.lecturesCreated")}
-                value={String(stats.lectureCount)}
-                tone="brand"
-              />
-            </div>
+            <SurfaceStatCard
+              label={t("admin.detail.stats.pendingPayments")}
+              value={String(stats.pendingPayments)}
+              tone="warning"
+            />
+            <SurfaceStatCard
+              label={t("admin.detail.stats.lecturesCreated")}
+              value={String(stats.lectureCount)}
+              tone="brand"
+            />
           </div>
-        </section>
+        </div>
+      </SurfaceCard>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <SurfaceCard variant="section" className="space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">{t("admin.detail.sections.course")}</h2>
-              <p className="mt-1 text-sm text-text-secondary">{t("admin.detail.update.note")}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {canManage ? (
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr] items-start">
+        {/* Main Column */}
+        <div className="space-y-6">
+          <SurfaceCard variant="section" className="space-y-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-text-primary">{t("admin.detail.sections.course")}</h2>
+                <p className="mt-1 text-sm text-text-secondary">{t("admin.detail.update.note")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {canManage ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    startIcon={<Pencil className="h-4 w-4" />}
+                    onClick={() => setIsEditOpen(true)}
+                  >
+                    {t("admin.detail.update.open")}
+                  </Button>
+                ) : null}
                 <Button
                   size="sm"
-                  variant="secondary"
-                  startIcon={<Pencil className="h-4 w-4" />}
-                  onClick={() => setIsEditOpen(true)}
+                  variant="primary"
+                  startIcon={<BadgeCheck className="h-4 w-4" />}
+                  onClick={handlePublish}
+                  disabled={publishCourse.isPending || course.status === "PUBLISHED" || !isPublishReady}
                 >
-                  {t("admin.detail.update.open")}
+                  {publishCourse.isPending
+                    ? t("admin.detail.actions.publishing")
+                    : t("admin.detail.actions.publish")}
                 </Button>
-              ) : null}
-              <Button
-                size="sm"
-                variant="outline"
-                startIcon={<BadgeCheck className="h-4 w-4" />}
-                onClick={handlePublish}
-                disabled={publishCourse.isPending || course.status === "PUBLISHED" || !isPublishReady}
+                <Button
+                  size="sm"
+                  variant="danger"
+                  startIcon={<CircleOff className="h-4 w-4" />}
+                  onClick={() => setShowArchiveConfirm(true)}
+                  disabled={archiveCourse.isPending || course.status === "ARCHIVED"}
+                >
+                  {archiveCourse.isPending
+                    ? t("admin.detail.actions.archiving")
+                    : t("admin.detail.actions.archive")}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border-light bg-surface-tertiary p-5">
+              <p className="text-sm leading-7 text-text-secondary">
+                {course.fullDescription ?? course.shortDescription ?? t("admin.detail.noShortDescription")}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-text-secondary">
+                <span className="rounded-full border border-border-light bg-white px-3 py-1.5">
+                  {t(`statuses.course.${course.status ?? "DRAFT"}` as Parameters<typeof t>[0])}
+                </span>
+                <span className="rounded-full border border-border-light bg-white px-3 py-1.5">
+                  {t(`statuses.visibility.${course.visibility ?? "PUBLIC"}` as Parameters<typeof t>[0])}
+                </span>
+              </div>
+            </div>
+
+            {feedback ? (
+              <div
+                className={`rounded-2xl px-4 py-3 text-sm ${
+                  feedback.tone === "success"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-rose-50 text-rose-700"
+                }`}
               >
-                {publishCourse.isPending
-                  ? t("admin.detail.actions.publishing")
-                  : t("admin.detail.actions.publish")}
-              </Button>
-              <Button
-                size="sm"
-                variant="danger"
-                startIcon={<CircleOff className="h-4 w-4" />}
-                onClick={() => setShowArchiveConfirm(true)}
-                disabled={archiveCourse.isPending || course.status === "ARCHIVED"}
-              >
-                {archiveCourse.isPending
-                  ? t("admin.detail.actions.archiving")
-                  : t("admin.detail.actions.archive")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-border-light bg-surface-secondary/55 p-5">
-            <p className="text-sm leading-7 text-text-secondary">
-              {course.fullDescription ?? course.shortDescription ?? t("admin.detail.noShortDescription")}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-text-secondary">
-              <span className="rounded-full border border-border-light bg-white px-3 py-1.5">
-                {t(`statuses.course.${course.status ?? "DRAFT"}` as Parameters<typeof t>[0])}
-              </span>
-              <span className="rounded-full border border-border-light bg-white px-3 py-1.5">
-                {t(`statuses.visibility.${course.visibility ?? "PUBLIC"}` as Parameters<typeof t>[0])}
-              </span>
-            </div>
-            <p className="mt-4 text-xs leading-6 text-text-muted">{t("admin.detail.update.note")}</p>
-          </div>
-
-          {feedback ? (
-            <div
-              className={`rounded-2xl px-4 py-3 text-sm ${
-                feedback.tone === "success"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-rose-50 text-rose-700"
-              }`}
-            >
-              {feedback.message}
-            </div>
-          ) : null}
-        </SurfaceCard>
-
-        <div className="space-y-4">
-          <SurfaceCard variant="section" className="space-y-4">
-            <h2 className="text-lg font-semibold text-text-primary">{t("admin.detail.sections.courseSummary")}</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.price")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatCurrency(course.priceAmount ?? null, course.currencyCode ?? null, locale) === "-"
-                    ? t("admin.list.free")
-                    : formatCurrency(course.priceAmount ?? null, course.currencyCode ?? null, locale)}
-                </div>
+                {feedback.message}
               </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.priceEgp")}</div>
-                <div className="font-semibold text-text-primary">
-                  {course.priceAmountEgp
-                    ? formatCurrency(course.priceAmountEgp, "EGP", locale)
-                    : t("admin.detail.summary.notSet")}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.priceUsd")}</div>
-                <div className="font-semibold text-text-primary">
-                  {course.priceAmountUsd
-                    ? formatCurrency(course.priceAmountUsd, "USD", locale)
-                    : t("admin.detail.summary.notSet")}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.startsAt")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatDateTime(course.startsAt, locale)}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.endsAt")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatDateTime(course.endsAt, locale)}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.duration")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatPlanValue(
-                    course.plannedDurationDays,
-                    locale,
-                    t("admin.detail.summary.daysUnit"),
-                  )}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.lectures")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatPlanValue(
-                    course.plannedLectureCount,
-                    locale,
-                    t("admin.detail.summary.lectureUnit"),
-                  )}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.lecturesCreated")}</div>
-                <div className="font-semibold text-text-primary">
-                  {`${new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
-                    lectureCount,
-                  )} ${t("admin.detail.summary.lectureUnit")}`}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm">
-                <div className="text-xs text-text-muted">{t("admin.detail.summary.updatedAt")}</div>
-                <div className="font-semibold text-text-primary">
-                  {formatDateTime(course.updatedAt, locale)}
-                </div>
-              </div>
-            </div>
+            ) : null}
           </SurfaceCard>
 
           {!lecturePlanReady ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {missingLectures > 0
-                ? t("admin.errors.missingLectureSchedule", { count: missingLectures })
-                : t("admin.errors.scheduleIncomplete")}
+            <div className="flex items-center gap-3 rounded-[24px] border border-amber-200 bg-amber-50/50 p-4 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="font-medium">
+                {missingLectures > 0
+                  ? t("admin.errors.missingLectureSchedule", { count: missingLectures })
+                  : t("admin.errors.scheduleIncomplete")}
+              </div>
             </div>
           ) : null}
 
@@ -433,7 +411,7 @@ export default function AdminAcademyDetailScreen({ courseId }: Props) {
               {canManage ? (
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="primary"
                   startIcon={<Plus className="h-4 w-4" />}
                   onClick={() => setIsLectureOpen(true)}
                   disabled={!canAddLecture}
@@ -583,23 +561,100 @@ export default function AdminAcademyDetailScreen({ courseId }: Props) {
               />
             )}
           </SurfaceCard>
+        </div>
 
-          <SurfaceCard variant="section" className="space-y-3">
+        {/* Sidebar Column */}
+        <div className="space-y-6">
+          <SurfaceCard variant="section" className="space-y-4">
+            <h2 className="text-lg font-semibold text-text-primary">{t("admin.detail.sections.courseSummary")}</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.price")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatCurrency(course.priceAmount ?? null, course.currencyCode ?? null, locale) === "-"
+                    ? t("admin.list.free")
+                    : formatCurrency(course.priceAmount ?? null, course.currencyCode ?? null, locale)}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.priceEgp")}</div>
+                <div className="font-semibold text-text-primary">
+                  {course.priceAmountEgp
+                    ? formatCurrency(course.priceAmountEgp, "EGP", locale)
+                    : t("admin.detail.summary.notSet")}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.priceUsd")}</div>
+                <div className="font-semibold text-text-primary">
+                  {course.priceAmountUsd
+                    ? formatCurrency(course.priceAmountUsd, "USD", locale)
+                    : t("admin.detail.summary.notSet")}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.startsAt")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatDateTime(course.startsAt, locale)}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.endsAt")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatDateTime(course.endsAt, locale)}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.duration")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatPlanValue(
+                    course.plannedDurationDays,
+                    locale,
+                    t("admin.detail.summary.daysUnit"),
+                  )}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.lectures")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatPlanValue(
+                    course.plannedLectureCount,
+                    locale,
+                    t("admin.detail.summary.lectureUnit"),
+                  )}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.lecturesCreated")}</div>
+                <div className="font-semibold text-text-primary">
+                  {`${new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
+                    lectureCount,
+                  )} ${t("admin.detail.summary.lectureUnit")}`}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm col-span-full">
+                <div className="text-xs text-text-muted">{t("admin.detail.summary.updatedAt")}</div>
+                <div className="font-semibold text-text-primary">
+                  {formatDateTime(course.updatedAt, locale)}
+                </div>
+              </div>
+            </div>
+          </SurfaceCard>
+
+          <SurfaceCard variant="section" className="space-y-4">
             <h2 className="text-lg font-semibold text-text-primary">{t("admin.detail.sections.join")}</h2>
             <p className="text-sm text-text-secondary">{t("admin.detail.join.note")}</p>
-            <div className="space-y-3 rounded-2xl bg-surface-secondary px-4 py-4 text-sm">
-              <div>
-                <div className="text-xs text-text-muted">{t("admin.detail.join.meetingUrl")}</div>
-                <div className="mt-1 break-all font-semibold text-text-primary">
-                  {course.meetingUrl ?? t("admin.detail.join.none")}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-text-muted">{t("admin.detail.join.whatsappGroupUrl")}</div>
-                <div className="mt-1 break-all font-semibold text-text-primary">
-                  {course.whatsappGroupUrl ?? t("admin.detail.join.none")}
-                </div>
-              </div>
+            <div className="space-y-3">
+              <CopyableLink
+                label={t("admin.detail.join.meetingUrl")}
+                value={course.meetingUrl}
+                fallback={t("admin.detail.join.none")}
+              />
+              <CopyableLink
+                label={t("admin.detail.join.whatsappGroupUrl")}
+                value={course.whatsappGroupUrl}
+                fallback={t("admin.detail.join.none")}
+              />
             </div>
           </SurfaceCard>
         </div>

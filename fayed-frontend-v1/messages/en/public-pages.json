@@ -1,53 +1,53 @@
 {
   "meta": {
-    "siteTitle": "Fayed",
+    "siteTitle": "Sawiyaa",
     "siteDescription": "Guided mental care with clearer entry paths, public practitioner discovery, specialties, and trust-backed content.",
     "home": {
-      "title": "Fayed | Guided mental care entry",
+      "title": "Sawiyaa | Guided mental care entry",
       "description": "Start with guided matching, assessments, practitioner discovery, or support through a clearer public entry into care."
     },
     "practitioners": {
-      "title": "Fayed | Browse practitioners",
+      "title": "Sawiyaa | Browse practitioners",
       "description": "Browse real public practitioner profiles, specialties, languages, and trust context to choose a clearer next care step."
     },
     "practitionerProfileFallback": {
-      "title": "Fayed | Practitioner profile",
+      "title": "Sawiyaa | Practitioner profile",
       "description": "Review a public practitioner profile, specialties, credentials, trust context, and booking availability."
     },
     "specialties": {
-      "title": "Fayed | Mental health specialties",
+      "title": "Sawiyaa | Mental health specialties",
       "description": "Explore public mental health specialties and move into the care path that fits your needs."
     },
     "specialtyFallback": {
-      "title": "Fayed | Specialty details",
+      "title": "Sawiyaa | Specialty details",
       "description": "Review a public specialty, its current catalog details, and the practitioners linked to it."
     },
     "articles": {
-      "title": "Fayed | Articles",
+      "title": "Sawiyaa | Articles",
       "description": "Read published care content with trust metadata and direct links into real public care paths."
     },
     "articleFallback": {
-      "title": "Fayed | Article",
+      "title": "Sawiyaa | Article",
       "description": "Read published public care content with author and trust context where available."
     },
     "refundPolicies": {
-      "title": "Fayed | Refund policies",
+      "title": "Sawiyaa | Refund policies",
       "description": "Review the active refund policies for sessions and package purchases."
     },
     "refundPolicySession": {
-      "title": "Fayed | Session refund policy",
+      "title": "Sawiyaa | Session refund policy",
       "description": "Review the currently active refund policy for normal session payments."
     },
     "refundPolicyPackage": {
-      "title": "Fayed | Package refund policy",
+      "title": "Sawiyaa | Package refund policy",
       "description": "Review the currently active refund policy for standardized package purchases."
     },
     "notFound": {
-      "title": "Fayed | Page not found",
+      "title": "Sawiyaa | Page not found",
       "description": "This public page is not available right now or may have moved."
     },
     "unavailable": {
-      "title": "Fayed | Public page unavailable",
+      "title": "Sawiyaa | Public page unavailable",
       "description": "This public page could not be loaded right now. Please try again or continue from another real public path."
     }
   },

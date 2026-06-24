@@ -165,7 +165,51 @@ export interface PractitionerForgotPasswordRequest {
   email: string;
 }
 
+export interface PractitionerVerifyPasswordResetOtpRequest {
+  email: string;
+  code: string;
+}
+
+export interface PractitionerVerifyPasswordResetOtpResponse {
+  message: string;
+  resetToken: string;
+  expiresAt: string;
+  nextStep: string;
+}
+
+export interface PractitionerConfirmPasswordResetRequest {
+  resetToken: string;
+  newPassword: string;
+}
+
 export interface PractitionerResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export interface PatientForgotPasswordRequest {
+  email: string;
+}
+
+export interface PatientVerifyPasswordResetOtpRequest {
+  email: string;
+  code: string;
+}
+
+export interface PatientVerifyPasswordResetOtpResponse {
+  message: string;
+  resetToken: string;
+  expiresAt: string;
+  nextStep: string;
+}
+
+export interface PatientConfirmPasswordResetRequest {
+  resetToken: string;
+  newPassword: string;
+}
+
+export interface PatientResetPasswordRequest {
   email: string;
   code: string;
   newPassword: string;

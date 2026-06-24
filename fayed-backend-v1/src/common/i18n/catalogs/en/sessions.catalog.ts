@@ -15,7 +15,7 @@ export const enSessionsCatalog = {
       'Your session starts soon.{{packageContext}} Open the session page to join securely.',
     sessionJoinAvailablePushBody:
       'Your session is ready. Open the session page to join securely.',
-    sessionJoinAvailableEmailSubject: 'Your Fayed session is ready to join',
+    sessionJoinAvailableEmailSubject: 'Your Sawiyaa session is ready to join',
     sessionJoinAvailableEmailTitle: 'Your session is ready',
     sessionJoinAvailableEmailBody:
       'Your session starts soon.{{packageContext}} Open the session page to join securely.',

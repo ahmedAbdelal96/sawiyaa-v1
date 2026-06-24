@@ -1,5 +1,5 @@
 /**
- * Mobile Shell — shared layout constants for the Fayed mobile app.
+ * Mobile Shell — shared layout constants for the Sawiyaa mobile app.
  * All spacing, sizing, and color references flow through this file.
  * Do NOT hardcode pixel values in screen components — use these tokens.
  */

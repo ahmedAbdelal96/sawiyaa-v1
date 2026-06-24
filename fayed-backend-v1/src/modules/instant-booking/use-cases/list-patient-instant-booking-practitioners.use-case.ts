@@ -5,6 +5,7 @@ import { AvailabilitySlotRepository } from '@modules/availability/repositories/a
 import { BuildAvailabilityWindowsService } from '@modules/availability/services/build-availability-windows.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
 import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
+import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 import { InstantBookingPractitionerRepository } from '../repositories/instant-booking-practitioner.repository';
@@ -40,6 +41,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
     private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
   ) {}
 
   async execute(input: {
@@ -73,6 +75,10 @@ export class ListPatientInstantBookingPractitionersUseCase {
     }
 
     const practitionerIds = candidateRows.map((row) => row.id);
+    const ratingSummaries =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        practitionerIds,
+      );
     const [weeklySlots, exceptions, blockingSessions, completedSessionsMap] =
       await Promise.all([
         this.availabilitySlotRepository.listActiveByPractitioners(
@@ -100,12 +106,29 @@ export class ListPatientInstantBookingPractitionersUseCase {
       blockingSessions,
     );
 
-    const eligibleItems = candidateRows
+    const sortedCandidateRows = [...candidateRows].sort((left, right) => {
+      const leftRating = ratingSummaries.get(left.id)?.averageRating ?? -1;
+      const rightRating = ratingSummaries.get(right.id)?.averageRating ?? -1;
+      if (rightRating !== leftRating) {
+        return rightRating - leftRating;
+      }
+
+      const leftExperience = left.yearsOfExperience ?? -1;
+      const rightExperience = right.yearsOfExperience ?? -1;
+      if (rightExperience !== leftExperience) {
+        return rightExperience - leftExperience;
+      }
+
+      return right.createdAt.getTime() - left.createdAt.getTime();
+    });
+
+    const eligibleItems = sortedCandidateRows
       .map((row) =>
         this.buildEligibleItem({
           row,
           now,
           locale: input.locale,
+          rating: ratingSummaries.get(row.id)?.averageRating ?? null,
           slots: slotsByPractitionerId.get(row.id) ?? [],
           exceptions: exceptionsByPractitionerId.get(row.id) ?? [],
           blockingSessions: blockingSessionsByPractitionerId.get(row.id) ?? [],
@@ -151,9 +174,10 @@ export class ListPatientInstantBookingPractitionersUseCase {
     blockingSessions: Array<
       Awaited<
         ReturnType<SessionRepository['listBlockingSessionsInRangeForPractitioners']>
-      >[number]
+    >[number]
     >;
     completedSessionsCount: number;
+    rating: number | null;
     currency: CurrencyCode | null;
     requestedDuration: InstantBookingDiscoveryDuration | null;
   }): InstantBookingEligiblePractitionerViewModel | null {
@@ -314,11 +338,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
       supportedDurations,
       instantBookingPricing: pricing,
       shortBio: this.toBioSnippet(input.row.bio),
-      rating:
-        input.row.ratingSummary?.averageRating === null ||
-        input.row.ratingSummary?.averageRating === undefined
-          ? null
-          : Number(input.row.ratingSummary.averageRating),
+      rating: input.rating,
       completedSessionsCount: input.completedSessionsCount,
     };
   }

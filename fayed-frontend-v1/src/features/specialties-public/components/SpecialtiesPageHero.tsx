@@ -32,7 +32,7 @@ export default async function SpecialtiesPageHero({
     <div className="app-page-hero px-6 py-10">
       <div className="mx-auto max-w-7xl">
         <p className="mb-3 text-sm text-text-muted">
-          <span className="text-primary">Fayed</span>
+          <span className="text-primary">Sawiyaa</span>
           {" / "}
           <span>{t("breadcrumb")}</span>
         </p>

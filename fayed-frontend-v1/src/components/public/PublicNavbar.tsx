@@ -32,7 +32,7 @@ export default function PublicNavbar() {
             href="/"
             className="text-2xl font-bold tracking-tight text-primary"
           >
-            Fayed
+            Sawiyaa
           </Link>
           <ul className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => {

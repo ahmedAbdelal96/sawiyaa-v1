@@ -1,4 +1,4 @@
-const BASE_ALLOWED_EXTERNAL_PROTOCOLS = new Set(["https:", "fayed:"]);
+const BASE_ALLOWED_EXTERNAL_PROTOCOLS = new Set(["https:", "sawiyaa:"]);
 
 export function isAllowedExternalUrl(input: string) {
   const value = input.trim();

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
@@ -37,6 +38,10 @@ import { SendDevTestPushNotificationUseCase } from './use-cases/send-dev-test-pu
 import { RegisterNotificationDeviceUseCase } from './use-cases/register-notification-device.use-case';
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
 import { NotificationContextEnrichmentService } from './services/notification-context-enrichment.service';
+import { EMAIL_PROVIDER } from './providers/email-provider.token';
+import { EmailProviderAdapter } from './providers/email-provider.adapter';
+import { SmtpEmailProvider } from './providers/smtp-email.provider';
+import { BrevoEmailProvider } from './providers/brevo-email.provider';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
@@ -52,6 +57,42 @@ import { NotificationContextEnrichmentService } from './services/notification-co
     RolesGuard,
     PermissionsGuard,
     PermissionResolverService,
+
+    // --- Email provider adapter factory ---
+    // Selects the concrete provider based on notification.mail.provider.
+    // Fails fast at startup if provider=brevo but BREVO_API_KEY is missing.
+    {
+      provide: EMAIL_PROVIDER,
+      useFactory: (configService: ConfigService): EmailProviderAdapter => {
+        const provider =
+          configService
+            .get<string>('notification.mail.provider')
+            ?.toLowerCase()
+            .trim() ?? 'smtp';
+
+        if (provider === 'brevo') {
+          const apiKey = configService
+            .get<string>('notification.brevo.apiKey')
+            ?.trim();
+          if (!apiKey) {
+            throw new Error(
+              '[NotificationsModule] MAIL_PROVIDER=brevo requires BREVO_API_KEY to be set',
+            );
+          }
+          // BrevoEmailProvider is stateless — construct directly without DI
+          return new BrevoEmailProvider(configService);
+        }
+
+        // Default to SMTP
+        return new SmtpEmailProvider(configService);
+      },
+      inject: [ConfigService],
+    },
+
+    // --- Concrete providers (used by the factory above) ---
+    SmtpEmailProvider,
+    BrevoEmailProvider,
+
     NotificationEmailService,
     NotificationPushExecutionService,
     NotificationDeviceRepository,

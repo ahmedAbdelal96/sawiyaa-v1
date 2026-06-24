@@ -1,5 +1,5 @@
 /**
- * Shared HTTP client for the Fayed frontend base.
+ * Shared HTTP client for the Sawiyaa frontend base.
  */
 
 import axios, {

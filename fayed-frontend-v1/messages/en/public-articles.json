@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Fayed | Articles",
+    "title": "Sawiyaa | Articles",
     "description": "Read published mental care content with clear trust metadata and direct links into real practitioner and care paths."
   },
   "list": {
@@ -57,11 +57,11 @@
   },
   "patient": {
     "meta": {
-      "title": "Fayed | Care Articles",
+      "title": "Sawiyaa | Care Articles",
       "description": "Read published care articles from inside your patient space."
     },
     "metaFallback": {
-      "title": "Fayed | Article",
+      "title": "Sawiyaa | Article",
       "description": "Read article details and continue your care journey."
     },
     "list": {

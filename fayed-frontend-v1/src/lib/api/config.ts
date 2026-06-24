@@ -1,5 +1,5 @@
 /**
- * API configuration used by the active Fayed frontend foundation.
+ * API configuration used by the active Sawiyaa frontend foundation.
  */
 export const API_CONFIG = {
   baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/v1",
@@ -11,9 +11,9 @@ export const API_CONFIG = {
 } as const;
 
 export const TOKEN_CONFIG = {
-  ACCESS_TOKEN_KEY: "fayed_access_token",
-  REFRESH_TOKEN_KEY: "fayed_refresh_token",
-  CONTEXT_ID_KEY: "fayed_context_id",
+  ACCESS_TOKEN_KEY: "sawiyaa_access_token",
+  REFRESH_TOKEN_KEY: "sawiyaa_refresh_token",
+  CONTEXT_ID_KEY: "sawiyaa_context_id",
   ACCESS_TOKEN_EXPIRY: Number(process.env.NEXT_PUBLIC_TOKEN_EXPIRY_DAYS) || 7,
   REFRESH_TOKEN_EXPIRY:
     Number(process.env.NEXT_PUBLIC_REFRESH_TOKEN_EXPIRY_DAYS) || 30,

@@ -10,7 +10,6 @@ import {
   PaymentProvider,
   PaymentStatus,
   Prisma,
-  PaymentPurpose,
   RefundPolicyType,
   SessionStatus,
 } from '@prisma/client';
@@ -209,6 +208,13 @@ export class InitiateSessionPaymentUseCase {
     if (amountFromGateway.lte(0)) {
       provider = PaymentProvider.INTERNAL_WALLET;
     } else {
+      if (!session.patient.country?.isoCode?.trim()) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.paymentRoutingAmbiguous',
+          error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        });
+      }
+
       provider = this.paymentProviderResolverService.resolveProvider({
         currencyCode: pricing.currencyCode,
         commissionMarketType: pricing.marketType,
@@ -227,6 +233,7 @@ export class InitiateSessionPaymentUseCase {
       appBaseUrl,
     });
     const paymobContext = {
+      currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
       checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
       operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
     };
@@ -310,7 +317,8 @@ export class InitiateSessionPaymentUseCase {
             amountFromGateway: amountFromGateway.toFixed(2),
             currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
             commissionRuleId: pricing.commissionRuleId,
-            commissionPlatformRatePercent: pricing.commissionPlatformRatePercent,
+            commissionPlatformRatePercent:
+              pricing.commissionPlatformRatePercent,
             commissionPractitionerRatePercent:
               pricing.commissionPractitionerRatePercent,
             couponId: pricing.couponId,
@@ -565,9 +573,10 @@ export class InitiateSessionPaymentUseCase {
     }
 
     if (input.returnUrl?.trim()) {
-      const trustedReturnUrl = this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
-        input.returnUrl.trim(),
-      );
+      const trustedReturnUrl =
+        this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
+          input.returnUrl.trim(),
+        );
 
       if (!trustedReturnUrl) {
         throw new BadRequestException({

@@ -55,7 +55,7 @@ export class InitiateSessionPaymentDto {
 
   @ApiProperty({
     required: false,
-    example: 'fayed://sessions/session_123/payment-return',
+    example: 'sawiyaa://sessions/session_123/payment-return',
     description:
       'Optional trusted return URL for hosted checkout flows. When provided by a trusted caller surface, the payment provider can return directly to that same surface instead of the public web payment-return page.',
   })

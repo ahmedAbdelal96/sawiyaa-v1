@@ -84,7 +84,7 @@ describe('InitiateSessionPaymentUseCase', () => {
       if (
         value.startsWith('http://localhost:3000') ||
         value.startsWith('http://localhost:8081') ||
-        value.startsWith('fayed://')
+        value.startsWith('sawiyaa://')
       ) {
         return value;
       }
@@ -301,7 +301,7 @@ describe('InitiateSessionPaymentUseCase', () => {
   it.each([
     'http://localhost:8081/patient/sessions/session-1/payment-return',
     'http://localhost:3000/en/patient/sessions/session-1/payment-return',
-    'fayed://sessions/session-1/payment-return',
+    'sawiyaa://sessions/session-1/payment-return',
   ])('preserves trusted session returnUrl %s for Paymob payments', async (returnUrl) => {
     await useCase.execute({
       userId: 'user-1',

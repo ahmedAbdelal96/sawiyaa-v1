@@ -5,7 +5,9 @@ import { Link } from "@/i18n/navigation";
 import {
   ArrowRight,
   Brain,
+  CalendarDays,
   ClipboardList,
+  Clock,
   HeartHandshake,
   LifeBuoy,
   ShieldCheck,
@@ -93,143 +95,55 @@ export default function PatientAssessmentsHomeScreen({
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const history = usePatientAssessmentsHistory({ page: 1, limit: 6, status: "COMPLETED" });
   const firstAvailableAssessment = items[0] ?? null;
-  const featuredAssessment = firstAvailableAssessment ?? null;
   const categoryCount = new Set(items.map((item) => item.category)).size;
   const historyCount = history.data?.items.length ?? 0;
 
   return (
-    <div className="app-max-content mx-auto w-full space-y-5 sm:space-y-6">
-      <SurfaceCard
-        as="section"
-        variant="page"
-        className="relative overflow-hidden border-primary/10 bg-surface-secondary dark:bg-surface-secondary"
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-20 top-0 h-52 w-52 rounded-full bg-primary/8 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 bottom-0 h-64 w-64 rounded-full bg-primary/8 blur-3xl dark:bg-primary/5"
-        />
-
-        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:items-center">
-          <div className="space-y-6">
-            <div className="max-w-2xl">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                {t("home.eyebrow")}
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-4xl">
-                {t("home.title")}
-              </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-text-secondary sm:text-base">
-                {t("home.note")}
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <SurfaceStatCard
-                label={t("home.heroStats.assessmentsLabel")}
-                value={`${items.length}`}
-                hint={t("home.heroStats.assessmentsHint")}
-                tone="primary"
-                icon={<Sparkles className="h-5 w-5" />}
-              />
-              <SurfaceStatCard
-                label={t("home.heroStats.categoriesLabel")}
-                value={`${categoryCount}`}
-                hint={t("home.heroStats.categoriesHint")}
-                tone="neutral"
-                icon={<ClipboardList className="h-5 w-5" />}
-              />
-              <SurfaceStatCard
-                label={t("home.heroStats.resultsLabel")}
-                value={`${historyCount}`}
-                hint={t("home.heroStats.resultsHint")}
-                tone="primary"
-                icon={<Target className="h-5 w-5" />}
-              />
-            </div>
+    <div className="space-y-6">
+      {/* Compact Statistics Grid */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{t("home.heroStats.assessmentsLabel")}</p>
+            <p className="text-2xl font-bold text-text-primary dark:text-white">{items.length}</p>
           </div>
-
-          <aside className="relative">
-            <div className="app-panel-soft relative overflow-hidden rounded-[30px] p-5 sm:p-6">
-              <div className="relative space-y-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                      {t("home.trustTitle")}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-text-primary dark:text-white/95">
-                      {t("home.availableHeading")}
-                    </p>
-                  </div>
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-light text-primary shadow-[0_12px_24px_-18px_rgba(68,161,148,0.35)]">
-                    <Brain className="h-6 w-6" />
-                  </span>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <InsightPill
-                    icon={ShieldCheck}
-                    title={t("home.trustTitle")}
-                    note={t("home.trustNote")}
-                  />
-                  <InsightPill
-                    icon={LifeBuoy}
-                    title={t("home.nextSupport")}
-                    note={t("home.nextSupportNote")}
-                  />
-                </div>
-
-                {featuredAssessment ? (
-                  <div className="rounded-[24px] border border-border-light bg-white p-4 shadow-[0_16px_28px_-26px_rgba(34,52,56,0.22)] dark:bg-surface-secondary">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                      {t("home.availableHeading")}
-                    </p>
-                    <div className="mt-3 flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                        <Sparkles className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-                          {featuredAssessment.title}
-                        </h2>
-                        <p className="mt-1 text-sm leading-6 text-text-secondary">
-                          {featuredAssessment.description ?? t("home.card.noDescription")}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                        {featuredAssessment.category}
-                      </span>
-                      {featuredAssessment.estimatedDurationMinutes !== null && (
-                        <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                          {t("home.card.minutes", {
-                            value: featuredAssessment.estimatedDurationMinutes,
-                          })}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </aside>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light text-primary dark:bg-primary/20 dark:text-primary-light">
+            <Sparkles className="h-4 w-4" />
+          </span>
         </div>
-      </SurfaceCard>
 
-      <SurfaceCard as="section" variant="page">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{t("home.heroStats.categoriesLabel")}</p>
+            <p className="text-2xl font-bold text-text-primary dark:text-white">{categoryCount}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/40">
+            <ClipboardList className="h-4 w-4" />
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-border-light bg-white p-4 shadow-[0_8px_24px_rgba(36,86,79,0.04)] dark:bg-surface-secondary text-start flex items-start justify-between col-span-2 lg:col-span-1">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-text-muted">{t("home.heroStats.resultsLabel")}</p>
+            <p className="text-2xl font-bold text-text-primary dark:text-white">{historyCount}</p>
+          </div>
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success-light text-success dark:bg-success/20 dark:text-success-light">
+            <Target className="h-4 w-4" />
+          </span>
+        </div>
+      </div>
+
+      {/* Available Assessments Panel */}
+      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-border-light/60">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
             <Brain className="h-5 w-5" />
           </span>
-          <div>
+          <div className="text-start">
             <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
               {t("home.availableHeading")}
             </h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("home.availableNote")}</p>
+            <p className="mt-0.5 text-xs text-text-secondary">{t("home.availableNote")}</p>
           </div>
         </div>
 
@@ -241,7 +155,7 @@ export default function PatientAssessmentsHomeScreen({
             note={t("states.catalogError.note")}
           />
         ) : items.length > 0 ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, index) => {
               const Icon = assessmentIcons[hashToken(`${item.slug}-${index}`) % assessmentIcons.length];
               const isAlt = index % 3 === 1;
@@ -251,71 +165,53 @@ export default function PatientAssessmentsHomeScreen({
                 ];
 
               return (
-                <SurfaceCard
+                <article
                   key={item.slug}
-                  as="article"
-                  variant="compact"
-                  className={`group relative flex h-full flex-col overflow-hidden border border-border-light bg-white transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_18px_40px_-28px_rgba(34,52,56,0.18)] dark:bg-surface-secondary ${
-                    isAlt ? "bg-primary-light/35 dark:bg-primary/10" : ""
+                  className={`relative flex flex-col justify-between rounded-[24px] border border-border-light p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 dark:bg-surface-secondary dark:border-border-light/40 ${
+                    isAlt ? "bg-primary-light/10 dark:bg-primary/5" : "bg-white"
                   }`}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/8 blur-2xl"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -left-10 bottom-0 h-20 w-20 rounded-full bg-primary/6 blur-2xl"
-                  />
-
-                  <div className="relative z-10 flex h-full flex-col">
+                  <div className="space-y-4 text-start">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span
-                          className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-[0_10px_22px_-18px_rgba(68,161,148,0.12)] ${iconShell}`}
-                        >
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconShell}`}>
                           <Icon className="h-5 w-5" />
                         </span>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-muted">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
                             {item.category}
                           </p>
-                          <h3 className="mt-1 text-lg font-semibold leading-7 text-text-primary dark:text-white/95">
+                          <h3 className="text-base font-bold text-text-primary dark:text-white/95">
                             {item.title}
                           </h3>
                         </div>
                       </div>
-
-                      {item.estimatedDurationMinutes !== null ? (
-                        <span className="app-chip rounded-full px-3 py-1 text-xs font-semibold text-primary">
-                          {t("home.card.minutes", { value: item.estimatedDurationMinutes })}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <p className="mt-4 min-h-[3.5rem] text-sm leading-6 text-text-secondary">
-                      {item.description ?? t("home.card.noDescription")}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
                       {item.estimatedDurationMinutes !== null && (
-                        <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                          {t("home.card.duration", { value: item.estimatedDurationMinutes })}
+                        <span className="inline-flex items-center rounded-full bg-primary-light/60 px-2.5 py-0.5 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
+                          {t("home.card.minutes", { value: item.estimatedDurationMinutes })}
                         </span>
                       )}
                     </div>
 
-                    <div className="mt-5 border-t border-border-light/60 pt-4">
-                      <Link
-                        href={`/patient/assessments/${item.slug}`}
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3"
-                      >
-                        {t("home.card.open")}
-                        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-                      </Link>
-                    </div>
+                    <p className="text-sm leading-6 text-text-secondary line-clamp-2">
+                      {item.description ?? t("home.card.noDescription")}
+                    </p>
                   </div>
-                </SurfaceCard>
+
+                  <div className="mt-5 border-t border-border-light/60 pt-4 flex items-center justify-between">
+                    <span className="text-xs text-text-muted flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      {t("home.card.duration", { value: item.estimatedDurationMinutes ?? 3 })}
+                    </span>
+                    <Link
+                      href={`/patient/assessments/${item.slug}`}
+                      className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+                    >
+                      <span>{t("home.card.open")}</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+                    </Link>
+                  </div>
+                </article>
               );
             })}
           </div>
@@ -338,18 +234,19 @@ export default function PatientAssessmentsHomeScreen({
             }}
           />
         )}
-      </SurfaceCard>
+      </section>
 
-      <SurfaceCard as="section" variant="page">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+      {/* Recent History Panel */}
+      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-border-light/60">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
             <ClipboardList className="h-5 w-5" />
           </span>
-          <div>
+          <div className="text-start">
             <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
               {t("history.heading")}
             </h2>
-            <p className="mt-1 text-sm text-text-secondary">{t("history.note")}</p>
+            <p className="mt-0.5 text-xs text-text-secondary">{t("history.note")}</p>
           </div>
         </div>
 
@@ -370,60 +267,54 @@ export default function PatientAssessmentsHomeScreen({
           />
         ) : history.data && history.data.items.length > 0 ? (
           <div className="mt-5 grid gap-3 xl:grid-cols-2">
-            {history.data.items.map((item, index) => {
-              return (
-                <SurfaceCard
-                  key={item.submissionId}
-                  as="article"
-                  variant="compact"
-                  className="overflow-hidden border border-border-light bg-white transition hover:border-primary/25 dark:bg-surface-secondary"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start gap-3">
-                        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
-                          <ClipboardList className="h-5 w-5" />
-                        </span>
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
-                            {item.assessmentTitle}
-                          </h3>
-                          <p className="mt-1 text-xs text-text-muted">
-                            {t("history.completedAt", {
-                              date: formatDate(item.completedAt ?? item.createdAt, numLocale),
-                            })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <HistoryBandChip band={item.resultBand} />
-                        {item.totalScore !== null && (
-                          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                            {t("history.score", { value: item.totalScore })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
-                      <Link
-                        href={`/patient/assessments/submissions/${item.submissionId}`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover sm:w-auto"
-                      >
-                        {t("history.viewResult")}
-                      </Link>
-                      <Link
-                        href={`/patient/assessments/${item.assessmentSlug}`}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-primary hover:border-primary/25 hover:text-primary sm:w-auto"
-                      >
-                        {t("history.retake")}
-                      </Link>
+            {history.data.items.map((item) => (
+              <div
+                key={item.submissionId}
+                className="rounded-[24px] border border-border-light bg-white p-5 shadow-sm dark:bg-surface-secondary flex flex-col justify-between gap-4"
+              >
+                <div className="flex items-start justify-between gap-3 text-start">
+                  <div className="flex items-start gap-3">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-primary">
+                      <ClipboardList className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+                        {item.assessmentTitle}
+                      </h3>
+                      <p className="mt-1 text-xs text-text-muted">
+                        {t("history.completedAt", {
+                          date: formatDate(item.completedAt ?? item.createdAt, numLocale),
+                        })}
+                      </p>
                     </div>
                   </div>
-                </SurfaceCard>
-              );
-            })}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <HistoryBandChip band={item.resultBand} />
+                  {item.totalScore !== null && (
+                    <span className="inline-flex items-center rounded-full bg-surface-tertiary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-white/10 dark:text-white/80">
+                      {t("history.score", { value: item.totalScore })}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-4 border-t border-border-light/60 w-full">
+                  <Link
+                    href={`/patient/assessments/submissions/${item.submissionId}`}
+                    className="sawiyaa-btn-press inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover shadow-sm"
+                  >
+                    {t("history.viewResult")}
+                  </Link>
+                  <Link
+                    href={`/patient/assessments/${item.assessmentSlug}`}
+                    className="sawiyaa-btn-press inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-light px-4 py-2 text-xs font-semibold text-text-primary hover:border-primary/25 hover:text-primary dark:bg-white/5"
+                  >
+                    {t("history.retake")}
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <StateCard
@@ -458,50 +349,50 @@ export default function PatientAssessmentsHomeScreen({
             }
           />
         )}
-      </SurfaceCard>
+      </section>
 
-      <SurfaceCard as="section" variant="page" className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-24 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
-        />
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-end">
-          <div className="max-w-2xl">
+      {/* Next Steps Panel */}
+      <section className="rounded-[32px] border border-border-light bg-white p-5 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-6">
+        <div className="flex items-center gap-3 pb-4 border-b border-border-light/60">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
+            <HeartHandshake className="h-5 w-5" />
+          </span>
+          <div className="text-start">
             <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
               {t("home.nextHeading")}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{t("home.nextNote")}</p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <Link
-              href="/patient/matching"
-              className="app-panel-soft group flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
-            >
-              <div>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                  {t("home.nextMatching")}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">{t("home.nextMatchingNote")}</p>
-              </div>
-              <HeartHandshake className="h-5 w-5 shrink-0 text-primary transition group-hover:scale-110" />
-            </Link>
-
-            <Link
-              href="/patient/messages?lane=support"
-              className="app-panel-soft group flex items-center justify-between gap-4 rounded-[28px] p-5 transition hover:border-primary/25 hover:text-primary"
-            >
-              <div>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                  {t("home.nextSupport")}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">{t("home.nextSupportNote")}</p>
-              </div>
-              <LifeBuoy className="h-5 w-5 shrink-0 text-primary transition group-hover:scale-110" />
-            </Link>
+            <p className="mt-0.5 text-xs text-text-secondary">{t("home.nextNote")}</p>
           </div>
         </div>
-      </SurfaceCard>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/patient/matching"
+            className="group flex items-center justify-between gap-4 rounded-[20px] border border-border-light bg-surface-tertiary/20 p-4 transition-all duration-300 hover:border-primary/25 hover:bg-surface-tertiary/40 text-start"
+          >
+            <div>
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95 group-hover:text-primary">
+                {t("home.nextMatching")}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">{t("home.nextMatchingNote")}</p>
+            </div>
+            <HeartHandshake className="h-5 w-5 shrink-0 text-primary transition group-hover:scale-110" />
+          </Link>
+
+          <Link
+            href="/patient/messages?lane=support"
+            className="group flex items-center justify-between gap-4 rounded-[20px] border border-border-light bg-surface-tertiary/20 p-4 transition-all duration-300 hover:border-primary/25 hover:bg-surface-tertiary/40 text-start"
+          >
+            <div>
+              <p className="text-sm font-semibold text-text-primary dark:text-white/95 group-hover:text-primary">
+                {t("home.nextSupport")}
+              </p>
+              <p className="mt-1 text-xs text-text-secondary">{t("home.nextSupportNote")}</p>
+            </div>
+            <LifeBuoy className="h-5 w-5 shrink-0 text-primary transition group-hover:scale-110" />
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

@@ -413,16 +413,18 @@ export class CreateAcademyEnrollmentUseCase {
     learnerCountryIsoCode: string | null;
   }) {
     const provider = resolveProviderForCurrency(input.currencyCode);
-    if (provider === PaymentProvider.STRIPE) {
-      return this.paymentProviderResolverService.resolveProvider({
-        currencyCode: 'USD',
-        commissionMarketType: MarketType.CROSS_BORDER,
-        operatingCountryIsoCode: null,
-        checkoutCountryIsoCode: input.learnerCountryIsoCode,
-      });
-    }
-
     if (provider === PaymentProvider.PAYMOB) {
+      const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
+
+      if (normalizedCurrencyCode === 'USD') {
+        return this.paymentProviderResolverService.resolveProvider({
+          currencyCode: 'USD',
+          commissionMarketType: MarketType.CROSS_BORDER,
+          operatingCountryIsoCode: null,
+          checkoutCountryIsoCode: input.learnerCountryIsoCode,
+        });
+      }
+
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,
@@ -455,11 +457,15 @@ export class CreateAcademyEnrollmentUseCase {
         ? returnUrlBase
         : `${returnUrlBase}/`
       : (() => {
-          const baseUrl = this.paymentRuntimeConfigService.getAppBaseUrl().trim();
+          const baseUrl = this.paymentRuntimeConfigService
+            .getAppBaseUrl()
+            .trim();
           return baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
         })();
     const returnUrl = new URL(
-      input.returnUrlBase ? `${input.enrollmentId}/payment-return` : normalizedPath,
+      input.returnUrlBase
+        ? `${input.enrollmentId}/payment-return`
+        : normalizedPath,
       normalizedBaseUrl,
     );
     returnUrl.searchParams.set('token', input.publicAccessToken);

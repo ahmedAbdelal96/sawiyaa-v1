@@ -172,7 +172,7 @@
     },
     "SECURED": {
       "label": "تم استلام الدفع",
-      "note": "تم استلام الدفع بنجاح وأصبحت هذه الجلسة مؤمنة."
+      "note": "تم استلام الدفع وتأكيد الجلسة بنجاح."
     },
     "REFUND_PENDING": {
       "label": "الاسترداد قيد المعالجة",
@@ -192,7 +192,7 @@
     "heading": "كيف تقرأ هذه الدفعة",
     "notes": {
       "PENDING_PAYMENT": "هذه الجلسة ما زالت بانتظار الدفع. أكمل الدفع الآن حتى يتم تأكيدها.",
-      "SECURED": "تم استلام الدفع بنجاح وأصبحت هذه الجلسة مؤمنة.",
+      "SECURED": "تم استلام الدفع وتأكيد الجلسة بنجاح.",
       "REFUND_PENDING": "يجري الآن استرداد مبلغ هذه الجلسة.",
       "REFUNDED": "تم استرداد مبلغ هذه الجلسة بالفعل.",
       "EXPIRED": "انتهت مهلة الدفع قبل أن يتم تأكيد هذه الجلسة."
@@ -287,6 +287,15 @@
     "policyMandatory": "يجب الموافقة على سياسة الاسترجاع قبل الدفع.",
     "policyRequiredForPayment": "يرجى مراجعة سياسة الاسترجاع أدناه والموافقة عليها قبل الدفع.",
     "viewFullPolicy": "عرض السياسة كاملة",
+    "policyModalTitle": "مراجعة سياسة الاسترداد",
+    "policyModalCheckbox": "أوافق على سياسة الاسترداد",
+    "policyModalConfirm": "أوافق وأتابع للدفع",
+    "policyModalCancel": "إلغاء",
+    "policyCardTitle": "سياسة الاسترداد",
+    "policyCardShortCopy": "يرجى مراجعة سياسة الاسترداد والموافقة عليها للمتابعة.",
+    "policyStatusAccepted": "تم القبول",
+    "policyStatusNotAccepted": "لم يتم القبول بعد",
+    "policyCardReviewAction": "مراجعة سياسة الاسترداد",
     "securityNote": "تتم معالجة الدفع بشكل آمن.",
     "with": "مع",
     "minutes": "دقائق",
@@ -300,7 +309,7 @@
     "returnToPractitioner": "العودة إلى المختص",
     "bookAgain": "تصفح المختصين",
     "alreadyPaid": "تم تأكيد الجلسة مسبقًا",
-    "alreadyPaidNote": "تم استلام الدفع بالفعل والجلسة أصبحت مؤمنة.",
+    "alreadyPaidNote": "تم استلام الدفع وتأكيد الجلسة بالفعل.",
     "viewSessions": "عرض جلساتي",
     "proceedToPay": "المتابعة إلى الدفع",
     "payWithAmount": "ادفع {amount}",
@@ -359,7 +368,7 @@
     "heading": "كيف سيتم تقسيم هذه الدفعة",
     "totalLabel": "إجمالي الجلسة",
     "walletDeductionLabel": "المخصوم من المحفظة",
-    "gatewayRemainderLabel": "المتبقي للبوابة",
+    "gatewayRemainderLabel": "المبلغ المطلوب دفعه",
     "useWalletTitle": "استخدام رصيد المحفظة",
     "useWalletNote": "طبّق رصيد محفظتك المتاح قبل الدفع بالبطاقة.",
     "useWalletToggle": "استخدام المحفظة",

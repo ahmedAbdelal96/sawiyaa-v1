@@ -11,8 +11,9 @@ function buildService(
     paymobIntentionBaseUrl: string | null;
     paymobCheckoutBaseUrl: string | null;
     paymobCheckoutFlow: 'legacy' | 'intention';
-    paymobIntegrationIdCard: string | null;
-    paymobIntegrationIdWallet: string | null;
+    paymobEgpCardIntegrationId: string | null;
+    paymobEgpWalletIntegrationId: string | null;
+    paymobUsdCardIntegrationId: string | null;
     paymobIframeId: string | null;
     paymobDefaultCheckoutMethod: 'CARD' | 'WALLET' | null;
   }>,
@@ -41,53 +42,88 @@ function buildService(
       checkoutBaseUrl:
         overrides?.paymobCheckoutBaseUrl ?? 'https://flashapi.paymob.com',
       checkoutFlow: overrides?.paymobCheckoutFlow ?? 'legacy',
+      egpCardIntegrationId:
+        overrides?.paymobEgpCardIntegrationId === null
+          ? null
+          : (overrides?.paymobEgpCardIntegrationId ?? 'egp_card_integration'),
+      egpWalletIntegrationId:
+        overrides?.paymobEgpWalletIntegrationId === null
+          ? null
+          : (overrides?.paymobEgpWalletIntegrationId ??
+            'egp_wallet_integration'),
+      usdCardIntegrationId:
+        overrides?.paymobUsdCardIntegrationId === null
+          ? null
+          : (overrides?.paymobUsdCardIntegrationId ?? 'usd_card_integration'),
       integrationIdCard:
-        overrides?.paymobIntegrationIdCard === null
+        overrides?.paymobEgpCardIntegrationId === null
           ? null
-          : (overrides?.paymobIntegrationIdCard ?? 'card_integration'),
-      integrationIdWallet:
-        overrides?.paymobIntegrationIdWallet === null
-          ? null
-          : (overrides?.paymobIntegrationIdWallet ?? 'wallet_integration'),
+          : (overrides?.paymobEgpCardIntegrationId ?? 'egp_card_integration'),
+      integrationIdWallet: null,
       iframeId: overrides?.paymobIframeId ?? 'iframe_id',
       defaultCheckoutMethod: overrides?.paymobDefaultCheckoutMethod ?? 'CARD',
     }),
     getPaymobCheckoutFlow: () => 'legacy' as const,
-    getPaymobEnabledMethods: () => {
+    getPaymobEnabledMethods: (context?: { currencyCode?: string | null }) => {
       const methods: Array<{
         key: 'CARD' | 'WALLET';
         label: string;
         type: string;
         enabled: boolean;
         integrationId: string;
+        currencyCodes: string[];
       }> = [];
 
-      const cardIntegrationId =
-        overrides?.paymobIntegrationIdCard === null
-          ? null
-          : (overrides?.paymobIntegrationIdCard ?? 'card_integration');
-      const walletIntegrationId =
-        overrides?.paymobIntegrationIdWallet === null
-          ? null
-          : (overrides?.paymobIntegrationIdWallet ?? 'wallet_integration');
+      const normalizedCurrency = context?.currencyCode?.trim().toUpperCase();
+      if (normalizedCurrency === 'USD') {
+        const usdCardIntegrationId =
+          overrides?.paymobUsdCardIntegrationId === null
+            ? null
+            : (overrides?.paymobUsdCardIntegrationId ?? 'usd_card_integration');
 
-      if (cardIntegrationId) {
+        if (usdCardIntegrationId) {
+          methods.push({
+            key: 'CARD',
+            label: 'Card',
+            type: 'CARD',
+            enabled: true,
+            integrationId: usdCardIntegrationId,
+            currencyCodes: ['USD'],
+          });
+        }
+
+        return methods;
+      }
+
+      const egpCardIntegrationId =
+        overrides?.paymobEgpCardIntegrationId === null
+          ? null
+          : (overrides?.paymobEgpCardIntegrationId ?? 'egp_card_integration');
+      const egpWalletIntegrationId =
+        overrides?.paymobEgpWalletIntegrationId === null
+          ? null
+          : (overrides?.paymobEgpWalletIntegrationId ??
+            'egp_wallet_integration');
+
+      if (egpCardIntegrationId) {
         methods.push({
           key: 'CARD',
           label: 'Card',
           type: 'CARD',
           enabled: true,
-          integrationId: cardIntegrationId,
+          integrationId: egpCardIntegrationId,
+          currencyCodes: ['EGP'],
         });
       }
 
-      if (walletIntegrationId) {
+      if (egpWalletIntegrationId) {
         methods.push({
           key: 'WALLET',
           label: 'Wallet',
           type: 'WALLET',
           enabled: true,
-          integrationId: walletIntegrationId,
+          integrationId: egpWalletIntegrationId,
+          currencyCodes: ['EGP'],
         });
       }
 
@@ -102,9 +138,13 @@ function buildService(
 
 describe('PaymentProviderCapabilitiesService', () => {
   it('reports configured paymob methods from real config truth', () => {
-    const service = buildService();
+    const service = buildService({
+      paymobEgpWalletIntegrationId: 'egp_wallet_integration',
+    });
 
-    const capability = service.getCapability(PaymentProvider.PAYMOB);
+    const capability = service.getCapability(PaymentProvider.PAYMOB, {
+      currencyCode: 'EGP',
+    });
 
     expect(capability.available).toBe(true);
     expect(capability.supportedMethods).toEqual(['CARD', 'WALLET']);
@@ -113,16 +153,19 @@ describe('PaymentProviderCapabilitiesService', () => {
 
   it('marks paymob unavailable when no checkout method ids are configured', () => {
     const service = buildService({
-      paymobIntegrationIdCard: null,
-      paymobIntegrationIdWallet: null,
+      paymobEgpCardIntegrationId: null,
+      paymobEgpWalletIntegrationId: null,
+      paymobUsdCardIntegrationId: null,
     });
 
-    const capability = service.getCapability(PaymentProvider.PAYMOB);
+    const capability = service.getCapability(PaymentProvider.PAYMOB, {
+      currencyCode: 'EGP',
+    });
 
     expect(capability.available).toBe(false);
     expect(capability.configured).toBe(false);
     expect(capability.missingConfig).toEqual(
-      expect.arrayContaining(['PAYMOB_METHOD_REGISTRY_JSON']),
+      expect.arrayContaining(['PAYMOB_EGP_CARD_INTEGRATION_ID']),
     );
   });
 
@@ -148,5 +191,33 @@ describe('PaymentProviderCapabilitiesService', () => {
 
     expect(capability.available).toBe(false);
     expect(capability.missingConfig).toContain('PAYMOB_PUBLIC_KEY');
+  });
+
+  it('reports USD card only and never exposes wallet for USD', () => {
+    const service = buildService({
+      paymobEgpWalletIntegrationId: 'egp_wallet_integration',
+    });
+
+    const capability = service.getCapability(PaymentProvider.PAYMOB, {
+      currencyCode: 'USD',
+    });
+
+    expect(capability.available).toBe(true);
+    expect(capability.supportedMethods).toEqual(['CARD']);
+  });
+
+  it('fails closed for USD when USD card config is missing', () => {
+    const service = buildService({
+      paymobUsdCardIntegrationId: null,
+    });
+
+    const capability = service.getCapability(PaymentProvider.PAYMOB, {
+      currencyCode: 'USD',
+    });
+
+    expect(capability.available).toBe(false);
+    expect(capability.missingConfig).toContain(
+      'PAYMOB_USD_CARD_INTEGRATION_ID',
+    );
   });
 });

@@ -5,6 +5,7 @@ import { CareChatPresenter } from '../presenters/care-chat.presenter';
 import { CareChatConversationRepository } from '../repositories/care-chat-conversation.repository';
 import { CareChatRequestRepository } from '../repositories/care-chat-request.repository';
 import { ValidateCareChatApprovalTransitionService } from '../services/validate-care-chat-approval-transition.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
 export class RevokeCareChatRequestUseCase {
@@ -15,6 +16,7 @@ export class RevokeCareChatRequestUseCase {
     private readonly careChatConversationRepository: CareChatConversationRepository,
     private readonly validateCareChatApprovalTransitionService: ValidateCareChatApprovalTransitionService,
     private readonly careChatPresenter: CareChatPresenter,
+    private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: {
@@ -75,6 +77,13 @@ export class RevokeCareChatRequestUseCase {
     this.logger.warn(
       `Care chat request revoked (request=${request.id}, reviewer=${input.userId})`,
     );
+
+    await this.operationalNotificationService.notifyCareChatRequestRevoked({
+      patientProfileId: request.patientId,
+      practitionerProfileId: request.practitionerId,
+      requestId: request.id,
+      conversationId: request.linkedConversationId,
+    });
 
     return {
       item: this.careChatPresenter.presentAdminRequestItem(updated),

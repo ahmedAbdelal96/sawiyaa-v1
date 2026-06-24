@@ -96,6 +96,12 @@ export default registerAs('payment', () => ({
     ),
     checkoutFlow: normalizePaymobCheckoutFlow(process.env.PAYMOB_CHECKOUT_FLOW),
     methodRegistryJson: process.env.PAYMOB_METHOD_REGISTRY_JSON ?? null,
+    egpCardIntegrationId:
+      process.env.PAYMOB_EGP_CARD_INTEGRATION_ID ??
+      process.env.PAYMOB_INTEGRATION_ID_CARD ??
+      process.env.PAYMOB_INTEGRATION_ID,
+    egpWalletIntegrationId: process.env.PAYMOB_EGP_WALLET_INTEGRATION_ID,
+    usdCardIntegrationId: process.env.PAYMOB_USD_CARD_INTEGRATION_ID,
     integrationIdCard:
       process.env.PAYMOB_INTEGRATION_ID_CARD ??
       process.env.PAYMOB_INTEGRATION_ID,

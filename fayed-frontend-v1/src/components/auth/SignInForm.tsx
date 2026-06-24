@@ -96,7 +96,7 @@ const TEST_CREDENTIALS_BY_MODE: Record<SignInMode, CredentialPreset> = {
   },
   practitioner: {
     label: "الافتراضي: معالج QA مصري",
-    email: "dr.ahmed@hesba.local",
+    email: "ahmed.m.abdelal57@gmail.com",
     password: "Practitioner@12345",
     note: "DR. AHMED / القاهرة",
   },
@@ -132,13 +132,13 @@ const PATIENT_TEST_CREDENTIALS: CredentialPreset[] = [
 const PRACTITIONER_TEST_CREDENTIALS: CredentialPreset[] = [
   {
     label: "معالج QA 1",
-    email: "dr.ahmed@hesba.local",
+    email: "ahmed.m.abdelal57@gmail.com",
     password: "Practitioner@12345",
     note: "القاهرة",
   },
   {
     label: "معالج QA 2",
-    email: "dr.mohamed@hesba.local",
+    email: "amohamef206@gmail.com",
     password: "Practitioner2@12345",
     note: "الرياض",
   },
@@ -352,8 +352,21 @@ export default function SignInForm({ mode }: SignInFormProps) {
       : mode === "practitioner"
         ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
         : null;
+
+  const forgotPasswordHref =
+    mode === "patient"
+      ? buildAuthHref("/forgot-password/patient", {})
+      : mode === "practitioner"
+        ? buildAuthHref("/forgot-password/practitioner", {})
+        : null;
   const shouldShowTestCredentials =
     process.env.NEXT_PUBLIC_SHOW_TEST_CREDENTIALS === "true";
+  // UI hint only. Backend is the source of truth for whether OTP is required.
+  // When false, hide the "we will send an OTP" copy on the credentials form.
+  // If the backend still requires OTP, the form transitions to the OTP step
+  // regardless of this flag.
+  const practitionerOtpHintEnabled =
+    process.env.NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED !== "false";
   const modeConfig = MODE_CONFIG[mode];
   const ModeIcon = modeConfig.icon;
   const testCredentials = TEST_CREDENTIALS_BY_MODE[mode];
@@ -423,7 +436,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
                 <div className="rounded-full border border-primary/15 bg-white/85 px-4 py-2 text-xs font-medium text-primary dark:bg-surface/75 dark:text-primary-light">
                   {t(`entryCards.${mode}.meta`)}
                 </div>
-                {mode === "practitioner" && !challenge ? (
+                {mode === "practitioner" && !challenge && practitionerOtpHintEnabled ? (
                   <div className="rounded-full border border-border-light bg-white/75 px-4 py-2 text-xs font-medium text-text-secondary dark:border-border-light dark:bg-surface/75 dark:text-text-secondary">
                     {t("practitionerOtpHint")}
                   </div>
@@ -578,9 +591,20 @@ export default function SignInForm({ mode }: SignInFormProps) {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
-                    {mode === "practitioner" ? t("practitionerOtpHint") : t("forgotPassword")}
-                  </div>
+                  {forgotPasswordHref ? (
+                    <Link
+                      href={forgotPasswordHref}
+                      className="block rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary"
+                    >
+                      {t("forgotPassword")}
+                    </Link>
+                  ) : (
+                    <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
+                      {mode === "practitioner" && practitionerOtpHintEnabled
+                        ? t("practitionerOtpHint")
+                        : null}
+                    </div>
+                  )}
 
                   {error && (
                     <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">

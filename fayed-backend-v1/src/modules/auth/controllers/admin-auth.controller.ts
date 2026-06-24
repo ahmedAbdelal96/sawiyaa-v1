@@ -87,7 +87,7 @@ export class AdminAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -139,7 +139,7 @@ export class AdminAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -171,7 +171,7 @@ export class AdminAuthController {
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutAdminUseCase.execute(request.user!.sessionId!);
-    res.clearCookie('fayed_refresh_token', {
+    res.clearCookie('sawiyaa_refresh_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

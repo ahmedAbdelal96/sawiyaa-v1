@@ -101,11 +101,6 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       href: "/patient/sessions",
       icon: <Calendar className="h-4 w-4" />,
     },
-    {
-      key: "messages",
-      href: "/patient/messages",
-      icon: <MessageSquare className="h-4 w-4" />,
-    },
   ];
 
   const userQuickLinks: PatientNavItem[] = [
@@ -169,7 +164,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
 
   return (
     <div className="min-h-screen bg-background dark:bg-background">
-      <header className="sticky top-0 z-40 border-b border-border-light/70 bg-surface-secondary/92 backdrop-blur-xl dark:border-border-light dark:bg-surface-secondary/92">
+      <header className="sticky top-0 z-[60] w-full border-b border-border-light/80 bg-white/95 dark:bg-surface-secondary/95 text-text-primary shadow-[0_10px_24px_-26px_rgba(31,42,45,0.18)] backdrop-blur-xl transition-all duration-300">
         <div className="app-max-shell-patient mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="md:hidden">
@@ -220,7 +215,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
         </div>
       </header>
 
-      <main className="app-max-shell-patient mx-auto w-full px-4 pb-10 pt-6 sm:px-6 sm:pt-8">
+      <main className="app-max-shell-patient mx-auto w-full px-4 pb-10 pt-0 sm:px-6 sm:pt-0">
         {children}
       </main>
 

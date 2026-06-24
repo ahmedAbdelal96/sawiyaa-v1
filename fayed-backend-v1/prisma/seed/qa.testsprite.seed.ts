@@ -39,7 +39,7 @@ import {
   rolePermissionBundles,
 } from './modules/auth.seed';
 import { seedCredentials, seedIds } from './shared/seed.constants';
-import { daysFromNow, hashPassword } from './shared/seed.utils';
+import { daysAgo, daysFromNow, hashPassword } from './shared/seed.utils';
 
 type QaAccount = {
   key: string;
@@ -599,7 +599,7 @@ async function ensureSupportData(prisma: PrismaClient): Promise<boolean> {
     select: { id: true },
   });
   const practitionerProfile = await prisma.practitionerProfile.findUnique({
-    where: { userId: seedIds.users.practitionerA },
+    where: { userId: seedIds.users.practitionerF },
     select: { id: true },
   });
 
@@ -762,7 +762,7 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
     select: { id: true },
   });
   const practitionerProfile = await prisma.practitionerProfile.findUnique({
-    where: { userId: seedIds.users.practitionerA },
+    where: { userId: seedIds.users.practitionerF },
     select: { id: true },
   });
 
@@ -776,6 +776,8 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
     select: { id: true },
   });
   const sessionId = existingSession?.id ?? toStableUuid('qa-session-001');
+  const sessionStartAt = daysFromNow(2);
+  const sessionEndAt = new Date(sessionStartAt.getTime() + 60 * 60 * 1000);
 
   await prisma.session.upsert({
     where: { id: sessionId },
@@ -788,9 +790,9 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
       sessionMode: SessionMode.VIDEO,
       durationMinutes: 60,
       status: SessionStatus.CONFIRMED,
-      requestedStartAt: daysFromNow(2),
-      scheduledStartAt: daysFromNow(2),
-      scheduledEndAt: daysFromNow(2),
+      requestedStartAt: sessionStartAt,
+      scheduledStartAt: sessionStartAt,
+      scheduledEndAt: sessionEndAt,
       joinOpenAt: null,
       expiresAt: daysFromNow(3),
       provider: SessionProvider.NONE,
@@ -800,8 +802,8 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
     update: {
       sessionCode,
       status: SessionStatus.CONFIRMED,
-      scheduledStartAt: daysFromNow(2),
-      scheduledEndAt: daysFromNow(2),
+      scheduledStartAt: sessionStartAt,
+      scheduledEndAt: sessionEndAt,
       expiresAt: daysFromNow(3),
       notesInternal: 'QA session for TestSprite.',
     },
@@ -1175,6 +1177,151 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
   return true;
 }
 
+async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean> {
+  const patientProfile = await prisma.patientProfile.findUnique({
+    where: { userId: seedIds.users.patientA },
+    select: { id: true },
+  });
+  const practitionerProfile = await prisma.practitionerProfile.findUnique({
+    where: { userId: seedIds.users.practitionerF },
+    select: { id: true },
+  });
+
+  if (!patientProfile || !practitionerProfile) {
+    return false;
+  }
+
+  const reviewSessions = [
+    {
+      seedKey: 'qa-review-acceptance-f-text',
+      sessionCode: 'QA-REVIEW-ACCEPT-F-001',
+      sessionDate: daysAgo(4),
+      roomSuffix: 'f-text',
+    },
+    {
+      seedKey: 'qa-review-acceptance-f-rating-only',
+      sessionCode: 'QA-REVIEW-ACCEPT-F-002',
+      sessionDate: daysAgo(3),
+      roomSuffix: 'f-rating-only',
+    },
+    {
+      seedKey: 'qa-review-acceptance-f-rating-only-2',
+      sessionCode: 'QA-REVIEW-ACCEPT-F-003',
+      sessionDate: daysAgo(2),
+      roomSuffix: 'f-rating-only-2',
+    },
+  ];
+
+  for (const reviewSession of reviewSessions) {
+    const endAt = new Date(reviewSession.sessionDate.getTime() + 60 * 60 * 1000);
+    const sessionId = toStableUuid(reviewSession.seedKey);
+    const paymentId = toStableUuid(`${reviewSession.seedKey}-payment`);
+
+    await prisma.session.upsert({
+      where: { id: sessionId },
+      create: {
+        id: sessionId,
+        sessionCode: reviewSession.sessionCode,
+        patientId: patientProfile.id,
+        practitionerId: practitionerProfile.id,
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 60,
+        status: SessionStatus.COMPLETED,
+        requestedStartAt: reviewSession.sessionDate,
+        scheduledStartAt: reviewSession.sessionDate,
+        scheduledEndAt: endAt,
+        joinOpenAt: new Date(reviewSession.sessionDate.getTime() - 10 * 60 * 1000),
+        expiresAt: null,
+        cancelledAt: null,
+        completedAt: endAt,
+        provider: SessionProvider.DAILY,
+        providerRoomId: `qa-review-room-${reviewSession.roomSuffix}`,
+        providerSessionRef: `qa-review-provider-${reviewSession.roomSuffix}`,
+        timezoneSnapshot: 'Africa/Cairo',
+        paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
+        notesInternal: 'QA review acceptance session for TestSprite.',
+      },
+      update: {
+        sessionCode: reviewSession.sessionCode,
+        patientId: patientProfile.id,
+        practitionerId: practitionerProfile.id,
+        flowType: SessionFlowType.SCHEDULED,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 60,
+        status: SessionStatus.COMPLETED,
+        requestedStartAt: reviewSession.sessionDate,
+        scheduledStartAt: reviewSession.sessionDate,
+        scheduledEndAt: endAt,
+        joinOpenAt: new Date(reviewSession.sessionDate.getTime() - 10 * 60 * 1000),
+        expiresAt: null,
+        cancelledAt: null,
+        completedAt: endAt,
+        provider: SessionProvider.DAILY,
+        providerRoomId: `qa-review-room-${reviewSession.roomSuffix}`,
+        providerSessionRef: `qa-review-provider-${reviewSession.roomSuffix}`,
+        timezoneSnapshot: 'Africa/Cairo',
+        paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
+        notesInternal: 'QA review acceptance session for TestSprite.',
+      },
+    });
+
+    await prisma.payment.upsert({
+      where: { id: paymentId },
+      create: {
+        id: paymentId,
+        sessionId,
+        patientId: patientProfile.id,
+        practitionerId: practitionerProfile.id,
+        paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+        provider: PaymentProvider.STRIPE,
+        status: PaymentStatus.CAPTURED,
+        amountSubtotal: 300,
+        amountDiscount: 0,
+        amountTotal: 300,
+        amountFromWallet: 0,
+        amountFromGateway: 300,
+        currencyCode: 'EGP',
+        providerPaymentRef: `qa-review-payment-ref-${reviewSession.roomSuffix}`,
+        providerOrderRef: `qa-review-order-ref-${reviewSession.roomSuffix}`,
+        providerCustomerRef: `qa-review-customer-ref-${reviewSession.roomSuffix}`,
+        capturedAt: endAt,
+        metadataJson: {
+          qa: true,
+          source: 'testsprite-seed',
+          kind: 'review-acceptance',
+          reviewVariant: reviewSession.seedKey,
+        },
+      },
+      update: {
+        sessionId,
+        patientId: patientProfile.id,
+        practitionerId: practitionerProfile.id,
+        paymentPurpose: PaymentPurpose.SESSION_BOOKING,
+        provider: PaymentProvider.STRIPE,
+        status: PaymentStatus.CAPTURED,
+        amountSubtotal: 300,
+        amountDiscount: 0,
+        amountTotal: 300,
+        amountFromGateway: 300,
+        currencyCode: 'EGP',
+        providerPaymentRef: `qa-review-payment-ref-${reviewSession.roomSuffix}`,
+        providerOrderRef: `qa-review-order-ref-${reviewSession.roomSuffix}`,
+        providerCustomerRef: `qa-review-customer-ref-${reviewSession.roomSuffix}`,
+        capturedAt: endAt,
+        metadataJson: {
+          qa: true,
+          source: 'testsprite-seed',
+          kind: 'review-acceptance',
+          reviewVariant: reviewSession.seedKey,
+        },
+      },
+    });
+  }
+
+  return true;
+}
+
 async function ensureAcademyData(prisma: PrismaClient): Promise<boolean> {
   const courseId = toStableUuid('qa-academy-course-001');
   const learnerId = toStableUuid('qa-academy-learner-001');
@@ -1319,6 +1466,15 @@ async function main(): Promise<void> {
     } else {
       summary.skippedItems.push(
         'Session/payment/refund/settlement QA data skipped because patient or practitioner profile prerequisites were missing.',
+      );
+    }
+
+    const reviewReady = await ensureReviewAcceptanceData(prisma);
+    if (reviewReady) {
+      summary.domainRecordsEnsured += 4;
+    } else {
+      summary.skippedItems.push(
+        'Review acceptance QA data skipped because patient or practitioner profile prerequisites were missing.',
       );
     }
 

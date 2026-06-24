@@ -7,7 +7,7 @@
     "articles": "Articles",
     "policies": "Policies",
     "courses": "Courses",
-    "about": "About Fayed",
+    "about": "About Sawiyaa",
     "login": "Sign in",
     "startJourney": "Get started",
     "openMenu": "Open menu"
@@ -71,7 +71,7 @@
     },
     "practitionerJoin": {
       "title": "I'm a specialist and want to join",
-      "desc": "Apply to join the Fayed network and manage your sessions from one place.",
+      "desc": "Apply to join the Sawiyaa network and manage your sessions from one place.",
       "cta": "Apply as a specialist"
     }
   },
@@ -103,7 +103,7 @@
   },
   "howItWorks": {
     "eyebrow": "A clear journey",
-    "title": "How does your care start with Fayed?",
+    "title": "How does your care start with Sawiyaa?",
     "subtitle": "A clear journey from choosing a path to following your session.",
     "stepLabel": "Step",
     "step1Title": "Choose the right path",
@@ -201,8 +201,8 @@
   },
   "practitionerCTA": {
     "eyebrow": "For specialists",
-    "title": "Are you a specialist and want to join Fayed?",
-    "subtitle": "Join the Fayed network, showcase your expertise, and organize your schedule and sessions from one place.",
+    "title": "Are you a specialist and want to join Sawiyaa?",
+    "subtitle": "Join the Sawiyaa network, showcase your expertise, and organize your schedule and sessions from one place.",
     "benefits": {
       "benefit1": "Clear professional profile.",
       "benefit2": "Schedule and availability management.",
@@ -236,10 +236,31 @@
     "ctaPrimary": "Start choosing a specialist",
     "ctaSecondary": "Help me choose the right one"
   },
-  "whyFayed": {
-    "eyebrow": "Why trust Fayed",
+  "footer": {
+    "tagline": "Sawiyaa is a care platform that helps you choose the right specialist, book your sessions, and follow your journey with clear steps.",
+    "copyright": "Sawiyaa Mental Wellness. All rights reserved.",
+    "sectionPlatform": "Sawiyaa",
+    "sectionCare": "Care",
+    "sectionSupport": "Support and policies",
+    "sectionAccount": "Account",
+    "linkHome": "Home",
+    "linkSpecialties": "Specialties",
+    "linkPractitioners": "Practitioners",
+    "linkArticles": "Articles",
+    "linkAcademy": "Academy",
+    "linkAbout": "About Sawiyaa",
+    "linkHelp": "Help center",
+    "linkRefund": "Refund policy",
+    "linkPrivacy": "Privacy",
+    "linkTerms": "Terms and conditions",
+    "linkLogin": "Sign in",
+    "linkSignup": "Create account",
+    "linkJoinPractitioner": "Apply as a specialist"
+  },
+  "whySawiyaa": {
+    "eyebrow": "Why trust Sawiyaa",
     "title": "Clearer care starts from a trusted platform",
-    "desc": "Fayed does not just show you specialists — it helps you understand the next step, book your session, and follow it with clarity.",
+    "desc": "Sawiyaa does not just show you specialists — it helps you understand the next step, book your session, and follow it with clarity.",
     "cta": "Explore specialties",
     "secondaryCta": "Browse specialists",
     "privacyTitle": "Specialists with clear profiles",
@@ -255,26 +276,5 @@
       "publishedContent": "Published public articles with clear context, not decorative snippets.",
       "secureJourney": "A clear path from exploration to booking and secure session flow."
     }
-  },
-  "footer": {
-    "tagline": "Fayed is a care platform that helps you choose the right specialist, book your sessions, and follow your journey with clear steps.",
-    "copyright": "Fayed Mental Wellness. All rights reserved.",
-    "sectionPlatform": "Fayed",
-    "sectionCare": "Care",
-    "sectionSupport": "Support and policies",
-    "sectionAccount": "Account",
-    "linkHome": "Home",
-    "linkSpecialties": "Specialties",
-    "linkPractitioners": "Practitioners",
-    "linkArticles": "Articles",
-    "linkAcademy": "Academy",
-    "linkAbout": "About Fayed",
-    "linkHelp": "Help center",
-    "linkRefund": "Refund policy",
-    "linkPrivacy": "Privacy",
-    "linkTerms": "Terms and conditions",
-    "linkLogin": "Sign in",
-    "linkSignup": "Create account",
-    "linkJoinPractitioner": "Apply as a specialist"
   }
 }

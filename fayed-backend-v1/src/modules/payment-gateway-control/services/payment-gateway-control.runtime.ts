@@ -7,12 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
-import {
-  ConfigDataType,
-  ConfigScopeType,
-  PaymentProvider,
-  Prisma,
-} from '@prisma/client';
+import { ConfigDataType, PaymentProvider, Prisma } from '@prisma/client';
 import paymentConfig from '@config/payment.config';
 import { ResolveConfigValueUseCase } from '@modules/config/use-cases/resolve-config-value.use-case';
 import {
@@ -24,25 +19,15 @@ import {
 import { PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS } from '../payment-gateway-control.constants';
 import {
   PaymentGatewayControlManagedProvider,
-  PaymentGatewayControlProvider,
-  PaymentGatewayControlRuntimeSnapshot,
   PaymentRoutingRuntimeSnapshot,
   PaymobGatewayControlMethodEntry,
   PaymobGatewayControlRuntimeSnapshot,
   StripeGatewayControlRuntimeSnapshot,
 } from '../types/payment-gateway-control.types';
-import {
-  PaymentRoutingDraftNormalized,
-  PaymobGatewayControlDraftNormalized,
-  paymobGatewayControlDraftSchema,
-  paymobGatewayMethodEntrySchema,
-  paymentRoutingDraftSchema,
-  stripeGatewayControlDraftSchema,
-  StripeGatewayControlDraftNormalized,
-} from '../schemas/paymob-gateway-control.schema';
+import { paymobGatewayMethodEntrySchema } from '../schemas/paymob-gateway-control.schema';
 
 type ResolvedConfig = {
-  value: Prisma.JsonValue | string | number | boolean | null;
+  value: Prisma.JsonValue;
   source: 'database' | 'catalog_default' | 'missing';
   dataType: ConfigDataType;
 };
@@ -1203,6 +1188,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
           PaymobCheckoutFlow.LEGACY,
           PaymobCheckoutFlow.INTENTION,
         ],
+        currencyCodes: [],
         countryIsoCodes: [],
       });
     }
@@ -1219,6 +1205,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
           PaymobCheckoutFlow.LEGACY,
           PaymobCheckoutFlow.INTENTION,
         ],
+        currencyCodes: [],
         countryIsoCodes: [],
       });
     }
@@ -1232,7 +1219,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     }
 
     try {
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
       const candidates = Array.isArray(parsed)
         ? parsed
         : Array.isArray((parsed as { methods?: unknown }).methods)
@@ -1240,7 +1227,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
           : [];
 
       return candidates
-        .map((entry, index) => this.normalizePaymobRegistryEntry(entry, index))
+        .map((entry) => this.normalizePaymobRegistryEntry(entry))
         .filter((entry): entry is PaymobMethodRegistryEntry => Boolean(entry));
     } catch {
       return [];
@@ -1249,7 +1236,6 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
   private normalizePaymobRegistryEntry(
     entry: unknown,
-    _index: number,
   ): PaymobMethodRegistryEntry | null {
     if (!entry || typeof entry !== 'object') {
       return null;
@@ -1285,6 +1271,9 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       type,
       enabled: this.toBoolean(raw.enabled, true),
       integrationId,
+      currencyCodes: this.toStringArray(
+        raw.currencyCodes ?? raw.currencies ?? raw.currencyCode ?? null,
+      ),
       supportedCheckoutFlows: this.normalizeSupportedCheckoutFlows(
         raw.supportedCheckoutFlows ?? raw.checkoutFlows ?? raw.flows ?? null,
         type,

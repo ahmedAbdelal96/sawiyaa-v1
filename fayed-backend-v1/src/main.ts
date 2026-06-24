@@ -79,7 +79,7 @@ async function bootstrap(): Promise<void> {
   );
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Fayed Backend API')
+    .setTitle('Sawiyaa Backend API')
     .setDescription('Phase 1 backend APIs')
     .setVersion('1.0')
     .addBearerAuth()
@@ -93,7 +93,7 @@ async function bootstrap(): Promise<void> {
   logger.info(
     {
       message: 'Application started',
-      appName: process.env.APP_NAME ?? 'fayed-backend-v1',
+      appName: process.env.APP_NAME ?? 'sawiyaa-backend-v1',
       environment: process.env.NODE_ENV ?? 'development',
       port,
       apiPrefix,

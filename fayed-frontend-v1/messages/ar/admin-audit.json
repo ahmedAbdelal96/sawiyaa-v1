@@ -1,94 +1,158 @@
 {
   "audit": {
     "meta": {
-      "listTitle": "سجل التدقيق الإداري",
-      "listDescription": "سجل تشغيلي قابل للتتبع مع فلاتر وبحث بشكل منظم.",
-      "detailTitle": "تفاصيل حدث التدقيق",
-      "detailDescription": "عرض تفصيلي لسياق حدث تدقيق واحد."
+      "listTitle": "سجل الأنشطة والعمليات الإدارية",
+      "listDescription": "سجل تشغيلي لمراقبة ومتابعة كافة العمليات والأنشطة على مستوى المنصة.",
+      "detailTitle": "تفاصيل العملية",
+      "detailDescription": "عرض تفصيلي لسياق وسجل عملية واحدة في النظام."
     },
     "list": {
-      "title": "سجل التدقيق",
-      "description": "متابعة الأحداث الأمنية والتشغيلية والمعلوماتية على مستوى المنصة.",
-      "summaryLabel": "أحداث التدقيق",
-      "openAction": "فتح التفاصيل",
+      "title": "سجل الأنشطة والعمليات",
+      "description": "مراقبة ومتابعة العمليات الإدارية، الأنشطة التشغيلية، والأحداث الأمنية على مستوى المنصة.",
+      "summaryLabel": "إجمالي الأنشطة والعمليات",
+      "openAction": "عرض التفاصيل",
+      "quickTracking": "تتبع سريع حسب نوع النشاط",
       "columns": {
-        "action": "الإجراء",
-        "actor": "الفاعل",
+        "action": "العملية / الإجراء",
+        "actor": "المنفذ (الفاعل)",
         "target": "الهدف",
-        "category": "الفئة",
-        "severity": "الشدة",
+        "category": "تصنيف العمليات",
+        "severity": "الخطورة / الشدة",
         "source": "المصدر",
-        "occurredAt": "الوقت"
+        "occurredAt": "وقت العملية"
       }
     },
     "filters": {
       "all": "الكل",
-      "actorRole": "دور الفاعل",
-      "category": "الفئة",
-      "severity": "الشدة",
-      "source": "المصدر",
+      "actorRole": "دور المنفذ",
+      "category": "تصنيف العمليات",
+      "severity": "درجة الخطورة",
+      "source": "قناة المصدر",
       "dateFrom": "من تاريخ",
       "dateTo": "إلى تاريخ",
-      "eventFamily": "عائلة الحدث",
+      "eventFamily": "عائلة العمليات",
       "eventFamilyPlaceholder": "auth / payments / sessions",
-      "targetEntityType": "نوع الهدف",
+      "targetEntityType": "نوع الكيان المستهدف",
       "targetEntityTypePlaceholder": "PAYMENT / SESSION / REFUND",
-      "search": "بحث",
-      "searchPlaceholder": "ابحث في الإجراء أو الفاعل أو الهدف..."
+      "search": "بحث سريع",
+      "searchPlaceholder": "ابحث باسم الإجراء، اسم المنفذ..."
     },
     "detail": {
-      "back": "العودة إلى سجل التدقيق",
-      "eyebrow": "التدقيق الإداري",
-      "title": "تفاصيل حدث التدقيق"
+      "back": "العودة إلى سجل الأنشطة",
+      "eyebrow": "الرقابة والمتابعة",
+      "title": "تفاصيل العملية"
     },
     "sections": {
-      "event": "سياق الحدث",
-      "actorTarget": "الفاعل والهدف",
-      "snapshots": "اللقطات",
-      "timestamps": "الطوابع الزمنية"
+      "event": "سياق العملية والحدث",
+      "actor": "منفذ العملية (الفاعل)",
+      "target": "الكيان المستهدف (الهدف)",
+      "snapshots": "البيانات المسجلة (اللقطات)",
+      "timestamps": "التوقيت الزمني"
     },
     "fields": {
-      "action": "الإجراء",
-      "eventFamily": "عائلة الحدث",
-      "status": "الحالة",
-      "category": "الفئة",
-      "severity": "الشدة",
-      "source": "المصدر",
-      "occurredAt": "وقت الحدث",
-      "actorUserId": "معرّف المستخدم",
-      "actorName": "اسم الفاعل",
-      "actorRole": "دور الفاعل",
-      "targetType": "نوع الهدف",
-      "targetId": "معرّف الهدف",
+      "action": "اسم العملية",
+      "eventFamily": "مجموعة العمليات",
+      "status": "الحالة التشغيلية",
+      "category": "تصنيف العملية",
+      "severity": "درجة الخطورة",
+      "source": "المصدر القناة",
+      "occurredAt": "تاريخ ووقت الحدوث",
+      "actorUserId": "معرّف المستخدم (ID)",
+      "actorName": "اسم المنفذ",
+      "actorRole": "دور المنفذ",
+      "targetType": "نوع الكيان المستهدف",
+      "targetId": "معرّف الكيان (ID)",
       "titleSnapshot": "لقطة العنوان",
       "subjectSnapshot": "لقطة الموضوع",
-      "bodySnapshot": "لقطة المحتوى",
-      "suppressedReason": "سبب الحجب",
-      "createdAt": "تاريخ الإنشاء",
-      "updatedAt": "آخر تحديث"
+      "bodySnapshot": "لقطة المحتوى المكتوب",
+      "suppressedReason": "سبب الحجب التشغيلي",
+      "createdAt": "تاريخ التسجيل بالخلفية",
+      "updatedAt": "تاريخ آخر تحديث"
     },
     "states": {
       "empty": {
-        "heading": "لا توجد أحداث تدقيق",
-        "note": "لا توجد نتائج تطابق الفلاتر الحالية."
+        "heading": "لا توجد عمليات مسجلة",
+        "note": "لا توجد نتائج تطابق الفلاتر المحددة حالياً."
       },
       "listError": {
-        "heading": "تعذّر تحميل سجل التدقيق",
-        "note": "حدث خطأ أثناء تحميل أحداث التدقيق.",
-        "retry": "أعد المحاولة"
+        "heading": "تعذّر تحميل سجل العمليات",
+        "note": "حدث خطأ أثناء الاتصال بالنظام لتحميل سجل الأنشطة.",
+        "retry": "إعادة المحاولة"
       },
       "detailError": {
-        "heading": "تعذّر تحميل تفاصيل الحدث",
-        "note": "تعذّر تحميل بيانات هذا الحدث حالياً.",
-        "retry": "أعد المحاولة"
+        "heading": "تعذّر تحميل تفاصيل العملية",
+        "note": "تعذّر جلب بيانات وتفاصيل هذه العملية حالياً.",
+        "retry": "إعادة المحاولة"
       },
       "notFound": {
-        "heading": "الحدث غير متاح",
-        "note": "قد يكون الحدث غير موجود أو لم يعد متاحاً."
+        "heading": "العملية غير موجودة",
+        "note": "قد يكون هذا الحدث غير متوفر أو تم حذفه."
       }
     },
     "fallback": {
-      "noValue": "-"
+      "noValue": "لا يوجد"
+    },
+    "actions": {
+      "auth.admin.login.success": "تسجيل دخول ناجح للمشرف",
+      "auth.admin.login.failed": "فشل تسجيل دخول المشرف",
+      "auth.patient.login.success": "تسجيل دخول ناجح للمريض",
+      "auth.patient.login.failed": "فشل تسجيل دخول المريض",
+      "auth.practitioner.login.success": "تسجيل دخول ناجح للممارس",
+      "auth.practitioner.login.failed": "فشل تسجيل دخول الممارس",
+      "auth.logout": "تسجيل خروج من النظام",
+      "auth.password.reset.request": "طلب استعادة كلمة المرور",
+      "auth.password.reset.confirm": "تأكيد تغيير كلمة المرور",
+      "sessions.create": "حجز جلسة جديدة",
+      "sessions.start": "بدء الجلسة العلاجية",
+      "sessions.end": "إنهاء الجلسة العلاجية",
+      "sessions.cancel": "إلغاء الجلسة العلاجية",
+      "sessions.join": "دخول الجلسة العلاجية",
+      "payments.charge.success": "سداد رسوم ناجح",
+      "payments.charge.failed": "فشل عملية الدفع",
+      "payments.refund.success": "استرداد مالي ناجح",
+      "payments.refund.failed": "فشل عملية الاسترداد",
+      "payments.payout.processed": "تحويل مستحقات مالية للممارس",
+      "practitioner.application.submit": "تقديم طلب انضمام ممارس جديد",
+      "practitioner.application.approve": "قبول انضمام ممارس وتفعيل حسابه",
+      "practitioner.application.reject": "رفض طلب انضمام ممارس",
+      "support.ticket.create": "فتح تذكرة مساعدة جديدة",
+      "support.ticket.assign": "تحويل تذكرة الدعم لمشرف",
+      "support.ticket.resolve": "حل تذكرة المساعدة",
+      "support.ticket.close": "إغلاق تذكرة المساعدة"
+    },
+    "roles": {
+      "SUPER_ADMIN": "مدير النظام العام",
+      "ADMIN": "مشرف الإدارة",
+      "SUPPORT": "موظف الدعم الفني",
+      "PATIENT": "مريض",
+      "PRACTITIONER": "ممارس (معالج)",
+      "CONTENT_REVIEWER": "مراجع محتوى",
+      "PATIENT_OPERATIONS": "عمليات المرضى",
+      "FINANCE_STAFF": "موظف المالية"
+    },
+    "severities": {
+      "LOW": "منخفضة",
+      "MEDIUM": "متوسطة",
+      "HIGH": "عالية",
+      "CRITICAL": "حرجة"
+    },
+    "categories": {
+      "SECURITY": "أمن وصلاحيات الحسابات",
+      "SESSION": "الجلسات العلاجية",
+      "PAYMENT": "المدفوعات والمالية",
+      "CONTENT": "المحتوى والمقالات",
+      "SUPPORT": "الدعم والمساعدة الفنية",
+      "CHAT": "المحادثات والرسائل",
+      "SYSTEM": "عمليات النظام التلقائية",
+      "TRAINING": "التدريب والأكاديمية",
+      "MARKETING": "التسويق والعروض"
+    },
+    "sources": {
+      "SYSTEM": "النظام الآلي",
+      "SMS": "رسالة نصية SMS",
+      "EMAIL": "البريد الإلكتروني",
+      "PUSH": "إشعار الهاتف",
+      "IN_APP": "داخل التطبيق"
     }
   }
 }

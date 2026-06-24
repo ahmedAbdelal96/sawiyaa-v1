@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "InstantBookingRequest_practitionerId_status_expiresAt_createdAt" RENAME TO "InstantBookingRequest_practitionerId_status_expiresAt_creat_idx";

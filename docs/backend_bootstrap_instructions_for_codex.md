@@ -136,6 +136,33 @@
 - `PAYMOB_HMAC_SECRET`
 - `PAYMOB_INTEGRATION_ID`
 
+## Care Chat Expiry Sweeper
+> Documentation only unless the backend config explicitly reads these variables.
+> Do not activate these as required env vars unless they are wired safely through
+> the existing config pattern with defaults.
+
+- `CARE_CHAT_EXPIRY_SWEEPER_INITIAL_DELAY_MS`
+- `CARE_CHAT_EXPIRY_SWEEPER_INTERVAL_MS`
+
+### Recommended comments for `.env.example`
+```text
+# Care Chat Expiry Sweeper
+# This is a low-frequency cleanup job that expires pending care-chat approval requests
+# after their expiresAt time has passed.
+#
+# Production recommendation:
+# - Keep this slow. Do NOT run it every minute or every hour.
+# - Default initial delay after app bootstrap: 3 minutes.
+# - Default interval: 24 hours.
+# - The job should only update PENDING requests where expiresAt <= now.
+# - It must never block app startup.
+# - It should use batch updates and avoid loading unnecessary relations.
+#
+# Current defaults are intentionally conservative:
+# CARE_CHAT_EXPIRY_SWEEPER_INITIAL_DELAY_MS=180000
+# CARE_CHAT_EXPIRY_SWEEPER_INTERVAL_MS=86400000
+```
+
 ---
 
 # 4) إعداد Config Module بشكل صحيح
@@ -504,4 +531,3 @@ src/
 - Security middleware ready
 - Project structure organized
 - Ready to start Phase 1 implementation
-

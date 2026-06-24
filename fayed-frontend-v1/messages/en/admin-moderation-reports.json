@@ -127,7 +127,8 @@
       "reporter": "Reporter context",
       "snapshot": "Target snapshot",
       "actions": "Available actions",
-      "boundary": "Scope boundary"
+      "boundary": "Scope boundary",
+      "technicalDetails": "System Tracking & Technical Details"
     },
     "fields": {
       "reportId": "Report ID",

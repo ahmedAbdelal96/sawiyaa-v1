@@ -19,6 +19,8 @@ const countryIsoCodeSchema = z
   .max(3)
   .transform((value) => value.toUpperCase());
 
+const currencyCodeSchema = z.enum(['EGP', 'USD']);
+
 const providerKeySchema = z.enum([
   PaymentProvider.PAYMOB,
   PaymentProvider.STRIPE,
@@ -37,6 +39,7 @@ export const paymobGatewayMethodEntrySchema = z
     enabled: z.boolean(),
     priority: z.number().int().min(0).max(1000).default(0),
     supportedCheckoutFlows: z.array(paymobCheckoutFlowSchema).default([]),
+    currencyCodes: z.array(currencyCodeSchema).default([]),
     countryIsoCodes: z.array(countryIsoCodeSchema).default([]),
     integrationId: z.string().trim().min(1).max(120).nullable().default(null),
   })

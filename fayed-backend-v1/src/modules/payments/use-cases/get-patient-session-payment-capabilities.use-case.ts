@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PaymentProvider, Prisma } from '@prisma/client';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentSessionRepository } from '../repositories/payment-session.repository';
@@ -38,7 +42,15 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
     });
 
     const checkoutCountryIsoCode = session.patient.country?.isoCode ?? null;
+    if (!checkoutCountryIsoCode) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.paymentRoutingAmbiguous',
+        error: 'PAYMENT_ROUTING_AMBIGUOUS',
+      });
+    }
+
     const context = {
+      currencyCode: pricing.currencyCode,
       checkoutCountryIsoCode,
       operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
     };
@@ -70,16 +82,6 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
         enabled: item.enabled,
       }));
 
-    const buildStripeMethods = (): PaymentCapabilityMethodViewModel[] => [
-      {
-        key: 'STRIPE_CHECKOUT',
-        type: 'PROVIDER_HOSTED',
-        label: 'Stripe',
-        enabled: true,
-        description: 'Provider-side payment method selection via Stripe.',
-      },
-    ];
-
     let methods = paymobMethods;
     let supportedMethods = paymobMethods.map((item) => item.key);
     let defaultMethod =
@@ -88,28 +90,16 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
     let normalizedMethods: PaymentCapabilityMethodViewModel[] = paymobMethods;
     const provider = pricing.provider;
 
-    if (provider === PaymentProvider.STRIPE) {
-      const stripeMethods = buildStripeMethods();
-      methods = stripeMethods.map((item) => ({
-        key: item.key,
-        label: item.label,
-        type: item.type,
-        enabled: item.enabled,
-      }));
-      supportedMethods = stripeMethods.map((item) => item.key);
-      defaultMethod = stripeMethods[0]?.key ?? null;
-      checkoutFlow = PaymobCheckoutFlow.INTENTION;
-      normalizedMethods = stripeMethods;
-    } else if (provider === PaymentProvider.PAYMOB) {
+    if (provider === PaymentProvider.PAYMOB) {
       normalizedMethods = paymobMethods;
     } else {
       normalizedMethods = [
         {
-          key: 'FAYED_WALLET',
+          key: 'SAWIYAA_WALLET',
           type: 'INTERNAL_WALLET',
-          label: 'Fayed Wallet',
+          label: 'Sawiyaa Wallet',
           enabled: true,
-          description: 'Internal wallet payment within Fayed balance.',
+          description: 'Internal wallet payment within Sawiyaa balance.',
         },
       ];
       methods = normalizedMethods.map((item) => ({
@@ -119,15 +109,8 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
         enabled: item.enabled,
       }));
       supportedMethods = normalizedMethods.map((item) => item.key);
-      defaultMethod = 'FAYED_WALLET';
+      defaultMethod = 'SAWIYAA_WALLET';
       checkoutFlow = PaymobCheckoutFlow.INTENTION;
-    }
-
-    if (!checkoutCountryIsoCode && pricing.currencyCode === 'EGP') {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.paymentRoutingAmbiguous',
-        error: 'PAYMENT_ROUTING_AMBIGUOUS',
-      });
     }
 
     return {

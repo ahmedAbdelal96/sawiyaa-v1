@@ -49,7 +49,7 @@
       "cta": "Open payments"
     },
     "meta": {
-      "title": "Fayed | Patient Care Space",
+      "title": "Sawiyaa | Patient Care Space",
       "description": "A simple care-first entry point for patients to discover practitioners and follow their sessions."
     }
   },
@@ -309,7 +309,7 @@
       "title": "My Sessions",
       "description": "Your upcoming and past therapy sessions will appear here.",
       "meta": {
-        "title": "Fayed | My Sessions",
+        "title": "Sawiyaa | My Sessions",
         "description": "View your upcoming and past therapy sessions."
       }
     },
@@ -317,7 +317,7 @@
       "title": "Settings",
       "description": "Account preferences and security options.",
       "meta": {
-        "title": "Fayed | Settings",
+        "title": "Sawiyaa | Settings",
         "description": "Manage your account preferences and security options."
       }
     },
@@ -325,7 +325,7 @@
       "title": "My Payments",
       "description": "Your payment history and billing information will appear here.",
       "meta": {
-        "title": "Fayed | My Payments",
+        "title": "Sawiyaa | My Payments",
         "description": "View your payment history and billing information."
       }
     },
@@ -333,7 +333,7 @@
       "title": "Messages",
       "description": "Care follow-up messaging and approved conversations.",
       "meta": {
-        "title": "Fayed | Messages",
+        "title": "Sawiyaa | Messages",
         "description": "Care follow-up messaging and approved conversations."
       }
     },
@@ -341,7 +341,7 @@
       "title": "My Reviews",
       "description": "Your submitted feedback and reviews will appear here.",
       "meta": {
-        "title": "Fayed | My Reviews",
+        "title": "Sawiyaa | My Reviews",
         "description": "View and manage your submitted feedback and reviews."
       }
     },
@@ -349,7 +349,7 @@
       "title": "Articles",
       "description": "Educational content and articles for your care journey.",
       "meta": {
-        "title": "Fayed | Articles",
+        "title": "Sawiyaa | Articles",
         "description": "Educational content and articles for your care journey."
       }
     }

@@ -1,5 +1,5 @@
 /**
- * Client-side API helper for the Fayed frontend base.
+ * Client-side API helper for the Sawiyaa frontend base.
  */
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
@@ -47,7 +47,7 @@ apiClient.interceptors.request.use(
     if (typeof window !== "undefined") {
       const accessTokenCookie = document.cookie
         .split("; ")
-        .find((row) => row.startsWith("fayed_access_token="));
+        .find((row) => row.startsWith("sawiyaa_access_token="));
 
       if (accessTokenCookie && config.headers) {
         const token = accessTokenCookie.split("=")[1];
@@ -56,7 +56,7 @@ apiClient.interceptors.request.use(
 
       const userData = document.cookie
         .split("; ")
-        .find((row) => row.startsWith("fayed_user_data="));
+        .find((row) => row.startsWith("sawiyaa_user_data="));
 
       if (userData) {
         try {
@@ -120,7 +120,7 @@ export const isAuthenticated = (): boolean => {
 
   const userData = document.cookie
     .split("; ")
-    .find((row) => row.startsWith("fayed_user_data="));
+    .find((row) => row.startsWith("sawiyaa_user_data="));
 
   return !!userData;
 };
@@ -130,7 +130,7 @@ export const getUserFromCookie = (): any | null => {
 
   const userData = document.cookie
     .split("; ")
-    .find((row) => row.startsWith("fayed_user_data="));
+    .find((row) => row.startsWith("sawiyaa_user_data="));
 
   if (!userData) return null;
 

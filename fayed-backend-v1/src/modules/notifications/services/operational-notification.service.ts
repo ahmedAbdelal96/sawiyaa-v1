@@ -35,6 +35,8 @@ type SessionPackageContext = {
 
 type SessionReminderRecipientRole = 'PATIENT' | 'PRACTITIONER';
 
+type CareChatRecipientRole = 'patient' | 'practitioner';
+
 type MessageLane = 'SESSION_CHAT' | 'SUPPORT' | 'CARE_CHAT';
 
 type SessionReminderNotificationInput = {
@@ -47,6 +49,13 @@ type SessionReminderNotificationInput = {
 type InstantBookingRequestNotificationInput = {
   patientProfileId: string;
   requestId: string;
+};
+
+type CareChatDecisionNotificationInput = {
+  patientProfileId: string;
+  practitionerProfileId: string;
+  requestId: string;
+  conversationId?: string | null;
 };
 
 type ScheduledSessionReminderDispatch = {
@@ -154,6 +163,181 @@ export class OperationalNotificationService {
       relatedEntityId: input.refundId,
       category: NotificationCategory.PAYMENT,
     });
+  }
+
+  async notifyCareChatRequestApproved(
+    input: CareChatDecisionNotificationInput,
+  ): Promise<void> {
+    const [patient, practitioner] = await Promise.all([
+      this.resolvePatientRecipient(input.patientProfileId),
+      this.resolvePractitionerRecipient(input.practitionerProfileId),
+    ]);
+
+    const conversationId = input.conversationId ?? null;
+    if (!conversationId) {
+      return;
+    }
+
+    await Promise.all([
+      this.sendBySlug({
+        recipient: patient,
+        slug: 'care-chat.request-approved',
+        titleKey: 'careChat.notifications.requestApprovedTitle',
+        bodyKey: 'careChat.notifications.requestApprovedBody',
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: input.requestId,
+        category: NotificationCategory.CHAT,
+        routePath: this.buildCareChatConversationRoutePath(
+          patient?.locale ?? null,
+          'patient',
+          conversationId,
+        ),
+        idempotencyKey: this.buildCareChatDecisionNotificationIdempotencyKey(
+          'care-chat.request-approved',
+          input.requestId,
+          patient?.userId ?? null,
+        ),
+        targetRole: 'PATIENT',
+        payload: {
+          careRequestId: input.requestId,
+          conversationId,
+          decision: 'APPROVE',
+        },
+      }),
+      this.sendBySlug({
+        recipient: practitioner,
+        slug: 'care-chat.request-approved',
+        titleKey: 'careChat.notifications.requestApprovedTitle',
+        bodyKey: 'careChat.notifications.requestApprovedBody',
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: input.requestId,
+        category: NotificationCategory.CHAT,
+        routePath: this.buildCareChatConversationRoutePath(
+          practitioner?.locale ?? null,
+          'practitioner',
+          conversationId,
+        ),
+        idempotencyKey: this.buildCareChatDecisionNotificationIdempotencyKey(
+          'care-chat.request-approved',
+          input.requestId,
+          practitioner?.userId ?? null,
+        ),
+        targetRole: 'PRACTITIONER',
+        payload: {
+          careRequestId: input.requestId,
+          conversationId,
+          decision: 'APPROVE',
+        },
+      }),
+    ]);
+  }
+
+  async notifyCareChatRequestRejected(input: {
+    patientProfileId: string;
+    requestId: string;
+  }): Promise<void> {
+    const patient = await this.resolvePatientRecipient(input.patientProfileId);
+
+    await this.sendBySlug({
+      recipient: patient,
+      slug: 'care-chat.request-rejected',
+      titleKey: 'careChat.notifications.requestRejectedTitle',
+      bodyKey: 'careChat.notifications.requestRejectedBody',
+      relatedEntityType: 'CARE_CHAT_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.CHAT,
+      routePath: this.buildCareChatRequestRoutePath(
+        patient?.locale ?? null,
+        'patient',
+        input.requestId,
+      ),
+      idempotencyKey: this.buildCareChatDecisionNotificationIdempotencyKey(
+        'care-chat.request-rejected',
+        input.requestId,
+        patient?.userId ?? null,
+      ),
+      targetRole: 'PATIENT',
+      payload: {
+        careRequestId: input.requestId,
+        decision: 'REJECT',
+      },
+    });
+  }
+
+  async notifyCareChatRequestRevoked(
+    input: CareChatDecisionNotificationInput,
+  ): Promise<void> {
+    const [patient, practitioner] = await Promise.all([
+      this.resolvePatientRecipient(input.patientProfileId),
+      this.resolvePractitionerRecipient(input.practitionerProfileId),
+    ]);
+
+    const conversationId = input.conversationId ?? null;
+
+    await Promise.all([
+      this.sendBySlug({
+        recipient: patient,
+        slug: 'care-chat.request-revoked',
+        titleKey: 'careChat.notifications.requestRevokedTitle',
+        bodyKey: 'careChat.notifications.requestRevokedBody',
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: input.requestId,
+        category: NotificationCategory.CHAT,
+        routePath: conversationId
+          ? this.buildCareChatConversationRoutePath(
+              patient?.locale ?? null,
+              'patient',
+              conversationId,
+            )
+          : this.buildCareChatRequestRoutePath(
+              patient?.locale ?? null,
+              'patient',
+              input.requestId,
+            ),
+        idempotencyKey: this.buildCareChatDecisionNotificationIdempotencyKey(
+          'care-chat.request-revoked',
+          input.requestId,
+          patient?.userId ?? null,
+        ),
+        targetRole: 'PATIENT',
+        payload: {
+          careRequestId: input.requestId,
+          ...(conversationId ? { conversationId } : {}),
+          decision: 'REVOKE',
+        },
+      }),
+      this.sendBySlug({
+        recipient: practitioner,
+        slug: 'care-chat.request-revoked',
+        titleKey: 'careChat.notifications.requestRevokedTitle',
+        bodyKey: 'careChat.notifications.requestRevokedBody',
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: input.requestId,
+        category: NotificationCategory.CHAT,
+        routePath: conversationId
+          ? this.buildCareChatConversationRoutePath(
+              practitioner?.locale ?? null,
+              'practitioner',
+              conversationId,
+            )
+          : this.buildCareChatRequestRoutePath(
+              practitioner?.locale ?? null,
+              'practitioner',
+              input.requestId,
+            ),
+        idempotencyKey: this.buildCareChatDecisionNotificationIdempotencyKey(
+          'care-chat.request-revoked',
+          input.requestId,
+          practitioner?.userId ?? null,
+        ),
+        targetRole: 'PRACTITIONER',
+        payload: {
+          careRequestId: input.requestId,
+          ...(conversationId ? { conversationId } : {}),
+          decision: 'REVOKE',
+        },
+      }),
+    ]);
   }
 
   async notifyInstantBookingAccepted(
@@ -430,6 +614,55 @@ export class OperationalNotificationService {
       relatedEntityId: input.enrollmentId,
       category: NotificationCategory.TRAINING,
       scheduledFor: input.scheduledFor,
+    });
+  }
+
+  async queuePractitionerAvailabilityWeekEndingReminder(input: {
+    practitionerId: string;
+    userId: string;
+    locale: SupportedLocale;
+    routePath: string;
+    currentWeekStartDate: string;
+    currentWeekEndDate: string;
+    nextWeekStartDate: string;
+    daysUntilCurrentWeekEnds: number;
+    shouldPromptForNextWeek: boolean;
+    nextWeekPublished: boolean;
+    scheduledFor: Date;
+  }): Promise<void> {
+    const recipient = {
+      userId: input.userId,
+      displayName: null,
+      locale: input.locale,
+      email: null,
+    };
+
+    await this.queueBySlug({
+      recipient,
+      slug: 'availability.week-ending-reminder',
+      titleKey: 'availability.notifications.weekEndingReminderTitle',
+      bodyKey: 'availability.notifications.weekEndingReminderBody',
+      pushBodyKey: 'availability.notifications.weekEndingReminderPushBody',
+      params: {
+        daysUntilCurrentWeekEnds: input.daysUntilCurrentWeekEnds,
+      },
+      relatedEntityType: 'PRACTITIONER_AVAILABILITY_WEEK',
+      relatedEntityId: input.practitionerId,
+      category: NotificationCategory.SESSION,
+      scheduledFor: input.scheduledFor,
+      routePath: input.routePath,
+      idempotencyKey: `availability.week-ending-reminder:${input.practitionerId}:${input.currentWeekStartDate}`,
+      targetRole: 'PRACTITIONER',
+      payload: {
+        practitionerId: input.practitionerId,
+        currentWeekStartDate: input.currentWeekStartDate,
+        currentWeekEndDate: input.currentWeekEndDate,
+        nextWeekStartDate: input.nextWeekStartDate,
+        daysUntilCurrentWeekEnds: input.daysUntilCurrentWeekEnds,
+        shouldPromptForNextWeek: input.shouldPromptForNextWeek,
+        nextWeekPublished: input.nextWeekPublished,
+        routePath: input.routePath,
+      },
     });
   }
 
@@ -788,6 +1021,34 @@ export class OperationalNotificationService {
     )}`;
   }
 
+  private buildCareChatConversationRoutePath(
+    locale: SupportedLocale | null,
+    role: CareChatRecipientRole,
+    conversationId: string,
+  ): string | null {
+    if (!locale) {
+      return null;
+    }
+
+    return `/${locale}/${role.toLowerCase()}/care-chat/conversations/${encodeURIComponent(
+      conversationId,
+    )}`;
+  }
+
+  private buildCareChatRequestRoutePath(
+    locale: SupportedLocale | null,
+    role: CareChatRecipientRole,
+    requestId: string,
+  ): string | null {
+    if (!locale) {
+      return null;
+    }
+
+    return `/${locale}/${role.toLowerCase()}/care-chat/requests/${encodeURIComponent(
+      requestId,
+    )}`;
+  }
+
   private buildMessageRoutePath(
     locale: SupportedLocale | null,
     role: SessionReminderRecipientRole,
@@ -816,6 +1077,18 @@ export class OperationalNotificationService {
   }
 
   private buildInstantBookingNotificationIdempotencyKey(
+    slug: string,
+    requestId: string,
+    userId: string | null,
+  ): string | null {
+    if (!userId) {
+      return null;
+    }
+
+    return `${slug}:${requestId}:${userId}`;
+  }
+
+  private buildCareChatDecisionNotificationIdempotencyKey(
     slug: string,
     requestId: string,
     userId: string | null,

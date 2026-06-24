@@ -47,7 +47,7 @@
       "reviewsCount_two": "تقييمان",
       "reviewsCount_few": "{{count}} تقييمات",
       "reviewsCount_many": "{{count}} تقييمًا",
-      "reviewsCount_other": "{{count}} تقييم"
+      "reviewsCount_other": "{{count}} تقييمًا"
     },
     "recentlyVisited": {
       "title": "زرت مؤخرًا",
@@ -607,8 +607,29 @@
       "title": "أعد تعيين كلمة المرور",
       "subtitle": "أدخل بريدك الإلكتروني لاستقبال رمز إعادة تعيين كلمة المرور.",
       "sendCode": "إرسال رمز الاستعادة",
+      "step2Title": "تأكيد رمز الاستعادة",
+      "step2Description": "أدخل رمز الاستعادة للمتابعة.",
+      "verifyOtp": "تأكيد الرمز",
+      "step3Title": "إنشاء كلمة مرور جديدة",
+      "step3Description": "تم التحقق من الرمز. عيّن كلمة مرور جديدة لإكمال الاستعادة.",
       "resetPassword": "تعيين كلمة مرور جديدة",
-      "backToSignIn": "العودة إلى تسجيل دخول المريض"
+      "confirmPassword": "تأكيد كلمة المرور الجديدة",
+      "confirmPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+      "otpEmailInfoLabel": "تم إرسال الرمز إلى",
+      "passwordEmailInfoLabel": "إعادة التعيين للبريد",
+      "changeEmail": "تغيير البريد الإلكتروني",
+      "rememberPassword": "تتذكر كلمة المرور؟",
+      "goToSignIn": "الذهاب لتسجيل الدخول",
+      "errorMessage": "تعذر إكمال استرجاع كلمة المرور الآن.",
+      "backToSignIn": "العودة إلى تسجيل دخول المريض",
+      "cooldownMessage": "يمكنك طلب رمز جديد خلال {{seconds}} ثانية.",
+      "resendCode": "إعادة إرسال الرمز",
+      "errors": {
+        "patientAccountNotFound": "لا يوجد حساب مريض بهذا البريد الإلكتروني.",
+        "practitionerEmailOnPatientPage": "هذا البريد مرتبط بحساب معالج. استخدم استعادة المعالج.",
+        "patientEmailOnPractitionerPage": "هذا البريد مرتبط بحساب مريض. استخدم استعادة المريض.",
+        "passwordsMismatch": "كلمتا المرور غير متطابقتين."
+      }
     },
     "practitionerSignUp": {
       "eyebrow": "تسجيل المعالج",
@@ -628,7 +649,26 @@
       "title": "استرجع وصولك كمعالج",
       "subtitle": "اطلب رمز الاستعادة أولاً، ثم استخدم البريد نفسه والرمز لتعيين كلمة مرور جديدة.",
       "sendCode": "إرسال رمز الاستعادة",
-      "resetPassword": "تعيين كلمة المرور"
+      "step2Title": "تأكيد رمز الاستعادة",
+      "step2Description": "أدخل رمز الاستعادة للمتابعة.",
+      "verifyOtp": "تأكيد الرمز",
+      "step3Title": "إنشاء كلمة مرور جديدة",
+      "step3Description": "تم التحقق من الرمز. عيّن كلمة مرور جديدة لإكمال إعادة التعيين.",
+      "resetPassword": "تعيين كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور الجديدة",
+      "confirmPasswordPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+      "otpEmailInfoLabel": "تم إرسال الرمز إلى",
+      "passwordEmailInfoLabel": "إعادة التعيين للبريد",
+      "changeEmail": "تغيير البريد الإلكتروني",
+      "errorMessage": "تعذر إكمال استرجاع كلمة المرور الآن.",
+      "cooldownMessage": "يمكنك طلب رمز جديد خلال {{seconds}} ثانية.",
+      "resendCode": "إعادة إرسال الرمز",
+      "errors": {
+        "practitionerAccountNotFound": "لا يوجد حساب معالج بهذا البريد الإلكتروني.",
+        "practitionerEmailOnPatientPage": "هذا البريد مرتبط بحساب معالج. استخدم استعادة المعالج.",
+        "patientEmailOnPractitionerPage": "هذا البريد مرتبط بحساب مريض. استخدم استعادة المريض.",
+        "passwordsMismatch": "كلمتا المرور غير متطابقتين."
+      }
     },
     "practitionerTypes": {
       "PSYCHOLOGIST": "أخصائي نفسي",
@@ -761,7 +801,7 @@
     "profile": {
       "professionalFallback": "معالج مرخص",
       "countryFallback": "الدولة غير محددة",
-      "reviews": "{{count}} مراجعة",
+      "reviews": "{{count}} تقييمًا",
       "yearsExp": "سنوات خبرة",
       "about": "نبذة",
       "specialties": "التخصصات",
@@ -1882,7 +1922,7 @@
     },
     "new": {
       "title": "طلب دردشة مع مختص",
-      "approvalNote": "ستُراجع طلبك من قِبل الفريق وسيتم إخطارك عند الموافقة.",
+      "approvalNote": "ستُراجع طلبك من قِبل فريق فايِد وسيتم إخطارك عند اتخاذ القرار.",
       "practitionerSlugLabel": "المعرف المختصر للمختص",
       "practitionerSlugPlaceholder": "مثال: dr-ahmed-ali",
       "practitionerSlugHint": "يمكنك الحصول على المعرف من صفحة الملف الشخصي للمختص.",
@@ -1896,7 +1936,7 @@
       "title": "تفاصيل الطلب",
       "reason": "سبب الطلب",
       "expiresAt": "تاريخ انتهاء الصلاحية",
-      "pendingNotice": "طلبك قيد المراجعة. سيتم إخطارك فور اتخاذ قرار.",
+      "pendingNotice": "طلبك قيد المراجعة من فريق فايِد. سيتم إخطارك فور اتخاذ القرار.",
       "rejectedNotice": "للأسف تم رفض طلب الدردشة. يمكنك فتح طلب دعم إذا كنت بحاجة للمساعدة.",
       "openConversation": "فتح المحادثة"
     },
@@ -1910,7 +1950,7 @@
     "sessionFollowUp": {
       "title": "متابعة بعد الجلسة",
       "practitionerLabel": "المختص",
-      "approvalNote": "سيتم مراجعة طلب المتابعة من قبل فريقنا.",
+      "approvalNote": "سيتم مراجعة طلب المتابعة من قبل فريق فايِد.",
       "reasonLabel": "سبب المتابعة",
       "reasonPlaceholder": "اشرح بإيجاز ما الذي تريد متابعته...",
       "submit": "إرسال طلب المتابعة",

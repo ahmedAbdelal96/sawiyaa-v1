@@ -83,7 +83,8 @@ export class PatientTrainingEnrollmentsController {
 
   @Get('enrollments/:id/pay/redirect')
   @ApiOperation({
-    summary: 'Create a fresh payment checkout redirect for a training enrollment',
+    summary:
+      'Create a fresh payment checkout redirect for a training enrollment',
   })
   async redirectToEnrollmentPayment(
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -181,7 +182,7 @@ export class PatientTrainingEnrollmentsController {
       try {
         const parsed = new URL(candidate);
 
-        if (parsed.protocol === 'fayed:') {
+        if (parsed.protocol === 'sawiyaa:') {
           return parsed.toString();
         }
 

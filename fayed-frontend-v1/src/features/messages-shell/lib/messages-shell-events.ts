@@ -2,9 +2,9 @@
 
 import type { UnifiedMessagingLane } from "../types/messages-shell.types";
 
-export const OPEN_SESSION_CHAT_EVENT = "fayed:messages-shell-open-session-chat";
-export const OPEN_MESSAGES_SHELL_EVENT = "fayed:messages-shell-open";
-export const TOGGLE_MESSAGES_SHELL_EVENT = "fayed:messages-shell-toggle";
+export const OPEN_SESSION_CHAT_EVENT = "sawiyaa:messages-shell-open-session-chat";
+export const OPEN_MESSAGES_SHELL_EVENT = "sawiyaa:messages-shell-open";
+export const TOGGLE_MESSAGES_SHELL_EVENT = "sawiyaa:messages-shell-toggle";
 
 export type OpenSessionChatEventPayload = {
   sessionId: string;

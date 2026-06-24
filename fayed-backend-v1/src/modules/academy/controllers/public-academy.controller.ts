@@ -132,7 +132,7 @@ export class PublicAcademyController {
       try {
         const parsed = new URL(candidate);
 
-        if (parsed.protocol === 'fayed:') {
+        if (parsed.protocol === 'sawiyaa:') {
           return parsed.toString();
         }
 

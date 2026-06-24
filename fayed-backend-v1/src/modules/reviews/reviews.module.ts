@@ -16,9 +16,9 @@ import { ReviewRepository } from './repositories/review.repository';
 import { BuildPublicTrustConversionContentQueryService } from './services/build-public-trust-conversion-content-query.service';
 import { BuildPractitionerCredibilitySummaryService } from './services/build-practitioner-credibility-summary.service';
 import { ReviewSessionRepository } from './repositories/review-session.repository';
-import { UpdatePractitionerRatingSummaryService } from './services/update-practitioner-rating-summary.service';
 import { ValidateReviewModerationTransitionService } from './services/validate-review-moderation-transition.service';
 import { ValidateSessionReviewEligibilityService } from './services/validate-session-review-eligibility.service';
+import { SessionReviewRatingAggregationService } from './services/session-review-rating-aggregation.service';
 import { CreateSessionReviewUseCase } from './use-cases/create-session-review.use-case';
 import { GetAdminReviewUseCase } from './use-cases/get-admin-review.use-case';
 import { GetMyReviewUseCase } from './use-cases/get-my-review.use-case';
@@ -50,9 +50,9 @@ import { ModerateReviewUseCase } from './use-cases/moderate-review.use-case';
     ReviewRepository,
     ReviewSessionRepository,
     BuildPractitionerCredibilitySummaryService,
+    SessionReviewRatingAggregationService,
     ValidateSessionReviewEligibilityService,
     ValidateReviewModerationTransitionService,
-    UpdatePractitionerRatingSummaryService,
     CreateSessionReviewUseCase,
     ListMyReviewsUseCase,
     GetMyReviewUseCase,
@@ -63,5 +63,6 @@ import { ModerateReviewUseCase } from './use-cases/moderate-review.use-case';
     ModerateReviewUseCase,
     ListPublicPractitionerReviewsUseCase,
   ],
+  exports: [SessionReviewRatingAggregationService],
 })
 export class ReviewsModule {}

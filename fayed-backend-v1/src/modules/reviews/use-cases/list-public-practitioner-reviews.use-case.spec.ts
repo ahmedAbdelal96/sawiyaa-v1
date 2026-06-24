@@ -2,14 +2,17 @@ import { NotFoundException } from '@nestjs/common';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
 import { BuildPractitionerCredibilitySummaryService } from '../services/build-practitioner-credibility-summary.service';
+import { SessionReviewRatingAggregationService } from '../services/session-review-rating-aggregation.service';
 import { ListPublicPractitionerReviewsUseCase } from './list-public-practitioner-reviews.use-case';
 
 describe('ListPublicPractitionerReviewsUseCase', () => {
   const reviewRepository = {
     findPublicPractitionerBySlug: jest.fn(),
     listPublicPublishedReviews: jest.fn(),
-    aggregatePublicVisibleReviews: jest.fn(),
   } as unknown as ReviewRepository;
+  const sessionReviewRatingAggregationService = {
+    aggregateByPractitionerId: jest.fn(),
+  } as unknown as SessionReviewRatingAggregationService;
 
   const reviewPresenter = new ReviewPresenter();
   const buildPractitionerCredibilitySummaryService =
@@ -18,6 +21,7 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
   const useCase = new ListPublicPractitionerReviewsUseCase(
     reviewRepository,
     buildPractitionerCredibilitySummaryService,
+    sessionReviewRatingAggregationService,
     reviewPresenter,
   );
 
@@ -50,11 +54,6 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
     ).mockResolvedValue({
       id: 'pr_1',
       publicSlug: 'dr-one',
-      ratingSummary: {
-        averageRating: 4.5,
-        totalReviews: 7,
-        publishedReviewsCount: 5,
-      },
     });
 
     (
@@ -79,11 +78,18 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
       2,
     ]);
     (
-      reviewRepository.aggregatePublicVisibleReviews as jest.Mock
+      sessionReviewRatingAggregationService.aggregateByPractitionerId as jest.Mock
     ).mockResolvedValue({
-      _count: { id: 2 },
-      _avg: { ratingValue: 4.5 },
-      _max: { publishedAt: new Date('2026-03-06T00:00:00.000Z') },
+      averageRating: 4.5,
+      ratingsCount: 2,
+      publishedRatingsCount: 2,
+      writtenReviewsCount: 2,
+      rating1Count: 0,
+      rating2Count: 0,
+      rating3Count: 0,
+      rating4Count: 1,
+      rating5Count: 1,
+      latestPublishedReviewAt: '2026-03-06T00:00:00.000Z',
     });
 
     const result = await useCase.execute({
@@ -94,6 +100,9 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
     expect(result).toEqual({
       summary: {
         averageOverallRating: 4.5,
+        ratingsCount: 2,
+        publishedRatingsCount: 2,
+        writtenReviewsCount: 2,
         totalPublicReviews: 2,
         totalPublishedReviews: 2,
         totalSubmittedReviews: 2,

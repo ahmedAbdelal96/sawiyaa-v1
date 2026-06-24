@@ -3,7 +3,6 @@ import { ConversationParticipantRole } from '@prisma/client';
 import { ModerateReviewDto } from '../dto/moderate-review.dto';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
-import { UpdatePractitionerRatingSummaryService } from '../services/update-practitioner-rating-summary.service';
 import { ValidateReviewModerationTransitionService } from '../services/validate-review-moderation-transition.service';
 
 @Injectable()
@@ -13,7 +12,6 @@ export class ModerateReviewUseCase {
   constructor(
     private readonly reviewRepository: ReviewRepository,
     private readonly validateReviewModerationTransitionService: ValidateReviewModerationTransitionService,
-    private readonly updatePractitionerRatingSummaryService: UpdatePractitionerRatingSummaryService,
     private readonly reviewPresenter: ReviewPresenter,
   ) {}
 
@@ -59,11 +57,6 @@ export class ModerateReviewUseCase {
         },
         tx,
       );
-
-      await this.updatePractitionerRatingSummaryService.execute({
-        practitionerId: review.practitionerId,
-        tx,
-      });
 
       return row;
     });

@@ -3,6 +3,8 @@ import { toAppError } from "@/lib/api/errors";
 const ACADEMY_ERROR_MAP: Record<string, string> = {
   ACADEMY_COURSE_NOT_FOUND: "admin.errors.notFound",
   ACADEMY_COURSE_ARCHIVED_READ_ONLY: "admin.errors.archivedReadOnly",
+  ACADEMY_COURSE_ARCHIVED_READONLY: "admin.errors.archivedReadOnly",
+  ACADEMY_LECTURE_OVERLAP: "admin.errors.lectureOverlap",
   ACADEMY_MISSING_PRICING: "admin.errors.missingPricing",
   ACADEMY_UNSUPPORTED_CURRENCY: "admin.errors.unsupportedCurrency",
   ACADEMY_INVALID_PUBLISH_TRANSITION: "admin.errors.invalidPublishTransition",

@@ -1,8 +1,8 @@
-# Patient Forgot Password - Manual Android Smoke Test Plan
+﻿# Patient Forgot Password - Manual Android Smoke Test Plan
 
 ## Test Environment Setup
 
-- Android Emulator or Device with Fayed Mobile App installed
+- Android Emulator or Device with Sawiyaa Mobile App installed
 - Backend running at http://localhost:3000 (or remote API URL)
 - Test patient account: patient@test.com / password: TestPass123
 
@@ -253,3 +253,4 @@
 All smoke tests passed: YES / NO
 
 Test completed by: ********\_******** Date: ****\_****
+

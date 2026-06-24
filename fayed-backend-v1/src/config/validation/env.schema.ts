@@ -7,7 +7,7 @@ const baseEnvSchema = z.object({
     .enum(['development', 'production', 'test'])
     .default('development'),
   PORT: z.coerce.number().default(3000),
-  APP_NAME: z.string().default('fayed-backend-v1'),
+  APP_NAME: z.string().default('sawiyaa-backend-v1'),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
   APP_DEFAULT_LOCALE: z.enum(['ar', 'en']).default('ar'),
@@ -27,7 +27,7 @@ const baseEnvSchema = z.object({
   // Throttling / Rate limit store
   THROTTLE_STORE: z.enum(['memory', 'redis']).default('memory'),
   REDIS_URL: z.string().url().optional(),
-  THROTTLE_KEY_PREFIX: z.string().default('fayed:throttle'),
+  THROTTLE_KEY_PREFIX: z.string().default('sawiyaa:throttle'),
   THROTTLE_KEY_HASH_SECRET: z.string().optional(),
 
   // Step-up (re-auth) enforcement for sensitive actions
@@ -42,7 +42,7 @@ const baseEnvSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  JWT_ISSUER: z.string().default('fayed-backend-v1'),
+  JWT_ISSUER: z.string().default('sawiyaa-backend-v1'),
   AUTH_PASSWORD_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(12),
   AUTH_OTP_CODE_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
   AUTH_LOGIN_OTP_TTL_MINUTES: z.coerce
@@ -66,8 +66,16 @@ const baseEnvSchema = z.object({
     .default(30),
   AUTH_COOKIE_AUTH_ENABLED: z.enum(['true', 'false']).optional(),
   AUTH_CSRF_ENFORCEMENT_ENABLED: z.enum(['true', 'false']).optional(),
-  AUTH_CSRF_COOKIE_NAME: z.string().default('fayed_csrf_token'),
+  AUTH_CSRF_COOKIE_NAME: z.string().default('sawiyaa_csrf_token'),
   AUTH_CSRF_HEADER_NAME: z.string().default('x-csrf-token'),
+  // Practitioner login OTP feature toggle.
+  // true  = require OTP after password login (default secure behavior).
+  // false = emergency bypass; password login issues tokens directly.
+  // This is the primary control for the practitioner login OTP flow.
+  AUTH_PRACTITIONER_LOGIN_OTP_ENABLED: z.enum(['true', 'false']).optional(),
+  // Legacy development-only bypass.
+  // Prefer AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=false instead.
+  // Kept for backward compatibility with local dev setups.
   AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV: z
     .enum(['true', 'false'])
     .optional(),
@@ -88,6 +96,10 @@ const baseEnvSchema = z.object({
   DEV_OTP_EMAIL_REDIRECT: z.string().optional(),
   DEV_OTP_BYPASS_DELIVERY_FAILURES: z.enum(['true', 'false']).optional(),
   SMS_PROVIDER: z.string().optional(),
+
+  // Brevo (Sendinblue) transactional email
+  BREVO_API_KEY: z.string().optional(),
+  BREVO_API_URL: z.string().url().optional(),
 
   // Video - Daily
   DAILY_API_KEY: z.string().optional(),
@@ -115,6 +127,9 @@ const baseEnvSchema = z.object({
   PAYMOB_INTEGRATION_ID: z.string().optional(),
   PAYMOB_INTEGRATION_ID_CARD: z.string().optional(),
   PAYMOB_INTEGRATION_ID_WALLET: z.string().optional(),
+  PAYMOB_EGP_CARD_INTEGRATION_ID: z.string().optional(),
+  PAYMOB_EGP_WALLET_INTEGRATION_ID: z.string().optional(),
+  PAYMOB_USD_CARD_INTEGRATION_ID: z.string().optional(),
   PAYMOB_IFRAME_ID: z.string().optional(),
   PAYMOB_BASE_URL: z.string().url().optional(),
   PAYMOB_INTENTION_BASE_URL: z.string().url().optional(),
@@ -153,7 +168,9 @@ const baseEnvSchema = z.object({
     .max(1000)
     .default(100),
   ACCOUNTING_RECONCILIATION_CRON: z.string().default('0 3 * * *'),
-  ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: z.enum(['true', 'false']).default('false'),
+  ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false'),
 });
 
 export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
@@ -165,7 +182,8 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   // Reject localhost/loopback addresses in production to prevent silent push to wrong domain
   if (effectiveAppEnv === 'production' && env.APP_URL) {
     const url = env.APP_URL.toLowerCase();
-    const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/;
+    const localhostPattern =
+      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/;
     if (localhostPattern.test(url)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -306,8 +324,14 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       env.PAYMOB_INTEGRATION_ID_CARD?.trim() ||
       env.PAYMOB_INTEGRATION_ID?.trim(),
     );
-    const hasWalletIntegration = Boolean(
-      env.PAYMOB_INTEGRATION_ID_WALLET?.trim(),
+    const hasExplicitEgpCardIntegration = Boolean(
+      env.PAYMOB_EGP_CARD_INTEGRATION_ID?.trim(),
+    );
+    const hasExplicitEgpWalletIntegration = Boolean(
+      env.PAYMOB_EGP_WALLET_INTEGRATION_ID?.trim(),
+    );
+    const hasExplicitUsdCardIntegration = Boolean(
+      env.PAYMOB_USD_CARD_INTEGRATION_ID?.trim(),
     );
     const rawRegistry = env.PAYMOB_METHOD_REGISTRY_JSON?.trim();
     const hasRegistryJson = Boolean(rawRegistry);
@@ -342,15 +366,17 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     }
 
     if (
+      !hasExplicitEgpCardIntegration &&
+      !hasExplicitEgpWalletIntegration &&
+      !hasExplicitUsdCardIntegration &&
       !hasLegacyCardIntegration &&
-      !hasWalletIntegration &&
       !hasRegistryJson
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_INTEGRATION_ID_CARD'],
+        path: ['PAYMOB_EGP_CARD_INTEGRATION_ID'],
         message:
-          'At least one Paymob method integration id or a method registry is required when PAYMENT_PAYMOB_ENABLED=true',
+          'At least one explicit Paymob currency/method integration id or a method registry is required when PAYMENT_PAYMOB_ENABLED=true',
       });
     }
 

@@ -73,7 +73,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "ALL",
     labelEn: "All",
-    labelAr: "All",
+    labelAr: "الكل",
     filters: {
       eventFamily: null,
       category: null,
@@ -82,7 +82,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "SECURITY",
     labelEn: "Security",
-    labelAr: "Security",
+    labelAr: "الأمان والحسابات",
     filters: {
       eventFamily: "auth",
       category: "SECURITY",
@@ -91,7 +91,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "FINANCIAL",
     labelEn: "Financial",
-    labelAr: "Financial",
+    labelAr: "المعاملات المالية",
     filters: {
       eventFamily: "payments",
       category: "PAYMENT",
@@ -100,7 +100,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "SESSIONS",
     labelEn: "Sessions",
-    labelAr: "Sessions",
+    labelAr: "الجلسات العلاجية",
     filters: {
       eventFamily: "sessions",
       category: "SESSION",
@@ -109,7 +109,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "SUPPORT",
     labelEn: "Support",
-    labelAr: "Support",
+    labelAr: "الدعم والمساعدة",
     filters: {
       category: "SUPPORT",
     },
@@ -117,7 +117,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "TRAINING",
     labelEn: "Training",
-    labelAr: "Training",
+    labelAr: "التدريب والأكاديمية",
     filters: {
       eventFamily: "training",
       category: "TRAINING",
@@ -126,7 +126,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "ADMIN_ACTIONS",
     labelEn: "Admin actions",
-    labelAr: "Admin actions",
+    labelAr: "عمليات الإشراف",
     filters: {
       eventFamily: "admin",
     },
@@ -134,7 +134,7 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
   {
     id: "SYSTEM",
     labelEn: "System",
-    labelAr: "System",
+    labelAr: "عمليات النظام الآلية",
     filters: {
       category: "SYSTEM",
     },
@@ -276,64 +276,93 @@ export default function AdminAuditLogListScreen() {
         header: t("audit.list.columns.action"),
         accessor: (row) => row.action,
         sortable: true,
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.action}
-            </p>
-            <p className="mt-1 text-xs text-text-muted">{row.eventFamily}</p>
-          </div>
-        ),
+        cell: (row) => {
+          const actionKey = `actions.${row.action}` as Parameters<typeof t>[0];
+          const hasActionTranslation = t.has(actionKey);
+          const translatedAction = hasActionTranslation ? t(actionKey) : row.action;
+
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                {translatedAction}
+              </p>
+              {hasActionTranslation && (
+                <p className="mt-0.5 text-[10px] font-mono text-text-muted">{row.action}</p>
+              )}
+              <p className="mt-1 text-xs text-text-muted">{row.eventFamily}</p>
+            </div>
+          );
+        },
       },
       {
         id: "actor",
         header: t("audit.list.columns.actor"),
         accessor: (row) => row.actor.displayName ?? row.actor.userId,
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm text-text-primary dark:text-white/95">
-              {row.actor.displayName ?? row.actor.userId}
-            </p>
-            <p className="mt-1 text-xs text-text-muted">{row.actor.role ?? t("audit.fallback.noValue")}</p>
-          </div>
-        ),
+        cell: (row) => {
+          const roleKey = `roles.${row.actor.role}` as Parameters<typeof t>[0];
+          const translatedRole = t.has(roleKey) ? t(roleKey) : row.actor.role;
+
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+                {row.actor.displayName ?? t("audit.fallback.noValue")}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">
+                {translatedRole ?? t("audit.fallback.noValue")}
+              </p>
+            </div>
+          );
+        },
       },
       {
         id: "target",
         header: t("audit.list.columns.target"),
         accessor: (row) => row.target.entityType ?? "",
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm text-text-primary dark:text-white/95">
-              {row.target.entityType ?? t("audit.fallback.noValue")}
-            </p>
-            <p className="mt-1 truncate text-xs text-text-muted">
-              {row.target.entityId ?? t("audit.fallback.noValue")}
-            </p>
-          </div>
-        ),
+        cell: (row) => {
+          const targetKey = `categories.${row.target.entityType}` as Parameters<typeof t>[0];
+          const translatedTarget = t.has(targetKey) ? t(targetKey) : row.target.entityType;
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-sm text-text-primary dark:text-white/95 font-medium">
+                {translatedTarget ?? t("audit.fallback.noValue")}
+              </p>
+            </div>
+          );
+        },
       },
       {
         id: "category",
         header: t("audit.list.columns.category"),
         accessor: (row) => row.category,
         sortable: true,
+        cell: (row) => {
+          const catKey = `categories.${row.category}` as Parameters<typeof t>[0];
+          return t.has(catKey) ? t(catKey) : row.category;
+        }
       },
       {
         id: "severity",
         header: t("audit.list.columns.severity"),
         accessor: (row) => row.severity,
         sortable: true,
-        cell: (row) => (
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getSeverityTone(row.severity)}`}>
-            {row.severity}
-          </span>
-        ),
+        cell: (row) => {
+          const sevKey = `severities.${row.severity}` as Parameters<typeof t>[0];
+          const translatedSeverity = t.has(sevKey) ? t(sevKey) : row.severity;
+          return (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getSeverityTone(row.severity)}`}>
+              {translatedSeverity}
+            </span>
+          );
+        },
       },
       {
         id: "source",
         header: t("audit.list.columns.source"),
         accessor: (row) => row.source,
+        cell: (row) => {
+          const srcKey = `sources.${row.source}` as Parameters<typeof t>[0];
+          return t.has(srcKey) ? t(srcKey) : row.source;
+        }
       },
       {
         id: "occurredAt",
@@ -360,7 +389,7 @@ export default function AdminAuditLogListScreen() {
         <div className="space-y-4">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {"Quick tracking"}
+              {t("audit.list.quickTracking")}
             </p>
             <div className="flex flex-wrap gap-2">
               {TRACKING_PRESETS.map((preset) => {

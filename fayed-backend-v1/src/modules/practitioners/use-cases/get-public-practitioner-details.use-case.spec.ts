@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import type { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
@@ -13,6 +14,9 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
   const patientProfileRepository = {
     findByUserId: jest.fn(),
   } as unknown as PatientProfileRepository;
+  const sessionReviewRatingAggregationService = {
+    aggregateByPractitionerId: jest.fn(),
+  } as unknown as SessionReviewRatingAggregationService;
   const mapper = new PublicPractitionerMapper();
   const visibilityPolicy = new PublicPractitionerVisibilityPolicy();
 
@@ -21,6 +25,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     visibilityPolicy,
     publicReadRepository,
     patientProfileRepository,
+    sessionReviewRatingAggregationService,
   );
 
   beforeEach(() => {
@@ -47,7 +52,6 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
           isPrimary: true,
         },
       ],
-      ratingSummary: { averageRating: null, publishedReviewsCount: 0 },
       _count: { credentials: 1 },
       sessionPrice30: new Prisma.Decimal('111.00'),
       sessionPrice60: new Prisma.Decimal('222.00'),
@@ -62,6 +66,20 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     (
       publicReadRepository.countApprovedCredentials as jest.Mock
     ).mockResolvedValue(1);
+    (
+      sessionReviewRatingAggregationService.aggregateByPractitionerId as jest.Mock
+    ).mockResolvedValue({
+      averageRating: 4.5,
+      ratingsCount: 8,
+      publishedRatingsCount: 8,
+      writtenReviewsCount: 5,
+      rating1Count: 0,
+      rating2Count: 0,
+      rating3Count: 1,
+      rating4Count: 3,
+      rating5Count: 4,
+      latestPublishedReviewAt: '2026-03-06T00:00:00.000Z',
+    });
 
     const result = await useCase.execute({
       slug: 'dr-youssef-abdallah',
@@ -77,5 +95,12 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     expect(result.item.displaySessionPrice60).toBe(15);
     expect(result.item.sessionPrice60).toBe(222);
     expect(result.item.sessionPrice60Usd).toBe(15);
+    expect(result.item.ratingSummary).toEqual({
+      averageRating: 4.5,
+      ratingsCount: 8,
+      publishedRatingsCount: 8,
+      writtenReviewsCount: 5,
+      totalReviews: 8,
+    });
   });
 });

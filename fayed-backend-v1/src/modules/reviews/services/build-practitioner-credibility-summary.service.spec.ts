@@ -5,7 +5,8 @@ describe('BuildPractitionerCredibilitySummaryService', () => {
 
   it('returns safe empty state for practitioner with no public reviews', () => {
     const result = service.build({
-      totalPublicReviews: 0,
+      ratingsCount: 0,
+      writtenReviewsCount: 0,
       averagePublicRating: null,
       latestPublishedAt: null,
       now: new Date('2026-03-31T00:00:00.000Z'),
@@ -13,6 +14,9 @@ describe('BuildPractitionerCredibilitySummaryService', () => {
 
     expect(result).toEqual({
       averageOverallRating: null,
+      ratingsCount: 0,
+      publishedRatingsCount: 0,
+      writtenReviewsCount: 0,
       totalPublicReviews: 0,
       totalPublishedReviews: 0,
       totalSubmittedReviews: 0,
@@ -26,7 +30,8 @@ describe('BuildPractitionerCredibilitySummaryService', () => {
 
   it('keeps deterministic low-volume aggregation semantics', () => {
     const result = service.build({
-      totalPublicReviews: 2,
+      ratingsCount: 2,
+      writtenReviewsCount: 1,
       averagePublicRating: 4.126,
       latestPublishedAt: new Date('2026-03-20T00:00:00.000Z'),
       now: new Date('2026-03-31T00:00:00.000Z'),
@@ -34,6 +39,9 @@ describe('BuildPractitionerCredibilitySummaryService', () => {
 
     expect(result).toEqual({
       averageOverallRating: 4.13,
+      ratingsCount: 2,
+      publishedRatingsCount: 2,
+      writtenReviewsCount: 1,
       totalPublicReviews: 2,
       totalPublishedReviews: 2,
       totalSubmittedReviews: 2,
@@ -47,7 +55,8 @@ describe('BuildPractitionerCredibilitySummaryService', () => {
 
   it('marks established and stale when review volume is sufficient but latest review is old', () => {
     const result = service.build({
-      totalPublicReviews: 8,
+      ratingsCount: 8,
+      writtenReviewsCount: 6,
       averagePublicRating: 3.75,
       latestPublishedAt: new Date('2026-01-01T00:00:00.000Z'),
       now: new Date('2026-03-31T00:00:00.000Z'),

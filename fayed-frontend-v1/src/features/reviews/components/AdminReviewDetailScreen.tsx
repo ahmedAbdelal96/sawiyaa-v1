@@ -298,10 +298,12 @@ export default function AdminReviewDetailScreen({ reviewId }: Props) {
             </div>
             <div>
               <dt className="text-xs font-medium text-text-muted">
-                {t("admin.detail.patientProfileId")}
+                {t("admin.detail.patient")}
               </dt>
-              <dd className="mt-0.5 font-mono text-xs text-text-secondary">
-                {item.patientProfileId}
+              <dd className="mt-0.5 text-sm text-text-primary dark:text-white/90">
+                {item.patient.isAnonymous
+                  ? t("admin.detail.anonymousPatient")
+                  : item.patient.displayName ?? t("admin.detail.patientFallback")}
               </dd>
             </div>
             <div>
@@ -348,6 +350,7 @@ export default function AdminReviewDetailScreen({ reviewId }: Props) {
           <ModerationPanel reviewId={reviewId} status={item.status} />
         </div>
       </div>
+
     </div>
   );
 }

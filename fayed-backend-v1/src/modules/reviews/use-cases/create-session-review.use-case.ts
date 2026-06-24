@@ -11,7 +11,6 @@ import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewActorRepository } from '../repositories/review-actor.repository';
 import { ReviewRepository } from '../repositories/review.repository';
 import { ValidateSessionReviewEligibilityService } from '../services/validate-session-review-eligibility.service';
-import { UpdatePractitionerRatingSummaryService } from '../services/update-practitioner-rating-summary.service';
 import { REVIEW_SUBMIT_INITIAL_STATUS } from '../types/reviews.types';
 
 @Injectable()
@@ -22,7 +21,6 @@ export class CreateSessionReviewUseCase {
     private readonly reviewActorRepository: ReviewActorRepository,
     private readonly reviewRepository: ReviewRepository,
     private readonly validateSessionReviewEligibilityService: ValidateSessionReviewEligibilityService,
-    private readonly updatePractitionerRatingSummaryService: UpdatePractitionerRatingSummaryService,
     private readonly reviewPresenter: ReviewPresenter,
   ) {}
 
@@ -74,11 +72,6 @@ export class CreateSessionReviewUseCase {
             },
             tx,
           );
-
-          await this.updatePractitionerRatingSummaryService.execute({
-            practitionerId: session.practitionerId,
-            tx,
-          });
 
           return row;
         },

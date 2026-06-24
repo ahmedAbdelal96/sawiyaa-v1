@@ -56,7 +56,7 @@ export function buildPublicMetadata({
       title,
       description,
       url: canonicalPath,
-      siteName: "Fayed",
+      siteName: locale === "ar" ? "سويّة" : "Sawiyaa",
       type: "website",
       locale: locale === "ar" ? "ar_EG" : "en_US",
     },

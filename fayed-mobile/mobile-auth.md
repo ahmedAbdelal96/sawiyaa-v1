@@ -1,10 +1,10 @@
-<!-- Design System -->
+﻿<!-- Design System -->
 <!DOCTYPE html>
 
 <html dir="rtl" lang="ar"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>تسجيل دخول المريض - Fayed</title>
+<title>ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„ Ø§Ù„Ù…Ø±ÙŠØ¶ - Sawiyaa</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=IBM+Plex+Sans:wght@500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -118,7 +118,7 @@
 <span class="material-symbols-outlined transform scale-x-[-1]">arrow_back</span>
 </button>
 <div class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed">
-                Fayed
+                Sawiyaa
             </div>
 <button aria-label="Help" class="text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-full p-2 active:scale-95 opacity-80">
 <span class="material-symbols-outlined">help_outline</span>
@@ -128,12 +128,12 @@
 <main class="flex-grow flex items-center justify-center p-mobile-padding w-full max-w-container-max mx-auto">
 <div class="bg-surface-container-lowest w-full max-w-md rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] p-6 sm:p-8">
 <div class="text-center mb-stack-lg">
-<h1 class="font-headline-lg text-headline-lg text-on-surface mb-stack-sm">تسجيل دخول المريض</h1>
-<p class="font-body-md text-body-md text-on-surface-variant">ادخل إلى حسابك لمتابعة جلساتك ورحلتك العلاجية.</p>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-stack-sm">ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„ Ø§Ù„Ù…Ø±ÙŠØ¶</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Ø§Ø¯Ø®Ù„ Ø¥Ù„Ù‰ Ø­Ø³Ø§Ø¨Ùƒ Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø¬Ù„Ø³Ø§ØªÙƒ ÙˆØ±Ø­Ù„ØªÙƒ Ø§Ù„Ø¹Ù„Ø§Ø¬ÙŠØ©.</p>
 </div>
 <form action="#" class="space-y-stack-md" method="POST">
 <div>
-<label class="block font-label-md text-label-md text-on-surface mb-1" for="email">البريد الإلكتروني</label>
+<label class="block font-label-md text-label-md text-on-surface mb-1" for="email">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</label>
 <div class="relative">
 <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-on-surface-variant">
 <span class="material-symbols-outlined text-[20px]">mail</span>
@@ -142,27 +142,27 @@
 </div>
 </div>
 <div>
-<label class="block font-label-md text-label-md text-on-surface mb-1" for="password">كلمة المرور</label>
+<label class="block font-label-md text-label-md text-on-surface mb-1" for="password">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</label>
 <div class="relative">
 <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-on-surface-variant">
 <span class="material-symbols-outlined text-[20px]">lock</span>
 </span>
-<input class="block w-full h-[56px] pl-3 pr-10 rounded-lg border-outline-variant bg-surface-container-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-body-md text-body-md" dir="ltr" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<input class="block w-full h-[56px] pl-3 pr-10 rounded-lg border-outline-variant bg-surface-container-lowest text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-colors font-body-md text-body-md" dir="ltr" id="password" name="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required="" type="password"/>
 </div>
 </div>
 <div class="flex items-center justify-between">
 <div class="flex items-center">
 <input class="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest cursor-pointer" id="remember-me" name="remember-me" type="checkbox"/>
 <label class="ml-2 mr-2 block font-label-md text-label-md text-on-surface-variant cursor-pointer" for="remember-me">
-                            تذكرني
+                            ØªØ°ÙƒØ±Ù†ÙŠ
                         </label>
 </div>
 <a class="font-label-md text-label-md text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">
-                        هل نسيت كلمة المرور؟
+                        Ù‡Ù„ Ù†Ø³ÙŠØª ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±ØŸ
                     </a>
 </div>
 <button class="w-full flex justify-center items-center h-[56px] rounded-lg bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all active:scale-[0.98]" type="submit">
-                    تسجيل الدخول
+                    ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
                 </button>
 </form>
 <div class="mt-stack-lg mb-stack-lg relative">
@@ -170,17 +170,17 @@
 <div class="w-full border-t border-outline-variant"></div>
 </div>
 <div class="relative flex justify-center text-sm">
-<span class="px-2 bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">أو</span>
+<span class="px-2 bg-surface-container-lowest text-on-surface-variant font-label-sm text-label-sm">Ø£Ùˆ</span>
 </div>
 </div>
 <button class="w-full flex justify-center items-center h-[56px] rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all active:scale-[0.98]" type="button">
 <img alt="Google logo" class="h-5 w-5 ml-2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1gR5LqWLebQNqd3QFaLBLEkeVvKjoBKeitNjDJLO0g1Vd_2iT_gR3ovzWVmiaQRvWz2LR5wvt28dtd5oD214VScqsWLW6vGZhaHNz0qyyRuEjsG26dTt02g1VCnpZ63Qn_mzq2NvGM8D-8AmRQneXJ1s29OYzxTJ-bwibN5JugJB4dVERed2ZPpGVzZ4WUeKEMQ2yylOG3rqRAEKGsnMVQ264A7T65Yqkn2pFTsfhf5UPLSL1ph2Y6PLRjB4AV6joL-XU_FbcGDQ"/>
-                المتابعة باستخدام Google
+                Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù… Google
             </button>
 <div class="mt-stack-lg text-center">
 <p class="font-body-md text-body-md text-on-surface-variant">
-                    ليس لديك حساب؟
-                    <a class="font-label-md text-label-md text-primary hover:text-on-primary-fixed-variant transition-colors mr-1" href="#">أنشئ حسابًا</a>
+                    Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ Ø­Ø³Ø§Ø¨ØŸ
+                    <a class="font-label-md text-label-md text-primary hover:text-on-primary-fixed-variant transition-colors mr-1" href="#">Ø£Ù†Ø´Ø¦ Ø­Ø³Ø§Ø¨Ù‹Ø§</a>
 </p>
 </div>
 </div>
@@ -194,7 +194,7 @@
 <html dir="rtl" lang="ar"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-<title>إنشاء حساب مريض - Fayed</title>
+<title>Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ù…Ø±ÙŠØ¶ - Sawiyaa</title>
 <!-- Fonts & Icons -->
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=IBM+Plex+Sans:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -331,7 +331,7 @@
 <span aria-hidden="true" class="material-symbols-outlined transform scale-x-[-1]">arrow_back</span>
 </button>
 <div class="font-headline-sm-mobile md:font-headline-sm text-headline-sm-mobile md:text-headline-sm font-bold text-primary">
-                Fayed
+                Sawiyaa
             </div>
 <div class="w-10"></div> <!-- Spacer for center alignment -->
 </header>
@@ -340,25 +340,25 @@
 <!-- Header Text -->
 <div class="flex flex-col gap-stack-sm text-center">
 <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">
-                    إنشاء حساب مريض
+                    Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ Ù…Ø±ÙŠØ¶
                 </h1>
 <p class="font-body-md text-body-md text-on-surface-variant">
-                    أنشئ حسابك لبدء الحجز ومتابعة جلساتك بسهولة.
+                    Ø£Ù†Ø´Ø¦ Ø­Ø³Ø§Ø¨Ùƒ Ù„Ø¨Ø¯Ø¡ Ø§Ù„Ø­Ø¬Ø² ÙˆÙ…ØªØ§Ø¨Ø¹Ø© Ø¬Ù„Ø³Ø§ØªÙƒ Ø¨Ø³Ù‡ÙˆÙ„Ø©.
                 </p>
 </div>
 <!-- Form -->
 <form action="#" class="flex flex-col gap-stack-md" method="POST" onsubmit="event.preventDefault();">
 <!-- Display Name Input -->
 <div class="flex flex-col gap-[4px]">
-<label class="font-label-md text-label-md text-on-surface" for="displayName">الاسم بالكامل</label>
+<label class="font-label-md text-label-md text-on-surface" for="displayName">Ø§Ù„Ø§Ø³Ù… Ø¨Ø§Ù„ÙƒØ§Ù…Ù„</label>
 <div class="relative">
 <span aria-hidden="true" class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant z-10 pointer-events-none">person</span>
-<input class="w-full h-12 pl-4 pr-10 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60" id="displayName" name="displayName" placeholder="أدخل اسمك بالكامل" required="" type="text"/>
+<input class="w-full h-12 pl-4 pr-10 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60" id="displayName" name="displayName" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ø³Ù…Ùƒ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„" required="" type="text"/>
 </div>
 </div>
 <!-- Email Input -->
 <div class="flex flex-col gap-[4px]">
-<label class="font-label-md text-label-md text-on-surface" for="email">البريد الإلكتروني</label>
+<label class="font-label-md text-label-md text-on-surface" for="email">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</label>
 <div class="relative">
 <span aria-hidden="true" class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant z-10 pointer-events-none">mail</span>
 <input class="w-full h-12 pl-4 pr-10 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 text-right" dir="ltr" id="email" name="email" placeholder="example@email.com" required="" type="email"/>
@@ -366,19 +366,19 @@
 </div>
 <!-- Password Input -->
 <div class="flex flex-col gap-[4px]">
-<label class="font-label-md text-label-md text-on-surface" for="password">كلمة المرور</label>
+<label class="font-label-md text-label-md text-on-surface" for="password">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</label>
 <div class="relative">
 <span aria-hidden="true" class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant z-10 pointer-events-none">lock</span>
-<input class="w-full h-12 pl-10 pr-10 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 text-right" dir="ltr" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<input class="w-full h-12 pl-10 pr-10 rounded-lg border border-outline-variant bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/60 text-right" dir="ltr" id="password" name="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required="" type="password"/>
 <button aria-label="Toggle password visibility" class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors focus:outline-none" type="button">
 <span aria-hidden="true" class="material-symbols-outlined">visibility_off</span>
 </button>
 </div>
-<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">يجب أن تحتوي على 8 أحرف على الأقل.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">ÙŠØ¬Ø¨ Ø£Ù† ØªØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ 8 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„.</span>
 </div>
 <!-- Primary CTA -->
 <button class="w-full h-12 mt-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" type="submit">
-                    إنشاء الحساب
+                    Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨
                     <!-- Flipped arrow for RTL -->
 <span aria-hidden="true" class="material-symbols-outlined text-[20px] transform scale-x-[-1]">arrow_forward</span>
 </button>
@@ -386,7 +386,7 @@
 <!-- Divider -->
 <div class="flex items-center gap-4 py-2">
 <div class="flex-1 h-px bg-outline-variant/50"></div>
-<span class="font-label-sm text-label-sm text-on-surface-variant">أو</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ø£Ùˆ</span>
 <div class="flex-1 h-px bg-outline-variant/50"></div>
 </div>
 <!-- Secondary CTA (Google) -->
@@ -398,12 +398,12 @@
 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
 </svg>
-                التسجيل باستخدام Google
+                Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù… Google
             </button>
 <!-- Bottom Link -->
 <div class="text-center mt-2">
 <a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors inline-flex items-center gap-1 group focus:outline-none rounded" href="#">
-                    لديك حساب بالفعل؟ <span class="text-primary font-medium group-hover:underline">تسجيل الدخول</span>
+                    Ù„Ø¯ÙŠÙƒ Ø­Ø³Ø§Ø¨ Ø¨Ø§Ù„ÙØ¹Ù„ØŸ <span class="text-primary font-medium group-hover:underline">ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</span>
 </a>
 </div>
 </section>
@@ -440,7 +440,7 @@
 <html dir="rtl" lang="ar"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>إعادة تعيين كلمة المرور - Fayed</title>
+<title>Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± - Sawiyaa</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=IBM+Plex+Sans:wght@500&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -553,11 +553,11 @@
 <body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pt-[16px]">
 <!-- TopAppBar -->
 <header class="flex items-center justify-between px-mobile-padding h-14 w-full max-w-container-max mx-auto bg-surface dark:bg-background shadow-sm dark:shadow-none docked full-width top-0 z-50">
-<button aria-label="العودة" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 active:opacity-80 flex items-center justify-center p-2 rounded-full">
+<button aria-label="Ø§Ù„Ø¹ÙˆØ¯Ø©" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 active:opacity-80 flex items-center justify-center p-2 rounded-full">
 <span class="material-symbols-outlined transform -scale-x-100" data-icon="arrow_back">arrow_back</span>
 </button>
-<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Fayed</h1>
-<button aria-label="المساعدة" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 active:opacity-80 flex items-center justify-center p-2 rounded-full">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">Sawiyaa</h1>
+<button aria-label="Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø©" class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:scale-95 active:opacity-80 flex items-center justify-center p-2 rounded-full">
 <span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
 </button>
 </header>
@@ -569,16 +569,16 @@
 <div class="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mx-auto mb-6 text-primary">
 <span class="material-symbols-outlined text-4xl" data-icon="lock_reset">lock_reset</span>
 </div>
-<h2 class="font-headline-lg text-headline-lg mb-2">إعادة تعيين كلمة المرور</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">أدخل بريدك الإلكتروني وسنرسل لك رمز إعادة التعيين.</p>
+<h2 class="font-headline-lg text-headline-lg mb-2">Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Ø£Ø¯Ø®Ù„ Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ÙˆØ³Ù†Ø±Ø³Ù„ Ù„Ùƒ Ø±Ù…Ø² Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ¹ÙŠÙŠÙ†.</p>
 </div>
 <form class="space-y-6" onsubmit="event.preventDefault(); document.getElementById('reset-form').classList.add('hidden', 'opacity-0'); document.getElementById('success-state').classList.remove('hidden', 'opacity-0'); document.getElementById('success-state').classList.add('flex', 'opacity-100');">
 <div>
-<label class="block font-label-md text-label-md text-on-surface mb-2" for="email">البريد الإلكتروني</label>
+<label class="block font-label-md text-label-md text-on-surface mb-2" for="email">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</label>
 <input class="w-full h-[56px] px-4 bg-surface-container-lowest border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-left" dir="ltr" id="email" name="email" placeholder="name@example.com" required="" type="email"/>
 </div>
 <button class="w-full h-[56px] bg-primary text-on-primary font-label-md text-label-md rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm flex items-center justify-center" type="submit">
-                    إرسال رمز الاستعادة
+                    Ø¥Ø±Ø³Ø§Ù„ Ø±Ù…Ø² Ø§Ù„Ø§Ø³ØªØ¹Ø§Ø¯Ø©
                 </button>
 </form>
 </div>
@@ -587,18 +587,18 @@
 <div class="w-20 h-20 bg-secondary-container rounded-full flex items-center justify-center mb-6 text-primary-fixed-dim">
 <span class="material-symbols-outlined text-5xl" data-icon="mark_email_read" data-weight="fill">mark_email_read</span>
 </div>
-<h2 class="font-headline-lg text-headline-lg mb-4">تحقق من بريدك الإلكتروني</h2>
+<h2 class="font-headline-lg text-headline-lg mb-4">ØªØ­Ù‚Ù‚ Ù…Ù† Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ</h2>
 <p class="font-body-lg text-body-lg text-on-surface-variant mb-10 max-w-[300px]">
-                أرسلنا رمز الاستعادة إذا كان البريد مسجلًا لدينا.
+                Ø£Ø±Ø³Ù„Ù†Ø§ Ø±Ù…Ø² Ø§Ù„Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø¨Ø±ÙŠØ¯ Ù…Ø³Ø¬Ù„Ù‹Ø§ Ù„Ø¯ÙŠÙ†Ø§.
             </p>
 <a class="w-full h-[56px] bg-primary text-on-primary font-label-md text-label-md rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm flex items-center justify-center" href="#" onclick="location.reload();">
-                الرجوع لتسجيل الدخول
+                Ø§Ù„Ø±Ø¬ÙˆØ¹ Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
             </a>
 </div>
 <!-- Shared Footer Link -->
 <div class="mt-8 text-center w-full">
 <a class="font-label-md text-label-md text-primary hover:underline" href="#" onclick="if(!document.getElementById('success-state').classList.contains('hidden')){location.reload();}">
-                الرجوع لتسجيل الدخول
+                Ø§Ù„Ø±Ø¬ÙˆØ¹ Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
             </a>
 </div>
 </main>

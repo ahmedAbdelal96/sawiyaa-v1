@@ -6,6 +6,13 @@ export const enAvailabilityCatalog = {
     exceptionUpdated: 'Availability exception updated successfully',
     exceptionDeleted: 'Availability exception deleted successfully',
   },
+  notifications: {
+    weekEndingReminderTitle: 'Publish next week availability',
+    weekEndingReminderBody:
+      'This schedule applies only to this week. Publish next week to keep patient bookings available. Patients can only book published weeks.',
+    weekEndingReminderPushBody:
+      'Publish next week so patients can keep booking available times.',
+  },
   errors: {
     practitionerNotFound: 'Practitioner profile was not found',
     invalidTimezone: 'Timezone is invalid',

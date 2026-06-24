@@ -10,9 +10,14 @@ export const arAuthCatalog = {
     practitionerOtpVerified: 'تم التحقق من دخول المعالج بنجاح',
     practitionerTokensRefreshed: 'تم تجديد جلسة المعالج بنجاح',
     practitionerLoggedOut: 'تم تسجيل خروج المعالج بنجاح',
-    practitionerPasswordResetRequested:
-      'إذا كان الحساب موجودًا فسيتم إرسال رسالة إعادة تعيين كلمة المرور',
+    practitionerPasswordResetRequested: 'تم إرسال رمز إعادة تعيين كلمة المرور',
+    practitionerPasswordResetOtpVerified:
+      'تم التحقق من الرمز بنجاح. يمكنك الآن تعيين كلمة مرور جديدة',
     practitionerPasswordResetCompleted: 'تمت إعادة تعيين كلمة المرور بنجاح',
+    patientPasswordResetRequested: 'تم إرسال رمز إعادة تعيين كلمة المرور',
+    patientPasswordResetOtpVerified:
+      'تم التحقق من الرمز بنجاح. يمكنك الآن تعيين كلمة مرور جديدة',
+    patientPasswordResetCompleted: 'تمت إعادة تعيين كلمة المرور بنجاح',
     adminLoggedIn: 'تم تسجيل دخول الإدارة بنجاح',
     adminTokensRefreshed: 'تم تجديد جلسة الإدارة بنجاح',
     adminLoggedOut: 'تم تسجيل خروج الإدارة بنجاح',
@@ -41,7 +46,12 @@ export const arAuthCatalog = {
     otpResendTooSoon: 'يرجى الانتظار قبل طلب رمز OTP جديد',
     notificationTypeMissing: 'نوع الإشعار غير مهيأ حالياً',
     passwordResetPractitionerOnly:
-      'إعادة تعيين كلمة المرور متاحة فقط لحسابات المعالجين',
+      'هذا البريد مسجل كحساب مريض. استخدم صفحة استعادة كلمة مرور المريض.',
+    passwordResetPatientOnly:
+      'هذا البريد مسجل كحساب معالج. استخدم صفحة استعادة كلمة مرور المعالج.',
+    passwordResetAccountNotFound: 'لا يوجد حساب مسجل بهذا البريد الإلكتروني.',
+    passwordResetTokenInvalid:
+      'رمز جلسة إعادة التعيين غير صالح أو منتهي الصلاحية',
     refreshTokenRequired: 'رمز التحديث مطلوب',
     googleAuthNotConfigured: 'مصادقة Google غير مهيأة',
     googleIdentityInvalid: 'بيانات هوية Google تفتقد الحقول المطلوبة',

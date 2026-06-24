@@ -1,22 +1,23 @@
 {
   "audit": {
     "meta": {
-      "listTitle": "Admin audit log",
-      "listDescription": "Traceable operational events with bounded filtering and search.",
-      "detailTitle": "Audit event details",
-      "detailDescription": "Detailed trace snapshot for a single audit event."
+      "listTitle": "Administrative Activities & Operations Log",
+      "listDescription": "Operational log to monitor and track all processes and activities across the platform.",
+      "detailTitle": "Operation Details",
+      "detailDescription": "Detailed trace snapshot for a single system activity or operation."
     },
     "list": {
-      "title": "Audit log",
-      "description": "Trace security, operational, and informational events across the platform.",
-      "summaryLabel": "Audit events",
-      "openAction": "Open details",
+      "title": "Activities & Operations Log",
+      "description": "Monitor and track administrative operations, operational activities, and security events across the platform.",
+      "summaryLabel": "Total Operations & Activities",
+      "openAction": "View Details",
+      "quickTracking": "Quick tracking by activity type",
       "columns": {
-        "action": "Action",
-        "actor": "Actor",
+        "action": "Operation / Action",
+        "actor": "Actor / Performer",
         "target": "Target",
-        "category": "Category",
-        "severity": "Severity",
+        "category": "Operation Category",
+        "severity": "Severity / Risk Level",
         "source": "Source",
         "occurredAt": "Timestamp"
       }
@@ -24,71 +25,134 @@
     "filters": {
       "all": "All",
       "actorRole": "Actor role",
-      "category": "Category",
-      "severity": "Severity",
-      "source": "Source",
+      "category": "Operation category",
+      "severity": "Severity level",
+      "source": "Source channel",
       "dateFrom": "Date from",
       "dateTo": "Date to",
-      "eventFamily": "Event family",
+      "eventFamily": "Operation family",
       "eventFamilyPlaceholder": "auth / payments / sessions",
       "targetEntityType": "Target entity type",
       "targetEntityTypePlaceholder": "PAYMENT / SESSION / REFUND",
-      "search": "Search",
-      "searchPlaceholder": "Search action, actor, target..."
+      "search": "Quick search",
+      "searchPlaceholder": "Search action name, actor name..."
     },
     "detail": {
-      "back": "Back to audit log",
-      "eyebrow": "Admin audit",
-      "title": "Audit event details"
+      "back": "Back to activities log",
+      "eyebrow": "Monitoring & Control",
+      "title": "Operation Details"
     },
     "sections": {
-      "event": "Event context",
-      "actorTarget": "Actor and target",
-      "snapshots": "Snapshots",
+      "event": "Operation & Event Context",
+      "actor": "Operation Performer (Actor)",
+      "target": "Target Entity (Target)",
+      "snapshots": "Recorded Data (Snapshots)",
       "timestamps": "Timestamps"
     },
     "fields": {
-      "action": "Action",
-      "eventFamily": "Event family",
-      "status": "Status",
-      "category": "Category",
-      "severity": "Severity",
-      "source": "Source",
-      "occurredAt": "Occurred at",
-      "actorUserId": "Actor user ID",
-      "actorName": "Actor name",
-      "actorRole": "Actor role",
-      "targetType": "Target type",
-      "targetId": "Target ID",
-      "titleSnapshot": "Title snapshot",
-      "subjectSnapshot": "Subject snapshot",
-      "bodySnapshot": "Body snapshot",
-      "suppressedReason": "Suppressed reason",
-      "createdAt": "Created at",
-      "updatedAt": "Updated at"
+      "action": "Action Name",
+      "eventFamily": "Operation Family",
+      "status": "Operational Status",
+      "category": "Operation Category",
+      "severity": "Severity Level",
+      "source": "Source Channel",
+      "occurredAt": "Occurred At",
+      "actorUserId": "User ID",
+      "actorName": "Actor Name",
+      "actorRole": "Actor Role",
+      "targetType": "Target Entity Type",
+      "targetId": "Entity ID",
+      "titleSnapshot": "Title Snapshot",
+      "subjectSnapshot": "Subject Snapshot",
+      "bodySnapshot": "Body Snapshot",
+      "suppressedReason": "Suppressed Reason",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At"
     },
     "states": {
       "empty": {
-        "heading": "No audit events found",
-        "note": "No audit events match the current filters."
+        "heading": "No operations found",
+        "note": "No activities match the current filters."
       },
       "listError": {
-        "heading": "Audit log is unavailable",
-        "note": "Unable to load audit events right now.",
+        "heading": "Activities log is unavailable",
+        "note": "Unable to load the platform activity events right now.",
         "retry": "Try again"
       },
       "detailError": {
-        "heading": "Audit event details are unavailable",
-        "note": "Unable to load this audit event right now.",
+        "heading": "Operation details are unavailable",
+        "note": "Unable to load details for this operation right now.",
         "retry": "Try again"
       },
       "notFound": {
-        "heading": "Audit event not found",
-        "note": "This audit event does not exist or is no longer available."
+        "heading": "Operation not found",
+        "note": "This activity event does not exist or is no longer available."
       }
     },
     "fallback": {
-      "noValue": "-"
+      "noValue": "None"
+    },
+    "actions": {
+      "auth.admin.login.success": "Successful Admin Login",
+      "auth.admin.login.failed": "Failed Admin Login",
+      "auth.patient.login.success": "Successful Patient Login",
+      "auth.patient.login.failed": "Failed Patient Login",
+      "auth.practitioner.login.success": "Successful Practitioner Login",
+      "auth.practitioner.login.failed": "Failed Practitioner Login",
+      "auth.logout": "Logout from Platform",
+      "auth.password.reset.request": "Password Reset Request",
+      "auth.password.reset.confirm": "Password Reset Confirmation",
+      "sessions.create": "New Session Booked",
+      "sessions.start": "Session Started",
+      "sessions.end": "Session Ended",
+      "sessions.cancel": "Session Cancelled",
+      "sessions.join": "Joined Session Video/Audio",
+      "payments.charge.success": "Successful Payment Charge",
+      "payments.charge.failed": "Failed Payment Charge",
+      "payments.refund.success": "Successful Refund",
+      "payments.refund.failed": "Failed Refund Process",
+      "payments.payout.processed": "Payout Processed for Practitioner",
+      "practitioner.application.submit": "Practitioner Application Submitted",
+      "practitioner.application.approve": "Practitioner Application Approved",
+      "practitioner.application.reject": "Practitioner Application Rejected",
+      "support.ticket.create": "New Support Ticket Opened",
+      "support.ticket.assign": "Support Ticket Assigned to Admin",
+      "support.ticket.resolve": "Support Ticket Resolved",
+      "support.ticket.close": "Support Ticket Closed"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Super Admin",
+      "ADMIN": "Admin",
+      "SUPPORT": "Support Agent",
+      "PATIENT": "Patient",
+      "PRACTITIONER": "Practitioner",
+      "CONTENT_REVIEWER": "Content Reviewer",
+      "PATIENT_OPERATIONS": "Patient Operations Staff",
+      "FINANCE_STAFF": "Finance Staff"
+    },
+    "severities": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
+    },
+    "categories": {
+      "SECURITY": "Security & Auth",
+      "SESSION": "Sessions & Bookings",
+      "PAYMENT": "Payments & Finance",
+      "CONTENT": "Content & Articles",
+      "SUPPORT": "Technical Support",
+      "CHAT": "Chat & Messaging",
+      "SYSTEM": "Automatic System Events",
+      "TRAINING": "Training & Academy",
+      "MARKETING": "Marketing & Promotions"
+    },
+    "sources": {
+      "SYSTEM": "Automated System",
+      "SMS": "SMS Message",
+      "EMAIL": "Email",
+      "PUSH": "Push Notification",
+      "IN_APP": "In-App Notification"
     }
   }
 }

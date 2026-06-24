@@ -30,7 +30,7 @@ function isUnifiedLane(value: string): value is UnifiedMessagingLane {
 }
 
 export function buildMessagesShellContinuityStorageKey(role: string) {
-  return `fayed:messages-shell:continuity:v${CONTINUITY_VERSION}:${role}`;
+  return `sawiyaa:messages-shell:continuity:v${CONTINUITY_VERSION}:${role}`;
 }
 
 export function loadMessagesShellContinuitySnapshot(

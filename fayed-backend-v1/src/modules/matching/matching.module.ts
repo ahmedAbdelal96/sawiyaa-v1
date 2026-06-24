@@ -7,6 +7,7 @@ import { BuildNormalizedCareSignalContextService } from '@modules/care-experienc
 import { InterpretAssessmentCareIntentService } from '@modules/care-experience-intelligence/services/interpret-assessment-care-intent.service';
 import { RecommendationPrecedenceService } from '@modules/care-experience-intelligence/services/recommendation-precedence.service';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { MatchingController } from './controllers/matching.controller';
 import { MatchingPresenter } from './presenters/matching.presenter';
 import { MatchingSessionAccessPolicy } from './policies/matching-session-access.policy';
@@ -20,6 +21,7 @@ import { CreateMatchingSessionUseCase } from './use-cases/create-matching-sessio
 import { GetMatchingSessionUseCase } from './use-cases/get-matching-session.use-case';
 
 @Module({
+  imports: [ReviewsModule],
   controllers: [MatchingController],
   providers: [
     JwtAccessAuthGuard,

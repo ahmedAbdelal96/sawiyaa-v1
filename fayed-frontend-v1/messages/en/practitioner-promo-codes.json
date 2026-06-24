@@ -84,7 +84,7 @@
     "discountValue": "Discount percentage",
     "discountHint": "Maximum discount is 25%. Percentage-only for practitioner promo codes.",
     "discountLockedHint": "This coupon already has redemptions, so the discount value is locked.",
-        "usageLimitTotal": "Total usage limit",
+    "usageLimitTotal": "Total usage limit",
     "usageLimitTotalPlaceholder": "Optional limit",
     "usageLimitTotalHint": "Leave empty for unlimited usage.",
     "usageLimitPerPatient": "Per-patient limit",

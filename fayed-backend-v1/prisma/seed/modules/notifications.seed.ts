@@ -154,6 +154,39 @@ export const notificationsSeedModule: SeedModule = {
         supportsInApp: true,
       },
       {
+        slug: 'care-chat.request-approved',
+        displayName: 'Care Chat Request Approved',
+        description:
+          'Operational notification when a care-chat request is approved',
+        category: NotificationCategory.CHAT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'care-chat.request-rejected',
+        displayName: 'Care Chat Request Rejected',
+        description:
+          'Operational notification when a care-chat request is rejected',
+        category: NotificationCategory.CHAT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'care-chat.request-revoked',
+        displayName: 'Care Chat Request Revoked',
+        description:
+          'Operational notification when a care-chat request is revoked',
+        category: NotificationCategory.CHAT,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
         slug: 'sessions.session-reminder-60',
         displayName: 'Session Reminder 60 Minutes',
         description: 'Operational reminder sent one hour before a session',
@@ -166,7 +199,8 @@ export const notificationsSeedModule: SeedModule = {
       {
         slug: 'sessions.session-reminder-15',
         displayName: 'Session Reminder 15 Minutes',
-        description: 'Operational reminder sent fifteen minutes before a session',
+        description:
+          'Operational reminder sent fifteen minutes before a session',
         category: NotificationCategory.SESSION,
         supportsEmail: true,
         supportsSms: false,
@@ -215,6 +249,17 @@ export const notificationsSeedModule: SeedModule = {
           'Patient notification when an instant booking request expires',
         category: NotificationCategory.SESSION,
         supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
+        slug: 'availability.week-ending-reminder',
+        displayName: 'Availability Week Ending Reminder',
+        description:
+          'Operational reminder for practitioners to publish the next availability week',
+        category: NotificationCategory.SESSION,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -525,7 +570,7 @@ export const notificationsSeedModule: SeedModule = {
         slug: 'sessions.session-join-available.email.v1',
         translations: {
           en: {
-            subjectTemplate: 'Your Fayed session is ready to join',
+            subjectTemplate: 'Your Sawiyaa session is ready to join',
             titleTemplate: 'Your session is ready',
             bodyTemplate:
               'Your session starts soon. Open the session page to join securely.',
@@ -533,7 +578,7 @@ export const notificationsSeedModule: SeedModule = {
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
           },
           ar: {
-            subjectTemplate: 'جلستك على فايد جاهزة للدخول',
+            subjectTemplate: 'جلستك على سويّة جاهزة للدخول',
             titleTemplate: 'جلستك جاهزة للدخول',
             bodyTemplate: 'تبدأ جلستك قريبًا. افتح صفحة الجلسة للانضمام بأمان.',
             ctaLabel: 'افتح الجلسة',
@@ -644,6 +689,120 @@ export const notificationsSeedModule: SeedModule = {
         },
       },
       {
+        typeSlug: 'care-chat.request-approved',
+        channel: NotificationChannel.IN_APP,
+        slug: 'care-chat.request-approved.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat approved',
+            bodyTemplate:
+              'Your care-chat request was approved. Open the conversation to continue.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تمت الموافقة على محادثة الرعاية',
+            bodyTemplate:
+              'تمت الموافقة على طلب محادثة الرعاية. افتح المحادثة للمتابعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'care-chat.request-approved',
+        channel: NotificationChannel.PUSH,
+        slug: 'care-chat.request-approved.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat approved',
+            bodyTemplate:
+              'Your care-chat request was approved. Open the conversation to continue.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تمت الموافقة على محادثة الرعاية',
+            bodyTemplate:
+              'تمت الموافقة على طلب محادثة الرعاية. افتح المحادثة للمتابعة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'care-chat.request-rejected',
+        channel: NotificationChannel.IN_APP,
+        slug: 'care-chat.request-rejected.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat not approved',
+            bodyTemplate:
+              'Your care-chat request was not approved. Review the request details for the next step.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'لم تتم الموافقة على محادثة الرعاية',
+            bodyTemplate:
+              'لم تتم الموافقة على طلب محادثة الرعاية. راجع تفاصيل الطلب لمعرفة الخطوة التالية.',
+          },
+        },
+      },
+      {
+        typeSlug: 'care-chat.request-rejected',
+        channel: NotificationChannel.PUSH,
+        slug: 'care-chat.request-rejected.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat not approved',
+            bodyTemplate:
+              'Your care-chat request was not approved. Review the request details for the next step.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'لم تتم الموافقة على محادثة الرعاية',
+            bodyTemplate:
+              'لم تتم الموافقة على طلب محادثة الرعاية. راجع تفاصيل الطلب لمعرفة الخطوة التالية.',
+          },
+        },
+      },
+      {
+        typeSlug: 'care-chat.request-revoked',
+        channel: NotificationChannel.IN_APP,
+        slug: 'care-chat.request-revoked.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat updated',
+            bodyTemplate:
+              'Your care-chat access was updated. Open the conversation or request details to review the latest state.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تم تحديث محادثة الرعاية',
+            bodyTemplate:
+              'تم تحديث وصول محادثة الرعاية. افتح المحادثة أو تفاصيل الطلب لمراجعة الحالة الحالية.',
+          },
+        },
+      },
+      {
+        typeSlug: 'care-chat.request-revoked',
+        channel: NotificationChannel.PUSH,
+        slug: 'care-chat.request-revoked.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Care chat updated',
+            bodyTemplate:
+              'Your care-chat access was updated. Open the conversation or request details to review the latest state.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تم تحديث محادثة الرعاية',
+            bodyTemplate:
+              'تم تحديث وصول محادثة الرعاية. افتح المحادثة أو تفاصيل الطلب لمراجعة الحالة الحالية.',
+          },
+        },
+      },
+      {
         typeSlug: 'sessions.session-reminder-60',
         channel: NotificationChannel.IN_APP,
         slug: 'sessions.session-reminder-60.in-app.v1',
@@ -724,6 +883,62 @@ export const notificationsSeedModule: SeedModule = {
             bodyTemplate: 'جلستك تبدأ بعد 15 دقيقة.',
             ctaLabel: 'افتح الجلسة',
             ctaUrlTemplate: '{{appUrl}}{{routePath}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'availability.week-ending-reminder',
+        channel: NotificationChannel.IN_APP,
+        slug: 'availability.week-ending-reminder.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Publish next week availability',
+            bodyTemplate:
+              'This schedule applies only to this week. Publish next week to keep patient bookings available. Patients can only book published weeks.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'انشر إتاحة الأسبوع القادم',
+            bodyTemplate:
+              'هذا الجدول ينطبق فقط على هذا الأسبوع. انشر الأسبوع القادم للحفاظ على توفر الحجز. يمكن للمرضى الحجز فقط في الأسابيع المنشورة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'availability.week-ending-reminder',
+        channel: NotificationChannel.EMAIL,
+        slug: 'availability.week-ending-reminder.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Publish next week availability',
+            titleTemplate: 'Publish next week availability',
+            bodyTemplate:
+              'This schedule applies only to this week. Publish next week to keep patient bookings available. Patients can only book published weeks.',
+          },
+          ar: {
+            subjectTemplate: 'انشر إتاحة الأسبوع القادم',
+            titleTemplate: 'انشر إتاحة الأسبوع القادم',
+            bodyTemplate:
+              'هذا الجدول ينطبق فقط على هذا الأسبوع. انشر الأسبوع القادم للحفاظ على توفر الحجز. يمكن للمرضى الحجز فقط في الأسابيع المنشورة.',
+          },
+        },
+      },
+      {
+        typeSlug: 'availability.week-ending-reminder',
+        channel: NotificationChannel.PUSH,
+        slug: 'availability.week-ending-reminder.push.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Publish next week availability',
+            bodyTemplate:
+              'Publish next week so patients can keep booking available times.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'انشر إتاحة الأسبوع القادم',
+            bodyTemplate: 'انشر إتاحة الأسبوع القادم ليستمر المرضى في الحجز.',
           },
         },
       },

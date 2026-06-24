@@ -24,7 +24,7 @@ export class ThrottleStoreService implements OnModuleInit, OnModuleDestroy {
   private readonly store = new Map<string, ThrottleEntry>();
   private redis: ReturnType<typeof createClient> | null = null;
   private storeMode: 'memory' | 'redis' = 'memory';
-  private keyPrefix = 'fayed:throttle';
+  private keyPrefix = 'sawiyaa:throttle';
   private keyHashSecret = '';
 
   constructor(private readonly configService: ConfigService) {}

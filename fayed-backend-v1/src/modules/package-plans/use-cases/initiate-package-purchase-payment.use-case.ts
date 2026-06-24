@@ -145,6 +145,13 @@ export class InitiatePackagePurchasePaymentUseCase {
     const practitionerCountryIsoCode =
       purchase.practitioner?.country?.isoCode ?? null;
     const patientCountryIsoCode = patient.country?.isoCode ?? null;
+    if (!patientCountryIsoCode) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.paymentRoutingAmbiguous',
+        error: 'PAYMENT_ROUTING_AMBIGUOUS',
+      });
+    }
+
     const provider = this.resolveProvider({
       currencyCode,
       patientCountryIsoCode,
@@ -256,8 +263,8 @@ export class InitiatePackagePurchasePaymentUseCase {
 
     const providerAdapter: PaymentProviderAdapter =
       this.paymentProviderRegistryService.get(provider, {
-        checkoutCountryIsoCode:
-          patientCountryIsoCode ?? practitionerCountryIsoCode,
+        currencyCode,
+        checkoutCountryIsoCode: patientCountryIsoCode,
         operatingCountryIsoCode: practitionerCountryIsoCode,
       });
 
@@ -276,8 +283,7 @@ export class InitiatePackagePurchasePaymentUseCase {
         sessionId: purchase.id,
         patientEmail: null,
         redirectionUrl: trustedReturnUrl,
-        checkoutCountryIsoCode:
-          patientCountryIsoCode ?? practitionerCountryIsoCode,
+        checkoutCountryIsoCode: patientCountryIsoCode,
         operatingCountryIsoCode: practitionerCountryIsoCode,
       });
     } catch (error) {
@@ -388,20 +394,22 @@ export class InitiatePackagePurchasePaymentUseCase {
     practitionerCountryIsoCode: string | null;
   }): PaymentProvider {
     const provider = resolveProviderForCurrency(input.currencyCode);
-    if (provider === PaymentProvider.STRIPE) {
-      return this.paymentProviderResolverService.resolveProvider({
-        currencyCode: 'USD',
-        commissionMarketType: MarketType.CROSS_BORDER,
-        operatingCountryIsoCode: input.practitionerCountryIsoCode,
-        checkoutCountryIsoCode: input.patientCountryIsoCode,
-      });
-    }
-
     if (provider === PaymentProvider.PAYMOB) {
       if (!input.patientCountryIsoCode) {
         throw new BadRequestException({
           messageKey: 'payments.errors.paymentRoutingAmbiguous',
           error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        });
+      }
+
+      const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
+
+      if (normalizedCurrencyCode === 'USD') {
+        return this.paymentProviderResolverService.resolveProvider({
+          currencyCode: 'USD',
+          commissionMarketType: MarketType.CROSS_BORDER,
+          operatingCountryIsoCode: input.practitionerCountryIsoCode,
+          checkoutCountryIsoCode: input.patientCountryIsoCode,
         });
       }
 
@@ -431,9 +439,7 @@ export class InitiatePackagePurchasePaymentUseCase {
     }
 
     const trustedReturnUrl =
-      this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
-        input.returnUrl,
-      );
+      this.paymentRuntimeConfigService.resolveTrustedReturnUrl(input.returnUrl);
 
     if (!trustedReturnUrl) {
       throw new BadRequestException({

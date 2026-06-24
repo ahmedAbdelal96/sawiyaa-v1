@@ -10,9 +10,9 @@ import {
   setSecureAuthTokens,
 } from "./secure-token-storage";
 
-const AUTH_SESSION_KEY_V1 = "fayed.mobile.auth.session.v1";
-const AUTH_SESSION_KEY_V2 = "fayed.mobile.auth.session.v2";
-const DEVICE_ID_KEY = "fayed.mobile.device.id.v1";
+const AUTH_SESSION_KEY_V1 = "sawiyaa.mobile.auth.session.v1";
+const AUTH_SESSION_KEY_V2 = "sawiyaa.mobile.auth.session.v2";
+const DEVICE_ID_KEY = "sawiyaa.mobile.device.id.v1";
 
 function createDeviceId() {
   return `device_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
@@ -101,7 +101,6 @@ export async function getStoredAuthSession() {
       return null;
     }
 
-    // Migrate legacy AsyncStorage token persistence to SecureStore.
     const legacy = parsed as PersistedAuthSession;
     try {
       await setSecureAuthTokens(legacy.tokens);
@@ -112,7 +111,6 @@ export async function getStoredAuthSession() {
       await AsyncStorage.removeItem(AUTH_SESSION_KEY_V1);
       return legacy;
     } catch {
-      // Fail closed: clear any legacy/session artifacts.
       await Promise.all([
         clearSecureAuthTokens(),
         AsyncStorage.removeItem(AUTH_SESSION_KEY_V1),

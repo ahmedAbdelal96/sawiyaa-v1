@@ -1,8 +1,8 @@
 {
   "meta": {
-    "listTitle": "Fayed | Support",
+    "listTitle": "Sawiyaa | Support",
     "listDescription": "Create and follow real support tickets for booking, payment, account, or technical help.",
-    "detailTitle": "Fayed | Support Ticket",
+    "detailTitle": "Sawiyaa | Support Ticket",
     "detailDescription": "Read your support ticket thread and send a follow-up reply."
   },
   "home": {
@@ -134,9 +134,9 @@
   },
   "practitioner": {
     "meta": {
-      "listTitle": "Fayed | Practitioner Support",
+      "listTitle": "Sawiyaa | Practitioner Support",
       "listDescription": "Create and follow real practitioner support tickets for operational, account, payment, or technical issues.",
-      "detailTitle": "Fayed | Practitioner Support Ticket",
+      "detailTitle": "Sawiyaa | Practitioner Support Ticket",
       "detailDescription": "Read the full practitioner support thread and send a follow-up reply."
     },
     "home": {
@@ -267,9 +267,9 @@
   },
   "admin": {
     "meta": {
-      "listTitle": "Fayed | Admin Support",
+      "listTitle": "Sawiyaa | Admin Support",
       "listDescription": "Review and manage all platform support tickets.",
-      "detailTitle": "Fayed | Admin Support Ticket",
+      "detailTitle": "Sawiyaa | Admin Support Ticket",
       "detailDescription": "Read the ticket thread, add a reply or internal note, change status, or reassign."
     },
     "list": {
@@ -311,10 +311,11 @@
       },
       "assign": {
         "heading": "Assignment",
-        "currentLabel": "Currently assigned",
+        "currentLabel": "Currently assigned to",
         "assignedToYou": "You",
-        "label": "Admin user ID",
-        "placeholder": "Paste admin user ID...",
+        "label": "Assignee",
+        "placeholder": "Select admin to assign...",
+        "fallbackAgent": "Admin",
         "assign": "Assign",
         "unassign": "Unassign",
         "assigning": "Assigning...",

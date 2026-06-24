@@ -1,4 +1,15 @@
 export const enCareChatCatalog = {
+  notifications: {
+    requestApprovedTitle: 'Care chat approved',
+    requestApprovedBody:
+      'Your care-chat request was approved. Open the conversation to continue.',
+    requestRejectedTitle: 'Care chat not approved',
+    requestRejectedBody:
+      'Your care-chat request was not approved. Review the request details for the next step.',
+    requestRevokedTitle: 'Care chat updated',
+    requestRevokedBody:
+      'Your care-chat access was updated. Open the conversation or request details to review the latest state.',
+  },
   success: {
     requestCreated: 'Care chat request created successfully',
     requestListed: 'Care chat requests retrieved successfully',

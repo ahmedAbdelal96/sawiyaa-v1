@@ -4,7 +4,7 @@ import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import HeroSection from "@/features/home/components/HeroSection";
 import ReassuranceStrip from "@/features/home/components/ReassuranceStrip";
 import GuidedEntrySection from "@/features/home/components/GuidedEntrySection";
-import WhyFayedSection from "@/features/home/components/WhyFayedSection";
+import WhySawiyaaSection from "@/features/home/components/WhySawiyaaSection";
 import SpecialtiesSection from "@/features/home/components/SpecialtiesSection";
 import HowItWorksSection from "@/features/home/components/HowItWorksSection";
 import PractitionersSection from "@/features/home/components/PractitionersSection";
@@ -41,7 +41,7 @@ export default async function HomePage({ params }: Props) {
       <ReassuranceStrip />
       <PractitionersSection />
       <GuidedEntrySection />
-      <WhyFayedSection />
+      <WhySawiyaaSection />
       <SpecialtiesSection />
       <HowItWorksSection />
       <GuidedCareSection />

@@ -42,6 +42,7 @@ export const PractitionerCompactCard = ({
       ? (practitioner.sessionPrice30Egp ?? practitioner.sessionPrice60Egp ?? null)
       : (practitioner.sessionPrice30Usd ?? practitioner.sessionPrice60Usd ?? null);
   const averageRating = practitioner.ratingSummary.averageRating;
+  const totalReviews = practitioner.ratingSummary.totalReviews;
 
   const handlePress = () => {
     if (onPress) {
@@ -156,7 +157,7 @@ export const PractitionerCompactCard = ({
                   {averageRating.toFixed(1)}
                 </Text>
                 <Text color={theme.colors.textMuted} style={styles.statMuted}>
-                  ({practitioner.ratingSummary.totalReviews})
+                  {t("discovery.profile.reviews", { count: totalReviews })}
                 </Text>
               </View>
             ) : null}

@@ -14,7 +14,7 @@
 
 // ──────────────────────────────────────────────────────────────────
 // Permission key enum — mirror of backend PermissionKey enum.
-// Keep in sync with: fayed-backend-v1/src/common/enums/permission-key.enum.ts
+// Keep in sync with: sawiyaa-backend-v1/src/common/enums/permission-key.enum.ts
 // ──────────────────────────────────────────────────────────────────
 export const PermissionKey = {
   FINANCE_EVENTS_READ: "finance.events.read",
@@ -63,7 +63,7 @@ export type PermissionKey = (typeof PermissionKey)[keyof typeof PermissionKey];
 
 // ──────────────────────────────────────────────────────────────────
 // Admin-class roles — mirrors backend AppRole enum (admin-area subset).
-// Keep in sync with: fayed-backend-v1/src/common/enums/app-role.enum.ts
+// Keep in sync with: sawiyaa-backend-v1/src/common/enums/app-role.enum.ts
 // ──────────────────────────────────────────────────────────────────
 export type AdminRole =
   | "SUPER_ADMIN"

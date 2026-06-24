@@ -38,6 +38,8 @@ export type CareRequestsReportRow = {
   revokedAt: string | null;
   patientId: string;
   practitionerId: string;
+  patientName: string | null;
+  practitionerName: string | null;
   requestedByUserId: string;
   reviewedByUserId: string | null;
   approvalRef: string | null;

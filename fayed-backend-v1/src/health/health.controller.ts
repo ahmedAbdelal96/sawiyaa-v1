@@ -6,7 +6,7 @@ export class HealthController {
   check() {
     return {
       success: true,
-      service: 'fayed-backend-v1',
+      service: 'sawiyaa-backend-v1',
       status: 'ok',
     };
   }

@@ -156,6 +156,12 @@ enum AvailabilityExceptionSource {
   SYSTEM
 }
 
+enum AvailabilityWeekStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum PresenceStatus {
   OFFLINE
   ONLINE
@@ -1288,6 +1294,7 @@ model User {
   permissionOverrides UserPermissionOverride[]
   sessions            UserSession[]
   otpChallenges       OtpChallenge[]
+  passwordResetSessions PasswordResetSession[]
   twoFactorSettings   TwoFactorSetting?
   patientProfile      PatientProfile?
   practitionerProfile PractitionerProfile?
@@ -1466,6 +1473,22 @@ model OtpChallenge {
   @@index([expiresAt])
 }
 
+model PasswordResetSession {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId         String       @db.Uuid
+  role           UserRoleType
+  tokenHash      String       @unique @db.VarChar(255)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  invalidatedAt  DateTime?
+  createdAt      DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, role])
+  @@index([expiresAt])
+}
+
 model TwoFactorSetting {
   id               String      @id @default(uuid()) @db.Uuid
   userId           String      @unique @db.Uuid
@@ -1640,6 +1663,7 @@ model PractitionerProfile {
   payoutDestination       PractitionerPayoutDestination?
   availabilitySlots       AvailabilitySlot[]
   availabilityExceptions  AvailabilityException[]
+  availabilityWeeks       PractitionerAvailabilityWeek[]
   presence                PractitionerPresence?
   sessions                Session[]
   instantBookingRequests  InstantBookingRequest[]
@@ -1658,7 +1682,6 @@ model PractitionerProfile {
   chatApprovalRequests    ChatApprovalRequest[]
   couponRedemptions       CouponRedemption[]
   sessionReviews          SessionReview[]
-  ratingSummary           PractitionerRatingSummary?
   coursesAsInstructor     TrainingInstructor[]
   matchingRecommendations MatchingRecommendation[]
   corporateBenefitPlans   CorporateBenefitPlanPractitioner[]
@@ -2115,6 +2138,7 @@ model AvailabilitySlot {
 model AvailabilityException {
   id             String                      @id @default(uuid()) @db.Uuid
   practitionerId String                      @db.Uuid
+  availabilityWeekId String?                 @db.Uuid
   type           AvailabilityExceptionType
   startsAtUtc    DateTime
   endsAtUtc      DateTime
@@ -2125,10 +2149,56 @@ model AvailabilityException {
   updatedAt      DateTime                    @updatedAt
 
   practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  availabilityWeek PractitionerAvailabilityWeek? @relation(fields: [availabilityWeekId], references: [id], onDelete: SetNull)
 
   @@index([practitionerId, startsAtUtc, endsAtUtc])
   @@index([practitionerId, type, isActive])
+  @@index([availabilityWeekId, startsAtUtc, endsAtUtc])
+  @@index([availabilityWeekId, type, isActive])
   @@index([practitionerId, isActive])
+}
+
+model PractitionerAvailabilityWeek {
+  id              String               @id @default(uuid()) @db.Uuid
+  practitionerId  String               @db.Uuid
+  weekStartDate    DateTime             @db.Date
+  weekEndDate      DateTime             @db.Date
+  timezone        String               @db.VarChar(50)
+  status          AvailabilityWeekStatus @default(DRAFT)
+  copiedFromWeekId String?              @db.Uuid
+  publishedAt     DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  copiedFromWeek PractitionerAvailabilityWeek? @relation("PractitionerAvailabilityWeekToCopiedFromWeek", fields: [copiedFromWeekId], references: [id], onDelete: SetNull)
+  copiedWeeks   PractitionerAvailabilityWeek[] @relation("PractitionerAvailabilityWeekToCopiedFromWeek")
+  slots         PractitionerAvailabilityWeekSlot[]
+  availabilityExceptions AvailabilityException[]
+
+  @@index([practitionerId, status, weekStartDate])
+  @@index([status, weekStartDate])
+  @@index([copiedFromWeekId])
+  @@unique([practitionerId, weekStartDate])
+}
+
+model PractitionerAvailabilityWeekSlot {
+  id               String   @id @default(uuid()) @db.Uuid
+  weekId           String   @db.Uuid
+  weekday          AvailabilityWeekday
+  startMinuteOfDay Int
+  endMinuteOfDay   Int
+  durationMinutes  Int      @default(30)
+  timezone         String   @db.VarChar(50)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  week PractitionerAvailabilityWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@index([weekId, weekday, startMinuteOfDay])
+  @@index([weekId, weekday, durationMinutes])
+  @@unique([weekId, weekday, startMinuteOfDay, endMinuteOfDay])
 }
 
 model PractitionerPresence {
@@ -4078,29 +4148,6 @@ model ReviewModerationEntry {
   @@index([sessionReviewId, createdAt])
   @@index([reviewerUserId, createdAt])
   @@index([moderationAction, createdAt])
-}
-
-model PractitionerRatingSummary {
-  id             String @id @default(uuid()) @db.Uuid
-  practitionerId String @unique @db.Uuid
-
-  totalReviews          Int     @default(0)
-  publishedReviewsCount Int     @default(0)
-  averageRating         Decimal @default(0) @db.Decimal(4, 2)
-
-  rating1Count Int @default(0)
-  rating2Count Int @default(0)
-  rating3Count Int @default(0)
-  rating4Count Int @default(0)
-  rating5Count Int @default(0)
-
-  lastReviewAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-
-  @@index([averageRating, publishedReviewsCount])
 }
 
 //////////////////////////////

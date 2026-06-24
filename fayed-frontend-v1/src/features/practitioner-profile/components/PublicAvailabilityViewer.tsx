@@ -480,7 +480,7 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
                         key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.maxDuration}`}
                         type="button"
                         onClick={() => handleSlotSelect(slot)}
-                        className="mb-1 flex h-8 w-full items-center justify-center rounded-md border border-border-light bg-white px-1 text-[10px] font-semibold text-text-primary transition hover:border-primary hover:text-primary dark:bg-surface-secondary"
+                        className="mb-1 flex h-8 w-full items-center justify-center rounded-lg border border-border-light/70 bg-white px-1 text-[10px] sm:text-xs font-semibold text-text-primary transition-all duration-200 hover:border-primary hover:bg-primary/5 hover:text-primary dark:bg-surface-secondary"
                       >
                         {formatTimeLabel(slot.startsAt, numLocale)}
                       </button>
@@ -496,26 +496,7 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
               <span className="font-medium text-text-muted">{tAvail("localTimeLabel")}</span>
               <span>{Intl.DateTimeFormat().resolvedOptions().timeZone}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-text-primary">{showBookedSessionsLabel}</span>
-              <button
-                type="button"
-                onClick={() => canShowBookedSlots && setShowBooked((v) => !v)}
-                disabled={!canShowBookedSlots}
-                className={`relative h-5 w-9 rounded-full transition ${showBooked ? "bg-primary" : "bg-border-light"} ${
-                  !canShowBookedSlots ? "cursor-not-allowed opacity-50" : ""
-                }`}
-                aria-pressed={showBooked}
-              >
-                <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${showBooked ? "right-0.5" : "left-0.5"}`}
-                />
-              </button>
-            </div>
           </div>
-          {!canShowBookedSlots && (
-            <p className="mt-2 text-xs text-text-muted">{bookedSlotsUnavailableLabel}</p>
-          )}
 
           {allEmpty && (
             <div className="mt-3 rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">

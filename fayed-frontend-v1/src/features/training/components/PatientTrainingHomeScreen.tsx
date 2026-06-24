@@ -8,9 +8,9 @@ import {
   Clock3,
   PlayCircle,
   ShieldCheck,
+  Compass,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { PatientQuickNav } from "@/components/patient/PatientSectionFrame";
 import { formatViewerDateTime } from "@/lib/time-formatting";
 import { usePatientTrainingEnrollments } from "../hooks/use-training";
 import type { PatientTrainingEnrollmentItem } from "../types/training.types";
@@ -18,10 +18,6 @@ import {
   getEnrollmentStatusTone,
   getStatusToneClasses,
 } from "./training-utils";
-
-function formatCount(locale: string, value: number) {
-  return new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US").format(value);
-}
 
 function EnrollmentCard({
   enrollment,
@@ -57,13 +53,13 @@ function EnrollmentCard({
   return (
     <Link
       href={action.href}
-      className="group block rounded-[28px] border border-border-light bg-surface-primary p-4 transition hover:border-primary/25 hover:shadow-soft dark:bg-white/5"
+      className="group block rounded-[20px] border border-border-light bg-white p-5 transition hover:border-primary/25 hover:shadow-[0_4px_12px_rgba(36,86,79,0.06)] dark:bg-white/5"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusToneClasses(tone)}`}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusToneClasses(tone)}`}
             >
               {t(
                 `statuses.enrollment.${enrollment.enrollmentStatus}` as Parameters<
@@ -78,17 +74,18 @@ function EnrollmentCard({
             </span>
           </div>
 
-          <h3 className="mt-3 text-sm font-semibold text-text-primary transition group-hover:text-primary dark:text-white/95">
+          <h3 className="mt-3 text-base font-bold text-text-primary transition group-hover:text-primary dark:text-white/95">
             {enrollment.courseTitle}
           </h3>
 
-          <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-secondary">
+          <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
             {enrollment.startsAt ? (
               <span className="inline-flex items-center gap-1">
-                <Clock3 className="h-3.5 w-3.5" />
+                <Clock3 className="h-3.5 w-3.5 text-text-muted" />
                 {formatViewerDateTime(enrollment.startsAt, { locale: locale === "ar" ? "ar-SA" : "en-US" })}
               </span>
             ) : null}
+            <span className="inline-block h-1 w-1 rounded-full bg-border-strong/60" />
             <span>
               {t(
                 `statuses.attendance.${enrollment.attendanceStatus}` as Parameters<
@@ -98,14 +95,14 @@ function EnrollmentCard({
             </span>
           </div>
 
-          <p className="mt-3 text-sm text-text-secondary">{t(action.noteKey)}</p>
+          <p className="mt-3 text-sm text-text-secondary leading-relaxed">{t(action.noteKey)}</p>
         </div>
 
         <span
-          className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusToneClasses(action.tone)}`}
+          className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusToneClasses(action.tone)}`}
         >
           {t(action.labelKey)}
-          <ArrowRight className="h-3.5 w-3.5" />
+          <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
         </span>
       </div>
     </Link>
@@ -143,22 +140,22 @@ function NextStepCard({
           };
 
   return (
-    <section className="app-panel rounded-[32px] p-5 sm:p-6">
+    <section className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
             {t("patient.home.nextStep.eyebrow")}
           </p>
-          <h2 className="mt-2 text-lg font-semibold text-text-primary dark:text-white/95">
+          <h2 className="mt-2 text-lg font-bold text-text-primary dark:text-white/95">
             {t("patient.home.nextStep.heading")}
           </h2>
-          <p className="mt-1 text-sm text-text-secondary">
+          <p className="mt-1 text-sm text-text-secondary leading-relaxed">
             {t("patient.home.nextStep.note")}
           </p>
         </div>
 
         <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusToneClasses(action.tone)}`}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusToneClasses(action.tone)}`}
         >
           {t(
             `statuses.enrollment.${enrollment.enrollmentStatus}` as Parameters<
@@ -168,38 +165,38 @@ function NextStepCard({
         </span>
       </div>
 
-      <div className="mt-5 rounded-[26px] border border-border-light bg-surface-primary p-4 dark:bg-white/5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+      <div className="mt-5 rounded-[20px] border border-border-light bg-surface-tertiary p-5 dark:bg-white/5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
               {t("patient.home.nextStep.itemLabel")}
             </p>
-            <h3 className="mt-2 text-base font-semibold text-text-primary dark:text-white/95">
+            <h3 className="mt-2 text-base font-bold text-text-primary dark:text-white/95">
               {enrollment.courseTitle}
             </h3>
-            <p className="mt-2 text-sm text-text-secondary">{t(action.noteKey)}</p>
+            <p className="mt-2 text-sm text-text-secondary leading-relaxed">{t(action.noteKey)}</p>
           </div>
 
           <Link
             href={action.href}
-            className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
+            className="inline-flex shrink-0 items-center justify-center rounded-[14px] bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
           >
             {t(action.labelKey)}
           </Link>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-3 text-xs text-text-secondary">
-          <span className="rounded-full bg-surface-secondary px-3 py-1 dark:bg-white/5">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-text-secondary border-t border-border-light/50 pt-3">
+          <span className="rounded-full bg-white px-3 py-1 border border-border-light dark:bg-white/5">
             {t("patient.enrollments.scheduleCode", {
               code: enrollment.scheduleCode,
             })}
           </span>
           {enrollment.startsAt ? (
-            <span className="rounded-full bg-surface-secondary px-3 py-1 dark:bg-white/5">
+            <span className="rounded-full bg-white px-3 py-1 border border-border-light dark:bg-white/5">
               {formatViewerDateTime(enrollment.startsAt, { locale: locale === "ar" ? "ar-SA" : "en-US" })}
             </span>
           ) : null}
-          <span className="rounded-full bg-surface-secondary px-3 py-1 dark:bg-white/5">
+          <span className="rounded-full bg-white px-3 py-1 border border-border-light dark:bg-white/5">
             {t(
               `statuses.attendance.${enrollment.attendanceStatus}` as Parameters<
                 typeof t
@@ -242,105 +239,108 @@ export default function PatientTrainingHomeScreen() {
   );
 
   return (
-    <div className="app-max-content mx-auto space-y-6">
-      <section className="app-panel rounded-[32px] p-6 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-5">
+    <div className="app-max-content mx-auto space-y-6 px-4 py-6 sm:py-8">
+      {/* Hero section */}
+      <section className="rounded-[24px] border border-border-light bg-white p-6 sm:p-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-3xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
               {t("patient.home.eyebrow")}
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
               {t("patient.home.title")}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-text-secondary sm:text-base">
+            <p className="mt-3 text-sm leading-relaxed text-text-secondary sm:text-base">
               {t("patient.home.note")}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5 shrink-0">
             <Link
               href="/patient/messages?lane=support"
-              className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+              className="inline-flex items-center justify-center rounded-[14px] border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary dark:bg-surface-tertiary"
             >
               {t("patient.home.ctas.support")}
             </Link>
             <Link
-              href="#my-enrollments"
-              className="inline-flex items-center justify-center rounded-full border border-border-light px-4 py-2 text-sm text-text-secondary transition hover:bg-surface-secondary dark:hover:bg-white/5"
+              href="/academy"
+              className="inline-flex items-center justify-center rounded-[14px] bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
             >
-              {t("patient.home.ctas.enrollments")}
+              <Compass className="me-1.5 h-4 w-4" />
+              {locale === "ar" ? "استكشاف البرامج" : "Explore Programs"}
             </Link>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-4">
-          <div className="rounded-[24px] bg-surface-secondary px-5 py-4 dark:bg-white/5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+        {/* Clean, Flat stats grid matching Sawiyaa design system (Calm Sage / Charcoal) */}
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Total Enrollments */}
+          <div className="rounded-[16px] bg-surface-tertiary border border-border-light p-4.5 dark:bg-white/5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               {t("patient.home.stats.total.label")}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-              {formatCount(locale, stats.total)}
+            <p className="mt-2.5 text-2xl font-bold text-text-primary dark:text-white/95 font-mono">
+              {stats.total}
             </p>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-xs text-text-secondary leading-normal">
               {t("patient.home.stats.total.note")}
             </p>
           </div>
 
-          <div className="rounded-[24px] bg-surface-secondary px-5 py-4 dark:bg-white/5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          {/* Active Enrollments */}
+          <div className="rounded-[16px] bg-surface-tertiary border border-border-light p-4.5 dark:bg-white/5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               {t("patient.home.stats.active.label")}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-              {formatCount(locale, stats.active)}
+            <p className="mt-2.5 text-2xl font-bold text-text-primary dark:text-white/95 font-mono">
+              {stats.active}
             </p>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-xs text-text-secondary leading-normal">
               {t("patient.home.stats.active.note")}
             </p>
           </div>
 
-          <div className="rounded-[24px] bg-surface-secondary px-5 py-4 dark:bg-white/5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          {/* Pending Payment */}
+          <div className="rounded-[16px] bg-surface-tertiary border border-border-light p-4.5 dark:bg-white/5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               {t("patient.home.stats.pending.label")}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-              {formatCount(locale, stats.pending)}
+            <p className="mt-2.5 text-2xl font-bold text-text-primary dark:text-white/95 font-mono">
+              {stats.pending}
             </p>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-xs text-text-secondary leading-normal">
               {t("patient.home.stats.pending.note")}
             </p>
           </div>
 
-          <div className="rounded-[24px] bg-surface-secondary px-5 py-4 dark:bg-white/5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          {/* Attention items */}
+          <div className="rounded-[16px] bg-surface-tertiary border border-border-light p-4.5 dark:bg-white/5">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
               {t("patient.home.stats.next.label")}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-              {formatCount(locale, nextActionCount)}
+            <p className="mt-2.5 text-2xl font-bold text-text-primary dark:text-white/95 font-mono">
+              {nextActionCount}
             </p>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-xs text-text-secondary leading-normal">
               {t("patient.home.stats.next.note")}
             </p>
           </div>
-        </div>
-
-        <div className="mt-5 border-t border-border-light/70 pt-4 dark:border-white/10">
-          <PatientQuickNav />
         </div>
       </section>
 
       {nextEnrollment ? <NextStepCard enrollment={nextEnrollment} locale={locale} /> : null}
 
-      <section id="my-enrollments" className="app-panel rounded-[32px] p-5 sm:p-6">
+      <section id="my-enrollments" className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
+            <h2 className="text-lg font-bold text-text-primary dark:text-white/95">
               {t("patient.enrollments.heading")}
             </h2>
-            <p className="mt-1 text-sm text-text-secondary">
+            <p className="mt-1 text-sm text-text-secondary leading-relaxed">
               {t("patient.enrollments.note")}
             </p>
           </div>
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-semibold">
             {data
               ? t("patient.enrollments.count", { value: data.pagination.totalItems })
               : t("patient.enrollments.loadingCount")}
@@ -361,11 +361,11 @@ export default function PatientTrainingHomeScreen() {
                 label: t("patient.enrollments.states.error.retry"),
                 onClick: () => refetch(),
               }}
-              className="rounded-[24px]"
+              className="rounded-[20px]"
             />
           </div>
         ) : enrollments.length > 0 ? (
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-3.5">
             {enrollments.map((enrollment) => (
               <EnrollmentCard key={enrollment.id} enrollment={enrollment} locale={locale} />
             ))}
@@ -377,16 +377,24 @@ export default function PatientTrainingHomeScreen() {
               title={t("patient.enrollments.states.empty.heading")}
               note={t("patient.enrollments.states.empty.note")}
               centered={false}
-              className="rounded-[24px] p-5"
+              className="rounded-[20px] p-5"
               action={{
                 label: t("patient.enrollments.states.empty.action"),
                 href: (
-                  <Link
-                    href="/patient/messages?lane=support"
-                    className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2 text-sm text-text-secondary shadow-theme-xs transition hover:border-primary/30 hover:bg-primary-light hover:text-primary dark:bg-surface-tertiary dark:hover:bg-surface-tertiary/80"
-                  >
-                    {t("patient.enrollments.states.empty.action")}
-                  </Link>
+                  <div className="flex flex-wrap gap-2.5">
+                    <Link
+                      href="/academy"
+                      className="inline-flex items-center justify-center rounded-[14px] bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+                    >
+                      {locale === "ar" ? "استكشاف البرامج التدريبية" : "Explore Training Programs"}
+                    </Link>
+                    <Link
+                      href="/patient/messages?lane=support"
+                      className="inline-flex items-center justify-center rounded-[14px] border border-border-light bg-white px-5 py-2.5 text-sm font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary dark:bg-surface-tertiary"
+                    >
+                      {t("patient.enrollments.states.empty.action")}
+                    </Link>
+                  </div>
                 ),
               }}
             />

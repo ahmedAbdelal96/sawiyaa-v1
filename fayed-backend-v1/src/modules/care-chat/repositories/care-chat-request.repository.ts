@@ -98,6 +98,20 @@ export class CareChatRequestRepository {
     ]);
   }
 
+  expirePendingDueRequests(input: { now: Date }) {
+    return this.prisma.chatApprovalRequest.updateMany({
+      where: {
+        status: ChatApprovalStatus.PENDING,
+        expiresAt: {
+          lte: input.now,
+        },
+      },
+      data: {
+        status: ChatApprovalStatus.EXPIRED,
+      },
+    });
+  }
+
   updateRequest(
     requestId: string,
     data: Prisma.ChatApprovalRequestUncheckedUpdateInput,

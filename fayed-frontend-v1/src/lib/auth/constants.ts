@@ -1,7 +1,7 @@
-export const ACCESS_TOKEN_COOKIE = "fayed_access_token";
-export const REFRESH_TOKEN_COOKIE = "fayed_refresh_token";
-export const USER_DATA_COOKIE = "fayed_user_data";
-export const USER_ROLE_COOKIE = "fayed_user_role";
+export const ACCESS_TOKEN_COOKIE = "sawiyaa_access_token";
+export const REFRESH_TOKEN_COOKIE = "sawiyaa_refresh_token";
+export const USER_DATA_COOKIE = "sawiyaa_user_data";
+export const USER_ROLE_COOKIE = "sawiyaa_user_role";
 
 export const ACCESS_TOKEN_MAX_AGE = 15 * 60;
 export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;

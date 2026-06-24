@@ -130,6 +130,34 @@ export class MessageResponseDto {
   message!: string;
 }
 
+export class PasswordResetRequestedResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty({ required: false, example: 'VERIFY_OTP' })
+  nextStep?: string;
+
+  @ApiProperty({ required: false })
+  cooldownSeconds?: number;
+
+  @ApiProperty({ required: false })
+  resendAvailableAt?: string;
+}
+
+export class PasswordResetOtpVerifiedResponseDto {
+  @ApiProperty()
+  message!: string;
+
+  @ApiProperty()
+  resetToken!: string;
+
+  @ApiProperty()
+  expiresAt!: string;
+
+  @ApiProperty({ example: 'SET_NEW_PASSWORD' })
+  nextStep!: string;
+}
+
 export class AuthSuccessEnvelopeResponseDto {
   @ApiProperty({ example: true })
   success!: true;
@@ -168,4 +196,12 @@ export class MessageEnvelopeResponseDto {
 
   @ApiProperty({ type: MessageResponseDto })
   data!: MessageResponseDto;
+}
+
+export class PasswordResetOtpVerifiedEnvelopeResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PasswordResetOtpVerifiedResponseDto })
+  data!: PasswordResetOtpVerifiedResponseDto;
 }

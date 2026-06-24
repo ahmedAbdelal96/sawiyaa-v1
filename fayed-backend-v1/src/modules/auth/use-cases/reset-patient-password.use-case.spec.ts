@@ -154,6 +154,10 @@ describe('ResetPatientPasswordUseCase', () => {
         'NewPassword123',
       );
       expect(prisma.$transaction).toHaveBeenCalled();
+      expect(result).toEqual({
+        message: 'localized.auth.success.patientPasswordResetCompleted',
+      });
+      expect((result as any).tokens).toBeUndefined();
     });
 
     it('should invalidate all tokens after successful reset', async () => {
@@ -243,6 +247,54 @@ describe('ResetPatientPasswordUseCase', () => {
       expect(userEmailRepository.findByEmailForAuth).toHaveBeenCalledWith(
         'patient@example.com',
       );
+    });
+
+    it('should reject OTP reuse after a successful reset consumed the challenge', async () => {
+      const patient = {
+        id: 'patient-123',
+        roles: [{ role: UserRoleType.PATIENT }],
+      };
+
+      userEmailRepository.findByEmailForAuth.mockResolvedValue({
+        user: patient,
+      } as any);
+      hashPasswordUseCase.execute.mockResolvedValue('hashed_password_123');
+
+      verifyOtpChallengeUseCase.execute
+        .mockResolvedValueOnce({ id: 'challenge-1', user: patient } as any)
+        .mockRejectedValueOnce(
+          new ConflictException({
+            messageKey: 'auth.errors.otpChallengeInvalid',
+            error: 'OTP_CHALLENGE_INVALID',
+          }),
+        );
+
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {};
+        return callback(tx as any);
+      });
+
+      await useCase.execute({
+        email: 'patient@example.com',
+        code: '123456',
+        newPassword: 'NewPassword123',
+        locale: 'en',
+      });
+
+      await expect(
+        useCase.execute({
+          email: 'patient@example.com',
+          code: '123456',
+          newPassword: 'NewPassword123',
+          locale: 'en',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(authIdentityRepository.updatePasswordHash).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(invalidateUserTokensUseCase.execute).toHaveBeenCalledTimes(1);
+      expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledTimes(2);
     });
   });
 });

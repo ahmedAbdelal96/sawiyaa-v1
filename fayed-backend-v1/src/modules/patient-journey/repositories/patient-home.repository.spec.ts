@@ -10,15 +10,21 @@ describe('PatientHomeRepository', () => {
     session: {
       groupBy: jest.fn(),
     },
-    practitionerRatingSummary: {
-      findMany: jest.fn(),
-    },
     practitionerProfile: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
   };
 
-  const repository = new PatientHomeRepository(prisma as never);
+  const sessionReviewRatingAggregationService = {
+    aggregateByPractitionerIds: jest.fn(),
+    aggregateByPractitionerId: jest.fn(),
+  };
+
+  const repository = new PatientHomeRepository(
+    prisma as never,
+    sessionReviewRatingAggregationService as never,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -97,9 +103,43 @@ describe('PatientHomeRepository', () => {
       { practitionerId: 'p-2', _count: { _all: 2 } },
     ]);
     prisma.practitionerProfile.findMany.mockResolvedValue([
-      buildPractitionerProfile('p-1', 'slug-1', 4.9, 20),
-      buildPractitionerProfile('p-2', 'slug-2', 4.7, 10),
+      buildPractitionerProfile('p-1', 'slug-1', 4.9),
+      buildPractitionerProfile('p-2', 'slug-2', 4.7),
     ]);
+    sessionReviewRatingAggregationService.aggregateByPractitionerIds.mockResolvedValue(
+      new Map([
+        [
+          'p-1',
+          {
+            averageRating: 4.9,
+            ratingsCount: 20,
+            publishedRatingsCount: 20,
+            writtenReviewsCount: 8,
+            rating1Count: 0,
+            rating2Count: 0,
+            rating3Count: 0,
+            rating4Count: 2,
+            rating5Count: 18,
+            latestPublishedReviewAt: '2026-05-28T00:00:00.000Z',
+          },
+        ],
+        [
+          'p-2',
+          {
+            averageRating: 4.7,
+            ratingsCount: 10,
+            publishedRatingsCount: 10,
+            writtenReviewsCount: 4,
+            rating1Count: 0,
+            rating2Count: 0,
+            rating3Count: 1,
+            rating4Count: 4,
+            rating5Count: 5,
+            latestPublishedReviewAt: '2026-05-28T00:00:00.000Z',
+          },
+        ],
+      ]),
+    );
 
     const result = await repository.listMostBookedToday({
       locale: 'ar',
@@ -123,61 +163,68 @@ describe('PatientHomeRepository', () => {
         }),
       }),
     );
+    expect(sessionReviewRatingAggregationService.aggregateByPractitionerIds).toHaveBeenCalledWith([
+      'p-1',
+      'p-2',
+    ]);
     expect(result[0]?.bookingCountToday).toBe(3);
     expect(result[1]?.bookingCountToday).toBe(2);
   });
 
   it('listTopRated returns max 5 and keeps Bayesian ordering without low-sample bias', async () => {
-    prisma.practitionerRatingSummary.findMany.mockResolvedValue([
-      {
-        practitionerId: 'p-low-sample',
-        averageRating: 5,
-        publishedReviewsCount: 5,
-      },
-      {
-        practitionerId: 'p-high-sample',
-        averageRating: 4.8,
-        publishedReviewsCount: 100,
-      },
-      {
-        practitionerId: 'p-strong',
-        averageRating: 4.9,
-        publishedReviewsCount: 80,
-      },
-      {
-        practitionerId: 'p-below-min',
-        averageRating: 5,
-        publishedReviewsCount: 2,
-      },
-      {
-        practitionerId: 'p-platform-anchor-1',
-        averageRating: 4.2,
-        publishedReviewsCount: 200,
-      },
-      {
-        practitionerId: 'p-platform-anchor-2',
-        averageRating: 4.1,
-        publishedReviewsCount: 220,
-      },
-    ]);
-    prisma.practitionerProfile.findMany.mockResolvedValue([
-      buildPractitionerProfile('p-low-sample', 'slug-low-sample', 5, 5),
-      buildPractitionerProfile('p-high-sample', 'slug-high-sample', 4.8, 100),
-      buildPractitionerProfile('p-strong', 'slug-strong', 4.9, 80),
-      buildPractitionerProfile('p-below-min', 'slug-below-min', 5, 2),
-      buildPractitionerProfile(
-        'p-platform-anchor-1',
-        'slug-platform-anchor-1',
-        4.2,
-        200,
-      ),
-      buildPractitionerProfile(
-        'p-platform-anchor-2',
-        'slug-platform-anchor-2',
-        4.1,
-        220,
-      ),
-    ]);
+    prisma.practitionerProfile.findMany
+      .mockResolvedValueOnce([
+        { id: 'p-low-sample' },
+        { id: 'p-high-sample' },
+        { id: 'p-strong' },
+        { id: 'p-below-min' },
+        { id: 'p-platform-anchor-1' },
+        { id: 'p-platform-anchor-2' },
+      ])
+      .mockResolvedValueOnce([
+        buildPractitionerProfile('p-low-sample', 'slug-low-sample', 5),
+        buildPractitionerProfile('p-high-sample', 'slug-high-sample', 4.8),
+        buildPractitionerProfile('p-strong', 'slug-strong', 4.9),
+        buildPractitionerProfile('p-below-min', 'slug-below-min', 5),
+        buildPractitionerProfile(
+          'p-platform-anchor-1',
+          'slug-platform-anchor-1',
+          4.2,
+        ),
+        buildPractitionerProfile(
+          'p-platform-anchor-2',
+          'slug-platform-anchor-2',
+          4.1,
+        ),
+      ]);
+    sessionReviewRatingAggregationService.aggregateByPractitionerIds.mockResolvedValue(
+      new Map([
+        [
+          'p-low-sample',
+          liveSummary(5, 5, '2026-05-28T00:00:00.000Z'),
+        ],
+        [
+          'p-high-sample',
+          liveSummary(4.8, 100, '2026-05-28T00:00:00.000Z'),
+        ],
+        [
+          'p-strong',
+          liveSummary(4.9, 80, '2026-05-28T00:00:00.000Z'),
+        ],
+        [
+          'p-below-min',
+          liveSummary(5, 2, '2026-05-28T00:00:00.000Z'),
+        ],
+        [
+          'p-platform-anchor-1',
+          liveSummary(4.2, 200, '2026-05-28T00:00:00.000Z'),
+        ],
+        [
+          'p-platform-anchor-2',
+          liveSummary(4.1, 220, '2026-05-28T00:00:00.000Z'),
+        ],
+      ]),
+    );
 
     const result = await repository.listTopRated({
       locale: 'ar',
@@ -186,15 +233,14 @@ describe('PatientHomeRepository', () => {
       priorReviews: 20,
     });
 
-    expect(prisma.practitionerRatingSummary.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          publishedReviewsCount: {
-            gt: 0,
-          },
-        }),
-      }),
-    );
+    expect(sessionReviewRatingAggregationService.aggregateByPractitionerIds).toHaveBeenCalledWith([
+      'p-low-sample',
+      'p-high-sample',
+      'p-strong',
+      'p-below-min',
+      'p-platform-anchor-1',
+      'p-platform-anchor-2',
+    ]);
     expect(result.map((item) => item.slug)).toEqual([
       'slug-strong',
       'slug-high-sample',
@@ -214,7 +260,6 @@ function buildPractitionerProfile(
   id: string,
   slug: string,
   averageRating: number,
-  publishedReviewsCount: number,
 ) {
   return {
     id,
@@ -223,10 +268,6 @@ function buildPractitionerProfile(
     avatarUrl: null,
     user: {
       displayName: `Name ${slug}`,
-    },
-    ratingSummary: {
-      averageRating,
-      publishedReviewsCount,
     },
     sessionPrice30Egp: 300,
     sessionPrice30Usd: null,
@@ -239,5 +280,26 @@ function buildPractitionerProfile(
         },
       },
     ],
+    createdAt: new Date('2026-05-28T00:00:00.000Z'),
+    averageRating,
+  };
+}
+
+function liveSummary(
+  averageRating: number,
+  publishedReviewsCount: number,
+  latestPublishedReviewAt: string,
+) {
+  return {
+    averageRating,
+    ratingsCount: publishedReviewsCount,
+    publishedRatingsCount: publishedReviewsCount,
+    writtenReviewsCount: Math.floor(publishedReviewsCount / 2),
+    rating1Count: 0,
+    rating2Count: 0,
+    rating3Count: 0,
+    rating4Count: 0,
+    rating5Count: publishedReviewsCount,
+    latestPublishedReviewAt,
   };
 }

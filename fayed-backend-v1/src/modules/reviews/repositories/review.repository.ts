@@ -147,13 +147,6 @@ export class ReviewRepository {
             displayName: true,
           },
         },
-        ratingSummary: {
-          select: {
-            averageRating: true,
-            totalReviews: true,
-            publishedReviewsCount: true,
-          },
-        },
       },
     });
   }
@@ -273,33 +266,6 @@ export class ReviewRepository {
     });
   }
 
-  upsertPractitionerRatingSummary(
-    practitionerId: string,
-    data: {
-      totalReviews: number;
-      publishedReviewsCount: number;
-      averageRating: number;
-      rating1Count: number;
-      rating2Count: number;
-      rating3Count: number;
-      rating4Count: number;
-      rating5Count: number;
-      lastReviewAt: Date | null;
-    },
-    tx?: Prisma.TransactionClient,
-  ) {
-    return this.getDb(tx).practitionerRatingSummary.upsert({
-      where: {
-        practitionerId,
-      },
-      create: {
-        practitionerId,
-        ...data,
-      },
-      update: data,
-    });
-  }
-
   withTransaction<T>(
     runner: (tx: Prisma.TransactionClient) => Promise<T>,
   ): Promise<T> {
@@ -324,6 +290,17 @@ export class ReviewRepository {
 
   private adminDetailsInclude() {
     return {
+      patient: {
+        select: {
+          id: true,
+          displayName: true,
+          user: {
+            select: {
+              displayName: true,
+            },
+          },
+        },
+      },
       session: {
         select: {
           id: true,

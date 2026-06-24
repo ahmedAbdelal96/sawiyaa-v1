@@ -11,7 +11,7 @@ function buildContext(overrides?: {
   const request = {
     method: overrides?.method ?? 'POST',
     authTransport: overrides?.authTransport ?? 'cookie',
-    cookies: overrides?.cookie ? { fayed_csrf_token: overrides.cookie } : {},
+    cookies: overrides?.cookie ? { sawiyaa_csrf_token: overrides.cookie } : {},
     headers: overrides?.header ? { 'x-csrf-token': overrides.header } : {},
   };
 
@@ -41,7 +41,7 @@ describe('CsrfProtectionGuard', () => {
     const guard = new CsrfProtectionGuard({
       get: jest.fn().mockReturnValue({
         cookieAuthEnabled: true,
-        csrf: { enforcementEnabled: true, cookieName: 'fayed_csrf_token' },
+        csrf: { enforcementEnabled: true, cookieName: 'sawiyaa_csrf_token' },
       }),
     } as unknown as ConfigService);
 
@@ -60,7 +60,7 @@ describe('CsrfProtectionGuard', () => {
     const guard = new CsrfProtectionGuard({
       get: jest.fn().mockReturnValue({
         cookieAuthEnabled: true,
-        csrf: { enforcementEnabled: true, cookieName: 'fayed_csrf_token' },
+        csrf: { enforcementEnabled: true, cookieName: 'sawiyaa_csrf_token' },
       }),
     } as unknown as ConfigService);
 

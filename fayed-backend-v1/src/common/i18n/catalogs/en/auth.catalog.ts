@@ -12,9 +12,14 @@ export const enAuthCatalog = {
     practitionerOtpVerified: 'Practitioner login verified successfully',
     practitionerTokensRefreshed: 'Practitioner session refreshed successfully',
     practitionerLoggedOut: 'Practitioner session logged out successfully',
-    practitionerPasswordResetRequested:
-      'If the account exists, a password reset message has been sent',
+    practitionerPasswordResetRequested: 'Password reset code has been sent',
+    practitionerPasswordResetOtpVerified:
+      'Code verified successfully. You can now set a new password',
     practitionerPasswordResetCompleted: 'Password has been reset successfully',
+    patientPasswordResetRequested: 'Password reset code has been sent',
+    patientPasswordResetOtpVerified:
+      'Code verified successfully. You can now set a new password',
+    patientPasswordResetCompleted: 'Password has been reset successfully',
     adminLoggedIn: 'Admin logged in successfully',
     adminTokensRefreshed: 'Admin session refreshed successfully',
     adminLoggedOut: 'Admin session logged out successfully',
@@ -46,7 +51,11 @@ export const enAuthCatalog = {
     otpResendTooSoon: 'Please wait before requesting another OTP',
     notificationTypeMissing: 'Notification type is not configured',
     passwordResetPractitionerOnly:
-      'Password reset flow is only available for practitioner accounts',
+      'This email is registered as a patient account. Use patient password recovery.',
+    passwordResetPatientOnly:
+      'This email is registered as a practitioner account. Use practitioner password recovery.',
+    passwordResetAccountNotFound: 'No account was found for this email.',
+    passwordResetTokenInvalid: 'Password reset token is invalid or expired',
     invalidRegistrationCountryCode:
       'Country code is invalid for practitioner registration',
     invalidRegistrationSpecialtyCategoryId:

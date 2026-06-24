@@ -70,7 +70,7 @@ export const useThemeStore = create<ThemeStore>()(
       },
     }),
     {
-      name: "fayed-theme",
+      name: "sawiyaa-theme",
       storage: createJSONStorage(() => localStorage),
       skipHydration: true, // مهم جداً لتجنب hydration mismatch
     }

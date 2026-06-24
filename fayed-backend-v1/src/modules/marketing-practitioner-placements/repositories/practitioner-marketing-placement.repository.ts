@@ -6,6 +6,10 @@ import {
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
+import {
+  SessionReviewRatingAggregationService,
+  type SessionReviewRatingSummary,
+} from '@modules/reviews/services/session-review-rating-aggregation.service';
 
 export type FeaturedPractitionerHomeCard = {
   practitionerId: string;
@@ -24,7 +28,10 @@ export type FeaturedPractitionerHomeCard = {
 
 @Injectable()
 export class PractitionerMarketingPlacementRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+  ) {}
 
   async listActiveHomeFeaturedPractitioners(input: {
     locale: SupportedLocale;
@@ -66,12 +73,6 @@ export class PractitionerMarketingPlacementRepository {
                   displayName: true,
                 },
               },
-              ratingSummary: {
-                select: {
-                  averageRating: true,
-                  publishedReviewsCount: true,
-                },
-              },
               sessionPrice30Egp: true,
               sessionPrice30Usd: true,
               sessionPrice60Egp: true,
@@ -107,6 +108,11 @@ export class PractitionerMarketingPlacementRepository {
         },
       });
 
+    const ratingSummaries =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        placements.map((placement) => placement.practitioner.id),
+      );
+
     const deduped = new Map<string, FeaturedPractitionerHomeCard>();
     for (const placement of placements) {
       const card = this.mapPlacementCard({
@@ -114,6 +120,7 @@ export class PractitionerMarketingPlacementRepository {
         badgeLabelAr: placement.badgeLabelAr,
         badgeLabelEn: placement.badgeLabelEn,
         practitioner: placement.practitioner,
+        ratingSummary: ratingSummaries.get(placement.practitioner.id) ?? null,
       });
 
       if (deduped.has(card.slug)) {
@@ -139,10 +146,6 @@ export class PractitionerMarketingPlacementRepository {
       professionalTitle: string | null;
       avatarUrl: string | null;
       user: { displayName: string | null };
-      ratingSummary: {
-        averageRating: unknown;
-        publishedReviewsCount: number;
-      } | null;
       sessionPrice30Egp: unknown;
       sessionPrice30Usd: unknown;
       sessionPrice60Egp: unknown;
@@ -153,6 +156,7 @@ export class PractitionerMarketingPlacementRepository {
         };
       }>;
     };
+    ratingSummary: SessionReviewRatingSummary | null;
   }): FeaturedPractitionerHomeCard {
     const badgeLabel =
       input.locale === 'ar'
@@ -169,11 +173,11 @@ export class PractitionerMarketingPlacementRepository {
         input.practitioner.specialties[0]?.specialty.translations[0]?.title ??
         null,
       averageRating:
-        input.practitioner.ratingSummary?.averageRating === null ||
-        input.practitioner.ratingSummary?.averageRating === undefined
+        input.ratingSummary?.averageRating === null ||
+        input.ratingSummary?.averageRating === undefined
           ? null
-          : Number(input.practitioner.ratingSummary.averageRating),
-      totalReviews: input.practitioner.ratingSummary?.publishedReviewsCount ?? 0,
+          : Number(input.ratingSummary.averageRating),
+      totalReviews: input.ratingSummary?.publishedRatingsCount ?? 0,
       displaySessionPrice30:
         input.practitioner.sessionPrice30Egp === null ||
         input.practitioner.sessionPrice30Egp === undefined

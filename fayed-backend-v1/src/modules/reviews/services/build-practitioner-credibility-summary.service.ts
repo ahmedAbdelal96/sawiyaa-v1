@@ -9,30 +9,32 @@ export class BuildPractitionerCredibilitySummaryService {
   private static readonly RECENT_REVIEW_DAYS_THRESHOLD = 30;
 
   build(input: {
-    totalPublicReviews: number;
+    ratingsCount: number;
+    writtenReviewsCount: number;
     averagePublicRating: number | null;
     latestPublishedAt: Date | null;
     now?: Date;
   }) {
     const now = input.now ?? new Date();
-    const totalPublicReviews = Math.max(0, input.totalPublicReviews);
+    const ratingsCount = Math.max(0, input.ratingsCount);
+    const writtenReviewsCount = Math.max(0, input.writtenReviewsCount);
 
     const averageOverallRating =
-      totalPublicReviews > 0 && input.averagePublicRating != null
+      ratingsCount > 0 && input.averagePublicRating != null
         ? Number(Number(input.averagePublicRating).toFixed(2))
         : null;
 
-    const volumeLevel = this.resolveVolumeLevel(totalPublicReviews);
+    const volumeLevel = this.resolveVolumeLevel(ratingsCount);
     const freshness = this.resolveFreshness({
       latestPublishedAt: input.latestPublishedAt,
       now,
     });
     const hasEnoughPublicReviews =
-      totalPublicReviews >=
+      ratingsCount >=
       BuildPractitionerCredibilitySummaryService.ESTABLISHED_REVIEWS_THRESHOLD;
 
     const rationaleCodes: string[] = [];
-    if (totalPublicReviews === 0) {
+    if (ratingsCount === 0) {
       rationaleCodes.push('NO_PUBLIC_REVIEWS');
     } else if (!hasEnoughPublicReviews) {
       rationaleCodes.push('LOW_PUBLIC_REVIEW_VOLUME');
@@ -50,9 +52,12 @@ export class BuildPractitionerCredibilitySummaryService {
 
     return {
       averageOverallRating,
-      totalPublicReviews,
-      totalPublishedReviews: totalPublicReviews,
-      totalSubmittedReviews: totalPublicReviews,
+      ratingsCount,
+      publishedRatingsCount: ratingsCount,
+      writtenReviewsCount,
+      totalPublicReviews: ratingsCount,
+      totalPublishedReviews: ratingsCount,
+      totalSubmittedReviews: ratingsCount,
       latestPublishedReviewAt: input.latestPublishedAt?.toISOString() ?? null,
       hasEnoughPublicReviews,
       volumeLevel,

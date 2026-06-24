@@ -10,7 +10,6 @@ import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbou
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
 import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
-import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
 import {
   LANGUAGE_CODES,
 } from "@/features/practitioners-discovery/types/practitioner";
@@ -43,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       fallback("description");
 
     return {
-      title: `Fayed | ${locale === "ar" ? profile.nameAr : profile.nameEn}`,
+      title: `${locale === "ar" ? "سويّة" : "Sawiyaa"} | ${locale === "ar" ? profile.nameAr : profile.nameEn}`,
       description,
     };
   } catch {
@@ -143,8 +142,8 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
   }
 
   return (
-    <div className="px-4 py-8">
-      <div className="app-max-content mx-auto space-y-5">
+    <div className="px-4 py-4 sm:py-6">
+      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
         <ProfileHeader
           profile={profile}
           countryLabel={countryLabel}
@@ -157,17 +156,12 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
 
         <ProfileBookingPanel profile={profile} presence={presence} />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
+        <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
           <div className="space-y-6">
             <ProfileAbout profile={profile} />
           </div>
 
-          <div className="grid gap-6">
-            <ProfileSpecialties
-              profile={profile}
-              specialtyLabels={specialtyLabels}
-              languageLabels={languageLabels}
-            />
+          <div className="space-y-6">
             <ProfileCredentials profile={profile} />
           </div>
         </div>

@@ -53,7 +53,7 @@ export default function PaymentCheckoutShell({
         ) : null}
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,2.15fr)_320px]">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_400px]">
         <main className="space-y-5">
           {summary}
           {children}

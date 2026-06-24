@@ -350,8 +350,7 @@ export class GetPublicAcademyEnrollmentPaymentRedirectUseCase {
       return 'payment_unavailable';
     }
 
-    const message =
-      error instanceof Error ? error.message.toLowerCase() : '';
+    const message = error instanceof Error ? error.message.toLowerCase() : '';
 
     if (
       message.includes('expired') ||
@@ -414,7 +413,7 @@ export class GetPublicAcademyEnrollmentPaymentRedirectUseCase {
     try {
       const parsed = new URL(callerSurfaceUrl.trim());
 
-      if (parsed.protocol === 'fayed:') {
+      if (parsed.protocol === 'sawiyaa:') {
         return parsed.toString();
       }
 
@@ -445,7 +444,7 @@ export class GetPublicAcademyEnrollmentPaymentRedirectUseCase {
           appBaseUrl.endsWith('/') ? appBaseUrl : `${appBaseUrl}/`,
         )
       : new URL(
-          `fayed://academy/enrollments/${input.enrollmentId}/payment-return`,
+          `sawiyaa://academy/enrollments/${input.enrollmentId}/payment-return`,
         );
   }
 
@@ -458,7 +457,7 @@ export class GetPublicAcademyEnrollmentPaymentRedirectUseCase {
       ? input.trustedBaseUrl
       : `${input.trustedBaseUrl}/`;
 
-    if (baseUrl.startsWith('fayed://')) {
+    if (baseUrl.startsWith('sawiyaa://')) {
       return new URL(
         `academy/enrollments/${input.enrollmentId}/payment-return`,
         baseUrl,
@@ -473,7 +472,9 @@ export class GetPublicAcademyEnrollmentPaymentRedirectUseCase {
 
   private getAppBaseUrlOrNull(): string | null {
     try {
-      const appBaseUrl = this.paymentRuntimeConfigService.getAppBaseUrl().trim();
+      const appBaseUrl = this.paymentRuntimeConfigService
+        .getAppBaseUrl()
+        .trim();
       return appBaseUrl || null;
     } catch {
       return null;

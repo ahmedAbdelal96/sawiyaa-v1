@@ -32,13 +32,17 @@ import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.i
 import {
   AuthSuccessEnvelopeResponseDto,
   MessageEnvelopeResponseDto,
+  PasswordResetOtpVerifiedEnvelopeResponseDto,
 } from '../dto/auth-response.dto';
+import { ConfirmPasswordResetDto } from '../dto/confirm-password-reset.dto';
 import { PatientEmailPasswordLoginDto } from '../dto/patient-email-password-login.dto';
 import { PatientEmailPasswordRegisterDto } from '../dto/patient-email-password-register.dto';
 import { PatientGoogleAuthDto } from '../dto/patient-google-auth.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { VerifyPasswordResetOtpDto } from '../dto/verify-password-reset-otp.dto';
+import { ConfirmPatientPasswordResetUseCase } from '../use-cases/confirm-patient-password-reset.use-case';
 import { LoginPatientWithEmailPasswordUseCase } from '../use-cases/login-patient-with-email-password.use-case';
 import { LogoutPatientUseCase } from '../use-cases/logout-patient.use-case';
 import { RefreshPatientTokenUseCase } from '../use-cases/refresh-patient-token.use-case';
@@ -46,6 +50,7 @@ import { RegisterPatientWithEmailPasswordUseCase } from '../use-cases/register-p
 import { RegisterPatientWithGoogleUseCase } from '../use-cases/register-patient-with-google.use-case';
 import { RequestPatientPasswordResetUseCase } from '../use-cases/request-patient-password-reset.use-case';
 import { ResetPatientPasswordUseCase } from '../use-cases/reset-patient-password.use-case';
+import { VerifyPatientPasswordResetOtpUseCase } from '../use-cases/verify-patient-password-reset-otp.use-case';
 import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
 @ApiTags('Auth - Patient')
@@ -60,6 +65,8 @@ export class PatientAuthController {
     private readonly refreshPatientTokenUseCase: RefreshPatientTokenUseCase,
     private readonly logoutPatientUseCase: LogoutPatientUseCase,
     private readonly requestPatientPasswordResetUseCase: RequestPatientPasswordResetUseCase,
+    private readonly verifyPatientPasswordResetOtpUseCase: VerifyPatientPasswordResetOtpUseCase,
+    private readonly confirmPatientPasswordResetUseCase: ConfirmPatientPasswordResetUseCase,
     private readonly resetPatientPasswordUseCase: ResetPatientPasswordUseCase,
   ) {}
 
@@ -87,7 +94,7 @@ export class PatientAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -130,7 +137,7 @@ export class PatientAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -171,7 +178,7 @@ export class PatientAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -223,7 +230,7 @@ export class PatientAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -258,7 +265,7 @@ export class PatientAuthController {
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutPatientUseCase.execute(request.user!.sessionId!);
-    res.clearCookie('fayed_refresh_token', {
+    res.clearCookie('sawiyaa_refresh_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -284,6 +291,54 @@ export class PatientAuthController {
   ) {
     return this.requestPatientPasswordResetUseCase.execute({
       email: dto.email,
+      locale,
+    });
+  }
+
+  @Public()
+  @Post('verify-password-reset-otp')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-patient-verify-password-reset-otp')
+  @ApiOperation({
+    summary: 'Verify patient password reset OTP and issue reset token',
+  })
+  @ApiBody({ type: VerifyPasswordResetOtpDto })
+  @ApiResponse({
+    status: 200,
+    type: PasswordResetOtpVerifiedEnvelopeResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({
+    description: 'OTP challenge is invalid or expired',
+  })
+  @ApiForbiddenResponse({ description: 'OTP code is invalid' })
+  async verifyPasswordResetOtp(
+    @Body() dto: VerifyPasswordResetOtpDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.verifyPatientPasswordResetOtpUseCase.execute({
+      email: dto.email,
+      code: dto.code,
+      locale,
+    });
+  }
+
+  @Public()
+  @Post('confirm-password-reset')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-patient-confirm-password-reset')
+  @ApiOperation({ summary: 'Confirm patient password reset using reset token' })
+  @ApiBody({ type: ConfirmPasswordResetDto })
+  @ApiResponse({ status: 200, type: MessageEnvelopeResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Reset token is invalid or expired' })
+  async confirmPasswordReset(
+    @Body() dto: ConfirmPasswordResetDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.confirmPatientPasswordResetUseCase.execute({
+      resetToken: dto.resetToken,
+      newPassword: dto.newPassword,
       locale,
     });
   }

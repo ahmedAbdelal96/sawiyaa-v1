@@ -10,10 +10,18 @@ import type {
   CurrentAuthUserResponse,
   MessageResponse,
   OtpChallengeResponse,
+  PatientForgotPasswordRequest,
+  PatientVerifyPasswordResetOtpRequest,
+  PatientVerifyPasswordResetOtpResponse,
+  PatientConfirmPasswordResetRequest,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
   PatientRegisterRequest,
+  PatientResetPasswordRequest,
   PractitionerForgotPasswordRequest,
+  PractitionerVerifyPasswordResetOtpRequest,
+  PractitionerVerifyPasswordResetOtpResponse,
+  PractitionerConfirmPasswordResetRequest,
   PractitionerLoginRequest,
   PractitionerRegisterRequest,
   PractitionerRegistrationResponse,
@@ -197,6 +205,66 @@ export async function practitionerResetPassword(
 ) {
   const response = await httpClient.post<ApiPayload<MessageResponse>>(
     "/auth/practitioner/reset-password",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function practitionerVerifyPasswordResetOtp(
+  data: PractitionerVerifyPasswordResetOtpRequest
+) {
+  const response = await httpClient.post<ApiPayload<PractitionerVerifyPasswordResetOtpResponse>>(
+    "/auth/practitioner/verify-password-reset-otp",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function practitionerConfirmPasswordReset(
+  data: PractitionerConfirmPasswordResetRequest
+) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/practitioner/confirm-password-reset",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function patientForgotPassword(
+  data: PatientForgotPasswordRequest
+) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/patient/forgot-password",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function patientResetPassword(
+  data: PatientResetPasswordRequest
+) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/patient/reset-password",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function patientVerifyPasswordResetOtp(
+  data: PatientVerifyPasswordResetOtpRequest
+) {
+  const response = await httpClient.post<ApiPayload<PatientVerifyPasswordResetOtpResponse>>(
+    "/auth/patient/verify-password-reset-otp",
+    data
+  );
+  return extractData(response.data);
+}
+
+export async function patientConfirmPasswordReset(
+  data: PatientConfirmPasswordResetRequest
+) {
+  const response = await httpClient.post<ApiPayload<MessageResponse>>(
+    "/auth/patient/confirm-password-reset",
     data
   );
   return extractData(response.data);

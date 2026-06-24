@@ -4,8 +4,10 @@ import { PractitionerMarketingPlacementManagementRepository } from './repositori
 import { PractitionerMarketingPlacementManagementService } from './services/practitioner-marketing-placement-management.service';
 import { PublicFeaturedPractitionersController } from './controllers/public-featured-practitioners.controller';
 import { ListPublicFeaturedPractitionersUseCase } from './use-cases/list-public-featured-practitioners.use-case';
+import { ReviewsModule } from '@modules/reviews/reviews.module';
 
 @Module({
+  imports: [ReviewsModule],
   controllers: [PublicFeaturedPractitionersController],
   providers: [
     PractitionerMarketingPlacementRepository,

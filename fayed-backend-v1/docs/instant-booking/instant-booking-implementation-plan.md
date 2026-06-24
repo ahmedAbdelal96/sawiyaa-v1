@@ -1,4 +1,4 @@
-# Fayed Instant Booking Implementation Plan
+﻿# Sawiyaa Instant Booking Implementation Plan
 
 ## 1. Full Flow Summary
 
@@ -207,7 +207,7 @@ Out of scope:
 
 1. Should instant pricing be required for all approved practitioners, or only when instant booking is enabled?
 2. Should instant booking prices be editable only by practitioners/admin, or also visible on public profile cards later?
-3. Should patient discovery prefer the practitioner’s live currency or let the patient choose currency explicitly?
+3. Should patient discovery prefer the practitionerâ€™s live currency or let the patient choose currency explicitly?
 4. Should the backend expose instant prices in the same `pricing` object as normal session pricing or under a separate `instantPricing` block?
 5. Should the availability API later expose `availableNow` and `earliestStartAt` in one response for discovery?
 
@@ -260,7 +260,7 @@ Frontend:
 ## 9. Phase 6 Authenticated Runtime Verification Notes
 
 - Mobile Expo web authenticated QA now covers both patient and practitioner surfaces.
-- Patient home exposes the `حجز فوري` entry point for logged-in patients.
+- Patient home exposes the `Ø­Ø¬Ø² ÙÙˆØ±ÙŠ` entry point for logged-in patients.
 - Patient discovery returns eligible practitioners only when the practitioner is both online and instant-booking-enabled.
 - A dev-only presence mismatch on `dr.mohamed` initially left discovery empty; updating the local practitioner presence to `ONLINE` with `isInstantBookingEnabled=true` restored the browse path for QA without changing production logic.
 - Patient browse state renders the instant-practitioner cards with pricing for `30` and `60` minutes.
@@ -285,7 +285,7 @@ Frontend:
 
 ## 11. Phase 6C Mobile Scale Alignment Notes
 
-- The Phase 6C follow-up reduced the visual weight of the instant booking mobile surfaces again so they better match the rest of the Fayed mobile product density.
+- The Phase 6C follow-up reduced the visual weight of the instant booking mobile surfaces again so they better match the rest of the Sawiyaa mobile product density.
 - Additional phone viewports validated during this pass:
   - 360 x 800
   - 390 x 844
@@ -356,3 +356,4 @@ Frontend:
 ### Next Recommended Task
 
 - Finish external Paymob sandbox QA, then return to backend session typing cleanup if the project wants a fully green repo build.
+

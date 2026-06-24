@@ -144,7 +144,7 @@ export function warnPackagePurchaseContractMismatch(input: {
 
   console.warn(
     [
-      "[Fayed package purchases] contract mismatch",
+      "[Sawiyaa package purchases] contract mismatch",
       `purchaseId=${input.purchaseId}`,
       `planCode=${normalizedPlanCode}`,
       `sessionCount=${input.sessionCount}`,

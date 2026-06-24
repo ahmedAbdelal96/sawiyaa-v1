@@ -22,7 +22,7 @@ export function AppIntlProvider({ children, locale, messages }: Props) {
         }
 
         if (process.env.NODE_ENV === "development") {
-          console.error("[Fayed i18n error]", error.message);
+          console.error("[Sawiyaa i18n error]", error.message);
         }
       }}
       getMessageFallback={({ namespace, key, error }) => {

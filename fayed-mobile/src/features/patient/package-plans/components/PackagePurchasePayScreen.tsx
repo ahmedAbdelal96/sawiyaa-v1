@@ -101,7 +101,7 @@ export default function PackagePurchasePayScreen({
     }
 
     return Linking.createURL(paymentReturnPath, {
-      scheme: "fayed",
+      scheme: "sawiyaa",
     });
   }, [purchaseId]);
 

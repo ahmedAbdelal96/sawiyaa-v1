@@ -563,9 +563,9 @@ export default function UnifiedMessagesLauncher({
       setIsHistoryOpen(false);
     };
 
-    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("mousedown", handlePointerDown, true);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("mousedown", handlePointerDown, true);
     };
   }, [isOpen, showFloatingTrigger]);
 
@@ -580,9 +580,9 @@ export default function UnifiedMessagesLauncher({
       }
     };
 
-    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("mousedown", handlePointerDown, true);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("mousedown", handlePointerDown, true);
     };
   }, [isHistoryOpen]);
 

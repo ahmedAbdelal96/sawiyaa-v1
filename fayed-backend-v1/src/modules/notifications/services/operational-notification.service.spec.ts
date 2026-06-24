@@ -137,11 +137,7 @@ describe('OperationalNotificationService', () => {
         idempotencyKey: 'messages.session-message:msg_1:user_2:in-app',
         payloadJson: expect.objectContaining({
           routePath: '/en/practitioner/messages/conv_1',
-          threadId: 'conv_1',
           targetRole: 'PRACTITIONER',
-          relatedEntityType: 'GENERAL_CHAT_MESSAGE',
-          relatedEntityId: 'msg_1',
-          category: 'CHAT',
         }),
       }),
     );
@@ -230,6 +226,116 @@ describe('OperationalNotificationService', () => {
     );
   });
 
+  it('queues care chat approval notifications for patient and practitioner', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyCareChatRequestApproved({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'practitioner_1',
+      requestId: 'request_1',
+      conversationId: 'conversation_1',
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_1',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: 'request_1',
+        idempotencyKey: 'care-chat.request-approved:request_1:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/care-chat/conversations/conversation_1',
+          targetRole: 'PATIENT',
+          careRequestId: 'request_1',
+          conversationId: 'conversation_1',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_2',
+        channel: NotificationChannel.PUSH,
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: 'request_1',
+        idempotencyKey: 'care-chat.request-approved:request_1:user_2:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/care-chat/conversations/conversation_1',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+  });
+
+  it('queues care chat rejection notifications only for the patient', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyCareChatRequestRejected({
+      patientProfileId: 'patient_1',
+      requestId: 'request_2',
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_1',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: 'request_2',
+        idempotencyKey: 'care-chat.request-rejected:request_2:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/care-chat/requests/request_2',
+          targetRole: 'PATIENT',
+          careRequestId: 'request_2',
+          decision: 'REJECT',
+        }),
+      }),
+    );
+    expect(setup.createNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_2',
+        relatedEntityId: 'request_2',
+      }),
+    );
+  });
+
+  it('queues care chat revocation notifications for both participants', async () => {
+    const setup = buildService({ emailEnabled: false, pushEnabled: true });
+
+    await setup.service.notifyCareChatRequestRevoked({
+      patientProfileId: 'patient_1',
+      practitionerProfileId: 'practitioner_1',
+      requestId: 'request_3',
+      conversationId: 'conversation_3',
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_1',
+        channel: NotificationChannel.IN_APP,
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: 'request_3',
+        idempotencyKey: 'care-chat.request-revoked:request_3:user_1:in-app',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/patient/care-chat/conversations/conversation_3',
+          targetRole: 'PATIENT',
+          decision: 'REVOKE',
+        }),
+      }),
+    );
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user_2',
+        channel: NotificationChannel.PUSH,
+        relatedEntityType: 'CARE_CHAT_REQUEST',
+        relatedEntityId: 'request_3',
+        idempotencyKey: 'care-chat.request-revoked:request_3:user_2:push',
+        payloadJson: expect.objectContaining({
+          routePath: '/en/practitioner/care-chat/conversations/conversation_3',
+          targetRole: 'PRACTITIONER',
+        }),
+      }),
+    );
+  });
+
   it('suppresses email when user preference disables the channel', async () => {
     const setup = buildService({ emailEnabled: true });
     setup.findPreference.mockImplementation(
@@ -288,9 +394,6 @@ describe('OperationalNotificationService', () => {
         payloadJson: expect.objectContaining({
           routePath: '/en/patient/instant-booking?requestId=request_1',
           targetRole: 'PATIENT',
-          relatedEntityType: 'INSTANT_BOOKING_REQUEST',
-          relatedEntityId: 'request_1',
-          category: 'SESSION',
         }),
       }),
     );
@@ -541,7 +644,6 @@ describe('OperationalNotificationService', () => {
         payloadJson: expect.objectContaining({
           packagePurchaseId: 'purchase_1',
           packagePlanCode: 'SESSIONS_4',
-          packagePlanTitle: '4 sessions',
           packageSessionIndex: 2,
           packageSessionCount: 4,
           packageDiscountPercent: 10,

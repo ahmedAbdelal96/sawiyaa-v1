@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import {
@@ -112,8 +112,8 @@ export default function PatientAssessmentDefinitionScreen({
 
   if (hasUnsupportedQuestions) {
     return (
-      <div className="mx-auto max-w-5xl">
-        <div className="app-panel rounded-[28px] p-5 sm:p-6">
+      <div className="mx-auto max-w-3xl">
+        <div className="app-panel rounded-[28px] p-5 sm:p-6 text-start">
           <div className="flex items-start gap-3">
             <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary dark:bg-primary/15 dark:text-primary-light">
               <AlertCircle className="h-5 w-5" />
@@ -138,91 +138,85 @@ export default function PatientAssessmentDefinitionScreen({
     );
   }
 
+  const locale = useLocale();
+
   if (!started) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
-        <section className="app-panel rounded-[28px] p-5 sm:p-6">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.85fr)] lg:items-start">
-            <div className="min-w-0">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("detail.eyebrow")}
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-                {item.title}
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary sm:text-base">
-                {item.introText ?? item.description ?? t("detail.note")}
-              </p>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="rounded-[32px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-8">
+          {/* Eyebrow & Title */}
+          <div className="text-start space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-primary">
+              {item.category}
+            </span>
+            <h1 className="text-3xl font-extrabold text-text-primary dark:text-white/95 leading-tight">
+              {item.title}
+            </h1>
+            <p className="text-sm text-text-secondary leading-relaxed max-w-3xl pt-2">
+              {item.introText ?? item.description ?? t("detail.note")}
+            </p>
+          </div>
 
-              <div className="mt-4 flex flex-wrap gap-2.5">
-                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                  {item.category}
-                </span>
-                {item.estimatedDurationMinutes !== null && (
-                  <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                    {t("detail.meta.duration", { value: item.estimatedDurationMinutes })}
+          {/* Metadata Parameters Grid (Non-Card Text Grid) */}
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-6 border-t border-b border-border-light/60 py-6 text-start">
+            <div>
+              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "المدة المقدرة" : "Estimated Duration"}</p>
+              <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white">
+                {item.estimatedDurationMinutes !== null ? t("detail.meta.duration", { value: item.estimatedDurationMinutes }) : t("detail.optional")}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "عدد الأسئلة" : "Questions Count"}</p>
+              <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white">
+                {t("detail.meta.questionCount", { value: questions.length })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "الخصوصية" : "Privacy"}</p>
+              <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+                <span>{t("detail.trustTitle")}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Before You Begin / Guidelines */}
+          <div className="mt-8 text-start space-y-4">
+            <h2 className="text-base font-bold text-text-primary dark:text-white/95">
+              {t("detail.beforeYouBegin.heading")}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                t("detail.beforeYouBegin.first"),
+                t("detail.beforeYouBegin.second"),
+                t("detail.beforeYouBegin.third"),
+              ].map((note, index) => (
+                <div key={note} className="rounded-2xl bg-surface-tertiary/40 p-4 border border-border-light/40 flex items-start gap-2.5">
+                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    {index + 1}
                   </span>
-                )}
-                <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
-                  {t("detail.meta.questionCount", { value: questions.length })}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="app-panel-soft rounded-[24px] px-4 py-4 text-sm text-text-secondary">
-                <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{t("detail.trustTitle")}</span>
+                  <p className="text-xs leading-5 text-text-secondary">{note}</p>
                 </div>
-                <p className="mt-1 text-xs leading-5 text-text-muted">
-                  {t("detail.trustNote")}
-                </p>
-              </div>
-
-              <div className="app-panel-soft rounded-[24px] px-4 py-4 text-sm text-text-secondary">
-                <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                  {t("detail.meta.questionCount", { value: questions.length })}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-text-primary dark:text-white/90">
-                  {t("detail.note")}
-                </p>
-                <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
-                  <span className="inline-flex h-2 w-2 rounded-full bg-primary" />
-                  <span>{item.estimatedDurationMinutes !== null ? t("detail.meta.duration", { value: item.estimatedDurationMinutes }) : t("detail.optional")}</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </section>
 
-        <section className="app-panel rounded-[28px] p-5 sm:p-6">
-          <h2 className="text-lg font-semibold text-text-primary dark:text-white/95">
-            {t("detail.beforeYouBegin.heading")}
-          </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {[
-              t("detail.beforeYouBegin.first"),
-              t("detail.beforeYouBegin.second"),
-              t("detail.beforeYouBegin.third"),
-            ].map((note) => (
-              <div key={note} className="app-panel-soft rounded-[22px] p-4">
-                <p className="text-sm leading-6 text-text-secondary">{note}</p>
-              </div>
-            ))}
+          {/* CTA Actions */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-end gap-3 pt-6 border-t border-border-light/60">
+            <Link
+              href="/patient/assessments"
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-6 py-3 text-sm font-semibold text-text-primary transition hover:bg-surface-tertiary/20"
+            >
+              {t("actions.backToList")}
+            </Link>
+            <Button
+              type="button"
+              onClick={() => setStarted(true)}
+              className="w-full sm:w-auto rounded-2xl bg-primary px-8 py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-hover"
+            >
+              {t("actions.start")}
+            </Button>
           </div>
-        </section>
-
-        <div className="flex flex-wrap gap-3">
-          <Button type="button" onClick={() => setStarted(true)}>
-            {t("actions.start")}
-          </Button>
-          <Link
-            href="/patient/assessments"
-            className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-3 text-sm font-medium text-text-primary hover:border-primary/25 hover:text-primary"
-          >
-            {t("actions.backToList")}
-          </Link>
         </div>
       </div>
     );
@@ -235,144 +229,119 @@ export default function PatientAssessmentDefinitionScreen({
   const progress = buildProgress(currentIndex, questions.length);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* Questionnaire Card */}
+      <div className="rounded-[32px] border border-border-light bg-white p-6 shadow-[0_18px_38px_-30px_rgba(34,52,56,0.22)] dark:border-border-light dark:bg-surface-secondary sm:p-8">
+        
+        {/* Header with Title and Progress */}
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-border-light/60">
+          <div className="text-start">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+              {item.title}
+            </p>
+            <h2 className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
               {t("detail.flow.progressLabel", {
                 current: currentIndex + 1,
                 total: questions.length,
               })}
-            </p>
-            <h1 className="mt-2 text-lg font-semibold text-text-primary dark:text-white/95">
-              {item.title}
-            </h1>
+            </h2>
           </div>
-          <span className="app-chip rounded-full px-3 py-1.5 text-xs font-medium">
+          <span className="inline-flex rounded-full bg-primary-light/60 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
             {progress}%
           </span>
         </div>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-tertiary dark:bg-white/10">
+
+        {/* Progress Bar */}
+        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-tertiary dark:bg-white/10">
           <div
-            className="h-full rounded-full bg-primary transition-[width]"
+            className="h-full rounded-full bg-primary transition-[width] duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
-      </section>
 
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)] lg:items-start">
-          <div className="min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
-                  {currentQuestion.prompt}
-                </h2>
-                {currentQuestion.description && (
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-                    {currentQuestion.description}
-                  </p>
-                )}
-              </div>
-              {!currentQuestion.isRequired && (
-                <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                  {t("detail.optional")}
-                </span>
-              )}
-            </div>
-
-            <fieldset className="mt-4">
-              <legend className="sr-only">{currentQuestion.prompt}</legend>
-              <div className="grid gap-3 md:grid-cols-2">
-                {currentQuestion.options.map((option) => {
-                  const checked = answers[currentQuestion.key] === option.key;
-                  return (
-                    <label
-                      key={option.key}
-                      className={`flex min-h-[92px] cursor-pointer items-start gap-3 rounded-[22px] border px-4 py-3 transition ${
-                        checked
-                          ? "border-primary/25 bg-primary-light shadow-[0_8px_24px_-20px_rgba(24,143,141,0.35)]"
-                          : "border-border-light bg-white/80 hover:border-primary/20 hover:bg-surface-secondary dark:bg-white/5"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={currentQuestion.key}
-                        value={option.key}
-                        checked={checked}
-                        onChange={() => setAnswer(currentQuestion.key, option.key)}
-                        className="mt-1 h-4 w-4 shrink-0 accent-primary"
-                      />
-                      <span className="min-w-0 text-sm leading-6 text-text-primary dark:text-white/90">
-                        {option.label}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            {stepError && (
-              <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
-                {stepError}
-              </div>
-            )}
-
-            {submitError && (
-              <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:text-white/90">
-                {submitError}
-              </div>
+        {/* Question Prompt */}
+        <div className="mt-8 text-start space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-text-primary dark:text-white/95 leading-snug">
+              {currentQuestion.prompt}
+            </h1>
+            {!currentQuestion.isRequired && (
+              <span className="shrink-0 inline-flex items-center rounded-full bg-surface-tertiary px-2.5 py-0.5 text-xs font-semibold text-text-muted">
+                {t("detail.optional")}
+              </span>
             )}
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="app-panel-soft rounded-[22px] px-4 py-4">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                {t("detail.flow.progressLabel", {
-                  current: currentIndex + 1,
-                  total: questions.length,
-                })}
-              </p>
-              <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
-                {t("detail.meta.questionCount", { value: questions.length })}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-text-secondary">
-                {t("detail.flow.footerNote")}
-              </p>
-            </div>
-
-            <div className="app-panel-soft rounded-[22px] px-4 py-4">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-text-muted">
-                {t("detail.meta.duration", { value: item.estimatedDurationMinutes ?? 0 })}
-              </p>
-              <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
-                {item.category}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-text-secondary">
-                {currentQuestion.isRequired ? t("detail.required") : t("detail.optional")}
-              </p>
-            </div>
-          </div>
+          {currentQuestion.description && (
+            <p className="text-sm text-text-secondary leading-relaxed max-w-2xl">
+              {currentQuestion.description}
+            </p>
+          )}
         </div>
-      </section>
 
-      <div className="app-panel sticky bottom-20 rounded-[24px] p-4 sm:bottom-6 sm:p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-text-secondary">{t("detail.flow.footerNote")}</p>
-          <div className="flex flex-wrap gap-3">
+        {/* Multiple Choice Options (Single list of wide, hover-lift rows) */}
+        <fieldset className="mt-8">
+          <legend className="sr-only">{currentQuestion.prompt}</legend>
+          <div className="space-y-3">
+            {currentQuestion.options.map((option) => {
+              const checked = answers[currentQuestion.key] === option.key;
+              return (
+                <label
+                  key={option.key}
+                  className={`flex cursor-pointer items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 text-start ${
+                    checked
+                      ? "border-primary bg-primary-light/35 shadow-sm dark:bg-primary/10 dark:border-primary"
+                      : "border-border-light bg-white hover:border-primary/20 hover:bg-surface-secondary dark:bg-surface-secondary dark:border-border-light/40 dark:hover:bg-white/5"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name={currentQuestion.key}
+                    value={option.key}
+                    checked={checked}
+                    onChange={() => setAnswer(currentQuestion.key, option.key)}
+                    className="h-4 w-4 shrink-0 accent-primary cursor-pointer"
+                  />
+                  <span className="min-w-0 text-sm font-semibold text-text-primary dark:text-white/90">
+                    {option.label}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {/* Step or Submit Error */}
+        {(stepError || submitError) && (
+          <div className="mt-4 rounded-xl border border-error/20 bg-error-light/50 px-4 py-3 text-sm text-error text-start flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{stepError || submitError}</span>
+          </div>
+        )}
+
+        {/* Navigation Action Buttons at the bottom of the card */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border-light/60 pt-6">
+          <p className="text-xs text-text-muted text-start leading-normal order-last sm:order-first">
+            {t("detail.flow.footerNote")}
+          </p>
+          
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              startIcon={<ChevronLeft className="h-4 w-4 rtl:rotate-180" />}
               onClick={goBack}
+              className="flex-1 sm:flex-initial rounded-xl"
             >
               {currentIndex === 0 ? t("actions.backToOverview") : t("actions.back")}
             </Button>
 
             {currentIndex < questions.length - 1 ? (
-              <Button type="button" size="sm" onClick={goNext}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={goNext}
+                className="flex-1 sm:flex-initial rounded-xl bg-primary text-white hover:bg-primary-hover"
+              >
                 {t("actions.next")}
               </Button>
             ) : (
@@ -381,6 +350,7 @@ export default function PatientAssessmentDefinitionScreen({
                 size="sm"
                 disabled={submitAssessment.isPending}
                 onClick={handleSubmit}
+                className="flex-1 sm:flex-initial rounded-xl bg-primary text-white hover:bg-primary-hover"
                 endIcon={
                   submitAssessment.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -389,13 +359,12 @@ export default function PatientAssessmentDefinitionScreen({
                   )
                 }
               >
-                {submitAssessment.isPending
-                  ? t("actions.submitting")
-                  : t("actions.submit")}
+                {submitAssessment.isPending ? t("actions.submitting") : t("actions.submit")}
               </Button>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

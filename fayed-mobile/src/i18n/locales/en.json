@@ -526,8 +526,29 @@
       "title": "Reset your password",
       "subtitle": "Enter your email to receive a password reset code.",
       "sendCode": "Send reset code",
+      "step2Title": "Verify reset code",
+      "step2Description": "Enter the reset code to continue.",
+      "verifyOtp": "Verify code",
+      "step3Title": "Create a new password",
+      "step3Description": "Code verified. Set your new password to finish recovery.",
       "resetPassword": "Set new password",
-      "backToSignIn": "Back to patient sign in"
+      "confirmPassword": "Confirm new password",
+      "confirmPasswordPlaceholder": "Re-enter your new password",
+      "otpEmailInfoLabel": "Code was sent to",
+      "passwordEmailInfoLabel": "Resetting password for",
+      "changeEmail": "Change email",
+      "rememberPassword": "Remember your password?",
+      "goToSignIn": "Go to sign in",
+      "errorMessage": "Unable to continue password recovery right now.",
+      "backToSignIn": "Back to patient sign in",
+      "cooldownMessage": "You can request a new code in {{seconds}} seconds.",
+      "resendCode": "Resend code",
+      "errors": {
+        "patientAccountNotFound": "No patient account was found with this email.",
+        "practitionerEmailOnPatientPage": "This email belongs to a practitioner account. Please use practitioner reset.",
+        "patientEmailOnPractitionerPage": "This email belongs to a patient account. Please use patient reset.",
+        "passwordsMismatch": "Passwords do not match."
+      }
     },
     "practitionerSignUp": {
       "eyebrow": "Practitioner registration",
@@ -547,7 +568,26 @@
       "title": "Recover practitioner access",
       "subtitle": "Request the reset code first, then use the same verified email and code to set a new password.",
       "sendCode": "Send reset code",
-      "resetPassword": "Reset password"
+      "step2Title": "Verify reset code",
+      "step2Description": "Enter the reset code to continue.",
+      "verifyOtp": "Verify code",
+      "step3Title": "Create a new password",
+      "step3Description": "Code verified. Set your new password to complete reset.",
+      "resetPassword": "Reset password",
+      "confirmPassword": "Confirm new password",
+      "confirmPasswordPlaceholder": "Re-enter your new password",
+      "otpEmailInfoLabel": "Code was sent to",
+      "passwordEmailInfoLabel": "Resetting password for",
+      "changeEmail": "Change email",
+      "errorMessage": "Unable to continue password recovery right now.",
+      "cooldownMessage": "You can request a new code in {{seconds}} seconds.",
+      "resendCode": "Resend code",
+      "errors": {
+        "practitionerAccountNotFound": "No practitioner account was found with this email.",
+        "practitionerEmailOnPatientPage": "This email belongs to a practitioner account. Please use practitioner reset.",
+        "patientEmailOnPractitionerPage": "This email belongs to a patient account. Please use patient reset.",
+        "passwordsMismatch": "Passwords do not match."
+      }
     },
     "practitionerTypes": {
       "PSYCHOLOGIST": "Psychologist",
@@ -1771,7 +1811,7 @@
     },
     "new": {
       "title": "Request Professional Chat",
-      "approvalNote": "Your request will be reviewed by our team. You will be notified once a decision is made.",
+      "approvalNote": "Your request will be reviewed by the Sawiyaa team. You will be notified once a decision is made.",
       "practitionerSlugLabel": "Practitioner identifier",
       "practitionerSlugPlaceholder": "e.g. dr-ahmed-ali",
       "practitionerSlugHint": "You can find the identifier on the practitioner's profile page.",
@@ -1785,7 +1825,7 @@
       "title": "Request Details",
       "reason": "Reason",
       "expiresAt": "Expiry date",
-      "pendingNotice": "Your request is under review. You will be notified once a decision is made.",
+      "pendingNotice": "Your request is under review by the Sawiyaa team. You will be notified once a decision is made.",
       "rejectedNotice": "Unfortunately, your chat request was rejected. You can open a support ticket if you need assistance.",
       "openConversation": "Open Conversation"
     },
@@ -1799,7 +1839,7 @@
     "sessionFollowUp": {
       "title": "Follow up after session",
       "practitionerLabel": "Practitioner",
-      "approvalNote": "Your follow-up request will be reviewed by our team.",
+      "approvalNote": "Your follow-up request will be reviewed by the Sawiyaa team.",
       "reasonLabel": "Reason for follow-up",
       "reasonPlaceholder": "Briefly explain what you'd like to follow up on...",
       "submit": "Submit follow-up request",

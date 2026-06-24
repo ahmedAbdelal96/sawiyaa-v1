@@ -7,6 +7,7 @@ import AppHeader from "@/layout/AppHeader";
 import Backdrop from "@/layout/Backdrop";
 import DynamicSidebar from "@/layout/DynamicSidebar";
 import UnifiedMessagesLauncher from "@/features/messages-shell/components/UnifiedMessagesLauncher";
+import { useSidebar } from "@/stores";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -31,9 +32,19 @@ export default function DashboardLayout({
   messagingRole,
   contentMode = "constrained",
 }: DashboardLayoutProps) {
+  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const locale = useLocale();
   const isRTL = locale === "ar";
-  const mainContentLayout = isRTL ? "lg:mr-[304px]" : "lg:ml-[304px]";
+
+  const mainContentLayout = isMobileOpen
+    ? "w-full"
+    : isExpanded || isHovered
+      ? isRTL
+        ? "lg:mr-[304px]"
+        : "lg:ml-[304px]"
+      : isRTL
+        ? "lg:mr-[88px]"
+        : "lg:ml-[88px]";
 
   const shellMaxClass =
     layoutVariant === "practitioner" ? "app-max-shell-practitioner" : "app-max-shell-admin";

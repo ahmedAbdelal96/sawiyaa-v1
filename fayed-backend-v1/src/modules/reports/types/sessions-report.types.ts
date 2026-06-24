@@ -26,4 +26,7 @@ export type SessionsReportRow = {
   createdAt: string;
   patientId: string;
   practitionerId: string;
+  patientName: string | null;
+  practitionerName: string | null;
 };
+

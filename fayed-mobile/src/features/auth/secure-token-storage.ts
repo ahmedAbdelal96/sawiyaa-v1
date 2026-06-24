@@ -3,10 +3,10 @@ import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { AuthTokens } from "./contracts";
 
-const ACCESS_TOKEN_KEY = "fayed.mobile.auth.tokens.access.v1";
-const REFRESH_TOKEN_KEY = "fayed.mobile.auth.tokens.refresh.v1";
-const ACCESS_EXPIRES_AT_KEY = "fayed.mobile.auth.tokens.access.expiresAt.v1";
-const REFRESH_EXPIRES_AT_KEY = "fayed.mobile.auth.tokens.refresh.expiresAt.v1";
+const ACCESS_TOKEN_KEY = "sawiyaa.mobile.auth.tokens.access.v1";
+const REFRESH_TOKEN_KEY = "sawiyaa.mobile.auth.tokens.refresh.v1";
+const ACCESS_EXPIRES_AT_KEY = "sawiyaa.mobile.auth.tokens.access.expiresAt.v1";
+const REFRESH_EXPIRES_AT_KEY = "sawiyaa.mobile.auth.tokens.refresh.expiresAt.v1";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;

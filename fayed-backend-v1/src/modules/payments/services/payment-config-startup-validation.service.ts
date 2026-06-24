@@ -31,6 +31,10 @@ export class PaymentConfigStartupValidationService implements OnModuleInit {
     }
 
     if (paymob.enabled) {
+      issues.push(
+        ...this.paymentRuntimeConfigService.getPaymobCurrencyMethodConfigIssues(),
+      );
+
       try {
         this.paymentRuntimeConfigService.assertCheckoutConfigured(
           PaymentProvider.PAYMOB,

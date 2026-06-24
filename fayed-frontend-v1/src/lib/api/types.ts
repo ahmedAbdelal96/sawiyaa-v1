@@ -43,7 +43,7 @@ export interface ApiError {
 // ==================== Legacy Backoffice Enums ====================
 //
 // These shared API types come from the old template/backoffice layer and are not
-// the active role-routing model for the current Fayed product surface.
+// the active role-routing model for the current Sawiyaa product surface.
 // Active protected-route roles live in src/config/route-access.ts.
 
 export type LegacyBackofficeUserRole =

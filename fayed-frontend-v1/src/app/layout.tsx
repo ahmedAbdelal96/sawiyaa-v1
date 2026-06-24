@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "flatpickr/dist/flatpickr.css";
+import NextTopLoader from "nextjs-toploader";
 import { QueryProvider } from "@/providers/query-provider";
 import { ToastProvider } from "@/providers/toast-provider";
 import { ThemeHydration } from "@/components/providers/ThemeHydration";
@@ -10,12 +11,12 @@ export const metadata: Metadata = {
   ...buildPublicMetadata({
     locale: "ar",
     pathname: "/",
-    title: "Fayed",
+    title: "Sawiyaa | سويّة",
     description:
       "Guided mental care with clearer entry paths, public practitioner discovery, specialties, and trust-backed content.",
   }),
   title: {
-    default: "Fayed",
+    default: "Sawiyaa | سويّة",
     template: "%s",
   },
   icons: {
@@ -47,6 +48,12 @@ export default async function RootLayout({ children, params }: Props) {
       >
         <QueryProvider>
           <ThemeHydration />
+          <NextTopLoader 
+            color="#24564F"
+            showSpinner={false}
+            height={3}
+            shadow="0 0 10px #24564F,0 0 5px #24564F"
+          />
           {children}
           <ToastProvider />
         </QueryProvider>

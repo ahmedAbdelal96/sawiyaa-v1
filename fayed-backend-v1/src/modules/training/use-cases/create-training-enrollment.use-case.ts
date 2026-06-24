@@ -127,19 +127,31 @@ export class CreateTrainingEnrollmentUseCase {
     }
 
     const pricing = this.resolvePricing(schedule);
+    const patientCountryIsoCode = patient.country?.isoCode ?? null;
+    if (!patientCountryIsoCode) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.paymentRoutingAmbiguous',
+        error: 'PAYMENT_ROUTING_AMBIGUOUS',
+      });
+    }
+
     const provider = this.resolveProvider({
       currencyCode: pricing.currencyCode,
-      patientCountryIsoCode: patient.country?.isoCode ?? null,
+      patientCountryIsoCode,
     });
-    const providerAdapter = this.paymentProviderRegistryService.get(provider);
+    const providerAdapter = this.paymentProviderRegistryService.get(provider, {
+      currencyCode: pricing.currencyCode,
+      checkoutCountryIsoCode: patientCountryIsoCode,
+      operatingCountryIsoCode: null,
+    });
     const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
-      declaredCountryCode: patient.country?.isoCode ?? null,
-      resolvedCountryCode: patient.country?.isoCode ?? null,
+      declaredCountryCode: patientCountryIsoCode,
+      resolvedCountryCode: patientCountryIsoCode,
       countrySource: 'ACCOUNT',
       countryMismatch: false,
       phoneCountryCode: null,
       operatingCountryCode: null,
-      checkoutCountryCode: patient.country?.isoCode ?? null,
+      checkoutCountryCode: patientCountryIsoCode,
       pricingCurrencyCode: pricing.currencyCode,
       pricingMarketType:
         pricing.currencyCode === 'EGP'
@@ -268,6 +280,8 @@ export class CreateTrainingEnrollmentUseCase {
         sessionId: schedule.id,
         patientEmail: patient.user.emails[0]?.email ?? null,
         redirectionUrl: providerRedirectionUrl,
+        checkoutCountryIsoCode: patientCountryIsoCode,
+        operatingCountryIsoCode: null,
       });
     } catch (error) {
       const failureReason =
@@ -452,16 +466,18 @@ export class CreateTrainingEnrollmentUseCase {
     patientCountryIsoCode: string | null;
   }) {
     const provider = resolveProviderForCurrency(input.currencyCode);
-    if (provider === PaymentProvider.STRIPE) {
-      return this.paymentProviderResolverService.resolveProvider({
-        currencyCode: 'USD',
-        commissionMarketType: MarketType.CROSS_BORDER,
-        operatingCountryIsoCode: null,
-        checkoutCountryIsoCode: input.patientCountryIsoCode,
-      });
-    }
-
     if (provider === PaymentProvider.PAYMOB) {
+      const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
+
+      if (normalizedCurrencyCode === 'USD') {
+        return this.paymentProviderResolverService.resolveProvider({
+          currencyCode: 'USD',
+          commissionMarketType: MarketType.CROSS_BORDER,
+          operatingCountryIsoCode: null,
+          checkoutCountryIsoCode: input.patientCountryIsoCode,
+        });
+      }
+
       return this.paymentProviderResolverService.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,
@@ -488,9 +504,8 @@ export class CreateTrainingEnrollmentUseCase {
     enrollmentId: string;
     returnUrl: string | null;
   }): string {
-    const trustedReturnUrl = this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
-      input.returnUrl,
-    );
+    const trustedReturnUrl =
+      this.paymentRuntimeConfigService.resolveTrustedReturnUrl(input.returnUrl);
 
     if (trustedReturnUrl) {
       return trustedReturnUrl;

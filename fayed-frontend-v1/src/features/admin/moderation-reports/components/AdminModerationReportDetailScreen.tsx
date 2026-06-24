@@ -4,7 +4,24 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Mail, Phone, ShieldCheck, ShieldX, UserRound } from "lucide-react";
+import { 
+  Mail, 
+  Phone, 
+  ShieldCheck, 
+  ShieldX, 
+  UserRound,
+  ShieldAlert,
+  Activity,
+  Gavel,
+  CheckCircle2,
+  XCircle,
+  Database,
+  UserCheck,
+  Eye,
+  Lock,
+  AlertCircle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { SurfaceCard, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
@@ -13,6 +30,9 @@ import Button from "@/components/ui/button/Button";
 import { useAuthState } from "@/stores/auth-store";
 import { toAppError } from "@/lib/api/errors";
 import { listAdminPatients } from "@/features/admin/patients/api/admin-patients.api";
+import { listAdminPractitioners } from "@/features/admin/practitioners/api/admin-practitioners.api";
+import { getAdminSessionAttendance } from "@/features/admin/session-runtime/api/admin-session-runtime.api";
+import { getAdminChatConversation } from "@/features/admin/chat-conversations/api/admin-chat-conversations.api";
 import { getAdminSupportTicket } from "@/features/support/api/support.api";
 import { useCreateAdminSupportTicketForReporter } from "@/features/support/hooks/use-support";
 import {
@@ -54,20 +74,116 @@ function formatDateTime(value: string | null, locale: string) {
   });
 }
 
-function formatSnapshotLabel(key: string) {
-  return key
+function translateSnapshotKey(key: string, locale: string): string {
+  if (locale !== "ar") {
+    return key
+      .replace(/_/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  const normalized = key.replace(/_/g, "").replace(/\s+/g, "").toLowerCase();
+  
+  const translations: Record<string, string> = {
+    tickettype: "نوع التذكرة",
+    status: "الحالة",
+    priority: "الأولوية",
+    subject: "موضوع التذكرة",
+    description: "الوصف",
+    updatedat: "تاريخ التحديث",
+    createdat: "تاريخ الإنشاء",
+    category: "القسم",
+    rating: "التقييم",
+    comment: "التعليق",
+    title: "العنوان",
+    content: "المحتوى",
+    authorid: "معرّف الكاتب",
+    senderid: "معرّف المرسل",
+    receiverid: "معرّف المستلم",
+    message: "الرسالة",
+    amount: "المبلغ",
+    currency: "العملة",
+    paymentmethod: "طريقة الدفع",
+    practitionerid: "المعالج",
+    patientid: "المريض",
+    patientprofileid: "المريض (العميل)",
+    practitionerprofileid: "المعالج (الممارس)",
+    conversationstatus: "حالة المحادثة",
+    participantcount: "عدد المشاركين",
+    sessionid: "الجلسة المعنية",
+    ratingvalue: "قيمة التقييم",
+    reviewstatus: "حالة المراجعة",
+    submittedat: "تاريخ التقديم",
+    conversationid: "أطراف المحادثة",
+    supportticketid: "تذكرة الدعم المرتبطة",
+    sentat: "تاريخ الإرسال",
+    preview: "نص الرسالة المُبلغ عنها",
+    visibility: "حالة الظهور",
+    slug: "معرف الرابط الفرعي للعنوان",
+  };
+
+  return translations[normalized] || key
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function formatSnapshotValue(value: unknown) {
+function translateSnapshotValue(value: string, locale: string): string {
+  if (locale !== "ar") return value;
+
+  const normalized = value.trim().toUpperCase();
+
+  const translations: Record<string, string> = {
+    PAYMENT: "استفسار مالي / مدفوعات",
+    GENERAL: "عام",
+    TECHNICAL: "تقني",
+    FEEDBACK: "ملاحظات وآراء",
+    OPEN: "مفتوح",
+    CLOSED: "مغلق",
+    RESOLVED: "تم الحل",
+    PENDING: "قيد الانتظار",
+    ACTIVE: "نشط",
+    INACTIVE: "غير نشط",
+    HIGH: "عالية جداً",
+    NORMAL: "عادية",
+    LOW: "منخفضة",
+    URGENT: "عاجل",
+    PATIENT: "عميل",
+    PRACTITIONER: "ممارس",
+    ADMIN: "مسؤول",
+    PUBLISHED: "منشور",
+    DRAFT: "مسودة",
+    ARCHIVED: "مؤرشف",
+    APPROVED: "مقبول/معتمد",
+    REJECTED: "مرفوض",
+    PENDING_REVIEW: "قيد المراجعة",
+    TRUE: "نعم",
+    FALSE: "لا",
+    EGP: "جنيه مصري",
+    USD: "دولار أمريكي",
+  };
+
+  return translations[normalized] || value;
+}
+
+function formatSnapshotValue(value: unknown, locale: string): string {
   if (value === null || value === undefined) return "-";
-  if (typeof value === "string") return value || "-";
+  if (typeof value === "string") {
+    const isIsoDate = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value);
+    if (isIsoDate) {
+      return formatDateTime(value, locale);
+    }
+    return translateSnapshotValue(value, locale);
+  }
   if (typeof value === "number") return Number.isNaN(value) ? "-" : String(value);
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
+  if (typeof value === "boolean") return value ? (locale === "ar" ? "نعم" : "true") : (locale === "ar" ? "لا" : "false");
+  if (Array.isArray(value)) {
+    return value.length 
+      ? value.map((v) => formatSnapshotValue(v, locale)).join(", ") 
+      : "-";
+  }
   if (typeof value === "object") {
     try {
       return JSON.stringify(value);
@@ -82,20 +198,138 @@ function DetailRow({
   label,
   value,
   mono = false,
+  ltr = false,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
+  ltr?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
       <span className="text-xs font-medium text-text-muted">{label}</span>
       <span
-        className={`text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
+        className={cn(
+          "text-sm text-text-primary dark:text-white/90",
+          mono && "font-mono text-xs sm:text-sm"
+        )}
+        dir={ltr ? "ltr" : undefined}
       >
         {value}
       </span>
     </div>
+  );
+}
+
+function PatientProfileName({ profileId }: { profileId: string }) {
+  const patientQuery = useQuery({
+    queryKey: ["adminModeration", "patientNameLookup", profileId],
+    enabled: !!profileId,
+    queryFn: async () => {
+      const data = await listAdminPatients({
+        search: profileId,
+        page: 1,
+        limit: 5,
+      });
+      const match = data.items.find((p) => p.id === profileId);
+      return match ? { displayName: match.displayName, email: match.primaryEmail } : null;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  if (patientQuery.isLoading) return <span className="text-text-muted">جاري التحميل...</span>;
+  if (!patientQuery.data) return <span className="font-mono text-xs text-text-secondary">{profileId}</span>;
+  
+  const { displayName, email } = patientQuery.data;
+  return (
+    <span className="inline-flex flex-col items-end">
+      <span className="font-semibold text-text-primary dark:text-white">{displayName ?? "غير معروف"}</span>
+      {email && <span className="text-xs text-text-muted">{email}</span>}
+    </span>
+  );
+}
+
+function PractitionerProfileName({ profileId }: { profileId: string }) {
+  const practitionerQuery = useQuery({
+    queryKey: ["adminModeration", "practitionerNameLookup", profileId],
+    enabled: !!profileId,
+    queryFn: async () => {
+      const data = await listAdminPractitioners({
+        search: profileId,
+        page: 1,
+        limit: 5,
+      });
+      const match = data.items.find((p) => p.id === profileId);
+      return match ? { displayName: match.displayName, email: match.email } : null;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  if (practitionerQuery.isLoading) return <span className="text-text-muted">جاري التحميل...</span>;
+  if (!practitionerQuery.data) return <span className="font-mono text-xs text-text-secondary">{profileId}</span>;
+
+  const { displayName, email } = practitionerQuery.data;
+  return (
+    <span className="inline-flex flex-col items-end">
+      <span className="font-semibold text-text-primary dark:text-white">{displayName ?? "غير معروف"}</span>
+      {email && <span className="text-xs text-text-muted">{email}</span>}
+    </span>
+  );
+}
+
+function SessionParticipantsLookup({ sessionId }: { sessionId: string }) {
+  const sessionQuery = useQuery({
+    queryKey: ["adminModeration", "sessionParticipantsLookup", sessionId],
+    enabled: !!sessionId,
+    queryFn: async () => {
+      const data = await getAdminSessionAttendance(sessionId);
+      return data.participants ?? null;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  if (sessionQuery.isLoading) return <span className="text-text-muted">جاري التحميل...</span>;
+  if (!sessionQuery.data) return <span className="font-mono text-xs text-text-secondary">{sessionId}</span>;
+
+  const { patient, practitioner } = sessionQuery.data;
+
+  return (
+    <span className="inline-flex flex-col items-end gap-1 text-right">
+      <span className="text-xs text-text-muted">
+        المريض: <span className="font-semibold text-text-primary dark:text-white">{patient?.displayName ?? "غير معروف"}</span>
+      </span>
+      <span className="text-xs text-text-muted">
+        المعالج: <span className="font-semibold text-text-primary dark:text-white">{practitioner?.displayName ?? "غير معروف"}</span>
+      </span>
+    </span>
+  );
+}
+
+function ConversationParticipantsLookup({ conversationId }: { conversationId: string }) {
+  const conversationQuery = useQuery({
+    queryKey: ["adminModeration", "conversationParticipantsLookup", conversationId],
+    enabled: !!conversationId,
+    queryFn: async () => {
+      const data = await getAdminChatConversation(conversationId);
+      return data.item;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  if (conversationQuery.isLoading) return <span className="text-text-muted">جاري التحميل...</span>;
+  if (!conversationQuery.data) return <span className="font-mono text-xs text-text-secondary">{conversationId}</span>;
+
+  const { patient, practitioner } = conversationQuery.data;
+
+  return (
+    <span className="inline-flex flex-col items-end gap-1 text-right">
+      <span className="text-xs text-text-muted">
+        المريض: <span className="font-semibold text-text-primary dark:text-white">{patient?.displayName ?? "غير معروف"}</span>
+      </span>
+      <span className="text-xs text-text-muted">
+        المعالج: <span className="font-semibold text-text-primary dark:text-white">{practitioner?.displayName ?? "غير معروف"}</span>
+      </span>
+    </span>
   );
 }
 
@@ -130,6 +364,7 @@ function ReporterQuickActions({
   patientProfileId: string | null;
   practitionerProfileId: string | null;
 }) {
+  const locale = useLocale();
   const primaryHref = patientProfileId
     ? `/admin/patients/${patientProfileId}`
     : practitionerProfileId
@@ -149,14 +384,14 @@ function ReporterQuickActions({
       ) : null}
 
       {email ? (
-        <a href={`mailto:${email}`} className={actionClassName}>
+        <a href={`mailto:${email}`} className={cn(actionClassName, "dir-ltr")} dir="ltr">
           <Mail className="h-4 w-4 text-primary" />
           {email}
         </a>
       ) : null}
 
       {phone ? (
-        <a href={`tel:${phone}`} className={actionClassName}>
+        <a href={`tel:${phone}`} className={cn(actionClassName, "dir-ltr")} dir="ltr">
           <Phone className="h-4 w-4 text-primary" />
           {phone}
         </a>
@@ -276,17 +511,64 @@ function useResolvedReporter(item: ModerationCaseDetail | undefined) {
   };
 }
 
-function OperationalCard({
+function SummaryStatusCard({
   label,
   title,
+  description,
+  icon,
   tone = "neutral",
 }: {
   label: string;
   title: string;
+  description: string;
+  icon: React.ReactNode;
   tone?: "neutral" | "brand" | "primary" | "success" | "warning";
 }) {
+  const locale = useLocale();
+  const toneClasses = {
+    neutral: "border-border-light bg-surface-secondary text-text-primary dark:border-white/8 dark:bg-white/5",
+    brand: "border-primary/20 bg-primary-light/50 text-text-brand dark:border-primary/30 dark:bg-primary/10",
+    primary: "border-primary/20 bg-primary-light/50 text-text-brand dark:border-primary/30 dark:bg-primary/10",
+    success: "border-success-500/25 bg-success-50/70 text-success-700 dark:border-success-500/20 dark:bg-success-950/20 dark:text-success-300",
+    warning: "border-status-warning-border/30 bg-status-warning-soft/70 text-status-warning dark:border-warning-500/20 dark:bg-warning-950/20",
+  };
+
+  const iconClasses = {
+    neutral: "bg-gray-100 text-text-muted dark:bg-white/10",
+    brand: "bg-primary-light text-text-brand dark:bg-primary/20",
+    primary: "bg-primary-light text-text-brand dark:bg-primary/20",
+    success: "bg-success-50 text-success-700 dark:bg-success-900/30 dark:text-success-300",
+    warning: "bg-status-warning-soft text-status-warning dark:bg-warning-800/25",
+  };
+
   return (
-    <SurfaceStatCard label={label} value={title} tone={tone} />
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl border p-5 transition-all duration-200",
+      toneClasses[tone]
+    )}>
+      <div className="flex items-start gap-4">
+        <div className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+          iconClasses[tone]
+        )}>
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className={cn(
+            "text-[11px] font-bold uppercase text-text-muted",
+            locale === "ar" ? "" : "tracking-[0.15em]"
+          )}>
+            {label}
+          </p>
+          <p className="mt-1.5 text-base font-bold text-text-primary dark:text-white">
+            {title}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-text-secondary">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -297,6 +579,8 @@ function SnapshotPanel({
   snapshot: ModerationTargetSnapshot | null;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const locale = useLocale();
+
   if (!snapshot) {
     return (
       <StateCard
@@ -318,9 +602,69 @@ function SnapshotPanel({
 
   return (
     <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-      {entries.map(([key, value]) => (
-        <DetailRow key={key} label={formatSnapshotLabel(key)} value={formatSnapshotValue(value)} />
-      ))}
+      {entries.map(([key, value]) => {
+        if (value === null || value === undefined) return null;
+
+        // Custom render for patientProfileId
+        if (key === "patientProfileId" && typeof value === "string") {
+          return (
+            <DetailRow
+              key={key}
+              label={translateSnapshotKey(key, locale)}
+              value={<PatientProfileName profileId={value} />}
+            />
+          );
+        }
+
+        // Custom render for practitionerProfileId
+        if (key === "practitionerProfileId" && typeof value === "string") {
+          return (
+            <DetailRow
+              key={key}
+              label={translateSnapshotKey(key, locale)}
+              value={<PractitionerProfileName profileId={value} />}
+            />
+          );
+        }
+
+        // Custom render for sessionId (reviews)
+        if (key === "sessionId" && typeof value === "string") {
+          return (
+            <DetailRow
+              key={key}
+              label={translateSnapshotKey(key, locale)}
+              value={<SessionParticipantsLookup sessionId={value} />}
+            />
+          );
+        }
+
+        // Custom render for conversationId (messages)
+        if (key === "conversationId" && typeof value === "string") {
+          return (
+            <DetailRow
+              key={key}
+              label={translateSnapshotKey(key, locale)}
+              value={<ConversationParticipantsLookup conversationId={value} />}
+            />
+          );
+        }
+
+        const formatted = formatSnapshotValue(value, locale);
+        const isLtrValue = typeof value === "string" && (
+          /^\d+$/.test(value) || 
+          value.includes("@") || 
+          /^\d{4}-\d{2}-\d{2}/.test(value)
+        );
+
+        return (
+          <DetailRow
+            key={key}
+            label={translateSnapshotKey(key, locale)}
+            value={formatted}
+            ltr={isLtrValue}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -375,6 +719,7 @@ function OperationalSnapshot({
   const caseState = getModerationCaseState(item);
   const targetState = getModerationTargetState(item);
   const actionPosture = getModerationActionPosture({ canOperate, availableActions });
+
   const caseTone =
     caseState === "resolved"
       ? "success"
@@ -393,26 +738,51 @@ function OperationalSnapshot({
         ? "neutral"
         : "warning";
 
+  const caseIcons = {
+    open: <ShieldAlert className="h-5 w-5" />,
+    review: <Activity className="h-5 w-5" />,
+    enforcement: <Gavel className="h-5 w-5" />,
+    resolved: <CheckCircle2 className="h-5 w-5" />,
+    dismissed: <XCircle className="h-5 w-5" />,
+  };
+
+  const targetIcons = {
+    snapshotPresent: <Database className="h-5 w-5" />,
+    snapshotMissing: <AlertCircle className="h-5 w-5" />,
+  };
+
+  const actionIcons = {
+    limitedActions: <UserCheck className="h-5 w-5" />,
+    noActions: <Eye className="h-5 w-5" />,
+    inspectionOnly: <Lock className="h-5 w-5" />,
+  };
+
   return (
     <SurfaceCard variant="section" className="rounded-[28px] p-5 sm:p-6">
       <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
         {t("detail.sections.snapshotSummary")}
       </h2>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
-        <OperationalCard
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <SummaryStatusCard
           label={t("detail.snapshotCards.caseState.label")}
           title={t(`detail.snapshotCards.caseState.states.${caseState}.title` as Parameters<typeof t>[0])}
+          description={t(`detail.snapshotCards.caseState.states.${caseState}.note` as Parameters<typeof t>[0])}
+          icon={caseIcons[caseState]}
           tone={caseTone}
         />
-        <OperationalCard
+        <SummaryStatusCard
           label={t("detail.snapshotCards.targetContext.label")}
           title={t(`detail.snapshotCards.targetContext.states.${targetState}.title` as Parameters<typeof t>[0])}
+          description={t(`detail.snapshotCards.targetContext.states.${targetState}.note` as Parameters<typeof t>[0])}
+          icon={targetIcons[targetState]}
           tone={targetTone}
         />
-        <OperationalCard
+        <SummaryStatusCard
           label={t("detail.snapshotCards.actionPosture.label")}
           title={t(`detail.snapshotCards.actionPosture.states.${actionPosture}.title` as Parameters<typeof t>[0])}
+          description={t(`detail.snapshotCards.actionPosture.states.${actionPosture}.note` as Parameters<typeof t>[0])}
+          icon={actionIcons[actionPosture]}
           tone={actionTone}
         />
       </div>
@@ -599,7 +969,10 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
           className="mb-3"
         />
 
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+        <p className={cn(
+          "mb-2 text-xs font-semibold uppercase text-primary",
+          locale === "ar" ? "" : "tracking-[0.18em]"
+        )}>
           {t("detail.eyebrow")}
         </p>
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -607,7 +980,6 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
             <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
               {t("detail.title")}
             </h1>
-            <p className="mt-2 font-mono text-sm text-text-secondary">{item.id}</p>
           </div>
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${ADMIN_MODERATION_STATUS_STYLES[item.status]}`}
@@ -640,7 +1012,6 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
         <div className="space-y-5">
           <SummaryCard title={t("detail.sections.case")}>
             <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-              <DetailRow label={t("detail.fields.reportId")} value={item.id} mono />
               <DetailRow
                 label={t("detail.fields.status")}
                 value={t(`statuses.${item.status}` as Parameters<typeof t>[0])}
@@ -649,7 +1020,6 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                 label={t("detail.fields.targetType")}
                 value={t(`targetTypes.${item.targetType}` as Parameters<typeof t>[0])}
               />
-              <DetailRow label={t("detail.fields.targetId")} value={item.targetId} mono />
               <DetailRow
                 label={t("detail.fields.reason")}
                 value={t(`reasons.${item.reason}` as Parameters<typeof t>[0])}
@@ -674,15 +1044,6 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                 )}
               />
               <DetailRow
-                label={t("detail.fields.reporterUserId")}
-                value={
-                  resolvedReporter.reporter?.userId ??
-                  item.reporterUserId ??
-                  t("detail.fields.noReporter")
-                }
-                mono
-              />
-              <DetailRow
                 label={t("detail.fields.reporterName")}
                 value={resolvedReporter.reporter?.displayName ?? "-"}
               />
@@ -693,6 +1054,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
               <DetailRow
                 label={t("detail.fields.reporterPhone")}
                 value={resolvedReporter.reporter?.phone ?? "-"}
+                ltr={!!resolvedReporter.reporter?.phone}
               />
               <DetailRow
                 label={t("detail.fields.note")}
@@ -732,7 +1094,10 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
               availableActions.length > 0 ? (
                 <form onSubmit={handleActionSubmit} className="space-y-4">
                   <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                    <span className={cn(
+                      "mb-2 block text-xs font-semibold uppercase text-text-muted",
+                      locale === "ar" ? "" : "tracking-[0.18em]"
+                    )}>
                       {t("actions.fields.action")}
                     </span>
                     <select
@@ -742,7 +1107,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                           event.target.value as ModerationCaseActionType | "",
                         )
                       }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
+                      className="w-full rounded-xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:ring-2 focus:ring-primary/20 focus:border-primary dark:border-white/8 dark:bg-white/5 dark:text-white"
                     >
                       <option value="">{t("actions.placeholders.selectAction")}</option>
                       {availableActions.map((action) => (
@@ -754,7 +1119,10 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                   </label>
 
                   <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                    <span className={cn(
+                      "mb-2 block text-xs font-semibold uppercase text-text-muted",
+                      locale === "ar" ? "" : "tracking-[0.18em]"
+                    )}>
                       {t("actions.fields.reason")}
                     </span>
                     <input
@@ -765,7 +1133,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                           ? t("actions.placeholders.reasonRequired")
                           : t("actions.placeholders.reasonOptional")
                       }
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
+                      className="w-full rounded-xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:ring-2 focus:ring-primary/20 focus:border-primary dark:border-white/8 dark:bg-white/5 dark:text-white"
                     />
                     {reasonRequired ? (
                       <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
@@ -775,7 +1143,10 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                   </label>
 
                   <label className="block">
-                    <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                    <span className={cn(
+                      "mb-2 block text-xs font-semibold uppercase text-text-muted",
+                      locale === "ar" ? "" : "tracking-[0.18em]"
+                    )}>
                       {t("actions.fields.note")}
                     </span>
                     <textarea
@@ -783,7 +1154,7 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
                       placeholder={t("actions.placeholders.note")}
-                      className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
+                      className="w-full rounded-xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:ring-2 focus:ring-primary/20 focus:border-primary dark:border-white/8 dark:bg-white/5 dark:text-white"
                     />
                   </label>
 
@@ -811,8 +1182,39 @@ export default function AdminModerationReportDetailScreen({ reportId }: Props) {
               />
             )}
           </SummaryCard>
-
         </div>
+      </div>
+
+      {/* Collapse widget for technical details */}
+      <div className="mt-5">
+        <details className="group rounded-2xl border border-border-light/60 bg-surface-secondary/30 p-4 transition-all duration-200 dark:border-white/8 dark:bg-white/2">
+          <summary className="flex cursor-pointer items-center justify-between font-medium text-text-muted hover:text-text-primary transition-colors">
+            <span>{t("detail.sections.technicalDetails" as Parameters<typeof t>[0])}</span>
+            <span className="text-xs transition-transform duration-200 group-open:rotate-180">▼</span>
+          </summary>
+          <div className="mt-3 space-y-2 border-t border-border-light/40 pt-3 text-xs font-mono text-text-secondary">
+            <div className="flex justify-between py-1">
+              <span>Report ID:</span>
+              <span className="select-all">{item.id}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span>Target ID:</span>
+              <span className="select-all">{item.targetId}</span>
+            </div>
+            {item.reporterUserId && (
+              <div className="flex justify-between py-1">
+                <span>Reporter User ID:</span>
+                <span className="select-all">{item.reporterUserId}</span>
+              </div>
+            )}
+            {item.targetSnapshot?.kind && (
+              <div className="flex justify-between py-1">
+                <span>Snapshot Kind:</span>
+                <span>{item.targetSnapshot.kind}</span>
+              </div>
+            )}
+          </div>
+        </details>
       </div>
     </div>
   );

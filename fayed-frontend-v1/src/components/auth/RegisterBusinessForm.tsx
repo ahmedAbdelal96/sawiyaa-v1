@@ -167,7 +167,7 @@ export default function RegisterBusinessForm() {
                     className="flex-1"
                     dir="ltr"
                   />
-                  <span className="text-sm text-gray-500 dark:text-gray-400">.fayed.app</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">.sawiyaa.app</span>
                 </div>
                 {errors.slug && (
                   <p className="mt-1 text-sm text-error-500">

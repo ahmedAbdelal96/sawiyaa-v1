@@ -7,7 +7,7 @@ import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 
 declare global {
   interface Window {
-    __fayedGoogleInitializedClientId?: string;
+    __sawiyaaGoogleInitializedClientId?: string;
     google?: {
       accounts: {
         id: {
@@ -35,7 +35,7 @@ type Props = {
   defaultRedirect: string;
 };
 
-const GOOGLE_SCRIPT_ID = "fayed-google-identity-script";
+const GOOGLE_SCRIPT_ID = "sawiyaa-google-identity-script";
 
 export default function PatientGoogleAuthButton({
   callbackUrl,
@@ -100,7 +100,7 @@ export default function PatientGoogleAuthButton({
     const container = buttonContainerRef.current;
     container.innerHTML = "";
 
-    if (window.__fayedGoogleInitializedClientId !== googleClientId) {
+    if (window.__sawiyaaGoogleInitializedClientId !== googleClientId) {
       window.google.accounts.id.initialize({
         client_id: googleClientId,
         callback: async (response) => {
@@ -122,7 +122,7 @@ export default function PatientGoogleAuthButton({
         },
       });
 
-      window.__fayedGoogleInitializedClientId = googleClientId;
+      window.__sawiyaaGoogleInitializedClientId = googleClientId;
     }
 
     window.google.accounts.id.renderButton(container, {

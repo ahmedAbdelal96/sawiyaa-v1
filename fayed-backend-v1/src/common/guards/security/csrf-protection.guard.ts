@@ -54,7 +54,7 @@ export class CsrfProtectionGuard implements CanActivate {
       return true;
     }
 
-    const cookieName = authCfg.csrf?.cookieName ?? 'fayed_csrf_token';
+    const cookieName = authCfg.csrf?.cookieName ?? 'sawiyaa_csrf_token';
     const headerName = authCfg.csrf?.headerName ?? 'x-csrf-token';
     const expectedToken = this.readCookieValue(request, cookieName);
     const presentedToken = this.readHeaderValue(request, headerName);

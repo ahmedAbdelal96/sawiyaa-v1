@@ -75,7 +75,7 @@
     "discountValue": "نسبة الخصم",
     "discountHint": "الحد الأقصى 25%. الأكواد الخاصة بالمعالج تكون بالنسبة المئوية فقط.",
     "discountLockedHint": "تم استخدام هذا الكود بالفعل، لذلك لا يمكن تغيير قيمة الخصم.",
-        "usageLimitTotal": "الحد الإجمالي للاستخدام",
+    "usageLimitTotal": "الحد الإجمالي للاستخدام",
     "usageLimitTotalPlaceholder": "حد اختياري",
     "usageLimitTotalHint": "اتركه فارغًا إذا كان الاستخدام غير محدود.",
     "usageLimitPerPatient": "الحد لكل مريض",

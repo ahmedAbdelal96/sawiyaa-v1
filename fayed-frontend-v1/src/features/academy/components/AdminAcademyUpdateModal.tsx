@@ -9,6 +9,7 @@ import { useUpdateAdminAcademyCourse } from "../hooks/use-academy";
 import { getAcademyPlanFieldIssues, type AcademyPlanFieldIssue } from "../lib/academy-form-errors";
 import { getAdminAcademyErrorKey } from "../lib/academy-errors";
 import type { AcademyCourseItem, CourseVisibility } from "../types/academy.types";
+import { toAppError } from "@/lib/api/errors";
 
 type Props = {
   isOpen: boolean;
@@ -230,9 +231,10 @@ export default function AdminAcademyUpdateModal({
         return;
       }
 
+      const errorKey = getAdminAcademyErrorKey(error);
       setFeedback({
         tone: "error",
-        message: t(getAdminAcademyErrorKey(error) as Parameters<typeof t>[0]),
+        message: errorKey && errorKey !== "admin.errors.generic" ? t(errorKey as Parameters<typeof t>[0]) : toAppError(error).message,
       });
     }
   };

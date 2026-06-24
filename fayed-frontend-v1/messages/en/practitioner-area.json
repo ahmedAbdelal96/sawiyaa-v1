@@ -653,9 +653,9 @@
     "empty": "Choose at least one specialty to keep your practitioner profile ready.",
     "primary": "Primary",
     "management": {
-      "heading": "Specialties on your practitioner profile",
-      "note": "Use this screen to update the specialties linked to your profile. Specialty records themselves are managed separately.",
-      "replaceHint": "Saving replaces your full specialties list and keeps one specialty marked as primary."
+      "heading": "Profile specialties",
+      "note": "Here you can choose the specialties you practice to showcase in your profile and help clients find you.",
+      "replaceHint": "Please keep one specialty marked as primary to define your profile's main focus."
     },
     "current": {
       "heading": "Current specialties"
@@ -667,7 +667,7 @@
       "categoryEmptyTitle": "No specialties under this category",
       "categoryEmptyNote": "Try another category to add a sub-specialty.",
       "pickerLabel": "Available specialties",
-      "selectionNote": "You can add only specialties that are currently active on Fayed.",
+      "selectionNote": "You can add only specialties that are currently active on Sawiyaa.",
       "primaryNote": "One specialty always stays primary. If you remove the current primary, the first remaining specialty becomes primary.",
       "noAvailableToAdd": "All available specialties are already selected.",
       "emptyTitle": "No specialties are available right now",
@@ -970,8 +970,8 @@
       },
       "statusMessage": {
         "SUBMITTED": "Your application has been submitted and is awaiting review.",
-        "UNDER_REVIEW": "Your application is being reviewed by the Fayed team. You will be notified of any updates.",
-        "APPROVED": "Your application has been approved. You are now an active practitioner on Fayed.",
+        "UNDER_REVIEW": "Your application is being reviewed by the Sawiyaa team. You will be notified of any updates.",
+        "APPROVED": "Your application has been approved. You are now an active practitioner on Sawiyaa.",
         "REJECTED": "Your application was rejected. Please review the note and resubmit if allowed.",
         "CHANGES_REQUESTED": "The admin team requested changes before approval. Please review the note and update the form.",
         "ARCHIVED": "This application has been archived and is no longer active."
@@ -985,7 +985,7 @@
         "label": "Submit application",
         "submitting": "Submitting...",
         "notReady": "Complete all requirements before submitting.",
-        "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
+        "confirmHint": "Once submitted, your application will be reviewed by the Sawiyaa team."
       },
       "feedback": {
         "loadError": "Could not load application status. Please try again.",
@@ -1498,7 +1498,7 @@
       "label": "Submit application",
       "submitting": "Submitting...",
       "notReady": "Complete all requirements before submitting.",
-      "confirmHint": "Once submitted, your application will be reviewed by the Fayed team."
+      "confirmHint": "Once submitted, your application will be reviewed by the Sawiyaa team."
     },
     "feedback": {
       "loadError": "Could not load application status. Please try again.",
@@ -1523,7 +1523,7 @@
     },
     "pending": {
       "title": "Your application is under review",
-      "subtitle": "We have received your application and the Fayed team is reviewing it now. We will notify you of any updates.",
+      "subtitle": "We have received your application and the Sawiyaa team is reviewing it now. We will notify you of any updates.",
       "whatHappensNext": "What happens next?",
       "reviewProcess": "We are reviewing your professional details and documents to ensure your profile is ready before activating your practitioner account.",
       "infoCallout": "You will receive any updates or revision requests via notifications or email.",
@@ -1532,11 +1532,11 @@
     },
     "meta": {
       "title": "Application — Practitioner",
-      "description": "Complete your practitioner application on the Fayed platform."
+      "description": "Complete your practitioner application on the Sawiyaa platform."
     },
     "statusMessage": {
       "SUBMITTED": "Your application has been submitted and is currently under review.",
-      "UNDER_REVIEW": "Your application is currently under review by the Fayed team. You will be notified of any updates.",
+      "UNDER_REVIEW": "Your application is currently under review by the Sawiyaa team. You will be notified of any updates.",
       "APPROVED": "Your application has been successfully approved and your practitioner account is now active."
     },
     "wizard": {

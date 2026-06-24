@@ -22,7 +22,6 @@ import { CareChatConversationRepository } from '@modules/care-chat/repositories/
 import { CareChatRequestRepository } from '@modules/care-chat/repositories/care-chat-request.repository';
 import { ValidateCareChatApprovalTransitionService } from '@modules/care-chat/services/validate-care-chat-approval-transition.service';
 import { ReviewRepository } from '@modules/reviews/repositories/review.repository';
-import { UpdatePractitionerRatingSummaryService } from '@modules/reviews/services/update-practitioner-rating-summary.service';
 import { ValidateReviewModerationTransitionService } from '@modules/reviews/services/validate-review-moderation-transition.service';
 import { ResolveSupportAdminActorRoleService } from '@modules/support/services/resolve-support-admin-actor-role.service';
 import { ValidateSupportTicketStatusTransitionService } from '@modules/support/services/validate-support-ticket-status-transition.service';
@@ -37,7 +36,6 @@ export class ExecuteModerationSurfaceEnforcementService {
     private readonly validateCareChatApprovalTransitionService: ValidateCareChatApprovalTransitionService,
     private readonly reviewRepository: ReviewRepository,
     private readonly validateReviewModerationTransitionService: ValidateReviewModerationTransitionService,
-    private readonly updatePractitionerRatingSummaryService: UpdatePractitionerRatingSummaryService,
     private readonly articleRepository: ArticleRepository,
     private readonly validateArticleStatusTransitionService: ValidateArticleStatusTransitionService,
     private readonly supportTicketRepository: SupportTicketRepository,
@@ -221,11 +219,6 @@ export class ExecuteModerationSurfaceEnforcementService {
         },
         tx,
       );
-
-      await this.updatePractitionerRatingSummaryService.execute({
-        practitionerId: review.practitionerId,
-        tx,
-      });
     });
   }
 

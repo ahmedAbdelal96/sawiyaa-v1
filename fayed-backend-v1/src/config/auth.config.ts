@@ -7,7 +7,7 @@ export default registerAs('auth', () => ({
       : (process.env.NODE_ENV ?? 'development') !== 'production',
   csrf: {
     enforcementEnabled: process.env.AUTH_CSRF_ENFORCEMENT_ENABLED === 'true',
-    cookieName: process.env.AUTH_CSRF_COOKIE_NAME ?? 'fayed_csrf_token',
+    cookieName: process.env.AUTH_CSRF_COOKIE_NAME ?? 'sawiyaa_csrf_token',
     headerName: process.env.AUTH_CSRF_HEADER_NAME ?? 'x-csrf-token',
   },
   jwt: {
@@ -15,7 +15,7 @@ export default registerAs('auth', () => ({
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
-    issuer: process.env.JWT_ISSUER ?? 'fayed-backend-v1',
+    issuer: process.env.JWT_ISSUER ?? 'sawiyaa-backend-v1',
   },
   password: {
     saltRounds: parseInt(process.env.AUTH_PASSWORD_SALT_ROUNDS ?? '12', 10),
@@ -36,6 +36,19 @@ export default registerAs('auth', () => ({
       10,
     ),
   },
+  // Primary feature toggle for practitioner login OTP.
+  // Exposed as a tri-state string so the use-case can distinguish
+  // "unset" (legacy fallback) from "explicitly true/false":
+  //   'true'   → OTP required, never overridden by legacy flag
+  //   'false'  → emergency bypass, works in any environment
+  //   'unset'  → fallback to legacy dev-only bypass flag
+  practitionerLoginOtpEnabledState:
+    process.env.AUTH_PRACTITIONER_LOGIN_OTP_ENABLED === 'true'
+      ? 'true'
+      : process.env.AUTH_PRACTITIONER_LOGIN_OTP_ENABLED === 'false'
+        ? 'false'
+        : 'unset',
+  // Legacy dev-only bypass. Used only when the new flag is unset.
   practitionerLoginOtpBypassInDev:
     process.env.AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV === 'true',
   google: {

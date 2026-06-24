@@ -12,7 +12,6 @@ import { CareChatConversationRepository } from '@modules/care-chat/repositories/
 import { CareChatRequestRepository } from '@modules/care-chat/repositories/care-chat-request.repository';
 import { ValidateCareChatApprovalTransitionService } from '@modules/care-chat/services/validate-care-chat-approval-transition.service';
 import { ReviewRepository } from '@modules/reviews/repositories/review.repository';
-import { UpdatePractitionerRatingSummaryService } from '@modules/reviews/services/update-practitioner-rating-summary.service';
 import { ValidateReviewModerationTransitionService } from '@modules/reviews/services/validate-review-moderation-transition.service';
 import { SupportTicketRepository } from '@modules/support/repositories/support-ticket.repository';
 import { ResolveSupportAdminActorRoleService } from '@modules/support/services/resolve-support-admin-actor-role.service';
@@ -45,9 +44,6 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
   const validateReviewModerationTransitionService = {
     resolveNextState: jest.fn(),
   } as unknown as ValidateReviewModerationTransitionService;
-  const updatePractitionerRatingSummaryService = {
-    execute: jest.fn(),
-  } as unknown as UpdatePractitionerRatingSummaryService;
   const articleRepository = {
     findArticleById: jest.fn(),
     updateArticle: jest.fn(),
@@ -73,7 +69,6 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
     validateCareChatApprovalTransitionService,
     reviewRepository,
     validateReviewModerationTransitionService,
-    updatePractitionerRatingSummaryService,
     articleRepository,
     validateArticleStatusTransitionService,
     supportTicketRepository,
@@ -121,7 +116,7 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
       expect.anything(),
     );
     expect(
-      updatePractitionerRatingSummaryService.execute,
+      validateReviewModerationTransitionService.resolveNextState,
     ).toHaveBeenCalledTimes(1);
   });
 

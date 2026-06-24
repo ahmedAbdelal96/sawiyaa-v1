@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
 import { BuildPractitionerCredibilitySummaryService } from '../services/build-practitioner-credibility-summary.service';
+import { SessionReviewRatingAggregationService } from '../services/session-review-rating-aggregation.service';
 
 @Injectable()
 export class GetPublicPractitionerTrustSummaryUseCase {
   constructor(
     private readonly reviewRepository: ReviewRepository,
     private readonly buildPractitionerCredibilitySummaryService: BuildPractitionerCredibilitySummaryService,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
     private readonly reviewPresenter: ReviewPresenter,
   ) {}
 
@@ -21,18 +23,18 @@ export class GetPublicPractitionerTrustSummaryUseCase {
       });
     }
 
-    const aggregate = await this.reviewRepository.aggregatePublicVisibleReviews(
-      practitioner.id,
-    );
+    const aggregate =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerId(
+        practitioner.id,
+      );
 
     const summary = this.buildPractitionerCredibilitySummaryService.build({
-      totalPublicReviews: aggregate._count.id ?? 0,
-      averagePublicRating:
-        aggregate._avg.ratingValue === null ||
-        aggregate._avg.ratingValue === undefined
-          ? null
-          : Number(aggregate._avg.ratingValue),
-      latestPublishedAt: aggregate._max.publishedAt ?? null,
+      ratingsCount: aggregate.ratingsCount,
+      writtenReviewsCount: aggregate.writtenReviewsCount,
+      averagePublicRating: aggregate.averageRating,
+      latestPublishedAt: aggregate.latestPublishedReviewAt
+        ? new Date(aggregate.latestPublishedReviewAt)
+        : null,
     });
 
     return {
@@ -43,6 +45,9 @@ export class GetPublicPractitionerTrustSummaryUseCase {
       }),
       summary: this.reviewPresenter.presentPublicSummary({
         averageRating: summary.averageOverallRating,
+        ratingsCount: summary.ratingsCount,
+        publishedRatingsCount: summary.publishedRatingsCount,
+        writtenReviewsCount: summary.writtenReviewsCount,
         totalPublicReviews: summary.totalPublicReviews,
         totalPublishedReviews: summary.totalPublishedReviews,
         totalSubmittedReviews: summary.totalSubmittedReviews,

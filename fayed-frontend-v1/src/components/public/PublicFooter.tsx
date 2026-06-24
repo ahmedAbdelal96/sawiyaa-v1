@@ -47,7 +47,7 @@ export default async function PublicFooter() {
           {/* Brand column */}
           <div className="md:col-span-1">
             <Link href="/" className="text-xl font-bold tracking-tight text-primary">
-              Fayed
+              Sawiyaa
             </Link>
             <p className="mt-3 text-sm leading-relaxed text-text-secondary">
               {t("tagline")}

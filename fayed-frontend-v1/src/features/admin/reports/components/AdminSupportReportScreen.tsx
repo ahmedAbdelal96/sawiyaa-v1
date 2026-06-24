@@ -6,12 +6,19 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { LifeBuoy, Timer, Ticket, TicketCheck } from "lucide-react";
 import { AreaTrendChart } from "@/components/charts";
-import { DashboardChartCard, DashboardKpiCard } from "@/components/dashboard";
 import { DataTable, buildUpdatedSearchParams, parsePositiveIntParam } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import { formatCompactNumber, formatDateLabel, formatDateTime } from "../utils/report-format";
 import { useSupportReportOverview, useSupportReportRows } from "../hooks/use-admin-reports";
 import type { SupportReportRow } from "../types/admin-reports.types";
+import {
+  ReportPageContainer,
+  ReportHeader,
+  ReportFilterLabel,
+  ReportKpiCard,
+  ReportChartCard,
+  ReportTableCard,
+} from "./ReportLayout";
 
 function parseIsoDateOnly(value: string | null) {
   if (!value) return null;
@@ -87,80 +94,75 @@ export default function AdminSupportReportScreen() {
     [t, locale],
   );
 
+  const filters = (
+    <div className="flex flex-wrap items-center gap-3">
+      <ReportFilterLabel label={t("filters.from")}>
+        <input
+          className="rounded-lg border border-border-light bg-surface-secondary px-2.5 py-1.5 text-xs text-text-brand shadow-theme-xs outline-hidden focus:border-border-focus focus:ring-2 focus:ring-primary/10"
+          type="date"
+          value={from ? from.slice(0, 10) : ""}
+          onChange={(event) => updateQuery({ page: 1, from: event.target.value || null })}
+        />
+      </ReportFilterLabel>
+
+      <ReportFilterLabel label={t("filters.to")}>
+        <input
+          className="rounded-lg border border-border-light bg-surface-secondary px-2.5 py-1.5 text-xs text-text-brand shadow-theme-xs outline-hidden focus:border-border-focus focus:ring-2 focus:ring-primary/10"
+          type="date"
+          value={to ? to.slice(0, 10) : ""}
+          onChange={(event) => updateQuery({ page: 1, to: event.target.value || null })}
+        />
+      </ReportFilterLabel>
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      <section className="app-page-hero px-6 py-6">
-        <div className="mx-auto w-full max-w-[1120px]">
-          <h1 className="text-2xl font-semibold text-text-primary">{t("support.title")}</h1>
-          <p className="mt-2 max-w-[78ch] text-sm text-text-muted">{t("support.subtitle")}</p>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("filters.from")}
-              </span>
-              <input
-                className="app-control w-full py-3"
-                type="date"
-                value={from ? from.slice(0, 10) : ""}
-                onChange={(event) => updateQuery({ page: 1, from: event.target.value || null })}
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("filters.to")}
-              </span>
-              <input
-                className="app-control w-full py-3"
-                type="date"
-                value={to ? to.slice(0, 10) : ""}
-                onChange={(event) => updateQuery({ page: 1, to: event.target.value || null })}
-              />
-            </label>
-          </div>
-        </div>
-      </section>
+    <ReportPageContainer>
+      <ReportHeader
+        title={t("support.title")}
+        subtitle={t("support.subtitle")}
+        filters={filters}
+      />
 
       <section className="px-6">
-        <div className="mx-auto w-full max-w-[1120px] space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <DashboardKpiCard
+        <div className="mx-auto w-full max-w-[1120px] space-y-4">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            <ReportKpiCard
               label={t("support.kpis.total")}
               value={formatCompactNumber(locale, overview?.totals.totalTickets ?? "0")}
               helper={t("support.kpis.totalHint")}
               icon={<LifeBuoy className="h-4 w-4" />}
               accentTone="teal"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("support.kpis.open")}
               value={formatCompactNumber(locale, overview?.totals.openTickets ?? "0")}
               helper={t("support.kpis.openHint")}
               icon={<Ticket className="h-4 w-4" />}
               accentTone="sky"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("support.kpis.overdue")}
               value={formatCompactNumber(locale, overview?.totals.overdueOpenTickets ?? "0")}
               helper={t("support.kpis.overdueHint")}
               icon={<Timer className="h-4 w-4" />}
               accentTone="orange"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("support.kpis.resolved")}
               value={formatCompactNumber(locale, overview?.totals.resolvedTickets ?? "0")}
               helper={t("support.kpis.resolvedHint")}
               icon={<TicketCheck className="h-4 w-4" />}
               accentTone="indigo"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("support.kpis.closed")}
               value={formatCompactNumber(locale, overview?.totals.closedTickets ?? "0")}
               helper={t("support.kpis.closedHint")}
               icon={<TicketCheck className="h-4 w-4" />}
               accentTone="indigo"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("support.kpis.avgClose")}
               value={overview?.totals.avgCloseHours ? `${overview.totals.avgCloseHours}h` : t("common.na")}
               helper={t("support.kpis.avgCloseHint")}
@@ -169,7 +171,7 @@ export default function AdminSupportReportScreen() {
             />
           </div>
 
-          <DashboardChartCard title={t("support.charts.trend.title")} subtitle={t("support.charts.trend.note")}>
+          <ReportChartCard title={t("support.charts.trend.title")} subtitle={t("support.charts.trend.note")}>
             <AreaTrendChart
               locale={locale}
               categories={categories}
@@ -179,35 +181,31 @@ export default function AdminSupportReportScreen() {
               comparisonValues={resolvedValues}
               color="#2F2FE4"
               comparisonColor="#89A4FF"
-              height={300}
+              height={220}
             />
-          </DashboardChartCard>
+          </ReportChartCard>
 
-          <article className="app-panel rounded-3xl p-5">
-            <h2 className="text-sm font-semibold text-text-primary">{t("support.table.title")}</h2>
-            <p className="mt-1 text-xs text-text-muted">{t("support.table.note")}</p>
-            <div className="mt-4">
-              <DataTable
-                data={rowsQuery.data?.items ?? []}
-                columns={columns}
-                getRowId={(row) => row.id}
-                loading={rowsQuery.isLoading}
-                error={rowsQuery.isError ? t("common.error") : null}
-                ariaLabel={t("support.table.title")}
-                caption={t("support.table.title")}
-                pagination={{
-                  page: rowsQuery.data?.pagination.page ?? page,
-                  limit: rowsQuery.data?.pagination.limit ?? limit,
-                  totalItems: rowsQuery.data?.pagination.totalItems ?? 0,
-                  totalPages: rowsQuery.data?.pagination.totalPages ?? 1,
-                }}
-                onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-                onPageSizeChange={(nextLimit) => updateQuery({ page: 1, limit: nextLimit })}
-              />
-            </div>
-          </article>
+          <ReportTableCard title={t("support.table.title")} subtitle={t("support.table.note")}>
+            <DataTable
+              data={rowsQuery.data?.items ?? []}
+              columns={columns}
+              getRowId={(row) => row.id}
+              loading={rowsQuery.isLoading}
+              error={rowsQuery.isError ? t("common.error") : null}
+              ariaLabel={t("support.table.title")}
+              caption={t("support.table.title")}
+              pagination={{
+                page: rowsQuery.data?.pagination.page ?? page,
+                limit: rowsQuery.data?.pagination.limit ?? limit,
+                totalItems: rowsQuery.data?.pagination.totalItems ?? 0,
+                totalPages: rowsQuery.data?.pagination.totalPages ?? 1,
+              }}
+              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+              onPageSizeChange={(nextLimit) => updateQuery({ page: 1, limit: nextLimit })}
+            />
+          </ReportTableCard>
         </div>
       </section>
-    </div>
+    </ReportPageContainer>
   );
 }

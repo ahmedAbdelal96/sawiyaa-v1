@@ -131,7 +131,7 @@ export class GetPatientTrainingEnrollmentPaymentRedirectUseCase {
         return parsed.origin;
       }
 
-      if (parsed.protocol === 'fayed:') {
+      if (parsed.protocol === 'sawiyaa:') {
         return parsed.toString().replace(/\/$/, '');
       }
     } catch {
@@ -145,9 +145,8 @@ export class GetPatientTrainingEnrollmentPaymentRedirectUseCase {
     returnUrl: string | null,
     fallbackReturnUrl: string,
   ): string {
-    const trustedReturnUrl = this.paymentRuntimeConfigService.resolveTrustedReturnUrl(
-      returnUrl,
-    );
+    const trustedReturnUrl =
+      this.paymentRuntimeConfigService.resolveTrustedReturnUrl(returnUrl);
 
     return trustedReturnUrl ?? fallbackReturnUrl;
   }

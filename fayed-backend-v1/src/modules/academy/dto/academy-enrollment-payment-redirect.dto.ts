@@ -12,7 +12,8 @@ export class AcademyEnrollmentPaymentRedirectQueryDto {
   token?: string;
 
   @ApiPropertyOptional({
-    example: 'fayed://academy/enrollments/enrollment_123/payment-return?token=public-access-token-uuid',
+    example:
+      'sawiyaa://academy/enrollments/enrollment_123/payment-return?token=public-access-token-uuid',
     description:
       'Optional trusted return URL used to return to the Academy payment-return screen after checkout.',
   })

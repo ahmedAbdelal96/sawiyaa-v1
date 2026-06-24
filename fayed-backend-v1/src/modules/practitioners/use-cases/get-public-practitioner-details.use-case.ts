@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
+import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
@@ -25,6 +26,7 @@ export class GetPublicPractitionerDetailsUseCase {
     private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly patientProfileRepository: PatientProfileRepository,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
   ) {}
 
   async execute(input: {
@@ -71,7 +73,10 @@ export class GetPublicPractitionerDetailsUseCase {
 
     const approvedCredentials =
       await this.publicReadRepository.countApprovedCredentials(profile.id);
-    const averageRatingRaw = profile.ratingSummary?.averageRating;
+    const ratingSummary =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerId(
+        profile.id,
+      );
     const pricingProfile = profile as typeof profile &
       PublicPractitionerPricingProfile;
 
@@ -158,11 +163,11 @@ export class GetPublicPractitionerDetailsUseCase {
             ? null
             : Number(pricingProfile.sessionPrice60Usd),
         ratingSummary: {
-          averageRating:
-            averageRatingRaw === null || averageRatingRaw === undefined
-              ? null
-              : Number(averageRatingRaw),
-          totalReviews: profile.ratingSummary?.publishedReviewsCount ?? 0,
+          averageRating: ratingSummary.averageRating,
+          ratingsCount: ratingSummary.ratingsCount,
+          publishedRatingsCount: ratingSummary.publishedRatingsCount,
+          writtenReviewsCount: ratingSummary.writtenReviewsCount,
+          totalReviews: ratingSummary.publishedRatingsCount,
         },
         credentialsSummary: {
           totalCredentials: profile._count.credentials,

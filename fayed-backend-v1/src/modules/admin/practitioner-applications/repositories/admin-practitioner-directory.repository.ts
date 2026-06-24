@@ -7,6 +7,10 @@ import {
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import {
+  SessionReviewRatingAggregationService,
+  type SessionReviewRatingSummary,
+} from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { getPresenceFreshnessCutoff } from '@modules/presence/utils/presence-liveness';
 import {
   AdminPractitionerGenderDto,
@@ -20,7 +24,10 @@ import {
  */
 @Injectable()
 export class AdminPractitionerDirectoryRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+  ) {}
 
   private buildWhere(input: {
     search?: string;
@@ -88,16 +95,6 @@ export class AdminPractitionerDirectoryRepository {
               },
             }
           : undefined,
-      ratingSummary:
-        input.minRating !== undefined
-          ? {
-              is: {
-                averageRating: {
-                  gte: input.minRating,
-                },
-              },
-            }
-          : undefined,
       OR: search
         ? [
             {
@@ -144,33 +141,10 @@ export class AdminPractitionerDirectoryRepository {
   }
 
   private buildOrderBy(sort?: AdminPractitionerSortByDto) {
-    if (sort === AdminPractitionerSortByDto.NEWEST) {
-      return [{ createdAt: 'desc' as const }];
-    }
-
-    if (sort === AdminPractitionerSortByDto.OLDEST) {
-      return [{ createdAt: 'asc' as const }];
-    }
-
-    if (sort === AdminPractitionerSortByDto.RATING) {
-      return [
-        { ratingSummary: { averageRating: 'desc' as const } },
-        { createdAt: 'desc' as const },
-      ];
-    }
-
-    if (sort === AdminPractitionerSortByDto.EXPERIENCE) {
-      return [
-        { yearsOfExperience: 'desc' as const },
-        { createdAt: 'desc' as const },
-      ];
-    }
-
-    return [
-      { ratingSummary: { averageRating: 'desc' as const } },
-      { yearsOfExperience: 'desc' as const },
-      { createdAt: 'desc' as const },
-    ];
+    if (sort === AdminPractitionerSortByDto.NEWEST) return 'newest';
+    if (sort === AdminPractitionerSortByDto.OLDEST) return 'oldest';
+    if (sort === AdminPractitionerSortByDto.EXPERIENCE) return 'experience';
+    return 'rating';
   }
 
   async list(input: {
@@ -185,54 +159,102 @@ export class AdminPractitionerDirectoryRepository {
     take: number;
   }) {
     const where = this.buildWhere(input);
-    const orderBy = this.buildOrderBy(input.sort);
-
-    const [rows, total] = await Promise.all([
-      this.prisma.practitionerProfile.findMany({
-        where,
-        select: {
-          id: true,
-          publicSlug: true,
-          professionalTitle: true,
-          practitionerType: true,
-          status: true,
-          yearsOfExperience: true,
-          avatarUrl: true,
-          user: {
-            select: {
-              displayName: true,
-              emails: {
-                select: {
-                  email: true,
-                },
+    const rows = await this.prisma.practitionerProfile.findMany({
+      where,
+      select: {
+        id: true,
+        publicSlug: true,
+        professionalTitle: true,
+        practitionerType: true,
+        status: true,
+        yearsOfExperience: true,
+        createdAt: true,
+        avatarUrl: true,
+        user: {
+          select: {
+            displayName: true,
+            emails: {
+              select: {
+                email: true,
               },
             },
           },
-          country: {
-            select: {
-              isoCode: true,
-            },
-          },
-          presence: {
-            select: {
-              status: true,
-              lastSeenAtUtc: true,
-            },
-          },
-          ratingSummary: {
-            select: {
-              averageRating: true,
-              publishedReviewsCount: true,
-            },
+        },
+        country: {
+          select: {
+            isoCode: true,
           },
         },
-        skip: input.skip,
-        take: input.take,
-        orderBy,
-      }),
-      this.prisma.practitionerProfile.count({ where }),
-    ]);
+        presence: {
+          select: {
+            status: true,
+            lastSeenAtUtc: true,
+          },
+        },
+      },
+    });
 
-    return { rows, total };
+    const ratingSummaries =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        rows.map((row) => row.id),
+      );
+
+    const decoratedRows = rows.map((row) => ({
+      ...row,
+      ratingSummary: this.toLegacyRatingSummary(ratingSummaries.get(row.id) ?? null),
+    }));
+
+    const filteredRows = input.minRating === undefined
+      ? decoratedRows
+      : decoratedRows.filter((row) => {
+          const rating = row.ratingSummary.averageRating;
+          return rating !== null && rating >= input.minRating!;
+        });
+
+    const sortMode = this.buildOrderBy(input.sort);
+    filteredRows.sort((left, right) => {
+      if (sortMode === 'newest') {
+        return right.createdAt.getTime() - left.createdAt.getTime();
+      }
+
+      if (sortMode === 'oldest') {
+        return left.createdAt.getTime() - right.createdAt.getTime();
+      }
+
+      if (sortMode === 'experience') {
+        if ((right.yearsOfExperience ?? 0) !== (left.yearsOfExperience ?? 0)) {
+          return (right.yearsOfExperience ?? 0) - (left.yearsOfExperience ?? 0);
+        }
+        return right.createdAt.getTime() - left.createdAt.getTime();
+      }
+
+      const leftRating = left.ratingSummary.averageRating ?? -1;
+      const rightRating = right.ratingSummary.averageRating ?? -1;
+      if (rightRating !== leftRating) {
+        return rightRating - leftRating;
+      }
+
+      if ((right.yearsOfExperience ?? 0) !== (left.yearsOfExperience ?? 0)) {
+        return (right.yearsOfExperience ?? 0) - (left.yearsOfExperience ?? 0);
+      }
+
+      return right.createdAt.getTime() - left.createdAt.getTime();
+    });
+
+    const total = filteredRows.length;
+    const pagedRows = filteredRows.slice(input.skip, input.skip + input.take);
+
+    return { rows: pagedRows, total };
+  }
+
+  private toLegacyRatingSummary(ratingSummary: SessionReviewRatingSummary | null) {
+    return {
+      averageRating:
+        ratingSummary?.averageRating === null ||
+        ratingSummary?.averageRating === undefined
+          ? null
+          : Number(ratingSummary.averageRating),
+      totalReviews: ratingSummary?.publishedRatingsCount ?? 0,
+    };
   }
 }

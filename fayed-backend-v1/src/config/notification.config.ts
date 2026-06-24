@@ -18,4 +18,8 @@ export default registerAs('notification', () => ({
   sms: {
     provider: process.env.SMS_PROVIDER,
   },
+  brevo: {
+    apiKey: process.env.BREVO_API_KEY,
+    apiUrl: process.env.BREVO_API_URL ?? 'https://api.brevo.com',
+  },
 }));

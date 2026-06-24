@@ -24,7 +24,7 @@ type AnalyticsSink = (payload: {
 declare global {
   // Optional escape hatch for future wiring without adding a new analytics system.
   // eslint-disable-next-line no-var
-  var __fayedAnalyticsTrackEvent__: AnalyticsSink | undefined;
+  var __sawiyaaAnalyticsTrackEvent__: AnalyticsSink | undefined;
 }
 
 export function trackAnalyticsEvent(
@@ -38,8 +38,8 @@ export function trackAnalyticsEvent(
   };
 
   try {
-    if (typeof globalThis.__fayedAnalyticsTrackEvent__ === "function") {
-      globalThis.__fayedAnalyticsTrackEvent__(payload);
+    if (typeof globalThis.__sawiyaaAnalyticsTrackEvent__ === "function") {
+      globalThis.__sawiyaaAnalyticsTrackEvent__(payload);
       return;
     }
 

@@ -12,7 +12,7 @@ export interface ResolvedCountryContext {
  * - `cf-ipcountry` – Cloudflare Worker / Krabs metadata header (most reliable, CF-proxied requests only)
  * - `x-vercel-ip-country` – Vercel Edge header (when deployed behind Vercel Edge)
  *
- * FAYED_DEV_COUNTRY_CODE env var is local-development only and is completely
+ * SAWIYAA_DEV_COUNTRY_CODE env var is local-development only and is completely
  * ignored in production to prevent accidental country override in live environments.
  *
  * Returns null if no trusted signal is available, letting the payment resolver
@@ -22,12 +22,14 @@ export interface ResolvedCountryContext {
  * @param request Express Request object
  * @returns ResolvedCountryContext with country code and detection source
  */
-export function resolveCountryFromRequest(request: Request): ResolvedCountryContext {
+export function resolveCountryFromRequest(
+  request: Request,
+): ResolvedCountryContext {
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Dev override — local development only, completely disabled in production
   if (!isProduction) {
-    const devOverride = process.env.FAYED_DEV_COUNTRY_CODE;
+    const devOverride = process.env.SAWIYAA_DEV_COUNTRY_CODE;
     if (devOverride && devOverride.trim().length > 0) {
       return {
         countryCode: devOverride.trim().toUpperCase(),
@@ -62,13 +64,17 @@ export function resolveCountryFromRequest(request: Request): ResolvedCountryCont
 
 const EGYPT_ISO_CODES = new Set(['EG', 'EGY']);
 
-export function isEgyptCountryCode(countryCode: string | null | undefined): boolean {
+export function isEgyptCountryCode(
+  countryCode: string | null | undefined,
+): boolean {
   if (!countryCode) return false;
   const normalized = countryCode.toUpperCase();
   return EGYPT_ISO_CODES.has(normalized);
 }
 
-export function normalizeCountryIsoCode(code: string | null | undefined): string | null {
+export function normalizeCountryIsoCode(
+  code: string | null | undefined,
+): string | null {
   if (!code) return null;
   const trimmed = code.trim().toUpperCase();
   return trimmed.length >= 2 && trimmed.length <= 3 ? trimmed : null;

@@ -6,12 +6,19 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { CalendarCheck, CalendarX, CalendarRange } from "lucide-react";
 import { AreaTrendChart } from "@/components/charts";
-import { DashboardChartCard, DashboardKpiCard } from "@/components/dashboard";
 import { DataTable, buildUpdatedSearchParams, parsePositiveIntParam } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import { formatCompactNumber, formatDateLabel, formatDateTime } from "../utils/report-format";
 import { useSessionsReportOverview, useSessionsReportRows } from "../hooks/use-admin-reports";
 import type { SessionsReportRow } from "../types/admin-reports.types";
+import {
+  ReportPageContainer,
+  ReportHeader,
+  ReportFilterLabel,
+  ReportKpiCard,
+  ReportChartCard,
+  ReportTableCard,
+} from "./ReportLayout";
 
 function parseIsoDateOnly(value: string | null) {
   if (!value) return null;
@@ -67,79 +74,74 @@ export default function AdminSessionsReportScreen() {
             : t("common.na"),
       },
       {
-        id: "patientId",
-        header: t("sessions.table.patientId"),
-        accessor: (row) => row.patientId,
+        id: "patientName",
+        header: t("sessions.table.patientName"),
+        accessor: (row) => row.patientName ?? t("common.na"),
       },
       {
-        id: "practitionerId",
-        header: t("sessions.table.practitionerId"),
-        accessor: (row) => row.practitionerId,
+        id: "practitionerName",
+        header: t("sessions.table.practitionerName"),
+        accessor: (row) => row.practitionerName ?? t("common.na"),
       },
     ],
     [t, locale],
   );
 
+  const filters = (
+    <div className="flex flex-wrap items-center gap-3">
+      <ReportFilterLabel label={t("filters.from")}>
+        <input
+          className="rounded-lg border border-border-light bg-surface-secondary px-2.5 py-1.5 text-xs text-text-brand shadow-theme-xs outline-hidden focus:border-border-focus focus:ring-2 focus:ring-primary/10"
+          type="date"
+          value={from ? from.slice(0, 10) : ""}
+          onChange={(event) => updateQuery({ page: 1, from: event.target.value || null })}
+        />
+      </ReportFilterLabel>
+
+      <ReportFilterLabel label={t("filters.to")}>
+        <input
+          className="rounded-lg border border-border-light bg-surface-secondary px-2.5 py-1.5 text-xs text-text-brand shadow-theme-xs outline-hidden focus:border-border-focus focus:ring-2 focus:ring-primary/10"
+          type="date"
+          value={to ? to.slice(0, 10) : ""}
+          onChange={(event) => updateQuery({ page: 1, to: event.target.value || null })}
+        />
+      </ReportFilterLabel>
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      <section className="app-page-hero px-6 py-6">
-        <div className="mx-auto w-full max-w-[1120px]">
-          <h1 className="text-2xl font-semibold text-text-primary">{t("sessions.title")}</h1>
-          <p className="mt-2 max-w-[78ch] text-sm text-text-muted">{t("sessions.subtitle")}</p>
-
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("filters.from")}
-              </span>
-              <input
-                className="app-control w-full py-3"
-                type="date"
-                value={from ? from.slice(0, 10) : ""}
-                onChange={(event) => updateQuery({ page: 1, from: event.target.value || null })}
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("filters.to")}
-              </span>
-              <input
-                className="app-control w-full py-3"
-                type="date"
-                value={to ? to.slice(0, 10) : ""}
-                onChange={(event) => updateQuery({ page: 1, to: event.target.value || null })}
-              />
-            </label>
-          </div>
-        </div>
-      </section>
+    <ReportPageContainer>
+      <ReportHeader
+        title={t("sessions.title")}
+        subtitle={t("sessions.subtitle")}
+        filters={filters}
+      />
 
       <section className="px-6">
-        <div className="mx-auto w-full max-w-[1120px] space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <DashboardKpiCard
+        <div className="mx-auto w-full max-w-[1120px] space-y-4">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <ReportKpiCard
               label={t("sessions.kpis.total")}
               value={formatCompactNumber(locale, overview?.totals.totalSessions ?? "0")}
               helper={t("sessions.kpis.totalHint")}
               icon={<CalendarRange className="h-4 w-4" />}
               accentTone="teal"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("sessions.kpis.completed")}
               value={formatCompactNumber(locale, overview?.totals.completed ?? "0")}
               helper={t("sessions.kpis.completedHint")}
               icon={<CalendarCheck className="h-4 w-4" />}
               accentTone="sky"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("sessions.kpis.cancelled")}
               value={formatCompactNumber(locale, overview?.totals.cancelled ?? "0")}
               helper={t("sessions.kpis.cancelledHint")}
               icon={<CalendarX className="h-4 w-4" />}
               accentTone="orange"
             />
-            <DashboardKpiCard
+            <ReportKpiCard
               label={t("sessions.kpis.noShow")}
               value={formatCompactNumber(locale, overview?.totals.noShow ?? "0")}
               helper={t("sessions.kpis.noShowHint")}
@@ -148,42 +150,38 @@ export default function AdminSessionsReportScreen() {
             />
           </div>
 
-          <DashboardChartCard title={t("sessions.charts.trend.title")} subtitle={t("sessions.charts.trend.note")}>
+          <ReportChartCard title={t("sessions.charts.trend.title")} subtitle={t("sessions.charts.trend.note")}>
             <AreaTrendChart
               locale={locale}
               categories={categories}
               seriesName={t("sessions.charts.trend.series")}
               values={totals}
-              height={300}
+              height={220}
               color="#3D9286"
             />
-          </DashboardChartCard>
+          </ReportChartCard>
 
-          <article className="app-panel rounded-3xl p-5">
-            <h2 className="text-sm font-semibold text-text-primary">{t("sessions.table.title")}</h2>
-            <p className="mt-1 text-xs text-text-muted">{t("sessions.table.note")}</p>
-            <div className="mt-4">
-              <DataTable
-                data={rowsQuery.data?.items ?? []}
-                columns={columns}
-                getRowId={(row) => row.id}
-                loading={rowsQuery.isLoading}
-                error={rowsQuery.isError ? t("common.error") : null}
-                ariaLabel={t("sessions.table.title")}
-                caption={t("sessions.table.title")}
-                pagination={{
-                  page: rowsQuery.data?.pagination.page ?? page,
-                  limit: rowsQuery.data?.pagination.limit ?? limit,
-                  totalItems: rowsQuery.data?.pagination.totalItems ?? 0,
-                  totalPages: rowsQuery.data?.pagination.totalPages ?? 1,
-                }}
-                onPageChange={(nextPage) => updateQuery({ page: nextPage })}
-                onPageSizeChange={(nextLimit) => updateQuery({ page: 1, limit: nextLimit })}
-              />
-            </div>
-          </article>
+          <ReportTableCard title={t("sessions.table.title")} subtitle={t("sessions.table.note")}>
+            <DataTable
+              data={rowsQuery.data?.items ?? []}
+              columns={columns}
+              getRowId={(row) => row.id}
+              loading={rowsQuery.isLoading}
+              error={rowsQuery.isError ? t("common.error") : null}
+              ariaLabel={t("sessions.table.title")}
+              caption={t("sessions.table.title")}
+              pagination={{
+                page: rowsQuery.data?.pagination.page ?? page,
+                limit: rowsQuery.data?.pagination.limit ?? limit,
+                totalItems: rowsQuery.data?.pagination.totalItems ?? 0,
+                totalPages: rowsQuery.data?.pagination.totalPages ?? 1,
+              }}
+              onPageChange={(nextPage) => updateQuery({ page: nextPage })}
+              onPageSizeChange={(nextLimit) => updateQuery({ page: 1, limit: nextLimit })}
+            />
+          </ReportTableCard>
         </div>
       </section>
-    </div>
+    </ReportPageContainer>
   );
 }

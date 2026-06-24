@@ -132,6 +132,25 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
           revokedAt: true,
           patientId: true,
           practitionerId: true,
+          patient: {
+            select: {
+              displayName: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+          practitioner: {
+            select: {
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
           requestedByUserId: true,
           reviewedByUserId: true,
           approvalRef: true,
@@ -155,6 +174,8 @@ export class PrismaCareRequestsReportProvider implements CareRequestsReportProvi
       revokedAt: row.revokedAt?.toISOString() ?? null,
       patientId: row.patientId,
       practitionerId: row.practitionerId,
+      patientName: row.patient?.user?.displayName ?? row.patient?.displayName ?? null,
+      practitionerName: row.practitioner?.user?.displayName ?? null,
       requestedByUserId: row.requestedByUserId,
       reviewedByUserId: row.reviewedByUserId,
       approvalRef: row.approvalRef,

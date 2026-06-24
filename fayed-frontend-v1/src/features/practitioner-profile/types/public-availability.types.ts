@@ -8,6 +8,8 @@ export type PublicAvailabilityWindow = {
   startsAt: string;
   /** UTC ISO 8601 string — exclusive end of the available window */
   endsAt: string;
+  /** Duration metadata returned by backend. Null means flexible/open extra window. */
+  durationMinutes: 30 | 60 | null;
 };
 
 export type PublicAvailabilityWindowsData = {

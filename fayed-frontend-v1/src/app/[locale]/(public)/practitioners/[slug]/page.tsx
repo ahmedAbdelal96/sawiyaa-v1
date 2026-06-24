@@ -69,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return buildPublicMetadata({
       locale,
       pathname: `/practitioners/${slug}`,
-      title: `Fayed | ${locale === "ar" ? profile.nameAr : profile.nameEn}`,
+      title: `${locale === "ar" ? "سويّة" : "Sawiyaa"} | ${locale === "ar" ? profile.nameAr : profile.nameEn}`,
       description,
     });
   } catch {

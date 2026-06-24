@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StoredPushRegistration } from "./types";
 
-const PUSH_REGISTRATION_KEY = "fayed.mobile.push.registration.v1";
+const PUSH_REGISTRATION_KEY = "sawiyaa.mobile.push.registration.v1";
 
 export async function getStoredPushRegistration() {
   const raw = await AsyncStorage.getItem(PUSH_REGISTRATION_KEY);

@@ -151,7 +151,9 @@ export default function PackagePurchaseCreateScreen() {
   );
   const availableSlots = useMemo(() => {
     const slots = buildSlotsFromWindows(availabilityQuery.data?.windows ?? []);
-    return slots.filter((slot) => slot.maxDuration >= durationMinutes);
+    return slots.filter(
+      (slot) => slot.durationMinutes === null || slot.durationMinutes === durationMinutes,
+    );
   }, [availabilityQuery.data?.windows, durationMinutes]);
   const groupedSlots = useMemo(
     () => groupSlotsByDay(availableSlots, locale),

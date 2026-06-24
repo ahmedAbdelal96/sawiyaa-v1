@@ -8,7 +8,7 @@ const PATIENT_EMAIL = 'ahmed.patient@hesba.local';
 const PATIENT_PASSWORD = 'Patient@12345';
 
 // Practitioner credentials
-const PRACTITIONER_EMAIL = 'dr.mohamed@hesba.local';
+const PRACTITIONER_EMAIL = 'amohamef206@gmail.com';
 const PRACTITIONER_PASSWORD = 'Practitioner2@12345';
 
 // Session ID for patient

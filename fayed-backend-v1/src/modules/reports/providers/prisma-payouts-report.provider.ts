@@ -118,6 +118,15 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
           createdAt: true,
           processedByUserId: true,
           proof: { select: { id: true } },
+          practitioner: {
+            select: {
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [
           { effectiveAt: 'desc' },
@@ -135,6 +144,7 @@ export class PrismaPayoutsReportProvider implements PayoutsReportProvider {
       settlementId: row.settlementId,
       batchId: row.batchId,
       practitionerId: row.practitionerId,
+      practitionerName: row.practitioner?.user?.displayName ?? null,
       amountPaid: row.amountPaid.toFixed(2),
       currencyCode: row.currencyCode,
       payoutMethod: row.payoutMethod,

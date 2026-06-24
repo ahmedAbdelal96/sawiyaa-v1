@@ -187,19 +187,38 @@ export class LoginPractitionerPasswordUseCase {
       });
     }
 
+    // Resolve the practitioner login OTP policy from config.
+    // AUTH_PRACTITIONER_LOGIN_OTP_ENABLED is the primary source of truth.
+    //
+    // Behavior:
+    //   - ENABLED='false'  → bypass OTP in any environment (emergency switch)
+    //   - ENABLED='true'   → require OTP in any environment (legacy dev bypass ignored)
+    //   - ENABLED='unset'  → fall back to legacy AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV
+    //                        in development only; production still requires OTP
+    //   - Otherwise        → require OTP (secure default)
     const isDevelopmentEnvironment =
       this.configService.get<string>('app.nodeEnv') === 'development';
-    const bypassPractitionerOtp =
+    const practitionerLoginOtpEnabledState =
+      this.configService.get<string>(
+        'auth.practitionerLoginOtpEnabledState',
+      ) ?? 'unset';
+    const legacyDevBypass =
       this.configService.get<boolean>(
         'auth.practitionerLoginOtpBypassInDev',
       ) === true;
+
+    const shouldBypassOtp =
+      practitionerLoginOtpEnabledState === 'false' ||
+      (practitionerLoginOtpEnabledState === 'unset' &&
+        isDevelopmentEnvironment &&
+        legacyDevBypass);
 
     await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
     await this.practitionerPresenceRepository.markOnline(
       practitionerProfile.id,
     );
 
-    if (isDevelopmentEnvironment && bypassPractitionerOtp) {
+    if (shouldBypassOtp) {
       const result = await this.issueAuthTokensUseCase.execute({
         userId: userEmail.user.id,
         role: UserRoleType.PRACTITIONER,

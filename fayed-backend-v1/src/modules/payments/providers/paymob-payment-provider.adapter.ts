@@ -12,6 +12,7 @@ import {
   PaymentWebhookResult,
 } from './payment-provider-adapter.interface';
 import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.service';
+import { PaymobCheckoutFlow } from '../types/paymob-payment.types';
 
 type PaymobAuthTokenResponse = {
   token?: string;
@@ -100,24 +101,27 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       this.paymentRuntimeConfigService.getPaymobCheckoutFlow();
     const enabledMethods =
       this.paymentRuntimeConfigService.getPaymobEnabledMethods({
+        currencyCode: input.currency,
         checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
         operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
       });
     const selectedMethod =
-      paymobCheckoutFlow === 'legacy'
+      paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY
         ? this.paymentRuntimeConfigService.resolvePaymobCheckoutMethod(
             input.paymobMethod ?? null,
             {
+              currencyCode: input.currency,
               checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
               operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
             },
           )
         : null;
     const integrationId =
-      paymobCheckoutFlow === 'legacy'
+      paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY
         ? this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
             selectedMethod,
             {
+              currencyCode: input.currency,
               checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
               operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
             },
@@ -125,13 +129,16 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
         : null;
 
     if (
-      paymobCheckoutFlow === 'legacy' &&
+      paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY &&
       (!selectedMethod || !integrationId)
     ) {
       throw this.providerInitFailed();
     }
 
-    if (paymobCheckoutFlow === 'intention' && enabledMethods.length === 0) {
+    if (
+      paymobCheckoutFlow === PaymobCheckoutFlow.INTENTION &&
+      enabledMethods.length === 0
+    ) {
       throw this.providerInitFailed();
     }
 
@@ -142,7 +149,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       amountMinor: input.amountMinor,
       currency: input.currency,
     });
-    if (paymobCheckoutFlow === 'legacy') {
+    if (paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY) {
       const paymobIframeId = paymobConfig.iframeId!;
       const paymentToken = await this.createPaymentKey({
         authToken,
@@ -178,6 +185,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       redirectionUrl: input.redirectionUrl ?? null,
       paymentMethodIds:
         this.paymentRuntimeConfigService.getPaymobIntentionPaymentMethodIds({
+          currencyCode: input.currency,
           checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
           operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
         }),
@@ -512,7 +520,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       apartment: 'NA',
       email: patientEmail?.trim() || 'no-email@fayed.local',
       floor: 'NA',
-      first_name: 'Fayed',
+      first_name: 'Sawiyaa',
       street: 'NA',
       building: 'NA',
       phone_number: 'NA',
@@ -629,7 +637,16 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       return '';
     }
 
-    return String(value);
+    if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean' ||
+      typeof value === 'bigint'
+    ) {
+      return String(value);
+    }
+
+    return '';
   }
 
   private toBooleanString(value: unknown): string {

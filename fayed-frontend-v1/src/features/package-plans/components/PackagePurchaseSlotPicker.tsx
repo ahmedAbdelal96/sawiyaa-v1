@@ -64,7 +64,9 @@ export default function PackagePurchaseSlotPicker({
       dayGroups
         .map((group) => ({
           ...group,
-          slots: group.slots.filter((slot) => slot.maxDuration >= durationMinutes),
+          slots: group.slots.filter(
+            (slot) => slot.durationMinutes === null || slot.durationMinutes === durationMinutes,
+          ),
         }))
         .filter((group) => group.slots.length > 0),
     [dayGroups, durationMinutes],
@@ -270,7 +272,7 @@ export default function PackagePurchaseSlotPicker({
                       const disabled = !selected && isFull;
                       return (
                         <button
-                          key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.maxDuration}`}
+                          key={`${slot.startsAt}-${slot.windowEndsAt}-${slot.durationMinutes ?? "any"}`}
                           type="button"
                           onClick={() => toggleSlot(slot)}
                           className={`w-[82px] flex-none rounded-lg border px-2 py-2 text-center text-[11px] font-semibold transition sm:w-[88px] lg:w-[92px] ${

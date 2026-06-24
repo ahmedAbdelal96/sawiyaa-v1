@@ -48,11 +48,10 @@ run-articles-only.ts
 
 # Editor/OS
 **/.idea/
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode/
+**/.vscode/
+.expo/
+**/.expo/
 **/.DS_Store
 **/Thumbs.db
 

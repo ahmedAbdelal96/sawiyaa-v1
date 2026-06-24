@@ -35,6 +35,15 @@ export class PublicPractitionerRatingSummaryResponseDto {
   averageRating!: number | null;
 
   @ApiProperty()
+  ratingsCount!: number;
+
+  @ApiProperty()
+  publishedRatingsCount!: number;
+
+  @ApiProperty()
+  writtenReviewsCount!: number;
+
+  @ApiProperty()
   totalReviews!: number;
 }
 

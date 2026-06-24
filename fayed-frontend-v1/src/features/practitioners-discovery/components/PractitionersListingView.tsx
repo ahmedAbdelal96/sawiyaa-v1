@@ -340,7 +340,7 @@ export default async function PractitionersListingView({
 
   return (
     <>
-      <ListingPageHero totalCount={pagination.totalItems} filteredCount={pagination.totalItems} />
+      <ListingPageHero />
 
       <div className="bg-background px-6 pb-8 pt-3 dark:bg-background">
         <div className="mx-auto max-w-7xl space-y-3">

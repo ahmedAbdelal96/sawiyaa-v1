@@ -65,152 +65,130 @@ export default async function ProfileHeader({
   ];
 
   return (
-    <div className="app-page-hero px-6 py-8">
+    <div className="px-4 py-4 sm:py-6">
       <div className="mx-auto max-w-7xl">
         {showBackLink ? (
           <Link
             href={backHref}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-primary dark:text-white/70 dark:hover:text-white"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-secondary transition-colors hover:text-primary dark:text-white/70 dark:hover:text-white group"
           >
-            <ArrowLeft size={15} className="rtl:rotate-180" />
+            <ArrowLeft size={15} className="transition-transform group-hover:-translate-x-0.5 rtl:group-hover:translate-x-0.5 rtl:rotate-180" />
             <span>{t("page.backToListing")}</span>
           </Link>
         ) : null}
 
-        <div className="app-panel mt-5 rounded-[34px] p-6 md:p-7">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[26px] bg-primary-light text-xl font-bold text-primary shadow-[0_20px_32px_-24px_rgba(95,143,139,0.32)] dark:bg-primary/15 dark:text-primary-light">
+        <div className="app-panel mt-3 sm:mt-4 rounded-[28px] p-5 md:p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b border-border-light/50 pb-6 dark:border-white/10">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start">
+              {/* Dual ring avatar wrapper */}
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] border-2 border-primary/20 p-0.5 bg-surface-secondary dark:bg-white/5">
+                <span className="flex h-full w-full items-center justify-center rounded-[20px] bg-primary-light text-xl font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
                   {p.initials}
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {p.isVerified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-3 py-1 text-xs font-semibold text-text-brand ring-1 ring-inset ring-primary/8 dark:bg-primary/15">
-                        <BadgeCheck size={13} className="text-primary" />
-                        {t("header.verified")}
-                      </span>
-                    ) : null}
-                    <span className="app-chip inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
-                      <MapPin size={13} className="text-primary" />
-                      {countryLabel}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h1 className="text-3xl font-bold tracking-[-0.03em] text-text-primary dark:text-white/95 md:text-4xl">
-                      {displayName}
-                    </h1>
-                    <p className="mt-2 text-base font-medium text-text-secondary md:text-lg">
-                      {displayTitle}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {primarySpecialties.map((specialty) => (
-                      <span
-                        key={specialty}
-                        className="app-chip rounded-full px-3 py-1.5 text-sm font-medium"
-                      >
-                        {specialtyLabels[specialty] ?? specialty}
-                      </span>
-                    ))}
-                  </div>
-
-                  {showBookingCta || messageHref ? (
-                    <div className="flex flex-wrap gap-2">
-                      {showBookingCta ? (
-                        <a
-                          href="#booking-panel"
-                          className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
-                        >
-                          {t("booking.jumpToAvailability")}
-                        </a>
-                      ) : null}
-                      {messageHref ? (
-                        <Link
-                          href={messageHref as never}
-                          className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-white/90"
-                        >
-                          {t("cta.messagePractitioner")}
-                        </Link>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
+                </span>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="app-panel-soft rounded-2xl p-4">
-                  <div className="mb-2 flex items-center gap-2 text-text-muted">
-                    <ShieldCheck size={15} />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em]">
-                      {t("badges.secure")}
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {p.isVerified ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-3 py-0.5 text-xs font-semibold text-text-brand ring-1 ring-inset ring-primary/8 dark:bg-primary/15">
+                      <BadgeCheck size={13} className="text-primary" />
+                      {t("header.verified")}
                     </span>
-                  </div>
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {t("badges.verified")}
+                  ) : null}
+                  <span className="app-chip inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-semibold">
+                    <MapPin size={13} className="text-primary" />
+                    {countryLabel}
+                  </span>
+                </div>
+
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+                    {displayName}
+                  </h1>
+                  <p className="mt-1 text-sm font-medium text-text-secondary">
+                    {displayTitle}
                   </p>
                 </div>
 
-                <div className="app-panel-soft rounded-2xl p-4">
-                  <div className="mb-2 flex items-center gap-2 text-text-muted">
-                    <Star size={15} className="fill-secondary text-secondary" />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em]">
-                      {t("header.specialtyFocus")}
+                {/* Specialties tags */}
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {primarySpecialties.map((specialty) => (
+                    <span
+                      key={specialty}
+                      className="rounded-full bg-primary-light/70 dark:bg-primary/10 border border-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-text-brand"
+                    >
+                      {specialtyLabels[specialty] ?? specialty}
                     </span>
-                  </div>
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {primarySpecialties.length > 0
-                      ? specialtyLabels[primarySpecialties[0]] ?? primarySpecialties[0]
-                      : "-"}
-                  </p>
-                </div>
-
-                <div className="app-panel-soft rounded-2xl p-4">
-                  <div className="mb-2 flex items-center gap-2 text-text-muted">
-                    <Globe size={15} />
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em]">
-                      {t("sections.languages")}
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {displayedLanguages || "-"}
-                  </p>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="app-panel rounded-[30px] p-5">
-              <div className="mb-4">
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                  {t("booking.panelTitle")}
-                </p>
-                <p className="mt-1 text-xs leading-6 text-text-secondary">
-                  {t("booking.jumpToAvailability")}
-                </p>
+            {/* Action buttons on the side */}
+            {(showBookingCta || messageHref) && (
+              <div className="flex flex-wrap gap-2.5 shrink-0 self-start md:pt-1">
+                {showBookingCta ? (
+                  <a
+                    href="#booking-panel"
+                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-hover shadow-sm hover:shadow"
+                  >
+                    {t("booking.jumpToAvailability")}
+                  </a>
+                ) : null}
+                {messageHref ? (
+                  <Link
+                    href={messageHref as never}
+                    className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-3 text-sm font-bold text-text-primary transition hover:border-primary/30 hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-white/90"
+                  >
+                    {t("cta.messagePractitioner")}
+                  </Link>
+                ) : null}
               </div>
+            )}
+          </div>
 
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                {stats.map((stat) => {
-                  const Icon = stat.icon;
-                  return (
-                    <div key={stat.label} className="app-panel-soft rounded-2xl p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                          {stat.label}
-                        </span>
-                        <Icon size={16} className="text-primary" />
-                      </div>
-                      <p className="text-xl font-bold text-text-primary dark:text-white/90">
-                        {stat.value}
-                      </p>
-                    </div>
-                  );
-                })}
+          {/* Consolidated 4-column horizontal stats bar (non-card styled) */}
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4 pt-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                <MessageSquare size={14} className="text-primary/70" />
+                <span>{t("stats.reviews")}</span>
               </div>
+              <p className="text-2xl font-extrabold text-text-primary dark:text-white/95">
+                {p.reviewCount}
+              </p>
+            </div>
+
+            <div className="space-y-1 border-s border-border-light/65 ps-4 md:ps-6 dark:border-white/10">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                <BriefcaseBusiness size={14} className="text-primary/70" />
+                <span>{t("stats.experience")}</span>
+              </div>
+              <p className="text-2xl font-extrabold text-text-primary dark:text-white/95">
+                {p.yearsExperience} {isAr ? "سنة" : "years"}
+              </p>
+            </div>
+
+            <div className="space-y-1 border-s border-border-light/65 ps-4 md:ps-6 dark:border-white/10">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                <Globe size={14} className="text-primary/70" />
+                <span>{t("sections.languages")}</span>
+              </div>
+              <p className="text-base font-bold text-text-primary dark:text-white/95 leading-normal">
+                {displayedLanguages || "-"}
+              </p>
+            </div>
+
+            <div className="space-y-1 border-s border-border-light/65 ps-4 md:ps-6 dark:border-white/10">
+              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted">
+                <Star size={14} className="text-primary/70 fill-primary/10" />
+                <span>{t("header.specialtyFocus")}</span>
+              </div>
+              <p className="text-base font-bold text-text-primary dark:text-white/95 leading-normal">
+                {primarySpecialties.length > 0
+                  ? specialtyLabels[primarySpecialties[0]] ?? primarySpecialties[0]
+                  : "-"}
+              </p>
             </div>
           </div>
         </div>

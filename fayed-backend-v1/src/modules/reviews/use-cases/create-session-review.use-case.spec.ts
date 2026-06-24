@@ -4,7 +4,6 @@ import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewActorRepository } from '../repositories/review-actor.repository';
 import { ReviewRepository } from '../repositories/review.repository';
 import { ValidateSessionReviewEligibilityService } from '../services/validate-session-review-eligibility.service';
-import { UpdatePractitionerRatingSummaryService } from '../services/update-practitioner-rating-summary.service';
 import { CreateSessionReviewUseCase } from './create-session-review.use-case';
 
 describe('CreateSessionReviewUseCase', () => {
@@ -22,10 +21,6 @@ describe('CreateSessionReviewUseCase', () => {
     assertEligible: jest.fn(),
   } as unknown as ValidateSessionReviewEligibilityService;
 
-  const updatePractitionerRatingSummaryService = {
-    execute: jest.fn(),
-  } as unknown as UpdatePractitionerRatingSummaryService;
-
   const reviewPresenter = {
     presentPatientReviewItem: jest.fn(),
   } as unknown as ReviewPresenter;
@@ -34,7 +29,6 @@ describe('CreateSessionReviewUseCase', () => {
     reviewActorRepository,
     reviewRepository,
     validateSessionReviewEligibilityService,
-    updatePractitionerRatingSummaryService,
     reviewPresenter,
   );
 

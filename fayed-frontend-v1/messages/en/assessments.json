@@ -1,10 +1,10 @@
 {
   "meta": {
-    "listTitle": "Fayed | Assessments",
+    "listTitle": "Sawiyaa | Assessments",
     "listDescription": "Browse supportive self-assessments to better understand your current needs.",
-    "detailTitle": "Fayed | {title}",
+    "detailTitle": "Sawiyaa | {title}",
     "detailDescription": "Take {title} through a calm guided web flow.",
-    "resultTitle": "Fayed | Assessment Result",
+    "resultTitle": "Sawiyaa | Assessment Result",
     "resultDescription": "View your saved assessment result with a calm, non-diagnostic summary."
   },
   "home": {
@@ -86,10 +86,18 @@
     "nonDiagnosticTitle": "Important reminder",
     "nonDiagnosticNote": "This result is not a diagnosis. If you need personal guidance, speaking with a qualified mental health professional is the most reliable next step.",
     "bands": {
-      "LOW": { "title": "Low" },
-      "MILD": { "title": "Mild" },
-      "MODERATE": { "title": "Moderate" },
-      "HIGH": { "title": "High" }
+      "LOW": {
+        "title": "Low"
+      },
+      "MILD": {
+        "title": "Mild"
+      },
+      "MODERATE": {
+        "title": "Moderate"
+      },
+      "HIGH": {
+        "title": "High"
+      }
     },
     "actions": {
       "moreAssessments": "More assessments",

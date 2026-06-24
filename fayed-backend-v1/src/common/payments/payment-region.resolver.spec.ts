@@ -13,7 +13,7 @@ describe('resolvePaymentRegionalResolution', () => {
     expect(result.resolvedCountryIsoCode).toBeNull();
     expect(result.regionalPricingMode).toBe('INTERNATIONAL');
     expect(result.currencyCode).toBe('USD');
-    expect(result.provider).toBe(PaymentProvider.STRIPE);
+    expect(result.provider).toBe(PaymentProvider.PAYMOB);
   });
 
   it('routes egypt only when patient/checkout country is explicitly egypt', () => {

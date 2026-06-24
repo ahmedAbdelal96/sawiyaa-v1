@@ -103,7 +103,6 @@
         "visibility": "Visibility",
         "type": "Access",
         "publicAccess": "Public course",
-        "marketNote": "The platform resolves one final price for your account. No country switch is shown here.",
         "duration": "Duration in days",
         "daysUnit": "days",
         "lectures": "Lecture count",
@@ -114,6 +113,13 @@
         "title": "Lecture schedule",
         "subtitle": "Review the saved lecture timings before you register.",
         "count": "{count} lecture(s)",
+        "columns": {
+          "order": "#",
+          "title": "Lecture",
+          "date": "Date",
+          "time": "Time",
+          "duration": "Duration"
+        },
         "empty": {
           "heading": "No lecture schedule yet",
           "note": "The course is still being prepared. Check back once the full schedule is ready."
@@ -144,6 +150,7 @@
       "email": "Email address",
       "submit": "Register now",
       "submitting": "Registering...",
+      "priceLabel": "Subscription Price",
       "noteTitle": "Automatic pricing",
       "noteBody": "The platform resolves one final price for your account on the server. You do not need to choose a country here.",
       "validation": {
@@ -185,7 +192,8 @@
       "missingLecturePlan": "Set the course duration, lecture count, and timing before adding lectures.",
       "invalidLectureWindow": "Each lecture must stay within the course window.",
       "lectureLimitReached": "This course already has the planned number of lectures.",
-      "lectureOrderTaken": "That lecture order is already in use."
+      "lectureOrderTaken": "That lecture order is already in use.",
+      "lectureOverlap": "Lecture schedule overlaps with another lecture."
     },
     "stats": {
       "totalCourses": "Total courses",

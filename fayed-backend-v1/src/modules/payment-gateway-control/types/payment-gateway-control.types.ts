@@ -37,6 +37,7 @@ export type PaymobGatewayControlMethodEntry = {
   enabled: boolean;
   priority: number;
   supportedCheckoutFlows: PaymobCheckoutFlowValue[];
+  currencyCodes: string[];
   countryIsoCodes: string[];
   integrationId: string | null;
 };

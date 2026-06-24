@@ -1,5 +1,5 @@
 /**
- * Shared React Query cache configuration for the active Fayed foundation.
+ * Shared React Query cache configuration for the active Sawiyaa foundation.
  */
 
 export const TIME = {

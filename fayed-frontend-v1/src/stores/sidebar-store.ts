@@ -88,7 +88,7 @@ export const useSidebarStore = create<SidebarStore>()(
       },
     }),
     {
-      name: "fayed-sidebar",
+      name: "sawiyaa-sidebar",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         isExpanded: state.isExpanded,

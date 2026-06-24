@@ -7,6 +7,7 @@ import { OtpCodeGeneratorService } from './services/otp-code-generator.service';
 import { OtpHashService } from './services/otp-hash.service';
 import { OtpPolicyResolverService } from './services/otp-policy-resolver.service';
 import { OtpDeliveryDispatcherService } from './services/otp-delivery-dispatcher.service';
+import { PasswordResetRateLimitService } from './services/password-reset-rate-limit.service';
 import { CreateOtpChallengeUseCase } from './use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from './use-cases/send-otp-challenge.use-case';
 import { VerifyOtpChallengeUseCase } from './use-cases/verify-otp-challenge.use-case';
@@ -26,6 +27,7 @@ import { ResendOtpChallengeUseCase } from './use-cases/resend-otp-challenge.use-
     OtpHashService,
     OtpPolicyResolverService,
     OtpDeliveryDispatcherService,
+    PasswordResetRateLimitService,
     CreateOtpChallengeUseCase,
     SendOtpChallengeUseCase,
     VerifyOtpChallengeUseCase,
@@ -38,6 +40,7 @@ import { ResendOtpChallengeUseCase } from './use-cases/resend-otp-challenge.use-
     VerifyOtpChallengeUseCase,
     InvalidateOtpChallengeUseCase,
     ResendOtpChallengeUseCase,
+    PasswordResetRateLimitService,
   ],
 })
 export class VerificationModule {}

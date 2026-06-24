@@ -213,7 +213,7 @@ describe('CreateAcademyEnrollmentUseCase', () => {
         whatsappNumber: '+201111111111',
         email: 'learner.one@example.com',
         sourceLabel: 'test',
-        returnUrlBase: 'fayed://academy/enrollments/',
+        returnUrlBase: 'sawiyaa://academy/enrollments/',
       },
     });
 
@@ -374,7 +374,7 @@ describe('CreateAcademyEnrollmentUseCase', () => {
         whatsappNumber: '+201111111111',
         email: 'learner.one@example.com',
         sourceLabel: 'test',
-        returnUrlBase: 'fayed://academy/enrollments/',
+        returnUrlBase: 'sawiyaa://academy/enrollments/',
       },
     });
 
@@ -418,7 +418,7 @@ describe('CreateAcademyEnrollmentUseCase', () => {
     expect(providerAdapter?.initiateSessionPayment).toHaveBeenCalledWith(
       expect.objectContaining({
         redirectionUrl: expect.stringMatching(
-          /^fayed:\/\/academy\/enrollments\/enrollment_1\/payment-return\?token=/,
+          /^sawiyaa:\/\/academy\/enrollments\/enrollment_1\/payment-return\?token=/,
         ),
       }),
     );

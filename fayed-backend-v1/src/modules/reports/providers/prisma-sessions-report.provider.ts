@@ -124,6 +124,25 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
           createdAt: true,
           patientId: true,
           practitionerId: true,
+          patient: {
+            select: {
+              displayName: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+          practitioner: {
+            select: {
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [{ scheduledStartAt: 'desc' }, { createdAt: 'desc' }],
         skip,
@@ -141,6 +160,8 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
       createdAt: row.createdAt.toISOString(),
       patientId: row.patientId,
       practitionerId: row.practitionerId,
+      patientName: row.patient?.user?.displayName ?? row.patient?.displayName ?? null,
+      practitionerName: row.practitioner?.user?.displayName ?? null,
     }));
 
     return { items, totalItems };

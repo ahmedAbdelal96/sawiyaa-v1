@@ -33,20 +33,25 @@ import {
   AuthSuccessEnvelopeResponseDto,
   MessageEnvelopeResponseDto,
   OtpChallengeEnvelopeResponseDto,
+  PasswordResetOtpVerifiedEnvelopeResponseDto,
   PractitionerRegistrationEnvelopeResponseDto,
 } from '../dto/auth-response.dto';
+import { ConfirmPasswordResetDto } from '../dto/confirm-password-reset.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { PractitionerLoginDto } from '../dto/practitioner-login.dto';
 import { PractitionerRegisterDto } from '../dto/practitioner-register.dto';
 import { PractitionerVerifyOtpDto } from '../dto/practitioner-verify-otp.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { VerifyPasswordResetOtpDto } from '../dto/verify-password-reset-otp.dto';
+import { ConfirmPractitionerPasswordResetUseCase } from '../use-cases/confirm-practitioner-password-reset.use-case';
 import { LoginPractitionerPasswordUseCase } from '../use-cases/login-practitioner-password.use-case';
 import { LogoutPractitionerUseCase } from '../use-cases/logout-practitioner.use-case';
 import { RefreshPractitionerTokenUseCase } from '../use-cases/refresh-practitioner-token.use-case';
 import { RegisterPractitionerAccountUseCase } from '../use-cases/register-practitioner-account.use-case';
 import { RequestPractitionerPasswordResetUseCase } from '../use-cases/request-practitioner-password-reset.use-case';
 import { ResetPractitionerPasswordUseCase } from '../use-cases/reset-practitioner-password.use-case';
+import { VerifyPractitionerPasswordResetOtpUseCase } from '../use-cases/verify-practitioner-password-reset-otp.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from '../use-cases/verify-practitioner-login-otp.use-case';
 import { getRequestDeviceContext } from '../utils/request-device-context.util';
 
@@ -62,6 +67,8 @@ export class PractitionerAuthController {
     private readonly refreshPractitionerTokenUseCase: RefreshPractitionerTokenUseCase,
     private readonly logoutPractitionerUseCase: LogoutPractitionerUseCase,
     private readonly requestPractitionerPasswordResetUseCase: RequestPractitionerPasswordResetUseCase,
+    private readonly verifyPractitionerPasswordResetOtpUseCase: VerifyPractitionerPasswordResetOtpUseCase,
+    private readonly confirmPractitionerPasswordResetUseCase: ConfirmPractitionerPasswordResetUseCase,
     private readonly resetPractitionerPasswordUseCase: ResetPractitionerPasswordUseCase,
   ) {}
 
@@ -177,7 +184,7 @@ export class PractitionerAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -232,7 +239,7 @@ export class PractitionerAuthController {
     });
 
     if (result.tokens?.refreshToken) {
-      res.cookie('fayed_refresh_token', result.tokens.refreshToken, {
+      res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -267,7 +274,7 @@ export class PractitionerAuthController {
     @CurrentLocale() locale: SupportedLocale,
   ) {
     await this.logoutPractitionerUseCase.execute(request.user!.sessionId!);
-    res.clearCookie('fayed_refresh_token', {
+    res.clearCookie('sawiyaa_refresh_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -293,6 +300,56 @@ export class PractitionerAuthController {
   ) {
     return this.requestPractitionerPasswordResetUseCase.execute({
       email: dto.email,
+      locale,
+    });
+  }
+
+  @Public()
+  @Post('verify-password-reset-otp')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-verify-password-reset-otp')
+  @ApiOperation({
+    summary: 'Verify practitioner password reset OTP and issue reset token',
+  })
+  @ApiBody({ type: VerifyPasswordResetOtpDto })
+  @ApiResponse({
+    status: 200,
+    type: PasswordResetOtpVerifiedEnvelopeResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({
+    description: 'OTP challenge is invalid or expired',
+  })
+  @ApiForbiddenResponse({ description: 'OTP code is invalid' })
+  async verifyPasswordResetOtp(
+    @Body() dto: VerifyPasswordResetOtpDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.verifyPractitionerPasswordResetOtpUseCase.execute({
+      email: dto.email,
+      code: dto.code,
+      locale,
+    });
+  }
+
+  @Public()
+  @Post('confirm-password-reset')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-confirm-password-reset')
+  @ApiOperation({
+    summary: 'Confirm practitioner password reset using reset token',
+  })
+  @ApiBody({ type: ConfirmPasswordResetDto })
+  @ApiResponse({ status: 200, type: MessageEnvelopeResponseDto })
+  @ApiBadRequestResponse({ description: 'Validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Reset token is invalid or expired' })
+  async confirmPasswordReset(
+    @Body() dto: ConfirmPasswordResetDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.confirmPractitionerPasswordResetUseCase.execute({
+      resetToken: dto.resetToken,
+      newPassword: dto.newPassword,
       locale,
     });
   }

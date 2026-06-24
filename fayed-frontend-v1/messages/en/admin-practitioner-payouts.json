@@ -55,7 +55,7 @@
     },
     "workspace": {
       "eyebrow": "Settlement workspace",
-      "title": "Create a settlement after the money leaves Fayed",
+      "title": "Create a settlement after the money leaves Sawiyaa",
       "description": "Pick the practitioner, confirm the payout destination snapshot, then record the exact amount you transferred outside the platform.",
       "bullets": {
         "manualTransfer": "External transfer only",
@@ -189,7 +189,7 @@
     "searchPlaceholder": "Search by practitioner name or code",
     "selectPractitioner": "Select",
     "selectedPractitioner": "Selected practitioner",
-    "selectionNote": "Review the balance cards and the read-only payout destination snapshot, then record the actual amount you transferred outside Fayed.",
+    "selectionNote": "Review the balance cards and the read-only payout destination snapshot, then record the actual amount you transferred outside Sawiyaa.",
     "identityConfirmation": "Confirm the practitioner details before recording the settlement.",
     "changePractitioner": "Change practitioner",
     "viewHistory": "View payout history",

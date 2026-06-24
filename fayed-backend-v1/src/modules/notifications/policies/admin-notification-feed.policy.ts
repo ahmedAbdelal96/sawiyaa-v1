@@ -7,6 +7,7 @@ const AUDIT_ONLY_TYPE_SLUGS = [
   'sessions.session-confirmed-practitioner',
   'sessions.session-reminder-60',
   'sessions.session-reminder-15',
+  'availability.week-ending-reminder',
   'training.schedule-reminder',
   'training.enrollment-confirmed',
   'dev.push-test',

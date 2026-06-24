@@ -38,8 +38,7 @@ export function resolvePaymentRegionalResolution(
   const explicitCurrency = normalizeCurrencyCode(input.currencyCode);
   const currencyCode =
     explicitCurrency ?? (regionalPricingMode === 'EGYPT_LOCAL' ? 'EGP' : 'USD');
-  const provider =
-    currencyCode === 'EGP' ? PaymentProvider.PAYMOB : PaymentProvider.STRIPE;
+  const provider = PaymentProvider.PAYMOB;
 
   return {
     resolvedCountryIsoCode,
@@ -57,7 +56,7 @@ export function resolveProviderForCurrency(currencyCode: string) {
   }
 
   if (normalizedCurrencyCode === 'USD') {
-    return PaymentProvider.STRIPE;
+    return PaymentProvider.PAYMOB;
   }
 
   return null;

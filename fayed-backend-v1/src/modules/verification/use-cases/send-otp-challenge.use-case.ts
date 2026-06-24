@@ -30,6 +30,7 @@ export class SendOtpChallengeUseCase {
     code: string;
     expiresAt: Date;
     locale: SupportedLocale;
+    isPractitioner?: boolean;
   }) {
     this.logger.log(
       `OTP delivery attempt (${input.purpose}) to ${maskTarget(input.target)}`,
@@ -43,6 +44,7 @@ export class SendOtpChallengeUseCase {
       expiresAt: input.expiresAt,
       locale: input.locale,
       purposeLabel: input.purpose,
+      isPractitioner: input.isPractitioner,
     });
 
     if (!delivery.delivered) {

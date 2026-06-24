@@ -20,8 +20,12 @@ import {
   patientRefresh,
   patientRegister,
   patientForgotPassword,
+  patientVerifyPasswordResetOtp,
+  patientConfirmPasswordReset,
   patientResetPassword,
   practitionerForgotPassword,
+  practitionerVerifyPasswordResetOtp,
+  practitionerConfirmPasswordReset,
   practitionerLogin,
   practitionerLogout,
   practitionerRefresh,
@@ -38,9 +42,13 @@ import type {
   PatientLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
+  PatientVerifyPasswordResetOtpRequest,
+  PatientConfirmPasswordResetRequest,
   PatientResetPasswordRequest,
   PersistedAuthSession,
   PractitionerForgotPasswordRequest,
+  PractitionerVerifyPasswordResetOtpRequest,
+  PractitionerConfirmPasswordResetRequest,
   PractitionerLoginRequest,
   PractitionerRegisterRequest,
   PractitionerResetPasswordRequest,
@@ -95,12 +103,24 @@ interface AuthContextValue {
   resetPatientPassword: (
     payload: PatientResetPasswordRequest,
   ) => ReturnType<typeof patientResetPassword>;
+  verifyPatientPasswordResetOtp: (
+    payload: PatientVerifyPasswordResetOtpRequest,
+  ) => ReturnType<typeof patientVerifyPasswordResetOtp>;
+  confirmPatientPasswordReset: (
+    payload: PatientConfirmPasswordResetRequest,
+  ) => ReturnType<typeof patientConfirmPasswordReset>;
   requestPractitionerPasswordReset: (
     payload: PractitionerForgotPasswordRequest,
   ) => ReturnType<typeof practitionerForgotPassword>;
   resetPractitionerPassword: (
     payload: PractitionerResetPasswordRequest,
   ) => ReturnType<typeof practitionerResetPassword>;
+  verifyPractitionerPasswordResetOtp: (
+    payload: PractitionerVerifyPasswordResetOtpRequest,
+  ) => ReturnType<typeof practitionerVerifyPasswordResetOtp>;
+  confirmPractitionerPasswordReset: (
+    payload: PractitionerConfirmPasswordResetRequest,
+  ) => ReturnType<typeof practitionerConfirmPasswordReset>;
   signOut: () => Promise<void>;
 }
 
@@ -584,8 +604,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUpPractitioner: practitionerRegister,
       requestPatientPasswordReset: patientForgotPassword,
       resetPatientPassword: patientResetPassword,
+      verifyPatientPasswordResetOtp: patientVerifyPasswordResetOtp,
+      confirmPatientPasswordReset: patientConfirmPasswordReset,
       requestPractitionerPasswordReset: practitionerForgotPassword,
       resetPractitionerPassword: practitionerResetPassword,
+      verifyPractitionerPasswordResetOtp: practitionerVerifyPasswordResetOtp,
+      confirmPractitionerPasswordReset: practitionerConfirmPasswordReset,
       signOut,
     }),
     [

@@ -2,7 +2,7 @@
  * WebResponseHardeningInterceptor
  *
  * Strips the refreshToken field from auth success response JSON bodies when
- * the client is the Fayed web browser (Next.js frontend).
+ * the client is the Sawiyaa web browser (Next.js frontend).
  *
  * Web clients receive the refresh token as an HttpOnly cookie (set via
  * Set-Cookie response header). The JSON response body does not need to
@@ -11,7 +11,7 @@
  *
  * Detection — TWO signals checked in order:
  *   1. X-Client-Platform: web  (primary — explicit frontend signal)
- *   2. Origin header matching Fayed web origins  (fallback — catches direct
+ *   2. Origin header matching Sawiyaa web origins  (fallback — catches direct
  *      browser calls, same-origin deployments, preview domains, etc.)
  *
  * If NEITHER signal is present the request is treated as native/mobile and
@@ -30,13 +30,13 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-const FAYED_WEB_ORIGINS = [
+const SAWIYAA_WEB_ORIGINS = [
   'http://localhost:3000',
-  'https://fayed.app',
-  'https://www.fayed.app',
+  'https://sawiyaa.app',
+  'https://www.sawiyaa.app',
 ] as const;
 
-type WebOrigin = (typeof FAYED_WEB_ORIGINS)[number];
+type WebOrigin = (typeof SAWIYAA_WEB_ORIGINS)[number];
 
 interface AuthTokensResponse {
   accessToken: string;
@@ -79,7 +79,7 @@ function hasKnownWebOrigin(context: ExecutionContext): boolean {
   const request = context.switchToHttp().getRequest();
   const origin = request.headers['origin'] as string | undefined;
   if (!origin) return false;
-  return (FAYED_WEB_ORIGINS as readonly string[]).includes(origin);
+  return (SAWIYAA_WEB_ORIGINS as readonly string[]).includes(origin);
 }
 
 function isWebClient(context: ExecutionContext): boolean {
@@ -110,9 +110,10 @@ function deleteRefreshTokenField<T extends AuthSuccessResponse>(value: T): T {
 }
 
 @Injectable()
-export class WebResponseHardeningInterceptor
-  implements NestInterceptor<AuthSuccessResponse, AuthSuccessResponse>
-{
+export class WebResponseHardeningInterceptor implements NestInterceptor<
+  AuthSuccessResponse,
+  AuthSuccessResponse
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,

@@ -19,13 +19,17 @@ type AppHeaderProps = {
 };
 
 const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
-  const { isMobileOpen, toggleMobileSidebar } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const locale = useLocale();
   const isRTL = locale === "ar";
 
   const headerOffsetClass = isRTL
-    ? "lg:right-[304px] lg:left-0"
-    : "lg:left-[304px] lg:right-0";
+    ? isExpanded || isHovered
+      ? "lg:right-[304px] lg:left-0"
+      : "lg:right-[88px] lg:left-0"
+    : isExpanded || isHovered
+      ? "lg:left-[304px] lg:right-0"
+      : "lg:left-[88px] lg:right-0";
 
   return (
     <header
@@ -45,10 +49,18 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
           />
 
           <div className="flex min-w-0 items-center gap-3">
-            <BrandMark compact />
+            <BrandMark
+              compact
+              onClick={(e) => {
+                if (window.innerWidth >= 1024) {
+                  e.preventDefault();
+                  toggleSidebar();
+                }
+              }}
+            />
             <div className="hidden min-w-0 border-s border-border-light ps-3 lg:block">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-                Fayed
+                Sawiyaa
               </p>
               <p className="text-sm font-medium text-text-primary">
                 {locale === "ar" ? "لوحة الإدارة" : "Admin shell"}

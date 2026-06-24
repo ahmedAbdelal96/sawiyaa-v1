@@ -8,7 +8,6 @@ import { CareChatConversationRepository } from '@modules/care-chat/repositories/
 import { CareChatRequestRepository } from '@modules/care-chat/repositories/care-chat-request.repository';
 import { ValidateCareChatApprovalTransitionService } from '@modules/care-chat/services/validate-care-chat-approval-transition.service';
 import { ReviewRepository } from '@modules/reviews/repositories/review.repository';
-import { UpdatePractitionerRatingSummaryService } from '@modules/reviews/services/update-practitioner-rating-summary.service';
 import { ValidateReviewModerationTransitionService } from '@modules/reviews/services/validate-review-moderation-transition.service';
 import { SupportTicketRepository } from '@modules/support/repositories/support-ticket.repository';
 import { ResolveSupportAdminActorRoleService } from '@modules/support/services/resolve-support-admin-actor-role.service';
@@ -40,7 +39,6 @@ import { ListModerationCasesUseCase } from './use-cases/list-moderation-cases.us
     ValidateCareChatApprovalTransitionService,
     ReviewRepository,
     ValidateReviewModerationTransitionService,
-    UpdatePractitionerRatingSummaryService,
     SupportTicketRepository,
     ValidateSupportTicketStatusTransitionService,
     ResolveSupportAdminActorRoleService,

@@ -44,6 +44,7 @@ export class ReviewPresenter {
     sessionId: string;
     patientId: string;
     practitionerId: string;
+    isAnonymous: boolean;
     ratingValue: number;
     reviewTitle: string | null;
     reviewText: string | null;
@@ -58,15 +59,34 @@ export class ReviewPresenter {
         displayName: string | null;
       };
     };
+    patient: {
+      id: string;
+      displayName: string | null;
+      user: {
+        displayName: string | null;
+      };
+    };
     session: {
       id: string;
       scheduledStartAt: Date | null;
     };
   }) {
+    const patientDisplayName =
+      item.patient.displayName ?? item.patient.user.displayName ?? null;
+    const patientLabel = item.isAnonymous
+      ? 'Anonymous patient'
+      : patientDisplayName ?? 'Patient';
+
     return {
       ...this.presentPatientReviewItem(item),
       patientProfileId: item.patientId,
       practitionerProfileId: item.practitionerId,
+      patient: {
+        id: item.patient.id,
+        displayName: patientDisplayName,
+        label: patientLabel,
+        isAnonymous: item.isAnonymous,
+      },
       session: {
         id: item.session.id,
         scheduledStartAt: item.session.scheduledStartAt?.toISOString() ?? null,
@@ -109,6 +129,9 @@ export class ReviewPresenter {
 
   presentPublicSummary(input: {
     averageRating: number | null;
+    ratingsCount: number;
+    publishedRatingsCount: number;
+    writtenReviewsCount: number;
     totalPublicReviews: number;
     totalPublishedReviews: number;
     totalSubmittedReviews: number;
@@ -120,6 +143,9 @@ export class ReviewPresenter {
   }) {
     return {
       averageOverallRating: input.averageRating,
+      ratingsCount: input.ratingsCount,
+      publishedRatingsCount: input.publishedRatingsCount,
+      writtenReviewsCount: input.writtenReviewsCount,
       totalPublicReviews: input.totalPublicReviews,
       totalPublishedReviews: input.totalPublishedReviews,
       totalSubmittedReviews: input.totalSubmittedReviews,

@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return buildPublicMetadata({
       locale,
       pathname: `/specialties/${slug}`,
-      title: `Fayed | ${data.specialty.name}`,
+      title: `${locale === "ar" ? "سويّة" : "Sawiyaa"} | ${data.specialty.name}`,
       description: data.specialty.description ?? fallback("description"),
     });
   } catch {

@@ -20,7 +20,7 @@ export default async function SpecialtyDetailHero({ specialty }: Props) {
         </Link>
 
         <p className="mt-5 text-sm text-text-muted">
-          <span className="text-primary">Fayed</span>
+          <span className="text-primary">Sawiyaa</span>
           {" / "}
           <span>{t("breadcrumb")}</span>
           {" / "}

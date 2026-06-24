@@ -5,6 +5,7 @@ import { AvailabilityModule } from '@modules/availability/availability.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { PresenceModule } from '@modules/presence/presence.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { PatientInstantBookingDiscoveryController } from './controllers/patient-instant-booking-discovery.controller';
 import { PatientInstantBookingController } from './controllers/patient-instant-booking.controller';
@@ -33,7 +34,13 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
  * Session creation happens as a handoff so Session remains the actual booking source of truth.
  */
 @Module({
-  imports: [AvailabilityModule, NotificationsModule, PresenceModule, SessionsModule],
+  imports: [
+    AvailabilityModule,
+    NotificationsModule,
+    PresenceModule,
+    ReviewsModule,
+    SessionsModule,
+  ],
   controllers: [
     PatientInstantBookingDiscoveryController,
     PatientInstantBookingController,

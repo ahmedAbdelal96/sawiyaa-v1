@@ -1,5 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PaymentProvider } from '@prisma/client';
+import { PaymobCheckoutFlow } from '../types/paymob-payment.types';
 import { PaymentProviderCapability } from '../types/payment-routing.types';
 import { PaymentRuntimeConfigService } from './payment-runtime-config.service';
 
@@ -12,6 +13,7 @@ export class PaymentProviderCapabilitiesService {
   getCapability(
     provider: PaymentProvider,
     context?: {
+      currencyCode?: string | null;
       checkoutCountryIsoCode?: string | null;
       operatingCountryIsoCode?: string | null;
     },
@@ -28,7 +30,8 @@ export class PaymentProviderCapabilitiesService {
         const paymob = this.paymentRuntimeConfigService.getPaymobConfig();
         const enabledMethods =
           this.paymentRuntimeConfigService.getPaymobEnabledMethods(context);
-        const isIntentionFlow = paymob.checkoutFlow === 'intention';
+        const isIntentionFlow =
+          paymob.checkoutFlow === PaymobCheckoutFlow.INTENTION;
         const requirements: Array<
           [key: string, value: string | undefined | null]
         > = [
@@ -48,6 +51,7 @@ export class PaymentProviderCapabilitiesService {
         }
 
         return this.buildCapability(provider, paymob.enabled, requirements, {
+          currencyCode: context?.currencyCode ?? null,
           checkoutFlow: paymob.checkoutFlow,
           maintenanceMode: paymob.maintenanceMode,
           methods: enabledMethods.map((item) => ({
@@ -77,6 +81,7 @@ export class PaymentProviderCapabilitiesService {
   assertAvailable(
     provider: PaymentProvider,
     context?: {
+      currencyCode?: string | null;
       checkoutCountryIsoCode?: string | null;
       operatingCountryIsoCode?: string | null;
     },
@@ -111,6 +116,7 @@ export class PaymentProviderCapabilitiesService {
     enabled: boolean,
     requirements: Array<[key: string, value: string | undefined | null]>,
     extras?: {
+      currencyCode?: string | null;
       checkoutFlow?: 'legacy' | 'intention';
       maintenanceMode?: boolean;
       methods?: Array<{
@@ -127,11 +133,21 @@ export class PaymentProviderCapabilitiesService {
       .filter(([, value]) => !value || !value.trim())
       .map(([key]) => key);
 
-    if (
-      provider === PaymentProvider.PAYMOB &&
-      (!extras?.supportedMethods || extras.supportedMethods.length === 0)
-    ) {
-      missingConfig.push('PAYMOB_METHOD_REGISTRY_JSON');
+    if (provider === PaymentProvider.PAYMOB) {
+      const normalizedCurrency =
+        typeof extras?.currencyCode === 'string'
+          ? extras.currencyCode.trim().toUpperCase()
+          : null;
+
+      if (!extras?.supportedMethods || extras.supportedMethods.length === 0) {
+        if (normalizedCurrency === 'USD') {
+          missingConfig.push('PAYMOB_USD_CARD_INTEGRATION_ID');
+        } else if (normalizedCurrency === 'EGP') {
+          missingConfig.push('PAYMOB_EGP_CARD_INTEGRATION_ID');
+        } else {
+          missingConfig.push('PAYMOB_METHOD_CONFIGURATION');
+        }
+      }
     }
 
     const configured = missingConfig.length === 0;

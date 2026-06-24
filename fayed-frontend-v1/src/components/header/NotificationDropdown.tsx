@@ -72,7 +72,6 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        closeOnOutsideClick={false}
         className={`absolute mt-[17px] flex w-[min(340px,calc(100vw-1rem))] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary ${
           isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
         }`}
@@ -108,7 +107,7 @@ export default function NotificationDropdown() {
               }}
             />
           ) : items.length > 0 ? (
-            <div className="space-y-2">
+            <div className="divide-y divide-border-light/70 dark:divide-white/10">
               {items.map((item) => {
                 const notificationSlug =
                   item.typeSlug ??
@@ -126,34 +125,41 @@ export default function NotificationDropdown() {
                 );
                 const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
 
+                const isUnread = item.status !== "READ";
+
                 return (
                   <Link
                     key={item.id}
                     href={`/admin/notifications/${item.id}` as never}
                     onClick={() => setIsOpen(false)}
-                    className="block rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 transition hover:border-primary/25 hover:bg-primary-light/40 dark:bg-surface-secondary text-start"
+                    className="block w-full text-start focus:outline-none transition first:mt-0"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className={`p-2 rounded-xl shrink-0 ${toneClass}`}>
+                    <div className="flex items-start gap-3 w-full py-3 px-2 transition hover:bg-surface-tertiary/60 dark:hover:bg-white/5">
+                      <div className={`p-2.5 rounded-full shrink-0 relative ${toneClass}`}>
                         {visual.icon}
+                        {isUnread ? (
+                          <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-surface-secondary" />
+                        ) : null}
                       </div>
-                      <div className="min-w-0 flex-1 text-start">
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${getAdminNotificationStatusTone(
-                              item.status,
-                            )}`}
-                          >
-                            {t(`notifications.statuses.${item.status}` as Parameters<typeof t>[0])}
-                          </span>
-                          <span className="text-[10px] text-text-muted">
+                      <div className="min-w-0 flex-1 text-start space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${getAdminNotificationStatusTone(
+                                item.status,
+                              )}`}
+                            >
+                              {t(`notifications.statuses.${item.status}` as Parameters<typeof t>[0])}
+                            </span>
+                            <p className={`text-sm leading-snug text-text-primary dark:text-white/95 truncate ${isUnread ? "font-bold" : "font-medium"}`}>
+                              {visual.title}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
                             {formatAdminNotificationDateTime(item.updatedAt, locale)}
                           </span>
                         </div>
-                        <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95 leading-normal">
-                          {visual.title}
-                        </p>
-                        <p className="mt-1 text-xs text-text-secondary leading-normal font-medium">
+                        <p className="text-xs leading-relaxed text-text-secondary line-clamp-2">
                           {visual.contextLine || visual.subtitle}
                         </p>
                       </div>

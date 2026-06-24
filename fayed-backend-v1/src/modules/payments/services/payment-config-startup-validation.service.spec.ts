@@ -19,6 +19,7 @@ function buildRuntimeConfigMock(overrides?: {
   }>;
   development?: boolean;
   redirectThrows?: boolean;
+  paymobMethodIssues?: string[];
 }) {
   const stripe = {
     enabled: true,
@@ -44,6 +45,8 @@ function buildRuntimeConfigMock(overrides?: {
     isDevelopmentEnvironment: () => overrides?.development ?? true,
     getStripeConfig: () => stripe,
     getPaymobConfig: () => paymob,
+    getPaymobCurrencyMethodConfigIssues: () =>
+      overrides?.paymobMethodIssues ?? [],
     assertCheckoutConfigured: jest.fn(),
     assertWebhookConfigured: jest.fn(),
     getRedirectUrls: jest.fn(() => {
@@ -86,5 +89,25 @@ describe('PaymentConfigStartupValidationService', () => {
     );
 
     expect(() => service.onModuleInit()).toThrow(/Stripe mode is live/i);
+  });
+
+  it('fails when paymob currency or method config is unsafe', () => {
+    const service = new PaymentConfigStartupValidationService(
+      buildRuntimeConfigMock({
+        paymob: {
+          enabled: true,
+          apiKey: 'paymob_api',
+          hmacSecret: 'paymob_hmac',
+          baseUrl: 'https://accept.paymob.com/api',
+          integrationIdCard: 'egp_card',
+          iframeId: 'iframe_id',
+        },
+        paymobMethodIssues: ['USD WALLET is not supported.'],
+      }) as never,
+    );
+
+    expect(() => service.onModuleInit()).toThrow(
+      /USD WALLET is not supported/i,
+    );
   });
 });

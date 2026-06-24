@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import {
@@ -35,8 +35,11 @@ interface ApiTokens {
 
 interface ApiUser {
   id: string;
-  email: string;
-  role: string;
+  email?: string;
+  primaryEmail?: string | null;
+  role?: string;
+  roles?: string[];
+  displayName?: string | null;
   fullName?: string;
   name?: string;
   firstName?: string;
@@ -84,6 +87,7 @@ function isApiEnvelope<T>(value: unknown): value is ApiEnvelope<T> {
 
 function splitName(user: ApiUser): { firstName: string; lastName: string } {
   const value =
+    user.displayName ||
     user.fullName ||
     user.name ||
     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
@@ -114,10 +118,10 @@ function normalizeAuthPayload(
 
   const user: ProcessedUser = {
     id: body.user.id,
-    email: body.user.email,
+    email: body.user.email || body.user.primaryEmail || "",
     firstName,
     lastName,
-    role: body.user.role,
+    role: body.user.role || body.user.roles?.[0] || "",
   };
 
   const tenant: ProcessedTenant = {

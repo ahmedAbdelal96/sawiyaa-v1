@@ -32,7 +32,7 @@ export class GetPublicPractitionerTrustBlockUseCase {
 
     const contentQueryPlan =
       this.buildPublicTrustConversionContentQueryService.build({
-        totalPublicReviews: trustSummary.summary.totalPublicReviews,
+        totalPublicReviews: trustSummary.summary.ratingsCount,
         freshness: trustSummary.summary.freshness,
         hasEnoughPublicReviews: trustSummary.summary.hasEnoughPublicReviews,
       });

@@ -5,6 +5,7 @@ import { ReviewRepository } from './review.repository';
 describe('ReviewRepository', () => {
   const prisma = {
     sessionReview: {
+      findUnique: jest.fn().mockResolvedValue(null),
       findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0),
     },
@@ -71,6 +72,40 @@ describe('ReviewRepository', () => {
       expect.objectContaining({
         skip: 20,
         take: 10,
+      }),
+    );
+  });
+
+  it('loads admin review details with patient and practitioner context', async () => {
+    await repository.findById('review-1');
+
+    expect(prisma.sessionReview.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'review-1' },
+        include: expect.objectContaining({
+          patient: {
+            select: {
+              id: true,
+              displayName: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+          practitioner: {
+            select: {
+              id: true,
+              publicSlug: true,
+              user: {
+                select: {
+                  displayName: true,
+                },
+              },
+            },
+          },
+        }),
       }),
     );
   });

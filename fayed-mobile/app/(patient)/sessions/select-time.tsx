@@ -43,22 +43,21 @@ function buildSlotsFromDurationWindows(
   bookedSlots: BookedAvailabilitySlot[],
   durationMinutes: DurationValue,
 ): ScheduleSlot[] {
-  const durationMs = durationMinutes * 60 * 1000;
   const earliestAllowedStart = Date.now() + 60 * 1000;
   const slots: ScheduleSlot[] = [];
 
   for (const window of windows) {
-    if (window.durationMinutes !== durationMinutes) continue;
-    const startMs = new Date(window.startsAt).getTime();
-    const endMs = new Date(window.endsAt).getTime();
-
-    for (let cursor = startMs; cursor + durationMs <= endMs; cursor += durationMs) {
-      if (cursor <= earliestAllowedStart) continue;
-      slots.push({
-        startsAt: new Date(cursor).toISOString(),
-        kind: "AVAILABLE",
-      });
+    if (window.durationMinutes !== null && window.durationMinutes !== durationMinutes) {
+      continue;
     }
+
+    const startMs = new Date(window.startsAt).getTime();
+    if (startMs <= earliestAllowedStart) continue;
+
+    slots.push({
+      startsAt: new Date(startMs).toISOString(),
+      kind: "AVAILABLE",
+    });
   }
 
   for (const booked of bookedSlots) {

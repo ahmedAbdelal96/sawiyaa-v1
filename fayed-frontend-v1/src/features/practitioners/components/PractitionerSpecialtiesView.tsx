@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, Info, Loader2, Star, Tag, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Info, Loader2, Plus, Star, Tag, TriangleAlert } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { FormModal } from "@/components/ui/modal";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
@@ -80,6 +82,7 @@ export default function PractitionerSpecialtiesView({
   const [draft, setDraft] = useState<EditableSpecialty[]>([]);
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     tone: "success" | "error";
     message: string;
@@ -201,6 +204,8 @@ export default function PractitionerSpecialtiesView({
         },
       ]),
     );
+    setIsAddModalOpen(false);
+    setSelectedSpecialtyId("");
   };
 
   const handleRemove = (specialtyId: string) => {
@@ -306,6 +311,8 @@ export default function PractitionerSpecialtiesView({
           {t("application.statusMessage.UNDER_REVIEW")}
         </div>
       ) : null}
+      
+      {/* Info Alert Panel */}
       <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
         <div className="flex items-start gap-3">
           <div className="rounded-2xl bg-primary-light p-2.5 text-text-brand dark:bg-primary/15 dark:text-primary-light">
@@ -337,242 +344,250 @@ export default function PractitionerSpecialtiesView({
         </div>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-primary dark:text-primary-light" />
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-              {t("specialties.current.heading")}
-            </h2>
+      {/* Main Specialties Editor Container */}
+      <div className="rounded-3xl border border-border-light bg-surface-primary p-6 shadow-theme-xs dark:bg-white/5">
+        {/* Header Actions Row */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-border-light/50 pb-4 dark:border-white/10">
+          <div className="flex items-center gap-2.5">
+            <Tag className="h-5 w-5 text-primary dark:text-primary-light" />
+            <div>
+              <h2 className="text-base font-bold text-text-primary dark:text-white/95">
+                {t("specialties.current.heading")}
+              </h2>
+              <p className="text-xs text-text-muted mt-0.5">
+                {t("specialties.catalog.primaryNote")}
+              </p>
+            </div>
           </div>
 
-          {draft.length === 0 ? (
-            <StateCard
-              icon={<Tag className="h-8 w-8 text-text-muted" />}
-              title={t("specialties.emptyTitle")}
-              note={t("specialties.empty")}
-              centered={false}
-              className="p-5"
-            />
-          ) : (
-            <div className="space-y-3">
-              {draft.map((specialty) => (
+          <button
+            type="button"
+            disabled={!isEditable || isCatalogLoading}
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-theme-sm transition hover:bg-primary-hover active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Plus className="h-4 w-4" />
+            {t("specialties.catalog.heading")}
+          </button>
+        </div>
+
+        {/* Specialties Grid */}
+        {draft.length === 0 ? (
+          <StateCard
+            icon={<Tag className="h-10 w-10 text-text-muted" />}
+            title={t("specialties.emptyTitle")}
+            note={t("specialties.empty")}
+            className="py-12 border-0 bg-transparent"
+          />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {draft.map((specialty) => {
+              const isPrimary = specialty.isPrimary;
+              const cardBgClass = isPrimary
+                ? "bg-primary-light/25 border-primary/25 dark:bg-primary/5 dark:border-primary/20"
+                : "bg-white border-border-light dark:bg-white/5 hover:border-primary/30 hover:shadow-theme-xs";
+              const iconWrapperClass = isPrimary
+                ? "bg-primary text-white"
+                : "bg-gray-50 text-text-secondary dark:bg-white/5 dark:text-text-muted";
+              const IconComponent = isPrimary ? Star : Tag;
+
+              return (
                 <div
                   key={specialty.specialtyId}
-                  className="rounded-2xl border border-border-light bg-surface-primary p-4 dark:bg-white/5"
+                  className={cn(
+                    "flex flex-col justify-between rounded-2xl border p-4.5 transition-all duration-200",
+                    cardBgClass
+                  )}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                          {getSpecialtyLabel(specialty)}
-                        </p>
-                        {specialty.isPrimary ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-text-brand dark:bg-primary/15 dark:text-primary-light">
-                            <Star className="h-3 w-3" />
-                            {t("specialties.primary")}
-                          </span>
-                        ) : null}
+                  <div>
+                    {/* Card Header Row */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div
+                        className={cn(
+                          "flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl transition-colors",
+                          iconWrapperClass
+                        )}
+                      >
+                        <IconComponent className="h-4 w-4" />
                       </div>
-                      <p className="mt-1 text-xs text-text-muted">{specialty.slug}</p>
+                      {isPrimary && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-0.5 text-[10px] font-bold text-text-brand dark:bg-primary/15 dark:text-primary-light">
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                          {t("specialties.primary")}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    {/* Card Title Body */}
+                    <div className="mt-3.5 mb-5">
+                      <h3 className="text-sm font-bold text-text-primary dark:text-white/90">
+                        {getSpecialtyLabel(specialty)}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Card Actions Footer */}
+                  <div className="flex items-center justify-between gap-2 border-t border-border-light/40 pt-3 dark:border-white/5">
+                    {!isPrimary ? (
                       <button
                         type="button"
                         onClick={() => handleSetPrimary(specialty.specialtyId)}
-                        disabled={specialty.isPrimary || !isEditable}
-                        className="inline-flex items-center justify-center rounded-xl border border-border-light px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/5"
-                      >
-                        {specialty.isPrimary
-                          ? t("specialties.actions.primarySelected")
-                          : t("specialties.actions.makePrimary")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(specialty.specialtyId)}
                         disabled={!isEditable}
-                        className="inline-flex items-center justify-center rounded-xl border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 dark:border-red-700/30 dark:text-red-300 dark:hover:bg-red-900/10"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-secondary shadow-theme-xs transition hover:bg-gray-50 hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-text-muted dark:hover:bg-white/10 dark:hover:text-white"
                       >
-                        {t("specialties.actions.remove")}
+                        <Star className="h-3 w-3" />
+                        {t("specialties.actions.makePrimary")}
                       </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <aside className="space-y-4">
-          <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-            <div className="mb-4 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-primary dark:text-primary-light" />
-              <h2 className="text-sm font-semibold text-text-primary dark:text-white/90">
-                {t("specialties.catalog.heading")}
-              </h2>
-            </div>
-
-            {isCatalogLoading ? (
-              <ListStateSkeleton items={2} heightClass="h-20" />
-            ) : isCatalogError ? (
-              <StateCard
-                icon={<TriangleAlert className="h-8 w-8 text-amber-500" />}
-                title={t("specialties.catalog.loadError")}
-                note={t("specialties.catalog.loadErrorNote")}
-                action={{
-                  label: t("specialties.feedback.retry"),
-                  onClick: () => refetchCatalog(),
-                }}
-                centered={false}
-                className="p-5"
-              />
-            ) : availableSpecialties.length === 0 ? (
-              <StateCard
-                icon={<Tag className="h-8 w-8 text-text-muted" />}
-                title={t("specialties.catalog.emptyTitle")}
-                note={t("specialties.catalog.emptyNote")}
-                centered={false}
-                className="p-5"
-              />
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="specialty-category-picker"
-                    className="mb-2 block text-xs font-medium text-text-secondary"
-                  >
-                    {t("specialties.catalog.categoryLabel")}
-                  </label>
-                  <Select
-                    key={`specialty-category-picker-${availableCategories.length}`}
-                    options={categoryOptions}
-                    placeholder={t("specialties.catalog.categoryPlaceholder")}
-                    defaultValue={selectedCategoryId}
-                    onChange={(value) => setSelectedCategoryId(value)}
-                    className="w-full"
-                    disabled={!isEditable}
-                  />
-                </div>
-
-                {isCategoriesError ? (
-                  <StateCard
-                    icon={<TriangleAlert className="h-8 w-8 text-amber-500" />}
-                    title={t("specialties.catalog.loadError")}
-                    note={t("specialties.catalog.loadErrorNote")}
-                    action={{
-                      label: t("specialties.feedback.retry"),
-                      onClick: () => refetchCategories(),
-                    }}
-                    centered={false}
-                    className="p-5"
-                  />
-                ) : null}
-
-                {!isCategoriesLoading && !isCategoriesError && categoryFilteredSpecialties.length === 0 ? (
-                  <StateCard
-                    icon={<Tag className="h-8 w-8 text-text-muted" />}
-                    title={t("specialties.catalog.categoryEmptyTitle")}
-                    note={t("specialties.catalog.categoryEmptyNote")}
-                    centered={false}
-                    className="p-5"
-                  />
-                ) : null}
-
-                <div>
-                  <label
-                    htmlFor="specialty-picker"
-                    className="mb-2 block text-xs font-medium text-text-secondary"
-                  >
-                    {t("specialties.catalog.pickerLabel")}
-                  </label>
-                  <div className="flex gap-2">
-                    <select
-                      id="specialty-picker"
-                      value={selectedSpecialtyId}
-                      onChange={(event) => setSelectedSpecialtyId(event.target.value)}
-                      disabled={unselectedSpecialties.length === 0 || !selectedCategoryId || !isEditable}
-                      className="flex-1 rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary dark:bg-white/5 dark:text-white/90"
-                    >
-                      {unselectedSpecialties.length === 0 ? (
-                        <option value="">{t("specialties.catalog.noAvailableToAdd")}</option>
-                      ) : (
-                        unselectedSpecialties.map((specialty) => (
-                          <option key={specialty.id} value={specialty.id}>
-                            {getSpecialtyLabel(specialty)}
-                          </option>
-                        ))
-                      )}
-                    </select>
-
+                    ) : (
+                      <span className="text-[11px] font-semibold text-text-brand dark:text-primary-light">
+                        {t("specialties.actions.primarySelected")}
+                      </span>
+                    )}
                     <button
                       type="button"
-                      onClick={handleAdd}
-                      disabled={!selectedSpecialtyId || unselectedSpecialties.length === 0 || !isEditable}
-                      className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => handleRemove(specialty.specialtyId)}
+                      disabled={!isEditable || draft.length <= 1}
+                      className="inline-flex items-center justify-center rounded-xl bg-transparent px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/20"
                     >
-                      {t("specialties.actions.add")}
+                      {t("specialties.actions.remove")}
                     </button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                <div className="rounded-2xl border border-dashed border-border-light px-4 py-3 text-xs leading-6 text-text-secondary dark:border-white/10">
-                  <p>{t("specialties.catalog.selectionNote")}</p>
-                  <p className="mt-1 text-text-muted">{t("specialties.catalog.primaryNote")}</p>
-                </div>
-              </div>
-            )}
+        {/* Global Save Actions Footer Panel */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border-light/50 pt-5 dark:border-white/10">
+          <div>
+            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+              {t("specialties.actions.heading")}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">
+              {hasUnsavedChanges
+                ? t("specialties.actions.unsavedChanges")
+                : t("specialties.actions.noChanges")}
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-border-light bg-surface-primary p-5 dark:bg-white/5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                  {t("specialties.actions.heading")}
-                </p>
-                <p className="mt-1 text-xs text-text-secondary">
-                  {hasUnsavedChanges
-                    ? t("specialties.actions.unsavedChanges")
-                    : t("specialties.actions.noChanges")}
-                </p>
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={!isEditable || !hasUnsavedChanges || setSpecialtiesMutation.isPending}
+              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-semibold text-text-secondary transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/5"
+            >
+              {t("specialties.actions.reset")}
+            </button>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={
-                  setSpecialtiesMutation.isPending ||
-                  !hasUnsavedChanges ||
-                  draft.length === 0 ||
-                  isCatalogError ||
-                  !isEditable
-                }
-                className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {setSpecialtiesMutation.isPending ? (
-                  <>
-                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                    {t("specialties.actions.saving")}
-                  </>
-                ) : (
-                  t("specialties.actions.save")
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={!isEditable || !hasUnsavedChanges || setSpecialtiesMutation.isPending}
-                className="inline-flex items-center justify-center rounded-2xl border border-border-light px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-surface-tertiary disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-white/5"
-              >
-                {t("specialties.actions.reset")}
-              </button>
-            </div>
+            <button
+               type="button"
+               onClick={handleSave}
+               disabled={
+                 setSpecialtiesMutation.isPending ||
+                 !hasUnsavedChanges ||
+                 draft.length === 0 ||
+                 isCatalogError ||
+                 !isEditable
+               }
+               className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover active:bg-primary-active disabled:cursor-not-allowed disabled:opacity-60"
+             >
+               {setSpecialtiesMutation.isPending ? (
+                 <>
+                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                   {t("specialties.actions.saving")}
+                 </>
+               ) : (
+                 t("specialties.actions.save")
+               )}
+            </button>
           </div>
-        </aside>
+        </div>
       </div>
+
+      {/* Form Modal for Adding Specialties */}
+      <FormModal
+        isOpen={isAddModalOpen}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedSpecialtyId("");
+        }}
+        title={t("specialties.catalog.heading")}
+        submitLabel={t("specialties.actions.add")}
+        cancelLabel={t("common.cancel") || "إلغاء"}
+        onSubmit={handleAdd}
+        submitDisabled={!selectedSpecialtyId || unselectedSpecialties.length === 0}
+        size="md"
+      >
+        <div className="space-y-4 py-2">
+          {isCategoriesError ? (
+            <StateCard
+              icon={<TriangleAlert className="h-8 w-8 text-amber-500" />}
+              title={t("specialties.catalog.loadError")}
+              note={t("specialties.catalog.loadErrorNote")}
+              action={{
+                label: t("specialties.feedback.retry"),
+                onClick: () => refetchCategories(),
+              }}
+              centered={false}
+              className="p-5"
+            />
+          ) : null}
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-text-secondary">
+              {t("specialties.catalog.categoryLabel")}
+            </label>
+            <Select
+              key={`specialty-category-picker-${availableCategories.length}`}
+              options={categoryOptions}
+              placeholder={t("specialties.catalog.categoryPlaceholder")}
+              defaultValue={selectedCategoryId}
+              onChange={(value) => setSelectedCategoryId(value)}
+              className="w-full"
+              disabled={!isEditable}
+            />
+          </div>
+
+          {!isCategoriesLoading && !isCategoriesError && categoryFilteredSpecialties.length === 0 ? (
+            <StateCard
+              icon={<Tag className="h-8 w-8 text-text-muted" />}
+              title={t("specialties.catalog.categoryEmptyTitle")}
+              note={t("specialties.catalog.categoryEmptyNote")}
+              centered={false}
+              className="p-5"
+            />
+          ) : null}
+
+          <div>
+            <label className="mb-2 block text-xs font-semibold text-text-secondary">
+              {t("specialties.catalog.pickerLabel")}
+            </label>
+            <select
+              value={selectedSpecialtyId}
+              onChange={(event) => setSelectedSpecialtyId(event.target.value)}
+              disabled={unselectedSpecialties.length === 0 || !selectedCategoryId || !isEditable}
+              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3.5 text-sm text-text-primary outline-none transition focus:border-primary dark:bg-white/5 dark:text-white/90"
+            >
+              {unselectedSpecialties.length === 0 ? (
+                <option value="">{t("specialties.catalog.noAvailableToAdd")}</option>
+              ) : (
+                unselectedSpecialties.map((specialty) => (
+                  <option key={specialty.id} value={specialty.id}>
+                    {getSpecialtyLabel(specialty)}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="rounded-2xl border border-dashed border-border-light px-4 py-3 text-xs leading-6 text-text-secondary dark:border-white/10">
+            <p>{t("specialties.catalog.selectionNote")}</p>
+            <p className="mt-1 text-text-muted">{t("specialties.catalog.primaryNote")}</p>
+          </div>
+        </div>
+      </FormModal>
     </div>
   );
 }

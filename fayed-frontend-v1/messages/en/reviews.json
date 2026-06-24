@@ -33,11 +33,15 @@
       "heading": "Review detail",
       "noText": "No review text provided.",
       "practitioner": "Practitioner",
+      "patient": "Patient",
+      "anonymousPatient": "Anonymous patient",
+      "patientFallback": "Patient",
       "patientProfileId": "Patient profile ID",
       "sessionDate": "Session date",
       "submittedAt": "Submitted",
       "publishedAt": "Published",
-      "moderatedAt": "Last moderated"
+      "moderatedAt": "Last moderated",
+      "technicalDetails": "System Tracking & Technical Details"
     },
     "moderation": {
       "heading": "Moderation",
@@ -75,6 +79,19 @@
         "title": "Review detail — Admin",
         "description": "View and moderate a submitted review."
       }
+    },
+    "table": {
+      "review": "Review",
+      "context": "Context",
+      "practitioner": "Practitioner",
+      "patient": "Patient",
+      "session": "Session",
+      "status": "Status",
+      "rating": "Rating",
+      "submitted": "Submitted"
+    },
+    "summary": {
+      "average": "Avg"
     }
   },
   "patient": {

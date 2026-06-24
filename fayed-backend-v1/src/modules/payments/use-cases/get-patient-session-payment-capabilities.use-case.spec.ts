@@ -43,29 +43,33 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (paymentSessionRepository.findPatientOwnedSession as jest.Mock).mockResolvedValue(
-      baseSession,
-    );
-    (paymentRuntimeConfigService.getPaymobEnabledMethods as jest.Mock).mockReturnValue([
+    (
+      paymentSessionRepository.findPatientOwnedSession as jest.Mock
+    ).mockResolvedValue(baseSession);
+    (
+      paymentRuntimeConfigService.getPaymobEnabledMethods as jest.Mock
+    ).mockReturnValue([
       { key: 'CARD', label: 'Card', type: 'CARD', enabled: true },
       { key: 'WALLET', label: 'Wallet', type: 'WALLET', enabled: true },
     ]);
-    (paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod as jest.Mock).mockReturnValue(
-      'CARD',
-    );
-    (paymentRuntimeConfigService.getPaymobCheckoutFlow as jest.Mock).mockReturnValue(
-      'legacy',
-    );
-    (resolveSessionPaymentPricingService.resolve as jest.Mock).mockResolvedValue({
+    (
+      paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod as jest.Mock
+    ).mockReturnValue('CARD');
+    (
+      paymentRuntimeConfigService.getPaymobCheckoutFlow as jest.Mock
+    ).mockReturnValue('legacy');
+    (
+      resolveSessionPaymentPricingService.resolve as jest.Mock
+    ).mockResolvedValue({
       currencyCode: 'EGP',
       provider: PaymentProvider.PAYMOB,
       regionalPricingMode: 'EGYPT_LOCAL',
       resolvedCountryIsoCode: 'EGY',
       amountTotal: '450.00',
     });
-    (customerWalletAccountingService.getAvailableBalance as jest.Mock).mockResolvedValue(
-      new Prisma.Decimal('200.00'),
-    );
+    (
+      customerWalletAccountingService.getAvailableBalance as jest.Mock
+    ).mockResolvedValue(new Prisma.Decimal('200.00'));
   });
 
   it('returns Paymob capabilities with configured CARD/WALLET methods only', async () => {
@@ -85,29 +89,42 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
     );
   });
 
-  it('returns Stripe capability for non-egypt routing', async () => {
-    (resolveSessionPaymentPricingService.resolve as jest.Mock).mockResolvedValueOnce({
+  it('returns card-only Paymob capability for USD routing', async () => {
+    (
+      resolveSessionPaymentPricingService.resolve as jest.Mock
+    ).mockResolvedValueOnce({
       currencyCode: 'USD',
-      provider: PaymentProvider.STRIPE,
+      provider: PaymentProvider.PAYMOB,
       regionalPricingMode: 'INTERNATIONAL',
       resolvedCountryIsoCode: 'USA',
       amountTotal: '45.00',
     });
-    (paymentSessionRepository.findPatientOwnedSession as jest.Mock).mockResolvedValueOnce({
+    (
+      paymentRuntimeConfigService.getPaymobEnabledMethods as jest.Mock
+    ).mockReturnValueOnce([
+      { key: 'CARD', label: 'Card', type: 'CARD', enabled: true },
+    ]);
+    (
+      paymentRuntimeConfigService.getPaymobDefaultCheckoutMethod as jest.Mock
+    ).mockReturnValueOnce('CARD');
+    (
+      paymentSessionRepository.findPatientOwnedSession as jest.Mock
+    ).mockResolvedValueOnce({
       ...baseSession,
       patient: { id: 'patient-1', country: { isoCode: 'USA' } },
       practitioner: { id: 'practitioner-1', country: { isoCode: 'EGY' } },
     });
 
     const result = await useCase.execute({ userId: 'u1', sessionId: 's1' });
-    expect(result.item.provider).toBe(PaymentProvider.STRIPE);
-    expect(result.item.normalizedMethods.map((m) => m.key)).toContain(
-      'STRIPE_CHECKOUT',
-    );
+    expect(result.item.provider).toBe(PaymentProvider.PAYMOB);
+    expect(result.item.supportedMethods).toEqual(['CARD']);
+    expect(result.item.normalizedMethods.map((m) => m.key)).toEqual(['CARD']);
   });
 
-  it('throws ambiguous routing for EGP when patient country is unknown', async () => {
-    (paymentSessionRepository.findPatientOwnedSession as jest.Mock).mockResolvedValueOnce({
+  it('throws ambiguous routing when patient country is unknown', async () => {
+    (
+      paymentSessionRepository.findPatientOwnedSession as jest.Mock
+    ).mockResolvedValueOnce({
       ...baseSession,
       patient: { id: 'patient-1', country: null },
     });
@@ -118,9 +135,9 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
   });
 
   it('wallet capability is disabled when no wallet balance is available', async () => {
-    (customerWalletAccountingService.getAvailableBalance as jest.Mock).mockResolvedValueOnce(
-      new Prisma.Decimal('0.00'),
-    );
+    (
+      customerWalletAccountingService.getAvailableBalance as jest.Mock
+    ).mockResolvedValueOnce(new Prisma.Decimal('0.00'));
 
     const result = await useCase.execute({ userId: 'u1', sessionId: 's1' });
     expect(result.item.wallet.enabled).toBe(false);
@@ -129,9 +146,9 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
   });
 
   it('throws not found for non-owned session', async () => {
-    (paymentSessionRepository.findPatientOwnedSession as jest.Mock).mockResolvedValueOnce(
-      null,
-    );
+    (
+      paymentSessionRepository.findPatientOwnedSession as jest.Mock
+    ).mockResolvedValueOnce(null);
 
     await expect(
       useCase.execute({ userId: 'u1', sessionId: 's1' }),

@@ -12,6 +12,7 @@ export type AppErrorType =
 type ErrorShape = {
   message?: string | string[];
   error?: string;
+  errorCode?: string;
   statusCode?: number;
   details?: Record<string, unknown>;
 };
@@ -152,7 +153,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
     return new AppError({
       message,
       statusCode,
-      code: responseData?.error ?? error.code,
+      code: responseData?.errorCode ?? responseData?.error ?? error.code,
       details: responseData?.details,
       diagnostics: {
         axiosCode: error.code,

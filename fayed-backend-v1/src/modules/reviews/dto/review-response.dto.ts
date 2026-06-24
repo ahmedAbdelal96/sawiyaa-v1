@@ -21,6 +21,20 @@ export class ReviewSessionSummaryDto {
   scheduledStartAt!: string | null;
 }
 
+export class ReviewPatientSummaryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+
+  @ApiProperty()
+  label!: string;
+
+  @ApiProperty()
+  isAnonymous!: boolean;
+}
+
 export class PatientReviewItemDto {
   @ApiProperty()
   id!: string;
@@ -60,6 +74,9 @@ export class AdminReviewItemDto extends PatientReviewItemDto {
   @ApiProperty()
   practitionerProfileId!: string;
 
+  @ApiProperty({ type: ReviewPatientSummaryDto })
+  patient!: ReviewPatientSummaryDto;
+
   @ApiProperty({ type: ReviewSessionSummaryDto })
   session!: ReviewSessionSummaryDto;
 }
@@ -84,6 +101,15 @@ export class PublicReviewItemDto {
 export class PractitionerRatingSummaryDto {
   @ApiProperty({ nullable: true })
   averageOverallRating!: number | null;
+
+  @ApiProperty()
+  ratingsCount!: number;
+
+  @ApiProperty()
+  publishedRatingsCount!: number;
+
+  @ApiProperty()
+  writtenReviewsCount!: number;
 
   @ApiProperty()
   totalPublicReviews!: number;

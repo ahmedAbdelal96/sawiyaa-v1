@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unused-vars, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unnecessary-type-assertion, @typescript-eslint/unbound-method */
 import {
   BadRequestException,
   ConflictException,
@@ -49,7 +49,7 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
   } as unknown as PaymentProviderResolverService;
   const paymentRuntimeConfigService = {
     resolveTrustedReturnUrl: jest.fn((returnUrl: string | null | undefined) =>
-      returnUrl && /localhost:8081|localhost:3000|^fayed:/.test(returnUrl)
+      returnUrl && /localhost:8081|localhost:3000|^sawiyaa:/.test(returnUrl)
         ? returnUrl
         : null,
     ),
@@ -192,7 +192,13 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     });
     (paymentRepository.createEvent as jest.Mock).mockResolvedValue({});
     (paymentRepository.updateStatus as jest.Mock).mockImplementation(
-      async (paymentId: string, data: { status?: PaymentStatus; metadataJson?: Record<string, unknown> }) => ({
+      (
+        paymentId: string,
+        data: {
+          status?: PaymentStatus;
+          metadataJson?: Record<string, unknown>;
+        },
+      ) => ({
         id: paymentId,
         status: data.status ?? PaymentStatus.PENDING,
         sessionId: null,
@@ -290,7 +296,8 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
         amountMinor: 36000,
         currency: 'EGP',
         sessionId: 'purchase-1',
-        redirectionUrl: 'http://localhost:8081/package-purchases/purchase-1/pay',
+        redirectionUrl:
+          'http://localhost:8081/package-purchases/purchase-1/pay',
       }),
     );
     expect(result.item.status).toBe(PaymentStatus.PENDING);
@@ -327,21 +334,24 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       },
     });
 
-    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce({
-      providerPaymentRef: 'provider-payment-2',
-      providerOrderRef: 'provider-order-2',
-      providerCustomerRef: null,
-      status: PaymentStatus.PENDING,
-      checkoutUrl: 'https://checkout-refreshed',
-      clientSecret: null,
-      metadata: {},
-    });
+    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce(
+      {
+        providerPaymentRef: 'provider-payment-2',
+        providerOrderRef: 'provider-order-2',
+        providerCustomerRef: null,
+        status: PaymentStatus.PENDING,
+        checkoutUrl: 'https://checkout-refreshed',
+        clientSecret: null,
+        metadata: {},
+      },
+    );
 
     const result = await useCase.execute({
       userId: 'user-1',
       purchaseId: 'purchase-1',
       acceptedRefundPolicyId: 'refund-policy-version-1',
-      returnUrl: 'http://localhost:3000/en/patient/package-purchases/purchase-1',
+      returnUrl:
+        'http://localhost:3000/en/patient/package-purchases/purchase-1',
       displayLocale: 'en',
     });
 
@@ -606,6 +616,49 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
-    expect(paymentProviderResolverService.resolveProvider).not.toHaveBeenCalled();
+    expect(
+      paymentProviderResolverService.resolveProvider,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('routes USD package payments to Paymob and never Stripe', async () => {
+    (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValueOnce({
+      ...basePatient,
+      country: { isoCode: 'USA' },
+    });
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValueOnce({
+      ...basePurchase,
+      currencyCodeSnapshot: 'USD',
+      practitioner: {
+        ...basePurchase.practitioner,
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+      },
+    });
+
+    await useCase.execute({
+      userId: 'user-1',
+      purchaseId: 'purchase-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      displayLocale: 'en',
+      returnUrl:
+        'http://localhost:3000/en/patient/package-purchases/purchase-1/payment-return',
+    });
+
+    expect(paymentProviderResolverService.resolveProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        checkoutCountryIsoCode: 'USA',
+      }),
+    );
+    expect(paymentProviderRegistryService.get).toHaveBeenCalledWith(
+      PaymentProvider.PAYMOB,
+      expect.objectContaining({
+        currencyCode: 'USD',
+        checkoutCountryIsoCode: 'USA',
+      }),
+    );
   });
 });

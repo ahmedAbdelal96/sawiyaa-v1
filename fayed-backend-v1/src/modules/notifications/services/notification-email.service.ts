@@ -1,28 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
-type EmailTransportConfig = {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth?: {
-    user: string;
-    pass: string;
-  };
-};
-
-type EmailTransporter = {
-  sendMail(input: {
-    from: string;
-    to: string;
-    subject: string;
-    text: string;
-  }): Promise<unknown>;
-};
-
-type NodemailerModule = {
-  createTransport(config: EmailTransportConfig): EmailTransporter;
-};
+import { EmailProviderAdapter } from '../providers/email-provider.adapter';
+import { EMAIL_PROVIDER } from '../providers/email-provider.token';
 
 type OtpRedirectResolution = {
   deliveryTarget: string;
@@ -30,25 +9,50 @@ type OtpRedirectResolution = {
   redirectTarget?: string;
 };
 
-type SendEmailInput = {
+export type SendEmailInput = {
   to: string;
   subject: string;
   body: string;
+  /**
+   * Optional pre-rendered HTML body. When present, providers that support
+   * rich content (Brevo) will deliver it as `htmlContent`. The plain-text
+   * `body` is still sent as a fallback.
+   *
+   * SECURITY: never log this value — it may contain an OTP code.
+   */
+  html?: string;
   notificationId: string;
   isOtp: boolean;
 };
 
 /**
- * Minimal SMTP email sender for notifications.
- * This is intentionally small and environment-driven to keep OTP delivery testable in dev.
+ * Notification email orchestrator.
+ *
+ * Owns all notification-level concerns:
+ *   - Input validation (well-formed email address, target presence)
+ *   - Dev redirect of OTP emails to a configured override address
+ *   - Dev bypass of delivery failures for OTP emails
+ *   - DB Notification record creation (via subclasses or callers)
+ *   - Masking of delivery targets in logs
+ *
+ * Delegates actual transport/sending to the configured {@link EmailProviderAdapter}
+ * (SMTP via nodemailer, Brevo, or a future provider).  The adapter contract
+ * guarantees a safe internal result shape regardless of which provider is active.
+ *
+ * This separation means:
+ * - Providers are easy to swap (set MAIL_PROVIDER)
+ * - OTP delivery rules stay in one place (this service)
+ * - Providers never need to know about dev redirects or bypass flags
  */
 @Injectable()
 export class NotificationEmailService {
   private readonly logger = new Logger(NotificationEmailService.name);
-  private transporter: EmailTransporter | null = null;
-  private loggedTransportConfig = false;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(EMAIL_PROVIDER)
+    private readonly emailProvider: EmailProviderAdapter,
+  ) {}
 
   private normalizeTarget(target: string): string {
     return target.trim();
@@ -58,7 +62,7 @@ export class NotificationEmailService {
     return target.includes('@');
   }
 
-  private maskTarget(target: string): string {
+  maskTarget(target: string): string {
     if (!target) {
       return '***';
     }
@@ -76,6 +80,13 @@ export class NotificationEmailService {
     return `${target.slice(0, 2)}***${target.slice(-2)}`;
   }
 
+  /**
+   * Resolve the effective delivery target for OTP emails.
+   * In development, redirects to the configured `DEV_OTP_EMAIL_REDIRECT` address
+   * when that address looks like a valid email.
+   *
+   * Called by {@link OtpDeliveryDispatcherService} before dispatch.
+   */
   resolveOtpTarget(target: string): OtpRedirectResolution {
     const nodeEnv = this.configService.get<string>('app.nodeEnv');
     const redirectTarget = this.configService.get<string>(
@@ -110,34 +121,6 @@ export class NotificationEmailService {
     };
   }
 
-  private logTransportConfigOnce(): void {
-    if (this.loggedTransportConfig) {
-      return;
-    }
-
-    const provider = this.configService.get<string>(
-      'notification.mail.provider',
-    );
-    const host = this.configService.get<string>('notification.mail.smtp.host');
-    const port = this.configService.get<number>('notification.mail.smtp.port');
-    const secure = this.configService.get<boolean>(
-      'notification.mail.smtp.secure',
-    );
-    const redirectTarget = this.configService.get<string>(
-      'notification.mail.devOtpEmailRedirect',
-    );
-    const devOtpBypassDeliveryFailures = this.configService.get<boolean>(
-      'notification.mail.devOtpBypassDeliveryFailures',
-    );
-    const nodeEnv = this.configService.get<string>('app.nodeEnv');
-
-    this.logger.log(
-      `Email transport configured (env=${nodeEnv ?? 'unknown'}) provider=${provider ?? 'undefined'} host=${host ?? 'undefined'} port=${port ?? 'undefined'} secure=${secure ? 'true' : 'false'} devRedirect=${redirectTarget?.trim() ? this.maskTarget(redirectTarget.trim()) : 'disabled'} devOtpBypassFailures=${devOtpBypassDeliveryFailures ? 'true' : 'false'}`,
-    );
-
-    this.loggedTransportConfig = true;
-  }
-
   private shouldBypassOtpDeliveryFailure(): boolean {
     const nodeEnv = this.configService.get<string>('app.nodeEnv');
     const devOtpBypassDeliveryFailures = this.configService.get<boolean>(
@@ -147,6 +130,15 @@ export class NotificationEmailService {
     return nodeEnv === 'development' && Boolean(devOtpBypassDeliveryFailures);
   }
 
+  /**
+   * Send an email notification.
+   *
+   * Validation and dev-redirect logic lives here.  The actual transport is
+   * delegated to the injected {@link EmailProviderAdapter}.
+   *
+   * Returns the same shape as the adapter for compatibility with existing callers
+   * ({@link OtpDeliveryDispatcherService}, operational notifications).
+   */
   async sendEmail(input: SendEmailInput): Promise<{
     delivered: boolean;
     deliveryTarget: string;
@@ -176,89 +168,55 @@ export class NotificationEmailService {
     }
 
     const purposeLabel = input.isOtp ? 'OTP' : 'notification';
-    const provider = this.configService.get<string>(
-      'notification.mail.provider',
-    );
-    const from = this.configService.get<string>('notification.mail.from');
-    const host = this.configService.get<string>('notification.mail.smtp.host');
-    const port = this.configService.get<number>('notification.mail.smtp.port');
-    const secure = this.configService.get<boolean>(
-      'notification.mail.smtp.secure',
-    );
-    const user = this.configService.get<string>('notification.mail.smtp.user');
-    const pass = this.configService.get<string>('notification.mail.smtp.pass');
 
-    if (provider !== 'smtp') {
-      this.logger.warn(
-        `Email provider "${provider ?? 'undefined'}" not supported for OTP delivery`,
-      );
-      return {
-        delivered: false,
-        deliveryTarget: normalizedTarget,
-        error: 'MAIL_PROVIDER_UNSUPPORTED',
-      };
-    }
+    // Dev redirect: resolve effective delivery target for OTP emails before calling provider
+    const { deliveryTarget } = input.isOtp
+      ? this.resolveOtpTarget(normalizedTarget)
+      : { deliveryTarget: normalizedTarget };
 
-    if (!from || !host || !port) {
-      this.logger.warn(
-        'SMTP mail configuration is incomplete; OTP email delivery skipped',
-      );
-      return {
-        delivered: false,
-        deliveryTarget: normalizedTarget,
-        error: 'MAIL_TRANSPORT_NOT_CONFIGURED',
-      };
-    }
+    // Delegate to the configured provider (SMTP, Brevo, etc.)
+    // SECURITY: `html` may carry the OTP code — never log it here or downstream.
+    const result = await this.emailProvider.sendEmail({
+      to: deliveryTarget,
+      subject: input.subject,
+      body: input.body,
+      ...(input.html ? { html: input.html } : {}),
+      isOtp: input.isOtp,
+    });
 
-    this.logTransportConfigOnce();
-
-    if (!this.transporter) {
-      const nodemailer = (await import('nodemailer')) as NodemailerModule;
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: Boolean(secure),
-        auth: user && pass ? { user, pass } : undefined,
-      });
-    }
-
-    try {
-      await this.transporter.sendMail({
-        from,
-        to: normalizedTarget,
-        subject: input.subject,
-        text: input.body,
-      });
-
+    if (result.delivered) {
+      const redirectedFrom = input.isOtp && normalizedTarget !== deliveryTarget
+        ? ` (redirected from ${this.maskTarget(normalizedTarget)})`
+        : '';
       this.logger.log(
-        `${purposeLabel} email delivered to ${this.maskTarget(normalizedTarget)} (notification ${input.notificationId})`,
+        `${purposeLabel} email delivered to ${this.maskTarget(result.deliveryTarget)}${redirectedFrom} (notification ${input.notificationId}, provider=${this.emailProvider.name})`,
       );
-
       return {
         delivered: true,
-        deliveryTarget: normalizedTarget,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to deliver OTP email (notification ${input.notificationId})`,
-        error instanceof Error ? error.stack : String(error),
-      );
-
-      if (input.isOtp && this.shouldBypassOtpDeliveryFailure()) {
-        this.logger.warn(
-          `DEV OTP fallback enabled; treating delivery as successful for notification ${input.notificationId}`,
-        );
-        return {
-          delivered: true,
-          deliveryTarget: normalizedTarget,
-        };
-      }
-
-      return {
-        delivered: false,
-        deliveryTarget: normalizedTarget,
-        error: 'MAIL_SEND_FAILED',
+        deliveryTarget: result.deliveryTarget,
       };
     }
+
+    // Provider failed
+    this.logger.error(
+      `Failed to deliver ${purposeLabel.toLowerCase()} email (notification ${input.notificationId}, provider=${this.emailProvider.name}): ${result.error}`,
+    );
+
+    // Dev OTP bypass: treat delivery failure as success so OTP flow continues
+    if (input.isOtp && this.shouldBypassOtpDeliveryFailure()) {
+      this.logger.warn(
+        `DEV OTP fallback enabled; treating delivery as successful for notification ${input.notificationId}`,
+      );
+      return {
+        delivered: true,
+        deliveryTarget: result.deliveryTarget,
+      };
+    }
+
+    return {
+      delivered: false,
+      deliveryTarget: result.deliveryTarget,
+      error: result.error,
+    };
   }
 }

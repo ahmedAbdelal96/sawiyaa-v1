@@ -28,6 +28,7 @@ export class PaymentProviderRegistryService {
   get(
     provider: PaymentProvider,
     context?: {
+      currencyCode?: string | null;
       checkoutCountryIsoCode?: string | null;
       operatingCountryIsoCode?: string | null;
     },

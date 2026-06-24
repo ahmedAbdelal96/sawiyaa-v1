@@ -20,6 +20,8 @@ export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   'auth-patient-login': { limit: 10, windowMs: 15 * 60_000 },
   'auth-patient-refresh': { limit: 30, windowMs: 15 * 60_000 },
   'auth-patient-forgot-password': { limit: 5, windowMs: 60 * 60_000 },
+  'auth-patient-verify-password-reset-otp': { limit: 5, windowMs: 60 * 60_000 },
+  'auth-patient-confirm-password-reset': { limit: 5, windowMs: 60 * 60_000 },
   'auth-patient-reset-password': { limit: 5, windowMs: 60 * 60_000 },
 
   // ── Practitioner auth ─────────────────────────────────────────
@@ -28,6 +30,14 @@ export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   'auth-practitioner-otp-verify': { limit: 5, windowMs: 15 * 60_000 },
   'auth-practitioner-refresh': { limit: 30, windowMs: 15 * 60_000 },
   'auth-practitioner-forgot-password': { limit: 5, windowMs: 60 * 60_000 },
+  'auth-practitioner-verify-password-reset-otp': {
+    limit: 5,
+    windowMs: 60 * 60_000,
+  },
+  'auth-practitioner-confirm-password-reset': {
+    limit: 5,
+    windowMs: 60 * 60_000,
+  },
   'auth-practitioner-reset-password': { limit: 5, windowMs: 60 * 60_000 },
 
   // ── Admin auth ────────────────────────────────────────────────

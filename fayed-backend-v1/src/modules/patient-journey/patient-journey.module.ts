@@ -11,6 +11,7 @@ import { BuildNormalizedCareSignalContextService } from '@modules/care-experienc
 import { InterpretAssessmentCareIntentService } from '@modules/care-experience-intelligence/services/interpret-assessment-care-intent.service';
 import { MarketingPractitionerPlacementsModule } from '@modules/marketing-practitioner-placements/marketing-practitioner-placements.module';
 import { RecommendationPrecedenceService } from '@modules/care-experience-intelligence/services/recommendation-precedence.service';
+import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { PatientHomeController } from './controllers/patient-home.controller';
 import { PatientJourneyController } from './controllers/patient-journey.controller';
 import { PatientJourneyMapper } from './mappers/patient-journey.mapper';
@@ -24,7 +25,7 @@ import { GetMyPatientJourneyUseCase } from './use-cases/get-my-patient-journey.u
 import { TrackPatientPractitionerViewUseCase } from './use-cases/track-patient-practitioner-view.use-case';
 
 @Module({
-  imports: [MarketingPractitionerPlacementsModule],
+  imports: [MarketingPractitionerPlacementsModule, ReviewsModule],
   controllers: [PatientJourneyController, PatientHomeController],
   providers: [
     JwtAccessAuthGuard,

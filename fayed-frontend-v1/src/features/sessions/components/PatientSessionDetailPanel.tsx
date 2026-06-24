@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -45,7 +45,7 @@ import {
 import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import SessionStatusBadge from "./SessionStatusBadge";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
-import { canContinuePayment } from "@/features/payments/lib/payment-status";
+import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
 import type {
   SessionJoinItem,
   SessionRuntimeItem,
@@ -257,7 +257,28 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const isRtl = locale.startsWith("ar");
 
+  const [now, setNow] = useState<number>(() => Date.now());
+
   const { data: session, isLoading, isError } = usePatientSession(sessionId);
+
+  useEffect(() => {
+    if (!session || session.status !== "PENDING_PAYMENT") {
+      return;
+    }
+    const deadline = session.expiresAt;
+    if (!deadline) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [session]);
+
   const { data: paymentsData } = usePatientPayments({ limit: 20 });
   const cancelMutation = useCancelPatientSession();
   const previewCancellationMutation = usePreviewPatientSessionCancellation();
@@ -317,11 +338,28 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             ? "SECURED"
           : null;
   const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
+  const isReservationExpired = Boolean(
+    session.expiresAt && new Date(session.expiresAt).getTime() <= now
+  );
+  const isPaymentAttemptExpired = Boolean(
+    sessionPayment && isPaymentExpired(sessionPayment, now)
+  );
+  const isPaymentWindowExpired = isReservationExpired;
+
+  const paymentDisplayStateKey =
+    isReservationExpired && session.status === "PENDING_PAYMENT"
+      ? "EXPIRED"
+      : paymentStateKey;
+
   const sessionPaymentCurrency = sessionPayment?.currency ?? null;
   const sessionPaymentHasDiscount = Boolean(
     sessionPayment && Number(sessionPayment.amountDiscount) > 0,
   );
-  const hasActivePendingPayment = Boolean(sessionPayment && canContinuePayment(sessionPayment));
+  const hasActivePendingPayment = Boolean(
+    sessionPayment &&
+      ["CREATED", "PENDING", "REQUIRES_ACTION"].includes(sessionPayment.status) &&
+      !isPaymentAttemptExpired
+  );
   const canJoinNow = session.joinAvailability?.canJoin === true;
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
     session.presentationStatus,
@@ -351,8 +389,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     typeof t
   >[0]);
   const chatNote = canOpenSessionChat ? t("detail.chatCard.note") : t("detail.chatCard.disabledNote");
-  const paymentStateNote = paymentStateKey
-    ? tPayments(`sessionState.${paymentStateKey}.note` as Parameters<typeof tPayments>[0])
+  const paymentStateNote = paymentDisplayStateKey
+    ? tPayments(`sessionState.${paymentDisplayStateKey}.note` as Parameters<typeof tPayments>[0])
     : null;
   const sessionPriceValue = sessionPayment
     ? formatSessionAmount(sessionPayment.amountSubtotal, numLocale, sessionPaymentCurrency)
@@ -481,350 +519,327 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_minmax(340px,0.95fr)]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.72fr)_360px]">
       <div className="space-y-6">
+        {/* Unified, Compact Session Details Card */}
         <PatientSectionCard
-          eyebrow={t("detail.summary.eyebrow")}
-          title={t("detail.summary.heading")}
-          description={t("detail.summary.note")}
-          actions={
-            <SessionStatusBadge
-              status={session.status}
-              presentationStatus={session.presentationStatus}
-            />
-          }
+          className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-4 sm:p-5"
         >
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <SummaryField
-              icon={<MessageSquareText className="h-4 w-4" />}
-              label={t("detail.summary.practitioner")}
-              value={session.practitioner.displayName ?? session.practitioner.slug}
-              note={session.practitioner.slug}
-            />
-            <SummaryField
-              icon={<CalendarClock className="h-4 w-4" />}
-              label={t("detail.summary.sessionCode")}
-              value={session.sessionCode}
-              note={sessionModeLabel}
-            />
-            <SummaryField
-              icon={<CalendarDays className="h-4 w-4" />}
-              label={t("detail.summary.scheduledAt")}
-              value={
-                session.scheduledStartAt
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-light/60">
+            {/* Practitioner Profile details */}
+            <div className="flex items-center gap-3.5">
+              <Avatar
+                src={null}
+                alt={session.practitioner.displayName ?? session.practitioner.slug}
+                name={undefined}
+                fallbackInitials={undefined}
+                size="large"
+                className="ring-2 ring-primary/10"
+              />
+              <div className="min-w-0 space-y-1">
+                <h2 className="text-base sm:text-lg font-bold text-text-primary dark:text-white/95 leading-tight">
+                  {session.practitioner.displayName ?? session.practitioner.slug}
+                </h2>
+                <div className="flex flex-wrap items-center gap-1.5 text-sm text-text-secondary">
+                  <span className="font-semibold text-text-secondary">{sessionModeLabel}</span>
+                  <span className="text-text-muted">•</span>
+                  <span className="text-text-muted">{t("detail.duration", { n: session.durationMinutes })}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            <div className="sm:self-center">
+              <SessionStatusBadge
+                status={isReservationExpired ? "EXPIRED" : session.status}
+                presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
+              />
+            </div>
+          </div>
+
+          {/* Session Metadata details (clean text grids, NO NESTED CARDS!) */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 pt-5 text-sm">
+            <div className="space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {t("detail.summary.scheduledAt")}
+              </span>
+              <p className="text-sm sm:text-base font-bold text-text-primary dark:text-white/90">
+                {session.scheduledStartAt
                   ? formatDatetime(session.scheduledStartAt, numLocale)
-                  : t("detail.notScheduled")
-              }
-              note={
-                session.scheduledEndAt
-                  ? formatDatetime(session.scheduledEndAt, numLocale)
-                  : undefined
-              }
-            />
-            <SummaryField
-              icon={<Clock className="h-4 w-4" />}
-              label={t("detail.summary.duration")}
-              value={t("detail.duration", { n: session.durationMinutes })}
-              note={sessionModeLabel}
-            />
-          </div>
-        </PatientSectionCard>
-
-        <PatientSectionCard
-          eyebrow={t("detail.runtime.heading")}
-          title={t("detail.runtime.heading")}
-          description={runtimeStatusNote}
-          actions={
-            session.status === "PENDING_PAYMENT" && hasActivePendingPayment ? (
-              <Link
-                href={`/patient/sessions/${session.id}/pay` as never}
-                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
-              >
-                {t("detail.PENDING_PAYMENT.action")}
-              </Link>
-            ) : undefined
-          }
-        >
-          {hasRuntimeAccess ? (
-            <div className="space-y-3">
-              {joinResult?.canJoin && joinUrl ? (
-                <>
-                  <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
-                      <p>{t("detail.runtime.ready")}</p>
-                    </div>
-                  </div>
-                  <a
-                    href={joinUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
-                  >
-                    <ExternalLink size={16} />
-                    {t("detail.runtime.actions.openRoom")}
-                  </a>
-                </>
-              ) : (
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  {prepareAllowed && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handlePrepareRuntime}
-                      disabled={prepareMutation.isPending}
-                      className="sawiyaa-btn-press sawiyaa-hover-lift w-full sm:w-auto transition-all"
-                    >
-                      {prepareMutation.isPending ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          {t("detail.runtime.actions.preparing")}
-                        </>
-                      ) : (
-                        t("detail.runtime.actions.prepare")
-                      )}
-                    </Button>
-                  )}
-                  {shouldShowJoinCheck && (
-                    <Button
-                      size="sm"
-                      onClick={handleResolveJoin}
-                      disabled={joinMutation.isPending}
-                      className="sawiyaa-btn-press sawiyaa-hover-lift w-full sm:w-auto transition-all"
-                    >
-                      {joinMutation.isPending ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          {t("detail.runtime.actions.checking")}
-                        </>
-                      ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              {prepareResult?.isPrepared && !joinResult?.canJoin && (
-                <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
-                    <p>{t("detail.runtime.prepared")}</p>
-                  </div>
-                </div>
-              )}
-
-              {joinResult && !joinResult.canJoin && (
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                  {t(
-                    `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<
-                      typeof t
-                    >[0],
-                  )}
-                </div>
-              )}
-
-              {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && (
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                  <p className="font-medium text-text-primary dark:text-white/90">
-                    {t("detail.liveFlow.phases.awaitingWindow.title")}
-                  </p>
-                  <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
-                </div>
-              )}
-
-              {prepareMutation.isError && (
-                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
-                  {t("detail.runtime.prepareError")}
-                </div>
-              )}
-
-              {joinMutation.isError && (
-                <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-text-primary dark:border-accent/25 dark:bg-accent/10 dark:text-white/90">
-                  {t("detail.runtime.error")}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary dark:bg-white/5">
-              <p className="font-medium text-text-primary dark:text-white/90">
-                {t("detail.liveFlow.phases.awaitingWindow.title")}
+                  : t("detail.notScheduled")}
               </p>
-              <p className="mt-1">{t("detail.liveFlow.phases.awaitingWindow.note")}</p>
             </div>
-          )}
+
+            <div className="space-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {t("detail.summary.sessionCode")}
+              </span>
+              <p className="font-mono text-sm sm:text-base font-bold text-text-primary dark:text-white/90">
+                {session.sessionCode}
+              </p>
+            </div>
+
+            <div className="space-y-1 col-span-2 md:col-span-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {locale === "ar" ? "موعد الانتهاء المتوقع" : "Expected End"}
+              </span>
+              <p className="text-sm sm:text-base font-semibold text-text-secondary dark:text-white/70">
+                {session.scheduledEndAt
+                  ? formatDatetime(session.scheduledEndAt, numLocale)
+                  : "—"}
+              </p>
+            </div>
+          </div>
         </PatientSectionCard>
 
+        {/* Combined Session Action Operations Card */}
         <PatientSectionCard
-          eyebrow={t("detail.chat.eyebrow")}
-          title={t("detail.chatCard.heading")}
-          description={chatNote}
-          actions={<MessageSquareText className="mt-1 h-5 w-5 shrink-0 text-text-muted" />}
+          className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-5 space-y-4"
         >
-          <div className="flex flex-wrap gap-3">
-            {canOpenSessionChat ? (
-              <Link
-                href={`/patient/sessions/${session.id}/chat` as never}
-                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover hover:-translate-y-0.5"
-              >
-                {t("detail.chatCard.open")}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="inline-flex cursor-not-allowed items-center justify-center rounded-2xl border border-border-light px-5 py-2.5 text-sm font-medium text-text-muted opacity-80"
-              >
-                {t("detail.chatCard.open")}
-              </button>
-            )}
+          <div className="space-y-1.5">
+            <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+              {locale === "ar" ? "التواصل والاتصال بالجلسة" : "Session Communication & Operations"}
+            </h3>
+            <p className="text-sm text-text-secondary">
+              {locale === "ar"
+                ? "ابدأ محادثة مع المختص أو انضم إلى غرفة الجلسة عند تفعيلها."
+                : "Message the practitioner or join the session room when available."}
+            </p>
           </div>
 
-          {!canOpenSessionChat && (
-            <div className="mt-3 rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-              {chatNote}
+          <div className="flex flex-col sm:flex-row gap-6 pt-3">
+            {/* Join Section */}
+            <div className="flex-1 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {t("detail.runtime.heading")}
+              </p>
+              
+              {hasRuntimeAccess ? (
+                <div className="space-y-3">
+                  {joinResult?.canJoin && joinUrl ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-success-700 font-medium">
+                        {t("detail.runtime.ready")}
+                      </p>
+                      <a
+                        href={joinUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover transition"
+                      >
+                        <ExternalLink size={16} />
+                        {t("detail.runtime.actions.openRoom")}
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-3">
+                      {prepareAllowed && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handlePrepareRuntime}
+                          disabled={prepareMutation.isPending}
+                          className="rounded-xl px-5 py-2.5 text-sm font-bold"
+                        >
+                          {prepareMutation.isPending ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            t("detail.runtime.actions.prepare")
+                          )}
+                        </Button>
+                      )}
+                      {shouldShowJoinCheck && (
+                        <Button
+                          size="sm"
+                          onClick={handleResolveJoin}
+                          disabled={joinMutation.isPending}
+                          className="rounded-xl px-5 py-2.5 text-sm font-bold"
+                        >
+                          {joinMutation.isPending ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            t("detail.runtime.actions.joinNow")
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {prepareResult?.isPrepared && !joinResult?.canJoin && (
+                    <p className="text-sm text-text-secondary font-medium">
+                      {t("detail.runtime.prepared")}
+                    </p>
+                  )}
+
+                  {joinResult && !joinResult.canJoin && (
+                    <p className="text-sm text-text-muted">
+                      {t(`detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as any)}
+                    </p>
+                  )}
+
+                  {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && (
+                    <p className="text-sm text-text-muted">
+                      {t("detail.liveFlow.phases.awaitingWindow.note")}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-text-muted">
+                  {t("detail.liveFlow.phases.awaitingWindow.note")}
+                </p>
+              )}
             </div>
-          )}
+
+            <div className="h-px bg-border-light sm:h-auto sm:w-px sm:mx-2" />
+
+            {/* Chat Section */}
+            <div className="flex-1 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {t("detail.chat.eyebrow")}
+              </p>
+              
+              <div className="space-y-3">
+                <p className="text-sm text-text-secondary">
+                  {chatNote}
+                </p>
+                
+                {canOpenSessionChat ? (
+                  <Link
+                    href={`/patient/sessions/${session.id}/chat` as never}
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-hover transition"
+                  >
+                    {t("detail.chatCard.open")}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex cursor-not-allowed items-center justify-center rounded-xl border border-border-light px-5 py-2.5 text-sm font-semibold text-text-muted opacity-60"
+                  >
+                    {t("detail.chatCard.open")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </PatientSectionCard>
       </div>
 
+      {/* Sidebar Columns */}
       <aside className="space-y-6 xl:sticky xl:top-6 self-start">
-        {paymentStateKey && (
-          <SurfaceCard
-            variant="section"
-            className={
-              paymentStateKey === "SECURED"
-                ? "border-green-200 bg-green-50/50 dark:border-green-700/40 dark:bg-green-900/10 text-green-800 dark:text-green-300"
-                : paymentStateKey === "PENDING_PAYMENT"
-                  ? "border-primary/15 bg-primary-light dark:border-primary/20 dark:bg-primary/10 text-text-primary"
-                  : "border-amber-200 bg-amber-50/50 dark:border-amber-700/40 dark:bg-amber-900/10 text-amber-800 dark:text-amber-300"
-            }
+        {paymentDisplayStateKey && (
+          <PatientSectionCard
+            className={`shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft p-5 space-y-4 ${
+              paymentDisplayStateKey === "SECURED"
+                ? "bg-green-50/20 border border-green-200"
+                : paymentDisplayStateKey === "PENDING_PAYMENT"
+                  ? "bg-primary-light/10 border border-primary/15"
+                  : "bg-amber-50/20 border border-amber-200"
+            }`}
           >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p
-                  className={
-                    paymentStateKey === "SECURED"
-                      ? "text-xs font-semibold uppercase tracking-[0.18em] text-green-700 dark:text-green-300"
-                      : paymentStateKey === "PENDING_PAYMENT"
-                        ? "text-xs font-semibold uppercase tracking-[0.18em] text-primary"
-                        : "text-xs font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300"
-                  }
-                >
-                  {tPayments("breakdown.heading")}
-                </p>
-                <h2
-                  className={
-                    paymentStateKey === "SECURED"
-                      ? "mt-1 text-lg font-semibold text-green-800 dark:text-green-300"
-                      : paymentStateKey === "PENDING_PAYMENT"
-                        ? "mt-1 text-lg font-semibold text-text-primary dark:text-white/95"
-                        : "mt-1 text-lg font-semibold text-amber-800 dark:text-amber-300"
-                  }
-                >
-                  {tPayments(
-                    `sessionState.${paymentStateKey}.label` as Parameters<typeof tPayments>[0],
-                  )}
-                </h2>
-                <p
-                  className={
-                    paymentStateKey === "SECURED"
-                      ? "mt-2 text-sm leading-6 text-green-700 dark:text-green-400"
-                      : paymentStateKey === "PENDING_PAYMENT"
-                        ? "mt-2 text-sm leading-6 text-text-secondary"
-                        : "mt-2 text-sm leading-6 text-amber-700 dark:text-amber-400"
-                  }
-                >
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                {tPayments("breakdown.heading")}
+              </p>
+              <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+                {tPayments(`sessionState.${paymentDisplayStateKey}.label` as any)}
+              </h3>
+              {paymentStateNote && (
+                <p className="text-sm text-text-secondary">
                   {paymentStateNote}
                 </p>
+              )}
+            </div>
+
+            {/* Price breakdown textual list (NO NESTED CARDS!) */}
+            <div className="space-y-3 pt-3 border-t border-border-light/60 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary">{tPayments("breakdown.grossAmount")}</span>
+                <span className="font-semibold text-text-primary dark:text-white/90">{sessionPriceValue}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary">{tPayments("breakdown.discount")}</span>
+                <span className="font-semibold text-text-brand dark:text-primary-light">
+                  {sessionPaymentHasDiscount ? `-${sessionDiscountValue}` : sessionDiscountValue}
+                </span>
               </div>
 
-              <Wallet className="mt-1 h-5 w-5 shrink-0 text-text-muted" />
+              <div className="flex justify-between items-center pt-3 border-t border-border-light/60 font-bold">
+                <span className="text-text-primary">{tPayments("breakdown.netPaid")}</span>
+                <span className="text-base text-primary">{sessionNetValue}</span>
+              </div>
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <FinanceStat
-                label={tPayments("breakdown.grossAmount")}
-                value={sessionPriceValue}
-                note={tPayments("breakdown.loading")}
-              />
-              <FinanceStat
-                label={tPayments("breakdown.discount")}
-                value={sessionDiscountValue}
-                note={
-                  sessionPaymentHasDiscount
-                    ? tPayments("breakdown.couponApplied")
-                    : tPayments("breakdown.discount")
-                }
-                tone={sessionPaymentHasDiscount ? "primary" : "neutral"}
-              />
-              <FinanceStat
-                label={tPayments("breakdown.netPaid")}
-                value={sessionNetValue}
-                note={paymentStateNote ?? undefined}
-                tone="success"
-              />
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-3">
-              {paymentStateKey === "PENDING_PAYMENT" && hasActivePendingPayment && (
+            {/* Actions list */}
+            <div className="pt-2 flex flex-col gap-2">
+              {paymentDisplayStateKey === "PENDING_PAYMENT" && !isPaymentWindowExpired && (
                 <Link
                   href={`/patient/sessions/${session.id}/pay` as never}
-                  className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover hover:-translate-y-0.5 transition-all duration-200"
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-hover transition"
                 >
                   {tPayments("sessionState.PENDING_PAYMENT.action")}
                 </Link>
               )}
-              <Link
-                href="/patient/payments"
-                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 transition-all duration-200 dark:bg-white/5 dark:text-white/90"
-              >
-                {tPayments("sessionMoney.actions.history")}
-              </Link>
-              <Link
-                href="/patient/wallet"
-                className="sawiyaa-btn-press inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary/30 hover:text-primary hover:-translate-y-0.5 transition-all duration-200 dark:bg-white/5 dark:text-white/90"
-              >
-                {tPayments("sessionMoney.actions.wallet")}
-              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/patient/payments"
+                  className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-surface-tertiary transition"
+                >
+                  {tPayments("sessionMoney.actions.history")}
+                </Link>
+                <Link
+                  href="/patient/wallet"
+                  className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-3 py-2 text-xs font-bold text-text-secondary hover:bg-surface-tertiary transition"
+                >
+                  {tPayments("sessionMoney.actions.wallet")}
+                </Link>
+              </div>
             </div>
-          </SurfaceCard>
+          </PatientSectionCard>
         )}
 
+        {/* Compact Cancellation Card */}
         <PatientSectionCard
-          eyebrow={t("detail.cancelAction")}
-          title={t("detail.cancelAction")}
-          description={t("detail.cancelConfirm.note")}
-          actions={
+          className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-4 sm:p-5"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-text-primary">
+                {t("detail.cancelAction")}
+              </h4>
+              <p className="text-xs text-text-muted leading-tight">
+                {isCancellable
+                  ? t("detail.cancelConfirm.policyNote")
+                  : t("detail.cancelConfirm.cannotProceed")}
+              </p>
+            </div>
+            
             <Button
               variant="danger"
               size="sm"
               onClick={openCancelModal}
-              className="sawiyaa-btn-press sawiyaa-hover-lift transition-all"
+              className="rounded-xl px-4 py-2.5 text-sm font-bold shrink-0"
             >
               {t("detail.cancelAction")}
             </Button>
-          }
-        >
-          <p className="text-sm text-text-secondary">
-            {isCancellable
-              ? t("detail.cancelConfirm.policyNote")
-              : t("detail.cancelConfirm.cannotProceed")}
-          </p>
+          </div>
 
-          {cancelFeedbackKey === "SUCCESS" ? (
-            <div className="mt-4 rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-300">
+          {cancelFeedbackKey === "SUCCESS" && (
+            <div className="mt-3 rounded-xl border border-success-200 bg-success-50 px-3.5 py-2 text-xs text-success-700">
               {t("detail.cancelResult.success")}
             </div>
-          ) : null}
-          {cancelFeedbackKey === "NOT_ALLOWED" ? (
-            <div className="mt-4 rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-300">
+          )}
+          {cancelFeedbackKey === "NOT_ALLOWED" && (
+            <div className="mt-3 rounded-xl border border-warning-200 bg-warning-50 px-3.5 py-2 text-xs text-warning-800">
               {t("detail.cancelResult.notAllowedByPolicy")}
             </div>
-          ) : null}
-          {cancelFeedbackKey === "FAILED" ? (
-            <div className="mt-4 rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300">
+          )}
+          {cancelFeedbackKey === "FAILED" && (
+            <div className="mt-3 rounded-xl border border-danger-200 bg-danger-50 px-3.5 py-2 text-xs text-danger-700">
               {t("detail.cancelResult.failed")}
             </div>
-          ) : null}
+          )}
         </PatientSectionCard>
       </aside>
 
@@ -904,8 +919,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   label={t("detail.cancelConfirm.summaryFields.status")}
                   value={
                     <SessionStatusBadge
-                      status={session.status}
-                      presentationStatus={session.presentationStatus}
+                      status={isReservationExpired ? "EXPIRED" : session.status}
+                      presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
                     />
                   }
                 />

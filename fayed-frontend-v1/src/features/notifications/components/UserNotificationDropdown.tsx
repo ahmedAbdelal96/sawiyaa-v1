@@ -90,7 +90,6 @@ export default function UserNotificationDropdown({
       <Dropdown
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        closeOnOutsideClick={false}
         className={`absolute mt-[17px] flex w-[min(360px,calc(100vw-1rem))] flex-col rounded-2xl border border-border-light bg-surface-secondary p-4 shadow-theme-lg dark:border-border-light dark:bg-surface-secondary ${maxDropdownHeightClass} ${
           isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"
         }`}
@@ -140,7 +139,7 @@ export default function UserNotificationDropdown({
               }}
             />
           ) : items.length > 0 ? (
-            <div className="space-y-2">
+            <div className="divide-y divide-border-light/70 dark:divide-white/10">
               {items.map((item) => {
                  const notificationSlug =
                    item.typeSlug ??
@@ -160,95 +159,95 @@ export default function UserNotificationDropdown({
                  const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
 
                  const content = (
-                  <>
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className={`p-2 rounded-xl shrink-0 ${toneClass}`}>
-                        {visual.icon}
-                      </div>
-                      <div className="min-w-0 flex-1 text-start">
-                        <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95 leading-normal">
-                          {visual.title}
-                        </p>
-                        <p className="text-[10px] text-text-muted mt-0.5 leading-none">
-                          {visual.subtitle}
-                        </p>
-                        <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-text-secondary font-medium">
-                          {visual.contextLine || item.body}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-[10px] text-text-muted">
-                        {formatUserNotificationDateTime(item.createdAt, locale)}
-                      </span>
-                    </div>
+                   <div className="flex items-start gap-3 w-full py-3 px-2 transition hover:bg-surface-tertiary/60 dark:hover:bg-white/5">
+                     <div className={`p-2.5 rounded-full shrink-0 relative ${toneClass}`}>
+                       {visual.icon}
+                       {!item.readAt ? (
+                         <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-surface-secondary" />
+                       ) : null}
+                     </div>
+                     <div className="min-w-0 flex-1 text-start space-y-1">
+                       <div className="flex items-start justify-between gap-2">
+                         <p className={`text-sm leading-snug text-text-primary dark:text-white/95 ${!item.readAt ? "font-bold" : "font-medium"}`}>
+                           {visual.title}
+                         </p>
+                         <span className="shrink-0 text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
+                           {formatUserNotificationDateTime(item.createdAt, locale)}
+                         </span>
+                       </div>
+                       {visual.subtitle && (
+                         <p className="text-[10px] text-text-muted leading-none font-medium">
+                           {visual.subtitle}
+                         </p>
+                       )}
+                       <p className="text-xs leading-relaxed text-text-secondary line-clamp-2">
+                         {visual.contextLine || item.body}
+                       </p>
+                       <div className="flex items-center justify-between gap-3 pt-1">
+                         <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                           {item.readAt ? t("status.read") : t("status.unread")}
+                         </span>
+                         {(item.action || item.primaryAction) ? (
+                           <span className="text-[10px] font-bold text-primary hover:underline">
+                             {visual.actionLabel || item.action?.label || t("actions.open")}
+                           </span>
+                         ) : null}
+                       </div>
+                     </div>
+                   </div>
+                 );
 
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="text-[10px] font-medium text-text-muted">
-                        {item.readAt ? t("status.read") : t("status.unread")}
-                      </span>
-                      {(item.action || item.primaryAction) ? (
-                        <span className="text-[10px] font-medium text-primary">
-                          {visual.actionLabel || item.action?.label || t("actions.open")}
-                        </span>
-                      ) : null}
-                    </div>
-                  </>
-                );
+                 const itemClassName = "block w-full text-start focus:outline-none transition first:mt-0";
 
-                const cardClassName = `block w-full text-start rounded-2xl border px-4 py-3 transition ${
-                  item.readAt
-                    ? "border-border-light bg-surface-secondary hover:border-primary/25 hover:bg-primary-light/40 dark:bg-surface-secondary"
-                    : "border-primary/15 bg-primary-light/20 hover:border-primary/25 hover:bg-primary-light/40 dark:bg-primary/10"
-                }`;
+                 if (item.action || item.primaryAction) {
+                   const target = resolveNotificationClickTarget({
+                     item,
+                     role,
+                   });
 
-                if (item.action || item.primaryAction) {
-                  const target = resolveNotificationClickTarget({
-                    item,
-                    role,
-                  });
+                   if (target.kind === "messages-shell") {
+                     return (
+                       <button
+                         key={item.id}
+                         type="button"
+                         onClick={() => {
+                           setIsOpen(false);
+                           handleMarkRead(item);
+                           dispatchOpenMessagesShell({
+                             lane: resolveMessagesShellLane(target.lane),
+                             threadId: target.threadId,
+                           });
+                         }}
+                         className={itemClassName}
+                       >
+                         {content}
+                       </button>
+                     );
+                   }
 
-                  if (target.kind === "messages-shell") {
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => {
-                          setIsOpen(false);
-                          handleMarkRead(item);
-                          dispatchOpenMessagesShell({
-                            lane: resolveMessagesShellLane(target.lane),
-                            threadId: target.threadId,
-                          });
-                        }}
-                        className={`${cardClassName} text-start`}
-                      >
-                        {content}
-                      </button>
-                    );
-                  }
+                   if (target.kind === "href") {
+                     return (
+                       <Link
+                         key={item.id}
+                         href={target.href as never}
+                         onClick={() => {
+                           setIsOpen(false);
+                           handleMarkRead(item);
+                         }}
+                         className={itemClassName}
+                       >
+                         {content}
+                       </Link>
+                     );
+                   }
+                 }
 
-                  if (target.kind === "href") {
-                    return (
-                      <Link
-                        key={item.id}
-                        href={target.href as never}
-                        onClick={() => {
-                          setIsOpen(false);
-                          handleMarkRead(item);
-                        }}
-                        className={cardClassName}
-                      >
-                        {content}
-                      </Link>
-                    );
-                  }
-                }
-
-                return (
-                  <div key={item.id} className={cardClassName}>
-                    {content}
-                  </div>
-                );
-              })}
+                 return (
+                   <div key={item.id} className={itemClassName}>
+                     {content}
+                   </div>
+                 );
+               })}
             </div>
           ) : (
             <StateCard

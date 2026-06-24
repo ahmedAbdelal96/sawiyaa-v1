@@ -21,6 +21,7 @@ export type PaymobMethodRegistryEntry = {
   enabled: boolean;
   priority: number;
   integrationId: string | null;
+  currencyCodes: string[];
   supportedCheckoutFlows: PaymobCheckoutFlowValue[];
   countryIsoCodes: string[];
 };

@@ -34,6 +34,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
       ? (practitioner.sessionPrice30Egp ?? practitioner.sessionPrice60Egp ?? null)
       : (practitioner.sessionPrice30Usd ?? practitioner.sessionPrice60Usd ?? null);
   const averageRating = practitioner.ratingSummary.averageRating;
+  const totalReviews = practitioner.ratingSummary.totalReviews;
   const visibleLanguages = practitioner.languages
     .slice(0, 3)
     .map(
@@ -117,7 +118,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
                   {averageRating.toFixed(1)}
                   <Text color={theme.colors.textMuted} weight="normal">
                     {" "}
-                    ({practitioner.ratingSummary.totalReviews})
+                    {t("discovery.profile.reviews", { count: totalReviews })}
                   </Text>
                 </Text>
               </View>
@@ -347,4 +348,3 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
 });
-

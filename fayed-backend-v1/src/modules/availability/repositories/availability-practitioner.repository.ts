@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PractitionerStatus, UserStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 /**
@@ -59,6 +60,32 @@ export class AvailabilityPractitionerRepository {
             specialtyId: true,
           },
         },
+      },
+    });
+  }
+
+  findApprovedReminderCandidates() {
+    return this.prisma.practitionerProfile.findMany({
+      where: {
+        status: PractitionerStatus.APPROVED,
+        user: {
+          status: UserStatus.ACTIVE,
+        },
+      },
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            defaultLocale: true,
+            timezone: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'asc',
       },
     });
   }

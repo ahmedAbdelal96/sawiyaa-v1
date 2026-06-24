@@ -9,8 +9,14 @@ import type {
   PatientLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
+  PatientVerifyPasswordResetOtpRequest,
+  PatientVerifyPasswordResetOtpResponse,
+  PatientConfirmPasswordResetRequest,
   PatientResetPasswordRequest,
   PractitionerForgotPasswordRequest,
+  PractitionerVerifyPasswordResetOtpRequest,
+  PractitionerVerifyPasswordResetOtpResponse,
+  PractitionerConfirmPasswordResetRequest,
   PractitionerLoginRequest,
   PractitionerRegisterRequest,
   PractitionerRegistrationResponse,
@@ -61,6 +67,26 @@ export async function patientForgotPassword(
 
 export async function patientResetPassword(data: PatientResetPasswordRequest) {
   const response = await apiClient.post("/auth/patient/reset-password", data);
+  return extractApiData<MessageResponse>(response);
+}
+
+export async function patientVerifyPasswordResetOtp(
+  data: PatientVerifyPasswordResetOtpRequest,
+) {
+  const response = await apiClient.post(
+    "/auth/patient/verify-password-reset-otp",
+    data,
+  );
+  return extractApiData<PatientVerifyPasswordResetOtpResponse>(response);
+}
+
+export async function patientConfirmPasswordReset(
+  data: PatientConfirmPasswordResetRequest,
+) {
+  const response = await apiClient.post(
+    "/auth/patient/confirm-password-reset",
+    data,
+  );
   return extractApiData<MessageResponse>(response);
 }
 
@@ -117,6 +143,26 @@ export async function practitionerResetPassword(
 ) {
   const response = await apiClient.post(
     "/auth/practitioner/reset-password",
+    data,
+  );
+  return extractApiData<MessageResponse>(response);
+}
+
+export async function practitionerVerifyPasswordResetOtp(
+  data: PractitionerVerifyPasswordResetOtpRequest,
+) {
+  const response = await apiClient.post(
+    "/auth/practitioner/verify-password-reset-otp",
+    data,
+  );
+  return extractApiData<PractitionerVerifyPasswordResetOtpResponse>(response);
+}
+
+export async function practitionerConfirmPasswordReset(
+  data: PractitionerConfirmPasswordResetRequest,
+) {
+  const response = await apiClient.post(
+    "/auth/practitioner/confirm-password-reset",
     data,
   );
   return extractApiData<MessageResponse>(response);

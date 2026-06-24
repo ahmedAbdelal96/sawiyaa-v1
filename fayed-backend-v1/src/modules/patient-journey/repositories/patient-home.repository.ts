@@ -2,14 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { PractitionerStatus, SessionStatus, UserStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
+import {
+  SessionReviewRatingAggregationService,
+  type SessionReviewRatingSummary,
+} from '@modules/reviews/services/session-review-rating-aggregation.service';
 
 @Injectable()
 export class PatientHomeRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+  ) {}
 
   async findPublicPractitionerBySlug(slug: string, locale: SupportedLocale) {
     const normalizedSlug = slug.trim().toLowerCase();
-    return this.prisma.practitionerProfile.findFirst({
+    const row = await this.prisma.practitionerProfile.findFirst({
       where: {
         publicSlug: normalizedSlug,
         status: PractitionerStatus.APPROVED,
@@ -44,12 +51,6 @@ export class PatientHomeRepository {
         },
         professionalTitle: true,
         avatarUrl: true,
-        ratingSummary: {
-          select: {
-            averageRating: true,
-            publishedReviewsCount: true,
-          },
-        },
         sessionPrice30Egp: true,
         sessionPrice30Usd: true,
         sessionPrice60Egp: true,
@@ -82,6 +83,20 @@ export class PatientHomeRepository {
         },
       },
     });
+
+    if (!row) {
+      return null;
+    }
+
+    const ratingSummary =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerId(
+        row.id,
+      );
+
+    return {
+      ...row,
+      ratingSummary: this.toLegacyRatingSummary(ratingSummary),
+    };
   }
 
   async trackView(input: {
@@ -180,12 +195,6 @@ export class PatientHomeRepository {
                 displayName: true,
               },
             },
-            ratingSummary: {
-              select: {
-                averageRating: true,
-                publishedReviewsCount: true,
-              },
-            },
             sessionPrice30Egp: true,
             sessionPrice30Usd: true,
             sessionPrice60Egp: true,
@@ -221,8 +230,16 @@ export class PatientHomeRepository {
       },
     });
 
+    const ratingSummaries =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        rows.map((row) => row.practitioner.id),
+      );
+
     return rows.map((row) => ({
-      ...this.mapPublicPractitionerCard(row.practitioner),
+      ...this.mapPublicPractitionerCard(
+        row.practitioner,
+        ratingSummaries.get(row.practitioner.id) ?? null,
+      ),
       lastViewedAt: row.lastViewedAt,
     }));
   }
@@ -303,23 +320,28 @@ export class PatientHomeRepository {
     minimumReviews: number;
     priorReviews: number;
   }) {
-    const summaries = await this.prisma.practitionerRatingSummary.findMany({
-      where: {
-        publishedReviewsCount: {
-          gt: 0,
-        },
-        practitioner: this.publicPractitionerWhere(),
-      },
+    const practitionerIds = await this.prisma.practitionerProfile.findMany({
+      where: this.publicPractitionerWhere(),
       select: {
-        practitionerId: true,
-        averageRating: true,
-        publishedReviewsCount: true,
+        id: true,
       },
     });
 
-    const platformMeanRating = this.calculatePlatformMeanRating(summaries);
+    const summaries =
+      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        practitionerIds.map((row) => row.id),
+      );
+    const summaryRows = Array.from(summaries.entries()).map(
+      ([practitionerId, summary]) => ({
+        practitionerId,
+        averageRating: summary.averageRating,
+        publishedReviewsCount: summary.publishedRatingsCount,
+      }),
+    );
 
-    const eligibleSummaries = summaries.filter(
+    const platformMeanRating = this.calculatePlatformMeanRating(summaryRows);
+
+    const eligibleSummaries = summaryRows.filter(
       (summary) => summary.publishedReviewsCount >= input.minimumReviews,
     );
 
@@ -330,6 +352,7 @@ export class PatientHomeRepository {
     const cards = await this.listPublicPractitionerCardsByIds(
       eligibleSummaries.map((summary) => summary.practitionerId),
       input.locale,
+      summaries,
     );
 
     const summaryByPractitionerId = new Map(
@@ -415,6 +438,7 @@ export class PatientHomeRepository {
   private async listPublicPractitionerCardsByIds(
     practitionerIds: string[],
     locale: SupportedLocale,
+    ratingSummaries?: Map<string, SessionReviewRatingSummary>,
   ) {
     if (practitionerIds.length === 0) {
       return [];
@@ -435,12 +459,6 @@ export class PatientHomeRepository {
         user: {
           select: {
             displayName: true,
-          },
-        },
-        ratingSummary: {
-          select: {
-            averageRating: true,
-            publishedReviewsCount: true,
           },
         },
         sessionPrice30Egp: true,
@@ -477,10 +495,17 @@ export class PatientHomeRepository {
     });
 
     const rowsById = new Map(rows.map((row) => [row.id, row]));
+    const summaries =
+      ratingSummaries ??
+      (await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+        practitionerIds,
+      ));
     return practitionerIds
       .map((id) => rowsById.get(id))
       .filter((row): row is NonNullable<typeof row> => Boolean(row))
-      .map((row) => this.mapPublicPractitionerCard(row));
+      .map((row) =>
+        this.mapPublicPractitionerCard(row, summaries.get(row.id) ?? null),
+      );
   }
 
   private mapPublicPractitionerCard(row: {
@@ -489,10 +514,6 @@ export class PatientHomeRepository {
     professionalTitle: string | null;
     avatarUrl: string | null;
     user: { displayName: string | null };
-    ratingSummary: {
-      averageRating: unknown;
-      publishedReviewsCount: number;
-    } | null;
     sessionPrice30Egp: unknown;
     sessionPrice30Usd: unknown;
     sessionPrice60Egp: unknown;
@@ -504,7 +525,7 @@ export class PatientHomeRepository {
         }>;
       };
     }>;
-  }) {
+  }, ratingSummary: SessionReviewRatingSummary | null) {
     return {
       practitionerId: row.id,
       slug: row.publicSlug,
@@ -514,11 +535,11 @@ export class PatientHomeRepository {
       primarySpecialty:
         row.specialties[0]?.specialty.translations[0]?.title ?? null,
       averageRating:
-        row.ratingSummary?.averageRating === null ||
-        row.ratingSummary?.averageRating === undefined
+        ratingSummary?.averageRating === null ||
+        ratingSummary?.averageRating === undefined
           ? null
-          : Number(row.ratingSummary.averageRating),
-      totalReviews: row.ratingSummary?.publishedReviewsCount ?? 0,
+          : Number(ratingSummary.averageRating),
+      totalReviews: ratingSummary?.publishedRatingsCount ?? 0,
       displaySessionPrice30:
         row.sessionPrice30Egp === null || row.sessionPrice30Egp === undefined
           ? row.sessionPrice30Usd === null || row.sessionPrice30Usd === undefined
@@ -532,6 +553,17 @@ export class PatientHomeRepository {
             : Number(row.sessionPrice60Usd)
           : Number(row.sessionPrice60Egp),
       isVerified: true,
+    };
+  }
+
+  private toLegacyRatingSummary(ratingSummary: SessionReviewRatingSummary | null) {
+    return {
+      averageRating:
+        ratingSummary?.averageRating === null ||
+        ratingSummary?.averageRating === undefined
+          ? null
+          : Number(ratingSummary.averageRating),
+      totalReviews: ratingSummary?.publishedRatingsCount ?? 0,
     };
   }
 

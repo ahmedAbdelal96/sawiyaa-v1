@@ -1,8 +1,8 @@
 {
   "admin": {
     "list": {
-      "heading": "المراجعات",
-      "count": "{value, number} {value, plural, one {مراجعة} other {مراجعات}}",
+      "heading": "التقييمات",
+      "count": "{value, number} {value, plural, one {تقييم} other {تقييمات}}",
       "needsModeration": "تحتاج إشرافًا",
       "unknownPractitioner": "ممارس غير معروف",
       "pagination": {
@@ -29,23 +29,27 @@
       "ARCHIVED": "أرشفة"
     },
     "detail": {
-      "back": "العودة إلى المراجعات",
-      "heading": "تفاصيل المراجعة",
-      "noText": "لا يوجد نص مكتوب لهذه المراجعة.",
+      "back": "العودة إلى التقييمات",
+      "heading": "تفاصيل التقييم",
+      "noText": "لا يوجد نص مكتوب لهذا التقييم.",
       "practitioner": "الممارس",
+      "patient": "المريض",
+      "anonymousPatient": "مريض مجهول",
+      "patientFallback": "مريض",
       "patientProfileId": "معرّف ملف المريض",
       "sessionDate": "تاريخ الجلسة",
       "submittedAt": "تاريخ الإرسال",
       "publishedAt": "تاريخ النشر",
-      "moderatedAt": "آخر تحديث إشرافي"
+      "moderatedAt": "آخر تحديث إشرافي",
+      "technicalDetails": "معلومات تتبع النظام (للمطورين)"
     },
     "moderation": {
-      "heading": "الإشراف",
+      "heading": "مراجعة التقييمات",
       "currentStatus": "الحالة الحالية",
       "actionLabel": "الإجراء",
       "selectAction": "اختر إجراءً",
       "noteLabel": "ملاحظة المشرف (اختياري)",
-      "notePlaceholder": "اختياري: أضف ملاحظة داخلية لسجل المراجعة",
+      "notePlaceholder": "اختياري: أضف ملاحظة داخلية لسجل التقييم",
       "submit": "تطبيق الإجراء",
       "submitting": "جارٍ التطبيق...",
       "success": "تم تطبيق إجراء الإشراف بنجاح.",
@@ -53,28 +57,41 @@
     },
     "states": {
       "empty": {
-        "heading": "لا توجد مراجعات مطابقة لهذه الفلاتر",
-        "note": "جرّب حالة مختلفة أو ألغِ خيار المراجعات التي تحتاج إشرافًا."
+        "heading": "لا توجد تقييمات مطابقة لهذه الفلاتر",
+        "note": "جرّب حالة مختلفة أو ألغِ خيار التقييمات التي تحتاج إشرافًا."
       },
       "listError": {
-        "heading": "المراجعات غير متاحة الآن",
-        "message": "تعذر تحميل المراجعات.",
+        "heading": "التقييمات غير متاحة الآن",
+        "message": "تعذر تحميل التقييمات.",
         "retry": "أعد المحاولة"
       },
       "detailError": {
-        "message": "تعذر تحميل هذه المراجعة.",
+        "message": "تعذر تحميل هذا التقييم.",
         "retry": "أعد المحاولة"
       }
     },
     "meta": {
       "list": {
-        "title": "المراجعات - الإدارة",
-        "description": "الإشراف على مراجعات المستخدمين وإدارتها."
+        "title": "التقييمات - الإدارة",
+        "description": "الإشراف على تقييمات المستخدمين وإدارتها."
       },
       "detail": {
-        "title": "تفاصيل المراجعة - الإدارة",
-        "description": "عرض المراجعة المقدمة وإدارتها إشرافيًا."
+        "title": "تفاصيل التقييم - الإدارة",
+        "description": "عرض التقييم المقدم وإدارته إشرافيًا."
       }
+    },
+    "table": {
+      "review": "التقييم",
+      "context": "السياق",
+      "practitioner": "الممارس",
+      "patient": "المريض",
+      "session": "الجلسة",
+      "status": "الحالة",
+      "rating": "الدرجة",
+      "submitted": "تم الإرسال"
+    },
+    "summary": {
+      "average": "المتوسط"
     }
   },
   "patient": {

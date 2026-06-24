@@ -19,7 +19,7 @@ export default registerAs('app', () => {
   return {
     nodeEnv: process.env.NODE_ENV ?? 'development',
     port: parseInt(process.env.PORT ?? '3000', 10),
-    name: process.env.APP_NAME ?? 'fayed-backend-v1',
+    name: process.env.APP_NAME ?? 'sawiyaa-backend-v1',
     // APP_URL is validated by env.schema.ts at startup — will throw if missing/invalid
     url: process.env.APP_URL!,
     defaultLocale: process.env.APP_DEFAULT_LOCALE ?? 'ar',

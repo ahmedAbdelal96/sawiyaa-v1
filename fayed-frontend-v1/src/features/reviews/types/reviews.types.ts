@@ -29,6 +29,13 @@ export interface AdminReviewPractitioner {
   displayName: string | null;
 }
 
+export interface AdminReviewPatient {
+  id: string;
+  displayName: string | null;
+  label: string;
+  isAnonymous: boolean;
+}
+
 export interface AdminReviewSession {
   id: string;
   scheduledStartAt: string | null;
@@ -64,6 +71,7 @@ export interface AdminReviewItem {
   publishedAt: string | null;
   moderatedAt: string | null;
   practitioner: AdminReviewPractitioner;
+  patient: AdminReviewPatient;
   patientProfileId: string;
   practitionerProfileId: string;
   session: AdminReviewSession;

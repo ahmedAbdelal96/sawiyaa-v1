@@ -26,6 +26,17 @@ function formatDate(iso: string | null, locale: string): string {
   });
 }
 
+function formatDateTime(iso: string | null, locale: string): string {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex items-center gap-0.5">
@@ -135,30 +146,74 @@ export default function AdminReviewsListScreen() {
   const columns = useMemo<ColumnDef<AdminReviewItem>[]>(() => [
     {
       id: "review",
-      header: "Review",
+      header: t("admin.table.review"),
       accessor: (row) => row.title ?? row.textReview ?? "",
       cell: (row) => (
-        <div className="min-w-0">
+        <div className="min-w-[200px] max-w-[320px] space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <StarRating rating={row.overallRating} />
-            <p className="truncate text-sm font-medium text-text-primary dark:text-white/95">
-              {row.title || row.practitioner.displayName || t("admin.list.unknownPractitioner")}
-            </p>
+            {row.title && (
+              <span className="text-xs font-semibold text-text-primary dark:text-white truncate">
+                {row.title}
+              </span>
+            )}
           </div>
           {row.textReview ? (
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-secondary">
+            <p className="line-clamp-2 text-xs leading-relaxed text-text-secondary whitespace-pre-wrap">
               {row.textReview}
             </p>
-          ) : null}
-          <p className="mt-1.5 text-xs text-text-muted">
-            {row.practitioner.displayName ?? t("admin.list.unknownPractitioner")}
-          </p>
+          ) : (
+            <p className="text-[11px] italic text-text-muted">
+              {t("admin.detail.noText")}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "practitioner",
+      header: t("admin.table.practitioner"),
+      accessor: (row) => row.practitioner.displayName ?? t("admin.list.unknownPractitioner"),
+      hideOnMobile: true,
+      cell: (row) => (
+        <div className="text-xs font-semibold text-text-primary dark:text-white whitespace-nowrap">
+          {row.practitioner.displayName ?? t("admin.list.unknownPractitioner")}
+        </div>
+      ),
+    },
+    {
+      id: "patient",
+      header: t("admin.table.patient"),
+      accessor: (row) => row.patient.displayName ?? t("admin.detail.patientFallback"),
+      hideOnMobile: true,
+      cell: (row) => (
+        <div className="text-xs text-text-secondary dark:text-slate-300 whitespace-nowrap">
+          {row.patient.isAnonymous ? (
+            <span className="text-text-muted italic bg-slate-50 dark:bg-white/5 px-2 py-0.5 rounded text-[11px]">
+              {t("admin.detail.anonymousPatient")}
+            </span>
+          ) : (
+            <span className="font-semibold text-text-primary dark:text-white">
+              {row.patient.displayName ?? t("admin.detail.patientFallback")}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "session",
+      header: t("admin.table.session"),
+      accessor: (row) => row.session.scheduledStartAt ?? "",
+      hideOnMobile: true,
+      cell: (row) => (
+        <div className="text-xs text-text-secondary dark:text-slate-300 whitespace-nowrap">
+          {formatDateTime(row.session.scheduledStartAt, locale)}
         </div>
       ),
     },
     {
       id: "status",
-      header: "Status",
+      header: t("admin.table.status"),
       accessor: (row) => row.status,
       sortable: true,
       cell: (row) => {
@@ -173,7 +228,7 @@ export default function AdminReviewsListScreen() {
     },
     {
       id: "overallRating",
-      header: "Rating",
+      header: t("admin.table.rating"),
       accessor: (row) => row.overallRating,
       sortable: true,
       align: "center",
@@ -181,7 +236,7 @@ export default function AdminReviewsListScreen() {
     },
     {
       id: "submittedAt",
-      header: "Submitted",
+      header: t("admin.table.submitted"),
       accessor: (row) => (row.submittedAt ? new Date(row.submittedAt).getTime() : null),
       sortable: true,
       hideOnMobile: true,
@@ -214,7 +269,7 @@ export default function AdminReviewsListScreen() {
             icon={<Star className="h-4 w-4" />}
           />
           <AdminSummaryCard
-            label="Avg"
+            label={t("admin.summary.average")}
             value={`${averageRating}/5`}
             tone="neutral"
             icon={<Star className="h-4 w-4" />}

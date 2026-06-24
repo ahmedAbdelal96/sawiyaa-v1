@@ -1,4 +1,4 @@
-const GLOBAL_SEEN_KEYS = "__fayedI18nMissingKeysWeb__";
+const GLOBAL_SEEN_KEYS = "__sawiyaaI18nMissingKeysWeb__";
 
 type MissingKeyWarningInput = {
   locale: string;
@@ -42,6 +42,6 @@ export function warnMissingTranslation({
   const fallbackPart = fallbackLocale ? ` fallback=${fallbackLocale}` : "";
 
   console.warn(
-    `[Fayed i18n missing] lang=${locale}${namespacePart} key=${key}${fallbackPart}`,
+    `[Sawiyaa i18n missing] lang=${locale}${namespacePart} key=${key}${fallbackPart}`,
   );
 }

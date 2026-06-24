@@ -105,12 +105,7 @@ export class PublicPractitionerReadRepository {
         },
         orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
       },
-      ratingSummary: {
-        select: {
-          averageRating: true,
-          publishedReviewsCount: true,
-        },
-      },
+      createdAt: true,
       presence: {
         select: {
           status: true,
@@ -151,7 +146,6 @@ export class PublicPractitionerReadRepository {
     availableThisWeek?: boolean;
     acceptsCoupon?: boolean;
     acceptsPackage?: boolean;
-    minRating?: number;
     minSessionFee?: number;
     maxSessionFee?: number;
   }): Prisma.PractitionerProfileWhereInput {
@@ -371,16 +365,6 @@ export class PublicPractitionerReadRepository {
             : undefined,
       acceptsPackages:
         input.acceptsPackage === undefined ? undefined : input.acceptsPackage,
-      ratingSummary:
-        input.minRating !== undefined
-          ? {
-              is: {
-                averageRating: {
-                  gte: input.minRating,
-                },
-              },
-            }
-          : undefined,
       OR: search
         ? [
             {
@@ -425,28 +409,6 @@ export class PublicPractitionerReadRepository {
     };
   }
 
-  private buildOrderBy(
-    sort: PublicPractitionerSortBy | undefined,
-  ): Prisma.PractitionerProfileOrderByWithRelationInput[] {
-    switch (sort) {
-      case PublicPractitionerSortBy.EXPERIENCE:
-        return [{ yearsOfExperience: 'desc' }, { createdAt: 'desc' }];
-      case PublicPractitionerSortBy.RATING:
-        return [
-          { ratingSummary: { averageRating: 'desc' } },
-          { yearsOfExperience: 'desc' },
-          { createdAt: 'desc' },
-        ];
-      case PublicPractitionerSortBy.RECOMMENDED:
-      default:
-        return [
-          { ratingSummary: { averageRating: 'desc' } },
-          { yearsOfExperience: 'desc' },
-          { createdAt: 'desc' },
-        ];
-    }
-  }
-
   async listPublic(input: {
     locale: SupportedLocale;
     search?: string;
@@ -462,27 +424,16 @@ export class PublicPractitionerReadRepository {
     availableThisWeek?: boolean;
     acceptsCoupon?: boolean;
     acceptsPackage?: boolean;
-    minRating?: number;
     minSessionFee?: number;
     maxSessionFee?: number;
     sort?: PublicPractitionerSortBy;
-    skip: number;
-    take: number;
   }) {
     const where = this.buildPublicWhere(input);
 
-    const [rows, total] = await Promise.all([
-      this.prisma.practitionerProfile.findMany({
-        where,
-        orderBy: this.buildOrderBy(input.sort),
-        skip: input.skip,
-        take: input.take,
-        select: this.getPublicPractitionerSelect(input.locale),
-      }),
-      this.prisma.practitionerProfile.count({ where }),
-    ]);
-
-    return { rows, total };
+    return this.prisma.practitionerProfile.findMany({
+      where,
+      select: this.getPublicPractitionerSelect(input.locale),
+    });
   }
 
   findByPublicSlug(slug: string, locale: SupportedLocale) {

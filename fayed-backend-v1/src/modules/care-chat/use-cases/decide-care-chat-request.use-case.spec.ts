@@ -3,6 +3,7 @@ import { CareChatPresenter } from '../presenters/care-chat.presenter';
 import { CareChatConversationRepository } from '../repositories/care-chat-conversation.repository';
 import { CareChatRequestRepository } from '../repositories/care-chat-request.repository';
 import { ValidateCareChatApprovalTransitionService } from '../services/validate-care-chat-approval-transition.service';
+import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { DecideCareChatRequestUseCase } from './decide-care-chat-request.use-case';
 
 describe('DecideCareChatRequestUseCase', () => {
@@ -21,11 +22,17 @@ describe('DecideCareChatRequestUseCase', () => {
     presentAdminRequestItem: jest.fn().mockReturnValue({ id: 'request-1' }),
   } as unknown as CareChatPresenter;
 
+  const operationalNotificationService = {
+    notifyCareChatRequestApproved: jest.fn(),
+    notifyCareChatRequestRejected: jest.fn(),
+  } as unknown as OperationalNotificationService;
+
   const useCase = new DecideCareChatRequestUseCase(
     requestRepository,
     conversationRepository,
     new ValidateCareChatApprovalTransitionService(),
     presenter,
+    operationalNotificationService,
   );
 
   beforeEach(() => {
@@ -78,6 +85,16 @@ describe('DecideCareChatRequestUseCase', () => {
     expect(
       conversationRepository.createApprovedConversation,
     ).toHaveBeenCalled();
+    expect(
+      operationalNotificationService.notifyCareChatRequestApproved,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patientProfileId: 'patient-1',
+        practitionerProfileId: 'practitioner-1',
+        requestId: 'request-1',
+        conversationId: 'conversation-1',
+      }),
+    );
   });
 
   it('does not create conversation when decision is reject', async () => {
@@ -85,6 +102,8 @@ describe('DecideCareChatRequestUseCase', () => {
       id: 'request-1',
       status: ChatApprovalStatus.PENDING,
       expiresAt: null,
+      patientId: 'patient-1',
+      practitionerId: 'practitioner-1',
     });
     (requestRepository.withTransaction as jest.Mock).mockImplementation(
       async (runner: (tx: { tx: true }) => Promise<unknown>) =>
@@ -116,5 +135,13 @@ describe('DecideCareChatRequestUseCase', () => {
     expect(
       conversationRepository.createApprovedConversation,
     ).not.toHaveBeenCalled();
+    expect(
+      operationalNotificationService.notifyCareChatRequestRejected,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patientProfileId: 'patient-1',
+        requestId: 'request-1',
+      }),
+    );
   });
 });

@@ -16,6 +16,14 @@ import {
 } from '../types/paymob-payment.types';
 import { PaymentRoutingRuntimeSnapshot } from '@modules/payment-gateway-control/types/payment-gateway-control.types';
 
+type SupportedPaymentCurrencyCode = 'EGP' | 'USD';
+
+type PaymobMethodContext = {
+  currencyCode?: string | null;
+  checkoutCountryIsoCode?: string | null;
+  operatingCountryIsoCode?: string | null;
+};
+
 type StripeRuntimeConfig = {
   enabled: boolean;
   mode: 'test' | 'live';
@@ -35,6 +43,9 @@ type PaymobRuntimeConfig = {
   intentionBaseUrl: string | null;
   checkoutBaseUrl: string | null;
   checkoutFlow: PaymobCheckoutFlowValue;
+  egpCardIntegrationId: string | null;
+  egpWalletIntegrationId: string | null;
+  usdCardIntegrationId: string | null;
   integrationIdCard: string | null;
   integrationIdWallet: string | null;
   iframeId: string | null;
@@ -92,6 +103,15 @@ export class PaymentRuntimeConfigService {
       ),
       checkoutBaseUrl: this.toNullable(this.paymentCfg.paymob.checkoutBaseUrl),
       checkoutFlow: snapshot.checkoutFlow,
+      egpCardIntegrationId: this.toNullable(
+        this.paymentCfg.paymob.egpCardIntegrationId,
+      ),
+      egpWalletIntegrationId: this.toNullable(
+        this.paymentCfg.paymob.egpWalletIntegrationId,
+      ),
+      usdCardIntegrationId: this.toNullable(
+        this.paymentCfg.paymob.usdCardIntegrationId,
+      ),
       integrationIdCard: this.toNullable(
         this.paymentCfg.paymob.integrationIdCard,
       ),
@@ -100,7 +120,9 @@ export class PaymentRuntimeConfigService {
       ),
       iframeId: this.toNullable(this.paymentCfg.paymob.iframeId),
       defaultCheckoutMethod: snapshot.defaultMethod,
-      methodRegistryJson: JSON.stringify(snapshot.methodRegistry),
+      methodRegistryJson: this.toNullable(
+        this.paymentCfg.paymob.methodRegistryJson,
+      ),
       maintenanceMode: snapshot.maintenanceMode,
       allowedCountryIsoCodes: snapshot.allowedCountryIsoCodes,
     };
@@ -111,40 +133,45 @@ export class PaymentRuntimeConfigService {
   }
 
   getPaymobMethodRegistry(): PaymobMethodRegistryEntry[] {
-    const snapshot =
-      this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
-    const parsedRegistry = snapshot.methodRegistry;
+    const paymob = this.getPaymobConfig();
+    const parsedRegistry = this.parsePaymobMethodRegistry(
+      paymob.methodRegistryJson,
+    );
 
     if (parsedRegistry.length > 0) {
       return parsedRegistry;
     }
 
-    return this.buildLegacyFallbackRegistry(this.getPaymobConfig());
+    return this.buildCurrencyAwareFallbackRegistry(paymob);
   }
 
-  getPaymobEnabledMethods(context?: {
-    checkoutCountryIsoCode?: string | null;
-    operatingCountryIsoCode?: string | null;
-  }): PaymobMethodRegistryEntry[] {
+  getPaymobEnabledMethods(
+    context?: PaymobMethodContext,
+  ): PaymobMethodRegistryEntry[] {
     const flow = this.getPaymobCheckoutFlow();
 
-    return this.getPaymobMethodRegistry().filter((entry) => {
-      if (!entry.enabled || !entry.integrationId?.trim()) {
-        return false;
-      }
+    return [...this.getPaymobMethodRegistry()]
+      .filter((entry) => {
+        if (!entry.enabled || !entry.integrationId?.trim()) {
+          return false;
+        }
 
-      if (!entry.supportedCheckoutFlows.includes(flow)) {
-        return false;
-      }
+        if (!entry.supportedCheckoutFlows.includes(flow)) {
+          return false;
+        }
 
-      return this.isMethodApplicable(entry, context);
-    });
+        return this.isMethodApplicable(entry, context);
+      })
+      .sort((left, right) => {
+        if (right.priority !== left.priority) {
+          return right.priority - left.priority;
+        }
+
+        return left.label.localeCompare(right.label);
+      });
   }
 
-  getPaymobSupportedCheckoutMethods(context?: {
-    checkoutCountryIsoCode?: string | null;
-    operatingCountryIsoCode?: string | null;
-  }): Array<{
+  getPaymobSupportedCheckoutMethods(context?: PaymobMethodContext): Array<{
     method: string;
     integrationId: string;
   }> {
@@ -154,10 +181,7 @@ export class PaymentRuntimeConfigService {
     }));
   }
 
-  getPaymobDefaultCheckoutMethod(context?: {
-    checkoutCountryIsoCode?: string | null;
-    operatingCountryIsoCode?: string | null;
-  }): string | null {
+  getPaymobDefaultCheckoutMethod(context?: PaymobMethodContext): string | null {
     const enabledMethods = this.getPaymobEnabledMethods(context);
 
     if (!enabledMethods.length) {
@@ -193,10 +217,7 @@ export class PaymentRuntimeConfigService {
 
   resolvePaymobCheckoutMethod(
     preferredMethod?: string | null,
-    context?: {
-      checkoutCountryIsoCode?: string | null;
-      operatingCountryIsoCode?: string | null;
-    },
+    context?: PaymobMethodContext,
   ): string | null {
     const enabledMethods = this.getPaymobEnabledMethods(context);
     if (!enabledMethods.length) {
@@ -219,10 +240,7 @@ export class PaymentRuntimeConfigService {
 
   resolvePaymobIntegrationId(
     checkoutMethod?: string | null,
-    context?: {
-      checkoutCountryIsoCode?: string | null;
-      operatingCountryIsoCode?: string | null;
-    },
+    context?: PaymobMethodContext,
   ): string | null {
     const enabledMethods = this.getPaymobEnabledMethods(context);
     if (!enabledMethods.length) {
@@ -247,13 +265,117 @@ export class PaymentRuntimeConfigService {
     return selected?.integrationId ?? null;
   }
 
-  getPaymobIntentionPaymentMethodIds(context?: {
-    checkoutCountryIsoCode?: string | null;
-    operatingCountryIsoCode?: string | null;
-  }): number[] {
+  getPaymobIntentionPaymentMethodIds(context?: PaymobMethodContext): number[] {
     return this.getPaymobEnabledMethods(context)
       .map((item) => Number(item.integrationId))
       .filter((value) => Number.isFinite(value));
+  }
+
+  getPaymobCurrencyMethodConfigIssues(): string[] {
+    const paymob = this.getPaymobConfig();
+    const issues: string[] = [];
+    const hasExplicitEnvConfig = Boolean(
+      paymob.egpCardIntegrationId ||
+      paymob.egpWalletIntegrationId ||
+      paymob.usdCardIntegrationId,
+    );
+    const hasLegacyEnvConfig = Boolean(
+      paymob.integrationIdCard || paymob.integrationIdWallet,
+    );
+    const rawRegistry = paymob.methodRegistryJson;
+    const registry = this.parsePaymobMethodRegistry(rawRegistry);
+    const sourceLabel = rawRegistry?.trim()
+      ? 'PAYMOB_METHOD_REGISTRY_JSON'
+      : 'env';
+
+    if (rawRegistry?.trim() && (hasExplicitEnvConfig || hasLegacyEnvConfig)) {
+      issues.push(
+        'Paymob currency/method config is ambiguous. Use either PAYMOB_METHOD_REGISTRY_JSON or the explicit PAYMOB_*_INTEGRATION_ID variables, not both.',
+      );
+    }
+
+    if (rawRegistry?.trim() && registry.length === 0) {
+      issues.push(
+        'PAYMOB_METHOD_REGISTRY_JSON is present but could not be parsed into any valid method entries.',
+      );
+    }
+
+    const seenEntries = new Set<string>();
+
+    for (const entry of registry) {
+      const normalizedMethod =
+        this.normalizeMethodKey(entry.type) ??
+        this.normalizeMethodKey(entry.key);
+      const normalizedCurrencies = entry.currencyCodes
+        .map((value) => this.normalizeCurrencyCode(value))
+        .filter((value): value is SupportedPaymentCurrencyCode =>
+          Boolean(value),
+        );
+
+      if (!normalizedMethod || !['CARD', 'WALLET'].includes(normalizedMethod)) {
+        issues.push(
+          `Unsupported Paymob method ${entry.key} in ${sourceLabel}. Only CARD and WALLET are allowed for checkout.`,
+        );
+      }
+
+      if (entry.enabled && !entry.integrationId?.trim()) {
+        issues.push(
+          `Enabled Paymob method ${entry.key} is missing an integrationId.`,
+        );
+      }
+
+      if (entry.enabled && normalizedCurrencies.length === 0) {
+        issues.push(
+          `Enabled Paymob method ${entry.key} must declare explicit currencyCodes.`,
+        );
+      }
+
+      if (
+        entry.currencyCodes.some((value) => !this.normalizeCurrencyCode(value))
+      ) {
+        issues.push(
+          `Paymob method ${entry.key} contains an unsupported currency code. Only EGP and USD are allowed.`,
+        );
+      }
+
+      if (
+        entry.enabled &&
+        normalizedMethod === PaymobCheckoutMethod.WALLET &&
+        normalizedCurrencies.includes('USD')
+      ) {
+        issues.push(
+          'USD WALLET is not supported. Remove USD from any Paymob WALLET method configuration.',
+        );
+      }
+
+      for (const currencyCode of normalizedCurrencies) {
+        const dedupeKey = `${currencyCode}:${normalizedMethod}`;
+        if (seenEntries.has(dedupeKey)) {
+          issues.push(
+            `Duplicate Paymob method configuration detected for ${currencyCode} ${normalizedMethod}.`,
+          );
+          continue;
+        }
+
+        seenEntries.add(dedupeKey);
+      }
+    }
+
+    if (!rawRegistry?.trim()) {
+      const hasAnyCardConfig = Boolean(
+        paymob.egpCardIntegrationId ||
+        paymob.usdCardIntegrationId ||
+        paymob.integrationIdCard,
+      );
+
+      if (!hasAnyCardConfig) {
+        issues.push(
+          'Paymob checkout requires at least one card integration. Configure PAYMOB_EGP_CARD_INTEGRATION_ID, PAYMOB_USD_CARD_INTEGRATION_ID, or legacy PAYMOB_INTEGRATION_ID_CARD/PAYMOB_INTEGRATION_ID.',
+        );
+      }
+    }
+
+    return issues;
   }
 
   getPaymobCheckoutLaunchUrl(clientSecret: string): string {
@@ -326,7 +448,7 @@ export class PaymentRuntimeConfigService {
       return false;
     }
 
-    if (parsed.protocol === 'fayed:') {
+    if (parsed.protocol === 'sawiyaa:') {
       return true;
     }
 
@@ -337,9 +459,7 @@ export class PaymentRuntimeConfigService {
     return this.getTrustedReturnUrlOrigins().includes(parsed.origin);
   }
 
-  resolveTrustedReturnUrl(
-    returnUrl: string | null | undefined,
-  ): string | null {
+  resolveTrustedReturnUrl(returnUrl: string | null | undefined): string | null {
     if (!returnUrl?.trim()) {
       return null;
     }
@@ -477,7 +597,7 @@ export class PaymentRuntimeConfigService {
           : [];
 
       return candidates
-        .map((entry, index) => this.normalizePaymobRegistryEntry(entry, index))
+        .map((entry) => this.normalizePaymobRegistryEntry(entry))
         .filter((entry): entry is PaymobMethodRegistryEntry => Boolean(entry));
     } catch {
       return [];
@@ -486,7 +606,6 @@ export class PaymentRuntimeConfigService {
 
   private normalizePaymobRegistryEntry(
     entry: unknown,
-    _index: number,
   ): PaymobMethodRegistryEntry | null {
     if (!entry || typeof entry !== 'object') {
       return null;
@@ -521,6 +640,9 @@ export class PaymentRuntimeConfigService {
         0,
       ),
       integrationId,
+      currencyCodes: this.toStringArray(
+        raw.currencyCodes ?? raw.currencies ?? raw.currencyCode ?? null,
+      ),
       supportedCheckoutFlows: this.normalizeSupportedCheckoutFlows(
         raw.supportedCheckoutFlows ?? raw.checkoutFlows ?? raw.flows ?? null,
         type,
@@ -535,19 +657,20 @@ export class PaymentRuntimeConfigService {
     };
   }
 
-  private buildLegacyFallbackRegistry(
+  private buildCurrencyAwareFallbackRegistry(
     paymob: PaymobRuntimeConfig,
   ): PaymobMethodRegistryEntry[] {
     const registry: PaymobMethodRegistryEntry[] = [];
 
-    if (paymob.integrationIdCard) {
+    if (paymob.egpCardIntegrationId) {
       registry.push({
         key: PaymobCheckoutMethod.CARD,
         label: 'Card',
         type: 'CARD',
         enabled: true,
         priority: 100,
-        integrationId: paymob.integrationIdCard,
+        integrationId: paymob.egpCardIntegrationId,
+        currencyCodes: ['EGP'],
         supportedCheckoutFlows: [
           PaymobCheckoutFlow.LEGACY,
           PaymobCheckoutFlow.INTENTION,
@@ -556,14 +679,32 @@ export class PaymentRuntimeConfigService {
       });
     }
 
-    if (paymob.integrationIdWallet) {
+    if (paymob.egpWalletIntegrationId) {
       registry.push({
         key: PaymobCheckoutMethod.WALLET,
         label: 'Mobile Wallet',
         type: 'WALLET',
         enabled: true,
         priority: 90,
-        integrationId: paymob.integrationIdWallet,
+        integrationId: paymob.egpWalletIntegrationId,
+        currencyCodes: ['EGP'],
+        supportedCheckoutFlows: [
+          PaymobCheckoutFlow.LEGACY,
+          PaymobCheckoutFlow.INTENTION,
+        ],
+        countryIsoCodes: ['EG', 'EGY'],
+      });
+    }
+
+    if (paymob.usdCardIntegrationId) {
+      registry.push({
+        key: PaymobCheckoutMethod.CARD,
+        label: 'Card',
+        type: 'CARD',
+        enabled: true,
+        priority: 80,
+        integrationId: paymob.usdCardIntegrationId,
+        currencyCodes: ['USD'],
         supportedCheckoutFlows: [
           PaymobCheckoutFlow.LEGACY,
           PaymobCheckoutFlow.INTENTION,
@@ -651,10 +792,34 @@ export class PaymentRuntimeConfigService {
   private isMethodApplicable(
     entry: PaymobMethodRegistryEntry,
     context?: {
+      currencyCode?: string | null;
       checkoutCountryIsoCode?: string | null;
       operatingCountryIsoCode?: string | null;
     },
   ): boolean {
+    if (!entry.currencyCodes.length) {
+      return false;
+    }
+
+    const normalizedCurrency = this.normalizeCurrencyCode(
+      context?.currencyCode,
+    );
+    if (normalizedCurrency) {
+      const methodCurrencies = entry.currencyCodes
+        .map((value) => this.normalizeCurrencyCode(value))
+        .filter((value): value is SupportedPaymentCurrencyCode =>
+          Boolean(value),
+        );
+
+      if (!methodCurrencies.length) {
+        return false;
+      }
+
+      if (!methodCurrencies.includes(normalizedCurrency)) {
+        return false;
+      }
+    }
+
     if (!entry.countryIsoCodes.length) {
       return true;
     }
@@ -683,6 +848,18 @@ export class PaymentRuntimeConfigService {
     return trimmed ? trimmed.toUpperCase() : null;
   }
 
+  private normalizeCurrencyCode(
+    value: string | null | undefined,
+  ): SupportedPaymentCurrencyCode | null {
+    const normalized = this.normalizeMethodKey(value);
+
+    if (normalized === 'EGP' || normalized === 'USD') {
+      return normalized;
+    }
+
+    return null;
+  }
+
   private toBoolean(value: unknown, fallback = false): boolean {
     if (typeof value === 'boolean') {
       return value;
@@ -698,6 +875,11 @@ export class PaymentRuntimeConfigService {
   }
 
   private toStringArray(value: unknown): string[] {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? [trimmed] : [];
+    }
+
     if (!Array.isArray(value)) {
       return [];
     }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpPurpose, UserRoleType } from '@prisma/client';
@@ -7,10 +7,12 @@ import { UserEmailRepository } from '../repositories/user-email.repository';
 import { PractitionerOtpChannelService } from '../services/practitioner-otp-channel.service';
 import { CreateOtpChallengeUseCase } from '../../verification/use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from '../../verification/use-cases/send-otp-challenge.use-case';
+import { OtpResendCooldownException } from '../../verification/exceptions/otp-cooldown.exception';
+import { PasswordResetRateLimitService } from '../../verification/services/password-reset-rate-limit.service';
+import { OtpEmailRoleRateLimitException } from '../../verification/exceptions/otp-rate-limit.exception';
 
 /**
- * Forgot-password must not reveal whether the practitioner account exists.
- * The response is intentionally generic even when no notification is actually queued.
+ * Forgot-password validates that a practitioner account exists, then issues a reset OTP.
  */
 @Injectable()
 export class RequestPractitionerPasswordResetUseCase {
@@ -21,6 +23,7 @@ export class RequestPractitionerPasswordResetUseCase {
     private readonly practitionerOtpChannelService: PractitionerOtpChannelService,
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
+    private readonly passwordResetRateLimitService: PasswordResetRateLimitService,
   ) {}
 
   async execute(input: { email: string; locale: SupportedLocale }) {
@@ -29,12 +32,10 @@ export class RequestPractitionerPasswordResetUseCase {
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
     if (!userEmail) {
-      return {
-        message: this.i18nService.t(
-          'auth.success.practitionerPasswordResetRequested',
-          input.locale,
-        ),
-      };
+      throw new ConflictException({
+        messageKey: 'auth.errors.passwordResetAccountNotFound',
+        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+      });
     }
 
     const hasPractitionerRole = userEmail.user.roles.some(
@@ -42,17 +43,27 @@ export class RequestPractitionerPasswordResetUseCase {
     );
 
     if (!hasPractitionerRole) {
-      return {
-        message: this.i18nService.t(
-          'auth.success.practitionerPasswordResetRequested',
-          input.locale,
-        ),
-      };
+      throw new ConflictException({
+        messageKey: 'auth.errors.passwordResetAccountNotFound',
+        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+      });
     }
 
     const twoFactorSetting = await this.twoFactorSettingRepository.findByUserId(
       userEmail.user.id,
     );
+
+    // Enforce per-email+role rate limits before creating the challenge.
+    const rateLimitCheck = await this.passwordResetRateLimitService.check(
+      normalizedEmail,
+      'practitioner',
+    );
+    if (!rateLimitCheck.allowed) {
+      throw new OtpEmailRoleRateLimitException(
+        rateLimitCheck.retryAfterSeconds,
+        rateLimitCheck.reason,
+      );
+    }
 
     try {
       const resolvedChannel =
@@ -79,9 +90,18 @@ export class RequestPractitionerPasswordResetUseCase {
         code: challenge.code,
         expiresAt: challenge.expiresAt,
         locale: input.locale,
+        isPractitioner: true,
       });
-    } catch {
-      // Response remains generic to avoid account enumeration and channel disclosure.
+    } catch (error) {
+      // Let the cooldown and rate-limit exceptions propagate with their
+      // structured payload so the API can return machine-readable metadata.
+      if (
+        error instanceof OtpResendCooldownException ||
+        error instanceof OtpEmailRoleRateLimitException
+      ) {
+        throw error;
+      }
+      throw error;
     }
 
     return {
@@ -89,6 +109,7 @@ export class RequestPractitionerPasswordResetUseCase {
         'auth.success.practitionerPasswordResetRequested',
         input.locale,
       ),
+      nextStep: 'VERIFY_OTP',
     };
   }
 }
