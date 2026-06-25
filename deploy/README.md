@@ -112,6 +112,7 @@ docker compose -f docker-compose.prod.yml down
 ```
 
 Do not use `docker compose down -v`. That would remove the persistent volumes.
+Never delete `postgres_data`.
 
 ## One-off Prisma migrations
 
@@ -149,33 +150,34 @@ The same log output is also printed automatically by the server deploy script wh
 
 ## Database backup
 
-Back up the PostgreSQL volume from the host:
+Back up the PostgreSQL database with the server script:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec -T postgres sh -lc 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup.sql
+bash /opt/sawiyaa/deploy/scripts/backup-db.sh
 ```
 
-You can also archive the named volume from the Docker host if you need a full physical backup.
-
-Recommended local backup path on the server:
+Backups are stored on the server under:
 
 ```bash
-/opt/sawiyaa-backups
+/opt/sawiyaa-backups/db
 ```
 
-To restore a backup:
+Each run creates a PostgreSQL custom-format dump plus a SHA256 checksum file.
+
+Copy backups off-server with your preferred secure transfer tool, for example `scp` or `rsync`:
 
 ```bash
-cat backup.sql | docker compose -f docker-compose.prod.yml exec -T postgres sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+scp /opt/sawiyaa-backups/db/sawiyaa-db-*.dump* user@backup-host:/safe/path/
+```
+
+To restore into a separate database only:
+
+```bash
+createdb -U "$POSTGRES_USER" sawiyaa_restore
+pg_restore -U "$POSTGRES_USER" --no-owner --no-acl -d sawiyaa_restore /opt/sawiyaa-backups/db/sawiyaa-db-YYYYMMDD-HHMMSS.dump
 ```
 
 Back up the `backend_storage` and `backend_uploads` named volumes separately if you need a full file-level restore of uploads or persisted app data.
-
-Example backup command on the server:
-
-```bash
-SAWIYAA_PROJECT_DIR=/opt/sawiyaa SAWIYAA_BACKUP_DIR=/opt/sawiyaa-backups bash /opt/sawiyaa/deploy/scripts/backup-db.sh
-```
 
 ## Volume checks
 
