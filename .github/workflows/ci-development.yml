@@ -18,7 +18,6 @@ jobs:
     timeout-minutes: 30
     env:
       CI: true
-      NODE_ENV: production
       NPM_CONFIG_PRODUCTION: false
       DATABASE_URL: postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder?schema=public
       APP_URL: https://example.invalid
@@ -76,11 +75,19 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: sawiyaa-backend-v1
-        run: npm ci
+        run: npm ci --include=dev
+
+      - name: Generate backend Prisma client
+        working-directory: sawiyaa-backend-v1
+        run: |
+          echo "Generating backend Prisma client..."
+          npm run prisma:generate
 
       - name: Build backend
         working-directory: sawiyaa-backend-v1
-        run: npm run build
+        run: |
+          echo "Building backend..."
+          npm run build
 
       - name: Setup Node.js for frontend
         uses: actions/setup-node@v4
@@ -91,7 +98,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: sawiyaa-frontend-v1
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build frontend
         working-directory: sawiyaa-frontend-v1
