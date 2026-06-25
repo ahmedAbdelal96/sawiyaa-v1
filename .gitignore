@@ -46,6 +46,8 @@ cache/
 .cache/
 test-reports/
 reports/
+!sawiyaa-backend-v1/src/modules/reports/
+!sawiyaa-backend-v1/src/modules/reports/**
 check-articles*.ts
 check-counts.js
 fix-arabic*.py
