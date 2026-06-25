@@ -71,6 +71,14 @@ export class ListPublicPractitionersDto {
   specialtySlug?: string;
 
   @ApiPropertyOptional({
+    description: 'Specialty category slug filter (public-safe identifier)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  specialtyCategorySlug?: string;
+
+  @ApiPropertyOptional({
     description: 'Language code filter (for example: ar, en)',
   })
   @Transform(({ value, obj }) => value ?? obj?.lang)

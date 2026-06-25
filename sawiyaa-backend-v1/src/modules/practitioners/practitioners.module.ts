@@ -38,6 +38,7 @@ import { GetPractitionerApplicationStatusUseCase } from './use-cases/get-practit
 import { GetPractitionerProfileReadinessUseCase } from './use-cases/get-practitioner-profile-readiness.use-case';
 import { GetPractitionerProfileUseCase } from './use-cases/get-practitioner-profile.use-case';
 import { ListPublicPractitionersUseCase } from './use-cases/list-public-practitioners.use-case';
+import { ListPublicPractitionerFiltersUseCase } from './use-cases/list-public-practitioner-filters.use-case';
 import { ListPractitionerCredentialsUseCase } from './use-cases/list-practitioner-credentials.use-case';
 import { ListPractitionerSpecialtiesUseCase } from './use-cases/list-practitioner-specialties.use-case';
 import { SetPractitionerSpecialtiesUseCase } from './use-cases/set-practitioner-specialties.use-case';
@@ -98,6 +99,7 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     GetPractitionerApplicationStatusUseCase,
     GetPractitionerProfileReadinessUseCase,
     ListPublicPractitionersUseCase,
+    ListPublicPractitionerFiltersUseCase,
     GetPublicPractitionerDetailsUseCase,
   ],
   exports: [

@@ -12,6 +12,7 @@ import {
   Text,
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { useAuth } from "../../../../providers/AuthProvider";
 import { useAppDirection } from "../../../../i18n/direction";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
@@ -30,7 +31,17 @@ export default function AcademyDetailScreen({
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { rowDirection, textAlign } = useAppDirection();
-  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: "guest" });
+  const { user, role, isLoading: isAuthLoading } = useAuth();
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${role ?? "unknown"}`;
+  }, [isAuthLoading, role, user]);
+  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
   const course = courseQuery.data ?? null;
   const coverUri = resolveMediaUrl(course?.coverImageUrl ?? course?.thumbnailUrl);
   const startLabel = course?.startsAt ? formatViewerDate(course.startsAt, { locale }) : null;

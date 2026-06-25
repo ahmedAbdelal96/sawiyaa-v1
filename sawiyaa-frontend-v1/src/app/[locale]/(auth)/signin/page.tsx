@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import AuthEntryChooser from "@/components/auth/AuthEntryChooser";
 import SignInForm, { type SignInMode } from "@/components/auth/SignInForm";
 
 type Props = {
@@ -24,7 +23,7 @@ export default async function SignInPage({ params, searchParams }: Props) {
 
   const signInMode = mode === "patient" || mode === "practitioner" || mode === "admin"
     ? (mode as SignInMode)
-    : null;
+    : "patient";
 
-  return signInMode ? <SignInForm mode={signInMode} /> : <AuthEntryChooser />;
+  return <SignInForm mode={signInMode} />;
 }

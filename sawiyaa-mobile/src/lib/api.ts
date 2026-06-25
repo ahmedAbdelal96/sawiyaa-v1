@@ -232,9 +232,22 @@ export function extractApiErrorMessage(error: unknown) {
       | {
           message?: string | string[];
           error?: string;
+          errorCode?: string;
           data?: { message?: string };
         }
       | undefined;
+    const errorCode =
+      typeof payload?.errorCode === "string"
+        ? payload.errorCode
+        : typeof payload?.error === "string"
+          ? payload.error
+          : null;
+
+    if (errorCode === "ACADEMY_LEARNER_ENROLLMENT_RESTRICTED") {
+      return i18n.language?.startsWith("ar")
+        ? "Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© Ù„Ø§ ÙŠÙ…ÙƒÙ†Ù‡Ø§ Ø§Ù„Ø§Ø´ØªØ±Ø§Ùƒ ÙƒØ¯Ø§Ø±Ø³. Ø§Ø³ØªØ®Ø¯Ù… Ø­Ø³Ø§Ø¨ Ù…Ø±ÙŠØ¶ Ø£Ùˆ Ù…Ø®ØªØµ Ø£Ùˆ Ø¯Ø§Ø±Ø³ Ù…Ù†ÙØµÙ„."
+        : "Admin accounts cannot enroll as learners. Please use a patient, practitioner, or learner account.";
+    }
 
     if (
       typeof payload?.data?.message === "string" &&

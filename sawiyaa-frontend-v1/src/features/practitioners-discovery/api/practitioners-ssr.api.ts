@@ -11,6 +11,7 @@
 import { serverGet } from "@/lib/api/server-http-client";
 import type {
   PublicPractitioner,
+  PractitionerFiltersMetadata,
   PractitionerPagination,
   PractitionerQueryParams,
 } from "../types/practitioner";
@@ -64,6 +65,7 @@ type PractitionersListData = {
 
 export const PRACTITIONERS_PUBLIC_ROUTES = {
   list: "/public/practitioners",
+  filters: "/public/practitioners/filters",
   bySlug: (slug: string) => `/public/practitioners/${slug}`,
 } as const;
 
@@ -146,6 +148,7 @@ export async function fetchPublicPractitioners(
     params: {
       search: params?.search,
       specialtySlug: params?.specialtySlug,
+      specialtyCategorySlug: params?.specialtyCategorySlug,
       language: params?.language,
       country: params?.country,
       practitionerKind: params?.practitionerKind,
@@ -169,4 +172,13 @@ export async function fetchPublicPractitioners(
     items: data.items.map(mapBackendListItemToUi),
     pagination: data.pagination,
   };
+}
+
+export async function fetchPublicPractitionerFilters(
+  locale: string,
+): Promise<PractitionerFiltersMetadata> {
+  return serverGet<PractitionerFiltersMetadata>(
+    PRACTITIONERS_PUBLIC_ROUTES.filters,
+    { locale },
+  );
 }

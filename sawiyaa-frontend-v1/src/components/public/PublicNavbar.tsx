@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Menu, X } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
@@ -11,6 +11,7 @@ import { useAuthState } from "@/stores/auth-store";
 
 export default function PublicNavbar() {
   const t = useTranslations("home.nav");
+  const locale = useLocale();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isAuthenticated } = useAuthState();
@@ -19,6 +20,7 @@ export default function PublicNavbar() {
     { href: "/", label: t("home") },
     { href: "/specialties", label: t("specialties") },
     { href: "/practitioners", label: t("practitioners") },
+    { href: "/academy", label: t("academy") },
     { href: "/articles", label: t("articles") },
     { href: "/refund-policies", label: t("policies") },
   ];
@@ -68,7 +70,7 @@ export default function PublicNavbar() {
           ) : (
             <>
               <Link
-                href="/signin"
+                href="/signin/patient"
                 className="rounded-xl px-3.5 py-2 text-sm font-medium text-text-secondary transition-all hover:bg-surface-tertiary hover:text-primary dark:hover:bg-white/5"
               >
                 {t("login")}
@@ -123,7 +125,7 @@ export default function PublicNavbar() {
           {!isAuthenticated && (
             <div className="flex flex-col gap-2">
               <Link
-                href="/signin"
+                href="/signin/patient"
                 className="rounded-xl border border-border-light px-4 py-2.5 text-center text-sm font-medium text-primary transition-colors hover:bg-surface-tertiary"
                 onClick={() => setMobileOpen(false)}
               >

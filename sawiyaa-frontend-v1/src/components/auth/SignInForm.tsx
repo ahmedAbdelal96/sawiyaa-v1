@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, Eye, EyeOff, LayoutGrid, Stethoscope, UserRound } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, ShieldCheck, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -228,6 +228,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<PractitionerChallengeState | null>(null);
+  const [showDevPanel, setShowDevPanel] = useState(false);
 
   const patientLogin = usePatientLogin();
   const practitionerLogin = usePractitionerLogin();
@@ -391,325 +392,304 @@ export default function SignInForm({ mode }: SignInFormProps) {
     setError(null);
   };
 
+  const isRtl = locale === "ar";
+  const modeLabels: Record<SignInMode, string> = {
+    patient: isRtl ? "بوابة تسجيل الدخول" : "Client Portal",
+    practitioner: isRtl ? "بوابة المعالجين" : "Specialist Portal",
+    admin: isRtl ? "بوابة الإدارة" : "Admin Portal",
+  };
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col">
-      <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {t("backToHome")}
-        </Link>
-
-        <div className="rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-text-secondary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary">
-          {t(`modes.${mode}`)}
+    <>
+      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center py-6 px-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
+        
+        {/* Back Link */}
+        <div className="mb-6 flex w-full">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border-light bg-surface-secondary/40 hover:bg-surface-secondary/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold text-text-secondary transition-all hover:text-text-primary shadow-theme-xs active:scale-[0.98]"
+          >
+            <ChevronLeft className={`h-3.5 w-3.5 shrink-0 transition-transform ${isRtl ? "rotate-180" : ""}`} />
+            <span>{t("backToHome")}</span>
+          </Link>
         </div>
-      </div>
 
-      <div className="py-6">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] lg:items-start">
-          <section className="rounded-[30px] border border-border-light bg-surface/65 p-6 dark:border-border-light dark:bg-surface-tertiary/45 lg:sticky lg:top-6">
-            <div className="rounded-[26px] bg-primary-light/50 p-5 dark:bg-primary/10 sm:p-6">
-              <div className="mb-4 flex items-start justify-between gap-4">
+        {/* Premium Unified Card */}
+        <div className="w-full rounded-[32px] border border-border-light bg-surface-secondary/85 p-8 shadow-[0_24px_70px_rgba(36,86,79,0.05)] backdrop-blur-md dark:border-white/5 sm:p-10">
+          
+          {/* Portal Indicator Badge */}
+          <div className="mb-6 flex">
+            <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide ${
+              mode === "patient" ? "border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light" :
+              mode === "practitioner" ? "border border-sky-500/15 bg-sky-500/10 text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400" :
+              "border border-indigo-500/15 bg-indigo-500/10 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400"
+            }`}>
+              <ModeIcon className="h-4 w-4" />
+              <span>{modeLabels[mode]}</span>
+            </div>
+          </div>
+
+          {/* Form Header */}
+          <div className="mb-8 space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
+              {challenge ? t("verifyOtpTitle") : t("welcomeBack")}
+            </h1>
+            <p className="text-sm leading-6 text-text-secondary dark:text-text-secondary">
+              {challenge ? t("verifyOtpDescription", { target: challenge.maskedTarget }) : t(descriptionKey)}
+            </p>
+          </div>
+
+          {!challenge ? (
+            <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
+              <div className="space-y-6">
+                
+                {/* Email Input */}
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                    {challenge ? t("verifyOtpTitle") : t(`entryCards.${mode}.eyebrow`)}
-                  </p>
-                  <h1 className="text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary sm:text-4xl">
-                    {challenge ? t("verifyOtpTitle") : t(`entryCards.${mode}.title`)}
-                  </h1>
+                  <Label>
+                    {t("email")} <span className="text-error-500">*</span>
+                  </Label>
+                  <Input
+                    placeholder={t("emailPlaceholder")}
+                    type="email"
+                    {...credentialsForm.register("email")}
+                    error={!!credentialsForm.formState.errors.email}
+                    dir="ltr"
+                  />
+                  {credentialsForm.formState.errors.email && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {credentialsForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
 
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/90 text-primary dark:bg-surface/75 dark:text-primary-light">
-                  <ModeIcon className="h-5 w-5" />
+                {/* Password Input with Inline Forgot Password Link */}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <Label className="mb-0">
+                      {t("password")} <span className="text-error-500">*</span>
+                    </Label>
+                    {forgotPasswordHref && (
+                      <Link
+                        href={forgotPasswordHref}
+                        className="text-xs font-semibold text-primary hover:text-primary-hover dark:text-text-brand dark:hover:text-primary transition-colors"
+                      >
+                        {t("forgotPasswordLink")}
+                      </Link>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder={t("passwordPlaceholder")}
+                      {...credentialsForm.register("password")}
+                      error={!!credentialsForm.formState.errors.password}
+                      dir="ltr"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                    >
+                      {showPassword ? (
+                        <Eye className="h-4.5 w-4.5" />
+                      ) : (
+                        <EyeOff className="h-4.5 w-4.5" />
+                      )}
+                    </button>
+                  </div>
+                  {credentialsForm.formState.errors.password && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {credentialsForm.formState.errors.password.message}
+                    </p>
+                  )}
                 </div>
-              </div>
 
-              <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary sm:text-base">
-                {challenge
-                  ? t("verifyOtpDescription", { target: challenge.maskedTarget })
-                  : t(descriptionKey)}
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <div className="rounded-full border border-primary/15 bg-white/85 px-4 py-2 text-xs font-medium text-primary dark:bg-surface/75 dark:text-primary-light">
-                  {t(`entryCards.${mode}.meta`)}
-                </div>
-                {mode === "practitioner" && !challenge && practitionerOtpHintEnabled ? (
-                  <div className="rounded-full border border-border-light bg-white/75 px-4 py-2 text-xs font-medium text-text-secondary dark:border-border-light dark:bg-surface/75 dark:text-text-secondary">
+                {/* Practitioner OTP Hint (if forgot password is not available) */}
+                {!forgotPasswordHref && mode === "practitioner" && practitionerOtpHintEnabled && (
+                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-surface-tertiary/70">
                     {t("practitionerOtpHint")}
                   </div>
-                ) : null}
-              </div>
-            </div>
+                )}
 
-            {!challenge && shouldShowTestCredentials && (
-              <div className="mt-5 rounded-[24px] border border-primary/15 bg-white/78 p-5 dark:border-primary/20 dark:bg-surface/65">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                      {t("testCredentials.badge")}
-                    </p>
-                    <p className="text-sm font-medium text-text-primary dark:text-text-primary">
-                      {t("testCredentials.title")}
-                    </p>
-                    <p className="text-xs leading-6 text-text-secondary dark:text-text-secondary">
-                      {t("testCredentials.description")}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => applyTestCredentials()}
-                    className="shrink-0 rounded-full border border-primary/20 px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-white"
-                  >
-                    {t("testCredentials.apply")}
-                  </button>
-                </div>
-
-                <div className="mt-4 grid gap-3 rounded-2xl bg-surface/85 p-4 text-xs text-text-secondary dark:bg-surface-tertiary/80 dark:text-text-secondary">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t("testCredentials.emailLabel")}</span>
-                    <span className="font-medium text-text-primary dark:text-text-primary">
-                      {testCredentials.email}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t("testCredentials.passwordLabel")}</span>
-                    <span className="font-medium text-text-primary dark:text-text-primary">
-                      {testCredentials.password}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>النوع</span>
-                    <span className="font-medium text-text-primary dark:text-text-primary">
-                      {testCredentials.label}
-                    </span>
-                  </div>
-                </div>
-
-                {quickAccounts.length > 0 && (
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {quickAccounts.map((item) => (
-                      <button
-                        key={item.email}
-                        type="button"
-                        onClick={() => applyTestCredentials(item)}
-                        className="group rounded-2xl border border-primary/15 bg-surface px-3 py-3 text-left text-xs text-text-secondary transition hover:border-primary hover:bg-primary hover:text-white dark:bg-surface-tertiary dark:text-text-secondary"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="font-semibold text-text-primary transition group-hover:text-white dark:text-text-primary">
-                              {item.label}
-                            </p>
-                            <p className="text-[11px] leading-5 text-text-secondary transition group-hover:text-white/85 dark:text-text-secondary">
-                              {item.note}
-                            </p>
-                          </div>
-                          <span className="rounded-full border border-current/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em]">
-                            {t(`modes.${mode}`)}
-                          </span>
-                        </div>
-                        <div className="mt-3 space-y-1 text-[11px] leading-5">
-                          <p className="truncate font-medium text-text-primary transition group-hover:text-white dark:text-text-primary">
-                            {item.email}
-                          </p>
-                          <p className="truncate text-text-secondary transition group-hover:text-white/85 dark:text-text-secondary">
-                            {item.password}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                {/* Server Error Message */}
+                {error && (
+                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
+                    {error}
                   </div>
                 )}
-              </div>
-            )}
-          </section>
 
-          <section className="rounded-[30px] border border-border-light bg-white/94 p-6 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92 sm:p-8">
-            {!challenge ? (
-              <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
-                      {t("welcomeBack")}
-                    </h2>
-                    <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-                      {t(`entryCards.${mode}.description`)}
-                    </p>
-                  </div>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? t("signingIn") : t("signInButton")}
+                </button>
 
-                  <div className="space-y-5">
-                    <div>
-                      <Label>
-                        {t("email")} <span className="text-error-500">*</span>
-                      </Label>
-                      <Input
-                        placeholder={t("emailPlaceholder")}
-                        type="email"
-                        {...credentialsForm.register("email")}
-                        error={!!credentialsForm.formState.errors.email}
-                        dir="ltr"
-                      />
-                      {credentialsForm.formState.errors.email && (
-                        <p className="mt-1.5 text-sm text-error-500">
-                          {credentialsForm.formState.errors.email.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label>
-                        {t("password")} <span className="text-error-500">*</span>
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder={t("passwordPlaceholder")}
-                          {...credentialsForm.register("password")}
-                          error={!!credentialsForm.formState.errors.password}
-                          dir="ltr"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((prev) => !prev)}
-                          className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
-                        >
-                          {showPassword ? (
-                            <Eye className="h-4 w-4" />
-                          ) : (
-                            <EyeOff className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                      {credentialsForm.formState.errors.password && (
-                        <p className="mt-1.5 text-sm text-error-500">
-                          {credentialsForm.formState.errors.password.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {forgotPasswordHref ? (
-                    <Link
-                      href={forgotPasswordHref}
-                      className="block rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary"
-                    >
-                      {t("forgotPassword")}
-                    </Link>
-                  ) : (
-                    <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
-                      {mode === "practitioner" && practitionerOtpHintEnabled
-                        ? t("practitionerOtpHint")
-                        : null}
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? t("signingIn") : t("signInButton")}
-                  </button>
-
-                  {mode === "patient" && (
+                {/* Google Auth Option */}
+                {mode === "patient" && (
+                  <div className="space-y-4">
                     <PatientGoogleAuthButton
                       callbackUrl={callbackUrl}
                       defaultRedirect={getDefaultRouteByRole("PATIENT")}
                     />
-                  )}
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
-                      {t("verifyOtpTitle")}
-                    </h2>
-                    <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-                      {t("verifyOtpDescription", { target: challenge.maskedTarget })}
+                  </div>
+                )}
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
+              <div className="space-y-6">
+                <div>
+                  <Label>
+                    {t("otpCode")} <span className="text-error-500">*</span>
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder={t("otpPlaceholder")}
+                    {...otpForm.register("code")}
+                    error={!!otpForm.formState.errors.code}
+                    dir="ltr"
+                  />
+                  {otpForm.formState.errors.code && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {otpForm.formState.errors.code.message}
                     </p>
-                  </div>
-
-                  <div>
-                    <Label>
-                      {t("otpCode")} <span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      placeholder={t("otpPlaceholder")}
-                      {...otpForm.register("code")}
-                      error={!!otpForm.formState.errors.code}
-                      dir="ltr"
-                    />
-                    {otpForm.formState.errors.code && (
-                      <p className="mt-1.5 text-sm text-error-500">
-                        {otpForm.formState.errors.code.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-6 text-text-secondary dark:border-border-light dark:bg-surface-tertiary/70 dark:text-text-secondary">
-                    {t("otpExpiresAt", {
-                      date: new Date(challenge.expiresAt).toLocaleString(),
-                    })}
-                  </div>
-
-                  {error && (
-                    <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                      {error}
-                    </div>
                   )}
-
-                  <div className="space-y-3">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={resetPractitionerOtpState}
-                      className="w-full rounded-2xl border border-border-light px-4 py-3 text-sm font-medium text-text-secondary transition hover:border-primary hover:text-primary"
-                    >
-                      {t("backToCredentials")}
-                    </button>
-                  </div>
                 </div>
-              </form>
-            )}
 
-            <div className="mt-6 border-t border-border-light pt-6 dark:border-border-light">
-              {signUpHref ? (
-                <p className="text-sm text-text-secondary dark:text-text-secondary">
-                  {mode === "practitioner"
-                    ? t("practitionerJoinPrompt")
-                    : t("dontHaveAccount")} {" "}
-                  <Link href={signUpHref} className="font-medium text-text-brand hover:text-primary-hover">
-                    {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
-                  </Link>
-                </p>
-              ) : (
-                <p className="text-sm text-text-secondary dark:text-text-secondary">
-                  {t("entryCards.admin.supportNote")}
-                </p>
-              )}
-            </div>
-          </section>
+                <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-surface-tertiary/70">
+                  {t("otpExpiresAt", {
+                    date: new Date(challenge.expiresAt).toLocaleString(),
+                  })}
+                </div>
+
+                {error && (
+                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={resetPractitionerOtpState}
+                    className="w-full rounded-2xl border border-border-light bg-white/70 px-4 py-3 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary dark:border-white/5 dark:bg-surface-secondary dark:text-text-secondary"
+                  >
+                    {t("backToCredentials")}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
+          {/* Form Card Footer */}
+          <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
+            {signUpHref ? (
+              <p className="text-sm text-text-secondary dark:text-white/70">
+                {mode === "practitioner"
+                  ? t("practitionerJoinPrompt")
+                  : t("dontHaveAccount")}{" "}
+                <Link href={signUpHref} className="font-semibold text-text-brand hover:text-primary-hover">
+                  {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
+                </Link>
+              </p>
+            ) : (
+              <p className="text-xs leading-5 text-text-muted dark:text-white/40">
+                {t("entryCards.admin.supportNote")}
+              </p>
+            )}
+          </div>
+
         </div>
       </div>
-    </div>
+
+      {/* Floating Developer Test Credentials Drawer (visible only in Local Development) */}
+      {shouldShowTestCredentials && (
+        <button
+          type="button"
+          onClick={() => setShowDevPanel(!showDevPanel)}
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500 hover:bg-amber-600 px-5 py-3.5 text-xs font-bold text-white shadow-xl active:scale-95 transition-all duration-200"
+        >
+          <Terminal className="h-4 w-4" />
+          <span>{isRtl ? "بيانات الاختبار السريع" : "Quick QA Accounts"}</span>
+        </button>
+      )}
+
+      {shouldShowTestCredentials && showDevPanel && (
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 z-40 bg-black/10 backdrop-blur-xs transition-opacity duration-200" 
+            onClick={() => setShowDevPanel(false)} 
+          />
+          {/* Dev accounts sheet */}
+          <div className={`fixed bottom-24 z-50 w-full max-w-[360px] rounded-3xl border border-border-light bg-surface/96 p-5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-surface-secondary/96 animate-in slide-in-from-bottom duration-200 ${isRtl ? "left-6" : "right-6"}`}>
+            <div className="mb-4 flex items-center justify-between border-b border-border-light pb-2 dark:border-white/5">
+              <div>
+                <h3 className="text-xs font-bold text-text-primary">{isRtl ? "حسابات الاختبار السريع" : "Quick Test Accounts"}</h3>
+                <p className="text-[10px] text-text-secondary mt-0.5">{isRtl ? "اضغط للتعبئة التلقائية السريعة" : "Click any account to auto-fill the form"}</p>
+              </div>
+              <button onClick={() => setShowDevPanel(false)} className="text-text-muted hover:text-text-primary text-xs font-semibold px-2 py-1">✕</button>
+            </div>
+
+            {/* Primary QA Preset Account */}
+            <button
+              type="button"
+              onClick={() => {
+                applyTestCredentials();
+                setShowDevPanel(false);
+              }}
+              className="w-full text-start p-3.5 rounded-2xl border border-primary/15 bg-primary-light/45 hover:bg-primary-light/75 transition duration-150 mb-3.5 dark:border-primary/20 dark:bg-primary/10 dark:hover:bg-primary/20"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-primary dark:text-primary-light">{isRtl ? "الحساب التجريبي الافتراضي" : "Primary Test Account"}</span>
+                <span className="text-[9px] uppercase tracking-wider bg-primary/8 text-primary px-1.5 py-0.5 rounded-md dark:bg-primary/20 dark:text-primary-light">{t(`modes.${mode}`)}</span>
+              </div>
+              <p className="text-[11px] text-text-secondary mt-1.5 truncate">Email: {testCredentials.email}</p>
+              <p className="text-[11px] text-text-secondary truncate">Password: {testCredentials.password}</p>
+              <p className="text-[10px] text-text-muted mt-2 border-t border-primary/10 pt-1.5 dark:border-white/5">{testCredentials.label}</p>
+            </button>
+
+            {/* List of other quick QA accounts */}
+            {quickAccounts.length > 0 && (
+              <div className="space-y-2 mt-2">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1.5 px-0.5">{isRtl ? "الحسابات المتاحة" : "Available Accounts"}</p>
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                  {quickAccounts.map((item) => (
+                    <button
+                      key={item.email}
+                      type="button"
+                      onClick={() => {
+                        applyTestCredentials(item);
+                        setShowDevPanel(false);
+                      }}
+                      className="w-full text-start p-3 rounded-2xl border border-border-light bg-surface hover:bg-primary-light/30 transition duration-150 dark:border-white/5 dark:bg-surface-tertiary dark:hover:bg-primary/10"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-text-primary">{item.label}</span>
+                        <span className="text-[8px] uppercase tracking-wider bg-text-muted/10 text-text-secondary px-1.5 py-0.5 rounded-md">{item.note}</span>
+                      </div>
+                      <p className="text-[10px] text-text-secondary mt-1.5 truncate">Email: {item.email}</p>
+                      <p className="text-[10px] text-text-secondary truncate">Password: {item.password}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 }

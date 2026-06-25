@@ -135,6 +135,7 @@ export class PublicPractitionerReadRepository {
   private buildPublicWhere(input: {
     search?: string;
     specialtySlug?: string;
+    specialtyCategorySlug?: string;
     language?: string;
     country?: string;
     currencyCode?: 'EGP' | 'USD' | null;
@@ -153,6 +154,9 @@ export class PublicPractitionerReadRepository {
     const onlineFreshnessCutoff = getPresenceFreshnessCutoff(now);
     const search = input.search?.trim();
     const specialtySlug = input.specialtySlug?.trim().toLowerCase();
+    const specialtyCategorySlug = input.specialtyCategorySlug
+      ?.trim()
+      .toLowerCase();
     const languageCode = input.language?.trim().toLowerCase();
     const countryCode = input.country?.trim().toUpperCase();
     const minSessionFee = input.minSessionFee;
@@ -234,31 +238,37 @@ export class PublicPractitionerReadRepository {
           ? { practitionerGender: PractitionerGender.FEMALE }
           : undefined;
 
-    const specialtyWhere = specialtySlug
-      ? {
-          some: {
-            specialty: {
-              isActive: true,
-              OR: [
-                { slug: specialtySlug },
-                {
-                  translations: {
-                    some: {
-                      slug: specialtySlug,
-                    },
+    const specialtyWhere = {
+      some: {
+        specialty: {
+          isActive: true,
+          ...(specialtyCategorySlug
+            ? {
+                category: {
+                  is: {
+                    slug: specialtyCategorySlug,
+                    isActive: true,
                   },
                 },
-              ],
-            },
-          },
-        }
-      : {
-          some: {
-            specialty: {
-              isActive: true,
-            },
-          },
-        };
+              }
+            : {}),
+          ...(specialtySlug
+            ? {
+                OR: [
+                  { slug: specialtySlug },
+                  {
+                    translations: {
+                      some: {
+                        slug: specialtySlug,
+                      },
+                    },
+                  },
+                ],
+              }
+            : {}),
+        },
+      },
+    };
 
     return {
       status: PractitionerStatus.APPROVED,
@@ -413,6 +423,7 @@ export class PublicPractitionerReadRepository {
     locale: SupportedLocale;
     search?: string;
     specialtySlug?: string;
+    specialtyCategorySlug?: string;
     language?: string;
     country?: string;
     currencyCode?: 'EGP' | 'USD' | null;
@@ -433,6 +444,80 @@ export class PublicPractitionerReadRepository {
     return this.prisma.practitionerProfile.findMany({
       where,
       select: this.getPublicPractitionerSelect(input.locale),
+    });
+  }
+
+  listPublicFilterMetadataSource(input: {
+    locale: SupportedLocale;
+    currencyCode: 'EGP' | 'USD';
+  }) {
+    return this.prisma.practitionerProfile.findMany({
+      where: this.buildPublicWhere({
+        currencyCode: input.currencyCode,
+      }),
+      select: {
+        id: true,
+        practitionerType: true,
+        practitionerGender: true,
+        country: {
+          select: {
+            isoCode: true,
+            name: true,
+            nativeName: true,
+          },
+        },
+        languages: {
+          select: {
+            language: {
+              select: {
+                code: true,
+                name: true,
+                nativeName: true,
+              },
+            },
+          },
+        },
+        specialties: {
+          where: {
+            specialty: {
+              isActive: true,
+            },
+          },
+          select: {
+            specialtyId: true,
+            specialty: {
+              select: {
+                slug: true,
+                category: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                  },
+                },
+                translations: {
+                  where: {
+                    locale: {
+                      in: [input.locale, 'en'],
+                    },
+                  },
+                  orderBy: {
+                    locale: 'asc',
+                  },
+                  select: {
+                    locale: true,
+                    title: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        sessionPrice30Egp: true,
+        sessionPrice30Usd: true,
+        sessionPrice60Egp: true,
+        sessionPrice60Usd: true,
+      },
     });
   }
 

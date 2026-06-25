@@ -131,4 +131,21 @@ describe('ListPublicPractitionersUseCase', () => {
 
     expect(result.items[0].isOnlineNow).toBe(false);
   });
+
+  it('passes specialty category filtering through to the repository query', async () => {
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
+
+    await useCase.execute({
+      locale: 'en',
+      specialtyCategorySlug: 'mental-health',
+      specialtySlug: 'therapy',
+    });
+
+    expect(publicReadRepository.listPublic).toHaveBeenCalledWith(
+      expect.objectContaining({
+        specialtyCategorySlug: 'mental-health',
+        specialtySlug: 'therapy',
+      }),
+    );
+  });
 });

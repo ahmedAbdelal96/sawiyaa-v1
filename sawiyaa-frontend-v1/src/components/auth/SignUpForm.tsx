@@ -171,41 +171,49 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     callbackUrl: normalizedCallbackUrl,
     mode,
   });
-  const chooserHref = buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl });
 
-  const guidancePanel = (
-    <section className="rounded-[28px] border border-border-light bg-white/75 p-6 shadow-[0_18px_60px_rgba(16,24,40,0.06)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/70 sm:p-7">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-        {t("signUpGuidance.eyebrow")}
-      </p>
-      <h2 className="text-2xl font-semibold leading-tight text-text-primary dark:text-text-primary">
-        {mode === "practitioner"
-          ? t("signUpGuidance.practitionerTitle")
-          : t("signUpGuidance.patientTitle")}
-      </h2>
-      <p className="mt-2 max-w-prose text-sm leading-7 text-text-secondary dark:text-text-secondary">
-        {mode === "practitioner"
-          ? t("signUpGuidance.practitionerSubtitle")
-          : t("signUpGuidance.patientSubtitle")}
-      </p>
+  const premiumGuidancePanel = (
+    <div className="relative hidden lg:flex lg:col-span-5 flex-col justify-between p-10 bg-gradient-to-b from-primary/90 via-primary/80 to-primary-hover/90 text-white overflow-hidden border-r border-white/10 dark:border-white/5 rtl:border-r-0 rtl:border-l rtl:border-white/10 rtl:dark:border-white/5">
+      {/* Premium Visual Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
+      <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
-      <div className="mt-6 grid gap-3">
+      {/* Top Header */}
+      <div className="relative z-10 space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-light/90">
+          {t("signUpGuidance.eyebrow")}
+        </p>
+        <h2 className="text-3xl font-bold leading-tight tracking-tight text-white">
+          {mode === "practitioner"
+            ? t("signUpGuidance.practitionerTitle")
+            : t("signUpGuidance.patientTitle")}
+        </h2>
+        <p className="text-sm leading-6 text-white/80">
+          {mode === "practitioner"
+            ? t("signUpGuidance.practitionerSubtitle")
+            : t("signUpGuidance.patientSubtitle")}
+        </p>
+      </div>
+
+      {/* Steps List */}
+      <div className="relative z-10 my-8 space-y-4">
         {(mode === "practitioner"
           ? (["p1", "p2", "p3"] as const)
           : (["c1", "c2", "c3"] as const)
         ).map((key, idx) => (
           <div
             key={key}
-            className="flex items-start gap-3 rounded-2xl border border-border-light bg-white/75 p-4 dark:border-border-light dark:bg-surface/65"
+            className="flex items-start gap-4 rounded-2xl bg-white/8 border border-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/12"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary dark:bg-primary/12 dark:text-primary-light">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-primary dark:bg-white dark:text-primary">
               {idx + 1}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-text-primary dark:text-text-primary">
+              <p className="text-sm font-semibold text-white">
                 {t(`signUpGuidance.steps.${key}.title`)}
               </p>
-              <p className="mt-0.5 text-xs leading-6 text-text-secondary dark:text-text-secondary">
+              <p className="mt-1 text-xs leading-5 text-white/75">
                 {t(`signUpGuidance.steps.${key}.desc`)}
               </p>
             </div>
@@ -213,54 +221,62 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
         ))}
       </div>
 
-      <div className="mt-6 rounded-2xl border border-primary/15 bg-primary-light/55 p-4 text-sm leading-7 text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
+      {/* Bottom Note */}
+      <div className="relative z-10 rounded-2xl bg-white/5 border border-white/10 p-4.5 text-xs leading-5 text-white/80">
         {mode === "practitioner"
           ? t("signUpGuidance.practitionerNext")
           : t("signUpGuidance.patientNext")}
       </div>
-    </section>
+    </div>
   );
 
-  const formPanel = (
-    <section className="rounded-[28px] border border-border-light bg-white/92 p-6 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/90 sm:p-8">
-      <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-        >
-          <ChevronLeftIcon className={isRtl ? "rotate-180" : ""} />
-          {t("backToHome")}
-        </Link>
+  return (
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center py-6 px-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
+      
+      {/* Premium Unified Split Card */}
+      <div className="w-full overflow-hidden rounded-[32px] border border-border-light bg-white/80 shadow-[0_24px_70px_rgba(36,86,79,0.05)] backdrop-blur-md dark:border-white/5 dark:bg-surface-secondary/75 grid grid-cols-1 lg:grid-cols-12 min-h-[620px]">
+        
+        {/* Left Side: Guidance Panel */}
+        {premiumGuidancePanel}
 
-        <Link
-          href={chooserHref}
-          className="hidden rounded-full border border-border-light bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-text-secondary transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface-tertiary/80 dark:text-text-secondary sm:inline-flex"
-        >
-          {t("chooseAccessPath")}
-        </Link>
-      </div>
-
-      <div className="mt-6 rounded-[24px] bg-primary-light/55 p-5 dark:bg-primary/10 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+        {/* Right Side: Form Panel */}
+        <div className="col-span-12 lg:col-span-7 flex flex-col justify-between p-8 sm:p-10">
+          
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-              {t(`entryCards.${mode}.eyebrow`)}
-            </p>
-            <h1 className="text-3xl font-semibold leading-tight text-text-primary dark:text-text-primary">
-              {t("createAccountTitle")}
-            </h1>
-          </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/85 text-primary dark:bg-surface/75 dark:text-primary-light">
-            <ModeIcon className="h-5 w-5" />
-          </div>
-        </div>
-        <p className="mt-2 text-sm leading-7 text-text-secondary dark:text-text-secondary">
-          {t(descriptionKey)}
-        </p>
-      </div>
+            {/* Back Home Link */}
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
+              >
+                <ChevronLeftIcon className={isRtl ? "rotate-180" : ""} />
+                {t("backToHome")}
+              </Link>
+            </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8">
-        <div className="space-y-6">
+            {/* Header */}
+            <div className="rounded-[24px] bg-primary-light/40 border border-primary/10 p-5 dark:bg-primary/10 sm:p-6 mb-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                    {t(`entryCards.${mode}.eyebrow`)}
+                  </p>
+                  <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
+                    {t("createAccountTitle")}
+                  </h1>
+                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-primary dark:bg-surface/75 dark:text-primary-light shadow-sm">
+                  <ModeIcon className="h-5 w-5" />
+                </div>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-text-secondary dark:text-text-secondary">
+                {t(descriptionKey)}
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div>
                     <Label>
@@ -269,11 +285,12 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                     <Input
                       type="text"
                       placeholder={t("displayNamePlaceholder")}
-                      {...form.register("displayName")}
                       error={!!form.formState.errors.displayName}
+                      {...form.register("displayName")}
+                      dir={isRtl ? "rtl" : "ltr"}
                     />
                     {form.formState.errors.displayName && (
-                      <p className="mt-1.5 text-sm text-error-500">
+                      <p className="mt-1.5 text-xs text-error-500">
                         {form.formState.errors.displayName.message}
                       </p>
                     )}
@@ -286,12 +303,12 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                     <Input
                       type="email"
                       placeholder={t("emailPlaceholder")}
-                      {...form.register("email")}
                       error={!!form.formState.errors.email}
+                      {...form.register("email")}
                       dir="ltr"
                     />
                     {form.formState.errors.email && (
-                      <p className="mt-1.5 text-sm text-error-500">
+                      <p className="mt-1.5 text-xs text-error-500">
                         {form.formState.errors.email.message}
                       </p>
                     )}
@@ -305,14 +322,14 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                       <Input
                         type={showPassword ? "text" : "password"}
                         placeholder={t("passwordPlaceholder")}
-                        {...form.register("password")}
                         error={!!form.formState.errors.password}
+                        {...form.register("password")}
                         dir="ltr"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
-                        className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                        className={`absolute top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary ${isRtl ? "left-4" : "right-4"}`}
                       >
                         {showPassword ? (
                           <EyeIcon className="fill-current" />
@@ -322,7 +339,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                       </button>
                     </div>
                     {form.formState.errors.password && (
-                      <p className="mt-1.5 text-sm text-error-500">
+                      <p className="mt-1.5 text-xs text-error-500">
                         {form.formState.errors.password.message}
                       </p>
                     )}
@@ -334,16 +351,16 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                       <Input
                         type="email"
                         placeholder={t("emailPlaceholder")}
-                        {...form.register("otpEmail")}
                         error={!!form.formState.errors.otpEmail}
+                        {...form.register("otpEmail")}
                         dir="ltr"
                       />
                       {form.formState.errors.otpEmail && (
-                        <p className="mt-1.5 text-sm text-error-500">
+                        <p className="mt-1.5 text-xs text-error-500">
                           {form.formState.errors.otpEmail.message}
                         </p>
                       )}
-                      <p className="mt-1.5 text-xs leading-6 text-text-muted">
+                      <p className="mt-1.5 text-xs leading-5 text-text-muted">
                         {t("otpEmailHint")}
                       </p>
                     </div>
@@ -351,12 +368,12 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                 </div>
 
                 {mode === "practitioner" && (
-                  <div className="rounded-[24px] border border-border-light bg-surface/75 p-5 dark:border-border-light dark:bg-surface-tertiary/70">
+                  <div className="rounded-[24px] border border-border-light bg-surface/40 p-5 dark:border-white/5 dark:bg-surface-tertiary/20">
                     <div className="mb-4">
                       <p className="text-sm font-semibold text-text-primary dark:text-text-primary">
                         {t("signUpInitialSpecialty.title")}
                       </p>
-                      <p className="mt-1 text-xs leading-6 text-text-secondary dark:text-text-secondary">
+                      <p className="mt-1 text-xs leading-5 text-text-secondary dark:text-text-secondary">
                         {t("signUpInitialSpecialty.helper")}
                       </p>
                     </div>
@@ -405,56 +422,52 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                   </div>
                 )}
 
-                {error ? (
-                  <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
+                {error && (
+                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
                     {error}
                   </div>
-                ) : null}
+                )}
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isSubmitting ? t("creatingAccount") : t("createAccountButton")}
                 </button>
 
-                {mode === "patient" ? (
-                  <PatientGoogleAuthButton callbackUrl={callbackUrl} defaultRedirect="/practitioners" />
-                ) : null}
+                {mode === "patient" && (
+                  <div className="space-y-4">
+                    <div className="relative flex items-center justify-center my-4">
+                      <div className="absolute w-full border-t border-border-light dark:border-white/5" />
+                      <span className="relative bg-white px-3 text-xs text-text-muted dark:bg-surface-secondary dark:text-text-muted uppercase tracking-wider">
+                        {t("orContinueWith")}
+                      </span>
+                    </div>
+                    <PatientGoogleAuthButton callbackUrl={callbackUrl} defaultRedirect="/practitioners" />
+                  </div>
+                )}
               </div>
             </form>
+          </div>
 
-      <div className="mt-6 border-t border-border-light pt-6 dark:border-border-light">
-        <p className="text-sm text-text-secondary dark:text-text-secondary">
-          {mode === "practitioner"
-            ? t("alreadyStartedPractitionerJourney")
-            : t("alreadyHaveAccount")}{" "}
-          <Link
-            href={signInHref}
-            className="font-medium text-text-brand hover:text-primary-hover"
-          >
-            {t("signIn")}
-          </Link>
-        </p>
-      </div>
-    </section>
-  );
+          {/* Footer Link */}
+          <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
+            <p className="text-sm text-text-secondary dark:text-text-secondary">
+              {mode === "practitioner"
+                ? t("alreadyStartedPractitionerJourney")
+                : t("alreadyHaveAccount")}{" "}
+              <Link
+                href={signInHref}
+                className="font-semibold text-primary hover:text-primary-hover transition-colors"
+              >
+                {t("signIn")}
+              </Link>
+            </p>
+          </div>
 
-  return (
-    <div className="w-full pb-10">
-      <div className="grid items-start gap-6 lg:grid-cols-2 lg:gap-8">
-        {isRtl ? (
-          <>
-            {formPanel}
-            {guidancePanel}
-          </>
-        ) : (
-          <>
-            {guidancePanel}
-            {formPanel}
-          </>
-        )}
+        </div>
+
       </div>
     </div>
   );

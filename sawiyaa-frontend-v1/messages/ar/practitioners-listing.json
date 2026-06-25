@@ -20,10 +20,10 @@
     "availableToday": "متاح اليوم",
     "availableThisWeek": "متاح هذا الأسبوع",
     "category": "المجال الرئيسي",
-    "specialty": "مجالات الاهتمام",
+    "specialty": "التخصص",
     "language": "اللغة",
     "country": "البلد",
-    "practitionerType": "نوع المعالج",
+    "practitionerType": "نوع المختص",
     "practitionerTypeDoctor": "طبيب نفسي",
     "practitionerTypeTherapist": "معالج نفسي",
     "gender": "الجنس",
@@ -36,6 +36,10 @@
     "sessionFee": "رسوم الجلسة",
     "minFee": "أقل رسوم",
     "maxFee": "أعلى رسوم",
+    "minFeeLabel": "أقل رسوم",
+    "maxFeeLabel": "أعلى رسوم",
+    "feeReset": "إعادة ضبط الرسوم",
+    "feeUnavailable": "رسوم الجلسة غير متاحة حاليًا.",
     "acceptsCoupon": "يقبل قسيمة خصم",
     "acceptsPackage": "يقبل الباقة",
     "any": "الكل",
@@ -52,7 +56,7 @@
     "allSpecialties": "جميع التخصصات",
     "allLanguages": "جميع اللغات",
     "allCountries": "جميع البلدان",
-    "clearAll": "مسح الكل",
+    "clearAll": "إعادة ضبط الفلاتر",
     "apply": "تطبيق الفلاتر",
     "openFilters": "الفلاتر",
     "activeFilters": "فلاتر نشطة"
@@ -103,7 +107,7 @@
     "offline": "غير متصل"
   },
   "empty": {
-    "title": "لم نجد ما تبحث عنه",
+    "title": "لا توجد نتائج مطابقة",
     "subtitle": "جرّب تغيير الفلاتر أو توسيع نطاق البحث للعثور على المختص المناسب",
     "clearFilters": "مسح الفلاتر"
   },

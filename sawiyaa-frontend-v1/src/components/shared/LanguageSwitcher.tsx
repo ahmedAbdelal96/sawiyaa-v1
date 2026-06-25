@@ -36,7 +36,7 @@ export function LanguageSwitcher() {
   const currentLocale = localeData[locale];
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-50" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2.5 h-11 rounded-2xl border border-border-light bg-surface-secondary px-3.5 text-sm font-medium shadow-sm transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md hover:border-primary/20 hover:bg-primary-light/40 dark:hover:border-primary/30 dark:hover:bg-primary/10 focus:outline-none"
@@ -49,7 +49,7 @@ export function LanguageSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full z-50 mt-2 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800 ltr:right-0 rtl:left-0">
+        <div className="absolute top-full z-50 mt-2 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800 end-0">
           {Object.entries(localeData).map(([loc, data]) => (
             <button
               key={loc}

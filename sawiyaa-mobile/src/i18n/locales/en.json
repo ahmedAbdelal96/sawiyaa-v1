@@ -3210,7 +3210,8 @@
         "whatsappPlaceholder": "Optional",
         "whatsappHelp": "Optional, but useful for enrollment updates.",
         "email": "Email",
-        "emailPlaceholder": "name@example.com"
+        "emailPlaceholder": "name@example.com",
+        "accountPrefillNote": "We filled in the details we already have from your account. You can edit anything missing."
       },
       "submitting": "Submitting...",
       "registerFree": "Register free",

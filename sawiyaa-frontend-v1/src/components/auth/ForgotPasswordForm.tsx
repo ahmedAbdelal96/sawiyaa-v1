@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ChevronLeft, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff, UserRound, Stethoscope } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
@@ -306,17 +306,53 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     }
   };
 
-  if (step === "success") {
-    return (
-      <div className="mx-auto w-full max-w-lg">
-        <div className="rounded-[30px] border border-border-light bg-white/94 p-8 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92">
+  const isRtl = locale === "ar";
+  const ModeIcon = isPractitioner ? Stethoscope : UserRound;
+  const modeLabels: Record<ForgotPasswordMode, string> = {
+    patient: isRtl ? "استعادة حساب العميل" : "Client Recovery",
+    practitioner: isRtl ? "استعادة حساب المعالج" : "Specialist Recovery",
+  };
+
+  return (
+    <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center py-6 px-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
+      
+      {/* Back Link */}
+      {step !== "success" && (
+        <div className="mb-6 flex w-full">
+          <button
+            onClick={goBack}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border-light bg-surface-secondary/40 hover:bg-surface-secondary/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold text-text-secondary transition-all hover:text-text-primary shadow-theme-xs active:scale-[0.98]"
+          >
+            <ChevronLeft className={`h-3.5 w-3.5 shrink-0 transition-transform ${isRtl ? "rotate-180" : ""}`} />
+            <span>{step === "password" ? tFp("backToOtp") : tFp("backToSignIn")}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Premium Unified Card */}
+      <div className="w-full rounded-[32px] border border-border-light bg-surface-secondary/85 p-8 shadow-[0_24px_70px_rgba(36,86,79,0.05)] backdrop-blur-md dark:border-white/5 sm:p-10">
+        
+        {/* Portal Indicator Badge */}
+        {step !== "success" && (
+          <div className="mb-6 flex">
+            <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide ${
+              mode === "patient" ? "border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light" :
+              "border border-sky-500/15 bg-sky-500/10 text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400"
+            }`}>
+              <ModeIcon className="h-4 w-4" />
+              <span>{modeLabels[mode]}</span>
+            </div>
+          </div>
+        )}
+
+        {step === "success" && (
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-50 dark:bg-success-500/10">
               <svg className="h-8 w-8 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-white">
               {tFp("resetSuccessTitle")}
             </h1>
             <p className="mt-3 text-sm leading-7 text-text-secondary dark:text-text-secondary">
@@ -324,264 +360,235 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
             </p>
             <Link
               href={`/signin${isPractitioner ? "?mode=practitioner" : ""}`}
-              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover"
+              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98]"
             >
               {tFp("signInNow")}
             </Link>
           </div>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  if (step === "otp") {
-    return (
-      <div className="mx-auto w-full max-w-lg">
-        <button
-          onClick={goBack}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {tFp("backToSignIn")}
-        </button>
+        {step === "otp" && (
+          <>
+            <div className="mb-8 space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
+                {tFp("step2Title")}
+              </h1>
+              <p className="text-sm leading-6 text-text-secondary dark:text-text-secondary">
+                {tFp("step2Description")}
+              </p>
+            </div>
 
-        <div className="rounded-[30px] border border-border-light bg-white/94 p-8 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92">
-          <div className="mb-6 space-y-2">
-            <h1 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
-              {tFp("step2Title")}
-            </h1>
-            <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-              {tFp("step2Description")}
-            </p>
-          </div>
-
-          <form onSubmit={otpForm.handleSubmit(handleVerifyOtpSubmit)}>
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-border-light bg-surface px-4 py-3 dark:bg-white/5">
-                <p className="text-xs font-medium text-text-secondary">{tFp("otpEmailInfoLabel")}</p>
-                <p className="mt-1 text-sm font-semibold text-text-primary" dir="ltr">{lockedEmail}</p>
-              </div>
-
-              <div>
-                <Label>{tFp("codeLabel")} <span className="text-error-500">*</span></Label>
-                <Input
-                  type="text"
-                  placeholder={tFp("codePlaceholder")}
-                  dir="ltr"
-                  {...otpForm.register("code")}
-                  error={!!otpForm.formState.errors.code}
-                />
-                {otpForm.formState.errors.code && (
-                  <p className="mt-1.5 text-sm text-error-500">
-                    {tFpValidation(otpForm.formState.errors.code.message ?? "codeInvalid")}
-                  </p>
-                )}
-              </div>
-
-              {serverError && (
-                <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                  {serverError}
+            <form onSubmit={otpForm.handleSubmit(handleVerifyOtpSubmit)}>
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-border-light bg-surface/70 px-4 py-3 dark:border-white/5 dark:bg-white/5">
+                  <p className="text-xs font-medium text-text-secondary">{tFp("otpEmailInfoLabel")}</p>
+                  <p className="mt-1 text-sm font-semibold text-text-primary" dir="ltr">{lockedEmail}</p>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? tFp("verifyingOtp") : tFp("verifyOtpButton")}
-              </button>
-
-              {/* Countdown + resend */}
-              <div className="flex items-center justify-between gap-3">
-                {cooldown.active ? (
-                  <p className="text-xs text-text-secondary dark:text-text-secondary">
-                    {tFp("cooldownMessage", { seconds: cooldown.remainingSeconds })}
-                  </p>
-                ) : (
-                  <span />
-                )}
-                <button
-                  type="button"
-                  onClick={handleResend}
-                  disabled={cooldown.active || requestMutation.isPending}
-                  className="text-xs font-medium text-primary transition hover:text-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {cooldown.active ? (
-                    <span className="font-mono text-xs">{formatCountdown(cooldown.remainingSeconds)}</span>
-                  ) : (
-                    tFp("resendButton")
+                <div>
+                  <Label>{tFp("codeLabel")} <span className="text-error-500">*</span></Label>
+                  <Input
+                    type="text"
+                    placeholder={tFp("codePlaceholder")}
+                    dir="ltr"
+                    {...otpForm.register("code")}
+                    error={!!otpForm.formState.errors.code}
+                  />
+                  {otpForm.formState.errors.code && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {tFpValidation(otpForm.formState.errors.code.message ?? "codeInvalid")}
+                    </p>
                   )}
+                </div>
+
+                {serverError && (
+                  <div className="rounded-2xl bg-error-50 p-3 text-xs text-error-500 dark:bg-error-500/10">
+                    {serverError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? tFp("verifyingOtp") : tFp("verifyOtpButton")}
+                </button>
+
+                {/* Countdown + resend */}
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  {cooldown.active ? (
+                    <p className="text-text-secondary dark:text-text-secondary">
+                      {tFp("cooldownMessage", { seconds: cooldown.remainingSeconds })}
+                    </p>
+                  ) : (
+                    <span />
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={cooldown.active || requestMutation.isPending}
+                    className="font-semibold text-primary transition hover:text-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {cooldown.active ? (
+                      <span className="font-mono">{formatCountdown(cooldown.remainingSeconds)}</span>
+                    ) : (
+                      tFp("resendButton")
+                    )}
+                  </button>
+                </div>
+
+                <div className="border-t border-border-light pt-4 dark:border-white/5">
+                  <button
+                    type="button"
+                    onClick={handleChangeEmail}
+                    className="text-xs font-semibold text-primary hover:text-primary-hover"
+                  >
+                    {tFp("changeEmail")}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </>
+        )}
+
+        {step === "password" && (
+          <>
+            <div className="mb-8 space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
+                {tFp("step3Title")}
+              </h1>
+              <p className="text-sm leading-6 text-text-secondary dark:text-text-secondary">
+                {tFp("step3Description")}
+              </p>
+            </div>
+
+            <form onSubmit={passwordForm.handleSubmit(handleConfirmSubmit)}>
+              <div className="space-y-6">
+                <div className="rounded-2xl border border-border-light bg-surface/70 px-4 py-3 dark:border-white/5 dark:bg-white/5">
+                  <p className="text-xs font-medium text-text-secondary">{tFp("passwordEmailInfoLabel")}</p>
+                  <p className="mt-1 text-sm font-semibold text-text-primary" dir="ltr">{lockedEmail}</p>
+                </div>
+
+                <div>
+                  <Label>{tFp("newPasswordLabel")} <span className="text-error-500">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder={tFp("newPasswordPlaceholder")}
+                      dir="ltr"
+                      {...passwordForm.register("newPassword")}
+                      error={!!passwordForm.formState.errors.newPassword}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((p) => !p)}
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                    >
+                      {showNewPassword ? <Eye className="h-4.5 w-4.5" /> : <EyeOff className="h-4.5 w-4.5" />}
+                    </button>
+                  </div>
+                  {passwordForm.formState.errors.newPassword && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {tFpValidation(passwordForm.formState.errors.newPassword.message ?? "passwordTooShort")}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label>{tFp("confirmPasswordLabel")} <span className="text-error-500">*</span></Label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder={tFp("confirmPasswordPlaceholder")}
+                      dir="ltr"
+                      {...passwordForm.register("confirmPassword")}
+                      error={!!passwordForm.formState.errors.confirmPassword}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((p) => !p)}
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                    >
+                      {showConfirmPassword ? <Eye className="h-4.5 w-4.5" /> : <EyeOff className="h-4.5 w-4.5" />}
+                    </button>
+                  </div>
+                  {passwordForm.formState.errors.confirmPassword && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {tFpValidation(passwordForm.formState.errors.confirmPassword.message ?? "confirmPasswordRequired")}
+                    </p>
+                  )}
+                </div>
+
+                {serverError && (
+                  <div className="rounded-2xl bg-error-50 p-3 text-xs text-error-500 dark:bg-error-500/10">
+                    {serverError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? tFp("resetting") : tFp("resetButton")}
                 </button>
               </div>
+            </form>
+          </>
+        )}
 
-              <button
-                type="button"
-                onClick={handleChangeEmail}
-                className="text-xs font-medium text-text-secondary transition hover:text-primary"
-              >
-                {tFp("changeEmail")}
-              </button>
+        {step === "request" && (
+          <>
+            <div className="mb-8 space-y-2">
+              <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
+                {tFp("title")}
+              </h1>
+              <p className="text-sm leading-6 text-text-secondary dark:text-text-secondary">
+                {tFp("description")}
+              </p>
             </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
 
-  if (step === "password") {
-    return (
-      <div className="mx-auto w-full max-w-lg">
-        <button
-          onClick={goBack}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          {tFp("backToOtp")}
-        </button>
-
-        <div className="rounded-[30px] border border-border-light bg-white/94 p-8 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92">
-          <div className="mb-6 space-y-2">
-            <h1 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
-              {tFp("step3Title")}
-            </h1>
-            <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-              {tFp("step3Description")}
-            </p>
-          </div>
-
-          <form onSubmit={passwordForm.handleSubmit(handleConfirmSubmit)}>
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-border-light bg-surface px-4 py-3 dark:bg-white/5">
-                <p className="text-xs font-medium text-text-secondary">{tFp("passwordEmailInfoLabel")}</p>
-                <p className="mt-1 text-sm font-semibold text-text-primary" dir="ltr">{lockedEmail}</p>
-              </div>
-              <div>
-                <Label>{tFp("newPasswordLabel")} <span className="text-error-500">*</span></Label>
-                <div className="relative">
+            <form onSubmit={requestForm.handleSubmit(handleRequestSubmit)}>
+              <div className="space-y-6">
+                <div>
+                  <Label>
+                    {tFp("emailLabel")} <span className="text-error-500">*</span>
+                  </Label>
                   <Input
-                    type={showNewPassword ? "text" : "password"}
-                    placeholder={tFp("newPasswordPlaceholder")}
+                    type="email"
+                    placeholder={tFp("emailPlaceholder")}
                     dir="ltr"
-                    {...passwordForm.register("newPassword")}
-                    error={!!passwordForm.formState.errors.newPassword}
+                    {...requestForm.register("email")}
+                    error={!!requestForm.formState.errors.email}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword((p) => !p)}
-                    className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
-                  >
-                    {showNewPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </button>
+                  {requestForm.formState.errors.email && (
+                    <p className="mt-1.5 text-xs text-error-500">
+                      {tFpValidation(requestForm.formState.errors.email.message ?? "emailRequired")}
+                    </p>
+                  )}
                 </div>
-                {passwordForm.formState.errors.newPassword && (
-                  <p className="mt-1.5 text-sm text-error-500">
-                    {tFpValidation(passwordForm.formState.errors.newPassword.message ?? "passwordTooShort")}
-                  </p>
+
+                {serverError && (
+                  <div className="rounded-2xl bg-error-50 p-3 text-xs text-error-500 dark:bg-error-500/10">
+                    {serverError}
+                  </div>
                 )}
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? tFp("submitting") : tFp("submit")}
+                </button>
               </div>
+            </form>
+          </>
+        )}
 
-              <div>
-                <Label>{tFp("confirmPasswordLabel")} <span className="text-error-500">*</span></Label>
-                <div className="relative">
-                  <Input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder={tFp("confirmPasswordPlaceholder")}
-                    dir="ltr"
-                    {...passwordForm.register("confirmPassword")}
-                    error={!!passwordForm.formState.errors.confirmPassword}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((p) => !p)}
-                    className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
-                  >
-                    {showConfirmPassword ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  </button>
-                </div>
-                {passwordForm.formState.errors.confirmPassword && (
-                  <p className="mt-1.5 text-sm text-error-500">
-                    {tFpValidation(passwordForm.formState.errors.confirmPassword.message ?? "confirmPasswordRequired")}
-                  </p>
-                )}
-              </div>
-
-              {serverError && (
-                <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                  {serverError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? tFp("resetting") : tFp("resetButton")}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // Step: request
-  return (
-    <div className="mx-auto w-full max-w-lg">
-      <button
-        onClick={goBack}
-        className="mb-4 inline-flex items-center gap-2 text-sm text-text-secondary transition hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        {tFp("backToSignIn")}
-      </button>
-
-      <div className="rounded-[30px] border border-border-light bg-white/94 p-8 shadow-[0_24px_80px_rgba(16,24,40,0.08)] backdrop-blur dark:border-border-light dark:bg-surface-secondary/92">
-        <div className="mb-6 space-y-2">
-          <h1 className="text-2xl font-semibold text-text-primary dark:text-text-primary">
-            {tFp("title")}
-          </h1>
-          <p className="text-sm leading-7 text-text-secondary dark:text-text-secondary">
-            {tFp("description")}
-          </p>
-        </div>
-
-        <form onSubmit={requestForm.handleSubmit(handleRequestSubmit)}>
-          <div className="space-y-5">
-            <div>
-              <Label>
-                {tFp("emailLabel")} <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="email"
-                placeholder={tFp("emailPlaceholder")}
-                dir="ltr"
-                {...requestForm.register("email")}
-                error={!!requestForm.formState.errors.email}
-              />
-              {requestForm.formState.errors.email && (
-                <p className="mt-1.5 text-sm text-error-500">
-                  {tFpValidation(requestForm.formState.errors.email.message ?? "emailRequired")}
-                </p>
-              )}
-            </div>
-
-            {serverError && (
-              <div className="rounded-2xl bg-error-50 p-3 text-sm text-error-500 dark:bg-error-500/10">
-                {serverError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? tFp("submitting") : tFp("submit")}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

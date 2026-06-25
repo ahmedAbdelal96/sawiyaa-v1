@@ -7,7 +7,6 @@ import GuidedEntrySection from "@/features/home/components/GuidedEntrySection";
 import WhySawiyaaSection from "@/features/home/components/WhySawiyaaSection";
 import SpecialtiesSection from "@/features/home/components/SpecialtiesSection";
 import HowItWorksSection from "@/features/home/components/HowItWorksSection";
-import PractitionersSection from "@/features/home/components/PractitionersSection";
 import GuidedCareSection from "@/features/home/components/GuidedCareSection";
 import BookingClaritySection from "@/features/home/components/BookingClaritySection";
 import ArticlesPreviewSection from "@/features/home/components/ArticlesPreviewSection";
@@ -39,7 +38,6 @@ export default async function HomePage({ params }: Props) {
     <>
       <HeroSection />
       <ReassuranceStrip />
-      <PractitionersSection />
       <GuidedEntrySection />
       <WhySawiyaaSection />
       <SpecialtiesSection />

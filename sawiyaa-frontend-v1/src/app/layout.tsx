@@ -20,9 +20,9 @@ export const metadata: Metadata = {
     template: "%s",
   },
   icons: {
-    icon: "/images/logo/logo-icon.svg",
-    shortcut: "/images/logo/logo-icon.svg",
-    apple: "/images/logo/logo-icon.svg",
+    icon: "/images/logo/icon.png",
+    shortcut: "/images/logo/icon.png",
+    apple: "/images/logo/icon.png",
   },
 };
 

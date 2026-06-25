@@ -144,6 +144,8 @@
     "form": {
       "title": "Register your seat",
       "subtitle": "Keep the form short and simple so registration stays fast.",
+      "identityNote": "If you are signed in, we will reuse your saved account details where available.",
+      "restricted": "Admin accounts cannot enroll as learners. Please use a patient, practitioner, or learner account.",
       "fullName": "Full name",
       "phoneNumber": "Phone number",
       "whatsappNumber": "WhatsApp number",

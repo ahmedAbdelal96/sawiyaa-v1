@@ -93,32 +93,68 @@
       "noValue": "لا يوجد"
     },
     "actions": {
-      "auth.admin.login.success": "تسجيل دخول ناجح للمشرف",
-      "auth.admin.login.failed": "فشل تسجيل دخول المشرف",
-      "auth.patient.login.success": "تسجيل دخول ناجح للمريض",
-      "auth.patient.login.failed": "فشل تسجيل دخول المريض",
-      "auth.practitioner.login.success": "تسجيل دخول ناجح للممارس",
-      "auth.practitioner.login.failed": "فشل تسجيل دخول الممارس",
-      "auth.logout": "تسجيل خروج من النظام",
-      "auth.password.reset.request": "طلب استعادة كلمة المرور",
-      "auth.password.reset.confirm": "تأكيد تغيير كلمة المرور",
-      "sessions.create": "حجز جلسة جديدة",
-      "sessions.start": "بدء الجلسة العلاجية",
-      "sessions.end": "إنهاء الجلسة العلاجية",
-      "sessions.cancel": "إلغاء الجلسة العلاجية",
-      "sessions.join": "دخول الجلسة العلاجية",
-      "payments.charge.success": "سداد رسوم ناجح",
-      "payments.charge.failed": "فشل عملية الدفع",
-      "payments.refund.success": "استرداد مالي ناجح",
-      "payments.refund.failed": "فشل عملية الاسترداد",
-      "payments.payout.processed": "تحويل مستحقات مالية للممارس",
-      "practitioner.application.submit": "تقديم طلب انضمام ممارس جديد",
-      "practitioner.application.approve": "قبول انضمام ممارس وتفعيل حسابه",
-      "practitioner.application.reject": "رفض طلب انضمام ممارس",
-      "support.ticket.create": "فتح تذكرة مساعدة جديدة",
-      "support.ticket.assign": "تحويل تذكرة الدعم لمشرف",
-      "support.ticket.resolve": "حل تذكرة المساعدة",
-      "support.ticket.close": "إغلاق تذكرة المساعدة"
+      "auth": {
+        "admin": {
+          "login": {
+            "success": "تسجيل دخول ناجح للمشرف",
+            "failed": "فشل تسجيل دخول المشرف"
+          }
+        },
+        "patient": {
+          "login": {
+            "success": "تسجيل دخول ناجح للمريض",
+            "failed": "فشل تسجيل دخول المريض"
+          }
+        },
+        "practitioner": {
+          "login": {
+            "success": "تسجيل دخول ناجح للممارس",
+            "failed": "فشل تسجيل دخول الممارس"
+          }
+        },
+        "logout": "تسجيل خروج من النظام",
+        "password": {
+          "reset": {
+            "request": "طلب استعادة كلمة المرور",
+            "confirm": "تأكيد تغيير كلمة المرور"
+          }
+        }
+      },
+      "sessions": {
+        "create": "حجز جلسة جديدة",
+        "start": "بدء الجلسة العلاجية",
+        "end": "إنهاء الجلسة العلاجية",
+        "cancel": "إلغاء الجلسة العلاجية",
+        "join": "دخول الجلسة العلاجية"
+      },
+      "payments": {
+        "charge": {
+          "success": "سداد رسوم ناجح",
+          "failed": "فشل عملية الدفع"
+        },
+        "refund": {
+          "success": "استرداد مالي ناجح",
+          "failed": "فشل عملية الاسترداد"
+        },
+        "payout": {
+          "processed": "تحويل مستحقات مالية للممارس"
+        }
+      },
+      "practitioner": {
+        "application": {
+          "submit": "تقديم طلب انضمام ممارس جديد",
+          "approve": "قبول انضمام ممارس وتفعيل حسابه",
+          "reject": "رفض طلب انضمام ممارس"
+        }
+      },
+      "support": {
+        "ticket": {
+          "create": "فتح تذكرة مساعدة جديدة",
+          "assign": "تحويل تذكرة الدعم لمشرف",
+          "resolve": "حل تذكرة المساعدة",
+          "close": "إغلاق تذكرة المساعدة"
+        }
+      }
     },
     "roles": {
       "SUPER_ADMIN": "مدير النظام العام",

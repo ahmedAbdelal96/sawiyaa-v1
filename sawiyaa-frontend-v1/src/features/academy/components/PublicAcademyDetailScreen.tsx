@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -16,6 +16,8 @@ import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import { StateCard } from "@/components/shared/ContentStates";
 import { DataTable } from "@/components/ui/data-table";
+import { toAppError } from "@/lib/api/errors";
+import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { useAuthStore } from "@/stores/auth-store";
 import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import {
@@ -75,6 +77,7 @@ export default function PublicAcademyDetailScreen({
     isError,
     refetch,
   } = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
+  const currentUserQuery = useCurrentUser(Boolean(user));
   const createEnrollment = useCreatePublicAcademyEnrollment();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
@@ -87,6 +90,35 @@ export default function PublicAcademyDetailScreen({
   const [enrollment, setEnrollment] = useState<
     Awaited<ReturnType<typeof createPublicAcademyEnrollment>> | null
   >(null);
+  const isRestrictedLearner = Boolean(
+    currentUserQuery.data?.roles.hasAdminRole ||
+      currentUserQuery.data?.roles.hasSupportAgentRole ||
+      currentUserQuery.data?.roles.hasContentReviewerRole,
+  );
+
+  useEffect(() => {
+    if (!user || isRestrictedLearner) {
+      return;
+    }
+
+    const profileName =
+      currentUserQuery.data?.displayName?.trim() ||
+      [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
+      null;
+    const profilePhone =
+      currentUserQuery.data?.identitySummary.primaryPhone?.trim() || null;
+    const profileEmail =
+      currentUserQuery.data?.identitySummary.primaryEmail?.trim() ||
+      user.email?.trim() ||
+      null;
+
+    setForm((current) => ({
+      ...current,
+      fullName: current.fullName.trim() ? current.fullName : profileName ?? current.fullName,
+      phoneNumber: current.phoneNumber.trim() ? current.phoneNumber : profilePhone ?? current.phoneNumber,
+      email: current.email?.trim() ? current.email : profileEmail ?? current.email,
+    }));
+  }, [currentUserQuery.data, isRestrictedLearner, user]);
 
   const priceLabel = useMemo(
     () =>
@@ -140,6 +172,11 @@ export default function PublicAcademyDetailScreen({
     event.preventDefault();
     setFeedback(null);
 
+    if (isRestrictedLearner) {
+      setFeedback(t("public.form.restricted"));
+      return;
+    }
+
     if (!form.fullName.trim() || !form.phoneNumber.trim()) {
       setFeedback(t("public.form.validation.required"));
       return;
@@ -159,7 +196,14 @@ export default function PublicAcademyDetailScreen({
       setEnrollment(created as Awaited<ReturnType<typeof createPublicAcademyEnrollment>>);
       setFeedback(t("public.form.success"));
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : t("errors.generic"));
+      const appError = toAppError(error);
+
+      if (appError.code === "ACADEMY_LEARNER_ENROLLMENT_RESTRICTED") {
+        setFeedback(t("public.form.restricted"));
+        return;
+      }
+
+      setFeedback(appError.message || t("errors.generic"));
     }
   };
 
@@ -446,6 +490,18 @@ export default function PublicAcademyDetailScreen({
               <p className="text-xs text-text-muted mt-0.5">{t("public.form.subtitle")}</p>
             </div>
           </div>
+
+          {user && !isRestrictedLearner ? (
+            <div className="mt-4 rounded-[16px] border border-primary/15 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-text-secondary">
+              {t("public.form.identityNote")}
+            </div>
+          ) : null}
+
+          {isRestrictedLearner ? (
+            <div className="mt-4 rounded-[16px] border border-error/20 bg-error/5 px-4 py-3 text-xs leading-relaxed text-error-600">
+              {t("public.form.restricted")}
+            </div>
+          ) : null}
 
           <div className="mt-5 space-y-4">
             <Input

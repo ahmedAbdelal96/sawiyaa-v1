@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -16,6 +16,7 @@ import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../../i18n/direction";
 import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { extractApiErrorMessage } from "../../../../lib/api";
+import { useAuth } from "../../../../providers/AuthProvider";
 import { useCreatePublicAcademyEnrollment, usePublicAcademyCourse } from "../hooks";
 import { buildAcademyEnrollmentPaymentReturnBaseUrl } from "../navigation";
 import type { CreateAcademyEnrollmentInput } from "../types";
@@ -30,7 +31,17 @@ export default function AcademyEnrollmentCreateScreen({
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { rowDirection, textAlign } = useAppDirection();
-  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: "guest" });
+  const { user, role, isLoading: isAuthLoading } = useAuth();
+  const authScopeKey = useMemo(() => {
+    if (isAuthLoading) {
+      return "bootstrapping";
+    }
+    if (!user) {
+      return "guest";
+    }
+    return `auth:${user.id}:${role ?? "unknown"}`;
+  }, [isAuthLoading, role, user]);
+  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
   const enrollMutation = useCreatePublicAcademyEnrollment();
   const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
     fullName: "",
@@ -41,6 +52,25 @@ export default function AcademyEnrollmentCreateScreen({
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const paymentReturnBaseUrl = buildAcademyEnrollmentPaymentReturnBaseUrl();
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      fullName: current.fullName.trim()
+        ? current.fullName
+        : user.displayName?.trim() ?? current.fullName,
+      phoneNumber: current.phoneNumber.trim()
+        ? current.phoneNumber
+        : user.primaryPhone?.trim() ?? current.phoneNumber,
+      email: current.email?.trim()
+        ? current.email
+        : user.primaryEmail?.trim() ?? current.email,
+    }));
+  }, [user]);
 
   const course = courseQuery.data ?? null;
   const displayCurrency = resolveSupportedCurrencyCode({
@@ -139,6 +169,20 @@ export default function AcademyEnrollmentCreateScreen({
               title={t("academy.detail.enrollTitle")}
               subtitle={t("academy.detail.enrollSubtitle")}
             />
+            {user ? (
+              <Card
+                variant="outlined"
+                padding="sm"
+                style={[
+                  styles.noticeCard,
+                  { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.border },
+                ]}
+              >
+                <Text color={theme.colors.textSecondary} style={styles.noticeText}>
+                  {t("academy.detail.form.accountPrefillNote")}
+                </Text>
+              </Card>
+            ) : null}
             <View style={styles.formStack}>
               <Input
                 label={t("academy.detail.form.fullName")}
@@ -316,10 +360,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     gap: 8,
   },
-  formStack: {
-    gap: 12,
-  },
   noticeCard: {
     marginHorizontal: 0,
+    marginBottom: 8,
+  },
+  noticeText: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  formStack: {
+    gap: 12,
   },
 });

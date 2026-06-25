@@ -156,10 +156,10 @@ export default function PatientGoogleAuthButton({
     <div className="space-y-3">
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border-light" />
+          <span className="w-full border-t border-border-light dark:border-white/5" />
         </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-[0.16em] text-text-muted">
-          <span className="bg-white px-3 dark:bg-surface-secondary">
+        <div className="relative flex justify-center text-xs uppercase tracking-[0.16em] text-text-muted dark:text-white/45">
+          <span className="relative z-10 bg-white px-3 dark:bg-surface-secondary dark:text-white/45">
             {t("orContinueWith")}
           </span>
         </div>

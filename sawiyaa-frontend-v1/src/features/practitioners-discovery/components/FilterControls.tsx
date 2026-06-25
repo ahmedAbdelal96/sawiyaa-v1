@@ -6,19 +6,15 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
-import type { CountryCode, LanguageCode } from "../types/practitioner";
+import type {
+  PractitionerFeeBounds,
+  PractitionerFiltersMetadata,
+} from "../types/practitioner";
 
-type SpecialtyOption = { slug: string; name: string; categorySlug: string | null };
-type SpecialtyCategoryOption = { slug: string; name: string };
 type BooleanValue = "" | "true" | "false";
 
 type Props = {
-  specialties: SpecialtyOption[];
-  specialtyCategories: SpecialtyCategoryOption[];
-  languageCodes: LanguageCode[];
-  languageLabels: Record<string, string>;
-  countryCodes: CountryCode[];
-  countryLabels: Record<string, string>;
+  filters: PractitionerFiltersMetadata;
   limitOptions: readonly number[];
   desktopMode?: "inline" | "sidebar";
 };
@@ -69,13 +65,149 @@ function FilterSectionTitle({ title }: { title: string }) {
   return <p className="mb-2 text-sm font-semibold text-text-brand">{title}</p>;
 }
 
+function formatFeeValue(value: number, currency: PractitionerFeeBounds["currency"]) {
+  return `${value} ${currency}`;
+}
+
+function FeeRangeSlider({
+  bounds,
+  currentMinFee,
+  currentMaxFee,
+  onChange,
+  minLabel,
+  maxLabel,
+  resetLabel,
+  unavailableLabel,
+}: {
+  bounds: PractitionerFeeBounds;
+  currentMinFee: string;
+  currentMaxFee: string;
+  onChange: (nextMin: string, nextMax: string) => void;
+  minLabel: string;
+  maxLabel: string;
+  resetLabel: string;
+  unavailableLabel: string;
+}) {
+  const hasBounds = bounds.max > bounds.min;
+  const minBound = bounds.min;
+  const maxBound = bounds.max;
+
+  const normalizedMin = currentMinFee ? Number(currentMinFee) : minBound;
+  const normalizedMax = currentMaxFee ? Number(currentMaxFee) : maxBound;
+
+  const safeMin = Number.isFinite(normalizedMin)
+    ? Math.min(Math.max(normalizedMin, minBound), normalizedMax || maxBound)
+    : minBound;
+  const safeMax = Number.isFinite(normalizedMax)
+    ? Math.max(Math.min(normalizedMax, maxBound), safeMin || minBound)
+    : maxBound;
+
+  const [draftMin, setDraftMin] = useState(safeMin);
+  const [draftMax, setDraftMax] = useState(safeMax);
+
+  useEffect(() => {
+    setDraftMin(safeMin);
+    setDraftMax(safeMax);
+  }, [safeMin, safeMax]);
+
+  useEffect(() => {
+    if (!hasBounds) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const nextMin = draftMin <= minBound ? "" : String(draftMin);
+      const nextMax = draftMax >= maxBound ? "" : String(draftMax);
+      if (nextMin === currentMinFee && nextMax === currentMaxFee) return;
+      onChange(nextMin, nextMax);
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    currentMaxFee,
+    currentMinFee,
+    draftMax,
+    draftMin,
+    hasBounds,
+    maxBound,
+    minBound,
+    onChange,
+  ]);
+
+  if (!hasBounds) {
+    return (
+      <div className="rounded-xl border border-dashed border-border-light bg-surface-secondary px-3 py-4 text-sm text-text-muted">
+        {unavailableLabel}
+      </div>
+    );
+  }
+
+  const rangePercent = ((draftMax - draftMin) / Math.max(maxBound - minBound, 1)) * 100;
+  const offsetPercent = ((draftMin - minBound) / Math.max(maxBound - minBound, 1)) * 100;
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
+      <div className="flex items-center justify-between gap-3 text-sm font-medium text-text-secondary">
+        <span>{formatFeeValue(draftMin, bounds.currency)}</span>
+        <span>{formatFeeValue(draftMax, bounds.currency)}</span>
+      </div>
+
+      <div className="relative h-12">
+        <div className="absolute inset-x-1 top-1/2 h-2 -translate-y-1/2 rounded-full bg-border-light" />
+        <div
+          className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-primary"
+          style={{
+            insetInlineStart: `${offsetPercent}%`,
+            width: `${rangePercent}%`,
+          }}
+        />
+        <input
+          type="range"
+          min={minBound}
+          max={maxBound}
+          step={bounds.step}
+          value={draftMin}
+          aria-label={minLabel}
+          onChange={(event) => {
+            const nextValue = Math.min(Number(event.target.value), draftMax);
+            setDraftMin(nextValue);
+          }}
+          className="pointer-events-none absolute inset-0 h-12 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-surface [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:bg-surface"
+        />
+        <input
+          type="range"
+          min={minBound}
+          max={maxBound}
+          step={bounds.step}
+          value={draftMax}
+          aria-label={maxLabel}
+          onChange={(event) => {
+            const nextValue = Math.max(Number(event.target.value), draftMin);
+            setDraftMax(nextValue);
+          }}
+          className="pointer-events-none absolute inset-0 h-12 w-full appearance-none bg-transparent [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:mt-[-6px] [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-surface [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-track]:h-2 [&::-moz-range-track]:bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:bg-surface"
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-text-muted">
+        <span>{formatFeeValue(minBound, bounds.currency)}</span>
+        <button
+          type="button"
+          onClick={() => {
+            setDraftMin(minBound);
+            setDraftMax(maxBound);
+            onChange("", "");
+          }}
+          className="font-semibold text-text-secondary transition hover:text-primary"
+        >
+          {resetLabel}
+        </button>
+        <span>{formatFeeValue(maxBound, bounds.currency)}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function FilterControls({
-  specialties,
-  specialtyCategories,
-  languageCodes,
-  languageLabels,
-  countryCodes,
-  countryLabels,
+  filters,
   limitOptions,
   desktopMode = "inline",
 }: Props) {
@@ -102,12 +234,9 @@ export default function FilterControls({
   const currentMinSessionFee = searchParams.get("minSessionFee") ?? "";
   const currentMaxSessionFee = searchParams.get("maxSessionFee") ?? "";
   const currentOnlineNow = (searchParams.get("onlineNow") ?? "") as BooleanValue;
-  const currentAvailableToday = (searchParams.get("availableToday") ?? "") as BooleanValue;
-  const currentAvailableThisWeek = (searchParams.get("availableThisWeek") ?? "") as BooleanValue;
-  const currentAcceptsCoupon = (searchParams.get("acceptsCoupon") ?? "") as BooleanValue;
-  const currentAcceptsPackage = (searchParams.get("acceptsPackage") ?? "") as BooleanValue;
 
   const [searchInput, setSearchInput] = useState(currentSearch);
+
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -154,10 +283,6 @@ export default function FilterControls({
     currentGender,
     currentDuration,
     currentOnlineNow,
-    currentAvailableToday,
-    currentAvailableThisWeek,
-    currentAcceptsCoupon,
-    currentAcceptsPackage,
     currentMinRating,
     currentMinSessionFee,
     currentMaxSessionFee,
@@ -165,11 +290,13 @@ export default function FilterControls({
   const hasActiveFilters = activeFiltersCount > 0;
 
   const onCategoryChange = (nextCategorySlug: string) => {
-    const selectedSpecialty = specialties.find((item) => item.slug === currentSpecialtySlug);
+    const selectedSpecialty = filters.specialties.find(
+      (item) => item.slug === currentSpecialtySlug,
+    );
     const shouldClearSpecialty =
       Boolean(currentSpecialtySlug) &&
       (!selectedSpecialty ||
-        (nextCategorySlug && selectedSpecialty.categorySlug !== nextCategorySlug));
+        (nextCategorySlug && selectedSpecialty.category?.slug !== nextCategorySlug));
 
     updateParams({
       specialtyCategorySlug: nextCategorySlug,
@@ -191,23 +318,26 @@ export default function FilterControls({
 
   const categoryOptions = [
     { value: "", label: t("filter.allCategories") },
-    ...specialtyCategories.map((item) => ({ value: item.slug, label: item.name })),
+    ...filters.specialtyCategories.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
   ];
   const specialtyOptions = [
     { value: "", label: t("filter.allSpecialties") },
-    ...specialties
+    ...filters.specialties
       .filter((item) =>
-        currentSpecialtyCategorySlug ? item.categorySlug === currentSpecialtyCategorySlug : true,
+        currentSpecialtyCategorySlug ? item.category?.slug === currentSpecialtyCategorySlug : true,
       )
       .map((item) => ({ value: item.slug, label: item.name })),
   ];
   const languageOptions = [
     { value: "", label: t("filter.allLanguages") },
-    ...languageCodes.map((code) => ({ value: code, label: languageLabels[code] ?? code })),
+    ...filters.languages.map((item) => ({ value: item.value, label: item.label })),
   ];
   const countryOptions = [
     { value: "", label: t("filter.allCountries") },
-    ...countryCodes.map((code) => ({ value: code, label: countryLabels[code] ?? code.toUpperCase() })),
+    ...filters.countries.map((item) => ({ value: item.value, label: item.label })),
   ];
   const sortOptions = [
     { value: "recommended", label: t("sort.recommended") },
@@ -216,24 +346,31 @@ export default function FilterControls({
   ];
   const kindOptions = [
     { value: "", label: t("filter.allTypes") },
-    { value: "doctor", label: t("filter.practitionerTypeDoctor") },
-    { value: "therapist", label: t("filter.practitionerTypeTherapist") },
+    ...filters.practitionerKinds.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
   ];
   const genderOptions = [
     { value: "", label: t("filter.allGenders") },
-    { value: "male", label: t("filter.genderMale") },
-    { value: "female", label: t("filter.genderFemale") },
+    ...filters.genders.map((item) => ({
+      value: item.value,
+      label: item.label,
+    })),
   ];
   const durationOptions = [
     { value: "", label: t("filter.allDurations") },
-    { value: "30", label: t("filter.duration30") },
-    { value: "60", label: t("filter.duration60") },
+    ...filters.durations.map((item) => ({
+      value: String(item.value),
+      label: item.label,
+    })),
   ];
   const ratingOptions = [
     { value: "", label: t("filter.anyRating") },
-    { value: "3", label: t("filter.rating3Up") },
-    { value: "4", label: t("filter.rating4Up") },
-    { value: "4.5", label: t("filter.rating45Up") },
+    ...filters.ratingThresholds.map((item) => ({
+      value: String(item.value),
+      label: item.label,
+    })),
   ];
   const yesNoAllOptions = [
     { value: "", label: t("filter.any") },
@@ -266,133 +403,121 @@ export default function FilterControls({
           <FilterSelect value={currentSort} onChange={(value) => updateParam("sort", value)} options={sortOptions} />
         </div>
 
-        <div>
-          <FilterSectionTitle title={t("filter.availability")} />
-          <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
-            <p className="text-xs font-medium text-text-secondary">{t("filter.onlineNow")}</p>
+        {/* Available today / this week are hidden until rebuilt on public published availability windows. */}
+        {filters.availability.onlineNowSupported ? (
+          <div>
+            <FilterSectionTitle title={t("filter.availability")} />
+            <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
+              <p className="text-xs font-medium text-text-secondary">{t("filter.onlineNow")}</p>
+              <FilterSelect
+                value={currentOnlineNow}
+                onChange={(value) => updateParam("onlineNow", value)}
+                options={yesNoAllOptions}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {filters.specialtyCategories.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.category")} />
             <FilterSelect
-              value={currentOnlineNow}
-              onChange={(value) => updateParam("onlineNow", value)}
-              options={yesNoAllOptions}
-            />
-            <p className="text-xs font-medium text-text-secondary">{t("filter.availableToday")}</p>
-            <FilterSelect
-              value={currentAvailableToday}
-              onChange={(value) => updateParam("availableToday", value)}
-              options={yesNoAllOptions}
-            />
-            <p className="text-xs font-medium text-text-secondary">{t("filter.availableThisWeek")}</p>
-            <FilterSelect
-              value={currentAvailableThisWeek}
-              onChange={(value) => updateParam("availableThisWeek", value)}
-              options={yesNoAllOptions}
+              value={currentSpecialtyCategorySlug}
+              onChange={onCategoryChange}
+              options={categoryOptions}
             />
           </div>
-        </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.category")} />
-          <FilterSelect
-            value={currentSpecialtyCategorySlug}
-            onChange={onCategoryChange}
-            options={categoryOptions}
-          />
-        </div>
+        {filters.specialties.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.specialty")} />
+            <FilterSelect
+              value={currentSpecialtySlug}
+              onChange={(value) => updateParam("specialtySlug", value)}
+              options={specialtyOptions}
+            />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.specialty")} />
-          <FilterSelect
-            value={currentSpecialtySlug}
-            onChange={(value) => updateParam("specialtySlug", value)}
-            options={specialtyOptions}
-          />
-        </div>
+        {filters.languages.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.language")} />
+            <FilterSelect
+              value={currentLanguage}
+              onChange={(value) => updateParam("language", value)}
+              options={languageOptions}
+            />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.language")} />
-          <FilterSelect
-            value={currentLanguage}
-            onChange={(value) => updateParam("language", value)}
-            options={languageOptions}
-          />
-        </div>
+        {filters.countries.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.country")} />
+            <FilterSelect
+              value={currentCountry}
+              onChange={(value) => updateParam("country", value)}
+              options={countryOptions}
+            />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.country")} />
-          <FilterSelect
-            value={currentCountry}
-            onChange={(value) => updateParam("country", value)}
-            options={countryOptions}
-          />
-        </div>
+        {filters.practitionerKinds.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.practitionerType")} />
+            <FilterSelect
+              value={currentPractitionerKind}
+              onChange={(value) => updateParam("practitionerKind", value)}
+              options={kindOptions}
+            />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.practitionerType")} />
-          <FilterSelect
-            value={currentPractitionerKind}
-            onChange={(value) => updateParam("practitionerKind", value)}
-            options={kindOptions}
-          />
-        </div>
+        {filters.genders.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.gender")} />
+            <FilterSelect value={currentGender} onChange={(value) => updateParam("gender", value)} options={genderOptions} />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.gender")} />
-          <FilterSelect value={currentGender} onChange={(value) => updateParam("gender", value)} options={genderOptions} />
-        </div>
+        {filters.durations.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.sessionDuration")} />
+            <FilterSelect
+              value={currentDuration}
+              onChange={(value) => updateParam("duration", value)}
+              options={durationOptions}
+            />
+          </div>
+        ) : null}
 
-        <div>
-          <FilterSectionTitle title={t("filter.sessionDuration")} />
-          <FilterSelect
-            value={currentDuration}
-            onChange={(value) => updateParam("duration", value)}
-            options={durationOptions}
-          />
-        </div>
-
-        <div>
-          <FilterSectionTitle title={t("filter.rating")} />
-          <FilterSelect
-            value={currentMinRating}
-            onChange={(value) => updateParam("minRating", value)}
-            options={ratingOptions}
-          />
-        </div>
+        {filters.ratingThresholds.length > 0 ? (
+          <div>
+            <FilterSectionTitle title={t("filter.rating")} />
+            <FilterSelect
+              value={currentMinRating}
+              onChange={(value) => updateParam("minRating", value)}
+              options={ratingOptions}
+            />
+          </div>
+        ) : null}
 
         <div>
           <FilterSectionTitle title={t("filter.sessionFee")} />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              inputMode="decimal"
-              value={currentMinSessionFee}
-              onChange={(event) => updateParam("minSessionFee", event.target.value)}
-              placeholder={t("filter.minFee")}
-              className="h-12 rounded-xl border border-border-light bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted"
-            />
-            <input
-              inputMode="decimal"
-              value={currentMaxSessionFee}
-              onChange={(event) => updateParam("maxSessionFee", event.target.value)}
-              placeholder={t("filter.maxFee")}
-              className="h-12 rounded-xl border border-border-light bg-surface px-3 text-sm text-text-primary placeholder:text-text-muted"
-            />
-          </div>
-        </div>
-
-        <div>
-          <FilterSectionTitle title={t("filter.acceptsCoupon")} />
-          <FilterSelect
-            value={currentAcceptsCoupon}
-            onChange={(value) => updateParam("acceptsCoupon", value)}
-            options={yesNoAllOptions}
-          />
-        </div>
-
-        <div>
-          <FilterSectionTitle title={t("filter.acceptsPackage")} />
-          <FilterSelect
-            value={currentAcceptsPackage}
-            onChange={(value) => updateParam("acceptsPackage", value)}
-            options={yesNoAllOptions}
+          <FeeRangeSlider
+            bounds={filters.feeBounds}
+            currentMinFee={currentMinSessionFee}
+            currentMaxFee={currentMaxSessionFee}
+            onChange={(nextMin, nextMax) =>
+              updateParams({
+                minSessionFee: nextMin,
+                maxSessionFee: nextMax,
+              })
+            }
+            minLabel={t("filter.minFeeLabel")}
+            maxLabel={t("filter.maxFeeLabel")}
+            resetLabel={t("filter.feeReset")}
+            unavailableLabel={t("filter.feeUnavailable")}
           />
         </div>
 

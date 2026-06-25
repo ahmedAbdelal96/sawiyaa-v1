@@ -56,6 +56,7 @@ export class ListPublicPractitionersUseCase {
     currentUserId?: string | null;
     search?: string;
     specialtySlug?: string;
+    specialtyCategorySlug?: string;
     language?: string;
     country?: string;
     practitionerKind?: PublicPractitionerKind;
@@ -88,6 +89,7 @@ export class ListPublicPractitionersUseCase {
       currencyCode: regionalResolution.currencyCode as 'EGP' | 'USD',
       search: input.search,
       specialtySlug: input.specialtySlug,
+      specialtyCategorySlug: input.specialtyCategorySlug,
       language: input.language,
       country: input.country,
       practitionerKind: input.practitionerKind,

@@ -93,32 +93,68 @@
       "noValue": "None"
     },
     "actions": {
-      "auth.admin.login.success": "Successful Admin Login",
-      "auth.admin.login.failed": "Failed Admin Login",
-      "auth.patient.login.success": "Successful Patient Login",
-      "auth.patient.login.failed": "Failed Patient Login",
-      "auth.practitioner.login.success": "Successful Practitioner Login",
-      "auth.practitioner.login.failed": "Failed Practitioner Login",
-      "auth.logout": "Logout from Platform",
-      "auth.password.reset.request": "Password Reset Request",
-      "auth.password.reset.confirm": "Password Reset Confirmation",
-      "sessions.create": "New Session Booked",
-      "sessions.start": "Session Started",
-      "sessions.end": "Session Ended",
-      "sessions.cancel": "Session Cancelled",
-      "sessions.join": "Joined Session Video/Audio",
-      "payments.charge.success": "Successful Payment Charge",
-      "payments.charge.failed": "Failed Payment Charge",
-      "payments.refund.success": "Successful Refund",
-      "payments.refund.failed": "Failed Refund Process",
-      "payments.payout.processed": "Payout Processed for Practitioner",
-      "practitioner.application.submit": "Practitioner Application Submitted",
-      "practitioner.application.approve": "Practitioner Application Approved",
-      "practitioner.application.reject": "Practitioner Application Rejected",
-      "support.ticket.create": "New Support Ticket Opened",
-      "support.ticket.assign": "Support Ticket Assigned to Admin",
-      "support.ticket.resolve": "Support Ticket Resolved",
-      "support.ticket.close": "Support Ticket Closed"
+      "auth": {
+        "admin": {
+          "login": {
+            "success": "Successful Admin Login",
+            "failed": "Failed Admin Login"
+          }
+        },
+        "patient": {
+          "login": {
+            "success": "Successful Patient Login",
+            "failed": "Failed Patient Login"
+          }
+        },
+        "practitioner": {
+          "login": {
+            "success": "Successful Practitioner Login",
+            "failed": "Failed Practitioner Login"
+          }
+        },
+        "logout": "Logout from Platform",
+        "password": {
+          "reset": {
+            "request": "Password Reset Request",
+            "confirm": "Password Reset Confirmation"
+          }
+        }
+      },
+      "sessions": {
+        "create": "New Session Booked",
+        "start": "Session Started",
+        "end": "Session Ended",
+        "cancel": "Session Cancelled",
+        "join": "Joined Session Video/Audio"
+      },
+      "payments": {
+        "charge": {
+          "success": "Successful Payment Charge",
+          "failed": "Failed Payment Charge"
+        },
+        "refund": {
+          "success": "Successful Refund",
+          "failed": "Failed Refund Process"
+        },
+        "payout": {
+          "processed": "Payout Processed for Practitioner"
+        }
+      },
+      "practitioner": {
+        "application": {
+          "submit": "Practitioner Application Submitted",
+          "approve": "Practitioner Application Approved",
+          "reject": "Practitioner Application Rejected"
+        }
+      },
+      "support": {
+        "ticket": {
+          "create": "New Support Ticket Opened",
+          "assign": "Support Ticket Assigned to Admin",
+          "resolve": "Support Ticket Resolved",
+          "close": "Support Ticket Closed"
+        }
+      }
     },
     "roles": {
       "SUPER_ADMIN": "Super Admin",

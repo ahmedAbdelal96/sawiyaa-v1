@@ -63,6 +63,61 @@ export type PublicPractitioner = {
   avatarUrl: string | null;
 };
 
+export type PractitionerFilterSpecialtyOption = {
+  id: string;
+  slug: string;
+  name: string;
+  category: {
+    id: string;
+    slug: string;
+    name: string;
+  } | null;
+  practitionerCount: number;
+};
+
+export type PractitionerFilterOption = {
+  value: string;
+  label: string;
+  practitionerCount: number;
+};
+
+export type PractitionerFilterNumberOption = {
+  value: number;
+  label: string;
+  practitionerCount: number;
+};
+
+export type PractitionerRatingThresholdOption = {
+  value: number;
+  label: string;
+};
+
+export type PractitionerFeeBounds = {
+  min: number;
+  max: number;
+  currency: "EGP" | "USD";
+  step: number;
+};
+
+export type PractitionerAvailabilityFilterSupport = {
+  onlineNowSupported: true;
+  availableTodaySupported: false;
+  availableThisWeekSupported: false;
+};
+
+export type PractitionerFiltersMetadata = {
+  specialties: PractitionerFilterSpecialtyOption[];
+  specialtyCategories: PractitionerFilterOption[];
+  languages: PractitionerFilterOption[];
+  countries: PractitionerFilterOption[];
+  practitionerKinds: PractitionerFilterOption[];
+  genders: PractitionerFilterOption[];
+  durations: PractitionerFilterNumberOption[];
+  ratingThresholds: PractitionerRatingThresholdOption[];
+  feeBounds: PractitionerFeeBounds;
+  availability: PractitionerAvailabilityFilterSupport;
+};
+
 /** Legacy filter params used by mock data helpers (not sent to backend). */
 export type PractitionerFilterParams = {
   q?: string;
@@ -75,6 +130,7 @@ export type PractitionerFilterParams = {
 export type PractitionerQueryParams = {
   search?: string;
   specialtySlug?: string;
+  specialtyCategorySlug?: string;
   language?: string;
   country?: string;
   practitionerKind?: "doctor" | "therapist";

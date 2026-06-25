@@ -21,8 +21,13 @@ import {
   PublicPractitionerDetailsSuccessResponseDto,
   PublicPractitionersListSuccessResponseDto,
 } from '../dto/public-practitioner-response.dto';
+import { ListPublicPractitionerFiltersUseCase } from '../use-cases/list-public-practitioner-filters.use-case';
 import { GetPublicPractitionerDetailsUseCase } from '../use-cases/get-public-practitioner-details.use-case';
 import { ListPublicPractitionersUseCase } from '../use-cases/list-public-practitioners.use-case';
+import {
+  PublicPractitionerFiltersResponseDto,
+  PublicPractitionerFiltersSuccessResponseDto,
+} from '../dto/public-practitioner-filters-response.dto';
 
 /**
  * Public read-only controller for practitioner pages.
@@ -34,6 +39,7 @@ import { ListPublicPractitionersUseCase } from '../use-cases/list-public-practit
 export class PublicPractitionerController {
   constructor(
     private readonly listPublicPractitionersUseCase: ListPublicPractitionersUseCase,
+    private readonly listPublicPractitionerFiltersUseCase: ListPublicPractitionerFiltersUseCase,
     private readonly getPublicPractitionerDetailsUseCase: GetPublicPractitionerDetailsUseCase,
   ) {}
 
@@ -46,6 +52,7 @@ export class PublicPractitionerController {
   })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'specialtySlug', required: false })
+  @ApiQuery({ name: 'specialtyCategorySlug', required: false })
   @ApiQuery({ name: 'language', required: false })
   @ApiQuery({ name: 'country', required: false })
   @ApiQuery({ name: 'practitionerKind', required: false })
@@ -74,6 +81,7 @@ export class PublicPractitionerController {
       currentUserId: currentUser?.id ?? null,
       search: query.search ?? query.q,
       specialtySlug: query.specialtySlug ?? query.specialty,
+      specialtyCategorySlug: query.specialtyCategorySlug,
       language: query.language ?? query.lang,
       country: query.country,
       practitionerKind: query.practitionerKind,
@@ -90,6 +98,23 @@ export class PublicPractitionerController {
       sort: query.sort,
       page: query.page,
       limit: query.limit,
+    });
+  }
+
+  @Get('filters')
+  @ApiOperation({
+    summary: 'List public practitioner filter metadata',
+    description:
+      'Public-safe metadata for practitioner discovery filters derived from public-visible practitioners only.',
+  })
+  @ApiResponse({ status: 200, type: PublicPractitionerFiltersSuccessResponseDto })
+  listFilters(
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() currentUser: AuthenticatedUser | null,
+  ): PublicPractitionerFiltersResponseDto | Promise<PublicPractitionerFiltersResponseDto> {
+    return this.listPublicPractitionerFiltersUseCase.execute({
+      locale,
+      currentUserId: currentUser?.id ?? null,
     });
   }
 

@@ -5,9 +5,10 @@ import ListingPageHero from "./ListingPageHero";
 import FilterControls from "./FilterControls";
 import PractitionerGrid from "./PractitionerGrid";
 import ListingErrorState from "./ListingErrorState";
-import { fetchPublicPractitioners } from "../api/practitioners-ssr.api";
-import { COUNTRY_CODES, LANGUAGE_CODES } from "../types/practitioner";
-import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
+import {
+  fetchPublicPractitionerFilters,
+  fetchPublicPractitioners,
+} from "../api/practitioners-ssr.api";
 
 const VALID_SORT_VALUES = ["recommended", "experience", "rating"] as const;
 const VALID_LIMIT_VALUES = [6, 12, 24] as const;
@@ -37,8 +38,7 @@ export type PractitionersListingSearchParams = {
 };
 
 export type PractitionersListingViewData = {
-  specialties: Array<{ slug: string; name: string; categorySlug: string | null }>;
-  specialtyCategories: Array<{ slug: string; name: string }>;
+  filters: Awaited<ReturnType<typeof fetchPublicPractitionerFilters>>;
   specialtyLabels: Record<string, string>;
   languageLabels: Record<string, string>;
   countryLabels: Record<string, string>;
@@ -55,10 +55,6 @@ export type PractitionersListingViewData = {
   safeGender: "male" | "female" | "";
   safeDuration: 30 | 60 | undefined;
   safeOnlineNow: boolean;
-  safeAvailableToday: boolean;
-  safeAvailableThisWeek: boolean;
-  safeAcceptsCoupon: boolean | undefined;
-  safeAcceptsPackage: boolean | undefined;
   safeMinRating: number | undefined;
   safeMinSessionFee: number | undefined;
   safeMaxSessionFee: number | undefined;
@@ -85,10 +81,6 @@ export async function getPractitionersListingData(
     gender = "",
     duration,
     onlineNow,
-    availableToday,
-    availableThisWeek,
-    acceptsCoupon,
-    acceptsPackage,
     minRating,
     minSessionFee,
     maxSessionFee,
@@ -98,11 +90,6 @@ export async function getPractitionersListingData(
   } = searchParams;
 
   const toBool = (value: string | undefined) => value === "true";
-  const toOptionalBool = (value: string | undefined): boolean | undefined => {
-    if (value === "true") return true;
-    if (value === "false") return false;
-    return undefined;
-  };
   const toOptionalNumber = (value: string | undefined) => {
     if (!value) return undefined;
     const num = Number(value);
@@ -117,10 +104,6 @@ export async function getPractitionersListingData(
   const safeLimit: LimitValue = VALID_LIMIT_VALUES.includes(parsedLimit as LimitValue)
     ? (parsedLimit as LimitValue)
     : 12;
-  const safeLanguage = (LANGUAGE_CODES as readonly string[]).includes(language) ? language : "";
-  const safeCountry = (COUNTRY_CODES as readonly string[]).includes(country as (typeof COUNTRY_CODES)[number])
-    ? country
-    : "";
   const safePractitionerKind: "doctor" | "therapist" | "" =
     practitionerKind === "doctor" || practitionerKind === "therapist" ? practitionerKind : "";
   const safeGender: "male" | "female" | "" =
@@ -128,10 +111,6 @@ export async function getPractitionersListingData(
   const parsedDuration = Number(duration);
   const safeDuration: 30 | 60 | undefined = parsedDuration === 30 || parsedDuration === 60 ? parsedDuration : undefined;
   const safeOnlineNow = toBool(onlineNow);
-  const safeAvailableToday = toBool(availableToday);
-  const safeAvailableThisWeek = toBool(availableThisWeek);
-  const safeAcceptsCoupon = toOptionalBool(acceptsCoupon);
-  const safeAcceptsPackage = toOptionalBool(acceptsPackage);
   const safeMinRatingRaw = toOptionalNumber(minRating);
   const safeMinRating =
     safeMinRatingRaw !== undefined && safeMinRatingRaw >= 1 && safeMinRatingRaw <= 5
@@ -144,65 +123,58 @@ export async function getPractitionersListingData(
   const safeMaxSessionFee =
     safeMaxSessionFeeRaw !== undefined && safeMaxSessionFeeRaw >= 0 ? safeMaxSessionFeeRaw : undefined;
   const currentPage = Math.max(1, parseInt(page, 10) || 1);
+  let filters: Awaited<ReturnType<typeof fetchPublicPractitionerFilters>> = {
+    specialties: [],
+    specialtyCategories: [],
+    languages: [],
+    countries: [],
+    practitionerKinds: [],
+    genders: [],
+    durations: [],
+    ratingThresholds: [],
+    feeBounds: { min: 0, max: 0, currency: "USD", step: 5 },
+    availability: {
+      onlineNowSupported: true,
+      availableTodaySupported: false,
+      availableThisWeekSupported: false,
+    },
+  };
 
-  let specialties: Array<{
-    slug: string;
-    name: string;
-    categorySlug: string | null;
-    categoryName: string | null;
-  }> = [];
   try {
-    const data = await fetchPublicSpecialties(locale);
-    specialties = data.specialties
-      .filter((item) => item.isActive)
-      .map((item) => ({
-        slug: item.slug,
-        name: item.name ?? item.slug,
-        categorySlug: item.category?.slug ?? null,
-        categoryName: item.category?.name ?? null,
-      }));
+    filters = await fetchPublicPractitionerFilters(locale);
   } catch {
-    // Best-effort rendering: listing still works even if specialties are unavailable.
+    // Best-effort rendering: listing still works even if filter metadata is unavailable.
   }
 
-  const specialtyCategories = Array.from(
-    new Map(
-      specialties.filter((item) => item.categorySlug).map((item) => [
-        item.categorySlug!,
-        item.categoryName ?? item.categorySlug!,
-      ]),
-    ).values(),
-  ).map(([slug, name]) => ({
-    slug,
-    name,
-  }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const safeLanguage = filters.languages.some((option) => option.value === language)
+    ? language
+    : "";
+  const safeCountry = filters.countries.some((option) => option.value === country.toUpperCase())
+    ? country.toUpperCase()
+    : "";
+  const safeSpecialtyCategorySlug = filters.specialtyCategories.some(
+    (option) => option.value === specialtyCategorySlug,
+  )
+    ? specialtyCategorySlug
+    : "";
+  const safeSpecialtySlug = filters.specialties.some(
+    (option) =>
+      option.slug === specialtySlug &&
+      (!safeSpecialtyCategorySlug ||
+        option.category?.slug === safeSpecialtyCategorySlug),
+  )
+    ? specialtySlug
+    : "";
 
-  const knownCategorySlugs = new Set(specialties.map((item) => item.categorySlug).filter(Boolean) as string[]);
-  const safeSpecialtyCategorySlug =
-    specialtyCategorySlug && knownCategorySlugs.has(specialtyCategorySlug)
-      ? specialtyCategorySlug
-      : "";
-  const knownSlugs = new Set(specialties.map((item) => item.slug));
-  const safeSpecialtySlug =
-    specialtySlug &&
-    knownSlugs.has(specialtySlug) &&
-    (!safeSpecialtyCategorySlug ||
-      specialties.some(
-        (item) =>
-          item.slug === specialtySlug &&
-          item.categorySlug === safeSpecialtyCategorySlug,
-      ))
-      ? specialtySlug
-      : "";
-  const specialtyLabels = Object.fromEntries(specialties.map((item) => [item.slug, item.name]));
-
-  const tLanguages = await getTranslations("practitioners-listing.languages");
-  const languageLabels = Object.fromEntries(
-    LANGUAGE_CODES.map((code) => [code, tLanguages(code)]),
+  const specialtyLabels = Object.fromEntries(
+    filters.specialties.map((item) => [item.slug, item.name]),
   );
-  const tCountries = await getTranslations("practitioners-listing.countries");
-  const countryLabels = Object.fromEntries(COUNTRY_CODES.map((code) => [code, tCountries(code)]));
+  const languageLabels = Object.fromEntries(
+    filters.languages.map((item) => [item.value, item.label]),
+  );
+  const countryLabels = Object.fromEntries(
+    filters.countries.map((item) => [item.value.toLowerCase(), item.label]),
+  );
 
   let fetchError = false;
   let items: Awaited<ReturnType<typeof fetchPublicPractitioners>>["items"] = [];
@@ -216,6 +188,7 @@ export async function getPractitionersListingData(
   try {
     const data = await fetchPublicPractitioners(locale, {
       search: safeSearch || undefined,
+      specialtyCategorySlug: safeSpecialtyCategorySlug || undefined,
       specialtySlug: safeSpecialtySlug || undefined,
       language: safeLanguage || undefined,
       country: safeCountry || undefined,
@@ -223,10 +196,6 @@ export async function getPractitionersListingData(
       gender: safeGender || undefined,
       duration: safeDuration,
       onlineNow: safeOnlineNow || undefined,
-      availableToday: safeAvailableToday || undefined,
-      availableThisWeek: safeAvailableThisWeek || undefined,
-      acceptsCoupon: safeAcceptsCoupon,
-      acceptsPackage: safeAcceptsPackage,
       minRating: safeMinRating,
       minSessionFee: safeMinSessionFee,
       maxSessionFee: safeMaxSessionFee,
@@ -241,8 +210,7 @@ export async function getPractitionersListingData(
   }
 
   return {
-    specialties,
-    specialtyCategories,
+    filters,
     specialtyLabels,
     languageLabels,
     countryLabels,
@@ -259,10 +227,6 @@ export async function getPractitionersListingData(
     safeGender,
     safeDuration,
     safeOnlineNow,
-    safeAvailableToday,
-    safeAvailableThisWeek,
-    safeAcceptsCoupon,
-    safeAcceptsPackage,
     safeMinRating,
     safeMinSessionFee,
     safeMaxSessionFee,
@@ -277,8 +241,7 @@ export default async function PractitionersListingView({
 }: PractitionersListingViewProps) {
   const tPage = await getTranslations("practitioners-listing.page");
   const {
-    specialties,
-    specialtyCategories,
+    filters,
     specialtyLabels,
     languageLabels,
     countryLabels,
@@ -295,10 +258,6 @@ export default async function PractitionersListingView({
     safeGender,
     safeDuration,
     safeOnlineNow,
-    safeAvailableToday,
-    safeAvailableThisWeek,
-    safeAcceptsCoupon,
-    safeAcceptsPackage,
     safeMinRating,
     safeMinSessionFee,
     safeMaxSessionFee,
@@ -317,10 +276,6 @@ export default async function PractitionersListingView({
     if (safeGender) qs.set("gender", safeGender);
     if (safeDuration) qs.set("duration", String(safeDuration));
     if (safeOnlineNow) qs.set("onlineNow", "true");
-    if (safeAvailableToday) qs.set("availableToday", "true");
-    if (safeAvailableThisWeek) qs.set("availableThisWeek", "true");
-    if (safeAcceptsCoupon !== undefined) qs.set("acceptsCoupon", String(safeAcceptsCoupon));
-    if (safeAcceptsPackage !== undefined) qs.set("acceptsPackage", String(safeAcceptsPackage));
     if (safeMinRating !== undefined) qs.set("minRating", String(safeMinRating));
     if (safeMinSessionFee !== undefined) qs.set("minSessionFee", String(safeMinSessionFee));
     if (safeMaxSessionFee !== undefined) qs.set("maxSessionFee", String(safeMaxSessionFee));
@@ -345,12 +300,7 @@ export default async function PractitionersListingView({
       <div className="bg-background px-6 pb-8 pt-3 dark:bg-background">
         <div className="mx-auto max-w-7xl space-y-3">
           <FilterControls
-            specialties={specialties}
-            specialtyCategories={specialtyCategories}
-            languageCodes={LANGUAGE_CODES}
-            languageLabels={languageLabels}
-            countryCodes={COUNTRY_CODES}
-            countryLabels={countryLabels}
+            filters={filters}
             limitOptions={VALID_LIMIT_VALUES}
           />
 
@@ -463,12 +413,7 @@ export default async function PractitionersListingView({
 
             <div className="w-full lg:max-w-[390px] lg:shrink-0">
               <FilterControls
-                specialties={specialties}
-                specialtyCategories={specialtyCategories}
-                languageCodes={LANGUAGE_CODES}
-                languageLabels={languageLabels}
-                countryCodes={COUNTRY_CODES}
-                countryLabels={countryLabels}
+                filters={filters}
                 limitOptions={VALID_LIMIT_VALUES}
                 desktopMode="sidebar"
               />
