@@ -75,6 +75,30 @@ If the scripts were transferred from Windows, verify they still have LF endings 
 docker compose -f docker-compose.prod.yml build
 ```
 
+## Local validation before push
+
+Run this on a Windows machine from the repo root before pushing or merging:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\scripts\local-validate.ps1
+```
+
+Optional Docker image build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\scripts\local-validate.ps1 -BuildDocker
+```
+
+What it checks:
+
+- repo folder presence for `sawiyaa-backend-v1` and `sawiyaa-frontend-v1`
+- Docker availability
+- backend `npm ci`, Prisma client generation, and build
+- frontend `npm ci` and build
+- `docker compose -f docker-compose.prod.yml config`
+
+This is local validation only. It does not deploy, does not run production migrations, and does not replace GitHub Actions CI.
+
 ## Start
 
 ```bash
