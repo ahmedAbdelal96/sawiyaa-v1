@@ -95,6 +95,7 @@ export type PractitionerRatingThresholdOption = {
 export type PractitionerFeeBounds = {
   min: number;
   max: number;
+  actualMin?: number;
   currency: "EGP" | "USD";
   step: number;
 };
@@ -147,6 +148,12 @@ export type PractitionerQueryParams = {
   sort?: "recommended" | "experience" | "rating";
   page?: number;
   limit?: number;
+};
+
+export type ActiveFeeFilterContext = {
+  duration?: 30 | 60;
+  minSessionFee?: number;
+  maxSessionFee?: number;
 };
 
 export type PractitionerPagination = {

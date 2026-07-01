@@ -1,35 +1,56 @@
 {
   "meta": {
     "title": "Practitioner payouts - Admin",
-    "description": "Review practitioner balances, package money, and manual payout records."
+    "description": "Review practitioner dues and payouts."
   },
+  "unavailable": "Unavailable",
   "list": {
     "meta": {
-      "title": "Practitioner payouts - Admin",
-      "description": "Review each practitioner by currency and record the amount actually transferred outside the platform."
+      "title": "Practitioner Dues - Admin",
+      "description": "Review practitioner dues and payouts."
     },
-    "eyebrow": "Practitioner payouts",
+    "eyebrow": "Admin finance",
     "title": "Practitioner payouts",
-    "description": "Review each practitioner by currency and record the amount actually transferred outside the platform.",
+    "description": "Review practitioner dues and record manual payouts after transfers are completed.",
     "searchLabel": "Search practitioners",
     "searchPlaceholder": "Search by name or identifier",
     "results": "{count, number} practitioners",
     "loading": "Loading practitioners...",
-    "emptyTitle": "No payable balances right now",
-    "emptyDescription": "There are no practitioners with payable or package balances at the moment.",
-    "note": "Session balances and package balances are shown on the same page while keeping EGP and USD separate.",
+    "emptyTitle": "No practitioners match the current filters.",
+    "emptyDescription": "There are no practitioners with dues in the current results.",
+    "unavailable": "Unavailable",
     "filters": {
       "all": "All",
       "hasPayable": "Has money",
       "hasPackage": "Has package money",
       "allCurrencies": "All currencies"
     },
+    "status": {
+      "hasPayable": "Has payable money",
+      "hasPackage": "Has package money"
+    },
+    "summary": {
+      "practitionersWithDues": "Practitioners with dues",
+      "totalDueEgp": "Total EGP dues",
+      "totalDueUsd": "Total USD dues",
+      "readyForPayoutPractitioners": "Ready for payout"
+    },
     "columns": {
       "practitioner": "Practitioner",
-      "payableEgp": "Payable EGP",
-      "payableUsd": "Payable USD",
+      "egpDue": "EGP due",
+      "usdDue": "USD due",
       "lastPayout": "Last payout",
       "actions": "Actions"
+    },
+    "balanceCards": {
+      "EGP": {
+        "available": "Available for payout",
+        "held": "Held package balance:"
+      },
+      "USD": {
+        "available": "Available for payout",
+        "held": "Held package balance:"
+      }
     },
     "payableNow": "Payable now",
     "normalSessionsShort": "Normal sessions:",
@@ -48,55 +69,55 @@
     },
     "actions": {
       "viewDetails": "View details",
-      "pay": "Pay",
+      "pay": "Record manual payout",
       "history": "Payout history",
-      "createSettlement": "Create settlement",
+      "createPayout": "Record manual payout",
+      "recordManualPayout": "Record manual payout",
       "reconciliation": "Accounting review"
-    },
-    "workspace": {
-      "eyebrow": "Settlement workspace",
-      "title": "Create a settlement after the money leaves Sawiyaa",
-      "description": "Pick the practitioner, confirm the payout destination snapshot, then record the exact amount you transferred outside the platform.",
-      "bullets": {
-        "manualTransfer": "External transfer only",
-        "recordActualAmount": "Record the actual amount paid",
-        "keepHistory": "Keep the payout history in one place"
-      }
     },
     "pagination": {
       "previous": "Previous",
       "next": "Next",
       "page": "Page {page, number} of {totalPages, number}"
-    }
+    },
+    "errorTitle": "We couldn't load practitioner dues.",
+    "errorDescription": "We couldn't load practitioner dues. Please try again.",
+    "errorRetry": "Try again"
   },
   "detail": {
     "meta": {
-      "title": "Practitioner payout details",
-      "description": "View currency balances, package amounts, and payout history for one practitioner."
+      "title": "Practitioner Payout Detail",
+      "description": "Review this practitioner's backend balance snapshot and recorded manual payouts."
     },
-    "eyebrow": "Practitioner payouts",
-    "description": "See currency-specific balances, package amounts, and payout history for one practitioner.",
+    "eyebrow": "Practitioner payout detail",
+    "description": "Review this practitioner's backend balance snapshot and recorded manual payouts.",
+    "snapshotNote": "Balances shown here come from backend payout balance endpoints. They are a current snapshot for this practitioner and should be checked before recording any manual payout.",
+    "manualTransferNote": "Recording a payout here documents an external manual transfer. It does not send money automatically from Sawiyaa.",
+    "balanceScopeNote": "Held amounts are not necessarily available for payout until released by the platform rules.",
     "backToList": "Back to payouts list",
-    "payNow": "Pay now",
+    "payNow": "Record manual payout",
     "sections": {
-      "egp": "Egyptian pound",
-      "usd": "US dollar"
+      "egp": "EGP balance",
+      "usd": "USD balance"
     },
     "metrics": {
-      "normal": "Normal session payable",
-      "packageReleased": "Package released payable",
-      "packageHeld": "Package held amount",
-      "totalPayable": "Total payable now",
-      "lastPayout": "Last payout"
+      "normalSessionPayable": "Normal session payable",
+      "packageReleasedAmount": "Package released amount",
+      "packageHeldAmount": "Held package balance",
+      "remainingDue": "Remaining due",
+      "lastPayout": "Last recorded payout"
     },
-    "lastPayoutEmpty": "No payout recorded yet",
-    "packageSectionTitle": "Package money",
-    "packageSectionDescription": "Package money belongs to the practitioner account, but the held part stays outside the payable total until it is released.",
+    "availableForManualPayout": "Available for manual payout",
+    "heldPackageBalance": "Held package balance",
+    "lastPayoutEmpty": "No recorded payout yet",
+    "packageSectionTitle": "Package amounts",
+    "packageSectionDescription": "Package amounts belong to the practitioner account, but the held part stays outside the payoutable total until it is released.",
     "packageSectionNote": "Held package amounts are shown for clarity only and cannot be paid now unless the backend release rules already allow it.",
-    "historyEyebrow": "Payout history",
-    "historyTitle": "Payout history",
-    "historyDescription": "Recent manual payouts recorded for this practitioner.",
-    "historyEmptyTitle": "No payouts yet",
+    "historyEyebrow": "Recorded payout history",
+    "historyTitle": "Recorded payout history",
+    "historyDescription": "This section shows recorded payout entries returned for this practitioner.",
+    "historyScopeNote": "This section shows recorded payout entries returned for this practitioner.",
+    "historyEmptyTitle": "No recorded payouts for this practitioner yet.",
     "historyEmptyDescription": "Recorded payouts will appear here once they are saved.",
     "actions": {
       "reconciliation": "Accounting review"
@@ -111,38 +132,55 @@
       "clear": "Clear filters"
     },
     "historyColumns": {
-      "amount": "Amount",
+      "amount": "Recorded amount",
       "currency": "Currency",
-      "paidAt": "Payment date",
+      "paidAt": "Recorded at",
       "paymentMethod": "Method",
       "reference": "Transfer reference",
-      "notes": "Notes"
+      "notes": "Proof / notes"
     }
   },
   "history": {
     "meta": {
       "title": "Payout history - Admin",
-      "description": "Review manual payouts recorded across practitioners."
+      "description": "Review manual payouts recorded after external transfers."
     },
-    "eyebrow": "Payout history",
+    "eyebrow": "Recorded payout history",
     "title": "Payout history",
-    "description": "Review payout records recorded by admins.",
+    "description": "Review recorded payouts.",
+    "safetyNote": "Recorded payouts only.",
+    "tableSubtitle": "Backend totals.",
+    "filterNote": "Filters update the server results.",
     "backToList": "Back to payouts",
     "results": "{count, number} records",
+    "summary": {
+      "totalPayouts": "Total payouts",
+      "egpRecorded": "Total recorded EGP",
+      "usdRecorded": "Total recorded USD",
+      "filterMatched": "Filtered totals",
+      "currencyMatched": "Currency totals"
+    },
     "loading": "Loading payout history...",
-    "emptyTitle": "No payout records",
-    "emptyDescription": "Recorded payouts will appear here.",
+    "emptyTitle": "No recorded payouts match the current filters.",
+    "emptyDescription": "Recorded manual payouts will appear here when matching rows are available.",
     "filters": {
       "currencyLabel": "Currency",
-      "allCurrencies": "All currencies"
+      "allCurrencies": "All currencies",
+      "practitionerLabel": "Practitioner",
+      "practitionerPlaceholder": "Search by practitioner name or ID",
+      "methodLabel": "Method",
+      "allMethods": "All methods",
+      "from": "From",
+      "to": "To",
+      "clear": "Clear filters"
     },
     "columns": {
       "practitioner": "Practitioner",
       "currency": "Currency",
-      "amount": "Amount paid",
-      "paidAt": "Payment date",
+      "amount": "Recorded amount",
+      "paidAt": "Transfer date",
       "reference": "Transfer reference",
-      "notes": "Notes",
+      "notes": "Proof / notes",
       "recordedBy": "Recorded by",
       "actions": "Actions"
     },
@@ -153,51 +191,58 @@
     },
     "actions": {
       "viewPractitioner": "View practitioner",
-      "viewDetails": "View details"
+      "viewDetails": "View details",
+      "reconciliation": "Accounting review"
     },
+    "errorTitle": "We couldn't load payout history.",
+    "errorDescription": "We couldn't load payout history. Please try again.",
+    "errorRetry": "Try again",
     "detail": {
-      "eyebrow": "Payout record",
+      "eyebrow": "Recorded payout",
       "title": "Payout details",
-      "description": "Review the payout record exactly as it was saved by the admin.",
+      "description": "Review this recorded payout.",
       "close": "Close",
       "unknownPractitioner": "Unknown practitioner",
-      "notesTitle": "Notes",
+      "reviewOnlyNotice": "Review only.",
+      "reviewOnlyHelper": "This shows a recorded manual transfer and does not move money.",
+      "notesTitle": "Proof / notes",
       "noNotes": "No notes were added for this payout.",
       "fields": {
-        "amount": "Amount paid",
+        "amount": "Recorded amount",
         "currency": "Currency",
-        "paidAt": "Payment date",
+        "paidAt": "Transfer date",
+        "recordedAt": "Recorded at",
         "paymentMethod": "Method",
         "reference": "Transfer reference",
         "recordedBy": "Recorded by"
       }
     }
   },
-  "drawer": {
+    "drawer": {
     "eyebrow": "Manual payout",
-    "searchEyebrow": "Settlement workspace",
-    "searchTitle": "Create settlement",
-    "searchDescription": "Search by practitioner name or code to choose the practitioner you want to record a settlement for.",
-    "title": "Record practitioner payout",
-    "description": "Choose the currency and record the amount actually transferred outside the platform.",
-    "manualNotice": "This only records the payout. The transfer happens outside the platform.",
+    "searchEyebrow": "Payout workspace",
+    "searchTitle": "Record manual payout",
+    "searchDescription": "Search by practitioner name or code to choose the practitioner you want to record a payout for.",
+    "title": "Record manual payout",
+    "description": "Enter the amount that was actually transferred outside Sawiyaa. Partial payouts are allowed; the remaining balance stays due.",
+    "manualNotice": "Recording a payout here documents an external manual transfer. It does not send money automatically from Sawiyaa.",
     "searchHint": "Search returns up to 30 lightweight results only.",
-    "searchStartTitle": "Find a practitioner to settle",
-    "searchStartDescription": "Search by practitioner name or code to choose the practitioner you want to record a settlement for.",
+    "searchStartTitle": "Find a practitioner to pay",
+    "searchStartDescription": "Search by practitioner name or code to choose the practitioner you want to record a payout for.",
     "searchEmptyTitle": "No matching results",
     "searchEmptyDescription": "Try another name or code.",
     "searchPlaceholder": "Search by practitioner name or code",
     "selectPractitioner": "Select",
     "selectedPractitioner": "Selected practitioner",
     "selectionNote": "Review the balance cards and the read-only payout destination snapshot, then record the actual amount you transferred outside Sawiyaa.",
-    "identityConfirmation": "Confirm the practitioner details before recording the settlement.",
+    "identityConfirmation": "Confirm the practitioner details before recording the payout.",
     "changePractitioner": "Change practitioner",
     "viewHistory": "View payout history",
-    "openSettlement": "Open settlement",
+    "openPayout": "Open payout",
     "currencyHelp": "Each currency has a separate balance and is recorded independently.",
     "practitioner": "Practitioner",
     "selectedCurrency": "Selected currency",
-    "currentCurrencyLabel": "Current settlement currency",
+    "currentCurrencyLabel": "Current payout currency",
     "currencyActive": "Selected",
     "currencySwitch": "Switch",
     "currencyBadge": {
@@ -206,25 +251,25 @@
     },
     "summary": {
       "normal": "Normal sessions",
-      "packageReleased": "Package released payable",
-      "packageHeld": "Package held amount",
-      "totalPayable": "Total payable"
+      "packageReleased": "Package released amount",
+      "packageHeld": "Held package balance",
+      "totalPayable": "Remaining due"
     },
     "balanceBreakdown": "Normal {normal} · Packages {packages} · Held {held}",
-    "lastPayout": "Last payout",
+    "lastPayout": "Last recorded payout",
     "packageHeldNote": "Held package amounts are shown for review only and are not part of the payable total.",
     "noPayableAmount": "There is no payable amount for this practitioner in the selected currency.",
     "currencyLabel": "Currency",
-    "amountPaidLabel": "Amount transferred",
-    "paidAtLabel": "Transfer date",
+    "amountPaidLabel": "Recorded amount",
+    "paidAtLabel": "Recorded at",
     "paymentMethodLabel": "Transfer method",
-    "transferReferenceLabel": "Transfer reference",
+    "transferReferenceLabel": "External transfer reference",
     "transferReferencePlaceholder": "Bank or wallet reference",
     "notesLabel": "Notes",
     "notesPlaceholder": "Optional note",
-    "remainingLabel": "Remaining after payment",
+    "remainingLabel": "Remaining due",
     "packageHeldLabel": "Held amount",
-    "footerNote": "Record the amount that was actually transferred outside the platform.",
+    "footerNote": "Recording a payout here documents an external manual transfer. It does not send money automatically from Sawiyaa.",
     "destinationTitle": "Payout destination snapshot",
     "destinationReadOnly": "Read only",
     "destinationMissing": "No payout destination snapshot is available for this practitioner.",
@@ -250,13 +295,16 @@
       "amountTooHigh": "You cannot record more than the payable amount for this currency."
     },
     "amountCurrencyNote": "Amount currency: {currency}",
+    "amountLimitNote": "Do not exceed the available due balance for the selected currency.",
+    "partialNote": "Enter the amount that was actually transferred outside Sawiyaa. Partial payouts are allowed; the remaining balance stays due.",
     "comboboxLabel": "Select practitioner",
     "clearSearch": "Clear search",
     "searchError": "Could not load search results right now.",
     "destinationAvailable": "Payout destination available",
     "destinationMissingShort": "Needs payout destination",
     "initialEmptyMessage": "No practitioners have settlement-eligible balances right now.",
-    "confirmationCheckboxLabel": "I confirm the amount above is the amount actually transferred outside the platform."
+    "confirmationCheckboxLabel": "I confirm the amount above is the amount actually transferred outside the platform.",
+    "confirmAction": "Confirm recorded payout"
   },
   "currencies": {
     "EGP": "EGP - Egyptian pound",
@@ -269,14 +317,14 @@
     "OTHER": "Other"
   },
   "actions": {
-    "record": "Record payout",
+    "record": "Record manual payout",
     "saving": "Saving...",
-    "pay": "Pay",
-    "payNow": "Pay now",
+    "pay": "Record manual payout",
+    "payNow": "Record manual payout",
     "backToList": "Back to list",
     "viewDetails": "View details",
     "history": "Payout history",
-    "createSettlement": "Create settlement",
+    "createPayout": "Record manual payout",
     "reconciliation": "Accounting review"
   },
   "errors": {
@@ -291,7 +339,7 @@
     "practitionerNotFound": "Practitioner not found."
   },
   "messages": {
-    "success": "Settlement saved successfully.",
-    "error": "Could not save the settlement right now. Please try again."
+    "success": "Payout saved successfully.",
+    "error": "Could not save the payout right now. Please try again."
   }
 }

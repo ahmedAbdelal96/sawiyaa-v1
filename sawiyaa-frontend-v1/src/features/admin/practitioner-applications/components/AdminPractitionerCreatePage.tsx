@@ -13,6 +13,8 @@ import {
   useCreateAdminPractitionerDirect,
   useUploadAdminDirectPractitionerCredentialFile,
 } from "../hooks/use-practitioner-applications";
+import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
+import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import type {
   CreateAdminPractitionerRequest,
 } from "../types/practitioner-applications.types";
@@ -30,6 +32,7 @@ import {
   normalizeBankValue,
   normalizeWalletProviderValue,
 } from "@/lib/catalogs/payout";
+import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
 
 const PRACTITIONER_TYPES: PractitionerType[] = [
   "PSYCHOLOGIST",
@@ -259,6 +262,7 @@ export default function AdminPractitionerCreatePage() {
   const isRtl = locale.startsWith("ar");
   const createMutation = useCreateAdminPractitionerDirect();
   const uploadMutation = useUploadAdminDirectPractitionerCredentialFile();
+  const stepUp = useAdminStepUp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<StepId>("account");
@@ -631,61 +635,58 @@ export default function AdminPractitionerCreatePage() {
       return;
     }
 
-    uploadMutation.mutate(
-      {
-        credentialType: uploadDraft.credentialType,
-        expiresAt: uploadDraft.expiresAt
-          ? `${uploadDraft.expiresAt}T00:00:00.000Z`
-          : undefined,
-        file: uploadDraft.file as File,
-      },
-      {
-        onSuccess: (response) => {
-          const file = uploadDraft.file as File;
-          setCredentials((current) => [
-            ...current,
-            {
-              id: `${response.credential.credentialType}-${response.credential.fileUrl}`,
-              credentialType: response.credential.credentialType,
-              fileUrl: response.credential.fileUrl,
-              expiresAt: uploadDraft.expiresAt || undefined,
-              fileName: file.name,
-              sizeBytes: response.credential.sizeBytes,
-            },
-          ]);
-          setUploadDraft(INITIAL_UPLOAD);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-          setErrors((current) => {
-            const next = { ...current };
-            delete next.credentials;
-            delete next.uploadFile;
-            return next;
-          });
-        },
-        onError: (error) => {
-          const response = (error as {
-            response?: {
-              data?: {
-                message?: string;
-                messageKey?: string;
-              };
-            };
-          })?.response?.data;
+    const payload = {
+      credentialType: uploadDraft.credentialType,
+      expiresAt: uploadDraft.expiresAt
+        ? `${uploadDraft.expiresAt}T00:00:00.000Z`
+        : undefined,
+      file: uploadDraft.file as File,
+    };
 
-          setErrors((current) => ({
-            ...current,
-            uploadFile: t("applications.directCreate.validation.uploadFileRequired"),
-          }));
-          setGlobalError(
-            response?.messageKey
-              ? t("applications.directCreate.upload.submitError")
-              : t("applications.directCreate.upload.submitError")
-          );
-        },
+    const runUpload = async () => {
+      try {
+        const response = await uploadMutation.mutateAsync(payload);
+        const file = uploadDraft.file as File;
+        setCredentials((current) => [
+          ...current,
+          {
+            id: `${response.credential.credentialType}-${response.credential.fileUrl}`,
+            credentialType: response.credential.credentialType,
+            fileUrl: response.credential.fileUrl,
+            expiresAt: uploadDraft.expiresAt || undefined,
+            fileName: file.name,
+            sizeBytes: response.credential.sizeBytes,
+          },
+        ]);
+        setUploadDraft(INITIAL_UPLOAD);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        setGlobalError(null);
+        setErrors((current) => {
+          const next = { ...current };
+          delete next.credentials;
+          delete next.uploadFile;
+          return next;
+        });
+      } catch (cause) {
+        const appError = toAppError(cause);
+
+        const message =
+          appError.statusCode === 403
+            ? t("applications.directCreate.upload.forbidden")
+            : t("applications.directCreate.upload.submitError");
+
+        setErrors((current) => ({
+          ...current,
+          uploadFile: message,
+        }));
+        setGlobalError(message);
       }
-    );
+    };
+
+    setGlobalError(null);
+    void runUpload();
   };
 
   const handleSubmit = () => {
@@ -700,8 +701,9 @@ export default function AdminPractitionerCreatePage() {
     setGlobalError(null);
     setServerDetails([]);
 
-    createMutation.mutate(normalizedPayload, {
-      onSuccess: (response) => {
+    const runCreate = async () => {
+      try {
+        const response = await createMutation.mutateAsync(normalizedPayload);
         setSuccessState({
           practitionerName:
             response.practitioner.displayName || normalizedPayload.displayName,
@@ -709,9 +711,14 @@ export default function AdminPractitionerCreatePage() {
           password: normalizedPayload.password,
           practitionerProfileId: response.practitioner.practitionerProfileId,
         });
-      },
-      onError: (error: unknown) => {
-        const response = (error as {
+      } catch (cause) {
+        const appError = toAppError(cause);
+
+        if (isStepUpRequiredError(appError)) {
+          throw appError;
+        }
+
+        const response = (cause as {
           response?: {
             data?: {
               message?: string;
@@ -791,9 +798,30 @@ export default function AdminPractitionerCreatePage() {
           setStep("payout");
         }
 
-        setGlobalError(t("applications.directCreate.submitError"));
+        setGlobalError(
+          appError.statusCode === 403
+            ? t("applications.directCreate.submitForbidden")
+            : t("applications.directCreate.submitError")
+        );
         setServerDetails(Array.from(new Set(friendlyDetails)));
-      },
+      }
+    };
+
+    void runCreate().catch((cause) => {
+      const appError = toAppError(cause);
+
+      if (isStepUpRequiredError(appError)) {
+        stepUp.requestStepUp(async () => {
+          await runCreate();
+        });
+        return;
+      }
+
+      setGlobalError(
+        appError.statusCode === 403
+          ? t("applications.directCreate.submitForbidden")
+          : t("applications.directCreate.submitError")
+      );
     });
   };
 
@@ -1695,6 +1723,8 @@ export default function AdminPractitionerCreatePage() {
           </Link>
         </div>
       </div>
+
+      <AdminUserStepUpDialog controller={stepUp} />
     </div>
   );
 }

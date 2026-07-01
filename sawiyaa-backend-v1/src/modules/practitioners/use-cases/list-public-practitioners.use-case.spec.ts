@@ -2,17 +2,17 @@ import { Prisma } from '@prisma/client';
 import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
-import type { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
+import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { ListPublicPractitionersUseCase } from './list-public-practitioners.use-case';
 
 describe('ListPublicPractitionersUseCase', () => {
   const publicReadRepository = {
     listPublic: jest.fn(),
   } as unknown as PublicPractitionerReadRepository;
-  const patientProfileRepository = {
-    findByUserId: jest.fn(),
-  } as unknown as PatientProfileRepository;
+  const pricingContextService = {
+    resolve: jest.fn(),
+  } as unknown as PublicPractitionerPricingContextService;
   const sessionReviewRatingAggregationService = {
     aggregateByPractitionerIds: jest.fn(),
   } as unknown as SessionReviewRatingAggregationService;
@@ -23,12 +23,18 @@ describe('ListPublicPractitionersUseCase', () => {
     mapper,
     visibilityPolicy,
     publicReadRepository,
-    patientProfileRepository,
+    pricingContextService,
     sessionReviewRatingAggregationService,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (pricingContextService.resolve as jest.Mock).mockResolvedValue({
+      resolvedCountryIsoCode: null,
+      regionalPricingMode: 'INTERNATIONAL',
+      currencyCode: 'USD',
+      provider: 'PAYMOB',
+    });
   });
 
   const baseRow = {
@@ -147,5 +153,28 @@ describe('ListPublicPractitionersUseCase', () => {
         specialtySlug: 'therapy',
       }),
     );
+  });
+
+  it('uses shared pricing context so Egypt-authenticated users see EGP display prices', async () => {
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
+    (pricingContextService.resolve as jest.Mock).mockResolvedValue({
+      resolvedCountryIsoCode: 'EG',
+      regionalPricingMode: 'EGYPT_LOCAL',
+      currencyCode: 'EGP',
+      provider: 'PAYMOB',
+    });
+
+    const result = await useCase.execute({
+      locale: 'en',
+      currentUserId: 'patient-1',
+    });
+
+    expect(pricingContextService.resolve).toHaveBeenCalledWith({
+      currentUserId: 'patient-1',
+      guestCountryIsoCode: undefined,
+    });
+    expect(result.items[0].currencyCode).toBe('EGP');
+    expect(result.items[0].displaySessionPrice30).toBe(250);
+    expect(result.items[0].displaySessionPrice60).toBe(450);
   });
 });

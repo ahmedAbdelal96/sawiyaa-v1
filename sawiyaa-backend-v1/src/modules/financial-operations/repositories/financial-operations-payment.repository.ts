@@ -161,6 +161,8 @@ export class FinancialOperationsPaymentRepository {
                 provider: true,
                 paymentPurpose: true,
                 status: true,
+                amountTotal: true,
+                currencyCode: true,
                 providerPaymentRef: true,
                 providerOrderRef: true,
                 sessionId: true,
@@ -330,6 +332,8 @@ export class FinancialOperationsPaymentRepository {
         externalRef:
           event.providerEventRef ?? event.payment.providerPaymentRef ?? null,
         summary: this.summarizePaymentEvent(event.eventType),
+        amount: event.payment.amountTotal.toString(),
+        currencyCode: event.payment.currencyCode,
         occurredAt: event.createdAt,
         createdAt: event.createdAt,
         linkedSessionId: event.payment.sessionId ?? null,
@@ -354,6 +358,8 @@ export class FinancialOperationsPaymentRepository {
         externalRef:
           refund.providerRefundRef ?? refund.payment.providerPaymentRef ?? null,
         summary: this.summarizeRefundEvent(refund.status),
+        amount: refund.amount.toString(),
+        currencyCode: refund.currencyCode,
         occurredAt: refund.requestedAt,
         createdAt: refund.createdAt,
         linkedSessionId: refund.sessionId ?? refund.payment.sessionId ?? null,
@@ -406,6 +412,8 @@ export class FinancialOperationsPaymentRepository {
             provider: true,
             paymentPurpose: true,
             status: true,
+            amountTotal: true,
+            currencyCode: true,
             providerPaymentRef: true,
             providerOrderRef: true,
             sessionId: true,
@@ -459,6 +467,8 @@ export class FinancialOperationsPaymentRepository {
           paymentEvent.payment.providerPaymentRef ??
           null,
         summary: this.summarizePaymentEvent(paymentEvent.eventType),
+        amount: paymentEvent.payment.amountTotal.toString(),
+        currencyCode: paymentEvent.payment.currencyCode,
         occurredAt: paymentEvent.createdAt,
         createdAt: paymentEvent.createdAt,
         linkedSessionId: paymentEvent.payment.sessionId ?? null,
@@ -527,6 +537,8 @@ export class FinancialOperationsPaymentRepository {
       externalRef:
         refund.providerRefundRef ?? refund.payment.providerPaymentRef ?? null,
       summary: this.summarizeRefundEvent(refund.status),
+      amount: refund.amount.toString(),
+      currencyCode: refund.currencyCode,
       occurredAt: refund.requestedAt,
       createdAt: refund.createdAt,
       linkedSessionId: refund.sessionId ?? refund.payment.sessionId ?? null,

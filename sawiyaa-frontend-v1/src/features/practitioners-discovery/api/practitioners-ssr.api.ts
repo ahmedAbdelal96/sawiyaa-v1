@@ -176,9 +176,15 @@ export async function fetchPublicPractitioners(
 
 export async function fetchPublicPractitionerFilters(
   locale: string,
+  params?: Pick<PractitionerQueryParams, "duration">,
 ): Promise<PractitionerFiltersMetadata> {
   return serverGet<PractitionerFiltersMetadata>(
     PRACTITIONERS_PUBLIC_ROUTES.filters,
-    { locale },
+    {
+      locale,
+      params: {
+        duration: params?.duration,
+      },
+    },
   );
 }

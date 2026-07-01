@@ -1,4 +1,4 @@
-import type { PublicPractitioner } from "../types/practitioner";
+import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerCard from "./PractitionerCard";
 import EmptyPractitionersState from "./EmptyPractitionersState";
 
@@ -6,6 +6,7 @@ type Props = {
   practitioners: PublicPractitioner[];
   specialtyLabels: Record<string, string>;
   languageLabels: Record<string, string>;
+  activeFeeFilter: ActiveFeeFilterContext;
   basePath?: string;
 };
 
@@ -13,6 +14,7 @@ export default function PractitionerGrid({
   practitioners,
   specialtyLabels,
   languageLabels,
+  activeFeeFilter,
   basePath,
 }: Props) {
   if (practitioners.length === 0) {
@@ -27,6 +29,7 @@ export default function PractitionerGrid({
           practitioner={p}
           specialtyLabels={specialtyLabels}
           languageLabels={languageLabels}
+          activeFeeFilter={activeFeeFilter}
           basePath={basePath}
         />
       ))}

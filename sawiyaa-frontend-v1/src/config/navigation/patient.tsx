@@ -19,7 +19,7 @@ export const patientNavigation: NavigationConfig = [
     items: [
       { key: "messages", icon: <NavigationIcons.chat />, path: "/messages" },
       { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help" },
-      { key: "academy", icon: <NavigationIcons.training />, path: "/academy" },
+      { key: "academy", icon: <NavigationIcons.training />, path: "/patient/academy" },
       { key: "payments", icon: <NavigationIcons.payments />, path: "/payments" },
     ],
   },

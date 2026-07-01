@@ -1525,7 +1525,7 @@ export interface CheckAvailabilityRequest {
   date: string;
 }
 
-export interface AvailabilitySlot {
+export interface AvailabilityOption {
   time: string;
   staffId?: string;
   staffName?: string;

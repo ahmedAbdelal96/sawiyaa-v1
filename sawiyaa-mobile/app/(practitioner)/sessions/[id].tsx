@@ -11,7 +11,6 @@ import {
   LoadingState,
   Screen,
   StatusBadge,
-  StatusChip,
   Text,
 } from "../../../src/components/ui";
 import {
@@ -58,6 +57,7 @@ export default function PractitionerSessionDetailScreen() {
   const { theme } = useTheme();
   const direction = getAppDirection(i18n.language);
   const isRTL = direction === "rtl";
+  const rowDirection = isRTL ? "row-reverse" : "row";
   const locale = isRTL ? "ar-SA" : "en-US";
   const textAlign = isRTL ? "right" : "left";
   const autoJoinKeyRef = useRef<string | null>(null);
@@ -70,6 +70,7 @@ export default function PractitionerSessionDetailScreen() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [joinContract, setJoinContract] =
     useState<PractitionerSessionJoinContract | null>(null);
+
   const handleBackToSessions = () => {
     router.replace("/(practitioner)/sessions");
   };
@@ -131,25 +132,22 @@ export default function PractitionerSessionDetailScreen() {
 
     return [
       {
-        label: t("practitioner.detail.sessionType"),
+        label: t("practitioner.detail.sessionType", "نوع الموعد"),
         value: getFlowTypeLabel(session.flowType, t),
       },
       {
-        label: t("practitioner.detail.mode"),
+        label: t("practitioner.detail.mode", "نوع الجلسة"),
         value: t(`practitioner.detail.modeValue.${session.sessionMode}`),
       },
       {
-        label: t("practitioner.detail.duration"),
+        label: t("practitioner.detail.duration", "المدة"),
         value: t("practitioner.sessions.duration", {
           minutes: session.durationMinutes,
         }),
       },
       {
-        label: t("practitioner.detail.timezone"),
-        value: formatTimeZoneLabel(session.timezone, {
-          locale: i18n.language,
-          fallbackText: t("practitioner.common.notAvailable"),
-        }),
+        label: t("practitioner.detail.timezone", "المنطقة الزمنية"),
+        value: getFriendlyTimezone(session.timezone, i18n.language, t),
       },
     ];
   }, [i18n.language, session, t]);
@@ -185,12 +183,11 @@ export default function PractitionerSessionDetailScreen() {
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
   const canJoinNow = session.joinAvailability?.canJoin === true;
-  const canOpenMessages =
-    session.chatAvailability?.canRead === true;
-  const messagesAreReadOnly = session.chatAvailability.readOnly;
+  const canOpenMessages = session.chatAvailability?.canRead === true;
+  const messagesAreReadOnly = session.chatAvailability?.readOnly;
   const joinUrl = buildJoinUrl(joinContract);
   const canOpenJoinAction = canJoinNow && Boolean(joinUrl);
-  const stateCopy = getSessionStateCopy(session, joinContract, locale, t);
+  const stateCopy = getSessionStateCopy(session, joinContract, locale, t, isRTL);
 
   const handlePrepare = async () => {
     setFeedback(null);
@@ -287,34 +284,40 @@ export default function PractitionerSessionDetailScreen() {
 
   const primaryAction = canOpenJoinAction
     ? {
-        title: t("practitioner.detail.openRoom"),
         onPress: () => void handleOpenRoom(),
         disabled: false,
       }
     : canPrepare
       ? {
-          title: prepareMutation.isPending
-            ? t("practitioner.detail.preparing")
-            : t("practitioner.detail.prepare"),
           onPress: () => void handlePrepare(),
           disabled: prepareMutation.isPending,
         }
       : canCheckJoin
         ? {
-            title: joinMutation.isPending
-              ? t("practitioner.detail.checkingJoin")
-              : t("practitioner.detail.checkJoin"),
             onPress: () => void handleCheckJoin(),
             disabled: joinMutation.isPending,
           }
         : canComplete
           ? {
-              title: completeMutation.isPending
-                ? t("practitioner.detail.completing")
-                : t("practitioner.detail.markCompleted"),
               onPress: () => void handleComplete(),
               disabled: completeMutation.isPending,
             }
+          : null;
+
+  const primaryActionTitle = canOpenJoinAction
+    ? t("practitioner.detail.openRoom", { defaultValue: isRTL ? "انضم الآن" : "Join now" })
+    : canPrepare
+      ? (prepareMutation.isPending
+        ? t("practitioner.detail.preparing")
+        : t("practitioner.detail.prepare"))
+      : canCheckJoin
+        ? (joinMutation.isPending
+          ? t("practitioner.detail.checkingJoin")
+          : t("practitioner.detail.checkJoin"))
+        : canComplete
+          ? (completeMutation.isPending
+            ? t("practitioner.detail.completing")
+            : t("practitioner.detail.markCompleted", { defaultValue: isRTL ? "تحديد كمكتملة" : "Mark completed" }))
           : null;
 
   return (
@@ -325,27 +328,27 @@ export default function PractitionerSessionDetailScreen() {
         title={t("practitioner.detail.title")}
       />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="elevated" padding="md" style={styles.summaryCard}>
-          <View
-            style={[
-              styles.summaryTopRow,
-              { flexDirection: isRTL ? "row-reverse" : "row" },
-            ]}
-          >
-            <View
-              style={[
-                styles.summaryTextWrap,
-                { alignItems: isRTL ? "flex-end" : "flex-start" },
-              ]}
-            >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Main Session Summary Card */}
+        <Card variant="outlined" padding="md" style={styles.summaryCard}>
+          <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+            <View style={styles.patientInfoGroup}>
               <Text
-                weight="600"
-                style={[styles.summaryName, { textAlign }]}
+                weight="700"
+                style={[styles.patientName, { textAlign }]}
+                color={theme.colors.textPrimary}
                 numberOfLines={1}
               >
-                {session.patient?.displayName ??
-                  t("practitioner.sessions.unknownPatient")}
+                {session.patient?.displayName ?? t("practitioner.sessions.unknownPatient")}
+              </Text>
+              <Text
+                color={theme.colors.textMuted}
+                style={[styles.sessionCode, { textAlign }]}
+                numberOfLines={1}
+              >
+                {t("practitioner.detail.sessionCodeLabel", {
+                  sessionCode: session.sessionCode,
+                })}
               </Text>
             </View>
             <StatusBadge
@@ -354,63 +357,78 @@ export default function PractitionerSessionDetailScreen() {
             />
           </View>
 
-          <Text color={theme.colors.textSecondary} style={[styles.summaryMeta, { textAlign }]}>
-            {session.scheduledStartAt
-              ? t("practitioner.detail.sessionAt", {
-                  datetime: formatSessionDate(
-                    session.scheduledStartAt,
-                    locale,
-                    session.timezone,
-                  ),
-                })
-              : t("practitioner.sessions.noSchedule")}
-          </Text>
-
-          <View
-            style={[
-              styles.summaryChipsRow,
-              { flexDirection: isRTL ? "row-reverse" : "row" },
-            ]}
-          >
-            <StatusChip
-              label={t("practitioner.sessions.duration", {
-                minutes: session.durationMinutes,
-              })}
-              tone="default"
-              showDot={false}
-            />
-            <StatusChip
-              label={t(
-                `practitioner.detail.modeValue.${session.sessionMode}`,
-              )}
-              tone="info"
-              showDot={false}
-            />
-            <StatusChip
-              label={getFlowTypeLabel(session.flowType, t)}
-              tone="default"
-              showDot={false}
-            />
+          {/* Date & Time Row */}
+          <View style={[styles.dateTimeRow, { flexDirection: rowDirection }]}>
+            <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
+            <Text weight="600" color={theme.colors.textSecondary} style={styles.dateTimeText}>
+              {session.scheduledStartAt
+                ? formatSessionDate(session.scheduledStartAt, locale, session.timezone)
+                : t("practitioner.sessions.noSchedule")}
+            </Text>
           </View>
 
-          <Text
-            color={theme.colors.textMuted}
-            style={[styles.summaryCode, { textAlign }]}
-            numberOfLines={1}
-          >
-            {t("practitioner.detail.sessionCodeLabel", {
-              sessionCode: session.sessionCode,
-            })}
-          </Text>
+          {/* Chips Row */}
+          <View style={[styles.chipsRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
+                {t("practitioner.sessions.duration", {
+                  minutes: session.durationMinutes,
+                })}
+              </Text>
+            </View>
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
+                {t(`practitioner.detail.modeValue.${session.sessionMode}`)}
+              </Text>
+            </View>
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
+                {getFlowTypeLabel(session.flowType, t)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Incomplete Warning Note if ENDED */}
+          {session.presentationStatus === "ENDED" ? (
+            <View
+              style={[
+                styles.warningBox,
+                {
+                  backgroundColor: theme.colors.errorLight + "10",
+                  borderColor: theme.colors.error + "25",
+                  flexDirection: rowDirection,
+                },
+              ]}
+            >
+              <Ionicons
+                name="alert-circle-outline"
+                size={18}
+                color={theme.colors.error}
+                style={styles.warningIcon}
+              />
+              <Text color={theme.colors.error} style={[styles.warningText, { textAlign }]}>
+                {t(
+                  "practitioner.detail.endedWarningNote",
+                  isRTL
+                    ? "هذه الجلسة لم تُسجل كمكتملة. راجع التفاصيل أو رسائل الجلسة إذا لزم الأمر."
+                    : "This session was not recorded as completed. Review details or messages if needed.",
+                )}
+              </Text>
+            </View>
+          ) : null}
         </Card>
 
+        {/* Actions Card Section */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
-          <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
-            {t("practitioner.detail.actionsTitle")}
+          <Text weight="700" style={[styles.sectionTitle, { textAlign }]} color={theme.colors.textPrimary}>
+            {isRTL ? "الإجراءات المتاحة" : "Available actions"}
           </Text>
-          <Text color={theme.colors.textSecondary} style={[styles.actionSummary, { textAlign }]}>
-            {stateCopy.summary}
-          </Text>
+
+          {primaryActionTitle && stateCopy.summary ? (
+            <Text color={theme.colors.textSecondary} style={[styles.actionSummary, { textAlign }]}>
+              {stateCopy.summary}
+            </Text>
+          ) : null}
           {stateCopy.hint ? (
             <Text color={theme.colors.textMuted} style={[styles.helperText, { textAlign }]}>
               {stateCopy.hint}
@@ -418,14 +436,28 @@ export default function PractitionerSessionDetailScreen() {
           ) : null}
 
           <View style={styles.actionColumn}>
-            {primaryAction ? (
+            {/* If primary action exists */}
+            {primaryActionTitle && primaryAction ? (
               <Button
-                title={primaryAction.title}
+                title={primaryActionTitle}
                 onPress={primaryAction.onPress}
                 disabled={primaryAction.disabled}
+                style={styles.primaryActionButton}
               />
             ) : null}
 
+            {/* If no action is required */}
+            {!primaryActionTitle && !canNoShow ? (
+              <View style={styles.noActionWrapper}>
+                <Text color={theme.colors.textSecondary} style={[styles.noActionText, { textAlign }]}>
+                  {isRTL
+                    ? "لا توجد إجراءات مطلوبة لهذه الجلسة الآن."
+                    : "No session action is required right now."}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Session Messages - secondary optional action */}
             {canOpenMessages ? (
               <View style={styles.messagesBlock}>
                 <SessionSecondaryActionRow
@@ -436,7 +468,7 @@ export default function PractitionerSessionDetailScreen() {
                 />
                 {messagesAreReadOnly ? (
                   <Text
-                    color={theme.colors.textSecondary}
+                    color={theme.colors.textMuted}
                     style={[styles.helperText, { textAlign }]}
                   >
                     {t("practitioner.detail.messagesReadOnly")}
@@ -445,19 +477,23 @@ export default function PractitionerSessionDetailScreen() {
               </View>
             ) : null}
 
+            {/* No-show action */}
             {canNoShow ? (
-              <CompactActionRow
-                label={
-                  noShowMutation.isPending
-                    ? t("practitioner.detail.markingNoShow")
-                    : t("practitioner.detail.markNoShow")
-                }
-                onPress={() => void handleNoShow()}
-              />
+              <View style={styles.noShowWrapper}>
+                <CompactActionRow
+                  label={
+                    noShowMutation.isPending
+                      ? t("practitioner.detail.markingNoShow")
+                      : t("practitioner.detail.markNoShow")
+                  }
+                  onPress={() => void handleNoShow()}
+                />
+              </View>
             ) : null}
           </View>
 
-          {joinMutation.isPending ? (
+          {/* Feedback & mutation pending state helper texts */}
+          {joinMutation.isPending && !canOpenJoinAction ? (
             <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("practitioner.detail.checkingJoin")}
             </Text>
@@ -467,7 +503,7 @@ export default function PractitionerSessionDetailScreen() {
               {t("practitioner.detail.preparing")}
             </Text>
           ) : null}
-          {joinContract?.blockedReason ? (
+          {joinContract?.blockedReason && !canOpenJoinAction ? (
             <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
               {t("practitioner.detail.joinBlocked", {
                 reason: t(
@@ -494,8 +530,9 @@ export default function PractitionerSessionDetailScreen() {
           ) : null}
         </Card>
 
+        {/* Quick Information / Session Facts Card */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
-          <Text weight="600" style={[styles.sectionTitle, { textAlign }]}>
+          <Text weight="700" style={[styles.sectionTitle, { textAlign }]} color={theme.colors.textPrimary}>
             {t("practitioner.detail.sessionFacts")}
           </Text>
           {sessionFacts.map((fact, index) => (
@@ -508,9 +545,10 @@ export default function PractitionerSessionDetailScreen() {
           ))}
         </Card>
 
+        {/* Bottom feedback status panel */}
         {feedback ? (
           <Card variant="flat" padding="md">
-            <Text color={theme.colors.textSecondary}>{feedback}</Text>
+            <Text color={theme.colors.textSecondary} style={{ textAlign }}>{feedback}</Text>
           </Card>
         ) : null}
       </ScrollView>
@@ -697,7 +735,7 @@ function getFlowTypeLabel(
   return t("practitioner.detail.flowTypeValue.DEFAULT");
 }
 
-function _formatTimezoneLabel(
+function getFriendlyTimezone(
   timezone: string | null,
   language: string,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -706,6 +744,7 @@ function _formatTimezoneLabel(
     return t("practitioner.common.notAvailable");
   }
 
+  // e.g. "Africa/Cairo" -> "Cairo"
   const cityToken = timezone.split("/").pop()?.replace(/_/g, " ") ?? timezone;
   const cityMap = language?.startsWith("ar")
     ? {
@@ -723,9 +762,17 @@ function _formatTimezoneLabel(
         Doha: "Doha",
       };
 
-  return t("practitioner.detail.timezoneValue", {
-    city: cityMap[cityToken as keyof typeof cityMap] ?? cityToken,
+  const friendlyCity = cityMap[cityToken as keyof typeof cityMap] ?? cityToken;
+  const fullLabel = formatTimeZoneLabel(timezone, {
+    locale: language,
+    fallbackText: "",
   });
+
+  // Extract offset inside parentheses, e.g. "(GMT+2)" or "(غرينتش +2)"
+  const offsetMatch = fullLabel.match(/\(([^)]+)\)/);
+  const offset = offsetMatch ? ` (${offsetMatch[1]})` : "";
+
+  return `${friendlyCity}${offset}`;
 }
 
 function getSessionStateCopy(
@@ -733,6 +780,7 @@ function getSessionStateCopy(
   joinContract: PractitionerSessionJoinContract | null,
   locale: string,
   t: (key: string, options?: Record<string, unknown>) => string,
+  isRTL: boolean,
 ) {
   switch (session.presentationStatus) {
     case "UPCOMING":
@@ -770,7 +818,7 @@ function getSessionStateCopy(
       };
     case "COMPLETED":
       return {
-        summary: t("practitioner.detail.noImmediateAction"),
+        summary: isRTL ? "تمت الجلسة بنجاح." : "The session completed successfully.",
         hint: null,
       };
     case "CANCELLED":
@@ -780,7 +828,7 @@ function getSessionStateCopy(
       };
     case "ENDED":
       return {
-        summary: t("practitioner.detail.noImmediateAction"),
+        summary: isRTL ? "الجلسة غير مكتملة." : "The session is incomplete.",
         hint: null,
       };
     case "UNAVAILABLE":
@@ -790,12 +838,17 @@ function getSessionStateCopy(
       };
     case "NO_SHOW":
       return {
-        summary: t("practitioner.detail.noImmediateAction"),
+        summary: isRTL ? "لم يحضر المريض الموعد." : "The patient did not show up.",
         hint: null,
       };
     case "UNDER_REVIEW":
       return {
-        summary: t("practitioner.detail.noImmediateAction"),
+        summary: isRTL ? "الجلسة قيد المراجعة." : "The session is under review.",
+        hint: null,
+      };
+    default:
+      return {
+        summary: "",
         hint: null,
       };
   }
@@ -811,8 +864,8 @@ function mapSessionBadge(status: SessionPresentationStatus) {
     case "UNDER_REVIEW":
       return "warning" as const;
     case "COMPLETED":
-    case "ENDED":
       return "default" as const;
+    case "ENDED":
     case "CANCELLED":
     case "NO_SHOW":
       return "error" as const;
@@ -822,92 +875,132 @@ function mapSessionBadge(status: SessionPresentationStatus) {
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 24,
-    gap: 10,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 16,
   },
   summaryCard: {
-    gap: 8,
+    gap: 14,
+    borderRadius: 16,
   },
-  summaryTopRow: {
-    flexDirection: "row",
+  cardHeaderRow: {
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 10,
+    gap: 12,
   },
-  summaryTextWrap: {
+  patientInfoGroup: {
     flex: 1,
+    gap: 2,
   },
-  summaryName: {
-    fontSize: 17,
-    marginBottom: 2,
+  patientName: {
+    fontSize: 18,
+    lineHeight: 24,
   },
-  summaryCode: {
+  sessionCode: {
     fontSize: 11,
-    lineHeight: 16,
-    marginTop: 6,
+    lineHeight: 15,
   },
-  summaryMeta: {
+  dateTimeRow: {
+    alignItems: "center",
+    gap: 8,
+  },
+  dateTimeText: {
     fontSize: 13,
     lineHeight: 18,
   },
-  summaryChipsRow: {
-    flexDirection: "row",
+  chipsRow: {
     gap: 8,
     flexWrap: "wrap",
+    marginTop: 2,
+  },
+  metaBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  metaTiny: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  warningBox: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    alignItems: "flex-start",
+    marginTop: 4,
+  },
+  warningIcon: {
+    marginTop: 1,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
   },
   sectionCard: {
-    gap: 8,
+    gap: 12,
+    borderRadius: 16,
   },
   sectionTitle: {
     fontSize: 15,
+    lineHeight: 20,
+    marginBottom: 4,
   },
   actionSummary: {
     fontSize: 13,
     lineHeight: 18,
   },
-  nextStepBox: {
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    gap: 4,
+  actionColumn: {
+    gap: 10,
   },
-  eyebrow: {
-    fontSize: 11,
+  primaryActionButton: {
+    width: "100%",
+    borderRadius: 10,
+    minHeight: 44,
   },
-  nextStepValue: {
+  noActionWrapper: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noActionText: {
     fontSize: 13,
     lineHeight: 18,
-  },
-  helperText: {
-    fontSize: 12,
-    lineHeight: 18,
+    textAlign: "center",
   },
   messagesBlock: {
     gap: 6,
     width: "100%",
   },
-  actionColumn: {
-    gap: 8,
+  noShowWrapper: {
+    marginTop: 4,
+  },
+  helperText: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   secondaryActionRow: {
-    minHeight: 48,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: 10,
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
   },
   secondaryActionContent: {
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     flex: 1,
   },
   secondaryActionIconBox: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
@@ -920,10 +1013,11 @@ const styles = StyleSheet.create({
   summaryRow: {
     justifyContent: "space-between",
     gap: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   summaryValue: {
     flex: 1,
     fontSize: 13,
+    lineHeight: 18,
   },
 });

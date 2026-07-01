@@ -1,4 +1,4 @@
-import type { SettlementPayoutMethod } from "../../settlements/types/admin-settlements.types";
+import type { PayoutMethod } from "../../finance/types/payout-method";
 import type { PractitionerPayoutDestination } from "@/features/practitioners/types/practitioners.types";
 
 export type AdminPractitionerPayoutBalance = {
@@ -25,7 +25,7 @@ export type AdminPractitionerManualPayout = {
   packageReleasedAppliedAmount: string;
   packageHeldAmountSnapshot: string;
   totalPayableSnapshot: string;
-  payoutMethod: SettlementPayoutMethod;
+  payoutMethod: PayoutMethod;
   transferReference: string | null;
   paidAt: string;
   notes: string | null;
@@ -33,6 +33,12 @@ export type AdminPractitionerManualPayout = {
   recordedByDisplayName: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type AdminPractitionerManualPayoutHistorySummary = {
+  payoutCount: number;
+  egpAmountPaid: string;
+  usdAmountPaid: string;
 };
 
 export type AdminPractitionerPayoutSummary = {
@@ -51,6 +57,13 @@ export type AdminPractitionerPayoutSummary = {
   lastPayoutAt: string | null;
 };
 
+export type AdminPractitionerPayoutSummaryStats = {
+  practitionersWithDues: number;
+  readyForPayoutPractitioners: number;
+  totalDueEgp: string;
+  totalDueUsd: string;
+};
+
 export type Pagination = {
   page: number;
   limit: number;
@@ -62,7 +75,7 @@ export type ListAdminPractitionerManualPayoutsParams = {
   page?: number;
   limit?: number;
   currency?: string;
-  payoutMethod?: SettlementPayoutMethod;
+  payoutMethod?: PayoutMethod;
   createdFrom?: string;
   createdTo?: string;
 };
@@ -72,7 +85,7 @@ export type ListAdminPractitionerManualPayoutHistoryParams = {
   limit?: number;
   practitionerId?: string;
   currency?: string;
-  payoutMethod?: SettlementPayoutMethod;
+  payoutMethod?: PayoutMethod;
   createdFrom?: string;
   createdTo?: string;
 };
@@ -84,10 +97,12 @@ export type AdminPractitionerPayoutBalanceResponseData = {
 export type AdminPractitionerManualPayoutListResponseData = {
   items: AdminPractitionerManualPayout[];
   pagination: Pagination;
+  summary: AdminPractitionerManualPayoutHistorySummary;
 };
 
 export type AdminPractitionerPayoutSummaryListResponseData = {
   items: AdminPractitionerPayoutSummary[];
+  summary: AdminPractitionerPayoutSummaryStats;
   pagination: Pagination;
 };
 
@@ -105,7 +120,7 @@ export type RecordAdminPractitionerManualPayoutRequest = {
   currencyCode: string;
   amountPaid: string;
   paidAt?: string;
-  paymentMethod?: SettlementPayoutMethod;
+  paymentMethod?: PayoutMethod;
   transferReference?: string;
   notes?: string;
 };

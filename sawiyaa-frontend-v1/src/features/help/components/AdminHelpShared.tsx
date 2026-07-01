@@ -6,6 +6,8 @@ import { useState, type ReactNode } from "react";
 import { MoreHorizontal } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import FieldErrorMessage from "@/components/form/error/FieldErrorMessage";
+import { FormErrorSummary } from "@/components/form/error/FormErrorSummary";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
@@ -14,6 +16,7 @@ import { FormModal, Modal, ModalBody, ModalFooter, ModalHeader } from "@/compone
 import { cn } from "@/lib/utils";
 import { formatHelpDate, getHelpCategoryTitle, getHelpQuestionBody, getHelpQuestionTitle } from "../lib/help";
 import type { HelpCategory, HelpQuestion } from "../types/help.types";
+import type { NormalizedFormError } from "@/lib/form-errors";
 
 export type CategoryDraft = {
   id: string | null;
@@ -36,6 +39,8 @@ export type QuestionDraft = {
   sortOrder: number;
   isActive: boolean;
 };
+
+export type QuestionDraftField = Exclude<keyof QuestionDraft, "id">;
 
 export type ActionItem = {
   key: string;
@@ -284,6 +289,8 @@ export function QuestionFormModal({
   draft,
   categories,
   locale,
+  fieldErrors,
+  submitError,
   onChange,
   onClose,
   onSave,
@@ -294,6 +301,8 @@ export function QuestionFormModal({
   draft: QuestionDraft;
   categories: HelpCategory[];
   locale: string;
+  fieldErrors?: Partial<Record<QuestionDraftField, string>>;
+  submitError?: NormalizedFormError | null;
   onChange: (next: QuestionDraft) => void;
   onClose: () => void;
   onSave: () => void;
@@ -314,13 +323,21 @@ export function QuestionFormModal({
       submitLabel={isSaving ? t("actions.saving") : t("actions.save")}
       cancelLabel={t("actions.cancel")}
     >
+      <FormErrorSummary
+        message={submitError?.message}
+        details={submitError?.requestId ? t("errors.referenceId", { requestId: submitError.requestId }) : undefined}
+      />
+
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-2 md:col-span-2">
           <span className="text-sm font-medium text-text-primary">{t("fields.category")}</span>
           <select
             value={draft.categoryId}
             onChange={(event) => onChange({ ...draft, categoryId: event.target.value })}
-            className="app-control w-full px-4 py-3"
+            className={cn(
+              "app-control w-full px-4 py-3",
+              fieldErrors?.categoryId ? "border-status-danger text-status-danger focus:ring-status-danger/10" : "",
+            )}
           >
             <option value="">{t("filters.uncategorized")}</option>
             {categories.map((category) => (
@@ -329,12 +346,15 @@ export function QuestionFormModal({
               </option>
             ))}
           </select>
+          <FieldErrorMessage message={fieldErrors?.categoryId} />
         </label>
         <label className="space-y-2">
           <span className="text-sm font-medium text-text-primary">{t("fields.questionAr")}</span>
           <InputField
             value={draft.questionAr}
             onChange={(event) => onChange({ ...draft, questionAr: event.target.value })}
+            error={Boolean(fieldErrors?.questionAr)}
+            hint={fieldErrors?.questionAr}
           />
         </label>
         <label className="space-y-2">
@@ -342,6 +362,8 @@ export function QuestionFormModal({
           <InputField
             value={draft.questionEn}
             onChange={(event) => onChange({ ...draft, questionEn: event.target.value })}
+            error={Boolean(fieldErrors?.questionEn)}
+            hint={fieldErrors?.questionEn}
           />
         </label>
         <label className="space-y-2 md:col-span-2">
@@ -350,6 +372,8 @@ export function QuestionFormModal({
             rows={4}
             value={draft.answerAr}
             onChange={(value) => onChange({ ...draft, answerAr: value })}
+            error={Boolean(fieldErrors?.answerAr)}
+            hint={fieldErrors?.answerAr}
           />
         </label>
         <label className="space-y-2 md:col-span-2">
@@ -358,6 +382,8 @@ export function QuestionFormModal({
             rows={4}
             value={draft.answerEn}
             onChange={(value) => onChange({ ...draft, answerEn: value })}
+            error={Boolean(fieldErrors?.answerEn)}
+            hint={fieldErrors?.answerEn}
           />
         </label>
         <label className="space-y-2">
@@ -367,6 +393,8 @@ export function QuestionFormModal({
             min={0}
             value={String(draft.sortOrder)}
             onChange={(event) => onChange({ ...draft, sortOrder: Number(event.target.value || 0) })}
+            error={Boolean(fieldErrors?.sortOrder)}
+            hint={fieldErrors?.sortOrder}
           />
         </label>
         <label className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface px-4 py-3">

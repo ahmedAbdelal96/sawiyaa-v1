@@ -112,7 +112,7 @@ describe('CreateMatchingSessionUseCase', () => {
           specialties: [{ specialty: { slug: 'anxiety', translations: [] } }],
           languages: [{ language: { code: 'ar' } }],
           presence: { status: 'ONLINE', isInstantBookingEnabled: true },
-          availabilitySlots: [{ id: 'slot-1' }],
+          availabilityWeeks: [{ id: 'week-1' }],
         },
       ]);
     scorePractitionerMatchService.score = jest.fn().mockReturnValue({
@@ -224,5 +224,111 @@ describe('CreateMatchingSessionUseCase', () => {
         payload: {},
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('passes hasAnyAvailability=false when candidate has no published availability weeks', async () => {
+    matchingPatientRepository.findByUserId = jest.fn().mockResolvedValue({
+      id: 'patient-1',
+    });
+    normalizeMatchingInputService.normalize = jest.fn().mockReturnValue({
+      normalized: {},
+      answers: [],
+    });
+    buildNormalizedCareSignalContextService.buildFromRepository = jest
+      .fn()
+      .mockResolvedValue({
+        profile: { countryCode: 'EG', timezone: 'Africa/Cairo' },
+        assessments: { interpretation: null },
+      });
+    buildAssessmentDerivedRecommendationsService.build = jest
+      .fn()
+      .mockReturnValue([]);
+    matchingCandidateRepository.listPublicCandidates = jest
+      .fn()
+      .mockResolvedValue([
+        {
+          id: 'pr-2',
+          status: 'APPROVED',
+          isPublicProfilePublished: true,
+          publicSlug: 'dr-two',
+          professionalTitle: 'Psychologist',
+          bio: 'bio',
+          practitionerType: 'PSYCHOLOGIST',
+          sessionPrice30: 400,
+          sessionPrice60: 700,
+          yearsOfExperience: 5,
+          createdAt: new Date('2026-01-01'),
+          user: { status: 'ACTIVE', displayName: 'Dr Two' },
+          specialties: [],
+          languages: [],
+          presence: { status: 'OFFLINE', isInstantBookingEnabled: false },
+          availabilityWeeks: [],
+        },
+      ]);
+    scorePractitionerMatchService.score = jest.fn().mockReturnValue({
+      score: 51,
+      signals: {
+        matchedSpecialty: false,
+        matchedLanguage: false,
+        matchedGenderPreference: false,
+        matchedSessionMode: false,
+        matchedBudget: false,
+        matchedUrgency: false,
+        matchedProviderType: false,
+        matchedInstantBooking: false,
+        matchedFirstTimePreference: false,
+      },
+      breakdown: {
+        specialty: { earned: 0, max: 24 },
+        language: { earned: 0, max: 16 },
+        budget: { earned: 0, max: 18 },
+        urgency: { earned: 0, max: 10 },
+        providerType: { earned: 0, max: 8 },
+        instantBooking: { earned: 0, max: 5 },
+        firstTime: { earned: 0, max: 5 },
+        sessionMode: { earned: 0, max: 4 },
+        experienceDepth: { earned: 1, max: 6 },
+        availabilityReadiness: { earned: 0, max: 4 },
+        total: 51,
+      },
+    });
+    buildMatchingRationaleService.build = jest.fn().mockReturnValue({
+      matchedSpecialty: false,
+      matchedLanguage: false,
+      matchedGenderPreference: false,
+      matchedSessionMode: false,
+      matchedBudget: false,
+      matchedUrgency: false,
+      matchedProviderType: false,
+      matchedInstantBooking: false,
+      scoreBreakdown: { total: 51 },
+      notes: [],
+    });
+    matchingSessionRepository.createCompletedSession = jest
+      .fn()
+      .mockResolvedValue({
+        id: 'session-2',
+        answers: [],
+        recommendations: [],
+      });
+    matchingPresenter.presentSession = jest.fn().mockReturnValue({
+      sessionId: 'session-2',
+      answers: {},
+      items: [],
+    });
+
+    await useCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      payload: {},
+    });
+
+    expect(scorePractitionerMatchService.score).toHaveBeenCalledWith(
+      expect.objectContaining({
+        candidate: expect.objectContaining({
+          hasAnyAvailability: false,
+        }),
+      }),
+    );
   });
 });

@@ -22,11 +22,18 @@ function formatCurrency(amount: string | null, currency: string | null, locale: 
   }).format(value);
 }
 
-export default function PublicAcademyHomeScreen({ locale }: { locale: string }) {
+export default function PublicAcademyHomeScreen({
+  locale,
+  detailBaseHref,
+}: {
+  locale: string;
+  detailBaseHref?: string;
+}) {
   const t = useTranslations("academy");
   const { user, isInitialized } = useAuthStore();
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const courseDetailBaseHref = detailBaseHref ?? `/${locale}/academy`;
   const authScopeKey = useMemo(() => {
     if (!isInitialized) {
       return "bootstrapping";
@@ -217,7 +224,7 @@ export default function PublicAcademyHomeScreen({ locale }: { locale: string }) 
                           : t("public.card.noDate")}
                       </div>
                       <Link
-                        href={`/${locale}/academy/${item.slug}`}
+                        href={`${courseDetailBaseHref}/${item.slug}`}
                         className="inline-flex items-center gap-1.5 rounded-[12px] bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
                       >
                         {t("public.card.open")}

@@ -1,9 +1,9 @@
 /**
  * Public specialties listing page - /[locale]/specialties
  *
- * DATA: Real backend via GET /specialties (SSR, ISR 5 min).
- * This page stays honest to current backend data and groups results using
- * only the real category information returned by the API.
+ * DATA: Real backend via GET /specialties and GET /specialty-categories.
+ * This page stays honest to current backend data and renders active care-path
+ * categories even when sub-specialties have not been added yet.
  */
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -12,7 +12,10 @@ import PublicPageState from "@/components/public/PublicPageState";
 import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import SpecialtiesGrid from "@/features/specialties-public/components/SpecialtiesGrid";
 import SpecialtiesPageHero from "@/features/specialties-public/components/SpecialtiesPageHero";
-import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
+import {
+  fetchPublicSpecialties,
+  fetchPublicSpecialtyCategories,
+} from "@/features/specialties-public/api/specialties-ssr.api";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -31,6 +34,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
+function normalizeSearch(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function matchesSearch(
+  value: string | null | undefined,
+  normalizedQuery: string,
+) {
+  if (!normalizedQuery) return true;
+  if (!value) return false;
+  return value.toLowerCase().includes(normalizedQuery);
+}
+
 export default async function SpecialtiesPage({ params, searchParams }: Props) {
   const { locale } = await params;
   const { q = "" } = await searchParams;
@@ -41,9 +57,13 @@ export default async function SpecialtiesPage({ params, searchParams }: Props) {
     getTranslations("public-pages.unavailable"),
   ]);
 
-  let data: Awaited<ReturnType<typeof fetchPublicSpecialties>>;
+  let specialtiesData: Awaited<ReturnType<typeof fetchPublicSpecialties>>;
+  let categoriesData: Awaited<ReturnType<typeof fetchPublicSpecialtyCategories>>;
   try {
-    data = await fetchPublicSpecialties(locale, q || undefined);
+    [specialtiesData, categoriesData] = await Promise.all([
+      fetchPublicSpecialties(locale, q || undefined),
+      fetchPublicSpecialtyCategories(locale),
+    ]);
   } catch {
     return (
       <PublicPageState
@@ -60,42 +80,83 @@ export default async function SpecialtiesPage({ params, searchParams }: Props) {
     );
   }
 
-  const specialties = data.specialties;
+  const normalizedQuery = normalizeSearch(q);
+  const allSpecialties = specialtiesData.specialties;
+  const allCategories = categoriesData.categories;
 
-  const categories = Array.from(
-    new Map(
-      specialties
-        .filter((specialty) => specialty.category)
-        .map((specialty) => [
-          specialty.category!.slug,
-          {
-            slug: specialty.category!.slug,
-            name: specialty.category!.name,
-          },
-        ]),
-    ).values(),
-  ).sort((a, b) => a.name.localeCompare(b.name));
+  const filteredCategories = allCategories.filter((category) => {
+    if (!normalizedQuery) return true;
+
+    if (
+      matchesSearch(category.name, normalizedQuery) ||
+      matchesSearch(category.slug, normalizedQuery) ||
+      matchesSearch(category.description, normalizedQuery)
+    ) {
+      return true;
+    }
+
+    return allSpecialties.some((specialty) =>
+      specialty.category?.id === category.id &&
+      (
+        matchesSearch(specialty.name, normalizedQuery) ||
+        matchesSearch(specialty.slug, normalizedQuery) ||
+        matchesSearch(specialty.description, normalizedQuery)
+      ));
+  });
+
+  const filteredCategoryIds = new Set(filteredCategories.map((category) => category.id));
+  const filteredSpecialties = allSpecialties.filter((specialty) => {
+    if (!normalizedQuery) return true;
+    if (!specialty.category?.id) return true;
+    return filteredCategoryIds.has(specialty.category.id);
+  });
+
+  const groupedCategories = filteredCategories.map((category) => ({
+    category,
+    specialties: filteredSpecialties
+      .filter((specialty) => specialty.category?.id === category.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+  }));
+
+  const categorizedSpecialtyIds = new Set(
+    groupedCategories.flatMap((group) => group.specialties.map((specialty) => specialty.id)),
+  );
+  const uncategorizedSpecialties = filteredSpecialties
+    .filter((specialty) => !specialty.category || !categorizedSpecialtyIds.has(specialty.id))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const carePathCount = groupedCategories.length;
+  const subSpecialtyCount = filteredSpecialties.length;
 
   const quickNav = [
     { href: "/specialties", label: t("allCategories") },
-    ...categories.map((category) => ({
+    ...filteredCategories.map((category) => ({
       href: `/specialties#category-${category.slug}`,
       label: category.name,
     })),
   ];
 
+  const hasAnyResults = carePathCount > 0 || subSpecialtyCount > 0;
+
   return (
     <>
       <SpecialtiesPageHero
-        totalCount={specialties.length}
-        categoryCount={categories.length}
+        carePathCount={carePathCount}
+        subSpecialtyCount={subSpecialtyCount}
         query={q}
         quickNav={quickNav}
       />
 
-      <div className="bg-surface px-6 py-10 dark:bg-surface">
+      <div className="bg-[#F7F4EE] px-6 py-12 dark:bg-[#0b1212]">
         <div className="mx-auto max-w-7xl">
-          <SpecialtiesGrid specialties={specialties} />
+          {hasAnyResults ? (
+            <SpecialtiesGrid
+              groups={groupedCategories}
+              uncategorizedSpecialties={uncategorizedSpecialties}
+            />
+          ) : (
+            <SpecialtiesGrid groups={[]} uncategorizedSpecialties={[]} />
+          )}
         </div>
       </div>
     </>

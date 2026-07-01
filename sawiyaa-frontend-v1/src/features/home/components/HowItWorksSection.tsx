@@ -21,7 +21,7 @@ export default async function HowItWorksSection() {
           </p>
         </div>
 
-        <div className="rounded-[36px] bg-surface p-4 ring-1 ring-inset ring-border-light sm:p-6 dark:bg-surface dark:ring-border-light">
+        <div className="rounded-[36px] bg-[#FCFAF6] border border-[#E8DED0] p-6 shadow-sawiyaa-small dark:border-white/5 dark:bg-[#101919]">
           <div className="grid gap-6 md:grid-cols-3">
             {HOW_IT_WORKS_STEPS.map((step, i) => {
               const Icon = step.icon;

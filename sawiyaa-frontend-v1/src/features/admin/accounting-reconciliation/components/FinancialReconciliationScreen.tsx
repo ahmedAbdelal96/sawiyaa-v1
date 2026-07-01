@@ -6,21 +6,16 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
-  CalendarClock,
   CircleDashed,
   Clock3,
   Eye,
   Play,
   RefreshCw,
   ShieldAlert,
-  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
-import AdminOperationalListShell, {
-  AdminSummaryCard,
-} from "@/components/shared/admin/AdminOperationalListShell";
-import { AdminSectionCard } from "@/components/shared/admin/AdminDashboardKit";
+import { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
 import Button from "@/components/ui/button/Button";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import {
@@ -60,13 +55,12 @@ import type {
   AccountingReconciliationSeverity,
 } from "../types";
 
-type RunActionKind = "PAYMENTS" | "WALLETS" | "SETTLEMENTS" | "REFUNDS" | "PACKAGE_SETTLEMENTS" | "FULL";
+type RunActionKind = "PAYMENTS" | "WALLETS" | "REFUNDS" | "PACKAGE_SETTLEMENTS" | "FULL";
 
 const RUN_SCOPE_OPTIONS: AccountingReconciliationRunScope[] = [
   "FULL",
   "PAYMENTS",
   "WALLETS",
-  "SETTLEMENTS",
   "REFUNDS",
   "PACKAGE_SETTLEMENTS",
 ];
@@ -105,7 +99,38 @@ function normalizeLocale(locale: string) {
 
 function formatDateTime(locale: string, value: string | null | undefined) {
   if (!value) return "—";
-  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
+  return new Intl.DateTimeFormat(normalizeLocale(locale), {
+    timeZone: "UTC",
+    day: "numeric",
+    month: locale === "ar" ? "long" : "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function renderSummaryDateTime(locale: string, value: string | null | undefined) {
+  if (!value) return "—";
+
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className="text-base font-semibold sm:text-lg">
+        {new Intl.DateTimeFormat(normalizeLocale(locale), {
+          timeZone: "UTC",
+          day: "numeric",
+          month: locale === "ar" ? "long" : "short",
+          year: "numeric",
+        }).format(new Date(value))}
+      </span>
+      <span className="mt-1 text-xs font-medium text-text-secondary dark:text-white/70">
+        {new Intl.DateTimeFormat(normalizeLocale(locale), {
+          timeZone: "UTC",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(value))}
+      </span>
+    </div>
+  );
 }
 
 function shortId(value: string | null | undefined) {
@@ -157,6 +182,34 @@ function InfoBlock({
       <p className={`mt-1 text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono break-all text-xs" : ""}`}>
         {value}
       </p>
+    </div>
+  );
+}
+
+function CopyableInfoBlock({
+  label,
+  value,
+  copyLabel,
+  onCopy,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  copyLabel: string;
+  onCopy: () => void;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{label}</p>
+          <p className={`mt-1 text-sm text-text-primary dark:text-white/90 ${mono ? "break-all font-mono text-xs" : ""}`}>{value}</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={onCopy}>
+          {copyLabel}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -215,8 +268,6 @@ function humanizeIssueDomain(scope: AccountingReconciliationRunScope, locale: st
       return isArabic ? "المدفوعات" : "Payments";
     case "WALLETS":
       return isArabic ? "المحافظ" : "Wallets";
-    case "SETTLEMENTS":
-      return isArabic ? "التسويات" : "Settlements";
     case "REFUNDS":
       return isArabic ? "الاستردادات" : "Refunds";
     case "PACKAGE_SETTLEMENTS":
@@ -261,6 +312,88 @@ function formatExpectedActualDifference(
   return locale === "ar"
     ? `${diff > 0 ? "أعلى" : "أقل"} بمقدار ${formatted}`
     : `${diff > 0 ? "Higher" : "Lower"} by ${formatted}`;
+}
+
+function formatCompactNumber(locale: string, value: number) {
+  return new Intl.NumberFormat(normalizeLocale(locale), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatMoneyValue(locale: string, value: string | null | undefined) {
+  const parsed = parseNumericValue(value);
+  if (parsed === null) return value?.trim() || "—";
+  return formatCompactNumber(locale, parsed);
+}
+
+function getCurrencyDisplay(locale: string, currencyCode: string | null | undefined) {
+  const localized = getLocalizedCurrencyLabel(currencyCode);
+  if (!localized) return null;
+  if (locale === "ar") {
+    if ((currencyCode ?? "").toUpperCase() === "EGP") return "ج.م";
+    return localized.ar;
+  }
+  return localized.en;
+}
+
+function getIssueSourceKey(issue: AccountingReconciliationIssueRecord) {
+  const entityType = issue.entityType.toLowerCase();
+  if (entityType.includes("journal")) return "journalEntry";
+  if (entityType.includes("refund")) return "refund";
+  if (entityType.includes("payment")) return "payment";
+  if (entityType.includes("practitioner") && entityType.includes("wallet")) return "practitionerWallet";
+  if (entityType.includes("patient") && entityType.includes("wallet")) return "patientWallet";
+  if (entityType.includes("practitioner") && entityType.includes("settlement")) return "practitionerSettlement";
+  if (entityType.includes("package") && entityType.includes("settlement")) return "packageSettlement";
+  if (issue.scope === "PAYMENTS") return "payment";
+  if (issue.scope === "REFUNDS") return "refund";
+  if (issue.scope === "WALLETS") return "practitionerWallet";
+  if (issue.scope === "PACKAGE_SETTLEMENTS") return "packageSettlement";
+  return "other";
+}
+
+function formatIssueSourceLabel(issue: AccountingReconciliationIssueRecord, t: ReturnType<typeof useTranslations>) {
+  return t(`issues.sources.${getIssueSourceKey(issue)}`);
+}
+
+function formatIssueAmountSummary(issue: AccountingReconciliationIssueRecord, locale: string, t: ReturnType<typeof useTranslations>) {
+  const expected = parseNumericValue(issue.expectedValue);
+  const actual = parseNumericValue(issue.actualValue);
+  const currencyDisplay = getCurrencyDisplay(locale, issue.currencyCode);
+
+  if (expected === null && actual === null) return t("common.notAvailable");
+
+  if (expected !== null && actual !== null) {
+    const difference = actual - expected;
+    if (difference === 0) return t("issues.amount.noDifference");
+
+    if (currencyDisplay) {
+      const differenceText = formatCompactNumber(locale, Math.abs(difference));
+      return locale === "ar"
+        ? `${t("issues.amount.difference")} ${differenceText} ${currencyDisplay}`
+        : `${t("issues.amount.difference")} ${currencyDisplay} ${differenceText}`;
+    }
+
+    const expectedText = formatCompactNumber(locale, expected);
+    const actualText = formatCompactNumber(locale, actual);
+    return `${t("issues.amount.expected")} ${expectedText} / ${t("issues.amount.actual")} ${actualText}`;
+  }
+
+  if (!currencyDisplay) return t("common.notAvailable");
+
+  if (expected !== null) {
+    return `${t("issues.amount.expected")} ${formatCompactNumber(locale, expected)} ${currencyDisplay}`;
+  }
+
+  return `${t("issues.amount.actual")} ${formatCompactNumber(locale, actual ?? 0)} ${currencyDisplay}`;
+}
+
+async function copyTextToClipboard(value: string) {
+  if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+    throw new Error("Clipboard API unavailable");
+  }
+  await navigator.clipboard.writeText(value);
 }
 
 function toSafeReferencePairs(metadataJson: Record<string, unknown> | null | undefined) {
@@ -335,6 +468,10 @@ function DateField({
   );
 }
 
+function looksLikeUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function useAccountingReconciliationFilters() {
   const searchParams = useSearchParams();
 
@@ -353,6 +490,7 @@ function useAccountingReconciliationFilters() {
   const runStatus = parseTextParam(searchParams.get("runStatus"), { maxLength: 32 });
   const runTrigger = parseTextParam(searchParams.get("runTrigger"), { maxLength: 32 });
   const runCurrencyCode = parseTextParam(searchParams.get("runCurrencyCode"), { maxLength: 3 });
+  const runEntityId = parseTextParam(searchParams.get("runEntityId"), { maxLength: 80 });
   const runFrom = parseTextParam(searchParams.get("runFrom"), { maxLength: 40 });
   const runTo = parseTextParam(searchParams.get("runTo"), { maxLength: 40 });
 
@@ -374,6 +512,7 @@ function useAccountingReconciliationFilters() {
       scope: (runScope as AccountingReconciliationRunScope | null) || undefined,
       status: (runStatus as AccountingReconciliationRunStatus | null) || undefined,
       trigger: (runTrigger as AccountingReconciliationRunTrigger | null) || undefined,
+      entityId: runEntityId || undefined,
       currencyCode: runCurrencyCode || undefined,
       from: runFrom || undefined,
       to: runTo || undefined,
@@ -392,7 +531,7 @@ function useAccountingReconciliationFilters() {
       from: issueFrom || undefined,
       to: issueTo || undefined,
     },
-    runFilters: { runScope, runStatus, runTrigger, runCurrencyCode, runFrom, runTo, runPage, runLimit },
+    runFilters: { runScope, runStatus, runTrigger, runCurrencyCode, runEntityId, runFrom, runTo, runPage, runLimit },
     issueFilters: {
       issueScope,
       issueSeverity,
@@ -428,6 +567,7 @@ export default function FinancialReconciliationScreen() {
   const runMutation = useRunAccountingReconciliation();
   const reviewMutation = useReviewAccountingReconciliationIssue();
 
+  const [activeTab, setActiveTab] = useState<"issues" | "checks">("issues");
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
@@ -447,6 +587,34 @@ export default function FinancialReconciliationScreen() {
     void statusQuery.refetch();
   };
 
+  const handleCopyValue = async (value: string) => {
+    try {
+      await copyTextToClipboard(value);
+      toast.success(t("common.copied"));
+    } catch {
+      toast.error(t("common.copyFailed"));
+    }
+  };
+
+  const handleIssueSearch = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      updateQuery({ issueCode: null, issueEntityId: null, issuePage: 1 });
+      return;
+    }
+
+    if (looksLikeUuid(trimmed)) {
+      updateQuery({ issueEntityId: trimmed, issueCode: null, issuePage: 1 });
+      return;
+    }
+
+    updateQuery({ issueCode: trimmed, issueEntityId: null, issuePage: 1 });
+  };
+
+  const handleRunSearch = (value: string) => {
+    updateQuery({ runEntityId: value.trim() || null, runPage: 1 });
+  };
+
   const executeRun = async (kind: RunActionKind) => {
     try {
       const result = await runMutation.mutateAsync({
@@ -458,7 +626,11 @@ export default function FinancialReconciliationScreen() {
           to: runFilters.runTo || undefined,
         },
       });
-      toast.success(t("toast.runSuccess", { runId: result.run.id, scope: t(`runs.scope.${result.run.scope.toLowerCase()}`) }));
+      if (result.issueCount > 0) {
+        toast.success(t("toast.runSuccessWithIssues", { count: result.issueCount }));
+      } else {
+        toast.success(t("toast.runSuccessNoIssues"));
+      }
       refreshAll();
     } catch (cause) {
       const appError = toAppError(cause);
@@ -476,17 +648,12 @@ export default function FinancialReconciliationScreen() {
     if (!selectedIssue) return;
 
     try {
-      const result = await reviewMutation.mutateAsync({
+      await reviewMutation.mutateAsync({
         issueId: selectedIssue.id,
         action,
         payload: { note: reviewNote.trim() || undefined },
       });
-      toast.success(
-        t("toast.reviewSuccess", {
-          action: t(`review.actions.${action.toLowerCase()}`),
-          issueCode: result.issueCode ?? selectedIssue.issueCode,
-        }),
-      );
+      toast.success(t("toast.reviewSuccess", { action: t(`review.actions.${action.toLowerCase()}`) }));
       setReviewNote("");
       refreshAll();
     } catch (cause) {
@@ -518,6 +685,10 @@ export default function FinancialReconciliationScreen() {
     selectedIssue?.actualValue,
     locale,
   );
+  const lastCheckAt =
+    status?.lastFullRunAt ?? status?.lastScheduledRunAt ?? runs[0]?.completedAt ?? runs[0]?.startedAt ?? null;
+  const issueSearchValue = issueFilters.issueCode ?? issueFilters.issueEntityId ?? "";
+  const runSearchValue = runFilters.runEntityId ?? "";
 
   const runColumns = useMemo<ColumnDef<AccountingReconciliationRunRecord>[]>(
     () => [
@@ -579,7 +750,7 @@ export default function FinancialReconciliationScreen() {
         cell: (row) => <StatusPill tone={issueSeverityTone(row.severity)}>{t(`issues.severity.${row.severity.toLowerCase()}`)}</StatusPill>,
       },
       {
-        id: "code",
+        id: "problem",
         header: t("issues.table.problem"),
         cell: (row) => {
           const copy = getReconciliationIssueCopy(row.issueCode);
@@ -594,26 +765,27 @@ export default function FinancialReconciliationScreen() {
         },
       },
       {
-        id: "scope",
-        header: t("issues.table.scope"),
-        cell: (row) => humanizeIssueDomain(row.scope, locale),
-      },
-      {
-        id: "entity",
-        header: t("issues.table.entity"),
+        id: "source",
+        header: t("issues.table.source"),
         cell: (row) => (
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {humanizeEntityType(row.entityType, locale)}
+            <p className="font-semibold text-text-primary dark:text-white/95">
+              {formatIssueSourceLabel(row, t)}
             </p>
-            <p className="font-mono text-xs text-text-muted">{shortId(row.entityId)}</p>
+            <p className="text-xs text-text-muted">
+              {humanizeIssueDomain(row.scope, locale)} · {humanizeEntityType(row.entityType, locale)}
+            </p>
           </div>
         ),
       },
       {
-        id: "currency",
-        header: t("issues.table.currency"),
-        cell: (row) => row.currencyCode ?? t("common.notAvailable"),
+        id: "amount",
+        header: t("issues.table.amount"),
+        cell: (row) => (
+          <div className="text-sm text-text-primary dark:text-white/90">
+            <p>{formatIssueAmountSummary(row, locale, t)}</p>
+          </div>
+        ),
       },
       {
         id: "reviewStatus",
@@ -621,22 +793,17 @@ export default function FinancialReconciliationScreen() {
         cell: (row) => <StatusPill tone={reviewStatusTone(row.status)}>{t(`issues.reviewStatus.${row.status.toLowerCase()}`)}</StatusPill>,
       },
       {
-        id: "detected",
-        header: t("issues.table.detected"),
+        id: "lastSeen",
+        header: t("issues.table.lastSeen"),
         cell: (row) => formatDateTime(locale, row.lastDetectedAt),
       },
       {
-        id: "expectedActual",
-        header: t("issues.table.expectedActual"),
+        id: "action",
+        header: t("issues.table.action"),
         cell: (row) => (
-          <div className="text-xs text-text-secondary">
-            <p>
-              {t("issues.table.expected")}: {row.expectedValue ?? t("common.notAvailable")}
-            </p>
-            <p>
-              {t("issues.table.actual")}: {row.actualValue ?? t("common.notAvailable")}
-            </p>
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIssueId(row.id)} startIcon={<Eye className="h-4 w-4" />}>
+            {t("actions.view")}
+          </Button>
         ),
       },
     ],
@@ -646,177 +813,376 @@ export default function FinancialReconciliationScreen() {
   return (
     <AdminPermissionGate requiredPermissions={[PermissionKey.ACCOUNTING_READ]}>
       <div className="space-y-6">
-        <AdminOperationalListShell
-          eyebrow={t("page.eyebrow")}
-          title={t("page.title")}
-          description={t("page.description")}
-        notice={
-          <div className="space-y-3 rounded-[20px] border border-warning-200 bg-warning-50/75 px-4 py-3 text-sm text-warning-900 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-100">
-            <div className="flex items-start gap-3">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>{t("page.safetyNotice")}</p>
+        <section className="rounded-[28px] border border-border-light bg-surface p-5 shadow-sm dark:border-white/8 dark:bg-surface-secondary">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+                {t("page.eyebrow")}
+              </p>
+              <h1 className="text-2xl font-semibold text-text-primary dark:text-white/95 sm:text-3xl">
+                {t("page.title")}
+              </h1>
+              <p className="max-w-3xl text-sm text-text-secondary">
+                {t("page.description")}
+              </p>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning-200/70 bg-white/70 px-4 py-3 text-warning-950 shadow-sm dark:border-warning-500/20 dark:bg-white/[0.04] dark:text-warning-50">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">{t("page.settlementCtaTitle")}</p>
-                <p className="text-xs leading-5 text-warning-900/80 dark:text-warning-50/80">
-                  {t("page.settlementCtaDescription")}
-                </p>
+            <div className="rounded-2xl border border-warning-200 bg-warning-50/75 px-4 py-3 text-sm text-warning-900 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-100">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>{t("page.safetyNotice")}</p>
               </div>
-              <Link
-                href="/admin/practitioner-payouts"
-                className="inline-flex items-center justify-center rounded-full border border-warning-300 bg-warning-100 px-4 py-2 text-xs font-semibold text-warning-950 transition hover:bg-warning-200 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-50 dark:hover:bg-warning-500/20"
-              >
-                {t("page.settlementCtaAction")}
-              </Link>
             </div>
           </div>
-        }
-          summaryCards={
-            <>
-              <AdminSummaryCard
-                label={t("summary.scheduler")}
-                value={status?.enabled ? t("common.yes") : t("common.no")}
-                hint={status ? t("summary.schedulerHint", { cron: status.cron }) : t("common.loading")}
-                tone={status?.enabled ? "success" : "warning"}
-                icon={<CalendarClock className="h-4 w-4" />}
-              />
-              <AdminSummaryCard
-                label={t("summary.alerts")}
-                value={status?.alertsEnabled ? t("common.yes") : t("common.no")}
-                hint={t("summary.alertsHint")}
-                tone={status?.alertsEnabled ? "primary" : "neutral"}
-                icon={<AlertTriangle className="h-4 w-4" />}
-              />
-              <AdminSummaryCard
-                label={t("summary.openCritical")}
-                value={String(status?.openCriticalCount ?? 0)}
-                hint={t("summary.openCriticalHint")}
-                tone={(status?.openCriticalCount ?? 0) > 0 ? "warning" : "success"}
-                icon={<ShieldAlert className="h-4 w-4" />}
-              />
-              <AdminSummaryCard
-                label={t("summary.openWarnings")}
-                value={String(status?.openWarningCount ?? 0)}
-                hint={t("summary.openWarningsHint")}
-                tone={(status?.openWarningCount ?? 0) > 0 ? "warning" : "success"}
-                icon={<ShieldCheck className="h-4 w-4" />}
-              />
-              <AdminSummaryCard
-                label={t("summary.lastScheduled")}
-                value={formatDateTime(locale, status?.lastScheduledRunAt)}
-                hint={status?.lastScheduledRunId ? shortId(status.lastScheduledRunId) : t("common.none")}
-                tone="neutral"
-                icon={<Clock3 className="h-4 w-4" />}
-              />
-              <AdminSummaryCard
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <AdminSummaryCard
+              label={t("summary.criticalIssues")}
+              value={String(status?.openCriticalCount ?? 0)}
+              hint={t("summary.criticalIssuesHint")}
+              tone={(status?.openCriticalCount ?? 0) > 0 ? "warning" : "success"}
+              icon={<ShieldAlert className="h-4 w-4" />}
+            />
+            <AdminSummaryCard
+              label={t("summary.warnings")}
+              value={String(status?.openWarningCount ?? 0)}
+              hint={t("summary.warningsHint")}
+              tone={(status?.openWarningCount ?? 0) > 0 ? "warning" : "success"}
+              icon={<AlertTriangle className="h-4 w-4" />}
+            />
+            <AdminSummaryCard
+              label={t("summary.lastCheck")}
+              value={renderSummaryDateTime(locale, lastCheckAt)}
+              tone="neutral"
+              icon={<Clock3 className="h-4 w-4" />}
+            />
+            <AdminSummaryCard
+              label={t("summary.autoCheckStatus")}
+              value={status?.active ? t("summary.active") : "—"}
+              hint={status?.enabled ? t("summary.enabled") : t("summary.disabled")}
+              tone={status?.active ? "primary" : "neutral"}
+              icon={<CircleDashed className="h-4 w-4" />}
+            />
+          </div>
+
+          <details className="mt-4 rounded-2xl border border-border-light bg-surface-secondary/70 px-4 py-3 text-sm text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
+            <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
+              {t("summary.autoCheckDetails")}
+            </summary>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <InfoBlock label={t("summary.scheduler")} value={status ? status.cron : t("common.loading")} />
+              <InfoBlock
                 label={t("summary.nextScheduled")}
                 value={formatDateTime(locale, status?.nextScheduledRunAt)}
-                hint={status?.active ? t("summary.active") : t("summary.inactive")}
-                tone={status?.active ? "primary" : "neutral"}
-                icon={<CircleDashed className="h-4 w-4" />}
               />
-            </>
-          }
-        >
-          <div className="space-y-6">
-            <AdminSectionCard eyebrow={t("page.howToUseEyebrow")} title={t("page.howToUseTitle")} description={t("page.howToUseDescription")}>
-              <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                <li className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/[0.03]">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    1
-                  </span>
-                  {t("page.howToUseSteps.one")}
-                </li>
-                <li className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/[0.03]">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    2
-                  </span>
-                  {t("page.howToUseSteps.two")}
-                </li>
-                <li className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/[0.03]">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    3
-                  </span>
-                  {t("page.howToUseSteps.three")}
-                </li>
-                <li className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/[0.03]">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    4
-                  </span>
-                  {t("page.howToUseSteps.four")}
-                </li>
-                <li className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 text-sm text-text-secondary dark:bg-white/[0.03]">
-                  <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    5
-                  </span>
-                  {t("page.howToUseSteps.five")}
-                </li>
-              </ol>
-            </AdminSectionCard>
+              <InfoBlock
+                label={t("summary.lastScheduled")}
+                value={formatDateTime(locale, status?.lastScheduledRunAt)}
+              />
+              <InfoBlock
+                label={t("summary.lastScheduledRunId")}
+                value={status?.lastScheduledRunId ? shortId(status.lastScheduledRunId) : t("common.none")}
+                mono
+              />
+            </div>
+          </details>
 
-            <AdminSectionCard
-              eyebrow={t("runs.eyebrow")}
-              title={t("runs.title")}
-              description={t("runs.description")}
-              actions={
-                canWrite ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="outline" size="sm" onClick={() => refreshAll()} startIcon={<RefreshCw className="h-4 w-4" />}>
-                      {t("actions.refresh")}
-                    </Button>
-                    <Button type="button" variant="primary" size="sm" onClick={() => executeRun("FULL")} startIcon={<Play className="h-4 w-4" />} disabled={runMutation.isPending}>
-                      {runMutation.isPending ? t("actions.running") : t("actions.runFull")}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => executeRun("PAYMENTS")} disabled={runMutation.isPending}>
-                      {t("actions.payments")}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => executeRun("WALLETS")} disabled={runMutation.isPending}>
-                      {t("actions.wallets")}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => executeRun("SETTLEMENTS")} disabled={runMutation.isPending}>
-                      {t("actions.settlements")}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => executeRun("REFUNDS")} disabled={runMutation.isPending}>
-                      {t("actions.refunds")}
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => executeRun("PACKAGE_SETTLEMENTS")} disabled={runMutation.isPending}>
-                      {t("actions.packageSettlements")}
-                    </Button>
-                  </div>
-                ) : null
-              }
-            >
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+          {canWrite ? (
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => executeRun("FULL")}
+                startIcon={<Play className="h-4 w-4" />}
+                disabled={runMutation.isPending}
+              >
+                {runMutation.isPending ? t("actions.running") : t("actions.runFullCheck")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={refreshAll}
+                startIcon={<RefreshCw className="h-4 w-4" />}
+              >
+                {t("actions.refresh")}
+              </Button>
+              <details className="relative">
+                <summary className="inline-flex cursor-pointer list-none items-center rounded-lg border border-border-light bg-surface-secondary px-4 py-2.5 text-sm font-semibold text-text-primary shadow-sm transition hover:border-primary/30 hover:bg-primary-light/30 dark:border-white/8 dark:bg-white/[0.03]">
+                  {t("actions.specificChecks")}
+                </summary>
+                <div className="mt-2 grid min-w-56 gap-2 rounded-2xl border border-border-light bg-surface p-2 shadow-lg dark:border-white/8 dark:bg-surface-secondary">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => executeRun("PAYMENTS")} disabled={runMutation.isPending}>
+                    {t("actions.payments")}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => executeRun("WALLETS")} disabled={runMutation.isPending}>
+                    {t("actions.wallets")}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => executeRun("REFUNDS")} disabled={runMutation.isPending}>
+                    {t("actions.refunds")}
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => executeRun("PACKAGE_SETTLEMENTS")} disabled={runMutation.isPending}>
+                    {t("actions.packageSettlements")}
+                  </Button>
+                </div>
+              </details>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="rounded-[28px] border border-border-light bg-surface p-5 shadow-sm dark:border-white/8 dark:bg-surface-secondary">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light pb-4 dark:border-white/8">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={activeTab === "issues" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("issues")}
+              >
+                {t("tabs.openIssues")}
+              </Button>
+              <Button
+                type="button"
+                variant={activeTab === "checks" ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("checks")}
+              >
+                {t("tabs.recentChecks")}
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted">
+              {activeTab === "issues" ? t("tabs.openIssuesHint") : t("tabs.recentChecksHint")}
+            </p>
+          </div>
+
+          {activeTab === "issues" ? (
+            <div className="space-y-4 pt-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <FilterField
-                  label={t("filters.runScope")}
-                  value={runFilters.runScope ?? ""}
-                  onChange={(value) => updateQuery({ runScope: value || null, runPage: 1 })}
-                  options={RUN_SCOPE_OPTIONS.map((item) => ({ value: item, label: t(`runs.scope.${item.toLowerCase()}`) }))}
+                  label={t("filters.search")}
+                  value={issueSearchValue}
+                  onChange={handleIssueSearch}
+                  placeholder={t("filters.searchIssuePlaceholder")}
                 />
                 <FilterField
-                  label={t("filters.runTrigger")}
-                  value={runFilters.runTrigger ?? ""}
-                  onChange={(value) => updateQuery({ runTrigger: value || null, runPage: 1 })}
-                  options={RUN_TRIGGER_OPTIONS.map((item) => ({ value: item, label: t(`runs.trigger.${item.toLowerCase()}`) }))}
+                  label={t("filters.status")}
+                  value={issueFilters.issueReviewStatus ?? ""}
+                  onChange={(value) => updateQuery({ issueReviewStatus: value || null, issuePage: 1 })}
+                  options={ISSUE_STATUS_OPTIONS.map((item) => ({ value: item, label: t(`issues.reviewStatus.${item.toLowerCase()}`) }))}
                 />
                 <FilterField
-                  label={t("filters.runStatus")}
+                  label={t("filters.severity")}
+                  value={issueFilters.issueSeverity ?? ""}
+                  onChange={(value) => updateQuery({ issueSeverity: value || null, issuePage: 1 })}
+                  options={ISSUE_SEVERITY_OPTIONS.map((item) => ({ value: item, label: t(`issues.severity.${item.toLowerCase()}`) }))}
+                />
+                <DateField
+                  label={t("filters.date")}
+                  value={issueFilters.issueFrom ?? ""}
+                  onChange={(value) => updateQuery({ issueFrom: value || null, issuePage: 1 })}
+                />
+              </div>
+
+              <details className="rounded-2xl border border-border-light bg-surface-secondary/70 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]">
+                <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
+                  {t("filters.advancedFilters")}
+                </summary>
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                  <FilterField
+                    label={t("filters.currency")}
+                    value={issueFilters.issueCurrencyCode ?? ""}
+                    onChange={(value) => updateQuery({ issueCurrencyCode: value || null, issuePage: 1 })}
+                    placeholder={t("filters.currencyPlaceholder")}
+                  />
+                  <FilterField
+                    label={t("filters.entityType")}
+                    value={issueFilters.issueEntityType ?? ""}
+                    onChange={(value) => updateQuery({ issueEntityType: value || null, issuePage: 1 })}
+                    placeholder={t("filters.entityTypePlaceholder")}
+                  />
+                  <FilterField
+                    label={t("filters.entityId")}
+                    value={issueFilters.issueEntityId ?? ""}
+                    onChange={(value) => updateQuery({ issueEntityId: value || null, issuePage: 1 })}
+                    placeholder={t("filters.entityIdPlaceholder")}
+                  />
+                  <FilterField
+                    label={t("filters.issueCode")}
+                    value={issueFilters.issueCode ?? ""}
+                    onChange={(value) => updateQuery({ issueCode: value || null, issuePage: 1 })}
+                    placeholder={t("filters.issueCodePlaceholder")}
+                  />
+                  <FilterField
+                    label={t("filters.runId")}
+                    value={issueFilters.issueRunId ?? ""}
+                    onChange={(value) => updateQuery({ issueRunId: value || null, issuePage: 1 })}
+                    placeholder={t("filters.runIdPlaceholder")}
+                  />
+                  <FilterField
+                    label={t("filters.scope")}
+                    value={issueFilters.issueScope ?? ""}
+                    onChange={(value) => updateQuery({ issueScope: value || null, issuePage: 1 })}
+                    options={RUN_SCOPE_OPTIONS.map((item) => ({ value: item, label: t(`runs.scope.${item.toLowerCase()}`) }))}
+                  />
+                  <DateField
+                    label={t("filters.to")}
+                    value={issueFilters.issueTo ?? ""}
+                    onChange={(value) => updateQuery({ issueTo: value || null, issuePage: 1 })}
+                  />
+                </div>
+              </details>
+
+              <div className="space-y-4">
+                <div className="space-y-3 md:hidden">
+                  {issues.map((row) => {
+                    const copy = getReconciliationIssueCopy(row.issueCode);
+                    const title = locale === "ar" ? copy.titleAr : copy.titleEn;
+                    return (
+                      <article
+                        key={row.id}
+                        className="rounded-2xl border border-border-light bg-surface-secondary/70 p-4 shadow-sm dark:border-white/8 dark:bg-white/[0.03]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-1">
+                            <StatusPill tone={issueSeverityTone(row.severity)}>
+                              {t(`issues.severity.${row.severity.toLowerCase()}`)}
+                            </StatusPill>
+                            <p className="text-base font-semibold text-text-primary dark:text-white/95">{title}</p>
+                            <p className="break-all text-xs text-text-muted">{row.issueCode}</p>
+                          </div>
+                          <StatusPill tone={reviewStatusTone(row.status)}>
+                            {t(`issues.reviewStatus.${row.status.toLowerCase()}`)}
+                          </StatusPill>
+                        </div>
+                        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                              {t("issues.table.source")}
+                            </p>
+                            <p className="mt-1 font-medium text-text-primary dark:text-white/90">{formatIssueSourceLabel(row, t)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                              {t("issues.table.amount")}
+                            </p>
+                            <p className="mt-1 font-medium text-text-primary dark:text-white/90">{formatIssueAmountSummary(row, locale, t)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                              {t("issues.table.lastSeen")}
+                            </p>
+                            <p className="mt-1 text-sm text-text-primary dark:text-white/90">{formatDateTime(locale, row.lastDetectedAt)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                              {t("runs.table.scope")}
+                            </p>
+                            <p className="mt-1 text-sm text-text-primary dark:text-white/90">{humanizeIssueDomain(row.scope, locale)}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedIssueId(row.id)}
+                            startIcon={<Eye className="h-4 w-4" />}
+                          >
+                            {t("actions.view")}
+                          </Button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                  {issues.length === 0 && !issuesQuery.isLoading ? (
+                    <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-6 text-sm text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
+                      {t("states.issuesEmptyNote")}
+                    </div>
+                  ) : null}
+                </div>
+                <div className="hidden overflow-hidden rounded-2xl border border-border-light bg-surface-secondary/40 dark:border-white/8 dark:bg-white/[0.02] md:block">
+                  <DataTable
+                    data={issues}
+                    columns={issueColumns}
+                    getRowId={(row) => row.id}
+                    loading={issuesQuery.isLoading}
+                    error={issuesQuery.isError ? t("states.issuesError") : null}
+                    errorState={{
+                      title: t("states.issuesErrorTitle"),
+                      description: t("states.issuesError"),
+                      action: { label: t("states.retry"), onClick: () => issuesQuery.refetch() },
+                    }}
+                    emptyState={{
+                      title: t("states.issuesEmptyTitle"),
+                      description: t("states.issuesEmptyNote"),
+                    }}
+                    pagination={issuesQuery.data?.pagination}
+                    onPageChange={(page) => updateQuery({ issuePage: page })}
+                    onPageSizeChange={(limit) => updateQuery({ issueLimit: limit, issuePage: 1 })}
+                    pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
+                    onRowClick={(row) => setSelectedIssueId(row.id)}
+                    ariaLabel={t("tabs.openIssues")}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <FilterField
+                  label={t("filters.search")}
+                  value={runSearchValue}
+                  onChange={handleRunSearch}
+                  placeholder={t("filters.searchRunPlaceholder")}
+                />
+                <FilterField
+                  label={t("filters.status")}
                   value={runFilters.runStatus ?? ""}
                   onChange={(value) => updateQuery({ runStatus: value || null, runPage: 1 })}
                   options={RUN_STATUS_OPTIONS.map((item) => ({ value: item, label: t(`runs.status.${item.toLowerCase()}`) }))}
                 />
-                <FilterField
-                  label={t("filters.currency")}
-                  value={runFilters.runCurrencyCode ?? ""}
-                  onChange={(value) => updateQuery({ runCurrencyCode: value || null, runPage: 1 })}
-                  placeholder={t("filters.currencyPlaceholder")}
+                <DateField
+                  label={t("filters.date")}
+                  value={runFilters.runFrom ?? ""}
+                  onChange={(value) => updateQuery({ runFrom: value || null, runPage: 1 })}
                 />
-                <DateField label={t("filters.from")} value={runFilters.runFrom ?? ""} onChange={(value) => updateQuery({ runFrom: value || null, runPage: 1 })} />
-                <DateField label={t("filters.to")} value={runFilters.runTo ?? ""} onChange={(value) => updateQuery({ runTo: value || null, runPage: 1 })} />
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/70 px-4 py-3 text-xs text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
+                  {t("tabs.recentChecksHint")}
+                </div>
               </div>
 
-              <div className="mt-4">
+              <details className="rounded-2xl border border-border-light bg-surface-secondary/70 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]">
+                <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
+                  {t("filters.advancedFilters")}
+                </summary>
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <FilterField
+                    label={t("filters.scope")}
+                    value={runFilters.runScope ?? ""}
+                    onChange={(value) => updateQuery({ runScope: value || null, runPage: 1 })}
+                    options={RUN_SCOPE_OPTIONS.map((item) => ({ value: item, label: t(`runs.scope.${item.toLowerCase()}`) }))}
+                  />
+                  <FilterField
+                    label={t("filters.trigger")}
+                    value={runFilters.runTrigger ?? ""}
+                    onChange={(value) => updateQuery({ runTrigger: value || null, runPage: 1 })}
+                    options={RUN_TRIGGER_OPTIONS.map((item) => ({ value: item, label: t(`runs.trigger.${item.toLowerCase()}`) }))}
+                  />
+                  <FilterField
+                    label={t("filters.currency")}
+                    value={runFilters.runCurrencyCode ?? ""}
+                    onChange={(value) => updateQuery({ runCurrencyCode: value || null, runPage: 1 })}
+                    placeholder={t("filters.currencyPlaceholder")}
+                  />
+                  <DateField
+                    label={t("filters.to")}
+                    value={runFilters.runTo ?? ""}
+                    onChange={(value) => updateQuery({ runTo: value || null, runPage: 1 })}
+                  />
+                </div>
+              </details>
+
+              <div className="overflow-hidden rounded-2xl border border-border-light bg-surface-secondary/40 dark:border-white/8 dark:bg-white/[0.02]">
                 <DataTable
                   data={runs}
                   columns={runColumns}
@@ -842,107 +1208,12 @@ export default function FinancialReconciliationScreen() {
                     </Button>
                   )}
                   onRowClick={(row) => setSelectedRunId(row.id)}
-                  ariaLabel={t("runs.title")}
+                  ariaLabel={t("tabs.recentChecks")}
                 />
               </div>
-            </AdminSectionCard>
-
-            <AdminSectionCard
-              eyebrow={t("issues.eyebrow")}
-              title={t("issues.title")}
-              description={t("issues.description")}
-            >
-              <div className="mb-4 rounded-[20px] border border-primary/15 bg-primary-light/30 px-4 py-3 text-sm text-text-secondary dark:bg-primary/10">
-                {t("issues.helper")}
-              </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-                <FilterField
-                  label={t("filters.issueScope")}
-                  value={issueFilters.issueScope ?? ""}
-                  onChange={(value) => updateQuery({ issueScope: value || null, issuePage: 1 })}
-                  options={RUN_SCOPE_OPTIONS.map((item) => ({ value: item, label: t(`runs.scope.${item.toLowerCase()}`) }))}
-                />
-                <FilterField
-                  label={t("filters.issueSeverity")}
-                  value={issueFilters.issueSeverity ?? ""}
-                  onChange={(value) => updateQuery({ issueSeverity: value || null, issuePage: 1 })}
-                  options={ISSUE_SEVERITY_OPTIONS.map((item) => ({ value: item, label: t(`issues.severity.${item.toLowerCase()}`) }))}
-                />
-                <FilterField
-                  label={t("filters.issueStatus")}
-                  value={issueFilters.issueReviewStatus ?? ""}
-                  onChange={(value) => updateQuery({ issueReviewStatus: value || null, issuePage: 1 })}
-                  options={ISSUE_STATUS_OPTIONS.map((item) => ({ value: item, label: t(`issues.reviewStatus.${item.toLowerCase()}`) }))}
-                />
-                <FilterField
-                  label={t("filters.currency")}
-                  value={issueFilters.issueCurrencyCode ?? ""}
-                  onChange={(value) => updateQuery({ issueCurrencyCode: value || null, issuePage: 1 })}
-                  placeholder={t("filters.currencyPlaceholder")}
-                />
-                <FilterField
-                  label={t("filters.entityType")}
-                  value={issueFilters.issueEntityType ?? ""}
-                  onChange={(value) => updateQuery({ issueEntityType: value || null, issuePage: 1 })}
-                  placeholder={t("filters.entityTypePlaceholder")}
-                />
-                <FilterField
-                  label={t("filters.issueCode")}
-                  value={issueFilters.issueCode ?? ""}
-                  onChange={(value) => updateQuery({ issueCode: value || null, issuePage: 1 })}
-                  placeholder={t("filters.issueCodePlaceholder")}
-                />
-              </div>
-
-              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <FilterField
-                  label={t("filters.entityId")}
-                  value={issueFilters.issueEntityId ?? ""}
-                  onChange={(value) => updateQuery({ issueEntityId: value || null, issuePage: 1 })}
-                  placeholder={t("filters.entityIdPlaceholder")}
-                />
-                <FilterField
-                  label={t("filters.runId")}
-                  value={issueFilters.issueRunId ?? ""}
-                  onChange={(value) => updateQuery({ issueRunId: value || null, issuePage: 1 })}
-                  placeholder={t("filters.runIdPlaceholder")}
-                />
-                <DateField label={t("filters.from")} value={issueFilters.issueFrom ?? ""} onChange={(value) => updateQuery({ issueFrom: value || null, issuePage: 1 })} />
-                <DateField label={t("filters.to")} value={issueFilters.issueTo ?? ""} onChange={(value) => updateQuery({ issueTo: value || null, issuePage: 1 })} />
-              </div>
-
-              <div className="mt-4">
-                <DataTable
-                  data={issues}
-                  columns={issueColumns}
-                  getRowId={(row) => row.id}
-                  loading={issuesQuery.isLoading}
-                  error={issuesQuery.isError ? t("states.issuesError") : null}
-                  errorState={{
-                    title: t("states.issuesErrorTitle"),
-                    description: t("states.issuesError"),
-                    action: { label: t("states.retry"), onClick: () => issuesQuery.refetch() },
-                  }}
-                  emptyState={{
-                    title: t("states.issuesEmptyTitle"),
-                    description: t("states.issuesEmptyNote"),
-                  }}
-                  pagination={issuesQuery.data?.pagination}
-                  onPageChange={(page) => updateQuery({ issuePage: page })}
-                  onPageSizeChange={(limit) => updateQuery({ issueLimit: limit, issuePage: 1 })}
-                  pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
-                  rowActions={(row) => (
-                    <Button type="button" variant="outline" size="sm" onClick={() => setSelectedIssueId(row.id)} startIcon={<Eye className="h-4 w-4" />}>
-                      {t("actions.view")}
-                    </Button>
-                  )}
-                  onRowClick={(row) => setSelectedIssueId(row.id)}
-                  ariaLabel={t("issues.title")}
-                />
-              </div>
-            </AdminSectionCard>
-          </div>
-        </AdminOperationalListShell>
+            </div>
+          )}
+        </section>
 
         <AccountingStepUpDialog controller={stepUp} />
 
@@ -1020,7 +1291,13 @@ export default function FinancialReconciliationScreen() {
             <ModalHeader
               eyebrow={t("issueDetail.eyebrow")}
               title={t("issueDetail.title")}
-              description={selectedIssue ? selectedIssue.issueCode : t("issueDetail.subtitle")}
+              description={
+                selectedIssue
+                  ? locale === "ar"
+                    ? selectedIssueCopy.titleAr
+                    : selectedIssueCopy.titleEn
+                  : t("issueDetail.subtitle")
+              }
             />
             <ModalBody className="space-y-5">
               {!selectedIssue && (selectedIssueQuery.isLoading || selectedIssueQuery.isFetching) ? (
@@ -1046,14 +1323,27 @@ export default function FinancialReconciliationScreen() {
                     <InfoBlock label={t("issueDetail.fields.scope")} value={t(`runs.scope.${selectedIssue.scope.toLowerCase()}`)} />
                     <InfoBlock label={t("issueDetail.fields.currency")} value={selectedIssueCurrencyLabel ? (locale === "ar" ? selectedIssueCurrencyLabel.ar : selectedIssueCurrencyLabel.en) : t("common.notAvailable")} />
                     <InfoBlock label={t("issueDetail.fields.entityType")} value={humanizeEntityType(selectedIssue.entityType, locale)} />
-                    <InfoBlock label={t("issueDetail.fields.entityId")} value={selectedIssue.entityId} mono />
+                    <CopyableInfoBlock
+                      label={t("issueDetail.fields.entityId")}
+                      value={selectedIssue.entityId}
+                      copyLabel={t("common.copy")}
+                      onCopy={() => void handleCopyValue(selectedIssue.entityId)}
+                      mono
+                    />
                     <InfoBlock label={t("issueDetail.fields.firstDetected")} value={formatDateTime(locale, selectedIssue.firstDetectedAt)} />
                     <InfoBlock label={t("issueDetail.fields.lastDetected")} value={formatDateTime(locale, selectedIssue.lastDetectedAt)} />
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <InfoBlock label={t("issueDetail.whatTitle")} value={locale === "ar" ? selectedIssueCopy.titleAr : selectedIssueCopy.titleEn} />
-                    <InfoBlock label={t("issueDetail.whereTitle")} value={`${humanizeIssueDomain(selectedIssue.scope, locale)} · ${humanizeEntityType(selectedIssue.entityType, locale)} · ${shortId(selectedIssue.entityId)}`} />
+                    <InfoBlock label={t("issueDetail.whereTitle")} value={`${formatIssueSourceLabel(selectedIssue, t)} · ${humanizeEntityType(selectedIssue.entityType, locale)} · ${shortId(selectedIssue.entityId)}`} />
                   </div>
+                  <CopyableInfoBlock
+                    label={t("issueDetail.fields.runId")}
+                    value={selectedIssue.runId}
+                    copyLabel={t("common.copy")}
+                    onCopy={() => void handleCopyValue(selectedIssue.runId)}
+                    mono
+                  />
                   <InfoBlock label={t("issueDetail.messageLabel")} value={selectedIssue.message} />
                   <div className="grid gap-3 md:grid-cols-2">
                     <InfoBlock label={t("issueDetail.whyTitle")} value={locale === "ar" ? selectedIssueCopy.whyItMattersAr : selectedIssueCopy.whyItMattersEn} />
@@ -1064,8 +1354,8 @@ export default function FinancialReconciliationScreen() {
                       {t("issueDetail.expectedActualTitle")}
                     </p>
                     <div className="mt-3 grid gap-3 md:grid-cols-3">
-                      <InfoBlock label={t("issueDetail.fields.expected")} value={selectedIssue.expectedValue ?? t("common.notAvailable")} />
-                      <InfoBlock label={t("issueDetail.fields.actual")} value={selectedIssue.actualValue ?? t("common.notAvailable")} />
+                      <InfoBlock label={t("issueDetail.fields.expected")} value={formatMoneyValue(locale, selectedIssue.expectedValue)} />
+                      <InfoBlock label={t("issueDetail.fields.actual")} value={formatMoneyValue(locale, selectedIssue.actualValue)} />
                       <InfoBlock label={t("issueDetail.differenceLabel")} value={selectedIssueExpectedActualDifference ?? t("common.notAvailable")} />
                     </div>
                   </div>

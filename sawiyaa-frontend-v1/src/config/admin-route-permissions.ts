@@ -73,10 +73,6 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
     requiresAny: [PK.FINANCE_EVENTS_READ, PK.ACCOUNTING_READ],
   },
   {
-    path: "/settlements",
-    requiresAny: [PK.SETTLEMENTS_READ, PK.SETTLEMENTS_WRITE],
-  },
-  {
     path: "/package-settlements",
     requiresAny: [PK.SETTLEMENTS_READ, PK.SETTLEMENTS_WRITE],
   },

@@ -66,6 +66,14 @@ function uuid(seed) {
     const h = (0, crypto_1.createHash)('md5').update(seed).digest('hex');
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
+function getSundayBasedWeekRange(baseDate, weekOffset = 0) {
+    const weekStartDate = new Date(baseDate);
+    weekStartDate.setUTCHours(0, 0, 0, 0);
+    weekStartDate.setUTCDate(weekStartDate.getUTCDate() - weekStartDate.getUTCDay() + weekOffset * 7);
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setUTCDate(weekStartDate.getUTCDate() + 6);
+    return { weekStartDate, weekEndDate };
+}
 function pick(arr, index) {
     return arr[index % arr.length];
 }
@@ -443,28 +451,51 @@ exports.regionalBulkSeedModule = {
                 update: { isPrimary: false },
             });
             const practitionerTimezone = pick(TIMEZONES, i);
-            const weeklyAvailability = BULK_AVAILABILITY_WEEKDAYS.map((weekday) => ({
-                id: uuid(`bulk-practitioner-availability-${profileId}-${weekday}`),
-                practitionerId: profileId,
-                weekday,
-                durationMinutes: 30,
-                startMinuteOfDay: 10 * 60 + (i % 3) * 60,
-                endMinuteOfDay: 18 * 60 + (i % 2) * 30,
-                timezone: practitionerTimezone,
-                isActive: true,
-            }));
-            for (const slot of weeklyAvailability) {
-                await prisma.availabilitySlot.upsert({
-                    where: { id: slot.id },
-                    create: slot,
+            const baseDate = new Date();
+            for (const weekOffset of [0, 1]) {
+                const range = getSundayBasedWeekRange(baseDate, weekOffset);
+                const weekId = uuid(`bulk-practitioner-availability-week-${profileId}-${range.weekStartDate.toISOString().slice(0, 10)}`);
+                await prisma.practitionerAvailabilityWeek.upsert({
+                    where: { id: weekId },
+                    create: {
+                        id: weekId,
+                        practitionerId: profileId,
+                        weekStartDate: range.weekStartDate,
+                        weekEndDate: range.weekEndDate,
+                        timezone: practitionerTimezone,
+                        status: client_1.AvailabilityWeekStatus.PUBLISHED,
+                        publishedAt: range.weekStartDate,
+                        archivedAt: null,
+                        slots: {
+                            create: BULK_AVAILABILITY_WEEKDAYS.map((weekday) => ({
+                                id: uuid(`bulk-practitioner-availability-slot-${weekId}-${weekday}`),
+                                weekday,
+                                durationMinutes: 30,
+                                startMinuteOfDay: 10 * 60 + (i % 3) * 60,
+                                endMinuteOfDay: 18 * 60 + (i % 2) * 30,
+                                timezone: practitionerTimezone,
+                            })),
+                        },
+                    },
                     update: {
-                        practitionerId: slot.practitionerId,
-                        weekday: slot.weekday,
-                        durationMinutes: slot.durationMinutes,
-                        startMinuteOfDay: slot.startMinuteOfDay,
-                        endMinuteOfDay: slot.endMinuteOfDay,
-                        timezone: slot.timezone,
-                        isActive: slot.isActive,
+                        practitionerId: profileId,
+                        weekStartDate: range.weekStartDate,
+                        weekEndDate: range.weekEndDate,
+                        timezone: practitionerTimezone,
+                        status: client_1.AvailabilityWeekStatus.PUBLISHED,
+                        publishedAt: range.weekStartDate,
+                        archivedAt: null,
+                        slots: {
+                            deleteMany: {},
+                            create: BULK_AVAILABILITY_WEEKDAYS.map((weekday) => ({
+                                id: uuid(`bulk-practitioner-availability-slot-${weekId}-${weekday}`),
+                                weekday,
+                                durationMinutes: 30,
+                                startMinuteOfDay: 10 * 60 + (i % 3) * 60,
+                                endMinuteOfDay: 18 * 60 + (i % 2) * 30,
+                                timezone: practitionerTimezone,
+                            })),
+                        },
                     },
                 });
             }

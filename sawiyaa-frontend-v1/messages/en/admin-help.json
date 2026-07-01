@@ -125,6 +125,15 @@
       "viewQuestionLabel": "Question"
     }
   },
+  "validation": {
+    "questionArRequired": "Arabic question is required.",
+    "answerArRequired": "Arabic answer is required."
+  },
+  "errors": {
+    "reviewRequired": "Please review the required fields.",
+    "saveFailed": "We couldn't save the changes. Please try again.",
+    "referenceId": "Reference ID: {requestId}"
+  },
   "fields": {
     "slug": "Slug",
     "titleAr": "Arabic name",

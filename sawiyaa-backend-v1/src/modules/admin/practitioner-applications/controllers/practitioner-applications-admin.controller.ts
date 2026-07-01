@@ -272,7 +272,6 @@ export class PractitionerApplicationsAdminController {
 
   /** Uploads a credential file for later inclusion in admin direct-create payloads. */
   @Post('direct-create/credentials/upload')
-  @RequireStepUp('security.practitioner.application.direct-create')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @UseInterceptors(
     FileInterceptor('file', {

@@ -216,7 +216,7 @@
         "ledger": "Ledger",
         "ledgerNote": "Inspect recent financial entries without leaving the practitioner area.",
         "settlements": "Settlements",
-        "settlementsNote": "Check settlement batches and their current visibility states.",
+        "settlementsNote": "Check payout records and their current visibility states.",
         "profile": "Profile",
         "careChatNote": "Review approved and pending care-chat requests without switching to a general chat flow.",
         "profileNote": "Keep your profile accurate and patient-ready.",
@@ -701,11 +701,11 @@
   "availability": {
     "meta": {
       "title": "Availability — Practitioner",
-      "description": "Manage your weekly schedule and instant booking settings."
+      "description": "Manage your current and next week availability. Draft weeks stay private until published, and patients can book only from published weeks."
     },
     "page": {
       "title": "Availability",
-      "subtitle": "Set your weekly schedule, manage exceptions, and control your presence."
+      "subtitle": "Manage your current and next week availability here. Draft weeks are private until published. Patients can only book times from published weeks."
     },
     "feedback": {
       "loadError": "Could not load your availability. Please try again.",
@@ -1374,7 +1374,7 @@
             "title": "Settlement gross mismatch",
             "description": "The settlement gross amount does not match the expected source amount.",
             "whyItMatters": "Gross mismatches can affect the total amount sent to payout reconciliation.",
-            "recommendedAction": "Review the settlement batch and compare it to the source ledger entries."
+            "recommendedAction": "Review the payout record and compare it to the source ledger entries."
           },
           "SETTLEMENT_NET_MISMATCH": {
             "title": "Settlement net mismatch",

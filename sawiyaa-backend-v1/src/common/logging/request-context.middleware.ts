@@ -12,9 +12,12 @@ import { REQUEST_ID_HEADER } from './logging.constants';
 export class RequestContextMiddleware implements NestMiddleware {
   use(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
     const incomingId = req.headers[REQUEST_ID_HEADER];
+    const incomingValue = Array.isArray(incomingId)
+      ? incomingId[0]
+      : incomingId;
     const requestId =
-      typeof incomingId === 'string' && incomingId.trim().length > 0
-        ? incomingId.trim()
+      typeof incomingValue === 'string' && incomingValue.trim().length > 0
+        ? incomingValue.trim()
         : randomUUID();
 
     req.requestId = requestId;

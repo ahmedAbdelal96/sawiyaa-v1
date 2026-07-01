@@ -93,8 +93,6 @@ async function bootstrap(): Promise<void> {
   logger.info(
     {
       message: 'Application started',
-      appName: process.env.APP_NAME ?? 'sawiyaa-backend-v1',
-      environment: process.env.NODE_ENV ?? 'development',
       port,
       apiPrefix,
       pid: process.pid,

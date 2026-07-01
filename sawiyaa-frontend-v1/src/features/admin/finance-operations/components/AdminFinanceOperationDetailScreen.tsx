@@ -40,6 +40,22 @@ function toViewValue(value: string | null) {
   return value ?? "-";
 }
 
+function formatMoney(value: string | null, currency: string | null, locale: string) {
+  if (!value || !currency) return "-";
+
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return `${value} ${currency}`;
+  }
+
+  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+}
+
 function OperationalSnapshot({ item }: { item: FinanceOperationEventItem }) {
   const t = useTranslations("admin-finance-operations");
 
@@ -166,6 +182,14 @@ export default function AdminFinanceOperationDetailScreen({ eventId }: Props) {
             value={t(`types.${item.operationType}` as Parameters<typeof t>[0])}
           />
           <DetailField label={t("detail.fields.summary")} value={toViewValue(item.summary)} />
+          <DetailField
+            label={t("detail.fields.amount")}
+            value={formatMoney(item.amount, item.currencyCode, locale)}
+          />
+          <DetailField
+            label={t("detail.fields.currencyCode")}
+            value={toViewValue(item.currencyCode)}
+          />
           <DetailField label={t("detail.fields.provider")} value={item.provider ? t(`providers.${item.provider}` as Parameters<typeof t>[0]) : "-"} />
           <DetailField
             label={t("detail.fields.paymentPurpose")}

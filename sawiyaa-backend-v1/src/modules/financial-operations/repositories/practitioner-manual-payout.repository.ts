@@ -76,6 +76,46 @@ export class PractitionerManualPayoutRepository {
     ]);
   }
 
+  summarizePayouts(input: {
+    practitionerId?: string;
+    currencyCode?: string;
+    payoutMethod?: SettlementPayoutMethod;
+    createdFrom?: Date;
+    createdTo?: Date;
+    tx?: Prisma.TransactionClient;
+  }) {
+    const db = this.getDb(input.tx);
+    const where: Prisma.PractitionerManualPayoutWhereInput = {
+      practitionerId: input.practitionerId,
+      currencyCode: input.currencyCode,
+      payoutMethod: input.payoutMethod,
+      ...(input.createdFrom || input.createdTo
+        ? {
+            paidAt: {
+              ...(input.createdFrom ? { gte: input.createdFrom } : {}),
+              ...(input.createdTo ? { lte: input.createdTo } : {}),
+            },
+          }
+        : {}),
+    };
+
+    return Promise.all([
+      db.practitionerManualPayout.count({ where }),
+      db.practitionerManualPayout.aggregate({
+        where: { ...where, currencyCode: 'EGP' },
+        _sum: { amountPaid: true },
+      }),
+      db.practitionerManualPayout.aggregate({
+        where: { ...where, currencyCode: 'USD' },
+        _sum: { amountPaid: true },
+      }),
+    ]).then(([payoutCount, egpAgg, usdAgg]) => ({
+      payoutCount,
+      egpAmountPaid: (egpAgg._sum.amountPaid ?? new Prisma.Decimal(0)).toFixed(2),
+      usdAmountPaid: (usdAgg._sum.amountPaid ?? new Prisma.Decimal(0)).toFixed(2),
+    }));
+  }
+
   listForBalance(
     practitionerId: string,
     currencyCode: string,

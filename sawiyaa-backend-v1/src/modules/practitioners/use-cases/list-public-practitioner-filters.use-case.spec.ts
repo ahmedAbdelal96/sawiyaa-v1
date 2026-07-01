@@ -1,24 +1,30 @@
 import { Prisma } from '@prisma/client';
-import type { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
+import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
+import { PublicPractitionerSessionDuration } from '../dto/list-public-practitioners.dto';
 import { ListPublicPractitionerFiltersUseCase } from './list-public-practitioner-filters.use-case';
 
 describe('ListPublicPractitionerFiltersUseCase', () => {
   const publicReadRepository = {
     listPublicFilterMetadataSource: jest.fn(),
   } as unknown as PublicPractitionerReadRepository;
-  const patientProfileRepository = {
-    findByUserId: jest.fn(),
-  } as unknown as PatientProfileRepository;
+  const pricingContextService = {
+    resolve: jest.fn(),
+  } as unknown as PublicPractitionerPricingContextService;
 
   const useCase = new ListPublicPractitionerFiltersUseCase(
     publicReadRepository,
-    patientProfileRepository,
+    pricingContextService,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValue(null);
+    (pricingContextService.resolve as jest.Mock).mockResolvedValue({
+      resolvedCountryIsoCode: null,
+      regionalPricingMode: 'INTERNATIONAL',
+      currencyCode: 'USD',
+      provider: 'PAYMOB',
+    });
   });
 
   it('builds localized public-safe metadata and fee bounds for guests', async () => {
@@ -114,7 +120,7 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
         category: {
           id: 'cat-1',
           slug: 'mental-health',
-          name: 'نفسي',
+          name: 'النفسي',
         },
         practitionerCount: 2,
       },
@@ -122,7 +128,7 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
     expect(result.specialtyCategories).toEqual([
       {
         value: 'mental-health',
-        label: 'نفسي',
+        label: 'النفسي',
         practitionerCount: 2,
       },
     ]);
@@ -131,8 +137,9 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
       { value: 'therapist', label: 'معالج نفسي', practitionerCount: 1 },
     ]);
     expect(result.feeBounds).toEqual({
-      min: 8,
+      min: 0,
       max: 22,
+      actualMin: 8,
       currency: 'USD',
       step: 5,
     });
@@ -151,13 +158,14 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
 
   it('uses patient country to resolve fee metadata currency', async () => {
     (
-      patientProfileRepository.findByUserId as jest.Mock
-    ).mockResolvedValue({
-      country: { isoCode: 'EG' },
-    });
-    (
       publicReadRepository.listPublicFilterMetadataSource as jest.Mock
     ).mockResolvedValue([]);
+    (pricingContextService.resolve as jest.Mock).mockResolvedValue({
+      resolvedCountryIsoCode: 'EG',
+      regionalPricingMode: 'EGYPT_LOCAL',
+      currencyCode: 'EGP',
+      provider: 'PAYMOB',
+    });
 
     const result = await useCase.execute({
       locale: 'en',
@@ -167,14 +175,69 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
     expect(result.feeBounds).toEqual({
       min: 0,
       max: 0,
+      actualMin: 0,
       currency: 'EGP',
       step: 50,
+    });
+    expect(pricingContextService.resolve).toHaveBeenCalledWith({
+      currentUserId: 'patient-1',
+      guestCountryIsoCode: undefined,
     });
     expect(
       publicReadRepository.listPublicFilterMetadataSource,
     ).toHaveBeenCalledWith({
       locale: 'en',
       currencyCode: 'EGP',
+    });
+  });
+
+  it('builds duration-aware fee bounds when duration=30 is selected', async () => {
+    (
+      publicReadRepository.listPublicFilterMetadataSource as jest.Mock
+    ).mockResolvedValue([
+      {
+        id: 'profile-1',
+        practitionerType: 'PSYCHIATRIST',
+        practitionerGender: 'MALE',
+        country: null,
+        languages: [],
+        specialties: [],
+        sessionPrice30Egp: new Prisma.Decimal('420'),
+        sessionPrice30Usd: new Prisma.Decimal('25'),
+        sessionPrice60Egp: new Prisma.Decimal('760'),
+        sessionPrice60Usd: new Prisma.Decimal('45'),
+      },
+      {
+        id: 'profile-2',
+        practitionerType: 'OTHER',
+        practitionerGender: 'FEMALE',
+        country: null,
+        languages: [],
+        specialties: [],
+        sessionPrice30Egp: new Prisma.Decimal('320'),
+        sessionPrice30Usd: new Prisma.Decimal('19'),
+        sessionPrice60Egp: new Prisma.Decimal('580'),
+        sessionPrice60Usd: new Prisma.Decimal('34'),
+      },
+    ]);
+    (pricingContextService.resolve as jest.Mock).mockResolvedValue({
+      resolvedCountryIsoCode: 'EG',
+      regionalPricingMode: 'EGYPT_LOCAL',
+      currencyCode: 'EGP',
+      provider: 'PAYMOB',
+    });
+
+    const result = await useCase.execute({
+      locale: 'en',
+      duration: PublicPractitionerSessionDuration.THIRTY,
+    });
+
+    expect(result.feeBounds).toEqual({
+      min: 0,
+      max: 420,
+      actualMin: 320,
+      currency: 'EGP',
+      step: 50,
     });
   });
 });

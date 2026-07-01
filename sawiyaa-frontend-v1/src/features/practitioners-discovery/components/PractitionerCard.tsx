@@ -3,13 +3,19 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, BadgeCheck, Briefcase, Star } from "lucide-react";
-import type { PublicPractitioner } from "../types/practitioner";
+import {
+  formatPublicMoney,
+  getPublicSessionPrices,
+  isPublicSessionPriceInActiveFeeRange,
+} from "../lib/public-pricing";
+import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
 type Props = {
   practitioner: PublicPractitioner;
   specialtyLabels: Record<string, string>;
   languageLabels: Record<string, string>;
+  activeFeeFilter?: ActiveFeeFilterContext;
   basePath?: string;
 };
 
@@ -23,12 +29,16 @@ export default function PractitionerCard({
   practitioner,
   specialtyLabels,
   languageLabels,
+  activeFeeFilter = {},
   basePath = "/practitioners",
 }: Props) {
   const t = useTranslations("practitioners-listing.card");
   const locale = useLocale();
 
   const isArabic = locale === "ar";
+  const sessionFeesLabel = isArabic ? "رسوم الجلسة" : t("sessionFees");
+  const duration30Label = isArabic ? "30 دقيقة" : t("duration30");
+  const duration60Label = isArabic ? "60 دقيقة" : t("duration60");
   const name = (isArabic ? practitioner.nameAr : practitioner.nameEn) || practitioner.slug;
   const title = (isArabic ? practitioner.titleAr : practitioner.titleEn) || "-";
   const rating = typeof practitioner.rating === "number" ? practitioner.rating : 0;
@@ -41,6 +51,7 @@ export default function PractitionerCard({
   const filledStars = Math.max(0, Math.min(5, Math.round(rating)));
 
   const visibleSpecialties = practitioner.specialties.slice(0, 2);
+  const sessionPrices = getPublicSessionPrices(practitioner);
 
   // Short language tags for horizontal stats layout
   const languagesList = practitioner.languages.map((code) => code.toUpperCase()).join(", ");
@@ -144,6 +155,34 @@ export default function PractitionerCard({
             <p className="font-bold text-text-primary dark:text-white/90">{yearsExperience}</p>
           </div>
         </div>
+
+        {sessionPrices.length > 0 ? (
+          <div className="rounded-2xl border border-primary/10 bg-primary-light/35 px-3 py-2 dark:bg-primary/10">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+              {sessionFeesLabel}
+            </p>
+            <div className="mt-2 space-y-1.5">
+              {sessionPrices.map((price) => (
+                <div
+                  key={price.duration}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <span className="flex items-center gap-2 font-medium text-text-secondary">
+                    <span>{price.duration === 30 ? duration30Label : duration60Label}</span>
+                    {isPublicSessionPriceInActiveFeeRange(price, activeFeeFilter) ? (
+                      <span className="rounded-full border border-primary/15 bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-primary dark:bg-primary/10">
+                        {t("matchesFilter")}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="font-bold text-text-primary dark:text-white/95">
+                    {formatPublicMoney(locale, price.amount, practitioner.currencyCode)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4">

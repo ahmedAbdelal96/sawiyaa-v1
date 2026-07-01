@@ -31,6 +31,7 @@ import { PractitionerApplicationCompletionService } from './services/practitione
 import { PractitionerAvatarStorageService } from './services/practitioner-avatar-storage.service';
 import { PractitionerCredentialStorageService } from './services/practitioner-credential-storage.service';
 import { PractitionerPayoutDestinationValidationService } from './services/practitioner-payout-destination-validation.service';
+import { PublicPractitionerPricingContextService } from './services/public-practitioner-pricing-context.service';
 import { PractitionerSpecialtyIntegrityService } from './services/practitioner-specialty-integrity.service';
 import { CreatePractitionerProfileUseCase } from './use-cases/create-practitioner-profile.use-case';
 import { GetPublicPractitionerDetailsUseCase } from './use-cases/get-public-practitioner-details.use-case';
@@ -81,6 +82,7 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     PractitionerLanguageRepository,
     PractitionerSpecialtyIntegrityService,
     PractitionerPayoutDestinationValidationService,
+    PublicPractitionerPricingContextService,
     PractitionerApplicationSnapshotService,
     PractitionerApplicationCompletionService,
     PractitionerAvatarStorageService,

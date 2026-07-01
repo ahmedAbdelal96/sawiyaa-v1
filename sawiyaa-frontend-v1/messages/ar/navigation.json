@@ -15,26 +15,29 @@
     "ledger": "دفتر الحسابات",
     "promoCodes": "أكواد الخصم",
     "payments": "المدفوعات",
-    "paymentsHome": "لوحة المدفوعات",
+    "paymentsHome": "المدفوعات",
     "paymentGatewayControl": "التحكم في بوابة الدفع",
     "finance": "المالية",
-    "financeDashboard": "لوحة المالية",
-    "financeLedger": "مستكشف القيود",
-    "financeReconciliation": "مراجعة الحسابات المالية",
+    "financeAccounts": "الحسابات",
+    "financeReview": "المراجعة",
+    "financeDashboard": "نظرة عامة",
+    "financeLedger": "دفتر القيود",
+    "financeReconciliation": "المطابقة المالية",
     "reports": "التقارير",
     "reportsHome": "صفحة التقارير",
     "reportsSessions": "تقرير الجلسات",
-    "reportsPaymentsRevenue": "تقرير المدفوعات والإيرادات",
+    "reportsPaymentsRevenue": "تقارير الإيرادات",
     "reportsSupport": "تقرير الدعم",
     "reportsCareRequests": "تقرير طلبات المحادثة",
-    "reportsPayouts": "تقرير التحويلات للمعالجين",
-    "practitionerPayouts": "مستحقات المعالجين",
-    "practitionerPayoutsHistory": "سجل دفعات المعالجين",
-    "settlements": "مستحقات المعالجين",
-    "settlementsBatches": "دفعات المستحقات",
+    "reportsPayouts": "تقارير الصرف",
+    "practitionerPayouts": "مستحقات المختصين",
+    "practitionerPayoutsHistory": "سجل التحويلات",
+    "settlements": "التسويات",
+    "advancedDuesReview": "مراجعة المستحقات",
+    "advancedPayoutOperations": "عمليات التحويلات",
     "packageSettlements": "تسويات الباقات",
-    "settlementsDues": "مستحقات المعالجين",
-    "settlementsPayouts": "سجل الدفعات",
+    "settlementsDues": "مستحقات المختصين",
+    "settlementsPayouts": "سجل التحويلات",
     "revenueShareRules": "قواعد اقتسام الإيراد",
     "assessments": "الاختبارات",
     "availability": "التوفر"
@@ -48,8 +51,11 @@
   "catalog": {
     "title": "الخدمات والمحتوى"
   },
-  "financeOps": {
-    "title": "المالية والتسويات"
+  "finance": {
+    "title": "المالية"
+  },
+  "financeReview": {
+    "title": "مراجعة مالية"
   },
   "insights": {
     "title": "التقارير والحوكمة"
@@ -57,14 +63,11 @@
   "core": {
     "title": "الأساسيات"
   },
-  "paymentsFinance": {
-    "title": "المدفوعات والمالية"
-  },
   "contentMarketplace": {
     "title": "المحتوى والسوق"
   },
   "oversight": {
-    "title": "الرقابة"
+    "title": "المراجعة والتقارير"
   },
   "practitionerWorkspaceTitle": {
     "title": "مساحة العمل"

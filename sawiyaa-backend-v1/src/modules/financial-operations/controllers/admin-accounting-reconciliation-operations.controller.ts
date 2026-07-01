@@ -127,42 +127,6 @@ export class AdminAccountingReconciliationOperationsController {
     };
   }
 
-  @Post('reconciliation-runs/settlements')
-  @RequireStepUp('finance.accounting.reconciliation.run')
-  @Permissions(PermissionKey.ACCOUNTING_WRITE)
-  @ApiOperation({
-    summary: 'Run settlement reconciliation',
-    description:
-      'Runs reconciliation over practitioner settlements and settlement batches.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Settlement reconciliation run result',
-  })
-  async runSettlements(
-    @Query() query: TriggerAccountingReconciliationRunDto,
-    @CurrentUser() currentUser: AuthenticatedUser,
-  ) {
-    const data = await this.operationsService.runSettlements(
-      this.toRunRequest('SETTLEMENTS', 'ADMIN', query),
-      currentUser.id,
-    );
-    this.logRun(
-      'finance.accounting.reconciliation.run.settlements',
-      currentUser,
-      {
-        runId: data.run.id,
-        scope: data.run.scope,
-        issueCount: data.issueCount,
-        ...data.summary,
-      },
-    );
-    return {
-      success: true as const,
-      data,
-    };
-  }
-
   @Post('reconciliation-runs/refunds')
   @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)

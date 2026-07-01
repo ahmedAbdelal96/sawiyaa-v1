@@ -725,21 +725,6 @@ exports.Prisma.PractitionerPayoutDestinationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.AvailabilitySlotScalarFieldEnum = {
-  id: 'id',
-  practitionerId: 'practitionerId',
-  weekday: 'weekday',
-  durationMinutes: 'durationMinutes',
-  startMinuteOfDay: 'startMinuteOfDay',
-  endMinuteOfDay: 'endMinuteOfDay',
-  timezone: 'timezone',
-  isActive: 'isActive',
-  effectiveFrom: 'effectiveFrom',
-  effectiveTo: 'effectiveTo',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.AvailabilityExceptionScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
@@ -2662,16 +2647,6 @@ exports.PractitionerPayoutMethodType = exports.$Enums.PractitionerPayoutMethodTy
   OTHER: 'OTHER'
 };
 
-exports.AvailabilityWeekday = exports.$Enums.AvailabilityWeekday = {
-  SUNDAY: 'SUNDAY',
-  MONDAY: 'MONDAY',
-  TUESDAY: 'TUESDAY',
-  WEDNESDAY: 'WEDNESDAY',
-  THURSDAY: 'THURSDAY',
-  FRIDAY: 'FRIDAY',
-  SATURDAY: 'SATURDAY'
-};
-
 exports.AvailabilityExceptionType = exports.$Enums.AvailabilityExceptionType = {
   BLOCK: 'BLOCK',
   OPEN_EXTRA: 'OPEN_EXTRA'
@@ -2687,6 +2662,16 @@ exports.AvailabilityWeekStatus = exports.$Enums.AvailabilityWeekStatus = {
   DRAFT: 'DRAFT',
   PUBLISHED: 'PUBLISHED',
   ARCHIVED: 'ARCHIVED'
+};
+
+exports.AvailabilityWeekday = exports.$Enums.AvailabilityWeekday = {
+  SUNDAY: 'SUNDAY',
+  MONDAY: 'MONDAY',
+  TUESDAY: 'TUESDAY',
+  WEDNESDAY: 'WEDNESDAY',
+  THURSDAY: 'THURSDAY',
+  FRIDAY: 'FRIDAY',
+  SATURDAY: 'SATURDAY'
 };
 
 exports.PresenceStatus = exports.$Enums.PresenceStatus = {
@@ -3611,7 +3596,6 @@ exports.Prisma.ModelName = {
   PractitionerApplication: 'PractitionerApplication',
   PractitionerCredential: 'PractitionerCredential',
   PractitionerPayoutDestination: 'PractitionerPayoutDestination',
-  AvailabilitySlot: 'AvailabilitySlot',
   AvailabilityException: 'AvailabilityException',
   PractitionerAvailabilityWeek: 'PractitionerAvailabilityWeek',
   PractitionerAvailabilityWeekSlot: 'PractitionerAvailabilityWeekSlot',

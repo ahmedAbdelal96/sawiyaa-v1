@@ -110,4 +110,22 @@ describe('CreateInstantBookingRequestUseCase', () => {
       },
     });
   });
+
+  it('bubbles eligibility rejection without creating a request', async () => {
+    (eligibilityService.assertPractitionerCanReceiveInstantBooking as jest.Mock).mockRejectedValueOnce(
+      new Error('not-available'),
+    );
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'ar',
+        practitionerSlug: 'dr-youssef',
+        durationMinutes: 30,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toThrow('not-available');
+
+    expect(requestRepository.createRequest).not.toHaveBeenCalled();
+  });
 });

@@ -8,6 +8,7 @@ const baseEnvSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().default(3000),
   APP_NAME: z.string().default('sawiyaa-backend-v1'),
+  SERVICE_NAME: z.string().optional(),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
   APP_DEFAULT_LOCALE: z.enum(['ar', 'en']).default('ar'),
@@ -23,6 +24,14 @@ const baseEnvSchema = z.object({
     .optional(),
   LOG_PRETTY: z.enum(['true', 'false']).optional(),
   LOG_HTTP_ENABLED: z.enum(['true', 'false']).default('true'),
+  LOG_FILE_ENABLED: z.enum(['true', 'false']).default('true'),
+  LOG_CONSOLE_ENABLED: z.enum(['true', 'false']).default('true'),
+  LOG_STACK_ENABLED: z.enum(['true', 'false']).optional(),
+  LOG_NEST_INTERNAL_ENABLED: z.enum(['true', 'false']).default('false'),
+  LOG_DIR: z.string().default('logs'),
+  LOG_SLOW_REQUEST_MS: z.coerce.number().int().positive().default(1000),
+  LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+  LOG_MAX_FILE_SIZE: z.string().default('20m'),
 
   // Throttling / Rate limit store
   THROTTLE_STORE: z.enum(['memory', 'redis']).default('memory'),

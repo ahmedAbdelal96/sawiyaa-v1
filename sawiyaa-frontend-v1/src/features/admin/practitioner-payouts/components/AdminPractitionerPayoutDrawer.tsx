@@ -6,8 +6,8 @@ import { AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/button/Button";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
-import { formatSettlementDateTime, formatSettlementMoney, toDateTimeLocalInputValue } from "@/features/admin/settlements/lib/settlement-formatters";
-import type { SettlementPayoutMethod } from "@/features/admin/settlements/types/admin-settlements.types";
+import { formatSettlementDateTime, formatSettlementMoney, toDateTimeLocalInputValue } from "@/features/admin/finance/lib/finance-formatters";
+import type { PayoutMethod } from "@/features/admin/finance/types/payout-method";
 import { useAdminPractitionerPayoutBalance, useRecordAdminPractitionerManualPayout } from "../hooks/use-admin-practitioner-payouts";
 import { getAdminPractitionerPayoutErrorKey } from "../lib/admin-practitioner-payouts-errors";
 
@@ -27,7 +27,7 @@ type Props = {
   onSuccess?: () => void;
 };
 
-const PAYMENT_METHOD_OPTIONS: SettlementPayoutMethod[] = [
+const PAYMENT_METHOD_OPTIONS: PayoutMethod[] = [
   "MANUAL_BANK_TRANSFER",
   "WALLET_TRANSFER",
   "CASH",
@@ -52,7 +52,7 @@ export default function AdminPractitionerPayoutDrawer({
   const [currencyCode, setCurrencyCode] = useState<CurrencyCode>(defaultCurrency);
   const [amountPaid, setAmountPaid] = useState("");
   const [paidAt, setPaidAt] = useState(toDateTimeLocalInputValue());
-  const [paymentMethod, setPaymentMethod] = useState<SettlementPayoutMethod>(
+  const [paymentMethod, setPaymentMethod] = useState<PayoutMethod>(
     "MANUAL_BANK_TRANSFER",
   );
   const [transferReference, setTransferReference] = useState("");
@@ -94,8 +94,6 @@ export default function AdminPractitionerPayoutDrawer({
     Boolean(practitioner?.practitionerId) &&
     Boolean(balance) &&
     !noPayableAmount &&
-    !amountInvalid &&
-    !amountTooHigh &&
     !recordMutation.isPending;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -303,16 +301,29 @@ export default function AdminPractitionerPayoutDrawer({
                 </span>
                 <input
                   value={amountPaid}
-                  onChange={(event) => setAmountPaid(event.target.value)}
+                  onChange={(event) => {
+                    setAmountPaid(event.target.value);
+                    setFeedback(null);
+                  }}
                   inputMode="decimal"
                   placeholder="0.00"
                   className="app-control w-full px-4 py-3"
                 />
-                <p className="mt-2 text-xs text-text-secondary">
-                  {t("drawer.amountCurrencyNote", {
-                    currency: t(`currencies.${currencyCode}` as Parameters<typeof t>[0]),
-                  })}
-                </p>
+                {amountPaid.trim() && amountTooHigh ? (
+                  <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+                    {t("drawer.validation.amountTooHigh")}
+                  </p>
+                ) : amountPaid.trim() && amountInvalid ? (
+                  <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">
+                    {t("drawer.validation.amountInvalid")}
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-text-secondary">
+                    {t("drawer.amountCurrencyNote", {
+                      currency: t(`currencies.${currencyCode}` as Parameters<typeof t>[0]),
+                    })}
+                  </p>
+                )}
               </label>
 
               <label className="block">
@@ -334,7 +345,7 @@ export default function AdminPractitionerPayoutDrawer({
                 <select
                   value={paymentMethod}
                   onChange={(event) =>
-                    setPaymentMethod(event.target.value as SettlementPayoutMethod)
+                    setPaymentMethod(event.target.value as PayoutMethod)
                   }
                   className="app-control w-full py-3"
                 >
@@ -390,18 +401,6 @@ export default function AdminPractitionerPayoutDrawer({
                 className="app-control w-full px-4 py-3"
               />
             </label>
-
-            {amountPaid.trim() && amountInvalid ? (
-              <div className="rounded-2xl border border-border-light bg-surface-secondary/50 px-4 py-3 text-sm text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
-                {t("drawer.validation.amountInvalid")}
-              </div>
-            ) : null}
-
-            {amountPaid.trim() && amountTooHigh ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                {t("drawer.validation.amountTooHigh")}
-              </div>
-            ) : null}
           </form>
         </ModalBody>
 

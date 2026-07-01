@@ -17,60 +17,145 @@
       "description": "Operational reconciliation controls across captured payments, refunds, and practitioner payouts."
     },
     "financialReconciliation": {
-      "title": "Financial Reconciliation - Admin",
-      "description": "Monitor payment, ledger, wallet, and settlement consistency without automatic financial correction."
+      "title": "Account consistency check - Admin",
+      "description": "Check payments, refunds, wallets, and ledger records without changing financial data."
+    }
+  },
+  "hub": {
+    "metaTitle": "Finance Overview - Admin",
+    "metaDescription": "Open the main finance tools.",
+    "eyebrow": "Finance Operations Hub",
+    "title": "Finance Overview",
+    "description": "Open the main finance tools.",
+    "safetyEyebrow": "NAVIGATION HUB ONLY",
+    "safety": "This hub only links to finance areas.",
+    "openLabel": "Open",
+    "groups": {
+      "daily": {
+        "title": "Daily Accounts",
+        "description": "Daily finance work."
+      },
+      "review": {
+        "title": "Financial Review",
+        "description": "Review, records, and reconciliation."
+      },
+      "reports": {
+        "title": "Related Reports",
+        "description": "Reports stay in the Reports area."
+      },
+      "settings": {
+        "title": "Related Financial Settings",
+        "description": "Sensitive settings stay in their own area."
+      }
+    },
+    "cards": {
+      "overview": {
+        "title": "Accounting Dashboard",
+        "description": "Open the finance dashboard."
+      },
+      "payments": {
+        "title": "Payments Review",
+        "description": "Review payments and refunds."
+      },
+      "dues": {
+        "title": "Practitioner Dues",
+        "description": "See payout-ready balances."
+      },
+      "history": {
+        "title": "Payout History",
+        "description": "Review recorded payouts."
+      },
+      "reportsPaymentsRevenue": {
+        "title": "Payments Revenue",
+        "description": "Open the revenue report."
+      },
+      "reportsPayouts": {
+        "title": "Payouts Report",
+        "description": "Open the payout report."
+      },
+      "refundPolicies": {
+        "title": "Refund Policies",
+        "description": "Configure refund rules."
+      }
+    },
+    "advanced": {
+      "ledger": {
+        "title": "Ledger",
+        "description": "Trace financial records."
+      },
+      "reconciliation": {
+        "title": "Reconciliation",
+        "description": "Check mismatches and proof."
+      },
+      "revenueShareRules": {
+        "title": "Revenue Share Rules",
+        "description": "Review revenue share rules."
+      },
+      "paymentGatewayControl": {
+        "title": "Payment Gateway Control",
+        "description": "Open gateway controls."
+      }
     }
   },
   "page": {
     "eyebrow": "Accounting operations",
-    "title": "Financial Reconciliation",
-    "description": "Monitor payment, ledger, wallet, and settlement consistency without automatic financial correction.",
-    "safetyNotice": "This page is for review and diagnostics only. It does not automatically modify balances or accounting entries.",
-    "settlementCtaTitle": "Need to record a practitioner settlement?",
-    "settlementCtaDescription": "Use the settlement workspace to record the amount actually transferred outside Sawiyaa and keep the payout history in one place.",
-    "settlementCtaAction": "Open settlements",
-    "howToUseEyebrow": "How to use",
-    "howToUseTitle": "How to use this page",
-    "howToUseDescription": "Use reconciliation to understand what changed, where it changed, and what to review next.",
-    "howToUseSteps": {
-      "one": "Run a full or scoped reconciliation sweep.",
-      "two": "Review issues by severity and currency.",
-      "three": "Open an issue to see the expected versus actual values.",
-      "four": "Use review actions only to track acknowledgment, resolution, or exception handling.",
-      "five": "Do not expect this page to auto-fix balances or ledger entries."
-    }
+    "title": "Account consistency check",
+    "description": "Check payments, refunds, wallets, and ledger records without changing financial data.",
+    "safetyNotice": "Review only - balances, ledger entries, and payouts are not changed."
   },
   "summary": {
-    "scheduler": "Scheduler",
+    "scheduler": "Schedule",
     "schedulerHint": "Cron: {cron}",
     "alerts": "Alerts",
-    "alertsEnabled": "Critical alerting is enabled.",
-    "alertsDisabled": "Critical alerting is disabled.",
-    "alertsHint": "Operational alerting for critical drift findings.",
-    "openCritical": "Open critical",
-    "openCriticalHint": "Issues that need immediate attention",
-    "openWarnings": "Open warnings/errors",
-    "openWarningsHint": "Non-critical issues awaiting review",
-    "lastScheduled": "Last scheduled run",
-    "lastScheduledHint": "Most recent automated reconciliation sweep",
-    "nextScheduled": "Next scheduled run",
-    "nextScheduledHint": "Next cron execution if the scheduler is active",
+    "alertsEnabled": "Critical alerts are on.",
+    "alertsDisabled": "Critical alerts are off.",
+    "alertsHint": "Operational alerts for critical drift findings.",
+    "criticalIssues": "Critical issues",
+    "criticalIssuesHint": "Items that need immediate review",
+    "warnings": "Warnings",
+    "warningsHint": "Items waiting for review",
+    "lastCheck": "Last check",
+    "lastScheduled": "Last scheduled check",
+    "lastScheduledHint": "Most recent automated check",
+    "nextScheduled": "Next scheduled check",
+    "nextScheduledHint": "Next cron run if scheduling is active",
+    "lastScheduledRunId": "Last scheduled run ID",
+    "autoCheckStatus": "Auto-check status",
+    "autoCheckDetails": "Auto-check details",
     "active": "Scheduler active",
-    "inactive": "Scheduler inactive"
+    "inactive": "Scheduler inactive",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "actions": {
     "refresh": "Refresh",
     "running": "Running...",
     "runFull": "Run full reconciliation",
+    "runFullCheck": "Run full check",
+    "specificChecks": "Specific checks",
     "payments": "Payments",
     "wallets": "Wallets",
-    "settlements": "Settlements",
     "refunds": "Refunds",
     "packageSettlements": "Package settlements",
-    "view": "View",
+    "view": "View details",
     "close": "Close"
   },
+  "tabs": {
+    "openIssues": "Open issues",
+    "recentChecks": "Recent checks",
+    "openIssuesHint": "Review issues that need follow-up.",
+    "recentChecksHint": "Review recent reconciliation runs."
+  },
   "filters": {
+    "search": "Search",
+    "searchIssuePlaceholder": "Search issue code or entity ID",
+    "searchRunPlaceholder": "Search run ID or entity ID",
+    "status": "Status",
+    "severity": "Severity",
+    "date": "Date",
+    "advancedFilters": "Advanced filters",
+    "scope": "Scope",
+    "trigger": "Trigger",
     "runScope": "Run scope",
     "runTrigger": "Trigger",
     "runStatus": "Run status",
@@ -93,12 +178,11 @@
   "runs": {
     "eyebrow": "Operational runs",
     "title": "Reconciliation runs",
-    "description": "Review scheduled and manual reconciliation executions with their status and summary counts.",
+    "description": "Review reconciliation runs and status.",
     "scope": {
       "full": "Full",
       "payments": "Payments",
       "wallets": "Wallets",
-      "settlements": "Settlements",
       "refunds": "Refunds",
       "package_settlements": "Package settlements"
     },
@@ -129,7 +213,7 @@
   "issues": {
     "eyebrow": "Open issues",
     "title": "Reconciliation issues",
-    "description": "Track drift findings and review them without changing financial data.",
+    "description": "Track drift findings without changing financial data.",
     "severity": {
       "info": "Info",
       "warning": "Warning",
@@ -144,17 +228,30 @@
     },
     "table": {
       "severity": "Severity",
-      "scope": "Scope",
-      "entity": "Entity",
-      "currency": "Currency",
+      "source": "Source",
+      "amount": "Amount",
       "reviewStatus": "Review status",
-      "detected": "Last detected",
-      "expectedActual": "Expected / actual",
+      "lastSeen": "Last seen",
+      "problem": "Issue",
+      "action": "Action"
+    },
+    "amount": {
       "expected": "Expected",
       "actual": "Actual",
-      "problem": "Problem"
+      "difference": "Difference",
+      "noDifference": "No difference"
     },
-    "helper": "This list shows mismatches or missing accounting data detected by reconciliation. Review critical issues and errors before payouts."
+    "sources": {
+      "payment": "Payment",
+      "refund": "Refund",
+      "practitionerWallet": "Practitioner wallet",
+      "patientWallet": "Patient wallet",
+      "practitionerSettlement": "Practitioner settlement",
+      "packageSettlement": "Package settlement",
+      "journalEntry": "Journal entry",
+      "other": "Finance record"
+    },
+    "helper": "Review critical issues and errors before payouts."
   },
   "runDetail": {
     "eyebrow": "Run details",
@@ -208,11 +305,11 @@
   },
   "review": {
     "actions": {
-      "acknowledge": "Acknowledge",
-      "resolve": "Resolve",
-      "ignore": "Ignore"
+      "acknowledge": "Mark reviewed",
+      "resolve": "Close as reviewed",
+      "ignore": "Ignore diagnostic issue"
     },
-    "help": "Acknowledge means you reviewed it. Resolve means the issue was fixed elsewhere. Ignore means this is an accepted exception or a false positive."
+    "help": "These actions only update review status and do not change financial records."
   },
   "stepUp": {
     "title": "Step-up verification",
@@ -241,14 +338,18 @@
     "noRunIssues": "This run did not record any issues."
   },
   "toast": {
-    "runSuccess": "Reconciliation run {runId} completed for {scope}.",
-    "reviewSuccess": "{action} completed for issue {issueCode}."
+    "runSuccessNoIssues": "Check completed. No open issues found.",
+    "runSuccessWithIssues": "Check completed. {count, number} issues need review.",
+    "reviewSuccess": "{action} completed."
   },
   "common": {
     "yes": "Yes",
     "no": "No",
     "loading": "Loading...",
     "none": "None",
+    "copy": "Copy",
+    "copied": "Copied.",
+    "copyFailed": "Could not copy right now.",
     "sourceType": {
       "PAYMENT_CAPTURED": "Payment captured",
       "REFUND_SUCCEEDED": "Refund succeeded",
@@ -263,16 +364,16 @@
   "reconciliation": {
     "eyebrow": "Finance follow-up",
     "title": "Finance operations follow-up",
-    "note": "Review key finance operations and record a clear decision: OK, needs proof, mismatch, or follow-up.",
+    "note": "Use reconciliation to check for differences or missing proof.",
     "help": {
       "purposeTitle": "What does this screen do?",
-      "purposeNote": "This screen helps non-accounting operators track finance operations and spot issues (amount mismatch, missing proof, missing details). Save a clear decision and note so the team stays aligned.",
+      "purposeNote": "This screen helps operators spot finance issues and save a clear decision.",
       "howTitle": "How do I use it?",
       "steps": {
-        "openRow": "Open any row to review it (click the row).",
-        "pickStatus": "Pick a simple status (OK, mismatch, needs proof, etc.).",
-        "addNote": "Add a short note describing what is needed next.",
-        "openJournal": "Use “Open details” to inspect the recorded entry when available."
+        "openRow": "Open a row to review it.",
+        "pickStatus": "Pick a simple status.",
+        "addNote": "Add a short next-step note.",
+        "openJournal": "Use “Open details” when available."
       }
     },
     "kpi": {
@@ -350,15 +451,17 @@
     }
   },
   "dashboard": {
-    "eyebrow": "Accounting truth",
-    "title": "Finance dashboard",
-    "note": "This dashboard reads from General Ledger journals for admin finance visibility.",
+    "eyebrow": "Accounting Truth",
+    "title": "Accounting Dashboard",
+    "description": "Review backend-sourced finance KPIs for the selected date range and currency.",
+    "note": "Numbers depend on the selected date range and currency. This page is not a replacement for the ledger or reconciliation workflows.",
     "currencyScopeNotice": "Metrics are calculated for the selected currency only; EGP and USD are not combined into one figure.",
     "actions": {
       "openLedger": "Open ledger explorer",
       "openOps": "Open operations events",
       "openReconciliation": "Open reconciliation",
       "exportCsv": "Export CSV",
+      "exportCsvHelper": "CSV export uses the selected filters.",
       "exporting": "Exporting...",
       "viewDetails": "View related ledger entries"
     },
@@ -367,20 +470,21 @@
       "to": "To",
       "currency": "Currency",
       "currencyPlaceholder": "All currencies",
-      "recentLimit": "Recent events"
+      "recentLimit": "Recent events",
+      "helper": "Selected currency and date range define the numbers shown on this page."
     },
     "kpis": {
-      "grossInflow": "Gross inflow",
+      "grossInflow": "Gross inflow for selected period",
       "grossInflowHint": "Captured payments within the selected period",
-      "platformRevenue": "Platform revenue",
+      "platformRevenue": "Platform revenue for selected period",
       "platformRevenueHint": "Net platform revenue from accounting entries",
       "practitionerPayable": "Practitioner payable",
       "practitionerPayableHint": "Outstanding unpaid practitioner liability",
-      "refunds": "Refund total",
+      "refunds": "Refund total for selected period",
       "refundsHint": "Refunds generated within the selected period",
-      "vat": "VAT total",
+      "vat": "VAT total for selected period",
       "vatHint": "VAT movement due for the selected period",
-      "fees": "Fees total",
+      "fees": "Fees total for selected period",
       "feesHint": "Gateway and transfer fee impact"
     },
     "charts": {
@@ -403,8 +507,8 @@
       }
     },
     "recent": {
-      "title": "Recent finance events",
-      "note": "Latest posted accounting events.",
+      "title": "Recent finance events sample",
+      "note": "Recent events are a limited backend sample, not the full finance history.",
       "columns": {
         "summary": "Summary",
         "sourceType": "Source",
@@ -414,15 +518,15 @@
       }
     },
     "states": {
-      "error": "Could not load accounting dashboard right now.",
-      "emptyTitle": "No accounting events found",
+      "error": "We couldn’t load the accounting dashboard. Please try again.",
+      "emptyTitle": "No accounting data matches the selected filters.",
       "emptyNote": "No journal entries matched the selected filters."
     }
   },
   "ledger": {
     "eyebrow": "Operator view",
     "title": "Ledger explorer",
-    "note": "Filter journal lines by account, source, practitioner, time range, and references.",
+    "note": "Use the ledger to trace financial records created by payments, refunds, payouts, and settlement activity.",
     "count": "{value, number} lines",
     "countLoading": "Loading...",
     "filters": {

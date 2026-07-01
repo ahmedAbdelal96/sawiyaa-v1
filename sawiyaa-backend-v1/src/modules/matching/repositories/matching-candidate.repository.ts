@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, PractitionerStatus, UserStatus } from '@prisma/client';
+import {
+  AvailabilityWeekStatus,
+  Prisma,
+  PractitionerStatus,
+  UserStatus,
+} from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
 import {
@@ -119,8 +124,13 @@ export class MatchingCandidateRepository {
             lastSeenAtUtc: true,
           },
         },
-        availabilitySlots: {
-          where: { isActive: true },
+        availabilityWeeks: {
+          where: {
+            status: AvailabilityWeekStatus.PUBLISHED,
+            slots: {
+              some: {},
+            },
+          },
           select: { id: true },
           take: 1,
         },

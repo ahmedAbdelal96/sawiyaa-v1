@@ -8,8 +8,9 @@ import { SessionStatus } from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AvailabilityExceptionRepository } from '../repositories/availability-exception.repository';
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
-import { AvailabilitySlotRepository } from '../repositories/availability-slot.repository';
-import { BuildAvailabilityWindowsService } from '../services/build-availability-windows.service';
+import { PractitionerAvailabilityWeekRepository } from '../repositories/practitioner-availability-week.repository';
+import { BuildPublishedWeekAvailabilityWindowsService } from '../services/build-published-week-availability-windows.service';
+import { AvailabilityWeekCalendarService } from '../services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
 
 const PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES: SessionStatus[] = [
@@ -21,19 +22,19 @@ const PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES: SessionStatus[] = [
 ];
 
 /**
- * Public window listing is the main booking-facing read baseline for Phase 2.
- * It returns derived UTC windows only and leaves reservation/session orchestration to later modules.
+ * Public window listing is the booking-facing read baseline for Phase 1B-A.
+ * It returns published-week UTC windows only and keeps legacy recurring slots
+ * out of the public patient contract.
  */
 @Injectable()
 export class ListPublicPractitionerAvailabilityWindowsUseCase {
-  private readonly maximumRangeInDays = 31;
-
   constructor(
     private readonly availabilityPractitionerRepository: AvailabilityPractitionerRepository,
-    private readonly availabilitySlotRepository: AvailabilitySlotRepository,
+    private readonly practitionerAvailabilityWeekRepository: PractitionerAvailabilityWeekRepository,
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
-    private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
+    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
+    private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly prisma: PrismaService,
   ) {}
@@ -51,19 +52,6 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       });
     }
 
-    const rangeDays =
-      (input.toUtc.getTime() - input.fromUtc.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (rangeDays > this.maximumRangeInDays) {
-      throw new BadRequestException({
-        messageKey: 'availability.errors.rangeTooLarge',
-        error: 'AVAILABILITY_RANGE_TOO_LARGE',
-        messageParams: {
-          maxDays: this.maximumRangeInDays,
-        },
-      });
-    }
-
     const practitioner =
       await this.availabilityPractitionerRepository.findByPublicSlug(
         input.slug,
@@ -75,45 +63,6 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
         error: 'PUBLIC_AVAILABILITY_NOT_FOUND',
       });
     }
-
-    const [weeklySlots, exceptions, bookedSessions] = await Promise.all([
-      this.availabilitySlotRepository.listActiveByPractitioner(practitioner.id),
-      this.availabilityExceptionRepository.listActiveForRange(
-        practitioner.id,
-        input.fromUtc,
-        input.toUtc,
-      ),
-      this.prisma.session.findMany({
-        where: {
-          practitionerId: practitioner.id,
-          OR: [
-            {
-              status: {
-                in: PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES,
-              },
-            },
-            {
-              status: SessionStatus.PENDING_PAYMENT,
-              expiresAt: {
-                gt: new Date(),
-              },
-            },
-          ],
-          scheduledStartAt: {
-            lt: input.toUtc,
-          },
-          scheduledEndAt: {
-            gt: input.fromUtc,
-          },
-        },
-        select: {
-          scheduledStartAt: true,
-          scheduledEndAt: true,
-          durationMinutes: true,
-          status: true,
-        },
-      }),
-    ]);
 
     const visibility = this.publicPractitionerVisibilityPolicy.evaluate({
       practitionerStatus: practitioner.status,
@@ -134,20 +83,90 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
     }
 
     const timezone = this.resolvePractitionerTimezoneService.resolve({
-      weeklySlots,
       fallbackTimezone: practitioner.user.timezone,
     });
-    const windows = this.buildAvailabilityWindowsService.buildForRange({
-      timezone,
-      weeklySlots,
-      exceptions,
-      bookedSessions: bookedSessions.map((session) => ({
-        startsAt: session.scheduledStartAt!,
-        endsAt: session.scheduledEndAt!,
-      })),
-      fromUtc: input.fromUtc,
-      toUtc: input.toUtc,
-    });
+    const weekWindow =
+      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
+        timezone,
+      });
+    const effectiveFrom = new Date(
+      Math.max(
+        input.fromUtc.getTime(),
+        weekWindow.currentWeek.startDate.getTime(),
+      ),
+    );
+    const effectiveTo = new Date(
+      Math.min(input.toUtc.getTime(), weekWindow.nextWeek.endDate.getTime()),
+    );
+
+    if (effectiveTo.getTime() <= effectiveFrom.getTime()) {
+      return {
+        timezone,
+        range: {
+          from: input.fromUtc.toISOString(),
+          to: input.toUtc.toISOString(),
+        },
+        windows: [],
+        bookedSlots: input.includeBooked ? [] : undefined,
+      };
+    }
+
+    const [publishedWeeks, exceptions, bookedSessions] = await Promise.all([
+      this.practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts(
+        practitioner.id,
+        [weekWindow.currentWeek.startDate, weekWindow.nextWeek.startDate],
+      ),
+      this.availabilityExceptionRepository.listActiveForRange(
+        practitioner.id,
+        effectiveFrom,
+        effectiveTo,
+      ),
+      this.prisma.session.findMany({
+        where: {
+          practitionerId: practitioner.id,
+          OR: [
+            {
+              status: {
+                in: PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES,
+              },
+            },
+            {
+              status: SessionStatus.PENDING_PAYMENT,
+              expiresAt: {
+                gt: new Date(),
+              },
+            },
+          ],
+          scheduledStartAt: {
+            lt: effectiveTo,
+          },
+          scheduledEndAt: {
+            gt: effectiveFrom,
+          },
+        },
+        select: {
+          scheduledStartAt: true,
+          scheduledEndAt: true,
+          durationMinutes: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    const windows = this.buildPublishedWeekAvailabilityWindowsService.buildForRange(
+      {
+        timezone,
+        weeks: publishedWeeks,
+        exceptions,
+        bookedSessions: bookedSessions.map((session) => ({
+          startsAt: session.scheduledStartAt!,
+          endsAt: session.scheduledEndAt!,
+        })),
+        fromUtc: effectiveFrom,
+        toUtc: effectiveTo,
+        now: new Date(),
+      },
+    );
 
     const bookedSlots = bookedSessions
       .filter((session) => session.scheduledStartAt && session.scheduledEndAt)

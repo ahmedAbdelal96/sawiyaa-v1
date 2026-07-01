@@ -7,7 +7,7 @@ import { SurfaceCard, SurfaceHeader, SurfaceToolbar, SurfaceActionLink } from "@
 import {
   useAdminRevenueShareRules,
   useUpdateAdminRevenueShareRules,
-} from "@/features/admin/settlements/hooks/use-admin-revenue-share-rules";
+} from "@/features/admin/finance/hooks/use-revenue-share-rules";
 
 type FormState = {
   localPlatformRatePercent: string;

@@ -75,7 +75,11 @@
     "editTitle": "تعديل المقال",
     "editNote": "حدّث بيانات المقال المحدد ضمن حدود العقد الحالي.",
     "validation": {
-      "required": "التصنيف والعنوان والمحتوى حقول مطلوبة."
+      "required": "التصنيف والعنوان والمحتوى حقول مطلوبة.",
+      "categoryRequired": "التصنيف مطلوب.",
+      "titleRequired": "العنوان مطلوب.",
+      "specialtyRequired": "التخصص الفرعي مطلوب.",
+      "contentRequired": "المحتوى مطلوب."
     },
     "fields": {
       "category": "التصنيف",
@@ -119,6 +123,10 @@
     "localeRequired": "يجب تحديد اللغة لتحديث الترجمة.",
     "invalidPublishTransition": "لا يمكن نشر هذه المقالة في حالتها الحالية.",
     "invalidArchiveTransition": "لا يمكن أرشفة هذه المقالة في حالتها الحالية.",
+    "saveFailed": "لم نستطع حفظ التغييرات. يرجى مراجعة النموذج والمحاولة مرة أخرى.",
+    "reviewRequired": "يرجى مراجعة الحقول المطلوبة.",
+    "referenceId": "رقم التتبع: {requestId}",
+    "coverUploadFailed": "تعذر رفع صورة الغلاف.",
     "generic": "تعذر إكمال إجراء المقالات الآن."
   }
 }

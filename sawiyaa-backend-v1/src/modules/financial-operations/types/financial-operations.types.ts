@@ -34,7 +34,6 @@ export const FINANCIAL_OPS_ERROR_CODES = {
 
 export const FINANCIAL_OPS_ROUTE_SCOPE = {
   adminOperatorOnly: [
-    '/admin/settlements',
     '/admin/practitioner-payouts',
     '/admin/finance/operations/events',
     '/admin/practitioners/:practitionerId/statement',
@@ -372,6 +371,13 @@ export type PractitionerManualPayoutSummaryViewModel = {
   hasPayable: boolean;
   hasPackage: boolean;
   lastPayoutAt: string | null;
+};
+
+export type PractitionerManualPayoutSummaryStatsViewModel = {
+  practitionersWithDues: number;
+  readyForPayoutPractitioners: number;
+  totalDueEgp: string;
+  totalDueUsd: string;
 };
 
 export type PractitionerManualPayoutViewModel = {

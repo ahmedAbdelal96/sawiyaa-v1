@@ -381,7 +381,7 @@ export default function PackagePurchaseCreateScreen() {
           ) : availabilityQuery.isError ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
               <Text color="#ba1a1a" style={{ textAlign }}>
-                {t("packagePurchases.create.loadError", "We could not load availability right now.")}
+                {t("packagePurchases.create.loadError", "Could not load available times right now.")}
               </Text>
               <Button
                 title={t("packagePurchases.create.retry", "Try again")}
@@ -393,7 +393,13 @@ export default function PackagePurchaseCreateScreen() {
           ) : groupedSlots.length === 0 ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
               <Text color={theme.colors.textSecondary} style={{ textAlign }}>
-                {t("packagePurchases.create.noSlots", "No open time found in this week.")}
+                {t("packagePurchases.create.noSlots", "No available times right now.")}
+              </Text>
+              <Text color={theme.colors.textMuted} style={[styles.helperText, { textAlign }]}>
+                {t(
+                  "packagePurchases.create.noSlotsHint",
+                  "This practitioner has not published available times for the current or next week yet. Please check again later or choose another practitioner.",
+                )}
               </Text>
             </Card>
           ) : (

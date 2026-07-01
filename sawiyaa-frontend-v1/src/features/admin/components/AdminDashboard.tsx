@@ -21,7 +21,6 @@ import { adminSessionsQueryKeys } from "@/features/admin/sessions/constants/quer
 import { useAdminSupportTickets } from "@/features/support/hooks/use-support";
 import { useAdminCareChatRequests } from "@/features/care-chat/hooks/use-care-chat";
 import { useAdminPractitionerApplications } from "@/features/admin/practitioner-applications/hooks/use-practitioner-applications";
-import { useAdminSettlementBatches } from "@/features/admin/settlements/hooks/use-admin-settlements";
 import { useAdminModerationReports } from "@/features/admin/moderation-reports/hooks/use-admin-moderation-reports";
 import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
@@ -387,11 +386,6 @@ export default function AdminDashboard() {
     hasPermission(PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN) ||
     hasPermission(PermissionKey.CARE_CHAT_REQUEST_DECIDE);
   const canReadApplications = hasPermission(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
-  const canReadSettlements =
-    hasPermission(PermissionKey.SETTLEMENTS_READ) ||
-    hasPermission(PermissionKey.FINANCE_EVENTS_READ) ||
-    hasPermission(PermissionKey.ACCOUNTING_READ) ||
-    hasPermission(PermissionKey.PRACTITIONER_PAYOUTS_READ);
   const canReadNotifications = hasPermission(PermissionKey.NOTIFICATION_OPS_READ);
   const canReadModerationReports =
     role === "ADMIN" ||
@@ -438,10 +432,6 @@ export default function AdminDashboard() {
     limit: 5,
     status: "OPEN",
   }, { enabled: canReadModerationReports });
-  const settlementsQuery = useAdminSettlementBatches({
-    page: 1,
-    limit: 12,
-  }, { enabled: canReadSettlements });
   const notificationsQuery = useAdminNotifications({
     page: 1,
     limit: 6,
@@ -480,28 +470,10 @@ export default function AdminDashboard() {
   const applicationsTotal = applicationsQuery.data?.pagination.total ?? 0;
   const moderationTotal = moderationQuery.data?.pagination.totalItems ?? 0;
 
-  const settlementsSorted = [...(settlementsQuery.data?.items ?? [])].sort(
-    (a, b) => monthKeyValue(a.periodYear, a.periodMonth) - monthKeyValue(b.periodYear, b.periodMonth),
-  );
-  const settlementLatest = settlementsSorted[settlementsSorted.length - 1];
-  const settlementPrevious = settlementsSorted[settlementsSorted.length - 2];
-
-  const settlementLatestValue = Number(settlementLatest?.totalAmount ?? "0") || 0;
-  const settlementPreviousValue = Number(settlementPrevious?.totalAmount ?? "0") || 0;
-  const settlementCurrency = settlementLatest?.currency ?? null;
-  const hasSettlementData = settlementLatestValue > 0;
-
   const sessionsDeltaTone =
     sessionsToday > sessionsYesterday
       ? ("up" as const)
       : sessionsToday < sessionsYesterday
-        ? ("down" as const)
-        : ("neutral" as const);
-
-  const settlementDeltaTone =
-    settlementLatestValue > settlementPreviousValue
-      ? ("up" as const)
-      : settlementLatestValue < settlementPreviousValue
         ? ("down" as const)
         : ("neutral" as const);
 
@@ -515,12 +487,6 @@ export default function AdminDashboard() {
     return Number((window.reduce((s, v) => s + v, 0) / window.length).toFixed(2));
   });
   const sessionsTrendLoading = sessionsTrendQueries.some((q) => q.isLoading);
-
-  const settlementChartLabels = settlementsSorted.map((item) => {
-    const date = new Date(item.periodYear, item.periodMonth - 1, 1);
-    return date.toLocaleDateString(normalizeLocale(locale), { month: "short" });
-  });
-  const settlementChartSeries = settlementsSorted.map((item) => Number(item.totalAmount) || 0);
 
   const workloadSeries = [supportTotal, careTotal, applicationsTotal, moderationTotal];
   const hasWorkloadData = workloadSeries.some((v) => v > 0);
@@ -624,12 +590,6 @@ export default function AdminDashboard() {
     downFromPrevious: "-",
     unchanged: "0%",
   });
-  const settlementDeltaText = safeDeltaText(settlementLatestValue, settlementPreviousValue, locale, {
-    upFromPrevious: "+",
-    downFromPrevious: "-",
-    unchanged: "0%",
-  });
-
   return (
     <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8 space-y-5">
       {/* ── Section 1: Command Header Card ── */}
@@ -685,16 +645,8 @@ export default function AdminDashboard() {
           />
           <AdminDashboardKpiCard
             label={copy.kpi.settlementsTotal}
-            value={hasSettlementData
-              ? formatFinanceMoney(locale, settlementLatestValue, settlementCurrency, {
-                  fallbackText: "-",
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 2,
-                })
-              : "-"}
+            value="-"
             icon={<WalletCards className="h-5 w-5" />}
-            deltaText={settlementDeltaText}
-            deltaTone={settlementDeltaTone}
             accentTone="blue"
           />
         </div>
@@ -756,29 +708,6 @@ export default function AdminDashboard() {
           </AdminDashboardChartCard>
         </div>
       </section>
-
-      {/* ── Section 4: Wide Settlements / Revenue Trend Card ── */}
-      {canReadSettlements && (
-        <section>
-          <AdminDashboardChartCard title={copy.charts.settlementsTrend}>
-            {!hasSettlementData ? (
-              <div className="flex h-[260px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
-                <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
-              </div>
-            ) : (
-              <BarTrendChart
-                locale={locale}
-                categories={settlementChartLabels}
-                seriesName={isArabic ? "مبلغ التسوية" : "Settlement Amount"}
-                values={settlementChartSeries}
-                currencyCode={settlementCurrency ?? undefined}
-                height={260}
-                color={chartPalette[0]}
-              />
-            )}
-          </AdminDashboardChartCard>
-        </section>
-      )}
 
       {/* ── Section 5: Bottom Operations Grid ── */}
       <section className="grid gap-4 grid-cols-1 lg:grid-cols-3">

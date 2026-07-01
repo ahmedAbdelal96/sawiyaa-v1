@@ -18,7 +18,7 @@ import {
   canReviewPackageSettlement,
   getAdminPackageSettlementErrorKey,
 } from "../lib/admin-package-settlement-status";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import {
   useAdminPackageSettlements,
   useReleaseAdminPackageSettlement,

@@ -4,11 +4,15 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { Request, Response } from 'express';
+import loggingConfig from '@config/logging.config';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
+import { AppRole } from '@common/enums/app-role.enum';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import {
   redactUrlForLogging,
@@ -21,6 +25,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
   constructor(
     private readonly i18nService: I18nService,
     private readonly logger: AppLoggerService,
+    @Inject(loggingConfig.KEY)
+    private readonly loggingCfg: ConfigType<typeof loggingConfig>,
   ) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -92,36 +98,39 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const method = request.method;
     const path = redactUrlForLogging(request.originalUrl ?? request.url);
     const userId = request.user?.id ?? null;
+    const role = this.resolveUserRole(request.user?.roles?.[0]);
     const requestId = request.requestId ?? null;
 
-    const exceptionMeta = sanitizeForLogging({
+    const logMeta = sanitizeForLogging({
       requestId,
       statusCode: status,
       method,
       path,
       userId,
+      role,
       locale: request.locale,
       validationErrors: errors,
-      exception:
+      errorName:
+        exception instanceof Error ? exception.name : 'UnknownException',
+      errorMessage:
         exception instanceof Error
-          ? {
-              name: exception.name,
-              message: exception.message,
-            }
-          : {
-              name: 'UnknownException',
-              message: String(exception),
-            },
+          ? exception.message
+          : 'Request failed with exception',
+      ...(exception instanceof Error && this.loggingCfg.stackEnabled
+        ? { stack: exception.stack }
+        : {}),
     });
 
-    this.logger.error(
-      {
-        message: 'Request failed with exception',
-        ...exceptionMeta,
-      },
-      exception instanceof Error ? exception.stack : undefined,
-      AllExceptionsFilter.name,
-    );
+    if (status >= 500) {
+      this.logger.error(
+        {
+          message: 'Request failed',
+          ...logMeta,
+        },
+        undefined,
+        AllExceptionsFilter.name,
+      );
+    }
 
     response.status(status).json({
       success: false,
@@ -176,5 +185,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
       default:
         return 'common.errors.internalServerError';
     }
+  }
+
+  private resolveUserRole(role?: AppRole): string | null {
+    return role ?? null;
   }
 }

@@ -33,6 +33,8 @@ describe('GetFinanceOperationEventUseCase', () => {
       refundStatus: RefundStatus.SUCCEEDED,
       externalRef: 'rf_123',
       summary: 'Refund succeeded',
+      amount: '20.00',
+      currencyCode: 'USD',
       linkedSessionId: 'session_1',
       linkedPractitionerId: 'practitioner_1',
       occurredAt: new Date('2026-04-01T09:00:00.000Z'),
@@ -48,6 +50,8 @@ describe('GetFinanceOperationEventUseCase', () => {
         refundStatus: RefundStatus.SUCCEEDED,
         linkedSessionId: 'session_1',
         linkedPractitionerId: 'practitioner_1',
+        amount: '20.00',
+        currencyCode: 'USD',
         occurredAt: '2026-04-01T09:00:00.000Z',
       }),
     });

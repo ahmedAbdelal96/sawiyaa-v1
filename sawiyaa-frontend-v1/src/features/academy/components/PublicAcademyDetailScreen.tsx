@@ -56,12 +56,15 @@ function formatPlanValue(value: number | null | undefined, locale: string, unit:
 export default function PublicAcademyDetailScreen({
   locale,
   slug,
+  backHref,
 }: {
   locale: string;
   slug: string;
+  backHref?: string;
 }) {
   const t = useTranslations("academy");
   const { user, isInitialized } = useAuthStore();
+  const academyBackHref = backHref ?? `/${locale}/academy`;
   const authScopeKey = useMemo(() => {
     if (!isInitialized) {
       return "bootstrapping";
@@ -238,14 +241,14 @@ export default function PublicAcademyDetailScreen({
   if (!course) {
     return (
       <div className="px-4 py-6 sm:py-8">
-        <StateCard
+            <StateCard
           title={t("public.detail.notFound.title")}
           note={t("public.detail.notFound.note")}
           action={{
             label: t("public.detail.notFound.back"),
             href: (
               <Link
-                href={`/${locale}/academy`}
+                href={academyBackHref}
                 className="inline-flex items-center gap-2 rounded-[14px] border border-border-light bg-white px-5 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:text-primary"
               >
                 <ArrowLeft className="h-4 w-4" />

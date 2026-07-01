@@ -75,7 +75,11 @@
     "editTitle": "Edit article",
     "editNote": "Update the selected article inside the current admin article contract.",
     "validation": {
-      "required": "Category, title, and content are required."
+      "required": "Category, title, and content are required.",
+      "categoryRequired": "Category is required.",
+      "titleRequired": "Title is required.",
+      "specialtyRequired": "Sub-specialty is required.",
+      "contentRequired": "Content is required."
     },
     "fields": {
       "category": "Category",
@@ -119,6 +123,10 @@
     "localeRequired": "A locale is required for translation updates.",
     "invalidPublishTransition": "This article cannot be published in its current state.",
     "invalidArchiveTransition": "This article cannot be archived in its current state.",
+    "saveFailed": "We couldn't save the changes. Please review the form and try again.",
+    "reviewRequired": "Please review the required fields.",
+    "referenceId": "Reference ID: {requestId}",
+    "coverUploadFailed": "Could not upload the cover image.",
     "generic": "Could not complete this article action right now."
   }
 }

@@ -140,7 +140,8 @@ html:not(.dark) .bg-white {
 
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-outfit: var(--font-outfit), Outfit, sans-serif;
+  --font-cairo: var(--font-cairo), Cairo, sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -368,10 +369,15 @@ html:not(.dark) .bg-white {
   }
 
   body {
-    @apply relative z-1 bg-surface font-normal font-outfit text-text-primary;
+    @apply relative z-1 bg-surface font-normal text-text-primary;
+    font-family: var(--font-outfit), Outfit, sans-serif;
     background: var(--background);
     background-attachment: fixed;
     text-rendering: optimizeLegibility;
+  }
+
+  html[lang="ar"] body {
+    font-family: var(--font-cairo), Cairo, sans-serif;
   }
 }
 
@@ -1037,7 +1043,26 @@ select:autofill:active {
   .sawiyaa-animate-fade-in {
     animation: none !important;
     opacity: 1 !important;
-    transform: none !important;
   }
 }
+
+/* ============================================
+   GLOBAL TYPOGRAPHY CLEANUP OVERRIDES
+   Resolves the cold, spaced-out, forced uppercase
+   aesthetic by restoring natural casing and tracking.
+   ============================================ */
+
+/* Disable forced uppercase globally */
+.uppercase {
+  text-transform: none !important;
+}
+
+/* Normalize letter tracking for wide spacing utility classes to prevent wide gaps */
+[class*="tracking-[0.1"],
+[class*="tracking-[0.2"],
+[class*="tracking-wider"],
+[class*="tracking-widest"] {
+  letter-spacing: 0.02em !important;
+}
+
 

@@ -8,6 +8,7 @@ import {
   PractitionerType,
   PractitionerStatus,
   UserStatus,
+  AvailabilityWeekStatus,
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -330,18 +331,31 @@ export class PublicPractitionerReadRepository {
               },
             }
           : undefined,
-      availabilitySlots:
+      availabilityWeeks:
         input.availableToday === true
           ? {
               some: {
-                isActive: true,
-                weekday: nextWeekday,
+                status: AvailabilityWeekStatus.PUBLISHED,
+                weekStartDate: {
+                  lte: now,
+                },
+                weekEndDate: {
+                  gte: now,
+                },
+                slots: {
+                  some: {
+                    weekday: nextWeekday,
+                  },
+                },
               },
             }
           : input.availableThisWeek === true
             ? {
                 some: {
-                  isActive: true,
+                  status: AvailabilityWeekStatus.PUBLISHED,
+                  slots: {
+                    some: {},
+                  },
                 },
               }
             : undefined,

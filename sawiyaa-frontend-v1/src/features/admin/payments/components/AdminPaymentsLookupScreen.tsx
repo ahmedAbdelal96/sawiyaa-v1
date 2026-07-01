@@ -87,6 +87,21 @@ function formatDateTime(value: string, locale: string) {
   });
 }
 
+function formatMoney(value: string, currency: string, locale: string) {
+  const numeric = Number(value);
+
+  if (Number.isNaN(numeric)) {
+    return `${value} ${currency}`;
+  }
+
+  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+}
+
 function shortId(value: string | null) {
   if (!value) return "-";
   if (value.length <= 12) return value;
@@ -103,9 +118,9 @@ function getPaymentsReviewCopy(locale: string) {
   if (locale.startsWith("ar")) {
     return {
       eyebrow: "مراجعة تشغيلية للمدفوعات",
-      title: "راجع سجلات الدفع",
+      title: "مراجعة المدفوعات",
       note:
-        "استخدم جدول الأحداث لمتابعة الدفع والاسترداد، والفلترة حسب المزود أو الحالة أو التاريخ، ثم افتح سجل الدفع المرتبط عند الحاجة.",
+        "هذه الصفحة للمراجعة التشغيلية فقط، وليست لدفتر القيود أو الإجماليات المحاسبية. استخدمها لفحص أحداث الدفع والاسترداد بأمان.",
       paymentIdLabel: "رقم الدفع",
       paymentIdPlaceholder: "الصق رقم الدفع",
       statusLabel: "الحالة الحالية",
@@ -116,17 +131,17 @@ function getPaymentsReviewCopy(locale: string) {
       paymentStatusesLabel: "حالة الدفع",
       paymentPurposesLabel: "نوع الدفع",
       refundStatusesLabel: "حالة الاسترداد",
+      amountUnavailable: "غير متاح",
       openPaymentAction: "فتح الدفع",
       fullDiagnosticsAction: "فتح سجل الأحداث الكامل",
-      settlementsTitle: "التسويات",
     };
   }
 
   return {
     eyebrow: "Operational payments review",
-    title: "Review payment records",
+    title: "Payments review",
     note:
-      "Use the event feed to scan payment activity, filter by provider or status, and open the linked payment detail when needed.",
+      "This page is for operational review only, not accounting ledger work or totals. Use it to inspect payment and refund events safely.",
     paymentIdLabel: "Payment ID",
     paymentIdPlaceholder: "Paste a payment ID",
     statusLabel: "Current status",
@@ -137,9 +152,9 @@ function getPaymentsReviewCopy(locale: string) {
     paymentStatusesLabel: "Payment status",
     paymentPurposesLabel: "Payment purpose",
     refundStatusesLabel: "Refund status",
+    amountUnavailable: "Unavailable",
     openPaymentAction: "Open payment",
     fullDiagnosticsAction: "Open full diagnostics",
-    settlementsTitle: "Settlements",
   };
 }
 
@@ -365,6 +380,19 @@ export default function AdminPaymentsLookupScreen() {
         hideOnMobile: true,
       },
       {
+        id: "amount",
+        header: t("list.headers.amount"),
+        accessor: (row) => row.amount ?? "",
+        cell: (row) =>
+          row.amount && row.currencyCode ? (
+            <span className="font-semibold text-text-primary dark:text-white/90">
+              {formatMoney(row.amount, row.currencyCode, locale)}
+            </span>
+          ) : (
+            <span className="text-text-muted">{copy.amountUnavailable}</span>
+          ),
+      },
+      {
         id: "status",
         header: copy.statusLabel,
         accessor: (row) => row.paymentStatus ?? row.refundStatus ?? "",
@@ -386,7 +414,7 @@ export default function AdminPaymentsLookupScreen() {
         cell: (row) => formatDateTime(row.createdAt, locale),
       },
     ],
-    [locale, t, copy.paymentIdLabel, copy.statusLabel],
+    [locale, t, copy.amountUnavailable, copy.paymentIdLabel, copy.statusLabel],
   );
 
   const openPaymentDetail = (row: FinanceOperationEventItem) => {
@@ -411,12 +439,6 @@ export default function AdminPaymentsLookupScreen() {
           >
             <ClipboardList className="h-3.5 w-3.5" />
             {copy.fullDiagnosticsAction}
-          </Link>
-          <Link
-            href="/admin/settlements"
-            className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
-          >
-            {copy.settlementsTitle}
           </Link>
         </>
       }

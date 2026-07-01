@@ -9,6 +9,7 @@ export type NavItem = {
   path?: string;
   namespace?: string;
   subItems?: { key: string; path: string; namespace?: string }[];
+  groupLabel?: boolean;
   /**
    * User must have at least one of these permissions to see this nav item.
    * Empty or absent = visible to all admin-class users.

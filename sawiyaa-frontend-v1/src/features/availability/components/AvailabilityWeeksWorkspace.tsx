@@ -26,7 +26,6 @@ import type {
   AvailabilityWeekOverview,
   AvailabilityWorkspaceData,
 } from "../types/availability.types";
-import AvailabilityExceptionsList from "./AvailabilityExceptionsList";
 
 type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 type SessionBlockDuration = 30 | 60;
@@ -962,8 +961,6 @@ export default function AvailabilityWeeksWorkspace({ data }: { data: Availabilit
       </SurfaceCard>
 
       <WeekDraftEditor week={selectedWeek} selectedKind={selectedKind} />
-
-      <AvailabilityExceptionsList data={data.legacy} />
     </div>
   );
 }

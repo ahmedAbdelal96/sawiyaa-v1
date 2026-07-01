@@ -113,7 +113,7 @@ export class CreateMatchingSessionUseCase {
               language.language.code.toLowerCase(),
             ),
             specialtySlugs: specialtySlugs.map((slug) => slug.toLowerCase()),
-            hasAnyAvailability: candidate.availabilitySlots.length > 0,
+            hasAnyAvailability: candidate.availabilityWeeks.length > 0,
             presenceStatus: resolveEffectivePresenceStatus(candidate.presence),
             isInstantBookingEnabled:
               candidate.presence?.isInstantBookingEnabled ?? false,

@@ -1,7 +1,6 @@
 export type AccountingReconciliationRunScope =
   | "PAYMENTS"
   | "WALLETS"
-  | "SETTLEMENTS"
   | "REFUNDS"
   | "PACKAGE_SETTLEMENTS"
   | "FULL";

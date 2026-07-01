@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
@@ -202,5 +202,28 @@ describe('CreateScheduledSessionUseCase', () => {
         sessionMode: SessionMode.VIDEO,
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects a past scheduled start through the booking-request guard before availability validation', async () => {
+    (
+      validateSessionBookingRequestService.assertScheduledStartIsFuture as jest.Mock
+    ).mockImplementationOnce(() => {
+      throw new BadRequestException('past');
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        practitionerSlug: 'dr-youssef',
+        scheduledStartAt: '2020-01-01T10:00:00.000Z',
+        durationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(
+      validateSessionScheduleCompatibilityService.assertFitsPractitionerAvailability,
+    ).not.toHaveBeenCalled();
   });
 });

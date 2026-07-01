@@ -1,10 +1,12 @@
 # Availability Module API
 
 ## Purpose
-Availability Module owns practitioner recurring schedule management and temporary schedule overrides.
+Availability Module owns practitioner availability-week management and temporary schedule overrides.
 
 This module is responsible for:
-- recurring weekly availability slots
+- Sunday-based current/next availability week management
+- draft and published week lifecycle
+- recurring weekly slot storage inside each availability week
 - temporary availability exceptions (`BLOCK`, `OPEN_EXTRA`)
 - timezone-aware availability window derivation
 - practitioner self-service schedule management
@@ -20,14 +22,13 @@ This module explicitly does **not** own:
 ## Endpoints
 
 ### Practitioner self-service
-- `GET /api/v1/practitioners/me/availability`
-- `PUT /api/v1/practitioners/me/availability/weekly-slots`
-- `POST /api/v1/practitioners/me/availability/exceptions`
-- `PATCH /api/v1/practitioners/me/availability/exceptions/:id`
-- `DELETE /api/v1/practitioners/me/availability/exceptions/:id`
+- `GET /api/v1/practitioners/me/availability/weeks/current-next`
+- `POST /api/v1/practitioners/me/availability/weeks`
+- `PATCH /api/v1/practitioners/me/availability/weeks/:weekId`
+- `POST /api/v1/practitioners/me/availability/weeks/:weekId/copy-to-next`
+- `POST /api/v1/practitioners/me/availability/weeks/:weekId/publish`
 
 ### Public read
-- `GET /api/v1/public/practitioners/:slug/availability`
 - `GET /api/v1/public/practitioners/:slug/availability/windows?from=...&to=...`
 
 ## Guards
@@ -43,34 +44,38 @@ This module explicitly does **not** own:
 - protected by existing public practitioner visibility policy at the use-case level
 
 ## Main DTOs
-- `ReplaceWeeklyAvailabilityDto`
-- `CreateAvailabilityExceptionDto`
-- `UpdateAvailabilityExceptionDto`
+- `CreateAvailabilityWeekDto`
+- `UpdateAvailabilityWeekDto`
+- `AvailabilityWeekOverviewSuccessResponseDto`
+- `AvailabilityWeekMutationSuccessResponseDto`
 - `ListPublicPractitionerAvailabilityWindowsDto`
 
 ## Main Use Cases
-- `GetMyAvailabilityUseCase`
-- `ReplaceWeeklyAvailabilityUseCase`
-- `CreateAvailabilityExceptionUseCase`
-- `UpdateAvailabilityExceptionUseCase`
-- `DeleteAvailabilityExceptionUseCase`
-- `GetPublicPractitionerAvailabilityUseCase`
+- `GetMyAvailabilityWeeksUseCase`
+- `CreatePractitionerAvailabilityWeekUseCase`
+- `UpdatePractitionerAvailabilityWeekUseCase`
+- `CopyPractitionerAvailabilityWeekToNextUseCase`
+- `PublishPractitionerAvailabilityWeekUseCase`
 - `ListPublicPractitionerAvailabilityWindowsUseCase`
 
 ## Business Rules
+- each practitioner week is Sunday-based and stored with explicit `weekStartDate` / `weekEndDate`
+- only `PUBLISHED` availability weeks are used by public availability, practitioner discovery, and matching readiness
+- draft weeks can be created, updated, and copied; published weeks are immutable in normal practitioner flows
 - recurring weekly slots must not overlap on the same day when they share the same duration
-- weekly slot granularity is enforced at 30 minutes in V1
+- weekly slot granularity remains enforced at 30 minutes in V1
 - each recurring weekly slot declares an explicit booking duration of `30` or `60` minutes
-- practitioner timezone is the source of truth for recurring schedule interpretation
+- practitioner timezone is the source of truth for week interpretation and slot derivation
 - exceptions are stored as concrete UTC datetimes
 - `BLOCK` overrides all other availability
 - `OPEN_EXTRA` adds temporary windows outside or alongside weekly schedule
 - public reads require the practitioner to satisfy existing public visibility rules
 
 ## Response Notes
-- self-service `GET /me/availability` returns timezone, recurring slots, and upcoming active exceptions
-- public `/availability` returns only recurring weekly slots and timezone
+- self-service `GET /weeks/current-next` returns the current and next availability weeks in practitioner timezone, including overview/reminder state
+- week mutation endpoints return the mutated week plus refreshed overview data
 - public `/availability/windows` returns derived UTC windows for the requested range, including the slot duration that produced each window
+- public `/availability/windows` can optionally return public-safe `bookedSlots` when `includeBooked=true`
 - exception `reason` is never exposed on public endpoints
 
 ## Localization Notes

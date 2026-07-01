@@ -124,7 +124,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       sessionsSeries: "Sessions",
       sessionsAverageSeries: "3-day average",
       settlementsTitle: "Settlement trend",
-      settlementsSubtitle: "Latest settlement batches by time.",
+      settlementsSubtitle: "Latest payout records by time.",
       settlementsSeries: "Settlements",
     },
     activity: {
@@ -178,7 +178,7 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
       sessionsSeries: "الجلسات",
       sessionsAverageSeries: "متوسط 3 أيام",
       settlementsTitle: "اتجاه التسويات",
-      settlementsSubtitle: "آخر دفعات التسوية عبر الفترات.",
+      settlementsSubtitle: "آخر سجلات الصرف عبر الفترات.",
       settlementsSeries: "التسويات",
     },
     activity: {
@@ -641,7 +641,7 @@ export default function PractitionerDashboard() {
                 {[
                   { href: "/practitioner/sessions", label: copy.actions.sessions, icon: <CalendarClock className="h-4 w-4" />, helper: locale === "ar" ? "عرض وإدارة الجلسات" : "View and manage sessions" },
                   { href: "/practitioner/wallet", label: copy.actions.wallet, icon: <WalletCards className="h-4 w-4" />, helper: locale === "ar" ? "تفاصيل الأرباح والمحفظة" : "Wallet details and balances" },
-                  { href: "/practitioner/settlements", label: copy.actions.settlements, icon: <Clock3 className="h-4 w-4" />, helper: locale === "ar" ? "سجل دفعات التسوية" : "Settlement batch history" },
+                  { href: "/practitioner/settlements", label: copy.actions.settlements, icon: <Clock3 className="h-4 w-4" />, helper: locale === "ar" ? "سجل الصرف" : "Payout record history" },
                 ].map((action) => (
                   <Link
                     key={action.href}

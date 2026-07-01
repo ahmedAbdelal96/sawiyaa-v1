@@ -10,40 +10,40 @@ export default async function WhySawiyaaSection() {
   return (
     <section className="px-6 py-24">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] lg:items-start">
-        <div className="app-panel overflow-hidden rounded-[34px] p-8">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary/80">
+        <div className="bg-[#24564F] text-white overflow-hidden rounded-[34px] p-8 shadow-sawiyaa-logo dark:bg-surface-secondary dark:text-white">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[#A7BFAE] dark:text-primary-light/80">
             {t("eyebrow")}
           </p>
-          <h2 className="text-3xl font-bold leading-tight text-text-primary md:text-4xl dark:text-text-primary">
+          <h2 className="text-3xl font-bold leading-tight text-white md:text-4xl">
             {t("title")}
           </h2>
-          <p className="mt-5 text-lg leading-8 text-text-secondary">{t("desc")}</p>
+          <p className="mt-5 text-lg leading-8 text-emerald-50/90 dark:text-white/80">{t("desc")}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/specialties"
-              className="inline-flex items-center rounded-2xl bg-primary px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+              className="inline-flex items-center rounded-2xl bg-[#FCFAF6] px-6 py-3.5 text-sm font-semibold text-[#24564F] transition hover:bg-[#EEF4EF] hover:shadow-md"
             >
               {t("cta")}
             </Link>
             <Link
               href="/practitioners"
-              className="inline-flex items-center rounded-2xl border border-border-light bg-surface-secondary px-6 py-3.5 text-sm font-semibold text-text-primary transition hover:border-primary hover:bg-primary-light hover:text-primary dark:text-white/90"
+              className="inline-flex items-center rounded-2xl border border-white/20 bg-white/10 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-white/20 dark:text-white/90"
             >
               {t("secondaryCta")}
             </Link>
           </div>
 
-          <ul className="mt-7 grid gap-2 text-sm leading-7 text-text-secondary">
+          <ul className="mt-7 grid gap-2 text-sm leading-7 text-emerald-100/90 dark:text-white/70">
             <li className="relative ps-5">
-              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-primary/70" />
+              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-emerald-300" />
               {t("signals.verifiedProfiles")}
             </li>
             <li className="relative ps-5">
-              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-primary/70" />
+              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-emerald-300" />
               {t("signals.publishedContent")}
             </li>
             <li className="relative ps-5">
-              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-primary/70" />
+              <span className="absolute start-0 top-2 h-1.5 w-1.5 rounded-full bg-emerald-300" />
               {t("signals.secureJourney")}
             </li>
           </ul>

@@ -14,14 +14,16 @@ import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/polic
 import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 import { resolveEffectivePresenceStatus } from '@modules/presence/utils/presence-liveness';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
-import { AvailabilitySlotRepository } from '@modules/availability/repositories/availability-slot.repository';
+import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
+import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
+import { AvailabilityWeekCalendarService } from '@modules/availability/services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
-import { BuildAvailabilityWindowsService } from '@modules/availability/services/build-availability-windows.service';
 import { ValidateSessionConflictsService } from '@modules/sessions/services/validate-session-conflicts.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
+import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 
 /**
- * Instant booking eligibility composes visibility, presence, availability, and conflict checks.
+ * Instant booking eligibility composes visibility, presence, published-week availability, and conflict checks.
  * It intentionally does not mutate presence or create sessions by itself.
  */
 @Injectable()
@@ -29,10 +31,12 @@ export class ValidateInstantBookingEligibilityService {
   constructor(
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
-    private readonly availabilitySlotRepository: AvailabilitySlotRepository,
+    private readonly practitionerAvailabilityWeekRepository: PractitionerAvailabilityWeekRepository,
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
+    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
-    private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
+    private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
+    private readonly sessionRepository: SessionRepository,
     private readonly validateSessionDurationService: ValidateSessionDurationService,
     private readonly validateSessionConflictsService: ValidateSessionConflictsService,
   ) {}
@@ -122,29 +126,57 @@ export class ValidateInstantBookingEligibilityService {
       input.nowUtc.getTime() + input.durationMinutes * 60 * 1000,
     );
 
-    const [weeklySlots, exceptions] = await Promise.all([
-      this.availabilitySlotRepository.listActiveByPractitioner(
+    const timezone = this.resolvePractitionerTimezoneService.resolve({
+      fallbackTimezone: input.practitioner.user.timezone,
+    });
+    const weekWindow =
+      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
+        timezone,
+        now: input.nowUtc,
+      });
+
+    if (
+      input.nowUtc < weekWindow.currentWeek.startDate ||
+      endsAtUtc > weekWindow.nextWeek.endDate
+    ) {
+      throw new BadRequestException({
+        messageKey: 'instantBooking.errors.practitionerNotAvailableNow',
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      });
+    }
+
+    const [publishedWeeks, exceptions, bookedSessions] = await Promise.all([
+      this.practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts(
         input.practitioner.id,
+        [weekWindow.currentWeek.startDate, weekWindow.nextWeek.startDate],
       ),
       this.availabilityExceptionRepository.listActiveForRange(
         input.practitioner.id,
         input.nowUtc,
         endsAtUtc,
       ),
+      this.sessionRepository.listBlockingSessionRangesInRangeForPractitioner(
+        input.practitioner.id,
+        endsAtUtc,
+        input.nowUtc,
+        input.nowUtc,
+      ),
     ]);
 
-    const timezone = this.resolvePractitionerTimezoneService.resolve({
-      weeklySlots,
-      fallbackTimezone: input.practitioner.user.timezone,
-    });
-
-    const windows = this.buildAvailabilityWindowsService.buildForRange({
-      timezone,
-      weeklySlots,
-      exceptions,
-      fromUtc: input.nowUtc,
-      toUtc: endsAtUtc,
-    });
+    const windows = this.buildPublishedWeekAvailabilityWindowsService.buildForRange(
+      {
+        timezone,
+        weeks: publishedWeeks,
+        exceptions,
+        bookedSessions: bookedSessions.map((session) => ({
+          startsAt: session.scheduledStartAt!,
+          endsAt: session.scheduledEndAt!,
+        })),
+        fromUtc: input.nowUtc,
+        toUtc: endsAtUtc,
+        now: input.nowUtc,
+      },
+    );
 
     const fitsWindow = windows.some(
       (window) =>

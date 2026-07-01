@@ -68,6 +68,9 @@ export class PublicPractitionerFeeBoundsDto {
   @ApiProperty()
   max!: number;
 
+  @ApiProperty({ required: false })
+  actualMin?: number;
+
   @ApiProperty({ enum: ['EGP', 'USD'] })
   currency!: 'EGP' | 'USD';
 
