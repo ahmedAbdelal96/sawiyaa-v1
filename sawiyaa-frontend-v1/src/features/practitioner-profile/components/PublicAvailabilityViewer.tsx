@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { formatPublicMoney } from "@/features/practitioners-discovery/lib/public-pricing";
 import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
 import { toAppError } from "@/lib/api/errors";
 import { usePublicAvailabilityWindows } from "../hooks/use-public-availability";
@@ -38,6 +39,9 @@ type Phase = "browse" | "confirm" | "success";
 
 type Props = {
   slug: string;
+  currencyCode: "EGP" | "USD" | null;
+  displaySessionPrice30: number | null;
+  displaySessionPrice60: number | null;
 };
 
 const MIN_BOOKING_LEAD_MS = 60 * 1000;
@@ -148,12 +152,19 @@ function groupByLocalDay(windows: PublicAvailabilityWindow[], numLocale: string)
     }));
 }
 
-export default function PublicAvailabilityViewer({ slug }: Props) {
+export default function PublicAvailabilityViewer({
+  slug,
+  currencyCode,
+  displaySessionPrice30,
+  displaySessionPrice60,
+}: Props) {
   const tAvail = useTranslations("practitioner-profile.availability");
   const tBook = useTranslations("practitioner-profile.booking");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const isRtl = locale === "ar";
+  const sessionFeesLabel = isRtl ? "رسوم الجلسة" : "Session fees";
+  const selectedPriceLabel = isRtl ? "السعر المختار" : "Selected price";
   const noTimesInDayLabel = isRtl ? "لا توجد مواعيد" : "No times available";
   const showBookedSessionsLabel = isRtl ? "إظهار الجلسات المحجوزة" : "Show booked sessions";
   const bookedSlotsUnavailableLabel = isRtl
@@ -186,6 +197,8 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
   const [createdSession, setCreatedSession] = useState<SessionItem | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const createSession = useCreateScheduledSession();
+  const selectedDurationPrice =
+    duration === 30 ? displaySessionPrice30 : displaySessionPrice60;
 
   const dateColumns = useMemo<DateColumn[]>(() => {
     const columns: DateColumn[] = [];
@@ -337,6 +350,12 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
               {tBook("duration60")}
             </button>
           </div>
+          {typeof selectedDurationPrice === "number" ? (
+            <p className="mt-2 text-xs font-semibold text-primary">
+              {selectedPriceLabel}:{" "}
+              {formatPublicMoney(locale, selectedDurationPrice, currencyCode)}
+            </p>
+          ) : null}
         </div>
 
         {isAuthLoading ? (
@@ -453,6 +472,27 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
             </button>
           </div>
 
+          {(typeof displaySessionPrice30 === "number" ||
+            typeof displaySessionPrice60 === "number") && (
+            <div className="mb-3 rounded-xl border border-primary/10 bg-primary-light/35 px-3 py-3 text-xs dark:bg-primary/10">
+              <p className="font-semibold text-text-primary dark:text-white/90">
+                {sessionFeesLabel}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {typeof displaySessionPrice30 === "number" ? (
+                  <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-text-secondary dark:bg-white/5">
+                    {tBook("duration30")} - {formatPublicMoney(locale, displaySessionPrice30, currencyCode)}
+                  </span>
+                ) : null}
+                {typeof displaySessionPrice60 === "number" ? (
+                  <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-text-secondary dark:bg-white/5">
+                    {tBook("duration60")} - {formatPublicMoney(locale, displaySessionPrice60, currencyCode)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:bg-surface">
             <div className={`grid border-b border-border-light`} style={{ gridTemplateColumns: `repeat(${VISIBLE_DATE_COLUMNS}, minmax(0, 1fr))` }}>
               {dateColumns.map((day, index) => (
@@ -500,7 +540,8 @@ export default function PublicAvailabilityViewer({ slug }: Props) {
 
           {allEmpty && (
             <div className="mt-3 rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
-              <p className="text-sm text-text-muted">{tAvail("noSlots")}</p>
+              <p className="text-sm font-medium text-text-primary dark:text-white/90">{tAvail("noSlots")}</p>
+              <p className="mt-1 text-xs leading-5 text-text-muted">{tAvail("noSlotsHint")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"

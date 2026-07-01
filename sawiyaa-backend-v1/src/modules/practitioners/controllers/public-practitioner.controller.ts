@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -8,11 +8,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { Public } from '@common/decorators/public.decorator';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import {
   ListPublicPractitionersDto,
   PublicPractitionerSortBy,
@@ -75,10 +77,12 @@ export class PublicPractitionerController {
     @Query() query: ListPublicPractitionersDto,
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser | null,
+    @Req() request: Request,
   ) {
     return this.listPublicPractitionersUseCase.execute({
       locale,
       currentUserId: currentUser?.id ?? null,
+      guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       search: query.search ?? query.q,
       specialtySlug: query.specialtySlug ?? query.specialty,
       specialtyCategorySlug: query.specialtyCategorySlug,
@@ -107,14 +111,19 @@ export class PublicPractitionerController {
     description:
       'Public-safe metadata for practitioner discovery filters derived from public-visible practitioners only.',
   })
+  @ApiQuery({ name: 'duration', required: false })
   @ApiResponse({ status: 200, type: PublicPractitionerFiltersSuccessResponseDto })
   listFilters(
+    @Query() query: ListPublicPractitionersDto,
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser | null,
+    @Req() request: Request,
   ): PublicPractitionerFiltersResponseDto | Promise<PublicPractitionerFiltersResponseDto> {
     return this.listPublicPractitionerFiltersUseCase.execute({
       locale,
       currentUserId: currentUser?.id ?? null,
+      guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
+      duration: query.duration,
     });
   }
 
@@ -140,11 +149,13 @@ export class PublicPractitionerController {
     @Param('slug') slug: string,
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser | null,
+    @Req() request: Request,
   ) {
     return this.getPublicPractitionerDetailsUseCase.execute({
       slug,
       locale,
       currentUserId: currentUser?.id ?? null,
+      guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 }

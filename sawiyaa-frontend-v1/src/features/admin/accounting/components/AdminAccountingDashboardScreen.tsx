@@ -265,19 +265,23 @@ export default function AdminAccountingDashboardScreen() {
   return (
     <div className="space-y-6">
       <section className="app-panel rounded-[30px] p-6 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="space-y-2 flex-1 min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
-              {t("dashboard.eyebrow") || "العمليات المالية"}
+              {t("dashboard.eyebrow")}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95 sm:text-3xl">
-              {"لوحة المالية"}
+            <h1 className="text-2xl font-semibold text-text-primary dark:text-white/95 sm:text-3xl">
+              {t("dashboard.title")}
             </h1>
-            <p className="mt-2 text-sm text-text-secondary">
-              {"نظرة عامة على العمليات المحاسبية، الحسابات الجارية، والتسويات المالية للمعالجين والمنصة."}
+            <p className="text-sm text-text-secondary max-w-3xl">
+              {t("dashboard.description")}
             </p>
+            <div className="rounded-xl border border-border-light bg-card-warm p-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-white/5 max-w-3xl">
+              <span className="font-semibold text-primary">{locale === "ar" ? "ملاحظة النطاق: " : "Scope Note: "}</span>
+              {t("dashboard.note")}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Button
               type="button"
               variant="outline"
@@ -300,69 +304,79 @@ export default function AdminAccountingDashboardScreen() {
               size="sm"
               onClick={() => router.push("/admin/practitioner-payouts")}
             >
-              {"فتح مستحقات المعالجين"}
+              {locale === "ar" ? "فتح مستحقات المعالجين" : "Open Practitioner Dues"}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              startIcon={<Download className="h-4 w-4" />}
-              onClick={handleExportDashboard}
-              disabled={dashboardExportMutation.isPending}
-            >
-              {dashboardExportMutation.isPending
-                ? (t("dashboard.actions.exporting") || "جاري التصدير...")
-                : (t("dashboard.actions.exportCsv") || "تصدير CSV")}
-            </Button>
+            <div className="flex flex-col items-stretch sm:items-end gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                startIcon={<Download className="h-4 w-4" />}
+                onClick={handleExportDashboard}
+                disabled={dashboardExportMutation.isPending}
+              >
+                {dashboardExportMutation.isPending
+                  ? (t("dashboard.actions.exporting") || "جاري التصدير...")
+                  : (t("dashboard.actions.exportCsv") || "تصدير CSV")}
+              </Button>
+              <span className="text-[10px] text-text-muted text-center sm:text-end block">
+                {t("dashboard.actions.exportCsvHelper")}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("dashboard.filters.from")}
-            </span>
-            <InputField
-              type="date"
-              value={from ? from.slice(0, 10) : ""}
-              onChange={(event) => updateQuery({ from: event.target.value || null })}
-            />
-          </label>
+        <div className="mt-6 border-t border-border-light/40 pt-5 dark:border-white/5">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("dashboard.filters.from")}
+              </span>
+              <InputField
+                type="date"
+                value={from ? from.slice(0, 10) : ""}
+                onChange={(event) => updateQuery({ from: event.target.value || null })}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("dashboard.filters.to")}
-            </span>
-            <InputField
-              type="date"
-              value={to ? to.slice(0, 10) : ""}
-              onChange={(event) => updateQuery({ to: event.target.value || null })}
-            />
-          </label>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("dashboard.filters.to")}
+              </span>
+              <InputField
+                type="date"
+                value={to ? to.slice(0, 10) : ""}
+                onChange={(event) => updateQuery({ to: event.target.value || null })}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("dashboard.filters.currency")}
-            </span>
-            <Select
-              options={currencyOptions}
-              placeholder="اختر العملة"
-              defaultValue={effectiveCurrencyCode}
-              onChange={(value) => updateQuery({ currencyCode: value || "EGP" })}
-            />
-          </label>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("dashboard.filters.currency")}
+              </span>
+              <Select
+                options={currencyOptions}
+                placeholder={locale === "ar" ? "اختر العملة" : "Select Currency"}
+                defaultValue={effectiveCurrencyCode}
+                onChange={(value) => updateQuery({ currencyCode: value || "EGP" })}
+              />
+            </label>
 
-          <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("dashboard.filters.recentLimit")}
-            </span>
-            <Select
-              options={limitOptions}
-              placeholder="العدد"
-              defaultValue={String(recentLimit)}
-              onChange={(value) => updateQuery({ recentLimit: Number(value) || 8 })}
-            />
-          </label>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("dashboard.filters.recentLimit")}
+              </span>
+              <Select
+                options={limitOptions}
+                placeholder={locale === "ar" ? "العدد" : "Limit"}
+                defaultValue={String(recentLimit)}
+                onChange={(value) => updateQuery({ recentLimit: Number(value) || 8 })}
+              />
+            </label>
+          </div>
+          <p className="mt-3 text-xs text-text-muted leading-relaxed">
+            {t("dashboard.filters.helper")}
+          </p>
         </div>
       </section>
 

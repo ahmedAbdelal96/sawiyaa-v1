@@ -1,4 +1,4 @@
-import { PresenceStatus, SessionMode } from '@prisma/client';
+import { ConflictException, PresenceStatus, SessionMode } from '@prisma/client';
 import { ValidateInstantBookingEligibilityService } from './validate-instant-booking-eligibility.service';
 
 describe('ValidateInstantBookingEligibilityService', () => {
@@ -8,17 +8,23 @@ describe('ValidateInstantBookingEligibilityService', () => {
   const practitionerPresenceRepository = {
     createOrGetByPractitionerProfileId: jest.fn(),
   } as never;
-  const availabilitySlotRepository = {
-    listActiveByPractitioner: jest.fn(),
+  const practitionerAvailabilityWeekRepository = {
+    findPublishedByPractitionerAndWeekStarts: jest.fn(),
   } as never;
   const availabilityExceptionRepository = {
     listActiveForRange: jest.fn(),
   } as never;
+  const availabilityWeekCalendarService = {
+    resolveCurrentAndNextWeekWindow: jest.fn(),
+  } as never;
   const resolvePractitionerTimezoneService = {
     resolve: jest.fn(),
   } as never;
-  const buildAvailabilityWindowsService = {
+  const buildPublishedWeekAvailabilityWindowsService = {
     buildForRange: jest.fn(),
+  } as never;
+  const sessionRepository = {
+    listBlockingSessionRangesInRangeForPractitioner: jest.fn(),
   } as never;
   const validateSessionDurationService = {
     validate: jest.fn(),
@@ -30,13 +36,56 @@ describe('ValidateInstantBookingEligibilityService', () => {
   const service = new ValidateInstantBookingEligibilityService(
     publicPractitionerVisibilityPolicy,
     practitionerPresenceRepository,
-    availabilitySlotRepository,
+    practitionerAvailabilityWeekRepository,
     availabilityExceptionRepository,
+    availabilityWeekCalendarService,
     resolvePractitionerTimezoneService,
-    buildAvailabilityWindowsService,
+    buildPublishedWeekAvailabilityWindowsService,
+    sessionRepository,
     validateSessionDurationService,
     validateSessionConflictsService,
   );
+
+  const currentWeekStart = new Date('2026-05-03T00:00:00.000Z');
+  const currentWeekEnd = new Date('2026-05-09T00:00:00.000Z');
+  const nextWeekStart = new Date('2026-05-10T00:00:00.000Z');
+  const nextWeekEnd = new Date('2026-05-16T00:00:00.000Z');
+
+  const currentWeek = {
+    id: 'week-current',
+    weekStartDate: currentWeekStart,
+    weekEndDate: currentWeekEnd,
+    timezone: 'Africa/Cairo',
+    status: 'PUBLISHED',
+    slots: [
+      {
+        id: 'slot-current',
+        weekday: 'THURSDAY',
+        startMinuteOfDay: 720,
+        endMinuteOfDay: 750,
+        durationMinutes: 30,
+        timezone: 'Africa/Cairo',
+      },
+    ],
+  };
+
+  const nextWeek = {
+    id: 'week-next',
+    weekStartDate: nextWeekStart,
+    weekEndDate: nextWeekEnd,
+    timezone: 'Africa/Cairo',
+    status: 'PUBLISHED',
+    slots: [
+      {
+        id: 'slot-next',
+        weekday: 'THURSDAY',
+        startMinuteOfDay: 780,
+        endMinuteOfDay: 810,
+        durationMinutes: 30,
+        timezone: 'Africa/Cairo',
+      },
+    ],
+  };
 
   const baseInput = {
     practitioner: {
@@ -71,25 +120,43 @@ describe('ValidateInstantBookingEligibilityService', () => {
       lastSeenAtUtc: new Date('2026-05-07T11:59:30.000Z'),
     });
     (
-      availabilitySlotRepository.listActiveByPractitioner as jest.Mock
-    ).mockResolvedValue([{ id: 'slot-1' }]);
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
+    ).mockResolvedValue([currentWeek, nextWeek]);
+    (availabilityExceptionRepository.listActiveForRange as jest.Mock).mockResolvedValue([]);
     (
-      availabilityExceptionRepository.listActiveForRange as jest.Mock
-    ).mockResolvedValue([]);
+      availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow as jest.Mock
+    ).mockReturnValue({
+      currentWeek: {
+        startDate: currentWeekStart,
+        endDate: currentWeekEnd,
+        startDateIso: '2026-05-03',
+        endDateIso: '2026-05-09',
+      },
+      nextWeek: {
+        startDate: nextWeekStart,
+        endDate: nextWeekEnd,
+        startDateIso: '2026-05-10',
+        endDateIso: '2026-05-16',
+      },
+    });
     (resolvePractitionerTimezoneService.resolve as jest.Mock).mockReturnValue(
       'Africa/Cairo',
     );
     (
-      buildAvailabilityWindowsService.buildForRange as jest.Mock
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
     ).mockReturnValue([
       {
         startsAt: '2026-05-07T12:00:00.000Z',
         endsAt: '2026-05-07T12:30:00.000Z',
+        durationMinutes: 30,
       },
     ]);
     (validateSessionDurationService.validate as jest.Mock).mockReturnValue(
       undefined,
     );
+    (
+      sessionRepository.listBlockingSessionRangesInRangeForPractitioner as jest.Mock
+    ).mockResolvedValue([]);
     (
       validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock
     ).mockResolvedValue(undefined);
@@ -113,7 +180,7 @@ describe('ValidateInstantBookingEligibilityService', () => {
     });
   });
 
-  it('allows instant booking when presence is fresh and online', async () => {
+  it('allows instant booking when presence is fresh and published availability matches', async () => {
     await expect(
       service.assertPractitionerCanReceiveInstantBooking(baseInput),
     ).resolves.toMatchObject({
@@ -123,14 +190,40 @@ describe('ValidateInstantBookingEligibilityService', () => {
     });
 
     expect(resolvePractitionerTimezoneService.resolve).toHaveBeenCalledWith({
-      weeklySlots: [{ id: 'slot-1' }],
       fallbackTimezone: 'Africa/Cairo',
     });
+    expect(
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts,
+    ).toHaveBeenCalledWith('practitioner-1', [currentWeekStart, nextWeekStart]);
+    expect(
+      buildPublishedWeekAvailabilityWindowsService.buildForRange,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timezone: 'Africa/Cairo',
+        weeks: [currentWeek, nextWeek],
+        exceptions: [],
+        bookedSessions: [],
+        fromUtc: new Date('2026-05-07T12:00:00.000Z'),
+        toUtc: new Date('2026-05-07T12:30:00.000Z'),
+        now: new Date('2026-05-07T12:00:00.000Z'),
+      }),
+    );
+    expect(
+      sessionRepository.listBlockingSessionRangesInRangeForPractitioner,
+    ).toHaveBeenCalledWith(
+      'practitioner-1',
+      new Date('2026-05-07T12:30:00.000Z'),
+      new Date('2026-05-07T12:00:00.000Z'),
+      new Date('2026-05-07T12:00:00.000Z'),
+    );
   });
 
-  it('rejects when the instant slot is outside the current availability window', async () => {
+  it('rejects when no published week exists', async () => {
     (
-      buildAvailabilityWindowsService.buildForRange as jest.Mock
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
+    ).mockResolvedValueOnce([]);
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
     ).mockReturnValueOnce([]);
 
     await expect(
@@ -142,7 +235,100 @@ describe('ValidateInstantBookingEligibilityService', () => {
     });
   });
 
-  it('rejects when a session conflict blocks the instant slot', async () => {
+  it('rejects when only draft weeks are available', async () => {
+    (
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
+    ).mockResolvedValueOnce([]);
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('rejects when only archived weeks are available', async () => {
+    (
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
+    ).mockResolvedValueOnce([]);
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('rejects when the published week window does not fully contain the requested slot', async () => {
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([
+      {
+        startsAt: '2026-05-07T12:00:00.000Z',
+        endsAt: '2026-05-07T12:15:00.000Z',
+        durationMinutes: 30,
+      },
+    ]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('rejects when an exception removes the current instant slot from the published window slice', async () => {
+    (
+      availabilityExceptionRepository.listActiveForRange as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        id: 'exception-block',
+        practitionerId: 'practitioner-1',
+        availabilityWeekId: 'week-current',
+        type: 'BLOCK',
+        startsAtUtc: new Date('2026-05-07T12:00:00.000Z'),
+        endsAtUtc: new Date('2026-05-07T12:30:00.000Z'),
+        reason: null,
+        source: 'MANUAL',
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as any);
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('passes overlapping blocking sessions into published-week availability calculation', async () => {
+    (
+      sessionRepository.listBlockingSessionRangesInRangeForPractitioner as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        scheduledStartAt: new Date('2026-05-07T12:00:00.000Z'),
+        scheduledEndAt: new Date('2026-05-07T12:30:00.000Z'),
+      },
+    ]);
     (
       validateSessionConflictsService.assertNoPractitionerConflict as jest.Mock
     ).mockRejectedValueOnce(new Error('conflict'));
@@ -150,5 +336,81 @@ describe('ValidateInstantBookingEligibilityService', () => {
     await expect(
       service.assertPractitionerCanReceiveInstantBooking(baseInput),
     ).rejects.toBeInstanceOf(Error);
+
+    expect(
+      buildPublishedWeekAvailabilityWindowsService.buildForRange,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookedSessions: [
+          {
+            startsAt: new Date('2026-05-07T12:00:00.000Z'),
+            endsAt: new Date('2026-05-07T12:30:00.000Z'),
+          },
+        ],
+      }),
+    );
+  });
+
+  it('rejects if the requested instant slot falls outside the managed current/next week range', async () => {
+    (
+      availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow as jest.Mock
+    ).mockReturnValueOnce({
+      currentWeek: {
+        startDate: new Date('2026-05-10T00:00:00.000Z'),
+        endDate: new Date('2026-05-16T00:00:00.000Z'),
+        startDateIso: '2026-05-10',
+        endDateIso: '2026-05-16',
+      },
+      nextWeek: {
+        startDate: new Date('2026-05-17T00:00:00.000Z'),
+        endDate: new Date('2026-05-23T00:00:00.000Z'),
+        startDateIso: '2026-05-17',
+        endDateIso: '2026-05-23',
+      },
+    });
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
+  });
+
+  it('uses the resolved practitioner timezone to compute current and next week boundaries', async () => {
+    resolvePractitionerTimezoneService.resolve.mockReturnValue('Asia/Riyadh');
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).resolves.toMatchObject({
+      timezone: 'Asia/Riyadh',
+    });
+
+    expect(availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow).toHaveBeenCalledWith(
+      {
+        timezone: 'Asia/Riyadh',
+        now: new Date('2026-05-07T12:00:00.000Z'),
+      },
+    );
+  });
+
+  it('rejects a partially overlapping instant slot', async () => {
+    (
+      buildPublishedWeekAvailabilityWindowsService.buildForRange as jest.Mock
+    ).mockReturnValueOnce([
+      {
+        startsAt: '2026-05-07T12:00:00.000Z',
+        endsAt: '2026-05-07T12:15:00.000Z',
+        durationMinutes: 30,
+      },
+    ]);
+
+    await expect(
+      service.assertPractitionerCanReceiveInstantBooking(baseInput),
+    ).rejects.toMatchObject({
+      response: {
+        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
+      },
+    });
   });
 });

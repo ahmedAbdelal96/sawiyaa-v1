@@ -177,7 +177,15 @@ export class ListAdminPractitionerPayoutSummariesUseCase {
       (page - 1) * limit + limit,
     );
 
+    const summary = {
+      practitionersWithDues: totalItems,
+      readyForPayoutPractitioners: relevant.filter((item) => item.hasPayable).length,
+      totalDueEgp: this.sumMoneyAmounts(relevant, (item) => item.egp.totalPayableAmount),
+      totalDueUsd: this.sumMoneyAmounts(relevant, (item) => item.usd.totalPayableAmount),
+    };
+
     return {
+      summary,
       items: items.map(
         ({ candidate, egp, usd, hasPayable, hasPackage, lastPayoutAt }) => {
           const primarySpecialty = candidate.specialties?.find(
@@ -240,6 +248,18 @@ export class ListAdminPractitionerPayoutSummariesUseCase {
     const suffix = practitionerId.replace(/-/g, '').slice(0, 4).toLowerCase();
     const codeBase = practitionerSlug?.trim() || 'practitioner';
     return `${codeBase} · #${suffix}`;
+  }
+
+  private sumMoneyAmounts<T>(
+    items: T[],
+    select: (item: T) => string | null | undefined,
+  ) {
+    const total = items.reduce((accumulator, item) => {
+      const value = Number(select(item) ?? 0);
+      return accumulator + (Number.isFinite(value) ? value : 0);
+    }, 0);
+
+    return total.toFixed(2);
   }
 
   private maskIdentifier(value: string | null | undefined) {

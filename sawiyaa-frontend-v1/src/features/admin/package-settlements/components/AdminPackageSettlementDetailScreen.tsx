@@ -25,7 +25,7 @@ import {
   useReleaseAdminPackageSettlement,
 } from "../hooks/use-admin-package-settlements";
 import type { AdminPackageSettlementDetail } from "../types/admin-package-settlements.types";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import AdminPackageSettlementReleaseModal from "./AdminPackageSettlementReleaseModal";
 
 type Props = {

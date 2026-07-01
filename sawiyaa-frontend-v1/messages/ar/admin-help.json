@@ -125,6 +125,15 @@
       "viewQuestionLabel": "السؤال"
     }
   },
+  "validation": {
+    "questionArRequired": "السؤال بالعربية مطلوب.",
+    "answerArRequired": "الإجابة بالعربية مطلوبة."
+  },
+  "errors": {
+    "reviewRequired": "يرجى مراجعة الحقول المطلوبة.",
+    "saveFailed": "تعذر حفظ التغييرات. يرجى المحاولة مرة أخرى.",
+    "referenceId": "رقم التتبع: {requestId}"
+  },
   "fields": {
     "slug": "المعرف",
     "titleAr": "الاسم بالعربية",

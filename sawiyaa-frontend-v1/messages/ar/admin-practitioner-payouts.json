@@ -3,6 +3,7 @@
     "title": "مستحقات المعالجين - الإدارة",
     "description": "راجع أرصدة المعالجين ومبالغ الباقات وسجلات الدفعات اليدوية."
   },
+  "unavailable": "Unavailable",
   "list": {
     "meta": {
       "title": "مستحقات المعالجين - الإدارة",
@@ -17,19 +18,39 @@
     "loading": "جارٍ تحميل المعالجين...",
     "emptyTitle": "لا توجد مستحقات قابلة للدفع حاليًا",
     "emptyDescription": "لا يوجد معالجون لديهم مستحقات أو مبالغ باقات في هذه اللحظة.",
-    "note": "ستظهر مستحقات الجلسات ومبالغ الباقات في نفس الصفحة مع الحفاظ على فصل الجنيه والدولار.",
+    "unavailable": "Unavailable",
     "filters": {
       "all": "الكل",
       "hasPayable": "لهم فلوس",
       "hasPackage": "لهم باقات",
       "allCurrencies": "كل العملات"
     },
+    "status": {
+      "hasPayable": "Has payable money",
+      "hasPackage": "Has package money"
+    },
+    "summary": {
+      "practitionersWithDues": "Practitioners with dues",
+      "totalDueEgp": "Total EGP dues",
+      "totalDueUsd": "Total USD dues",
+      "readyForPayoutPractitioners": "Ready for payout"
+    },
     "columns": {
       "practitioner": "المعالج",
-      "payableEgp": "القابل للدفع EGP",
-      "payableUsd": "القابل للدفع USD",
+      "egpDue": "EGP due",
+      "usdDue": "USD due",
       "lastPayout": "آخر دفعة",
       "actions": "الإجراءات"
+    },
+    "balanceCards": {
+      "EGP": {
+        "available": "Available for payout",
+        "held": "Held package balance:"
+      },
+      "USD": {
+        "available": "Available for payout",
+        "held": "Held package balance:"
+      }
     },
     "payableNow": "القابل للدفع الآن",
     "normalSessionsShort": "الجلسات العادية:",
@@ -50,24 +71,18 @@
       "viewDetails": "عرض التفاصيل",
       "pay": "دفع",
       "history": "سجل الدفعات",
-      "createSettlement": "إنشاء تسوية",
+      "createPayout": "تسجيل دفعة",
+      "recordManualPayout": "Record manual payout",
       "reconciliation": "مراجعة محاسبية"
-    },
-    "workspace": {
-      "eyebrow": "مساحة التسوية",
-      "title": "أنشئ تسوية بعد خروج المال من سويّة",
-      "description": "اختر المختص، راجع لقطة وجهة الدفع، ثم سجّل المبلغ الفعلي الذي حوّلته خارج المنصة.",
-      "bullets": {
-        "manualTransfer": "تحويل خارجي فقط",
-        "recordActualAmount": "سجّل المبلغ الفعلي المدفوع",
-        "keepHistory": "احتفظ بسجل التسويات في مكان واحد"
-      }
     },
     "pagination": {
       "previous": "السابق",
       "next": "التالي",
       "page": "الصفحة {page, number} من {totalPages, number}"
-    }
+    },
+    "errorTitle": "We couldn't load practitioner dues.",
+    "errorDescription": "We couldn't load practitioner dues. Please try again.",
+    "errorRetry": "Try again"
   },
   "detail": {
     "meta": {
@@ -76,6 +91,9 @@
     },
     "eyebrow": "مستحقات المعالجين",
     "description": "راجع الأرصدة حسب العملة ومبالغ الباقات وسجل الدفعات لمعالج واحد.",
+    "snapshotNote": "Balances shown here come from backend payout balance endpoints. They are a current snapshot for this practitioner and should be checked before recording any manual payout.",
+    "manualTransferNote": "Recording a payout here documents an external manual transfer. It does not send money automatically from Sawiyaa.",
+    "balanceScopeNote": "Held amounts are not necessarily available for payout until released by the platform rules.",
     "backToList": "العودة إلى المستحقات",
     "payNow": "دفع الآن",
     "sections": {
@@ -83,12 +101,14 @@
       "usd": "الدولار الأمريكي"
     },
     "metrics": {
-      "normal": "مستحقات الجلسات العادية",
-      "packageReleased": "مستحقات الباقات الجاهزة للصرف",
-      "packageHeld": "مبالغ الباقات المحجوزة",
-      "totalPayable": "إجمالي القابل للدفع الآن",
+      "normalSessionPayable": "Normal session payable",
+      "packageReleasedAmount": "Package released amount",
+      "packageHeldAmount": "Held package balance",
+      "remainingDue": "Remaining due",
       "lastPayout": "آخر دفعة"
     },
+    "availableForManualPayout": "Available for manual payout",
+    "heldPackageBalance": "Held package balance",
     "lastPayoutEmpty": "لا توجد دفعة مسجلة بعد",
     "packageSectionTitle": "مبالغ الباقات",
     "packageSectionDescription": "مبالغ الباقات جزء من حساب المعالج، لكن الجزء المحجوز يبقى خارج إجمالي القابل للدفع حتى يتم الإفراج عنه.",
@@ -96,6 +116,7 @@
     "historyEyebrow": "سجل الدفعات",
     "historyTitle": "سجل الدفعات",
     "historyDescription": "الدفعات اليدوية الحديثة المسجلة لهذا المعالج.",
+    "historyScopeNote": "This section shows recorded payout entries returned for this practitioner.",
     "historyEmptyTitle": "لا توجد دفعات بعد",
     "historyEmptyDescription": "ستظهر الدفعات المسجلة هنا بعد حفظها.",
     "actions": {
@@ -127,14 +148,31 @@
     "eyebrow": "سجل دفعات المعالجين",
     "title": "سجل دفعات المعالجين",
     "description": "راجع سجلات الدفعات التي سجّلتها الإدارة.",
+    "safetyNote": "Recorded payouts only.",
+    "tableSubtitle": "Backend totals.",
+    "filterNote": "Filters update the server results.",
     "backToList": "العودة إلى المستحقات",
     "results": "{count, number} سجل",
+    "summary": {
+      "totalPayouts": "Total payouts",
+      "egpRecorded": "Total recorded EGP",
+      "usdRecorded": "Total recorded USD",
+      "filterMatched": "Filtered totals",
+      "currencyMatched": "Currency totals"
+    },
     "loading": "جارٍ تحميل سجل الدفعات...",
     "emptyTitle": "لا توجد سجلات دفعات",
     "emptyDescription": "ستظهر الدفعات المسجلة هنا.",
     "filters": {
       "currencyLabel": "العملة",
-      "allCurrencies": "كل العملات"
+      "allCurrencies": "كل العملات",
+      "practitionerLabel": "Practitioner",
+      "practitionerPlaceholder": "Search by practitioner name or ID",
+      "methodLabel": "Method",
+      "allMethods": "All methods",
+      "from": "From",
+      "to": "To",
+      "clear": "Clear filters"
     },
     "columns": {
       "practitioner": "المعالج",
@@ -153,20 +191,27 @@
     },
     "actions": {
       "viewPractitioner": "عرض المختص",
-      "viewDetails": "عرض التفاصيل"
+      "viewDetails": "عرض التفاصيل",
+      "reconciliation": "Accounting review"
     },
+    "errorTitle": "We couldn't load payout history.",
+    "errorDescription": "We couldn't load payout history. Please try again.",
+    "errorRetry": "Try again",
     "detail": {
       "eyebrow": "سجل دفعة",
       "title": "تفاصيل الدفعة",
       "description": "راجع تفاصيل الدفعة كما تم تسجيلها من الإدارة.",
       "close": "إغلاق",
       "unknownPractitioner": "معالج غير معروف",
+      "reviewOnlyNotice": "Review only.",
+      "reviewOnlyHelper": "This shows a recorded manual transfer and does not move money.",
       "notesTitle": "ملاحظات",
       "noNotes": "لم تضاف ملاحظات لهذه الدفعة.",
       "fields": {
         "amount": "المبلغ المدفوع",
         "currency": "العملة",
         "paidAt": "تاريخ الدفع",
+        "recordedAt": "Recorded at",
         "paymentMethod": "الطريقة",
         "reference": "مرجع التحويل",
         "recordedBy": "تم التسجيل بواسطة"
@@ -175,18 +220,42 @@
   },
   "drawer": {
     "eyebrow": "دفع مستحقات معالج",
+    "searchEyebrow": "مساحة التسوية",
+    "searchTitle": "إنشاء تسوية",
+    "searchDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
     "title": "تسجيل دفعة معالج",
     "description": "اختر العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
     "manualNotice": "هذه الصفحة تسجل الدفعة فقط. التحويل الفعلي يتم خارج المنصة.",
+    "searchHint": "البحث يعرض حتى 30 نتيجة مختصرة فقط.",
+    "searchStartTitle": "ابحث عن مختص للتسوية",
+    "searchStartDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
+    "searchEmptyTitle": "لا توجد نتائج مطابقة",
+    "searchEmptyDescription": "جرّب اسمًا أو كودًا آخر.",
+    "searchPlaceholder": "ابحث باسم المعالج أو الكود",
+    "selectPractitioner": "اختيار",
+    "selectedPractitioner": "المختص المحدد",
+    "selectionNote": "راجع بطاقات الرصيد ولقطة وجهة الدفع للقراءة فقط، ثم سجّل المبلغ الفعلي الذي حوّلته خارج سويّة.",
+    "identityConfirmation": "تأكد من بيانات المعالج قبل تسجيل التسوية.",
+    "changePractitioner": "تغيير المختص",
+    "viewHistory": "عرض سجل التحويلات",
+    "openPayout": "فتح الدفعة",
     "currencyHelp": "لكل عملة رصيد مستقل، ويتم تسجيلها بشكل منفصل.",
     "practitioner": "المعالج",
     "selectedCurrency": "العملة المختارة",
+    "currentCurrencyLabel": "عملة التسوية الحالية",
+    "currencyActive": "محدد",
+    "currencySwitch": "تبديل",
+    "currencyBadge": {
+      "egp": "EGP",
+      "usd": "USD"
+    },
     "summary": {
       "normal": "مستحقات الجلسات العادية",
       "packageReleased": "مستحقات الباقات الجاهزة للصرف",
       "packageHeld": "مبالغ الباقات المحجوزة",
       "totalPayable": "إجمالي القابل للصرف"
     },
+    "balanceBreakdown": "العادي {normal} · الباقات {packages} · المحجوز {held}",
     "lastPayout": "آخر دفعة",
     "packageHeldNote": "مبالغ الباقات المحجوزة تظهر للمراجعة فقط ولا تدخل في إجمالي القابل للصرف.",
     "noPayableAmount": "لا توجد مبالغ قابلة للدفع لهذا المعالج بهذه العملة.",
@@ -199,38 +268,8 @@
     "notesLabel": "ملاحظات",
     "notesPlaceholder": "ملاحظة اختيارية",
     "remainingLabel": "المتبقي بعد الدفع",
-    "footerNote": "سجّل هنا المبلغ الذي تم تحويله فعليًا للمعالج خارج المنصة.",
-    "cancel": "إلغاء",
-    "validation": {
-      "amountInvalid": "أدخل مبلغًا صحيحًا أكبر من الصفر.",
-      "amountTooHigh": "لا يمكن تسجيل مبلغ أكبر من المستحقات القابلة للصرف لهذه العملة."
-    },
-    "amountCurrencyNote": "عملة المبلغ: {currency}",
-    "searchEyebrow": "مساحة التسوية",
-    "searchTitle": "إنشاء تسوية",
-    "searchDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
-    "searchHint": "البحث يعرض حتى 30 نتيجة مختصرة فقط.",
-    "searchStartTitle": "ابحث عن مختص للتسوية",
-    "searchStartDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
-    "searchEmptyTitle": "لا توجد نتائج مطابقة",
-    "searchEmptyDescription": "جرّب اسمًا أو كودًا آخر.",
-    "searchPlaceholder": "ابحث باسم المعالج أو الكود",
-    "selectPractitioner": "اختيار",
-    "selectedPractitioner": "المختص المحدد",
-    "selectionNote": "راجع بطاقات الرصيد ولقطة وجهة الدفع للقراءة فقط، ثم سجّل المبلغ الفعلي الذي حوّلته خارج سويّة.",
-    "identityConfirmation": "تأكد من بيانات المعالج قبل تسجيل التسوية.",
-    "changePractitioner": "تغيير المختص",
-    "viewHistory": "عرض سجل التسويات",
-    "openSettlement": "فتح التسوية",
-    "currentCurrencyLabel": "عملة التسوية الحالية",
-    "currencyActive": "محدد",
-    "currencySwitch": "تبديل",
-    "currencyBadge": {
-      "egp": "EGP",
-      "usd": "USD"
-    },
-    "balanceBreakdown": "العادي {normal} · الباقات {packages} · المحجوز {held}",
     "packageHeldLabel": "المبلغ المحجوز",
+    "footerNote": "سجّل هنا المبلغ الذي تم تحويله فعليًا للمعالج خارج المنصة.",
     "destinationTitle": "لقطة وجهة الدفع",
     "destinationReadOnly": "للقراءة فقط",
     "destinationMissing": "لا توجد لقطة لوجهة الدفع لهذا المختص.",
@@ -250,13 +289,22 @@
         "unknown": "طريقة غير معروفة"
       }
     },
+    "cancel": "إلغاء",
+    "validation": {
+      "amountInvalid": "أدخل مبلغًا صحيحًا أكبر من الصفر.",
+      "amountTooHigh": "لا يمكن تسجيل مبلغ أكبر من المستحقات القابلة للصرف لهذه العملة."
+    },
+    "amountCurrencyNote": "عملة المبلغ: {currency}",
+    "amountLimitNote": "Do not exceed the available due balance for the selected currency.",
+    "partialNote": "Enter the amount that was actually transferred outside Sawiyaa. Partial payouts are allowed; the remaining balance stays due.",
     "comboboxLabel": "اختيار المعالج",
     "clearSearch": "مسح البحث",
     "searchError": "تعذّر حمل نتائج البحث الآن.",
     "destinationAvailable": "وجهة الدفع متاحة",
     "destinationMissingShort": "يحتاج وجهة دفع",
     "initialEmptyMessage": "لا يوجد معالجون لديهم أرصدة قابلة للتسوية حاليًا",
-    "confirmationCheckboxLabel": "أؤكد أن المبلغ أعلاه هو المبلغ الذي تم تحويله فعليًا خارج المنصة."
+    "confirmationCheckboxLabel": "أؤكد أن المبلغ أعلاه هو المبلغ الذي تم تحويله فعليًا خارج المنصة.",
+    "confirmAction": "Confirm recorded payout"
   },
   "currencies": {
     "EGP": "EGP - الجنيه المصري",
@@ -276,7 +324,7 @@
     "backToList": "العودة إلى القائمة",
     "viewDetails": "عرض التفاصيل",
     "history": "سجل الدفعات",
-    "createSettlement": "إنشاء تسوية",
+    "createPayout": "تسجيل دفعة",
     "reconciliation": "مراجعة محاسبية"
   },
   "errors": {

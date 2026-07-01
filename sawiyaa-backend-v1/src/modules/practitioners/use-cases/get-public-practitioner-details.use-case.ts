@@ -1,12 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
 import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
 import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitioner-visibility.policy';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
+import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -25,7 +24,7 @@ export class GetPublicPractitionerDetailsUseCase {
     private readonly mapper: PublicPractitionerMapper,
     private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly publicReadRepository: PublicPractitionerReadRepository,
-    private readonly patientProfileRepository: PatientProfileRepository,
+    private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
   ) {}
 
@@ -33,12 +32,11 @@ export class GetPublicPractitionerDetailsUseCase {
     slug: string;
     locale: SupportedLocale;
     currentUserId?: string | null;
+    guestCountryIsoCode?: string | null;
   }) {
-    const patientProfile = input.currentUserId
-      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
-      : null;
-    const regionalResolution = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+    const regionalResolution = await this.pricingContextService.resolve({
+      currentUserId: input.currentUserId,
+      guestCountryIsoCode: input.guestCountryIsoCode,
     });
 
     const profile = await this.publicReadRepository.findByPublicSlug(

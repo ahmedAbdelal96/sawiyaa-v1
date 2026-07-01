@@ -61,19 +61,30 @@ export class ListAdminPractitionerManualPayoutsUseCase {
       });
     }
 
-    const [items, totalItems] = await this.manualPayoutRepository.listPayouts({
-      practitionerId,
-      currencyCode,
-      payoutMethod: input.query.payoutMethod,
-      createdFrom,
-      createdTo,
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const [itemsResult, summary] = await Promise.all([
+      this.manualPayoutRepository.listPayouts({
+        practitionerId,
+        currencyCode,
+        payoutMethod: input.query.payoutMethod,
+        createdFrom,
+        createdTo,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.manualPayoutRepository.summarizePayouts({
+        practitionerId,
+        currencyCode,
+        payoutMethod: input.query.payoutMethod,
+        createdFrom,
+        createdTo,
+      }),
+    ]);
+    const [items, totalItems] = itemsResult;
 
     return {
       items: items.map((item) => this.mapper.toPractitionerManualPayout(item)),
       pagination: buildPagination({ page, limit, totalItems }),
+      summary,
     };
   }
 }

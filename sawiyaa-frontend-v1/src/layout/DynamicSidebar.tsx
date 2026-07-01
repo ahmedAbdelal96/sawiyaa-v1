@@ -44,7 +44,7 @@ function SidebarSectionLabel({
       isRTL ? "text-right" : "text-left"
     )}>
       <p className={cn(
-        "font-semibold uppercase tracking-[0.2em] text-text-muted",
+        "font-semibold tracking-normal text-text-muted",
         isCompact ? "text-[10px]" : "text-[11px]"
       )}>
         {children}
@@ -322,14 +322,14 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
           )}
           {isVisible ? (
             <span className={cn(
-              "font-bold uppercase tracking-[0.15em]",
+              "font-bold tracking-normal",
               isCompact ? "text-[10px]" : "text-[11px]",
               isActiveGroup && "text-text-brand"
             )}>
               {sectionTitle}
             </span>
           ) : (
-            <span className="mx-auto text-text-muted/40 font-bold tracking-[0.2em]">-</span>
+            <span className="mx-auto text-text-muted/40 font-bold tracking-normal">-</span>
           )}
         </div>
         {isCollapsible && isVisible && (

@@ -95,7 +95,7 @@ export class PractitionerFinancialOperationsController {
   @ApiOperation({
     summary: 'List practitioner settlements',
     description:
-      'Returns practitioner payout records generated from settlement batches. This endpoint is read-only in this phase.',
+      'Returns practitioner payout records in read-only form. This endpoint is read-only in this phase.',
   })
   @ApiResponse({
     status: 200,

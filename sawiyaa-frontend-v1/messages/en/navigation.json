@@ -15,26 +15,29 @@
     "ledger": "Ledger",
     "promoCodes": "Promo codes",
     "payments": "Payments",
-    "paymentsHome": "Payments dashboard",
-    "paymentGatewayControl": "Gateway control",
+    "paymentsHome": "Payments",
+    "paymentGatewayControl": "Payment Gateway Control",
     "finance": "Finance",
-    "financeDashboard": "Finance dashboard",
-    "financeLedger": "Ledger explorer",
-    "financeReconciliation": "Financial Reconciliation",
+    "financeAccounts": "Accounts",
+    "financeReview": "Review",
+    "financeDashboard": "Overview",
+    "financeLedger": "Ledger",
+    "financeReconciliation": "Reconciliation",
     "reports": "Reports",
     "reportsHome": "Reports home",
     "reportsSessions": "Sessions report",
-    "reportsPaymentsRevenue": "Payments & revenue",
+    "reportsPaymentsRevenue": "Revenue reports",
     "reportsSupport": "Support report",
     "reportsCareRequests": "Care requests",
-    "reportsPayouts": "Payouts report",
-    "practitionerPayouts": "Practitioner payouts",
-    "practitionerPayoutsHistory": "Payout history",
-    "settlements": "Practitioner payouts",
-    "settlementsBatches": "Payout batches",
+    "reportsPayouts": "Payout reports",
+    "practitionerPayouts": "Practitioner Dues",
+    "practitionerPayoutsHistory": "Payout History",
+    "settlements": "Settlements",
+    "advancedDuesReview": "Dues review",
+    "advancedPayoutOperations": "Payout operations",
     "packageSettlements": "Package settlements",
     "settlementsDues": "Practitioner dues",
-    "settlementsPayouts": "Payout records",
+    "settlementsPayouts": "Payout History",
     "revenueShareRules": "Revenue Share Rules",
     "assessments": "Assessments",
     "availability": "Availability"
@@ -48,8 +51,11 @@
   "catalog": {
     "title": "Services & content"
   },
-  "financeOps": {
-    "title": "Finance & settlements"
+  "finance": {
+    "title": "Finance"
+  },
+  "financeReview": {
+    "title": "Finance Review"
   },
   "insights": {
     "title": "Reports & governance"
@@ -57,14 +63,11 @@
   "core": {
     "title": "Core"
   },
-  "paymentsFinance": {
-    "title": "Payments & Finance"
-  },
   "contentMarketplace": {
     "title": "Content & Marketplace"
   },
   "oversight": {
-    "title": "Oversight"
+    "title": "Review & reports"
   },
   "practitionerWorkspaceTitle": {
     "title": "Workspace"

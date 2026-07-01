@@ -14,8 +14,8 @@ import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
 import { Link } from "@/i18n/navigation";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
-import type { SettlementPayoutMethod } from "@/features/admin/settlements/types/admin-settlements.types";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import type { PayoutMethod } from "@/features/admin/finance/types/payout-method";
 import {
   useAdminPractitionerManualPayoutHistory,
 } from "../hooks/use-admin-practitioner-payouts";
@@ -23,11 +23,6 @@ import type { AdminPractitionerManualPayout } from "../types/admin-practitioner-
 import AdminPractitionerPayoutHistoryDetailDrawer from "./AdminPractitionerPayoutHistoryDetailDrawer";
 
 const PAGE_SIZE = DEFAULT_PAGE_LIMIT;
-
-function parseAmount(value: string | null | undefined) {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 export default function AdminPractitionerPayoutHistoryScreen() {
   const t = useTranslations("admin-practitioner-payouts");
@@ -50,30 +45,22 @@ export default function AdminPractitionerPayoutHistoryScreen() {
     limit,
     currency: deferredCurrency || undefined,
     practitionerId: deferredPractitioner.trim() || undefined,
-    payoutMethod: deferredMethod ? (deferredMethod as SettlementPayoutMethod) : undefined,
+    payoutMethod: deferredMethod ? (deferredMethod as PayoutMethod) : undefined,
     createdFrom: createdFrom || undefined,
     createdTo: createdTo || undefined,
   });
 
   const items = historyQuery.data?.items ?? [];
   const pagination = historyQuery.data?.pagination;
-  const summaryMetrics = useMemo(() => {
-    return items.reduce(
-      (accumulator, item) => {
-        const amount = parseAmount(item.amountPaid);
-        if (item.currencyCode === "EGP") {
-          accumulator.egpTotal += amount;
-          accumulator.egpCount += 1;
-        }
-        if (item.currencyCode === "USD") {
-          accumulator.usdTotal += amount;
-          accumulator.usdCount += 1;
-        }
-        return accumulator;
-      },
-      { egpTotal: 0, usdTotal: 0, egpCount: 0, usdCount: 0 },
-    );
-  }, [items]);
+  const summary = historyQuery.data?.summary;
+
+  const formatRecordedAmount = (amount: string | null | undefined, currency: string | null | undefined) => {
+    if (!amount || !currency) {
+      return t("unavailable");
+    }
+
+    return formatSettlementMoney(locale, amount, currency);
+  };
 
   const activeFilterChips = [
     currencyFilter
@@ -160,23 +147,20 @@ export default function AdminPractitionerPayoutHistoryScreen() {
         summaryCards={
           <>
             <AdminSummaryCard
-              label={t("history.results", { count: pagination?.totalItems ?? 0 })}
-              value={pagination?.totalItems ?? 0}
-              hint={t("history.title")}
+              label={t("history.summary.totalPayouts")}
+              value={summary?.payoutCount ?? 0}
               tone="primary"
               icon={<Receipt className="h-4 w-4" />}
             />
             <AdminSummaryCard
-              label={t("currencies.EGP")}
-              value={formatSettlementMoney(locale, summaryMetrics.egpTotal, "EGP")}
-              hint={`${summaryMetrics.egpCount} ${t("history.columns.currency")}`}
+              label={t("history.summary.egpRecorded")}
+              value={formatRecordedAmount(summary?.egpAmountPaid, "EGP")}
               tone="success"
               icon={<WalletCards className="h-4 w-4" />}
             />
             <AdminSummaryCard
-              label={t("currencies.USD")}
-              value={formatSettlementMoney(locale, summaryMetrics.usdTotal, "USD")}
-              hint={`${summaryMetrics.usdCount} ${t("history.columns.currency")}`}
+              label={t("history.summary.usdRecorded")}
+              value={formatRecordedAmount(summary?.usdAmountPaid, "USD")}
               tone="neutral"
               icon={<BadgeDollarSign className="h-4 w-4" />}
             />
@@ -313,7 +297,16 @@ export default function AdminPractitionerPayoutHistoryScreen() {
             columns={columns}
             getRowId={(row) => row.id}
             loading={historyQuery.isLoading}
+            error={historyQuery.error}
             loadingRows={PAGE_SIZE}
+            errorState={{
+              title: t("history.errorTitle"),
+              description: t("history.errorDescription"),
+              action: {
+                label: t("history.errorRetry"),
+                onClick: () => historyQuery.refetch(),
+              },
+            }}
             emptyState={{
               title: t("history.emptyTitle"),
               description: t("history.emptyDescription"),
@@ -342,6 +335,8 @@ export default function AdminPractitionerPayoutHistoryScreen() {
               </div>
             )}
             rowActionsHeader={t("history.columns.actions")}
+            ariaLabel={t("history.title")}
+            caption={t("history.description")}
           />
       </AdminOperationalListShell>
 

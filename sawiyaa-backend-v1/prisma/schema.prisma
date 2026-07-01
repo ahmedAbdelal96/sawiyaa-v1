@@ -1662,7 +1662,6 @@ model PractitionerProfile {
   applications            PractitionerApplication[]
   credentials             PractitionerCredential[]
   payoutDestination       PractitionerPayoutDestination?
-  availabilitySlots       AvailabilitySlot[]
   availabilityExceptions  AvailabilityException[]
   availabilityWeeks       PractitionerAvailabilityWeek[]
   presence                PractitionerPresence?
@@ -2115,26 +2114,6 @@ model PractitionerPayoutDestination {
 //////////////////////////////
 // Sessions / Availability / Presence
 //////////////////////////////
-
-model AvailabilitySlot {
-  id               String              @id @default(uuid()) @db.Uuid
-  practitionerId   String              @db.Uuid
-  weekday          AvailabilityWeekday
-  durationMinutes  Int                 @default(30)
-  startMinuteOfDay Int
-  endMinuteOfDay   Int
-  timezone         String              @db.VarChar(50)
-  isActive         Boolean             @default(true)
-  effectiveFrom    DateTime?           @db.Date
-  effectiveTo      DateTime?           @db.Date
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-
-  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
-
-  @@index([practitionerId, weekday, isActive])
-  @@index([practitionerId, isActive])
-}
 
 model AvailabilityException {
   id             String                      @id @default(uuid()) @db.Uuid

@@ -48,7 +48,6 @@ describe('AdminAccountingController access contract', () => {
       'reconcilePayment',
       'reconcilePractitionerWallet',
       'reconcileSettlement',
-      'reconcileSettlementBatch',
       'reconcileRefund',
       'reconcileCustomerWallet',
       'reconcilePackageSettlement',

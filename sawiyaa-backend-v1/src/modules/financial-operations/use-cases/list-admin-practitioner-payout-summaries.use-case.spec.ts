@@ -117,6 +117,12 @@ describe('ListAdminPractitionerPayoutSummariesUseCase', () => {
     expect(setup.prisma.practitionerProfile.findMany).toHaveBeenCalledTimes(1);
     expect(setup.balanceService.getBalance).toHaveBeenCalledTimes(4);
     expect(result.pagination.totalItems).toBe(1);
+    expect(result.summary).toEqual({
+      practitionersWithDues: 1,
+      readyForPayoutPractitioners: 1,
+      totalDueEgp: '120.00',
+      totalDueUsd: '25.00',
+    });
     expect(result.items).toHaveLength(1);
     expect(result.items[0].practitionerId).toBe('pr_1');
     expect(result.items[0].egp.totalPayableAmount).toBe('120.00');

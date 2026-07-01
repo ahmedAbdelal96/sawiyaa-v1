@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import { formatPublicMoney } from "../lib/public-pricing";
 import type {
   PractitionerFeeBounds,
   PractitionerFiltersMetadata,
@@ -65,11 +66,40 @@ function FilterSectionTitle({ title }: { title: string }) {
   return <p className="mb-2 text-sm font-semibold text-text-brand">{title}</p>;
 }
 
-function formatFeeValue(value: number, currency: PractitionerFeeBounds["currency"]) {
-  return `${value} ${currency}`;
+function formatFeeValue(
+  locale: string,
+  value: number,
+  currency: PractitionerFeeBounds["currency"],
+) {
+  return formatPublicMoney(locale, value, currency);
+}
+
+function getFeeFilterCopy(
+  t: ReturnType<typeof useTranslations<"practitioners-listing">>,
+  duration: string,
+) {
+  if (duration === "30") {
+    return {
+      title: t("filter.sessionFee30"),
+      helper: t("filter.sessionFeeDurationExactHelper"),
+    };
+  }
+
+  if (duration === "60") {
+    return {
+      title: t("filter.sessionFee60"),
+      helper: t("filter.sessionFeeDurationExactHelper"),
+    };
+  }
+
+  return {
+    title: t("filter.sessionFee"),
+    helper: t("filter.sessionFeeAnyDurationHelper"),
+  };
 }
 
 function FeeRangeSlider({
+  locale,
   bounds,
   currentMinFee,
   currentMaxFee,
@@ -79,6 +109,7 @@ function FeeRangeSlider({
   resetLabel,
   unavailableLabel,
 }: {
+  locale: string;
   bounds: PractitionerFeeBounds;
   currentMinFee: string;
   currentMaxFee: string;
@@ -146,8 +177,8 @@ function FeeRangeSlider({
   return (
     <div className="space-y-3 rounded-xl border border-border-light bg-surface-secondary p-3">
       <div className="flex items-center justify-between gap-3 text-sm font-medium text-text-secondary">
-        <span>{formatFeeValue(draftMin, bounds.currency)}</span>
-        <span>{formatFeeValue(draftMax, bounds.currency)}</span>
+        <span>{formatFeeValue(locale, draftMin, bounds.currency)}</span>
+        <span>{formatFeeValue(locale, draftMax, bounds.currency)}</span>
       </div>
 
       <div className="relative h-12">
@@ -188,7 +219,7 @@ function FeeRangeSlider({
       </div>
 
       <div className="flex items-center justify-between text-xs text-text-muted">
-        <span>{formatFeeValue(minBound, bounds.currency)}</span>
+        <span>{formatFeeValue(locale, minBound, bounds.currency)}</span>
         <button
           type="button"
           onClick={() => {
@@ -200,7 +231,7 @@ function FeeRangeSlider({
         >
           {resetLabel}
         </button>
-        <span>{formatFeeValue(maxBound, bounds.currency)}</span>
+        <span>{formatFeeValue(locale, maxBound, bounds.currency)}</span>
       </div>
     </div>
   );
@@ -212,6 +243,7 @@ export default function FilterControls({
   desktopMode = "inline",
 }: Props) {
   const t = useTranslations("practitioners-listing");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -381,6 +413,7 @@ export default function FilterControls({
     value: String(option),
     label: t("pagination.perPageOption", { count: option }),
   }));
+  const feeFilterCopy = getFeeFilterCopy(t, currentDuration);
 
   const filtersPanel = (
     <aside className="rounded-[22px] border border-border-light bg-surface p-5">
@@ -503,8 +536,12 @@ export default function FilterControls({
         ) : null}
 
         <div>
-          <FilterSectionTitle title={t("filter.sessionFee")} />
+          <FilterSectionTitle title={feeFilterCopy.title} />
+          <p className="mb-2 text-xs leading-5 text-text-muted">
+            {feeFilterCopy.helper}
+          </p>
           <FeeRangeSlider
+            locale={locale}
             bounds={filters.feeBounds}
             currentMinFee={currentMinSessionFee}
             currentMaxFee={currentMaxSessionFee}

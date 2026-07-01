@@ -2,22 +2,24 @@ import {
   CallHandler,
   ExecutionContext,
   HttpException,
+  Inject,
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
+import { Request } from 'express';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { ConfigType } from '@nestjs/config';
-import { Inject } from '@nestjs/common';
-import { Request } from 'express';
 import loggingConfig from '@config/logging.config';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
-import { redactUrlForLogging, sanitizeForLogging } from './log-sanitizer.util';
+import { AppRole } from '@common/enums/app-role.enum';
 import { AppLoggerService } from './app-logger.service';
+import { redactUrlForLogging, sanitizeForLogging } from './log-sanitizer.util';
 
 /**
  * Logs HTTP request lifecycle without leaking sensitive payload fields.
- * Success logs use level `http`, failures use `warn` for 4xx and `error` for 5xx.
+ * Success logs use the HTTP file target; slow requests are additionally
+ * routed to the dedicated slow-requests file.
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -37,7 +39,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = http.getResponse();
     const startedAt = Date.now();
 
-    const baseMeta = this.buildBaseMeta(request);
+    const baseMeta = this.buildBaseMeta(request, context);
 
     return next.handle().pipe(
       tap(() => {
@@ -49,29 +51,6 @@ export class LoggingInterceptor implements NestInterceptor {
           durationMs,
         };
 
-        if (statusCode >= 500) {
-          this.logger.error(
-            {
-              message: 'HTTP request completed with server error',
-              ...meta,
-            },
-            undefined,
-            LoggingInterceptor.name,
-          );
-          return;
-        }
-
-        if (statusCode >= 400) {
-          this.logger.warn(
-            {
-              message: 'HTTP request completed with client error',
-              ...meta,
-            },
-            LoggingInterceptor.name,
-          );
-          return;
-        }
-
         this.logger.http(
           {
             message: 'HTTP request completed',
@@ -80,6 +59,17 @@ export class LoggingInterceptor implements NestInterceptor {
           undefined,
           LoggingInterceptor.name,
         );
+
+        if (durationMs >= this.loggingCfg.slowRequestMs) {
+          this.logger.slowRequest(
+            {
+              message: 'Slow HTTP request detected',
+              ...meta,
+            },
+            undefined,
+            LoggingInterceptor.name,
+          );
+        }
       }),
       catchError((error: unknown) => {
         const durationMs = Date.now() - startedAt;
@@ -99,21 +89,22 @@ export class LoggingInterceptor implements NestInterceptor {
           }),
         };
 
-        if (statusCode >= 500) {
-          this.logger.error(
+        this.logger.http(
+          {
+            message: 'HTTP request failed',
+            ...meta,
+          },
+          undefined,
+          LoggingInterceptor.name,
+        );
+
+        if (durationMs >= this.loggingCfg.slowRequestMs) {
+          this.logger.slowRequest(
             {
-              message: 'HTTP request failed',
+              message: 'Slow HTTP request failed',
               ...meta,
             },
-            error instanceof Error ? error.stack : undefined,
-            LoggingInterceptor.name,
-          );
-        } else {
-          this.logger.warn(
-            {
-              message: 'HTTP request failed',
-              ...meta,
-            },
+            undefined,
             LoggingInterceptor.name,
           );
         }
@@ -125,15 +116,39 @@ export class LoggingInterceptor implements NestInterceptor {
 
   private buildBaseMeta(
     request: AuthenticatedRequest,
+    context: ExecutionContext,
   ): Record<string, unknown> {
     const expressRequest = request as Request;
+    const routeController = context.getClass()?.name ?? null;
+    const routeHandler = context.getHandler()?.name ?? null;
+    const userRole = this.resolveUserRole(request.user?.roles?.[0]);
+
     return sanitizeForLogging({
       requestId: request.requestId,
       method: request.method,
       path: redactUrlForLogging(request.originalUrl ?? request.url),
+      routeController,
+      routeHandler,
       userId: request.user?.id ?? null,
+      role: userRole,
+      locale: request.locale ?? null,
       ip: expressRequest.ip,
       userAgent: request.headers['user-agent'],
+      query: this.safeQuerySnapshot(request.query),
+      queryKeys: Object.keys(request.query ?? {}),
     });
   }
+
+  private safeQuerySnapshot(query: Request['query']): Record<string, unknown> {
+    if (!query || typeof query !== 'object') {
+      return {};
+    }
+
+    return sanitizeForLogging(query as Record<string, unknown>);
+  }
+
+  private resolveUserRole(role?: AppRole): string | null {
+    return role ?? null;
+  }
 }
+

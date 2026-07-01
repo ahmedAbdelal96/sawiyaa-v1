@@ -55,6 +55,8 @@ export type FinanceOperationEventItem = {
   refundStatus: AdminRefundStatus | null;
   externalRef: string | null;
   summary: string | null;
+  amount: string | null;
+  currencyCode: string | null;
   linkedSessionId: string | null;
   linkedPatientId: string | null;
   linkedPractitionerId: string | null;

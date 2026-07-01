@@ -218,14 +218,14 @@ async function main() {
                 sessionPrice30Usd: true,
                 sessionPrice60Egp: true,
                 sessionPrice60Usd: true,
-                _count: { select: { availabilitySlots: true } },
+                _count: { select: { availabilityWeeks: true } },
             },
         });
         addCheck(results, 'At least one package-eligible practitioner exists', Boolean(practitioner), practitioner
-            ? `${practitioner.publicSlug} | availabilitySlots=${practitioner._count.availabilitySlots}`
+            ? `${practitioner.publicSlug} | availabilityWeeks=${practitioner._count.availabilityWeeks}`
             : 'missing');
         if (practitioner) {
-            addCheck(results, 'Eligible practitioner has availability slots', practitioner._count.availabilitySlots > 0, `${practitioner.publicSlug} availabilitySlots=${practitioner._count.availabilitySlots}`);
+            addCheck(results, 'Eligible practitioner has published availability weeks', practitioner._count.availabilityWeeks > 0, `${practitioner.publicSlug} availabilityWeeks=${practitioner._count.availabilityWeeks}`);
         }
         dbReadSucceeded = true;
     }

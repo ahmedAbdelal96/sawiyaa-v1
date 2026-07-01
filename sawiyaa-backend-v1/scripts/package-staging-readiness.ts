@@ -344,7 +344,7 @@ async function main(): Promise<void> {
         sessionPrice30Usd: true,
         sessionPrice60Egp: true,
         sessionPrice60Usd: true,
-        _count: { select: { availabilitySlots: true } },
+        _count: { select: { availabilityWeeks: true } },
       },
     });
 
@@ -353,16 +353,16 @@ async function main(): Promise<void> {
       'At least one package-eligible practitioner exists',
       Boolean(practitioner),
       practitioner
-        ? `${practitioner.publicSlug} | availabilitySlots=${practitioner._count.availabilitySlots}`
+        ? `${practitioner.publicSlug} | availabilityWeeks=${practitioner._count.availabilityWeeks}`
         : 'missing',
     );
 
     if (practitioner) {
       addCheck(
         results,
-        'Eligible practitioner has availability slots',
-        practitioner._count.availabilitySlots > 0,
-        `${practitioner.publicSlug} availabilitySlots=${practitioner._count.availabilitySlots}`,
+        'Eligible practitioner has published availability weeks',
+        practitioner._count.availabilityWeeks > 0,
+        `${practitioner.publicSlug} availabilityWeeks=${practitioner._count.availabilityWeeks}`,
       );
     }
 

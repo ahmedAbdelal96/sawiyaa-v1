@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { API_BASE_URL } from "@/config/api";
+import { getAccessToken } from "@/lib/auth/server";
 import type { ApiPayload } from "./contracts";
 import { toAppError } from "./errors";
 import { extractData } from "./response";
@@ -63,6 +64,20 @@ async function fetchJson<T>(
   const baseUrl = await resolveServerBaseUrl();
   const requestUrl = buildRequestUrl(baseUrl, endpoint);
   appendParams(requestUrl, options.params);
+  const accessToken = await getAccessToken();
+
+  let trustedCountryHeaders: Record<string, string> = {};
+  try {
+    const requestHeaders = await headers();
+    const cfCountry = requestHeaders.get("cf-ipcountry");
+    const vercelCountry = requestHeaders.get("x-vercel-ip-country");
+    trustedCountryHeaders = {
+      ...(cfCountry ? { "cf-ipcountry": cfCountry } : {}),
+      ...(vercelCountry ? { "x-vercel-ip-country": vercelCountry } : {}),
+    };
+  } catch {
+    // No request context available. Keep public fallback behavior.
+  }
 
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? 30000;
@@ -75,6 +90,8 @@ async function fetchJson<T>(
         "Content-Type": "application/json",
         Accept: "application/json",
         ...(options.locale ? { "Accept-Language": options.locale } : {}),
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...trustedCountryHeaders,
       },
       signal: controller.signal,
       cache: "no-store",

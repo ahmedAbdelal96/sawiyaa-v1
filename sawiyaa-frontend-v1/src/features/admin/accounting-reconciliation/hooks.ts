@@ -14,7 +14,6 @@ import {
   runPackageSettlementsReconciliation,
   runPaymentsReconciliation,
   runRefundsReconciliation,
-  runSettlementsReconciliation,
   runWalletsReconciliation,
 } from "./api";
 import { accountingReconciliationQueryKeys } from "./query-keys";
@@ -92,8 +91,6 @@ export function useRunAccountingReconciliation() {
           return runPaymentsReconciliation(action);
         case "WALLETS":
           return runWalletsReconciliation(action);
-        case "SETTLEMENTS":
-          return runSettlementsReconciliation(action);
         case "REFUNDS":
           return runRefundsReconciliation(action);
         case "PACKAGE_SETTLEMENTS":

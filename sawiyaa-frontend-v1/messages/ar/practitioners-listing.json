@@ -34,6 +34,10 @@
     "duration60": "60 دقيقة",
     "rating": "التقييم",
     "sessionFee": "رسوم الجلسة",
+    "sessionFee30": "رسوم جلسة 30 دقيقة",
+    "sessionFee60": "رسوم جلسة 60 دقيقة",
+    "sessionFeeAnyDurationHelper": "يتم تطبيق الرسوم على أي مدة متاحة. اختر مدة الجلسة لتصفية سعر 30 أو 60 دقيقة بدقة.",
+    "sessionFeeDurationExactHelper": "يتم تطبيق نطاق الرسوم على مدة الجلسة المحددة فقط.",
     "minFee": "أقل رسوم",
     "maxFee": "أعلى رسوم",
     "minFeeLabel": "أقل رسوم",
@@ -104,7 +108,11 @@
     "languages": "اللغات",
     "rating": "التقييم",
     "onlineNow": "متصل الآن",
-    "offline": "غير متصل"
+    "offline": "غير متصل",
+    "matchesFilter": "مطابق للفلتر",
+    "sessionFees": "رسوم الجلسة",
+    "duration30": "30 دقيقة",
+    "duration60": "60 دقيقة"
   },
   "empty": {
     "title": "لا توجد نتائج مطابقة",

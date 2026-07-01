@@ -850,7 +850,7 @@
       "IN_PROGRESS": "In progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "ENDED": "Ended",
+      "ENDED": "Incomplete",
       "UNAVAILABLE": "Unavailable",
       "NO_SHOW": "No show",
       "UNDER_REVIEW": "Under review"
@@ -861,11 +861,11 @@
       "morning": "Morning",
       "afternoon": "Afternoon",
       "evening": "Evening",
-      "noSlots": "No available slots in this week. Try another week.",
+      "noSlots": "No available times right now.",
       "noSlotsThisDay": "No available slots on this day.",
       "selectedSlot": "Selected slot",
       "noSelectedSlot": "No time selected",
-      "loadError": "Could not load available times.",
+      "loadError": "Could not load available times right now.",
       "showBookedToggle": "Show booked slots",
       "bookedSlotsUnavailable": "Booked slots cannot be selected.",
       "bookingTypeTitle": "Booking type",
@@ -920,7 +920,12 @@
       "reviewBreakdownCta": "Create booking and review payment",
       "continueToPaymentCta": "Continue to payment",
       "confirmCta": "Confirm booking",
-      "confirming": "Confirming..."
+      "confirming": "Confirming...",
+      "errors": {
+        "generic": "We could not complete this action right now.",
+        "timeout": "The request timed out. Please try again.",
+        "unavailableSelection": "This time is no longer available. Please choose another available time."
+      }
     },
     "success": {
       "title": "Booking completed",
@@ -1077,7 +1082,7 @@
         "EXPIRED": "The session has expired.",
         "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions right now.",
         "REFUNDED": "A refund has already been processed for this session, so there are no direct actions right now.",
-        "ENDED": "The session has ended.",
+        "ENDED": "The session is incomplete.",
         "UNAVAILABLE": "The session is not available right now.",
         "DEFAULT": "This session does not have a direct action available from this screen right now."
       },
@@ -1438,9 +1443,10 @@
       "selectionSubtitle": "Pick one visible time for each session in the package.",
       "weekNote": "Use the upcoming weeks to select all required sessions.",
       "loadingSlots": "Loading available times...",
-      "loadError": "We could not load available times right now.",
+      "loadError": "Could not load available times right now.",
       "retry": "Try again",
-      "noSlots": "No open times were found for this week.",
+      "noSlots": "No available times right now.",
+      "noSlotsHint": "This practitioner has not published available times for the current or next week yet. Please check again later or choose another practitioner.",
       "daySelected_zero": "No sessions selected",
       "daySelected_one": "1 session selected",
       "daySelected_two": "2 sessions selected",
@@ -1472,6 +1478,11 @@
       "back": "Back",
       "errorTitle": "We could not load the package",
       "errorMessage": "Please try again in a moment.",
+      "errors": {
+        "generic": "We could not complete this action right now.",
+        "timeout": "The request timed out. Please try again.",
+        "unavailableSelection": "This time is no longer available. Please choose another available time."
+      },
       "prefillAdjusted": "Selected times were updated automatically because some choices were no longer available."
     },
     "pay": {
@@ -1579,7 +1590,7 @@
       "IN_PROGRESS": "In progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "ENDED": "Ended",
+      "ENDED": "Incomplete",
       "UNAVAILABLE": "Unavailable",
       "UNKNOWN": "Unknown"
     },
@@ -1927,7 +1938,8 @@
   "common": {
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "cancel": "Cancel"
   },
   "messages": {
     "common": {
@@ -2388,7 +2400,7 @@
       "IN_PROGRESS": "In progress",
       "COMPLETED": "Completed",
       "CANCELLED": "Cancelled",
-      "ENDED": "Ended",
+      "ENDED": "Incomplete",
       "UNAVAILABLE": "Unavailable",
       "NO_SHOW": "No show",
       "UNDER_REVIEW": "Under review"
@@ -3067,7 +3079,7 @@
         "EXPIRED": "The session expired.",
         "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions now.",
         "REFUNDED": "The refund for this session has already been processed, so there are no direct actions now.",
-        "ENDED": "The session has ended.",
+        "ENDED": "The session is incomplete.",
         "UNAVAILABLE": "The session is not available right now.",
         "DEFAULT": "This session does not expose a direct action from this screen right now."
       },
@@ -3102,7 +3114,7 @@
     },
     "availability": {
       "title": "Availability and presence",
-      "presenceTitle": "Live presence",
+      "presenceTitle": "Presence status",
       "overviewTitle": "At a glance",
       "overviewBody": "Keep your live status, weekly hours, and temporary changes easy to understand.",
       "presenceBody": "Choose how patients should see you right now. This does not change your weekly hours.",
@@ -3115,6 +3127,11 @@
       "instantBookingDisabled": "Instant booking is currently off, so new instant requests will not reach you.",
       "scheduleTitle": "Weekly schedule",
       "scheduleBody": "Set your repeating working hours here. Patients see the windows created from this schedule.",
+      "webManagedTitle": "Availability is managed on the web dashboard",
+      "webManagedBody": "Sawiyaa now uses a week-by-week availability system for safe booking. Please manage your current and next week availability from the web dashboard. Mobile editing will be added later.",
+      "webManagedSafetyNote": "Changes made in the old mobile weekly schedule would not control patient booking anymore, so editing is temporarily disabled here.",
+      "openWebDashboard": "Open web dashboard",
+      "webManagedSecondary": "Patients can only book times from published weekly availability.",
       "timezone": "Current timezone: {{timezone}}",
       "timezoneLabel": "Schedule time",
       "timezoneUnavailable": "Time labels are shown using the device until timezone data is available.",
@@ -3135,11 +3152,26 @@
       "saveSuccess": "The weekly schedule was saved successfully.",
       "saveError": "The weekly schedule could not be saved right now.",
       "saving": "Saving...",
+      "scheduleBodyCompact": "Set the times you can accept sessions during the week.",
+      "totalSlotsThisWeek": "{{count}} available slots this week",
+      "totalSlotsZero": "No slots added yet",
+      "durationSelector": "Session duration",
+      "durationMinutes": "{{minutes}} min",
+      "selectDay": "Select day",
+      "timeSlots": "Available times",
+      "selectedSlots": "Selected times",
+      "selectedSlotsEmpty": "No slots selected for this day yet.",
+      "removeSlotsHint": "Tap a time to remove it.",
+      "weeklySummary": "Week summary",
+      "daySlotsCount": "{{count}} slots",
+      "morningGroup": "Morning",
+      "afternoonGroup": "Afternoon",
+      "eveningGroup": "Evening",
       "exceptionsTitle": "Temporary changes",
       "exceptionsBody": "Use a block when you need time off, or open extra hours outside your weekly schedule.",
       "emptyExceptions": "There are no active exceptions right now.",
       "addException": "Add temporary change",
-      "saveException": "Save exception",
+      "saveException": "Save change",
       "editException": "Edit exception",
       "removeException": "Remove exception",
       "exceptionStartsAt": "Start date and time",
@@ -3162,8 +3194,18 @@
         "invalidDateTime": "Enter a valid date and time, like 2026-04-25 14:00."
       },
       "exceptionType": {
-        "BLOCK": "Temporary block",
+        "BLOCK": "Block time",
         "OPEN_EXTRA": "Extra hours"
+      },
+      "picker": {
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "selectDate": "Select Date",
+        "selectTime": "Select Time",
+        "startsAt": "Start",
+        "endsAt": "End",
+        "selectHour": "Select Hour",
+        "selectMinute": "Select Minute"
       }
     }
   },

@@ -9,6 +9,14 @@ function deterministicUuid(seed) {
     const hash = (0, crypto_1.createHash)('md5').update(seed).digest('hex');
     return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
+function getSundayBasedWeekRange(baseDate, weekOffset = 0) {
+    const weekStartDate = new Date(baseDate);
+    weekStartDate.setUTCHours(0, 0, 0, 0);
+    weekStartDate.setUTCDate(weekStartDate.getUTCDate() - weekStartDate.getUTCDay() + weekOffset * 7);
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setUTCDate(weekStartDate.getUTCDate() + 6);
+    return { weekStartDate, weekEndDate };
+}
 exports.practitionersSeedModule = {
     name: 'practitioners',
     async run(prisma) {
@@ -371,32 +379,56 @@ exports.practitionersSeedModule = {
             client_1.AvailabilityWeekday.THURSDAY,
         ];
         const practitionerIds = Object.values(seed_constants_1.seedIds.practitionerProfiles);
+        const baseDate = new Date();
         for (let i = 0; i < practitionerIds.length; i += 1) {
             const practitionerId = practitionerIds[i];
             const timezone = i % 3 === 0 ? 'Africa/Cairo' : i % 3 === 1 ? 'Asia/Riyadh' : 'Asia/Dubai';
-            for (const weekday of weekdays) {
+            for (const weekOffset of [0, 1]) {
+                const range = getSundayBasedWeekRange(baseDate, weekOffset);
+                const weekId = deterministicUuid(`avail-week-${practitionerId}-${range.weekStartDate.toISOString().slice(0, 10)}`);
                 weeklyAvailability.push({
-                    id: deterministicUuid(`avail-${practitionerId}-${weekday}-${10 * 60 + (i % 3) * 60}`),
-                    practitionerId,
-                    weekday,
-                    startMinuteOfDay: 10 * 60 + (i % 3) * 60,
-                    endMinuteOfDay: 18 * 60 + (i % 2) * 30,
-                    timezone,
-                    isActive: true,
+                    week: {
+                        id: weekId,
+                        practitionerId,
+                        weekStartDate: range.weekStartDate,
+                        weekEndDate: range.weekEndDate,
+                        timezone,
+                        status: client_1.AvailabilityWeekStatus.PUBLISHED,
+                        publishedAt: range.weekStartDate,
+                        archivedAt: null,
+                    },
+                    slots: weekdays.map((weekday) => ({
+                        id: deterministicUuid(`avail-slot-${weekId}-${weekday}-${10 * 60 + (i % 3) * 60}`),
+                        weekday,
+                        startMinuteOfDay: 10 * 60 + (i % 3) * 60,
+                        endMinuteOfDay: 18 * 60 + (i % 2) * 30,
+                        durationMinutes: 30,
+                        timezone,
+                    })),
                 });
             }
         }
-        for (const slot of weeklyAvailability) {
-            await prisma.availabilitySlot.upsert({
-                where: { id: slot.id },
-                create: slot,
+        for (const availability of weeklyAvailability) {
+            await prisma.practitionerAvailabilityWeek.upsert({
+                where: { id: availability.week.id },
+                create: {
+                    ...availability.week,
+                    slots: {
+                        create: availability.slots,
+                    },
+                },
                 update: {
-                    practitionerId: slot.practitionerId,
-                    weekday: slot.weekday,
-                    startMinuteOfDay: slot.startMinuteOfDay,
-                    endMinuteOfDay: slot.endMinuteOfDay,
-                    timezone: slot.timezone,
-                    isActive: slot.isActive,
+                    practitionerId: availability.week.practitionerId,
+                    weekStartDate: availability.week.weekStartDate,
+                    weekEndDate: availability.week.weekEndDate,
+                    timezone: availability.week.timezone,
+                    status: availability.week.status,
+                    publishedAt: availability.week.publishedAt,
+                    archivedAt: availability.week.archivedAt,
+                    slots: {
+                        deleteMany: {},
+                        create: availability.slots,
+                    },
                 },
             });
         }

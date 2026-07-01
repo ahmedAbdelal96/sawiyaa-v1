@@ -75,12 +75,6 @@ export async function runWalletsReconciliation(action: AccountingReconciliationR
   });
 }
 
-export async function runSettlementsReconciliation(action: AccountingReconciliationRunAction) {
-  return runReconciliationEndpoint("/admin/finance/accounting/reconciliation-runs/settlements", {
-    ...action.query,
-  });
-}
-
 export async function runRefundsReconciliation(action: AccountingReconciliationRunAction) {
   return runReconciliationEndpoint("/admin/finance/accounting/reconciliation-runs/refunds", {
     ...action.query,

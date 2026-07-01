@@ -7,24 +7,24 @@ export default async function FinalCTASection() {
   return (
     <section className="px-6 py-20 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <div className="app-panel overflow-hidden rounded-[36px] p-10 text-center lg:p-14">
-          <h2 className="text-3xl font-bold text-text-primary md:text-4xl dark:text-white/92">
+        <div className="bg-[#24564F] overflow-hidden rounded-[36px] p-10 text-center lg:p-14 shadow-sawiyaa-logo dark:bg-surface-secondary">
+          <h2 className="text-3xl font-bold text-white md:text-4xl">
             {t("title")}
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-text-secondary">
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-emerald-50/90 dark:text-white/80">
             {t("subtitle")}
           </p>
 
           <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link
               href="/practitioners"
-              className="app-lift inline-flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 text-base font-semibold text-white shadow-[0_18px_32px_-20px_rgba(95,143,139,0.5)] transition hover:-translate-y-0.5 hover:bg-primary-hover"
+              className="app-lift inline-flex items-center gap-2 rounded-2xl bg-[#FCFAF6] px-8 py-4 text-base font-semibold text-[#24564F] shadow-md transition hover:-translate-y-0.5 hover:bg-[#EEF4EF]"
             >
               {t("ctaPrimary")}
             </Link>
             <Link
               href="/specialties"
-              className="app-panel inline-flex items-center gap-2 rounded-2xl px-8 py-4 text-base font-semibold text-primary transition hover:bg-primary-light"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-8 py-4 text-base font-semibold text-white transition hover:bg-white/20"
             >
               {t("ctaSecondary")}
             </Link>

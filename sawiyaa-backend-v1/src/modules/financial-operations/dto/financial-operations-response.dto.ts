@@ -821,6 +821,12 @@ export class FinanceOperationEventItemDto {
   summary!: string | null;
 
   @ApiProperty({ nullable: true })
+  amount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  currencyCode!: string | null;
+
+  @ApiProperty({ nullable: true })
   linkedSessionId!: string | null;
 
   @ApiProperty({ nullable: true })
@@ -1003,6 +1009,20 @@ export class PractitionerManualPayoutSummaryItemDto {
   lastPayoutAt!: string | null;
 }
 
+export class PractitionerManualPayoutSummaryStatsDto {
+  @ApiProperty()
+  practitionersWithDues!: number;
+
+  @ApiProperty()
+  readyForPayoutPractitioners!: number;
+
+  @ApiProperty()
+  totalDueEgp!: string;
+
+  @ApiProperty()
+  totalDueUsd!: string;
+}
+
 export class PractitionerManualPayoutItemDto {
   @ApiProperty()
   id!: string;
@@ -1056,6 +1076,17 @@ export class PractitionerManualPayoutItemDto {
   updatedAt!: string;
 }
 
+export class PractitionerManualPayoutSummaryDto {
+  @ApiProperty()
+  payoutCount!: number;
+
+  @ApiProperty()
+  egpAmountPaid!: string;
+
+  @ApiProperty()
+  usdAmountPaid!: string;
+}
+
 export class PractitionerManualPayoutBalanceDataResponseDto {
   @ApiProperty({ type: PractitionerManualPayoutBalanceDto })
   item!: PractitionerManualPayoutBalanceDto;
@@ -1067,6 +1098,9 @@ export class PractitionerManualPayoutListDataResponseDto {
 
   @ApiProperty({ type: PaginationDto })
   pagination!: PaginationDto;
+
+  @ApiProperty({ type: PractitionerManualPayoutSummaryDto })
+  summary!: PractitionerManualPayoutSummaryDto;
 }
 
 export class PractitionerManualPayoutItemDataResponseDto {
@@ -1186,6 +1220,9 @@ export class PractitionerManualPayoutItemSuccessResponseDto {
 export class PractitionerManualPayoutSummaryListDataResponseDto {
   @ApiProperty({ type: PractitionerManualPayoutSummaryItemDto, isArray: true })
   items!: PractitionerManualPayoutSummaryItemDto[];
+
+  @ApiProperty({ type: PractitionerManualPayoutSummaryStatsDto })
+  summary!: PractitionerManualPayoutSummaryStatsDto;
 
   @ApiProperty({ type: PaginationDto })
   pagination!: PaginationDto;

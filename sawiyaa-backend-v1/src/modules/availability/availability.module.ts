@@ -2,23 +2,24 @@ import { Module } from '@nestjs/common';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
-import { PractitionerAvailabilityController } from './controllers/practitioner-availability.controller';
+import { PractitionerAvailabilityWeeksController } from './controllers/practitioner-availability-weeks.controller';
 import { PublicPractitionerAvailabilityController } from './controllers/public-practitioner-availability.controller';
-import { AvailabilityMapper } from './mappers/availability.mapper';
+import { AvailabilityWeekMapper } from './mappers/availability-week.mapper';
 import { AvailabilityExceptionRepository } from './repositories/availability-exception.repository';
 import { AvailabilityPractitionerRepository } from './repositories/availability-practitioner.repository';
-import { AvailabilitySlotRepository } from './repositories/availability-slot.repository';
-import { BuildAvailabilityWindowsService } from './services/build-availability-windows.service';
+import { PractitionerAvailabilityWeekRepository } from './repositories/practitioner-availability-week.repository';
+import { BuildPublishedWeekAvailabilityWindowsService } from './services/build-published-week-availability-windows.service';
+import { AvailabilityWeekCalendarService } from './services/availability-week-calendar.service';
+import { AvailabilityWeekOverviewService } from './services/availability-week-overview.service';
 import { ResolvePractitionerTimezoneService } from './services/resolve-practitioner-timezone.service';
 import { ValidateAvailabilitySessionConflictsService } from './services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from './services/validate-availability-overlap.service';
-import { CreateAvailabilityExceptionUseCase } from './use-cases/create-availability-exception.use-case';
-import { DeleteAvailabilityExceptionUseCase } from './use-cases/delete-availability-exception.use-case';
-import { GetMyAvailabilityUseCase } from './use-cases/get-my-availability.use-case';
-import { GetPublicPractitionerAvailabilityUseCase } from './use-cases/get-public-practitioner-availability.use-case';
+import { CopyPractitionerAvailabilityWeekToNextUseCase } from './use-cases/copy-practitioner-availability-week-to-next.use-case';
+import { CreatePractitionerAvailabilityWeekUseCase } from './use-cases/create-practitioner-availability-week.use-case';
+import { GetMyAvailabilityWeeksUseCase } from './use-cases/get-my-availability-weeks.use-case';
 import { ListPublicPractitionerAvailabilityWindowsUseCase } from './use-cases/list-public-practitioner-availability-windows.use-case';
-import { ReplaceWeeklyAvailabilityUseCase } from './use-cases/replace-weekly-availability.use-case';
-import { UpdateAvailabilityExceptionUseCase } from './use-cases/update-availability-exception.use-case';
+import { PublishPractitionerAvailabilityWeekUseCase } from './use-cases/publish-practitioner-availability-week.use-case';
+import { UpdatePractitionerAvailabilityWeekUseCase } from './use-cases/update-practitioner-availability-week.use-case';
 
 /**
  * Availability Module owns recurring schedule + exceptions only.
@@ -26,35 +27,37 @@ import { UpdateAvailabilityExceptionUseCase } from './use-cases/update-availabil
  */
 @Module({
   controllers: [
-    PractitionerAvailabilityController,
+    PractitionerAvailabilityWeeksController,
     PublicPractitionerAvailabilityController,
   ],
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
     PublicPractitionerVisibilityPolicy,
-    AvailabilityMapper,
+    AvailabilityWeekMapper,
     AvailabilityPractitionerRepository,
-    AvailabilitySlotRepository,
+    PractitionerAvailabilityWeekRepository,
     AvailabilityExceptionRepository,
     ValidateAvailabilityOverlapService,
     ValidateAvailabilitySessionConflictsService,
     ResolvePractitionerTimezoneService,
-    BuildAvailabilityWindowsService,
-    GetMyAvailabilityUseCase,
-    ReplaceWeeklyAvailabilityUseCase,
-    CreateAvailabilityExceptionUseCase,
-    UpdateAvailabilityExceptionUseCase,
-    DeleteAvailabilityExceptionUseCase,
-    GetPublicPractitionerAvailabilityUseCase,
+    BuildPublishedWeekAvailabilityWindowsService,
+    AvailabilityWeekCalendarService,
+    AvailabilityWeekOverviewService,
+    GetMyAvailabilityWeeksUseCase,
+    CreatePractitionerAvailabilityWeekUseCase,
+    UpdatePractitionerAvailabilityWeekUseCase,
+    CopyPractitionerAvailabilityWeekToNextUseCase,
+    PublishPractitionerAvailabilityWeekUseCase,
     ListPublicPractitionerAvailabilityWindowsUseCase,
   ],
   exports: [
     AvailabilityPractitionerRepository,
-    AvailabilitySlotRepository,
     AvailabilityExceptionRepository,
+    PractitionerAvailabilityWeekRepository,
     ResolvePractitionerTimezoneService,
-    BuildAvailabilityWindowsService,
+    BuildPublishedWeekAvailabilityWindowsService,
+    AvailabilityWeekCalendarService,
   ],
 })
 export class AvailabilityModule {}

@@ -1,17 +1,19 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { BuildAvailabilityWindowsService } from '@modules/availability/services/build-availability-windows.service';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
-import { AvailabilitySlotRepository } from '@modules/availability/repositories/availability-slot.repository';
+import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
+import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
+import { AvailabilityWeekCalendarService } from '@modules/availability/services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
 import { SessionRepository } from '../repositories/session.repository';
 
 @Injectable()
 export class ValidateSessionScheduleCompatibilityService {
   constructor(
-    private readonly availabilitySlotRepository: AvailabilitySlotRepository,
+    private readonly practitionerAvailabilityWeekRepository: PractitionerAvailabilityWeekRepository,
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
+    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
-    private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
+    private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
     private readonly sessionRepository: SessionRepository,
   ) {}
 
@@ -22,9 +24,28 @@ export class ValidateSessionScheduleCompatibilityService {
     requestedEndAtUtc: Date;
     requestedDurationMinutes: 30 | 60;
   }): Promise<{ timezone: string }> {
-    const [weeklySlots, exceptions, bookedSessions] = await Promise.all([
-      this.availabilitySlotRepository.listActiveByPractitioner(
+    const timezone = this.resolvePractitionerTimezoneService.resolve({
+      fallbackTimezone: input.practitionerTimezone,
+    });
+    const weekWindow =
+      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
+        timezone,
+      });
+
+    if (
+      input.requestedStartAtUtc < weekWindow.currentWeek.startDate ||
+      input.requestedEndAtUtc > weekWindow.nextWeek.endDate
+    ) {
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.unavailableTimeWindow',
+        error: 'SESSION_UNAVAILABLE_TIME_WINDOW',
+      });
+    }
+
+    const [publishedWeeks, exceptions, bookedSessions] = await Promise.all([
+      this.practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts(
         input.practitionerId,
+        [weekWindow.currentWeek.startDate, weekWindow.nextWeek.startDate],
       ),
       this.availabilityExceptionRepository.listActiveForRange(
         input.practitionerId,
@@ -38,21 +59,20 @@ export class ValidateSessionScheduleCompatibilityService {
       ),
     ]);
 
-    const timezone = this.resolvePractitionerTimezoneService.resolve({
-      weeklySlots,
-      fallbackTimezone: input.practitionerTimezone,
-    });
-    const windows = this.buildAvailabilityWindowsService.buildForRange({
-      timezone,
-      weeklySlots,
-      exceptions,
-      bookedSessions: bookedSessions.map((session) => ({
-        startsAt: session.scheduledStartAt!,
-        endsAt: session.scheduledEndAt!,
-      })),
-      fromUtc: input.requestedStartAtUtc,
-      toUtc: input.requestedEndAtUtc,
-    });
+    const windows = this.buildPublishedWeekAvailabilityWindowsService.buildForRange(
+      {
+        timezone,
+        weeks: publishedWeeks,
+        exceptions,
+        bookedSessions: bookedSessions.map((session) => ({
+          startsAt: session.scheduledStartAt!,
+          endsAt: session.scheduledEndAt!,
+        })),
+        fromUtc: input.requestedStartAtUtc,
+        toUtc: input.requestedEndAtUtc,
+        now: new Date(),
+      },
+    );
 
     const fitsWindow = windows.some(
       (window) =>

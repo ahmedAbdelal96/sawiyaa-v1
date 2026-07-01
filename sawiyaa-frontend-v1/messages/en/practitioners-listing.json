@@ -34,6 +34,10 @@
     "duration60": "60 minutes",
     "rating": "Rating",
     "sessionFee": "Session fee",
+    "sessionFee30": "30-minute session fee",
+    "sessionFee60": "60-minute session fee",
+    "sessionFeeAnyDurationHelper": "Fee range applies to any available duration. Choose a session duration to filter 30 or 60-minute prices exactly.",
+    "sessionFeeDurationExactHelper": "Fee range applies to the selected session duration only.",
     "minFee": "Min fee",
     "maxFee": "Max fee",
     "minFeeLabel": "Minimum fee",
@@ -100,11 +104,15 @@
     "yearsExp": "yrs exp",
     "sessions": "sessions",
     "reviews": "reviews",
+    "sessionFees": "Session fees",
+    "duration30": "30 min",
+    "duration60": "60 min",
     "viewProfile": "View profile",
     "languages": "Languages",
     "rating": "Rating",
     "onlineNow": "Online now",
-    "offline": "Offline"
+    "offline": "Offline",
+    "matchesFilter": "Matches filter"
   },
   "empty": {
     "title": "No results found",

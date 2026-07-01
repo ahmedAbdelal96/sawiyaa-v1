@@ -10,11 +10,9 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '@common/decorators/public.decorator';
 import {
-  PublicPractitionerAvailabilitySuccessResponseDto,
   PublicPractitionerAvailabilityWindowsSuccessResponseDto,
 } from '../dto/availability-response.dto';
 import { ListPublicPractitionerAvailabilityWindowsDto } from '../dto/list-public-practitioner-availability-windows.dto';
-import { GetPublicPractitionerAvailabilityUseCase } from '../use-cases/get-public-practitioner-availability.use-case';
 import { ListPublicPractitionerAvailabilityWindowsUseCase } from '../use-cases/list-public-practitioner-availability-windows.use-case';
 
 /**
@@ -26,27 +24,8 @@ import { ListPublicPractitionerAvailabilityWindowsUseCase } from '../use-cases/l
 @Controller('public/practitioners/:slug/availability')
 export class PublicPractitionerAvailabilityController {
   constructor(
-    private readonly getPublicPractitionerAvailabilityUseCase: GetPublicPractitionerAvailabilityUseCase,
     private readonly listPublicPractitionerAvailabilityWindowsUseCase: ListPublicPractitionerAvailabilityWindowsUseCase,
   ) {}
-
-  @Get()
-  @ApiOperation({
-    summary: 'Get public practitioner recurring availability summary',
-    description:
-      'Public read endpoint that returns public-safe recurring weekly schedule only. Temporary exceptions are not exposed here.',
-  })
-  @ApiParam({ name: 'slug', description: 'Practitioner public slug' })
-  @ApiResponse({
-    status: 200,
-    type: PublicPractitionerAvailabilitySuccessResponseDto,
-  })
-  @ApiNotFoundResponse({
-    description: 'Practitioner was not found or is not publicly visible',
-  })
-  getPublicAvailability(@Param('slug') slug: string) {
-    return this.getPublicPractitionerAvailabilityUseCase.execute({ slug });
-  }
 
   @Get('windows')
   @ApiOperation({

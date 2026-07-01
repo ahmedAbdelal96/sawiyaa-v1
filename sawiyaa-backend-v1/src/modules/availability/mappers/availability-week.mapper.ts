@@ -14,7 +14,6 @@ import {
 } from '../types/availability-week.types';
 import { AvailabilityWeekDateRange } from '../services/availability-week-calendar.service';
 import { PractitionerAvailabilityWeekWithSlots } from '../repositories/practitioner-availability-week.repository';
-import { WeeklyAvailabilitySlotViewModel } from '../types/availability.types';
 
 @Injectable()
 export class AvailabilityWeekMapper {
@@ -38,30 +37,6 @@ export class AvailabilityWeekMapper {
       timezone: input.timezone,
       createdAt: input.createdAt.toISOString(),
       updatedAt: input.updatedAt.toISOString(),
-    };
-  }
-
-  toPublicWeeklySlot(input: {
-    id: string;
-    weekday: AvailabilityWeekday;
-    startMinuteOfDay: number;
-    endMinuteOfDay: number;
-    durationMinutes: number;
-    timezone: string;
-    weekStartDate: Date;
-    weekEndDate: Date;
-  }): WeeklyAvailabilitySlotViewModel {
-    return {
-      id: input.id,
-      dayOfWeek: WEEKDAY_ENUM_TO_INDEX[input.weekday],
-      weekday: input.weekday,
-      startMinuteOfDay: input.startMinuteOfDay,
-      endMinuteOfDay: input.endMinuteOfDay,
-      durationMinutes: input.durationMinutes,
-      timezone: input.timezone,
-      isActive: true,
-      effectiveFrom: input.weekStartDate.toISOString().slice(0, 10),
-      effectiveTo: input.weekEndDate.toISOString().slice(0, 10),
     };
   }
 

@@ -282,7 +282,7 @@ export class AdminAccountingController {
   @ApiOperation({
     summary: 'Reconcile a practitioner settlement',
     description:
-      'Returns a read-only comparison between a settlement, its batch, payouts, and linked ledger entries.',
+      'Returns a read-only comparison between a settlement, its payouts, and linked ledger entries.',
   })
   @ApiResponse({ status: 200, description: 'Settlement reconciliation result' })
   async reconcileSettlement(
@@ -291,27 +291,6 @@ export class AdminAccountingController {
     const data =
       await this.accountingReconciliationDiagnosticsService.reconcileSettlement(
         settlementId,
-      );
-    return {
-      success: true as const,
-      data,
-    };
-  }
-
-  @Get('reconcile/settlement-batch/:batchId')
-  @Permissions(PermissionKey.ACCOUNTING_READ)
-  @ApiOperation({
-    summary: 'Reconcile a settlement batch',
-    description:
-      'Returns a read-only comparison between a settlement batch and its contained settlements.',
-  })
-  @ApiResponse({ status: 200, description: 'Settlement batch reconciliation result' })
-  async reconcileSettlementBatch(
-    @Param('batchId', new ParseUUIDPipe()) batchId: string,
-  ) {
-    const data =
-      await this.accountingReconciliationDiagnosticsService.reconcileSettlementBatch(
-        batchId,
       );
     return {
       success: true as const,

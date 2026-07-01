@@ -1,8 +1,8 @@
 {
   "meta": {
     "list": {
-      "title": "Finance operations events - Admin",
-      "description": "Inspect payment and refund operation events in a visibility-first diagnostics baseline."
+      "title": "Payments Review - Admin",
+      "description": "Review payment and refund operations with amounts, currencies, and linked operational context."
     },
     "detail": {
       "title": "Finance operation event - Admin",
@@ -10,9 +10,9 @@
     }
   },
   "list": {
-    "eyebrow": "Finance diagnostics baseline",
-    "title": "Finance operations events",
-    "note": "This screen is for visibility and diagnostics only. It helps operators inspect payment and refund operation events without control actions.",
+    "eyebrow": "Operational payments review",
+    "title": "Payments review",
+    "note": "Review payment and refund events by status, provider, currency, and reference. Use ledger/reconciliation for accounting traceability.",
     "count": "{value, number} events",
     "countLoading": "Loading...",
     "noSummary": "No summary provided",
@@ -21,6 +21,7 @@
     "headers": {
       "type": "Type",
       "summary": "Summary",
+      "amount": "Amount",
       "payment": "Payment",
       "refund": "Refund",
       "occurredAt": "Occurred",
@@ -28,11 +29,11 @@
     }
   },
   "scope": {
-    "heading": "Available now",
+    "heading": "Operational review",
     "items": {
-      "list": "Review operation events in one queue.",
-      "detail": "Inspect one event with linked identifiers.",
-      "filters": "Use filters to narrow operational diagnostics."
+      "list": "Review payment and refund events in one feed.",
+      "detail": "Open an event to inspect the linked payment or refund context.",
+      "filters": "Filter by status, provider, purpose, and date."
     }
   },
   "boundaries": {
@@ -130,6 +131,8 @@
       "id": "Event ID",
       "operationType": "Operation type",
       "summary": "Summary",
+      "amount": "Amount",
+      "currencyCode": "Currency",
       "provider": "Provider",
       "paymentPurpose": "Payment purpose",
       "paymentStatus": "Payment status",

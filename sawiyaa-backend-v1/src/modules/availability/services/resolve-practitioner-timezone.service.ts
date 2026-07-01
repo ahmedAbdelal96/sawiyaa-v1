@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { AvailabilitySlot } from '@prisma/client';
 import { isValidIanaTimeZone } from '../utils/availability-timezone.util';
 
 /**
@@ -10,12 +9,12 @@ import { isValidIanaTimeZone } from '../utils/availability-timezone.util';
 export class ResolvePractitionerTimezoneService {
   resolve(input: {
     requestedTimezone?: string | null;
-    weeklySlots?: Array<Pick<AvailabilitySlot, 'timezone'>>;
+    timezoneHints?: Array<{ timezone?: string | null }>;
     fallbackTimezone?: string | null;
   }): string {
     const timezoneCandidates = [
       input.requestedTimezone?.trim(),
-      input.weeklySlots?.[0]?.timezone?.trim(),
+      input.timezoneHints?.[0]?.timezone?.trim(),
       input.fallbackTimezone?.trim(),
       'UTC',
     ].filter((candidate): candidate is string => Boolean(candidate));

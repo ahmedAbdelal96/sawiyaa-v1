@@ -66,7 +66,6 @@ describe('AdminAccountingReconciliationOperationsController access contract', ()
     > = [
       'runPayments',
       'runWallets',
-      'runSettlements',
       'runRefunds',
       'runPackageSettlements',
       'runFull',

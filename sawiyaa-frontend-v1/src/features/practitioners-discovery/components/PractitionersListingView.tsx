@@ -9,6 +9,7 @@ import {
   fetchPublicPractitionerFilters,
   fetchPublicPractitioners,
 } from "../api/practitioners-ssr.api";
+import type { ActiveFeeFilterContext } from "../types/practitioner";
 
 const VALID_SORT_VALUES = ["recommended", "experience", "rating"] as const;
 const VALID_LIMIT_VALUES = [6, 12, 24] as const;
@@ -141,7 +142,9 @@ export async function getPractitionersListingData(
   };
 
   try {
-    filters = await fetchPublicPractitionerFilters(locale);
+    filters = await fetchPublicPractitionerFilters(locale, {
+      duration: safeDuration,
+    });
   } catch {
     // Best-effort rendering: listing still works even if filter metadata is unavailable.
   }
@@ -292,6 +295,11 @@ export default async function PractitionersListingView({
       : tPage("resultCount", { count: pagination.totalItems });
   const startItem = pagination.totalItems === 0 ? 0 : (currentPage - 1) * safeLimit + 1;
   const endItem = Math.min(currentPage * safeLimit, pagination.totalItems);
+  const activeFeeFilter: ActiveFeeFilterContext = {
+    duration: safeDuration,
+    minSessionFee: safeMinSessionFee,
+    maxSessionFee: safeMaxSessionFee,
+  };
 
   return (
     <>
@@ -325,6 +333,7 @@ export default async function PractitionersListingView({
                     practitioners={items}
                     specialtyLabels={specialtyLabels}
                     languageLabels={languageLabels}
+                    activeFeeFilter={activeFeeFilter}
                     basePath={basePath}
                   />
 

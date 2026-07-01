@@ -48,7 +48,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "admin-finance-operations",
     "admin-accounting",
     "admin-reports",
-    "admin-settlements",
     "admin-moderation-reports",
     "admin-session-runtime",
     "admin-sessions",

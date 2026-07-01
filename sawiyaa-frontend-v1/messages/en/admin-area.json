@@ -156,7 +156,7 @@
       },
       "settlements": {
         "title": "Settlements",
-        "description": "Review settlement batches, inspect payout status, and complete admin-only settlement closeout actions within the current contract."
+        "description": "Review payout status and complete admin-only payout review actions within the current contract."
       },
       "careChat": {
         "title": "Care Chat",
@@ -984,7 +984,7 @@
       "cancel": "Cancel",
       "submit": "Create practitioner",
       "submitting": "Creating practitioner...",
-      "submitError": "Could not create the practitioner right now.",
+      "submitError": "Could not create the practitioner account right now.",
       "specialtiesEmptyForCategory": "Select a primary specialty category first, then choose one or more linked specialties.",
       "fields": {
         "email": "Email",
@@ -1110,8 +1110,10 @@
         "hint": "Accepted formats: PDF, JPG, PNG, WebP up to 5 MB.",
         "submit": "Upload document",
         "submitting": "Uploading document...",
-        "submitError": "Could not upload the document right now."
+        "submitError": "Could not upload the document. Check the file and try again.",
+        "forbidden": "You do not have permission to upload practitioner creation documents."
       },
+      "submitForbidden": "You do not have permission to create practitioners from the admin panel.",
       "validation": {
         "fixStepErrors": "Complete the highlighted fields before continuing.",
         "emailRequired": "Email is required.",

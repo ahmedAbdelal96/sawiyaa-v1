@@ -69,20 +69,20 @@ async function fetchMyPackagePurchases(accessToken) {
   return json.data?.items || [];
 }
 
-async function fetchAvailabilitySlots(accessToken, slug) {
+async function fetchAvailabilityWindows(accessToken, slug) {
   const fromIso = new Date().toISOString();
   const toIso = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  console.log(`Fetching availability slots for ${slug}...`);
+  console.log(`Fetching availability windows for ${slug}...`);
   const response = await fetch(`${BACKEND_URL}/api/v1/public/practitioners/${slug}/availability/windows?from=${fromIso}&to=${toIso}`, {
     headers: { "Authorization": `Bearer ${accessToken}` }
   });
   if (!response.ok) {
-    throw new Error(`Failed to fetch slots: ${response.status}`);
+    throw new Error(`Failed to fetch availability windows: ${response.status}`);
   }
   const json = await response.json();
   const windows = json.data?.windows || [];
   
-  // Build simple slots
+  // Expand each availability window into bookable 30-minute starts.
   const slots = [];
   windows.forEach(w => {
     let start = new Date(w.startsAt);
@@ -210,7 +210,7 @@ async function main() {
 
   if (!pendingPurchase) {
     console.log("No pending payment packages found. Seeding a new package purchase...");
-    const slots = await fetchAvailabilitySlots(authData.tokens.accessToken, practitioner.slug);
+    const slots = await fetchAvailabilityWindows(authData.tokens.accessToken, practitioner.slug);
     const requiredSlotsCount = plan.item.sessionCount || 4;
     if (slots.length < requiredSlotsCount) {
       throw new Error(`Practitioner has only ${slots.length} available slots, but plan requires ${requiredSlotsCount}.`);

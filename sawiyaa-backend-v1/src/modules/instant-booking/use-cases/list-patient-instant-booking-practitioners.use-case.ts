@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
-import { AvailabilitySlotRepository } from '@modules/availability/repositories/availability-slot.repository';
-import { BuildAvailabilityWindowsService } from '@modules/availability/services/build-availability-windows.service';
+import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
+import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
+import { AvailabilityWeekCalendarService } from '@modules/availability/services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
 import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
@@ -35,11 +36,12 @@ const WINDOW_LOOKAHEAD_MS = 24 * 60 * 60 * 1000;
 export class ListPatientInstantBookingPractitionersUseCase {
   constructor(
     private readonly instantBookingPractitionerRepository: InstantBookingPractitionerRepository,
-    private readonly availabilitySlotRepository: AvailabilitySlotRepository,
+    private readonly practitionerAvailabilityWeekRepository: PractitionerAvailabilityWeekRepository,
     private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
-    private readonly buildAvailabilityWindowsService: BuildAvailabilityWindowsService,
+    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
+    private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
   ) {}
@@ -79,32 +81,10 @@ export class ListPatientInstantBookingPractitionersUseCase {
       await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
         practitionerIds,
       );
-    const [weeklySlots, exceptions, blockingSessions, completedSessionsMap] =
-      await Promise.all([
-        this.availabilitySlotRepository.listActiveByPractitioners(
-          practitionerIds,
-        ),
-        this.availabilityExceptionRepository.listActiveForPractitionersBetween(
-          practitionerIds,
-          now,
-          new Date(now.getTime() + WINDOW_LOOKAHEAD_MS),
-        ),
-        this.sessionRepository.listBlockingSessionsInRangeForPractitioners({
-          practitionerIds,
-          startsBefore: new Date(now.getTime() + WINDOW_LOOKAHEAD_MS),
-          endsAfter: now,
-          now,
-        }),
-        this.sessionRepository.countCompletedSessionsByPractitioners(
-          practitionerIds,
-        ),
-      ]);
-
-    const slotsByPractitionerId = groupByPractitionerId(weeklySlots);
-    const exceptionsByPractitionerId = groupByPractitionerId(exceptions);
-    const blockingSessionsByPractitionerId = groupByPractitionerId(
-      blockingSessions,
-    );
+    const completedSessionsMap =
+      await this.sessionRepository.countCompletedSessionsByPractitioners(
+        practitionerIds,
+      );
 
     const sortedCandidateRows = [...candidateRows].sort((left, right) => {
       const leftRating = ratingSummaries.get(left.id)?.averageRating ?? -1;
@@ -122,24 +102,23 @@ export class ListPatientInstantBookingPractitionersUseCase {
       return right.createdAt.getTime() - left.createdAt.getTime();
     });
 
-    const eligibleItems = sortedCandidateRows
-      .map((row) =>
-        this.buildEligibleItem({
-          row,
-          now,
-          locale: input.locale,
-          rating: ratingSummaries.get(row.id)?.averageRating ?? null,
-          slots: slotsByPractitionerId.get(row.id) ?? [],
-          exceptions: exceptionsByPractitionerId.get(row.id) ?? [],
-          blockingSessions: blockingSessionsByPractitionerId.get(row.id) ?? [],
-          completedSessionsCount: completedSessionsMap.get(row.id) ?? 0,
-          currency: input.currency ?? null,
-          requestedDuration: input.duration ?? null,
-        }),
+    const eligibleItems = (
+      await Promise.all(
+        sortedCandidateRows.map((row) =>
+          this.buildEligibleItem({
+            row,
+            now,
+            locale: input.locale,
+            rating: ratingSummaries.get(row.id)?.averageRating ?? null,
+            completedSessionsCount: completedSessionsMap.get(row.id) ?? 0,
+            currency: input.currency ?? null,
+            requestedDuration: input.duration ?? null,
+          }),
+        ),
       )
-      .filter((item): item is InstantBookingEligiblePractitionerViewModel =>
-        Boolean(item),
-      );
+    ).filter((item): item is InstantBookingEligiblePractitionerViewModel =>
+      Boolean(item),
+    );
 
     const total = eligibleItems.length;
     const skip = (input.page - 1) * input.limit;
@@ -157,30 +136,15 @@ export class ListPatientInstantBookingPractitionersUseCase {
     };
   }
 
-  private buildEligibleItem(input: {
+  private async buildEligibleItem(input: {
     row: DiscoveryCandidate;
     now: Date;
     locale: SupportedLocale;
-    slots: Array<
-      Awaited<
-        ReturnType<AvailabilitySlotRepository['listActiveByPractitioners']>
-      >[number]
-    >;
-    exceptions: Array<
-      Awaited<
-        ReturnType<AvailabilityExceptionRepository['listActiveForPractitionersBetween']>
-      >[number]
-    >;
-    blockingSessions: Array<
-      Awaited<
-        ReturnType<SessionRepository['listBlockingSessionsInRangeForPractitioners']>
-    >[number]
-    >;
     completedSessionsCount: number;
     rating: number | null;
     currency: CurrencyCode | null;
     requestedDuration: InstantBookingDiscoveryDuration | null;
-  }): InstantBookingEligiblePractitionerViewModel | null {
+  }): Promise<InstantBookingEligiblePractitionerViewModel | null> {
     const visibility = this.publicPractitionerVisibilityPolicy.evaluate({
       practitionerStatus: input.row.status,
       userStatus: input.row.user.status,
@@ -206,19 +170,45 @@ export class ListPatientInstantBookingPractitionersUseCase {
     }
 
     const timezone = this.resolvePractitionerTimezoneService.resolve({
-      weeklySlots: input.slots,
       fallbackTimezone: input.row.user.timezone,
     });
     const queryStartUtc = input.now;
     const queryEndUtc = new Date(input.now.getTime() + WINDOW_LOOKAHEAD_MS);
+    const weekWindow =
+      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
+        timezone,
+        now: input.now,
+      });
+
+    const [publishedWeeks, exceptions, blockingSessions] = await Promise.all([
+      this.practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts(
+        input.row.id,
+        [weekWindow.currentWeek.startDate, weekWindow.nextWeek.startDate],
+      ),
+      this.availabilityExceptionRepository.listActiveForRange(
+        input.row.id,
+        queryStartUtc,
+        queryEndUtc,
+      ),
+      this.sessionRepository.listBlockingSessionRangesInRangeForPractitioner(
+        input.row.id,
+        queryEndUtc,
+        queryStartUtc,
+        queryStartUtc,
+      ),
+    ]);
+
+    if (publishedWeeks.length === 0) {
+      return null;
+    }
 
     const currentWindows =
-      this.buildAvailabilityWindowsService
+      this.buildPublishedWeekAvailabilityWindowsService
         .buildForRange({
           timezone,
-          weeklySlots: input.slots,
-          exceptions: input.exceptions,
-          bookedSessions: input.blockingSessions
+          weeks: publishedWeeks,
+          exceptions,
+          bookedSessions: blockingSessions
             .filter(
               (session): session is {
                 practitionerId: string;
@@ -234,6 +224,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
             })),
           fromUtc: queryStartUtc,
           toUtc: queryEndUtc,
+          now: queryStartUtc,
         })
         .filter((window) => {
           const startsAt = new Date(window.startsAt);
@@ -386,18 +377,4 @@ function normalizeInstantPrice(
   }
 
   return normalized;
-}
-
-function groupByPractitionerId<T extends { practitionerId: string }>(
-  rows: T[],
-): Map<string, T[]> {
-  const grouped = new Map<string, T[]>();
-
-  for (const row of rows) {
-    const current = grouped.get(row.practitionerId) ?? [];
-    current.push(row);
-    grouped.set(row.practitionerId, current);
-  }
-
-  return grouped;
 }

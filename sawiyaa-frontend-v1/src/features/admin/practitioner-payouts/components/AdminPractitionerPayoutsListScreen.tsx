@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeDollarSign, Package, Search, Sparkles, Users } from "lucide-react";
+import { BadgeDollarSign, Search, Users } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
@@ -15,7 +15,7 @@ import AdminOperationalListShell, {
   AdminSummaryCard,
 } from "@/components/shared/admin/AdminOperationalListShell";
 import { Link } from "@/i18n/navigation";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import {
   useAdminPractitionerPayoutSummaries,
 } from "../hooks/use-admin-practitioner-payouts";
@@ -27,11 +27,6 @@ import AdminPractitionerSettlementDrawer, {
 type CurrencyCode = "EGP" | "USD";
 type BalanceFilter = "ALL" | "HAS_PAYABLE" | "HAS_PACKAGE";
 type CurrencyFilter = "ALL" | CurrencyCode;
-
-function parseAmount(value: string | null | undefined) {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function getLatestPayoutAt(values: Array<string | null | undefined>) {
   const timestamps = values.filter(Boolean).map((value) => new Date(value as string).getTime());
@@ -45,7 +40,7 @@ function maskSensitiveValue(value: string | null | undefined) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) return "-";
   if (trimmed.length <= 8) return trimmed;
-  return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+  return `${trimmed.slice(0, 4)}****${trimmed.slice(-4)}`;
 }
 
 function formatDestinationPreview(
@@ -59,11 +54,11 @@ function formatDestinationPreview(
 
   switch (destination.methodType) {
     case "BANK_ACCOUNT":
-      return `${t("list.destination.methods.bank")}: ${destination.accountHolderName ?? "-"} · ${destination.bankName ?? "-"} · ${maskSensitiveValue(destination.bankAccountNumber)}`;
+      return `${t("list.destination.methods.bank")}: ${destination.accountHolderName ?? "-"}  |  ${destination.bankName ?? "-"}  |  ${maskSensitiveValue(destination.bankAccountNumber)}`;
     case "IBAN":
-      return `${t("list.destination.methods.iban")}: ${destination.accountHolderName ?? "-"} · ${maskSensitiveValue(destination.iban)}`;
+      return `${t("list.destination.methods.iban")}: ${destination.accountHolderName ?? "-"}  |  ${maskSensitiveValue(destination.iban)}`;
     case "WALLET":
-      return `${t("list.destination.methods.wallet")}: ${destination.accountHolderName ?? "-"} · ${destination.walletProvider ?? "-"} · ${maskSensitiveValue(destination.walletIdentifier)}`;
+      return `${t("list.destination.methods.wallet")}: ${destination.accountHolderName ?? "-"}  |  ${destination.walletProvider ?? "-"}  |  ${maskSensitiveValue(destination.walletIdentifier)}`;
     case "OTHER":
       return `${t("list.destination.methods.other")}: ${destination.otherDetails ?? "-"}`;
     default:
@@ -117,9 +112,14 @@ function BalanceBreakdown({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-semibold text-text-primary dark:text-white/95">
-          {formatSettlementMoney(locale, balance.totalPayableAmount, currency)}
-        </span>
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            {t(`list.balanceCards.${currency}.available` as Parameters<typeof t>[0])}
+          </p>
+          <span className="font-semibold text-text-primary dark:text-white/95">
+            {formatSettlementMoney(locale, balance.totalPayableAmount, currency)}
+          </span>
+        </div>
         <span className="rounded-full bg-brand-25 px-2.5 py-1 text-[11px] font-semibold text-primary dark:bg-primary/10">
           {t("list.payableNow")}
         </span>
@@ -133,7 +133,7 @@ function BalanceBreakdown({
         {formatSettlementMoney(locale, balance.packageReleasedPayableAmount, currency)}
       </p>
       <p className="text-xs leading-5 text-text-secondary">
-        {t("list.packageHeldShort")}{" "}
+        {t(`list.balanceCards.${currency}.held` as Parameters<typeof t>[0])}{" "}
         {formatSettlementMoney(locale, balance.packageHeldAmount, currency)}
       </p>
     </div>
@@ -165,6 +165,7 @@ export default function AdminPractitionerPayoutsListScreen() {
     () => summariesQuery.data?.items ?? [],
     [summariesQuery.data?.items],
   );
+  const summaryStats = summariesQuery.data?.summary;
   const pagination = summariesQuery.data?.pagination;
 
   const visibleRows = useMemo(
@@ -208,32 +209,6 @@ export default function AdminPractitionerPayoutsListScreen() {
     setIsDrawerOpen(true);
   };
 
-  const summaryMetrics = useMemo(() => {
-    return visibleRows.reduce(
-      (accumulator, summary) => {
-        const egpPayable = parseAmount(summary.egp.totalPayableAmount);
-        const usdPayable = parseAmount(summary.usd.totalPayableAmount);
-        const egpHeld = parseAmount(summary.egp.packageHeldAmount);
-        const usdHeld = parseAmount(summary.usd.packageHeldAmount);
-
-        return {
-          practitioners: accumulator.practitioners + 1,
-          payableCount: accumulator.payableCount + (egpPayable > 0 || usdPayable > 0 ? 1 : 0),
-          packageCount: accumulator.packageCount + (egpHeld > 0 || usdHeld > 0 ? 1 : 0),
-          egpPayable: accumulator.egpPayable + egpPayable,
-          usdPayable: accumulator.usdPayable + usdPayable,
-        };
-      },
-      {
-        practitioners: 0,
-        payableCount: 0,
-        packageCount: 0,
-        egpPayable: 0,
-        usdPayable: 0,
-      },
-    );
-  }, [visibleRows]);
-
   const activeFilterChips = [
     deferredSearch ? { id: "search", label: `${t("list.searchLabel")}: ${deferredSearch}` } : null,
     balanceFilter !== "ALL"
@@ -258,7 +233,7 @@ export default function AdminPractitionerPayoutsListScreen() {
       id: "practitioner",
       header: t("list.columns.practitioner"),
       cell: (summary) => (
-        <div className="space-y-1">
+        <div className="space-y-2">
           <p className="font-semibold text-text-primary dark:text-white/95">
             {summary.practitionerName ?? summary.practitionerSlug ?? summary.practitionerId}
           </p>
@@ -266,12 +241,24 @@ export default function AdminPractitionerPayoutsListScreen() {
           <p className="text-xs leading-5 text-text-secondary">
             {formatDestinationPreview(t, summary)}
           </p>
+          <div className="flex flex-wrap gap-1.5">
+            {hasPayableMoney(summary) ? (
+              <span className="rounded-full bg-primary-light/40 px-2.5 py-1 text-[11px] font-semibold text-primary dark:bg-primary/10">
+                {t("list.status.hasPayable")}
+              </span>
+            ) : null}
+            {hasPackageMoney(summary) ? (
+              <span className="rounded-full bg-surface-secondary px-2.5 py-1 text-[11px] font-semibold text-text-secondary dark:bg-white/[0.05]">
+                {t("list.status.hasPackage")}
+              </span>
+            ) : null}
+          </div>
         </div>
       ),
     },
     {
       id: "egp",
-      header: t("list.columns.payableEgp"),
+      header: t("list.columns.egpDue"),
       cell: (summary) => (
         <BalanceBreakdown
           balance={summary.egp}
@@ -284,7 +271,7 @@ export default function AdminPractitionerPayoutsListScreen() {
     },
     {
       id: "usd",
-      header: t("list.columns.payableUsd"),
+      header: t("list.columns.usdDue"),
       cell: (summary) => (
         <BalanceBreakdown
           balance={summary.usd}
@@ -304,7 +291,7 @@ export default function AdminPractitionerPayoutsListScreen() {
         return (
           <div className="space-y-1 text-sm text-text-secondary">
             <p className="font-medium text-text-primary dark:text-white/95">
-              {latestPayoutAt ? formatSettlementDateTime(locale, latestPayoutAt) : "-"}
+              {latestPayoutAt ? formatSettlementDateTime(locale, latestPayoutAt) : t("list.unavailable")}
             </p>
             <p className="text-xs leading-5 text-text-muted">
               {t("list.packageHint", {
@@ -323,12 +310,10 @@ export default function AdminPractitionerPayoutsListScreen() {
       <AdminOperationalListShell
         eyebrow={t("list.eyebrow")}
         title={t("list.title")}
-        description={t("list.description")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" onClick={handleOpenCreateSettlement}>
-              <Sparkles className="h-4 w-4" />
-              {t("list.actions.createSettlement")}
+              {t("list.actions.recordManualPayout")}
             </Button>
             <SurfaceActionLink href="/admin/practitioner-payouts/history">
               {t("list.actions.history")}
@@ -341,32 +326,27 @@ export default function AdminPractitionerPayoutsListScreen() {
         summaryCards={
           <>
             <AdminSummaryCard
-              label={t("list.columns.practitioner")}
-              value={summaryMetrics.practitioners}
-              hint={pagination ? t("list.results", { count: visibleRows.length }) : t("list.loading")}
+              label={t("list.summary.practitionersWithDues")}
+              value={summaryStats?.practitionersWithDues ?? 0}
               tone="primary"
-              icon={<Users className="h-4 w-4" />}
             />
             <AdminSummaryCard
-              label={t("list.filters.hasPayable")}
-              value={summaryMetrics.payableCount}
-              hint={formatSettlementMoney(locale, summaryMetrics.egpPayable, "EGP")}
-              tone="success"
+              label={t("list.summary.totalDueEgp")}
+              value={formatSettlementMoney(locale, summaryStats?.totalDueEgp ?? "0", "EGP")}
+              tone="warning"
               icon={<BadgeDollarSign className="h-4 w-4" />}
             />
             <AdminSummaryCard
-              label={t("list.filters.hasPackage")}
-              value={summaryMetrics.packageCount}
-              hint={t("list.packageHeldShort")}
-              tone="warning"
-              icon={<Package className="h-4 w-4" />}
-            />
-            <AdminSummaryCard
-              label={t("list.columns.payableUsd")}
-              value={formatSettlementMoney(locale, summaryMetrics.usdPayable, "USD")}
-              hint={t("list.payableNow")}
+              label={t("list.summary.totalDueUsd")}
+              value={formatSettlementMoney(locale, summaryStats?.totalDueUsd ?? "0", "USD")}
               tone="neutral"
               icon={<BadgeDollarSign className="h-4 w-4" />}
+            />
+            <AdminSummaryCard
+              label={t("list.summary.readyForPayoutPractitioners")}
+              value={summaryStats?.readyForPayoutPractitioners ?? 0}
+              tone="success"
+              icon={<Users className="h-4 w-4" />}
             />
           </>
         }
@@ -457,44 +437,6 @@ export default function AdminPractitionerPayoutsListScreen() {
               </div>
             </div>
 
-            <section className="grid gap-4 rounded-[28px] border border-border-light bg-gradient-to-br from-brand-25 via-white to-surface-secondary p-5 shadow-soft dark:border-white/8 dark:from-primary/10 dark:via-surface-secondary dark:to-surface-secondary">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-white/[0.08]">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {t("list.workspace.eyebrow")}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-text-primary dark:text-white/95">
-                      {t("list.workspace.title")}
-                    </h2>
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
-                      {t("list.workspace.description")}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs font-medium text-text-secondary">
-                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
-                      {t("list.workspace.bullets.manualTransfer")}
-                    </span>
-                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
-                      {t("list.workspace.bullets.recordActualAmount")}
-                    </span>
-                    <span className="rounded-full bg-white px-3 py-1 shadow-sm dark:bg-white/[0.08]">
-                      {t("list.workspace.bullets.keepHistory")}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="primary" onClick={handleOpenCreateSettlement}>
-                    {t("list.actions.createSettlement")}
-                  </Button>
-                  <SurfaceActionLink href="/admin/practitioner-payouts/history">
-                    {t("list.actions.history")}
-                  </SurfaceActionLink>
-                </div>
-              </div>
-            </section>
-
             {activeFilterChips.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {activeFilterChips.map((chip) => (
@@ -516,6 +458,15 @@ export default function AdminPractitionerPayoutsListScreen() {
             getRowId={(row) => row.practitionerId}
             loading={summariesQuery.isLoading}
             loadingRows={limit}
+            error={summariesQuery.isError ? t("list.errorDescription") : null}
+            errorState={{
+              title: t("list.errorTitle"),
+              description: t("list.errorDescription"),
+              action: {
+                label: t("list.errorRetry"),
+                onClick: () => summariesQuery.refetch(),
+              },
+            }}
             emptyState={{
               title: t("list.emptyTitle"),
               description: t("list.emptyDescription"),
@@ -560,7 +511,7 @@ export default function AdminPractitionerPayoutsListScreen() {
                       )
                     }
                   >
-                    {t("list.actions.createSettlement")}
+                    {t("list.actions.recordManualPayout")}
                   </Button>
                 </div>
               );
@@ -568,7 +519,6 @@ export default function AdminPractitionerPayoutsListScreen() {
             rowActionsHeader={t("list.columns.actions")}
           />
 
-          <p className="text-xs leading-6 text-text-secondary">{t("list.note")}</p>
       </AdminOperationalListShell>
 
       {isDrawerOpen ? (

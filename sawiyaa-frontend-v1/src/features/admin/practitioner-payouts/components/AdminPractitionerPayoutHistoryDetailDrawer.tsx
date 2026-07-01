@@ -3,7 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import type { AdminPractitionerManualPayout } from "../types/admin-practitioner-payouts.types";
 
 type PayoutHistoryDetailDrawerProps = {
@@ -34,6 +34,18 @@ export default function AdminPractitionerPayoutHistoryDetailDrawer({
 }: PayoutHistoryDetailDrawerProps) {
   const t = useTranslations("admin-practitioner-payouts");
   const locale = useLocale();
+
+  const formatRecordedAmount = (amount: string | null | undefined, currency: string | null | undefined) => {
+    if (!amount || !currency) {
+      return t("unavailable");
+    }
+
+    return formatSettlementMoney(locale, amount, currency);
+  };
+
+  const currencyLabel = payout?.currencyCode
+    ? t(`currencies.${payout.currencyCode}` as Parameters<typeof t>[0])
+    : t("unavailable");
 
   const practitionerLabel =
     payout?.practitionerName ?? payout?.practitionerId ?? t("history.detail.unknownPractitioner");
@@ -72,18 +84,29 @@ export default function AdminPractitionerPayoutHistoryDetailDrawer({
         <ModalBody className="space-y-5">
           {!payout ? null : (
             <>
+              <section className="rounded-2xl border border-warning-200 bg-warning-50/70 px-4 py-3 text-sm leading-6 text-warning-900 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-100">
+                <p className="font-semibold">{t("history.detail.reviewOnlyNotice")}</p>
+                <p className="mt-1 text-warning-900/80 dark:text-warning-50/80">
+                  {t("history.detail.reviewOnlyHelper")}
+                </p>
+              </section>
+
               <section className="grid gap-3 sm:grid-cols-2">
                 <DetailRow
                   label={t("history.detail.fields.amount")}
-                  value={formatSettlementMoney(locale, payout.amountPaid, payout.currencyCode)}
+                  value={formatRecordedAmount(payout.amountPaid, payout.currencyCode)}
                 />
                 <DetailRow
                   label={t("history.detail.fields.currency")}
-                  value={t(`currencies.${payout.currencyCode}` as Parameters<typeof t>[0])}
+                  value={currencyLabel}
                 />
                 <DetailRow
                   label={t("history.detail.fields.paidAt")}
                   value={formatSettlementDateTime(locale, payout.paidAt)}
+                />
+                <DetailRow
+                  label={t("history.detail.fields.recordedAt")}
+                  value={formatSettlementDateTime(locale, payout.createdAt)}
                 />
                 <DetailRow
                   label={t("history.detail.fields.paymentMethod")}

@@ -104,7 +104,7 @@
   },
   "paymentsRevenue": {
     "title": "Payments & revenue report",
-    "subtitle": "Finance truth sourced from the accounting layer (journal entries/lines).",
+    "subtitle": "Finance truth sourced from the accounting layer (journal entries/lines). Numbers depend on selected filters, currency, and date range.",
     "kpis": {
       "grossInflow": "Gross inflow",
       "grossInflowHint": "Total collected from captured payments.",
@@ -218,7 +218,7 @@
   },
   "payouts": {
     "title": "Payouts report",
-    "subtitle": "Payout operations and remaining practitioner dues.",
+    "subtitle": "Payout operations and remaining practitioner dues. Numbers depend on selected filters, currency, and date range.",
     "kpis": {
       "paidAmount": "Paid amount",
       "paidAmountHint": "Total payout amounts in range.",

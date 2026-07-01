@@ -5,7 +5,7 @@ import {
   PractitionerPageShell,
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
 import PresencePanel from "@/features/presence/components/PresencePanel";
-import AvailabilityPanel from "@/features/availability/components/AvailabilityPanel";
+import AvailabilityWeeksPanel from "@/features/availability/components/AvailabilityWeeksPanel";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -33,7 +33,7 @@ export default async function PractitionerAvailabilityPage({ params }: Props) {
       />
       <div className="space-y-6">
         <PresencePanel />
-        <AvailabilityPanel />
+        <AvailabilityWeeksPanel />
       </div>
     </PractitionerPageShell>
   );

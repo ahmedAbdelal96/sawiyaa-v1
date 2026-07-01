@@ -87,6 +87,11 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       icon: <Stethoscope className="h-4 w-4" />,
     },
     {
+      key: "academy",
+      href: "/patient/academy",
+      icon: <GraduationCap className="h-4 w-4" />,
+    },
+    {
       key: "matching",
       href: "/patient/matching",
       icon: <HeartHandshake className="h-4 w-4" />,
@@ -105,14 +110,14 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
 
   const userQuickLinks: PatientNavItem[] = [
     {
+      key: "academy",
+      href: "/patient/academy",
+      icon: <GraduationCap className="h-4 w-4" />,
+    },
+    {
       key: "articles",
       href: "/patient/articles",
       icon: <BookOpen className="h-4 w-4" />,
-    },
-    {
-      key: "training",
-      href: "/patient/training",
-      icon: <GraduationCap className="h-4 w-4" />,
     },
     {
       key: "wallet",
@@ -150,11 +155,12 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     if (key === "matching") return tJourney("nextSteps.types.START_GUIDED_MATCHING.cta");
     if (key === "assessments") return tJourney("nextSteps.types.TAKE_ASSESSMENT.cta");
     if (key === "practitioners") return tNav("main.practitioners");
+    if (key === "academy") return tNav("main.academy");
     if (key === "sessions") return tNav("main.sessions");
     if (key === "messages") return locale === "ar" ? "الرسائل" : "Messages";
     if (key === "support") return tArea("shell.support");
+    if (key === "academy") return tNav("main.academy");
     if (key === "articles") return tNav("main.articles");
-    if (key === "training") return tNav("workspace.training");
     if (key === "wallet") return tNav("main.wallet");
     if (key === "payments") return tNav("main.payments");
     if (key === "profile") return tNav("settings.profile");

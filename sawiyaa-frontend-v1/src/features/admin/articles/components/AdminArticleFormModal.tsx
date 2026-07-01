@@ -8,11 +8,14 @@ import Label from "@/components/form/Label";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Select from "@/components/form/Select";
+import FieldErrorMessage from "@/components/form/error/FieldErrorMessage";
+import { FormErrorSummary } from "@/components/form/error/FormErrorSummary";
 import {
   useAdminSpecialties,
   useAdminSpecialtyCategories,
 } from "@/features/specialties/hooks/use-specialties";
 import { resolveCoverImageUrl } from "@/features/articles-public/lib/resolve-cover-image-url";
+import { normalizeFormError, type NormalizedFormError } from "@/lib/form-errors";
 import { useUploadAdminArticleCover } from "../hooks/use-admin-articles";
 import type {
   AdminArticleItem,
@@ -35,6 +38,11 @@ type FormState = {
   content: string;
   coverImageUrl: string;
 };
+
+type FormFieldName = keyof Pick<
+  FormState,
+  "title" | "categoryId" | "specialtyId" | "content" | "coverImageUrl"
+>;
 
 const EMPTY_FORM: FormState = {
   title: "",
@@ -92,14 +100,8 @@ export default function AdminArticleFormModal({
   const initialForm = mode === "edit" && article ? toFormState(article) : EMPTY_FORM;
 
   const [form, setForm] = useState<FormState>(initialForm);
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{
-    title?: boolean;
-    categoryId?: boolean;
-    specialtyId?: boolean;
-    content?: boolean;
-    coverImageUrl?: boolean;
-  }>({});
+  const [error, setError] = useState<NormalizedFormError | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FormFieldName, string>>>({});
 
   const categoryOptions = useMemo(
     () =>
@@ -118,9 +120,27 @@ export default function AdminArticleFormModal({
     [specialtiesQuery.data?.specialties, form.categoryId],
   );
 
-  const handleChange = (field: keyof FormState, value: string) => {
+  const clearFields = (...fields: FormFieldName[]) => {
+    if (fields.length === 0) {
+      return;
+    }
+
+    setFieldErrors((current) => {
+      const next = { ...current };
+      fields.forEach((field) => {
+        delete next[field];
+      });
+      return next;
+    });
+  };
+
+  const handleChange = (
+    field: FormFieldName,
+    value: string,
+    clearRelatedFields: FormFieldName[] = [],
+  ) => {
     setError(null);
-    setFieldErrors((current) => ({ ...current, [field]: false }));
+    clearFields(field, ...clearRelatedFields);
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -128,14 +148,21 @@ export default function AdminArticleFormModal({
     if (!file) return;
 
     setError(null);
-    setFieldErrors((current) => ({ ...current, coverImageUrl: false }));
+    clearFields("coverImageUrl");
 
     try {
       const result = await uploadCoverMutation.mutateAsync(file);
       setForm((current) => ({ ...current, coverImageUrl: result.url }));
     } catch {
-      setFieldErrors((current) => ({ ...current, coverImageUrl: true }));
-      setError(t("errors.generic"));
+      setFieldErrors((current) => ({
+        ...current,
+        coverImageUrl: t("errors.coverUploadFailed"),
+      }));
+      setError({
+        message: t("errors.saveFailed"),
+        fieldErrors: { coverImageUrl: t("errors.coverUploadFailed") },
+        statusCode: 500,
+      });
     }
   };
 
@@ -143,16 +170,11 @@ export default function AdminArticleFormModal({
     const title = form.title.trim();
     const content = form.content.trim();
 
-    const nextFieldErrors: {
-      title?: boolean;
-      categoryId?: boolean;
-      specialtyId?: boolean;
-      content?: boolean;
-    } = {};
-    if (!title) nextFieldErrors.title = true;
-    if (!form.categoryId) nextFieldErrors.categoryId = true;
-    if (!form.specialtyId) nextFieldErrors.specialtyId = true;
-    if (!content) nextFieldErrors.content = true;
+    const nextFieldErrors: Partial<Record<FormFieldName, string>> = {};
+    if (!title) nextFieldErrors.title = t("form.validation.titleRequired");
+    if (!form.categoryId) nextFieldErrors.categoryId = t("form.validation.categoryRequired");
+    if (!form.specialtyId) nextFieldErrors.specialtyId = t("form.validation.specialtyRequired");
+    if (!content) nextFieldErrors.content = t("form.validation.contentRequired");
 
     if (
       nextFieldErrors.title ||
@@ -161,11 +183,16 @@ export default function AdminArticleFormModal({
       nextFieldErrors.content
     ) {
       setFieldErrors((current) => ({ ...current, ...nextFieldErrors }));
-      setError(t("form.validation.required"));
+      setError({
+        message: t("errors.reviewRequired"),
+        fieldErrors: nextFieldErrors as Record<string, string>,
+        statusCode: 400,
+      });
       return;
     }
 
     try {
+      setError(null);
       const payload: CreateAdminArticleInput = {
         locale,
         title,
@@ -178,8 +205,28 @@ export default function AdminArticleFormModal({
 
       await onSubmit(payload);
       onClose();
-    } catch {
-      setError(t("errors.generic"));
+    } catch (error) {
+      const normalized = normalizeFormError(error, t("errors.saveFailed"));
+      const normalizedFieldErrors = Object.entries(normalized.fieldErrors).reduce<Partial<Record<FormFieldName, string>>>(
+        (acc, [field, message]) => {
+          if (field === "title" || field === "categoryId" || field === "specialtyId" || field === "content" || field === "coverImageUrl") {
+            acc[field] = message;
+          }
+          return acc;
+        },
+        {},
+      );
+
+      if (Object.keys(normalizedFieldErrors).length > 0) {
+        setFieldErrors((current) => ({ ...current, ...normalizedFieldErrors }));
+      }
+
+      setError({
+        ...normalized,
+        fieldErrors: {
+          ...normalizedFieldErrors,
+        },
+      });
     }
   };
 
@@ -219,10 +266,12 @@ export default function AdminArticleFormModal({
             options={categoryOptions}
             placeholder={locale === "ar" ? "اختر تخصص رئيسي" : "Choose main specialty"}
             defaultValue={form.categoryId}
-            error={!!fieldErrors.categoryId}
-            onChange={(value) =>
-              setForm((current) => ({ ...current, categoryId: value, specialtyId: "" }))
-            }
+            error={Boolean(fieldErrors.categoryId)}
+            hint={fieldErrors.categoryId}
+            onChange={(value) => {
+              handleChange("categoryId", value, ["specialtyId"]);
+              setForm((current) => ({ ...current, specialtyId: "" }));
+            }}
           />
         </div>
 
@@ -244,7 +293,8 @@ export default function AdminArticleFormModal({
                   : "Select main specialty first"
             }
             defaultValue={form.specialtyId}
-            error={!!fieldErrors.specialtyId}
+            error={Boolean(fieldErrors.specialtyId)}
+            hint={fieldErrors.specialtyId}
             onChange={(value) => handleChange("specialtyId", value)}
           />
           {!form.categoryId ? (
@@ -263,7 +313,8 @@ export default function AdminArticleFormModal({
           <InputField
             value={form.title}
             required
-            error={!!fieldErrors.title}
+            error={Boolean(fieldErrors.title)}
+            hint={fieldErrors.title}
             onChange={(event) => handleChange("title", event.target.value)}
             placeholder={t("form.fields.titlePlaceholder")}
             className="px-4 py-3"
@@ -277,7 +328,8 @@ export default function AdminArticleFormModal({
           <TextArea
             rows={8}
             value={form.content}
-            error={!!fieldErrors.content}
+            error={Boolean(fieldErrors.content)}
+            hint={fieldErrors.content}
             onChange={(value) => handleChange("content", value)}
             placeholder={t("form.fields.contentPlaceholder")}
             className="min-h-[180px] px-4 py-3"
@@ -318,15 +370,16 @@ export default function AdminArticleFormModal({
                 />
               </div>
             ) : null}
+            <FieldErrorMessage message={fieldErrors.coverImageUrl} />
           </div>
         </div>
       </div>
 
-      {error ? (
-        <p className="mt-4 rounded-2xl border border-status-danger-border bg-status-danger-soft px-4 py-3 text-sm text-status-danger">
-          {error}
-        </p>
-      ) : null}
+      <FormErrorSummary
+        className="mt-4"
+        message={error?.message}
+        details={error?.requestId ? t("errors.referenceId", { requestId: error.requestId }) : undefined}
+      />
     </FormModal>
   );
 }

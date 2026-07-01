@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
+import { PublicPractitionerSessionDuration } from '../dto/list-public-practitioners.dto';
 import { PractitionerType } from '@prisma/client';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
+import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 
 type FilterSourceRow = Awaited<
   ReturnType<PublicPractitionerReadRepository['listPublicFilterMetadataSource']>
@@ -13,18 +13,18 @@ type FilterSourceRow = Awaited<
 export class ListPublicPractitionerFiltersUseCase {
   constructor(
     private readonly publicReadRepository: PublicPractitionerReadRepository,
-    private readonly patientProfileRepository: PatientProfileRepository,
+    private readonly pricingContextService: PublicPractitionerPricingContextService,
   ) {}
 
   async execute(input: {
     locale: SupportedLocale;
     currentUserId?: string | null;
+    guestCountryIsoCode?: string | null;
+    duration?: PublicPractitionerSessionDuration;
   }) {
-    const patientProfile = input.currentUserId
-      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
-      : null;
-    const regionalResolution = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+    const regionalResolution = await this.pricingContextService.resolve({
+      currentUserId: input.currentUserId,
+      guestCountryIsoCode: input.guestCountryIsoCode,
     });
     const currencyCode = regionalResolution.currencyCode as 'EGP' | 'USD';
     const rows = await this.publicReadRepository.listPublicFilterMetadataSource(
@@ -92,9 +92,9 @@ export class ListPublicPractitionerFiltersUseCase {
           ? {
               id: link.specialty.category.id,
               slug: link.specialty.category.slug,
-              name: this.pickLocalizedLabel(
+              name: this.getSpecialtyCategoryLabel(
+                link.specialty.category.slug,
                 input.locale,
-                link.specialty.category.name,
                 link.specialty.category.name,
               ),
             }
@@ -129,7 +129,8 @@ export class ListPublicPractitionerFiltersUseCase {
 
       for (const languageLink of row.languages) {
         const code = languageLink.language.code.toLowerCase();
-        const label = this.pickLocalizedLabel(
+        const label = this.getLanguageLabel(
+          code,
           input.locale,
           languageLink.language.nativeName,
           languageLink.language.name,
@@ -148,7 +149,8 @@ export class ListPublicPractitionerFiltersUseCase {
 
       if (row.country?.isoCode) {
         const value = row.country.isoCode.toUpperCase();
-        const label = this.pickLocalizedLabel(
+        const label = this.getCountryLabel(
+          value,
           input.locale,
           row.country.nativeName,
           row.country.name,
@@ -195,12 +197,22 @@ export class ListPublicPractitionerFiltersUseCase {
       const price60 = this.pickCurrencyAwareFee(row, currencyCode, 60);
 
       if (price30 !== null) {
-        feeValues.push(price30);
+        if (
+          input.duration === undefined ||
+          input.duration === PublicPractitionerSessionDuration.THIRTY
+        ) {
+          feeValues.push(price30);
+        }
         this.upsertDuration(durationMap, 30, practitionerId, input.locale);
       }
 
       if (price60 !== null) {
-        feeValues.push(price60);
+        if (
+          input.duration === undefined ||
+          input.duration === PublicPractitionerSessionDuration.SIXTY
+        ) {
+          feeValues.push(price60);
+        }
         this.upsertDuration(durationMap, 60, practitionerId, input.locale);
       }
     }
@@ -239,8 +251,9 @@ export class ListPublicPractitionerFiltersUseCase {
         .sort((left, right) => left.value - right.value),
       ratingThresholds,
       feeBounds: {
-        min: feeValues.length > 0 ? Math.min(...feeValues) : 0,
+        min: 0,
         max: feeValues.length > 0 ? Math.max(...feeValues) : 0,
+        actualMin: feeValues.length > 0 ? Math.min(...feeValues) : 0,
         currency: currencyCode,
         step: currencyCode === 'EGP' ? 50 : 5,
       },
@@ -338,6 +351,87 @@ export class ListPublicPractitionerFiltersUseCase {
       fallbackValue ||
       arabicLikeValue ||
       ''
+    );
+  }
+
+  private getSpecialtyCategoryLabel(
+    slug: string,
+    locale: SupportedLocale,
+    fallbackValue: string | null | undefined,
+  ): string {
+    const normalizedSlug = slug.trim().toLowerCase();
+    const arLabels: Record<string, string> = {
+      'mental-health': 'النفسي',
+      nutrition: 'التغذية',
+      fitness: 'الرياضة',
+    };
+    const enLabels: Record<string, string> = {
+      'mental-health': 'Mental health',
+      nutrition: 'Nutrition',
+      fitness: 'Fitness',
+    };
+
+    return (
+      (locale === 'ar' ? arLabels[normalizedSlug] : enLabels[normalizedSlug]) ??
+      this.pickLocalizedLabel(locale, fallbackValue, fallbackValue)
+    );
+  }
+
+  private getLanguageLabel(
+    code: string,
+    locale: SupportedLocale,
+    arabicLikeValue: string | null | undefined,
+    fallbackValue: string | null | undefined,
+  ): string {
+    const normalized = code.trim().toLowerCase();
+    const labels: Record<SupportedLocale, Record<string, string>> = {
+      ar: {
+        ar: 'العربية',
+        en: 'الإنجليزية',
+        fr: 'الفرنسية',
+      },
+      en: {
+        ar: 'Arabic',
+        en: 'English',
+        fr: 'French',
+      },
+    };
+
+    return (
+      labels[locale][normalized] ??
+      this.pickLocalizedLabel(locale, arabicLikeValue, fallbackValue)
+    );
+  }
+
+  private getCountryLabel(
+    code: string,
+    locale: SupportedLocale,
+    arabicLikeValue: string | null | undefined,
+    fallbackValue: string | null | undefined,
+  ): string {
+    const normalized = code.trim().toUpperCase();
+    const labels: Record<SupportedLocale, Record<string, string>> = {
+      ar: {
+        EG: 'مصر',
+        SA: 'السعودية',
+        AE: 'الإمارات',
+        KW: 'الكويت',
+        JO: 'الأردن',
+        QA: 'قطر',
+      },
+      en: {
+        EG: 'Egypt',
+        SA: 'Saudi Arabia',
+        AE: 'United Arab Emirates',
+        KW: 'Kuwait',
+        JO: 'Jordan',
+        QA: 'Qatar',
+      },
+    };
+
+    return (
+      labels[locale][normalized] ??
+      this.pickLocalizedLabel(locale, arabicLikeValue, fallbackValue)
     );
   }
 

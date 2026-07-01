@@ -1,8 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { I18nManager } from "react-native";
-import { StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/providers/AuthProvider";
@@ -25,7 +23,6 @@ export default function PractitionerLayout() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const isRTL = I18nManager.isRTL;
   const { role, user, isLoading } = useAuth();
   const isApprovedPractitioner = user?.practitionerStatus === "APPROVED";
 
@@ -39,14 +36,15 @@ export default function PractitionerLayout() {
         headerShown: false,
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarInactiveTintColor: theme.colors.textSecondary,
         tabBarActiveBackgroundColor: theme.colors.primarySoft,
         tabBarInactiveBackgroundColor: theme.colors.surfaceRaised,
         tabBarStyle: {
           backgroundColor: theme.colors.surfaceRaised,
-          borderTopColor: theme.colors.divider,
-          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: theme.colors.borderStrong,
+          borderTopWidth: 1,
           ...theme.shadows.sm,
+          shadowColor: theme.colors.shadow,
           height: MOBILE_TAB_BAR_HEIGHT + insets.bottom,
           paddingBottom: Math.max(insets.bottom, theme.spacing.sm),
           paddingTop: theme.spacing.sm,
@@ -99,10 +97,7 @@ export default function PractitionerLayout() {
           href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.availability"),
           tabBarIcon: ({ color }) => (
-            <TabIcon
-              name={isRTL ? "time-outline" : "pulse-outline"}
-              color={color}
-            />
+            <TabIcon name="time-outline" color={color} />
           ),
         }}
       />
@@ -112,7 +107,7 @@ export default function PractitionerLayout() {
           href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.more"),
           tabBarIcon: ({ color }) => (
-            <TabIcon name="grid-outline" color={color} />
+            <TabIcon name="menu-outline" color={color} />
           ),
         }}
       />

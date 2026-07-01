@@ -201,7 +201,8 @@ export default function PackagePurchaseSlotPicker({
         <>
           {dayGroups.length === 0 ? (
             <div className="rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
-              <p className="text-sm text-text-muted">{tAvail("noSlots")}</p>
+              <p className="text-sm font-medium text-text-primary dark:text-white/90">{tAvail("noSlots")}</p>
+              <p className="mt-1 text-xs leading-5 text-text-muted">{tAvail("noSlotsHint")}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"

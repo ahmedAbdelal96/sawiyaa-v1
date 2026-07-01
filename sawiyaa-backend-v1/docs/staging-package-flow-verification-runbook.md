@@ -110,7 +110,7 @@ Use or create staging test data with:
   - `sessionPrice30Usd`
   - `sessionPrice60Egp`
   - `sessionPrice60Usd`
-- valid availability slots for the relevant time window
+- valid published availability windows for the relevant time window
 
 ## 7. Manual QA checklist
 
@@ -337,8 +337,8 @@ Example output:
 [OK] PackagePlan rows exist for all three standardized tiers - SESSIONS_4:ok, SESSIONS_6:ok, SESSIONS_8:ok
 [OK] packages.enabled exists and is true - rows=1
 [OK] packages.purchaseEnabled exists and is true - rows=1
-[OK] At least one package-eligible practitioner exists - public-slug | availabilitySlots=5
-[OK] Eligible practitioner has availability slots - public-slug availabilitySlots=5
+[OK] At least one package-eligible practitioner exists - public-slug | availabilityWeeks=2
+[OK] Eligible practitioner has published availability weeks - public-slug availabilityWeeks=2
 [OK] Stripe sandbox mode is test
 [OK] Stripe secret key present
 ...

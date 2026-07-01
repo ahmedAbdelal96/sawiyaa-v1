@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { ConfirmModal } from "@/components/ui/modal";
-import { formatSettlementMoney } from "@/features/admin/settlements/lib/settlement-formatters";
+import { formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import type { AdminPackageSettlementDetail } from "../types/admin-package-settlements.types";
 
 type Props = {

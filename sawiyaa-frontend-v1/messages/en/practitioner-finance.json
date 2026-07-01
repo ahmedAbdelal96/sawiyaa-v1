@@ -4,7 +4,7 @@
     "walletDescription": "Review your current wallet balances and summary totals without overbuilding the finance suite.",
     "ledgerTitle": "Ledger history — Practitioner",
     "ledgerDescription": "Review your ledger history entries without jumping into settlements or payout tooling.",
-    "settlementsTitle": "Settlements — Practitioner",
+    "settlementsTitle": "Payouts — Practitioner",
     "settlementsDescription": "Review settlement records and status updates without entering payout tooling."
   },
   "summary": {
@@ -118,7 +118,7 @@
   "settlements": {
     "eyebrow": "Practitioner settlements",
     "title": "Review settlement records tied to your practitioner earnings.",
-    "note": "This surface provides a visibility-first view of settlement batches and payout status updates.",
+    "note": "This surface provides a visibility-first view of payout records and status updates.",
     "count": "{value} settlements",
     "countLoading": "Loading settlements",
     "timezoneLabel": "Timezone",
@@ -141,7 +141,7 @@
       "createdAt": "Created",
       "paidAt": "Paid at",
       "failedAt": "Failed at",
-      "batch": "Batch",
+      "batch": "Payout reference",
       "reference": "Payout reference",
       "notes": "Notes"
     },

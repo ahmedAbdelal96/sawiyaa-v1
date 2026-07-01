@@ -13,6 +13,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { SurfaceCard, SurfaceToolbar } from "@/components/shared/SurfaceShell";
 import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
+import { normalizeFormError, type NormalizedFormError } from "@/lib/form-errors";
 import {
   formatHelpDate,
   getHelpCategoryTitle,
@@ -24,6 +25,7 @@ import {
   getEmptyQuestionDraft,
   getQuestionDraft,
   HelpAdminSectionNav,
+  type QuestionDraftField,
   QuestionFormModal,
   QuestionViewModal,
   type QuestionDraft,
@@ -53,6 +55,8 @@ export default function AdminHelpQuestionsScreen() {
 
   const [feedback, setFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
   const [draft, setDraft] = useState<QuestionDraft | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<QuestionDraftField, string>>>({});
+  const [submitError, setSubmitError] = useState<NormalizedFormError | null>(null);
   const [viewingQuestion, setViewingQuestion] = useState<HelpQuestion | null>(null);
   const [pendingDelete, setPendingDelete] = useState<HelpQuestion | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,8 +111,45 @@ export default function AdminHelpQuestionsScreen() {
 
   const hasFilters = Boolean(searchQuery.trim()) || categoryFilter !== "ALL" || statusFilter !== "ALL";
 
-  const openCreate = () => setDraft(getEmptyQuestionDraft());
-  const openEdit = (question: HelpQuestion) => setDraft(getQuestionDraft(question));
+  const clearDraftErrors = () => {
+    setFieldErrors({});
+    setSubmitError(null);
+  };
+
+  const openCreate = () => {
+    setDraft(getEmptyQuestionDraft());
+    clearDraftErrors();
+  };
+
+  const openEdit = (question: HelpQuestion) => {
+    setDraft(getQuestionDraft(question));
+    clearDraftErrors();
+  };
+
+  const closeDraft = () => {
+    setDraft(null);
+    clearDraftErrors();
+  };
+
+  const updateDraft = (next: QuestionDraft) => {
+    setDraft(next);
+    setFieldErrors({});
+    setSubmitError(null);
+  };
+
+  const buildRequiredFieldErrors = (current: QuestionDraft) => {
+    const nextErrors: Partial<Record<QuestionDraftField, string>> = {};
+
+    if (!current.questionAr.trim()) {
+      nextErrors.questionAr = t("validation.questionArRequired");
+    }
+
+    if (!current.answerAr.trim()) {
+      nextErrors.answerAr = t("validation.answerArRequired");
+    }
+
+    return nextErrors;
+  };
 
   const toggleActive = async (question: HelpQuestion) => {
     try {
@@ -163,6 +204,17 @@ export default function AdminHelpQuestionsScreen() {
 
   const saveQuestion = async () => {
     if (!draft) return;
+
+    const requiredFieldErrors = buildRequiredFieldErrors(draft);
+    if (Object.keys(requiredFieldErrors).length > 0) {
+      setFieldErrors(requiredFieldErrors);
+      setSubmitError({
+        message: t("errors.reviewRequired"),
+        fieldErrors: requiredFieldErrors,
+      });
+      return;
+    }
+
     const payload = {
       categoryId: draft.categoryId || null,
       questionAr: draft.questionAr.trim(),
@@ -179,10 +231,12 @@ export default function AdminHelpQuestionsScreen() {
       } else {
         await createMutation.mutateAsync(payload);
       }
-      setDraft(null);
+      closeDraft();
       setFeedback({ tone: "success", message: t("feedback.questionSaved") });
-    } catch {
-      setFeedback({ tone: "error", message: t("feedback.questionSaveError") });
+    } catch (error) {
+      const normalized = normalizeFormError(error, t("errors.saveFailed"));
+      setFieldErrors(normalized.fieldErrors as Partial<Record<QuestionDraftField, string>>);
+      setSubmitError(normalized);
     }
   };
 
@@ -473,8 +527,10 @@ export default function AdminHelpQuestionsScreen() {
         draft={draft ?? getEmptyQuestionDraft()}
         categories={categories}
         locale={locale}
-        onChange={(next) => setDraft(next)}
-        onClose={() => setDraft(null)}
+        fieldErrors={fieldErrors}
+        submitError={submitError}
+        onChange={updateDraft}
+        onClose={closeDraft}
         onSave={() => void saveQuestion()}
         isSaving={createMutation.isPending || updateMutation.isPending}
       />

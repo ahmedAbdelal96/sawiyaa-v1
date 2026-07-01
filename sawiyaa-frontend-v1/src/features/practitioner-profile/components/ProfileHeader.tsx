@@ -10,6 +10,10 @@ import {
   ShieldCheck,
   Star,
 } from "lucide-react";
+import {
+  formatPublicMoney,
+  getPublicSessionPrices,
+} from "@/features/practitioners-discovery/lib/public-pricing";
 import type { PractitionerProfile } from "../types/profile";
 
 type Props = {
@@ -38,6 +42,7 @@ export default async function ProfileHeader({
     getLocale(),
   ]);
   const isAr = locale === "ar";
+  const sessionFeesLabel = isAr ? "رسوم الجلسة" : t("pricing.sessionFees");
   const displayName = isAr ? p.nameAr : p.nameEn;
   const displayTitle = isAr ? p.titleAr : p.titleEn;
   const primarySpecialties = p.specialties.slice(0, 4);
@@ -45,6 +50,7 @@ export default async function ProfileHeader({
     .slice(0, 2)
     .map((language) => languageLabels[language] ?? language)
     .join(" / ");
+  const sessionPrices = getPublicSessionPrices(p);
 
   const stats = [
     {
@@ -121,6 +127,32 @@ export default async function ProfileHeader({
                     </span>
                   ))}
                 </div>
+
+                {sessionPrices.length > 0 ? (
+                  <div className="rounded-2xl border border-primary/10 bg-primary-light/35 px-3 py-3 dark:bg-primary/10">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                      {sessionFeesLabel}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {sessionPrices.map((price) => (
+                        <div
+                          key={price.duration}
+                          className="rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-white/5"
+                        >
+                          <span className="font-medium text-text-secondary">
+                            {price.duration === 30
+                              ? t("booking.duration30")
+                              : t("booking.duration60")}
+                          </span>
+                          <span className="mx-2 text-text-muted">-</span>
+                          <span className="font-bold text-text-primary dark:text-white/95">
+                            {formatPublicMoney(locale, price.amount, p.currencyCode)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 

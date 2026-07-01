@@ -7,26 +7,26 @@ type QuickNavItem = {
 };
 
 type Props = {
-  totalCount: number;
-  categoryCount: number;
+  carePathCount: number;
+  subSpecialtyCount: number;
   query: string;
   quickNav: QuickNavItem[];
 };
 
 export default async function SpecialtiesPageHero({
-  totalCount,
-  categoryCount,
+  carePathCount,
+  subSpecialtyCount,
   query,
   quickNav,
 }: Props) {
   const t = await getTranslations("specialties-public.listing");
 
-  const countLabel =
-    totalCount === 1 ? t("resultCountSingle") : t("resultCount", { count: totalCount });
-  const categoryLabel =
-    categoryCount === 1
-      ? t("categoryCountSingle")
-      : t("categoryCount", { count: categoryCount });
+  const carePathLabel =
+    carePathCount === 1 ? t("carePathCountSingle") : t("carePathCount", { count: carePathCount });
+  const subSpecialtyLabel =
+    subSpecialtyCount === 1
+      ? t("subSpecialtyCountSingle")
+      : t("subSpecialtyCount", { count: subSpecialtyCount });
 
   return (
     <div className="app-page-hero px-6 py-10">
@@ -52,19 +52,19 @@ export default async function SpecialtiesPageHero({
             <div className="mt-6 flex flex-wrap gap-3">
               <div className="app-panel rounded-2xl px-4 py-3">
                 <p className="text-xs font-medium text-text-muted">
-                  {t("summarySpecialties")}
+                  {t("summaryCarePaths")}
                 </p>
                 <p className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
-                  {countLabel}
+                  {carePathLabel}
                 </p>
               </div>
 
               <div className="app-panel rounded-2xl px-4 py-3">
                 <p className="text-xs font-medium text-text-muted">
-                  {t("summaryCategories")}
+                  {t("summarySubSpecialties")}
                 </p>
                 <p className="mt-1 text-lg font-semibold text-text-primary dark:text-white/90">
-                  {categoryLabel}
+                  {subSpecialtyLabel}
                 </p>
               </div>
             </div>

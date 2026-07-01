@@ -4,12 +4,14 @@
  */
 import { serverGet } from "@/lib/api/server-http-client";
 import type {
+  SpecialtyCategoriesListResponse,
   SpecialtiesListResponse,
   SpecialtySuccessResponse,
 } from "@/features/specialties/types/specialties.types";
 
 export const SPECIALTIES_PUBLIC_ROUTES = {
   list: "/specialties",
+  categories: "/specialty-categories",
   bySlug: (slug: string) => `/specialties/${slug}`,
 } as const;
 
@@ -24,6 +26,15 @@ export async function fetchPublicSpecialties(
     locale,
     params: q ? { q } : undefined,
   });
+}
+
+export async function fetchPublicSpecialtyCategories(
+  locale: string,
+): Promise<SpecialtyCategoriesListResponse> {
+  return serverGet<SpecialtyCategoriesListResponse>(
+    SPECIALTIES_PUBLIC_ROUTES.categories,
+    { locale },
+  );
 }
 
 /**

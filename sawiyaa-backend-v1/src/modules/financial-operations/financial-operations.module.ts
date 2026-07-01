@@ -10,7 +10,6 @@ import { AdminPayoutsController } from './controllers/admin-payouts.controller';
 import { AdminPackageSettlementsController } from './controllers/admin-package-settlements.controller';
 import { AdminPractitionerPayoutsController } from './controllers/admin-practitioner-payouts.controller';
 import { AdminPractitionerStatementsController } from './controllers/admin-practitioner-statements.controller';
-import { AdminSettlementsController } from './controllers/admin-settlements.controller';
 import { AdminAccountingController } from './controllers/admin-accounting.controller';
 import { PractitionerFinancialOperationsController } from './controllers/practitioner-financial-operations.controller';
 import { FinancialOperationsMapper } from './mappers/financial-operations.mapper';
@@ -42,7 +41,6 @@ import { PractitionerManualPayoutBalanceService } from './services/practitioner-
 import { PractitionerManualPayoutService } from './services/practitioner-manual-payout.service';
 import { RefreshPractitionerWalletService } from './services/refresh-practitioner-wallet.service';
 import { ValidateSettlementStatusTransitionService } from './services/validate-settlement-status-transition.service';
-import { GenerateSettlementBatchUseCase } from './use-cases/generate-settlement-batch.use-case';
 import { ExportAdminAccountingDashboardCsvUseCase } from './use-cases/export-admin-accounting-dashboard-csv.use-case';
 import { ExportAdminLedgerExplorerCsvUseCase } from './use-cases/export-admin-ledger-explorer-csv.use-case';
 import { ExportPractitionerStatementPackageCsvUseCase } from './use-cases/export-practitioner-statement-package-csv.use-case';
@@ -57,7 +55,6 @@ import { ListAdminPractitionerPayoutSummariesUseCase } from './use-cases/list-ad
 import { GetPractitionerPayoutDetailUseCase } from './use-cases/get-practitioner-payout-detail.use-case';
 import { GetPractitionerPayoutProofFileUseCase } from './use-cases/get-practitioner-payout-proof-file.use-case';
 import { GetPractitionerStatementUseCase } from './use-cases/get-practitioner-statement.use-case';
-import { GetSettlementBatchDetailsUseCase } from './use-cases/get-settlement-batch-details.use-case';
 import { ListAdminPractitionerSettlementsUseCase } from './use-cases/list-admin-practitioner-settlements.use-case';
 import { ListAdminPackageSettlementsUseCase } from './use-cases/list-admin-package-settlements.use-case';
 import { ListAdminPractitionerManualPayoutsUseCase } from './use-cases/list-admin-practitioner-manual-payouts.use-case';
@@ -70,10 +67,7 @@ import { ListPractitionerPayoutHistoryUseCase } from './use-cases/list-practitio
 import { ListPractitionerLedgerEntriesUseCase } from './use-cases/list-practitioner-ledger-entries.use-case';
 import { ListPractitionerSettlementPayoutsUseCase } from './use-cases/list-practitioner-settlement-payouts.use-case';
 import { ListPractitionerSettlementsUseCase } from './use-cases/list-practitioner-settlements.use-case';
-import { ListSettlementBatchesUseCase } from './use-cases/list-settlement-batches.use-case';
 import { ListAdminPayoutsUseCase } from './use-cases/list-admin-payouts.use-case';
-import { MarkSettlementFailedUseCase } from './use-cases/mark-settlement-failed.use-case';
-import { MarkSettlementPaidUseCase } from './use-cases/mark-settlement-paid.use-case';
 import { PostPaymentLedgerEntriesUseCase } from './use-cases/post-payment-ledger-entries.use-case';
 import { PostPackageSessionLedgerEntriesUseCase } from './use-cases/post-package-session-ledger-entries.use-case';
 import { PostRefundLedgerEntriesUseCase } from './use-cases/post-refund-ledger-entries.use-case';
@@ -96,7 +90,6 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     AdminPractitionerManualPayoutsController,
     AdminPractitionerPayoutsController,
     AdminPractitionerStatementsController,
-    AdminSettlementsController,
     AdminPackageSettlementsController,
     AdminFinanceOperationsController,
     AdminPayoutsController,
@@ -152,8 +145,6 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     ListPractitionerSettlementPayoutsUseCase,
     ListPractitionerPayoutDuesUseCase,
     ListPractitionerPayoutHistoryUseCase,
-    GenerateSettlementBatchUseCase,
-    ListSettlementBatchesUseCase,
     ListFinanceOperationEventsUseCase,
     GetFinanceOperationEventUseCase,
     GetAdminAccountingDashboardUseCase,
@@ -171,9 +162,6 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     GetPractitionerPayoutProofFileUseCase,
     GetPractitionerStatementUseCase,
     ExportPractitionerStatementPackageCsvUseCase,
-    GetSettlementBatchDetailsUseCase,
-    MarkSettlementPaidUseCase,
-    MarkSettlementFailedUseCase,
     RecordPractitionerSettlementPayoutUseCase,
     RecordPractitionerPayoutUseCase,
     UploadPractitionerPayoutProofUseCase,

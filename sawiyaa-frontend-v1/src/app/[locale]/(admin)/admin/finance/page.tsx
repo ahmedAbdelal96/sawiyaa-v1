@@ -1,11 +1,24 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import AdminFinanceHubScreen from "@/features/admin/finance/components/AdminFinanceHubScreen";
 
 type Props = {
   params: Promise<{ locale: string }>;
 };
 
-export default async function AdminFinanceIndexPage({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
-  redirect(`/${locale}/admin/finance/dashboard`);
+  const t = await getTranslations({ locale, namespace: "admin-accounting" });
+
+  return {
+    title: t("hub.metaTitle"),
+    description: t("hub.metaDescription"),
+  };
 }
 
+export default async function AdminFinancePage({ params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  return <AdminFinanceHubScreen locale={locale} />;
+}

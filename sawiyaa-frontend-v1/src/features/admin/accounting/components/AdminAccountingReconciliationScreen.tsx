@@ -246,26 +246,6 @@ export default function AdminAccountingReconciliationScreen() {
           </Button>
         </div>
 
-        <div className="mt-5 grid gap-3 xl:grid-cols-2">
-          <article className="rounded-[22px] border border-border-light bg-white px-5 py-4 text-sm text-text-secondary shadow-sm dark:border-white/8 dark:bg-white/[0.03]">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("reconciliation.help.purposeTitle")}
-            </p>
-            <p className="mt-2 leading-6">{t("reconciliation.help.purposeNote")}</p>
-          </article>
-          <article className="rounded-[22px] border border-border-light bg-white px-5 py-4 text-sm text-text-secondary shadow-sm dark:border-white/8 dark:bg-white/[0.03]">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-              {t("reconciliation.help.howTitle")}
-            </p>
-            <ol className="mt-2 space-y-1.5 leading-6">
-              <li>{t("reconciliation.help.steps.openRow")}</li>
-              <li>{t("reconciliation.help.steps.pickStatus")}</li>
-              <li>{t("reconciliation.help.steps.addNote")}</li>
-              <li>{t("reconciliation.help.steps.openJournal")}</li>
-            </ol>
-          </article>
-        </div>
-
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <label className="block">
             <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
