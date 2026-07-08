@@ -124,6 +124,10 @@ export default function MessagesWorkspace({ role }: Props) {
     searchParams.get("threadId") ||
     searchParams.get("conversationId") ||
     null;
+  const relatedSessionId = searchParams.get("relatedSessionId") || null;
+  const shouldOpenSupportCompose =
+    activeLane === "support" && Boolean(relatedSessionId) && !selectedId;
+  const showDetailPane = Boolean(selectedId) || shouldOpenSupportCompose;
 
   // 5. Helpers bound to URL state
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
@@ -145,7 +149,7 @@ export default function MessagesWorkspace({ role }: Props) {
         <div
           className={cn(
             "h-full flex flex-col min-h-0 overflow-hidden",
-            selectedId ? "hidden lg:flex lg:w-[380px] lg:shrink-0" : "w-full flex lg:w-[380px] lg:shrink-0"
+            showDetailPane ? "hidden lg:flex lg:w-[380px] lg:shrink-0" : "w-full flex lg:w-[380px] lg:shrink-0"
           )}
         >
           <ChatThreadList
@@ -210,6 +214,7 @@ export default function MessagesWorkspace({ role }: Props) {
                 role={role}
                 locale={locale}
                 selectedId={selectedId}
+                relatedSessionId={relatedSessionId}
                 page={page}
                 limit={limit}
                 updateListQuery={updateListQuery}
@@ -249,13 +254,14 @@ export default function MessagesWorkspace({ role }: Props) {
 
         {/* Right Conversation Panel / Detail Column */}
         <div
-          className={cn("h-full flex flex-col flex-1", selectedId ? "w-full flex" : "hidden lg:flex")}
+          className={cn("h-full flex flex-col flex-1", showDetailPane ? "w-full flex" : "hidden lg:flex")}
         >
           {activeLane === "support" && (
             <SupportLaneWorkspace
               role={role}
               locale={locale}
               selectedId={selectedId}
+              relatedSessionId={relatedSessionId}
               page={page}
               limit={limit}
               updateListQuery={updateListQuery}

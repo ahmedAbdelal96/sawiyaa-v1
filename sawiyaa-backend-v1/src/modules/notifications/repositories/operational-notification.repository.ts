@@ -397,20 +397,6 @@ export class OperationalNotificationRepository {
     });
   }
 
-  findTrainingEnrollmentDeliveryGuardState(enrollmentId: string) {
-    return this.prisma.enrollment.findUnique({
-      where: { id: enrollmentId },
-      select: {
-        enrollmentStatus: true,
-        courseSchedule: {
-          select: {
-            status: true,
-          },
-        },
-      },
-    });
-  }
-
   findPaymentDeliveryGuardState(paymentId: string) {
     return this.prisma.payment.findUnique({
       where: { id: paymentId },

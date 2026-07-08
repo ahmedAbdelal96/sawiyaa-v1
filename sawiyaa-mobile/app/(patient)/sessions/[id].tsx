@@ -115,6 +115,23 @@ export default function SessionDetailScreen() {
     session.chatAvailability.readOnly
       ? t("patientSessionsFlow.detail.messagesReadOnly")
       : t("patientSessionsFlow.detail.actionSummary.messages");
+  const roomClosedHelpVisible =
+    session.joinAvailability.blockedReason === "SESSION_ROOM_CLOSED";
+  const roomClosedSupportSubject = t(
+    "patientSessionsFlow.detail.roomClosed.supportSubject",
+    {
+      sessionCode: session.sessionCode,
+    },
+  );
+  const roomClosedSupportMessage = t(
+    "patientSessionsFlow.detail.roomClosed.supportMessage",
+    {
+      sessionCode: session.sessionCode,
+      practitionerName:
+        session.practitioner?.displayName ??
+        t("patientSessionsFlow.common.practitionerFallback"),
+    },
+  );
 
   const handleJoin = async () => {
     setJoinError(null);
@@ -277,6 +294,63 @@ export default function SessionDetailScreen() {
             <Text color={theme.colors.textSecondary} style={styles.joinHint}>
               {joinAvailableAtText}
             </Text>
+          ) : null}
+
+          {roomClosedHelpVisible ? (
+            <Card variant="flat" padding="md" style={styles.roomClosedCard}>
+              <View style={[styles.roomClosedHeader, directionRowStyle(direction)]}>
+                <View
+                  style={[
+                    styles.roomClosedIcon,
+                    { backgroundColor: theme.colors.warningLight },
+                  ]}
+                >
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={18}
+                    color={theme.colors.warning}
+                  />
+                </View>
+                <View style={styles.roomClosedCopy}>
+                  <Text
+                    weight="700"
+                    style={[
+                      styles.roomClosedTitle,
+                      { textAlign: isRtl ? "right" : "left" },
+                    ]}
+                  >
+                    {t("patientSessionsFlow.detail.roomClosed.title")}
+                  </Text>
+                  <Text
+                    color={theme.colors.textSecondary}
+                    style={[
+                      styles.roomClosedBody,
+                      { textAlign: isRtl ? "right" : "left" },
+                    ]}
+                  >
+                    {t("patientSessionsFlow.detail.roomClosed.body")}
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                title={t("patientSessionsFlow.detail.roomClosed.cta")}
+                onPress={() => {
+                  router.push({
+                    pathname: "/(patient)/support/new",
+                    params: {
+                      returnTo: `/(patient)/sessions/${session.id}`,
+                      relatedSessionId: session.id,
+                      category: "SESSION",
+                      subject: roomClosedSupportSubject,
+                      message: roomClosedSupportMessage,
+                      sessionCode: session.sessionCode,
+                    },
+                  } as any);
+                }}
+                style={styles.roomClosedButton}
+              />
+            </Card>
           ) : null}
 
           {canOpenMessages ? (
@@ -715,6 +789,37 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     marginTop: -2,
+  },
+  roomClosedCard: {
+    gap: 12,
+    marginTop: 4,
+  },
+  roomClosedHeader: {
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  roomClosedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  roomClosedCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  roomClosedTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  roomClosedBody: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  roomClosedButton: {
+    marginTop: 4,
   },
   secondaryActionWrap: {
     marginTop: 2,

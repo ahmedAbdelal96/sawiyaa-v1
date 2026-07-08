@@ -12,6 +12,7 @@ export type LaneWorkspaceProps = {
   role: "patient" | "practitioner" | "admin";
   locale: string;
   selectedId: string | null;
+  relatedSessionId?: string | null;
   page: number;
   limit: number;
   updateListQuery: (updates: Record<string, string | number | null | undefined>) => void;

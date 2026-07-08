@@ -22,7 +22,7 @@ export class BuildPatientJourneyNextStepsService {
     hasRecentMatching: boolean;
     hasAnyAssessment: boolean;
     hasPastSessions: boolean;
-    hasActiveTrainingEnrollment: boolean;
+    hasActiveAcademyEnrollment: boolean;
     continuityStage: CareContinuityStage;
     assessmentRecommendations?: CareRecommendationItem[];
   }): {
@@ -35,7 +35,7 @@ export class BuildPatientJourneyNextStepsService {
     const isUpcomingContinuity =
       input.hasUpcomingSession || input.continuityStage === 'UPCOMING_SESSION';
     const isActiveCare =
-      input.hasActiveTrainingEnrollment ||
+      input.hasActiveAcademyEnrollment ||
       input.continuityStage === 'ACTIVE_CARE';
     const isReturning =
       input.hasPastSessions || input.continuityStage === 'RETURNING';
@@ -157,11 +157,11 @@ export class BuildPatientJourneyNextStepsService {
           ? 'ACTIVE_CARE_CONTINUITY'
           : 'CONTINUITY_RECOMMENDED',
         reasonText: isActiveCare
-          ? 'You have an active care/training track; continue continuity with a next session action.'
+          ? 'You have an active care/academy track; continue continuity with a next session action.'
           : 'Continuity is recommended based on your existing journey history.',
         action: {
-          type: isActiveCare ? 'OPEN_TRAINING' : 'OPEN_BOOKING',
-          targetType: isActiveCare ? 'TRAINING' : 'SESSION',
+          type: isActiveCare ? 'OPEN_ACADEMY' : 'OPEN_BOOKING',
+          targetType: isActiveCare ? 'ACADEMY' : 'SESSION',
           targetId: null,
         },
         entityRefs: [],

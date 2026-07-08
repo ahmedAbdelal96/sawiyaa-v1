@@ -17,7 +17,7 @@ import { AcademyEnrollmentStatus } from '@prisma/client';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
-import { OrchestrateTrainingEnrollmentPaymentStatusService } from '../services/orchestrate-training-enrollment-payment-status.service';
+import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 import { CorporateSponsorshipConsumeService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-consume.service';
@@ -29,7 +29,7 @@ export class MarkPaymentSucceededUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
-    private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
+    private readonly orchestrateAcademyProgramEnrollmentPaymentStatusService: OrchestrateAcademyProgramEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly postPaymentLedgerEntriesUseCase: PostPaymentLedgerEntriesUseCase,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
@@ -127,6 +127,9 @@ export class MarkPaymentSucceededUseCase {
       unknown
     >;
     const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
+    const isAcademyProgramEnrollment =
+      payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
+      paymentMetadata.source === 'academy-program-enrollment';
 
     if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
       await this.reconcilePackagePurchasePaymentUseCase.execute({
@@ -152,14 +155,18 @@ export class MarkPaymentSucceededUseCase {
       };
     }
 
-    if (!isAcademyEnrollment && updated.amountFromWallet.gt(0)) {
+    if (
+      !isAcademyEnrollment &&
+      !isAcademyProgramEnrollment &&
+      updated.amountFromWallet.gt(0)
+    ) {
       await this.customerWalletAccountingService.captureReservationForPayment({
         paymentId: updated.id,
         currencyCode: updated.currencyCode,
       });
     }
 
-    if (!isAcademyEnrollment) {
+    if (!isAcademyEnrollment && !isAcademyProgramEnrollment) {
       await this.redeemCouponUseCase.execute({
         couponId: updated.couponId,
         couponCode: updated.couponCodeSnapshot?.toString() ?? null,
@@ -219,8 +226,8 @@ export class MarkPaymentSucceededUseCase {
           failedReason: null,
         },
       });
-    } else if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
-      await this.orchestrateTrainingEnrollmentPaymentStatusService.markEnrollmentActiveFromPayment(
+    } else if (isAcademyProgramEnrollment) {
+      await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentConfirmedFromPayment(
         payment.id,
       );
     }
@@ -236,7 +243,7 @@ export class MarkPaymentSucceededUseCase {
       'Payments',
     );
 
-    if (!isAcademyEnrollment && updated.patientId) {
+    if (!isAcademyEnrollment && !isAcademyProgramEnrollment && updated.patientId) {
       await this.operationalNotificationService.notifyPaymentSucceeded({
         patientProfileId: updated.patientId,
         paymentId: updated.id,

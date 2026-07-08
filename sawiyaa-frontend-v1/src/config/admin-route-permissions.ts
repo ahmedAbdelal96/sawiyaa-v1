@@ -59,7 +59,6 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
   { path: "/assessments", requiresAny: [] },
   { path: "/articles", requiresAny: [] },
   { path: "/academy", requiresAny: [] },
-  { path: "/training", requiresAny: [] },
   { path: "/specialties", requiresAny: [] },
   { path: "/package-plans", requiresAny: [] },
   { path: "/refund-policies", requiresAny: [] },

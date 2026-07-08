@@ -1,0 +1,13 @@
+-- AcademyProgram learner management foundation
+
+ALTER TABLE "AcademyLearner"
+ADD COLUMN IF NOT EXISTS "city" VARCHAR(191),
+ADD COLUMN IF NOT EXISTS "jobTitle" VARCHAR(191),
+ADD COLUMN IF NOT EXISTS "employer" VARCHAR(191),
+ADD COLUMN IF NOT EXISTS "education" VARCHAR(191),
+ADD COLUMN IF NOT EXISTS "notes" VARCHAR(1000);
+
+ALTER TABLE "AcademyProgramEnrollment"
+ADD COLUMN IF NOT EXISTS "completedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "certificateIssuedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "attendanceSummarySnapshot" JSONB;

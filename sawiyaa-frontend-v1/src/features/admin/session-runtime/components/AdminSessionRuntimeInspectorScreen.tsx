@@ -28,6 +28,7 @@ import AdminSessionInspectorOverlapCard from "./AdminSessionInspectorOverlapCard
 import AdminSessionInspectorRawEvidence from "./AdminSessionInspectorRawEvidence";
 import AdminSessionInspectorRecommendationPanel from "./AdminSessionInspectorRecommendationPanel";
 import AdminSessionInspectorRoleCard from "./AdminSessionInspectorRoleCard";
+import AdminSessionRoomCloseEvidencePanel from "./AdminSessionRoomCloseEvidencePanel";
 import AdminSessionInspectorTimeline from "./AdminSessionInspectorTimeline";
 import AdminSessionManualDecisionHistory from "./AdminSessionManualDecisionHistory";
 import AdminSessionManualDecisionPanel from "./AdminSessionManualDecisionPanel";
@@ -280,6 +281,11 @@ export default function AdminSessionRuntimeInspectorScreen({
             totalRiskFlags={pickRiskCount(extended.evidence)}
             patientName={patientName}
             practitionerName={practitionerName}
+          />
+
+          <AdminSessionRoomCloseEvidencePanel
+            videoRoomClose={attendance.data!.videoRoomClose}
+            relatedSupportTickets={attendance.data!.relatedSupportTickets}
           />
 
           <AdminSessionInspectorRecommendationPanel

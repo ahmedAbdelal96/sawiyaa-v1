@@ -41,6 +41,7 @@ export interface AuthTokens {
 export interface AuthenticatedUser {
   id: string;
   displayName: string | null;
+  timezone?: string | null;
   status: UserStatus;
   roles: AppRole[];
   primaryEmail: string | null;

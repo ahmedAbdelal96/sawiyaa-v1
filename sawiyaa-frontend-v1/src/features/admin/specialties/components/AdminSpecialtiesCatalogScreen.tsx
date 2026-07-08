@@ -33,6 +33,10 @@ import type {
   Specialty,
   SpecialtyCategory,
 } from "@/features/specialties/types/specialties.types";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 import SpecialtyFormModal from "./SpecialtyFormModal";
 import SpecialtyCategoryFormModal from "./SpecialtyCategoryFormModal";
 import CollapsibleHelpCenter from "@/components/shared/CollapsibleHelpCenter";
@@ -142,6 +146,8 @@ export default function AdminSpecialtiesCatalogScreen() {
     return categories.filter((category) => {
       if (
         textMatches(category.name, normalizedQuery) ||
+        textMatches(category.nameAr, normalizedQuery) ||
+        textMatches(category.nameEn, normalizedQuery) ||
         textMatches(category.slug, normalizedQuery) ||
         textMatches(category.description, normalizedQuery)
       ) {
@@ -149,6 +155,8 @@ export default function AdminSpecialtiesCatalogScreen() {
       }
       return (specialtiesByCategory.get(category.id) ?? []).some((specialty) =>
         textMatches(specialty.name ?? specialty.slug, normalizedQuery) ||
+        textMatches(specialty.nameAr, normalizedQuery) ||
+        textMatches(specialty.nameEn, normalizedQuery) ||
         textMatches(specialty.slug, normalizedQuery) ||
         textMatches(specialty.description, normalizedQuery),
       );
@@ -160,6 +168,8 @@ export default function AdminSpecialtiesCatalogScreen() {
     return specialties
       .filter((specialty) =>
         textMatches(specialty.name ?? specialty.slug, normalizedQuery) ||
+        textMatches(specialty.nameAr, normalizedQuery) ||
+        textMatches(specialty.nameEn, normalizedQuery) ||
         textMatches(specialty.slug, normalizedQuery) ||
         textMatches(specialty.description, normalizedQuery) ||
         textMatches(specialty.category?.name, normalizedQuery),
@@ -226,11 +236,11 @@ export default function AdminSpecialtiesCatalogScreen() {
       setFeedback({
         tone: "success",
         message: nextActiveState
-          ? t("specialtiesAdmin.feedback.activateSuccess", {
-              title: specialty.name ?? specialty.slug,
+              ? t("specialtiesAdmin.feedback.activateSuccess", {
+              title: getLocalizedSpecialtyName(specialty, locale),
             })
           : t("specialtiesAdmin.feedback.deactivateSuccess", {
-              title: specialty.name ?? specialty.slug,
+              title: getLocalizedSpecialtyName(specialty, locale),
             }),
       });
       setConfirmingDeactivateId(null);
@@ -255,10 +265,10 @@ export default function AdminSpecialtiesCatalogScreen() {
         tone: "success",
         message: nextActiveState
           ? t("specialtiesAdmin.feedback.activateCategorySuccess", {
-              title: category.name,
+              title: getLocalizedSpecialtyCategoryName(category, locale),
             })
           : t("specialtiesAdmin.feedback.deactivateCategorySuccess", {
-              title: category.name,
+              title: getLocalizedSpecialtyCategoryName(category, locale),
             }),
       });
     } catch {
@@ -426,7 +436,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                                 </button>
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-semibold text-text-primary">
-                                    {category.name}
+                                    {getLocalizedSpecialtyCategoryName(category, locale)}
                                   </p>
                                   <p className="mt-0.5 text-xs text-text-muted">{category.slug}</p>
                                 </div>
@@ -494,7 +504,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                                       </span>
                                       <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-text-primary">
-                                          {specialty.name ?? specialty.slug}
+                                          {getLocalizedSpecialtyName(specialty, locale)}
                                         </p>
                                         <p className="mt-0.5 text-xs text-text-muted">{specialty.slug}</p>
                                       </div>
@@ -567,7 +577,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                             </span>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-text-primary">
-                                {specialty.name ?? specialty.slug}
+                                {getLocalizedSpecialtyName(specialty, locale)}
                               </p>
                               <p className="mt-0.5 text-xs text-text-muted">{specialty.slug}</p>
                             </div>
@@ -577,7 +587,7 @@ export default function AdminSpecialtiesCatalogScreen() {
                           <div className="flex items-center gap-2">
                             <span>
                               {specialty.category?.name
-                                ? `${t("specialtiesAdmin.structure.types.secondary")} · ${specialty.category.name}`
+                                ? `${t("specialtiesAdmin.structure.types.secondary")} · ${getLocalizedSpecialtyCategoryName(specialty.category, locale)}`
                                 : t("specialtiesAdmin.structure.types.secondary")}
                             </span>
                             <span
@@ -715,7 +725,7 @@ export default function AdminSpecialtiesCatalogScreen() {
         {specialtyPendingDeactivate ? (
           <div className="rounded-2xl border border-status-warning-border bg-status-warning-soft px-4 py-4 text-sm text-status-warning">
             <p className="font-medium">
-              {specialtyPendingDeactivate.name ?? specialtyPendingDeactivate.slug}
+              {getLocalizedSpecialtyName(specialtyPendingDeactivate, locale)}
             </p>
             <p className="mt-1 text-xs text-status-warning/80">
               {specialtyPendingDeactivate.slug}

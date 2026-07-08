@@ -20,6 +20,16 @@ export interface AdminSpecialtySummary {
   specialtyId: string;
   slug: string;
   title: string | null;
+  name: string | null;
+  nameAr: string | null;
+  nameEn: string | null;
+  category: {
+    id: string;
+    slug: string;
+    name: string;
+    nameAr: string | null;
+    nameEn: string | null;
+  } | null;
 }
 
 export type PractitionerApplicationKind = "NEW_APPLICATION" | "EDIT_REQUEST";
@@ -101,6 +111,13 @@ export interface AdminPractitionerProfileSection {
   bio: string | null;
   yearsOfExperience: number | null;
   primarySpecialtyCategoryId: string | null;
+  primarySpecialtyCategory: {
+    id: string;
+    slug: string;
+    name: string;
+    nameAr: string | null;
+    nameEn: string | null;
+  } | null;
   pricing: {
     session30: {
       egp: number | null;

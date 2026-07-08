@@ -4,8 +4,8 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SpecialtyCategoryRepository } from '../repositories/specialty-category.repository';
 import { normalizeSpecialtySlug } from '../utils/normalize-specialty-slug.util';
 
-function buildCategoryBaseSlug(title: string) {
-  const normalized = normalizeSpecialtySlug(title);
+function buildCategoryBaseSlug(nameEn: string, nameAr: string) {
+  const normalized = normalizeSpecialtySlug(nameEn) || normalizeSpecialtySlug(nameAr);
   if (normalized.length > 0) return normalized;
   return 'category';
 }
@@ -23,17 +23,18 @@ export class CreateSpecialtyCategoryUseCase {
 
   async execute(input: {
     locale: SupportedLocale;
-    title: string;
+    nameAr: string;
+    nameEn: string;
     description?: string | null;
     sortOrder?: number;
     isActive?: boolean;
   }) {
-    const title = input.title.trim();
-    const baseSlug = buildCategoryBaseSlug(title);
+    const nameAr = input.nameAr.trim();
+    const nameEn = input.nameEn.trim();
+    const baseSlug = buildCategoryBaseSlug(nameEn, nameAr);
     let slug = baseSlug;
     let suffix = 2;
 
-    // Keep trying deterministic suffixes to avoid slug collisions.
     while (await this.specialtyCategoryRepository.findBySlug(slug)) {
       slug = `${baseSlug}-${suffix}`;
       suffix += 1;
@@ -52,7 +53,9 @@ export class CreateSpecialtyCategoryUseCase {
 
     const category = await this.specialtyCategoryRepository.create({
       slug,
-      name: title,
+      name: nameEn || nameAr,
+      nameAr,
+      nameEn,
       description: input.description?.trim() ?? null,
       sortOrder,
       isActive: input.isActive ?? true,

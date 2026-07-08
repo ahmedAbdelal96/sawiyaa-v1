@@ -75,8 +75,8 @@ It must feel clear, gentle, and reliable from first visit to follow-up.
 - The patient should know whether chat is available.
 - The patient should know whether cancellation is allowed.
 - The patient should know what happened with the money.
-- Session states must appear as human-readable translated labels. For example, `NO_SHOW` should render as `لم يحذر` in Arabic, not as the raw enum value.
-- The Join CTA must be hidden when `joinAvailability.canJoin` is `false`, including for no-show, under-review, ended, or payment-locked sessions.
+- Session states must appear as human-readable translated labels.
+- The Join CTA must be hidden when `joinAvailability.canJoin` is `false`.
 - Accepted instant-booking sessions should stay locked until backend payment confirmation arrives.
 
 ### Failure states
@@ -117,7 +117,7 @@ Practitioners use the platform to manage their professional presence, schedule, 
 5. Respond to pending instant booking requests.
 6. Join session chat at the right time.
 7. Review session history and earnings.
-8. Track wallet and ledger movements.
+8. Track wallet, ledger, and payout movements.
 9. Use support for operational issues.
 
 ### Important practitioner surfaces
@@ -143,8 +143,7 @@ Practitioners use the platform to manage their professional presence, schedule, 
 - Availability must be simple to edit and easy to trust.
 - Instant booking requests should be easy to scan and should expire clearly if not acted on in time.
 - Earnings and ledger values must be currency-aware.
-- Session states must be obvious and human-readable. Session detail must not leak raw enum values or internal i18n key paths.
-- The session presentation and join availability contract follows the same backend field contract as patient surfaces. `presentationStatus` and `joinAvailability` drive the UI consistently.
+- Session states must be obvious and human-readable.
 - Chat should show whether sending is allowed.
 - The dashboard should help practitioners act, not just inspect data.
 
@@ -158,7 +157,7 @@ It should prioritize control, clarity, auditing, and safe moderation.
 
 - Manage users and practitioner records.
 - Moderate sessions, chat, and support cases.
-- Operate payments, settlements, and refunds.
+- Operate payments, payouts, and accounting review.
 - Review reports, notifications, and content.
 - Configure platform policies and settings.
 
@@ -167,7 +166,7 @@ It should prioritize control, clarity, auditing, and safe moderation.
 1. Sign in with admin credentials.
 2. Review dashboard indicators.
 3. Inspect users, practitioners, or patients.
-4. Open sessions, payments, or settlement records.
+4. Open sessions, payment records, payout records, or reconciliation records.
 5. Handle moderation or support tasks.
 6. Review reports and resolve anomalies.
 7. Update policies or settings when authorized.
@@ -185,7 +184,9 @@ It should prioritize control, clarity, auditing, and safe moderation.
 - `/[locale]/admin/chat`
 - `/[locale]/admin/chat-conversations`
 - `/[locale]/admin/payments`
-- `/[locale]/admin/settlements`
+- `/[locale]/admin/practitioner-payouts`
+- `/[locale]/admin/practitioner-payouts/history`
+- `/[locale]/admin/finance/accounting/reconciliation`
 - `/[locale]/admin/refund-policies`
 - `/[locale]/admin/support`
 - `/[locale]/admin/reports`
@@ -201,3 +202,4 @@ It should prioritize control, clarity, auditing, and safe moderation.
 - Sensitive states should not be hidden behind vague copy.
 - Financial data should be precise and currency-aware.
 - Admin tooling should feel operational, not decorative.
+

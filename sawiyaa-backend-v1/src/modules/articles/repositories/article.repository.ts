@@ -71,8 +71,24 @@ export class ArticleRepository {
   findSpecialtyById(input: { id: string; locale: ContentLocale }) {
     return this.prisma.specialty.findUnique({
       where: { id: input.id },
-      include: {
-        category: true,
+      select: {
+        id: true,
+        slug: true,
+        categoryId: true,
+        isActive: true,
+        sortOrder: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            isActive: true,
+            sortOrder: true,
+          },
+        },
         translations: {
           where: {
             locale: {
@@ -80,6 +96,11 @@ export class ArticleRepository {
             },
           },
           orderBy: [{ locale: 'asc' }],
+          select: {
+            locale: true,
+            title: true,
+            description: true,
+          },
         },
       },
     });

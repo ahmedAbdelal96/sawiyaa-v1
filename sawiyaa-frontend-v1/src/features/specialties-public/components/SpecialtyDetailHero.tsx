@@ -1,12 +1,15 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ArrowLeft, BadgeInfo, LayoutGrid, Tag } from "lucide-react";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 
 type Props = { specialty: Specialty };
 
 export default async function SpecialtyDetailHero({ specialty }: Props) {
   const t = await getTranslations("specialties-public.detail");
+  const locale = await getLocale();
+  const specialtyName = getLocalizedSpecialtyName(specialty, locale);
 
   return (
     <div className="app-page-hero px-6 py-8">
@@ -24,7 +27,7 @@ export default async function SpecialtyDetailHero({ specialty }: Props) {
           {" / "}
           <span>{t("breadcrumb")}</span>
           {" / "}
-          <span className="text-text-secondary">{specialty.name}</span>
+          <span className="text-text-secondary">{specialtyName}</span>
         </p>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
@@ -33,7 +36,7 @@ export default async function SpecialtyDetailHero({ specialty }: Props) {
               {t("eyebrow")}
             </p>
             <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-text-primary md:text-5xl dark:text-white/92">
-              {specialty.name}
+              {specialtyName}
             </h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-text-secondary">
               {specialty.description || t("aboutFallback")}

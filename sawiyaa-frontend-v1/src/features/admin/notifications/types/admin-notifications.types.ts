@@ -18,7 +18,6 @@ export type AdminNotificationCategory =
   | "SUPPORT"
   | "CHAT"
   | "SYSTEM"
-  | "TRAINING"
   | "MARKETING";
 
 export type AdminDeliveryAttemptStatus =

@@ -78,6 +78,8 @@ Examples:
 - `instant-booking`
 - `help`
 - `refund-policies`
+- `specialties`
+- `notifications`
 
 ## Quality checks
 
@@ -100,28 +102,39 @@ Session display state comes from backend `presentationStatus` values. These valu
 
 ### What must not appear raw in UI
 
-- `NO_SHOW` — user-facing label should be translated, for example `لم يحذر` in Arabic or `No-show` in English
-- `UNDER_REVIEW` — user-facing label should be translated, for example `قيد المراجعة` in Arabic
-- `SESSION_NOT_JOINABLE_STATUS` — this is an internal gate value, not a user-facing state
+- `NO_SHOW` - user-facing label should be translated, never shown as the raw enum value
+- `UNDER_REVIEW` - user-facing label should be translated, never shown as the raw enum value
+- `SESSION_NOT_JOINABLE_STATUS` - this is an internal gate value, not a user-facing state
 - Internal i18n key paths such as `sessions.practitioner.detail.presentation.NO_SHOW.title` should not appear as visible text
 
-### Translation namespace coverage
+### Specialty localization rules
 
-Every `presentationStatus` value that can appear in a user-visible context must have translations in all namespaces where it renders, including:
+Specialty and specialty category names have raw fields and display helpers.
 
-- general badge and status labels (`sessions.presentationStatus`)
-- list row hints (`sessions.list.presentationHints`)
-- patient session detail presentation copy (`sessions.detail.presentation`)
-- practitioner session detail presentation copy (`sessions.practitioner.detail.presentation`)
-- mobile equivalents if present
+- Admin forms must bind raw inputs to `nameAr` and `nameEn`.
+- Display helpers are for public and list rendering only.
+- The helper must not backfill admin form values.
+- Arabic UI should prefer `nameAr`.
+- English UI should prefer `nameEn`.
+- Fallbacks should never produce blank names when a legacy value or slug exists.
 
-When adding a new `presentationStatus` value, update all relevant EN and AR translation keys before shipping. QA must verify visible DOM text in patient, practitioner, and admin journeys — not just the Next.js internal serialized payload.
+### Translation structure for specialty names
 
-### QA check for session state copy
+Specialty name display should remain separate from admin field labels.
+Examples:
+
+- `specialties.list.name`
+- `specialties.detail.name`
+- `admin.specialties.form.nameAr`
+- `admin.specialties.form.nameEn`
+
+### QA check for session and specialty text
 
 Verify by checking the rendered page text in the target locale:
 
 - The status badge shows a human-readable label, not a raw enum
 - The session detail shows translated state copy, not a key path or enum string
+- The specialty list shows a localized display name, not a blank card
 - No `undefined`, `null`, `[object Object]`, or raw enum appears in the visible content area
 - The Join CTA is hidden when `joinAvailability.canJoin` is false
+

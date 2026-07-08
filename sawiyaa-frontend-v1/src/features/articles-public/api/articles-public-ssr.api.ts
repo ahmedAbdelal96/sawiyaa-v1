@@ -36,12 +36,16 @@ export type PublicSpecialtyCategoryFilterItem = {
   id: string;
   slug: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
 };
 
 export type PublicSpecialtyFilterItem = {
   id: string;
   slug: string;
   name: string | null;
+  nameAr?: string | null;
+  nameEn?: string | null;
   category: PublicSpecialtyCategoryFilterItem | null;
 };
 

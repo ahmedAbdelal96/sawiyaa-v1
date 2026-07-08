@@ -16,6 +16,9 @@ import {
   fetchPublicSpecialties,
   fetchPublicSpecialtyCategories,
 } from "@/features/specialties-public/api/specialties-ssr.api";
+import {
+  getLocalizedSpecialtyCategoryName,
+} from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -89,6 +92,8 @@ export default async function SpecialtiesPage({ params, searchParams }: Props) {
 
     if (
       matchesSearch(category.name, normalizedQuery) ||
+      matchesSearch(category.nameAr, normalizedQuery) ||
+      matchesSearch(category.nameEn, normalizedQuery) ||
       matchesSearch(category.slug, normalizedQuery) ||
       matchesSearch(category.description, normalizedQuery)
     ) {
@@ -99,6 +104,8 @@ export default async function SpecialtiesPage({ params, searchParams }: Props) {
       specialty.category?.id === category.id &&
       (
         matchesSearch(specialty.name, normalizedQuery) ||
+        matchesSearch(specialty.nameAr, normalizedQuery) ||
+        matchesSearch(specialty.nameEn, normalizedQuery) ||
         matchesSearch(specialty.slug, normalizedQuery) ||
         matchesSearch(specialty.description, normalizedQuery)
       ));
@@ -132,7 +139,7 @@ export default async function SpecialtiesPage({ params, searchParams }: Props) {
     { href: "/specialties", label: t("allCategories") },
     ...filteredCategories.map((category) => ({
       href: `/specialties#category-${category.slug}`,
-      label: category.name,
+      label: getLocalizedSpecialtyCategoryName(category, locale),
     })),
   ];
 

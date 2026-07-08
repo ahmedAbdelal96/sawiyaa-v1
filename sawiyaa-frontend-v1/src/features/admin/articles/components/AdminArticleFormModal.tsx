@@ -14,6 +14,10 @@ import {
   useAdminSpecialties,
   useAdminSpecialtyCategories,
 } from "@/features/specialties/hooks/use-specialties";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 import { resolveCoverImageUrl } from "@/features/articles-public/lib/resolve-cover-image-url";
 import { normalizeFormError, type NormalizedFormError } from "@/lib/form-errors";
 import { useUploadAdminArticleCover } from "../hooks/use-admin-articles";
@@ -107,17 +111,20 @@ export default function AdminArticleFormModal({
     () =>
       (categoriesQuery.data?.categories ?? []).map((item) => ({
         value: item.id,
-        label: item.name,
+        label: getLocalizedSpecialtyCategoryName(item, locale),
       })),
-    [categoriesQuery.data?.categories],
+    [categoriesQuery.data?.categories, locale],
   );
 
   const specialtyOptions = useMemo(
     () =>
       (specialtiesQuery.data?.specialties ?? [])
         .filter((item) => item.category?.id === form.categoryId)
-        .map((item) => ({ value: item.id, label: item.name ?? item.slug })),
-    [specialtiesQuery.data?.specialties, form.categoryId],
+        .map((item) => ({
+          value: item.id,
+          label: getLocalizedSpecialtyName(item, locale),
+        })),
+    [specialtiesQuery.data?.specialties, form.categoryId, locale],
   );
 
   const clearFields = (...fields: FormFieldName[]) => {

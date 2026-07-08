@@ -3,7 +3,7 @@
 This document covers the care booking core:
 
 - practitioner availability
-- recurring schedule logic
+- week-by-week availability windows
 - specific-day overrides
 - exceptions
 - session lifecycle
@@ -12,32 +12,35 @@ This document covers the care booking core:
 
 ## Availability and schedule model
 
-The weekly schedule is the recurring base availability pattern.
+The current model is week-by-week availability, not a legacy recurring runtime schedule.
 
-- The weekly schedule repeats automatically every week unless the practitioner changes it.
-- Specific-day adjustments apply only to one selected date.
-- Exceptions are stored separately from the recurring weekly schedule.
+- Practitioners manage the current week and the next week.
+- Each availability week has a clear status: `DRAFT`, `PUBLISHED`, or `ARCHIVED`.
+- Public patient booking and discovery read only `PUBLISHED` weeks.
+- `DRAFT` and `ARCHIVED` weeks must not authorize booking.
+- Backend booking validation uses published week windows only.
+- Instant booking eligibility also uses published week windows only.
 - `BLOCK` means prevent bookings.
 - `OPEN_EXTRA` means add extra availability.
 - Booked sessions are subtracted from the available windows when the backend generates slots.
 - Deleting an exception removes only the exception record; it does not delete booked sessions.
-- Patient booking screens reflect live availability plus exceptions plus booking conflicts.
+- Patient booking screens reflect live published availability plus exceptions plus booking conflicts.
 
 The practitioner availability page should be understood as three layers:
 
-1. Weekly schedule
+1. Week draft or published windows
 2. Specific-day adjustments
 3. Global current/future exceptions table
 
-That separation matters because the weekly plan is recurring, while a specific-day adjustment changes only one date.
+That separation matters because the current week model is explicit and the old recurring runtime flow has been removed.
 
 ## Timezone behavior
 
-- Weekly schedule editing is practitioner-local wall time plus an IANA timezone.
+- Week editing is practitioner-local wall time plus an IANA timezone.
 - Specific-day adjustments are created for one explicit local date/time context and stored as UTC exception ranges.
 - Session creation, join windows, payment expiry, and chat availability are all driven from UTC session facts on the backend.
 - Patient-facing booking screens may show viewer-local times, but the backend still owns the actual slot validation and conflict checks.
-- Practitioner-facing availability screens should stay in the practitioner timezone so the recurring plan remains understandable.
+- Practitioner-facing availability screens should stay in the practitioner timezone so the weekly plan remains understandable.
 - The UI should label the timezone context when a time could be confusing, especially for cross-country travel or mixed-country teams.
 - Write endpoints should accept only valid IANA timezone names, with blank values normalized or rejected according to the specific flow contract.
 
@@ -47,7 +50,7 @@ The practitioner availability page is the operational editor for the schedule.
 
 It should make three things clear:
 
-- the recurring weekly pattern
+- the week being edited
 - the temporary adjustment for one date
 - the full list of current and future exceptions
 
@@ -120,15 +123,15 @@ It should never expose a raw route or technical enum as the main message.
 
 The backend owns session display state through two primary fields:
 
-- **`presentationStatus`** — drives all user-facing status copy: badges, list labels, detail headings, session summary counts, and filter tabs. The UI must not derive its own display label from raw backend session state.
-- **`joinAvailability.canJoin`** — the only signal the UI should use to show or hide the Join CTA. No other condition, clock-based logic, or local status inference should control this.
+- **`presentationStatus`** - drives all user-facing status copy: badges, list labels, detail headings, session summary counts, and filter tabs. The UI must not derive its own display label from raw backend session state.
+- **`joinAvailability.canJoin`** - the only signal the UI should use to show or hide the Join CTA. No other condition, clock-based logic, or local status inference should control this.
 
 ### Enforcing the join contract
 
 The Join CTA must stay hidden whenever `joinAvailability.canJoin` is `false`, including but not limited to these states:
 
-- `NO_SHOW` — session was closed as a no-show
-- `UNDER_REVIEW` — session is under operational review
+- `NO_SHOW` - session was closed as a no-show
+- `UNDER_REVIEW` - session is under operational review
 - session has ended or been cancelled
 - payment is not yet confirmed
 - the join window has not opened
@@ -146,7 +149,7 @@ The session detail page should always answer these questions from backend fields
 
 ### No-show and under-review states
 
-`NO_SHOW` and `UNDER_REVIEW` are session closeout states. They must render as human-readable copy, not raw enum values. For example, in Arabic the label should appear as `لم يحضر` for no-show. The raw enum must never appear in visible UI text.
+`NO_SHOW` and `UNDER_REVIEW` are session closeout states. They must render as human-readable copy, not raw enum values. For example, in Arabic the label should be translated, not shown as the raw enum. The raw enum must never appear in visible UI text.
 
 These states are set through admin manual decision operations and propagate through the same `presentationStatus` contract used across patient, practitioner, and admin surfaces. They do not automatically trigger refunds or payouts unless the finance policy explicitly handles that outcome.
 
@@ -229,7 +232,7 @@ Practitioner queue:
 ### Status
 
 - Phases 1-4 are closed.
-- Phase 5 is partially closed because provider-side Paymob checkout QA is still externally blocked.
+- Phase 5 is partially closed because provider-side checkout QA is still externally blocked.
 - Phase 6 is closed for mobile parity.
 - Phase 6B and 6C are closed for mobile visual polish and scale alignment.
 
@@ -241,3 +244,8 @@ Practitioner queue:
 - `/[locale]/practitioner/availability`
 - `/[locale]/practitioner/instant-booking`
 - `/[locale]/practitioner/sessions/[id]/chat`
+
+## Related docs
+
+- [Availability system](availability-system.md)
+- [Platform overview](platform-overview.md)

@@ -13,13 +13,7 @@ import { BuildPublishedWeekAvailabilityWindowsService } from '../services/build-
 import { AvailabilityWeekCalendarService } from '../services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '../services/resolve-practitioner-timezone.service';
 
-const PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES: SessionStatus[] = [
-  SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-  SessionStatus.CONFIRMED,
-  SessionStatus.UPCOMING,
-  SessionStatus.READY_TO_JOIN,
-  SessionStatus.IN_PROGRESS,
-];
+import { BLOCKING_SESSION_STATUSES } from '../utils/availability-session.constants';
 
 /**
  * Public window listing is the booking-facing read baseline for Phase 1B-A.
@@ -127,7 +121,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
           OR: [
             {
               status: {
-                in: PUBLIC_AVAILABILITY_BLOCKING_SESSION_STATUSES,
+                in: BLOCKING_SESSION_STATUSES,
               },
             },
             {

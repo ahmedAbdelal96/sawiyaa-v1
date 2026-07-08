@@ -13,7 +13,7 @@ It does not own:
 - practitioner-specialty linkage workflows (Practitioners Module)
 - article categories
 - course categories
-- content/training taxonomy
+- content/academy taxonomy
 
 ## Endpoints
 
@@ -115,6 +115,6 @@ No raw database shape or practitioner linkage internals are exposed.
 
 - practitioner linking flows
 - article/course category management
-- content/training taxonomy flows
+- content/academy taxonomy flows
 - search ranking and advanced discovery logic
 - sessions/payments/reviews/chat concerns

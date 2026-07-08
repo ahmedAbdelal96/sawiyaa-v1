@@ -3,6 +3,7 @@ import {
   SessionAttendanceEventType,
   SessionAttendanceParticipantRole,
 } from '@prisma/client';
+import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
 import {
   summarizeSessionAttendance,
@@ -40,7 +41,10 @@ type AttendanceSummary = {
 
 @Injectable()
 export class GetAdminSessionAttendanceUseCase {
-  constructor(private readonly sessionRepository: SessionRepository) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessionRepository: SessionRepository,
+  ) {}
 
   async execute(input: { sessionId: string }) {
     // Phase 3 — fetch the session with the participant identity include so we
@@ -163,6 +167,33 @@ export class GetAdminSessionAttendanceUseCase {
       session as unknown as SessionWithParticipants,
     );
 
+    const closedByUser = session.videoRoomClosedByUserId
+      ? await this.prisma.user.findUnique({
+          where: { id: session.videoRoomClosedByUserId },
+          select: {
+            id: true,
+            displayName: true,
+          },
+        })
+      : null;
+
+    const relatedSupportTickets = await this.prisma.supportTicket.findMany({
+      where: {
+        relatedSessionId: input.sessionId,
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        ticketType: true,
+        status: true,
+        priority: true,
+        subject: true,
+        lastMessageAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
     // Fetch final manual decision if one exists to override presentationStatus
     const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
       input.sessionId,
@@ -176,6 +207,7 @@ export class GetAdminSessionAttendanceUseCase {
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
+      videoRoomClosedAt: session.videoRoomClosedAt,
       now: new Date(),
       finalManualDecision: latestDecision?.decisionType ?? null,
     });
@@ -202,6 +234,23 @@ export class GetAdminSessionAttendanceUseCase {
       platformTimeline,
       evidenceTimeline,
       participants,
+      videoRoomClose: {
+        closedAt: session.videoRoomClosedAt?.toISOString() ?? null,
+        closedByUserId: session.videoRoomClosedByUserId ?? null,
+        closedByDisplayName: closedByUser?.displayName ?? null,
+        closeReason: session.videoRoomCloseReason ?? null,
+        closeNote: session.videoRoomCloseNote ?? null,
+      },
+      relatedSupportTickets: relatedSupportTickets.map((ticket) => ({
+        id: ticket.id,
+        category: ticket.ticketType,
+        status: ticket.status,
+        priority: ticket.priority,
+        subject: ticket.subject,
+        lastMessageAt: ticket.lastMessageAt?.toISOString() ?? null,
+        createdAt: ticket.createdAt.toISOString(),
+        updatedAt: ticket.updatedAt.toISOString(),
+      })),
       presentationStatus,
       extendedSummary: this.mapExtendedSummary(extendedSummary),
     };

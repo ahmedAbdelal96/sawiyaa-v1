@@ -24,11 +24,25 @@ function buildRawPayload(data: AdminSessionAttendanceResponseData) {
     ingestedAt: event.ingestedAt,
   }));
 
+  const relatedSupportTickets = (data.relatedSupportTickets ?? []).map((ticket) => ({
+    id: ticket.id,
+    category: ticket.category,
+    status: ticket.status,
+    priority: ticket.priority,
+    subject: ticket.subject,
+    lastMessageAt: ticket.lastMessageAt,
+    createdAt: ticket.createdAt,
+    updatedAt: ticket.updatedAt,
+  }));
+
   return {
     sessionId: data.sessionId,
     summary: data.summary,
     timelineEventCount: data.timeline.length,
     timeline: sanitizedEvents,
+    videoRoomClose: data.videoRoomClose,
+    relatedSupportTicketCount: relatedSupportTickets.length,
+    relatedSupportTickets,
     extendedSummary: data.extendedSummary,
   };
 }

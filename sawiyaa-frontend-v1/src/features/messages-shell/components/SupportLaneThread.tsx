@@ -29,6 +29,7 @@ type Props = {
   ticketId: string | null;
   fullViewHref: string;
   locale: string;
+  prefillRelatedSessionId?: string | null;
   copy: {
     heading: string;
     note: string;
@@ -85,6 +86,7 @@ export default function SupportLaneThread({
   ticketId,
   fullViewHref,
   locale,
+  prefillRelatedSessionId,
   copy,
   onOpenFull,
   onCreatedTicket,
@@ -92,7 +94,7 @@ export default function SupportLaneThread({
 }: Props) {
   const [messageDraft, setMessageDraft] = useState("");
   const [newMessage, setNewMessage] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(Boolean(prefillRelatedSessionId));
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -129,6 +131,12 @@ export default function SupportLaneThread({
 
   const createMutation =
     role === "patient" ? createPatientTicket : createPractitionerTicket;
+
+  useEffect(() => {
+    if (prefillRelatedSessionId) {
+      setShowCreateForm(true);
+    }
+  }, [prefillRelatedSessionId]);
 
   const ticket = ticketQuery.data?.item ?? null;
   const realtimeThread = useSupportChatRealtime({
@@ -187,6 +195,7 @@ export default function SupportLaneThread({
       subject,
       description,
       priority: "NORMAL",
+      relatedSessionId: prefillRelatedSessionId?.trim() || undefined,
     });
 
     setNewMessage("");
@@ -246,6 +255,15 @@ export default function SupportLaneThread({
             <LifeBuoy className="h-3.5 w-3.5" />
             {copy.createHeading}
           </div>
+          {prefillRelatedSessionId ? (
+            <div className="mb-1 inline-flex max-w-full rounded-full bg-primary/8 px-2 py-1 text-[10px] font-semibold text-primary dark:bg-primary/15 dark:text-primary-light">
+              <span className="truncate">
+                {locale.startsWith("ar")
+                  ? `الجلسة المرتبطة: ${prefillRelatedSessionId}`
+                  : `Related session: ${prefillRelatedSessionId}`}
+              </span>
+            </div>
+          ) : null}
           <form onSubmit={submitCreate}>
             <textarea
               value={newMessage}

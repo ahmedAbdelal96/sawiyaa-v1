@@ -105,7 +105,7 @@ Error:
 - `availability`, `presence`, `sessions`, `instant-booking`
 - `payments`, `financial-rules`, `financial-operations`
 - `support`, `care-chat`, `moderation`, `notifications`
-- `specialties`, `training`
+- `specialties`, `academy`
 - `chat` (general chat contracts)
 - `settings` (user settings baseline)
 - `admin`, `config`
@@ -115,6 +115,7 @@ Error:
 - Core guided-care backend lanes are implemented and contract-usable.
 - General chat/settings contracts exist in backend but may remain deferred in frontend product scope by explicit planning choice.
 - Some operational areas are intentionally baseline-first and can be expanded additively.
+- Training has been retired from the active backend runtime surface.
 
 ## Source-of-Truth Docs
 

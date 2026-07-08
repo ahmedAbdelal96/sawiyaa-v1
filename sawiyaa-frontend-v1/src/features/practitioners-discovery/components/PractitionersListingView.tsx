@@ -170,7 +170,12 @@ export async function getPractitionersListingData(
     : "";
 
   const specialtyLabels = Object.fromEntries(
-    filters.specialties.map((item) => [item.slug, item.name]),
+    filters.specialties.map((item) => [
+      item.slug,
+      locale.startsWith("ar")
+        ? item.nameAr ?? item.nameEn ?? item.name
+        : item.nameEn ?? item.nameAr ?? item.name,
+    ]),
   );
   const languageLabels = Object.fromEntries(
     filters.languages.map((item) => [item.value, item.label]),

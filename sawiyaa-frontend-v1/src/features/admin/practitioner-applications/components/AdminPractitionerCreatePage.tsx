@@ -25,6 +25,10 @@ import type {
   PractitionerType,
 } from "@/features/practitioners/types/practitioners.types";
 import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 import { SUPPORTED_COUNTRY_CODE_OPTIONS } from "@/constants/reference-data";
 import {
   getLocalizedBankOptions,
@@ -286,9 +290,9 @@ export default function AdminPractitionerCreatePage() {
     () =>
       (specialtyCategoriesQuery.data?.categories ?? []).map((item) => ({
         value: item.id,
-        label: item.name,
+        label: getLocalizedSpecialtyCategoryName(item, locale),
       })),
-    [specialtyCategoriesQuery.data?.categories]
+    [locale, specialtyCategoriesQuery.data?.categories]
   );
 
   const specialtiesForCategory = useMemo(
@@ -305,10 +309,10 @@ export default function AdminPractitionerCreatePage() {
     () =>
       specialtiesForCategory.map((item) => ({
         value: item.id,
-        text: item.name ?? item.slug,
+        text: getLocalizedSpecialtyName(item, locale),
         selected: form.specialtyIds.includes(item.id),
       })),
-    [form.specialtyIds, specialtiesForCategory]
+    [form.specialtyIds, locale, specialtiesForCategory]
   );
 
   const languageOptions = useMemo(

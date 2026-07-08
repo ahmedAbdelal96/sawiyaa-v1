@@ -24,12 +24,12 @@ import { enSessionsCatalog } from './sessions.catalog';
 import { enSettingsCatalog } from './settings.catalog';
 import { enSpecialtiesCatalog } from './specialties.catalog';
 import { enSupportCatalog } from './support.catalog';
-import { enTrainingCatalog } from './training.catalog';
 import { enUsersCatalog } from './users.catalog';
 import { enValidationCatalog } from './validation.catalog';
 
 export const enCatalog = {
   academy: enAcademyCatalog,
+  academyProgram: enAcademyCatalog.academyProgram,
   auth: enAuthCatalog,
   admin: enAdminCatalog,
   assessments: enAssessmentsCatalog,
@@ -56,6 +56,5 @@ export const enCatalog = {
   settings: enSettingsCatalog,
   specialties: enSpecialtiesCatalog,
   support: enSupportCatalog,
-  training: enTrainingCatalog,
   users: enUsersCatalog,
 };

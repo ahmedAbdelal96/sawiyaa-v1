@@ -17,13 +17,28 @@ import type { SupportTicketType } from "../../../src/features/patient/support/ty
 
 export default function NewSupportChatScreen() {
   const router = useRouter();
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
+  const params = useLocalSearchParams<{
+    returnTo?: string;
+    relatedSessionId?: string;
+    category?: string;
+    subject?: string;
+    message?: string;
+    sessionCode?: string;
+  }>();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language?.startsWith("ar") ?? false;
 
-  const [message, setMessage] = useState("");
-  const [category, setCategory] = useState<SupportTicketType>("GENERAL");
+  const relatedSessionId = toSingleParam(params.relatedSessionId);
+  const linkedSessionCode = toSingleParam(params.sessionCode);
+  const initialSubject = toSingleParam(params.subject) ?? "";
+  const initialMessage = toSingleParam(params.message) ?? "";
+  const initialCategory = normalizeCategory(toSingleParam(params.category));
+
+  const [message, setMessage] = useState(initialMessage);
+  const [category, setCategory] = useState<SupportTicketType>(
+    initialCategory ?? (relatedSessionId ? "SESSION" : "GENERAL"),
+  );
   const [showCategory, setShowCategory] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,15 +52,16 @@ export default function NewSupportChatScreen() {
     }
 
     try {
-      const subjectText = message.trim().slice(0, 60);
+      const subjectText = initialSubject.trim() || message.trim().slice(0, 60);
       const res = await createMutation.mutateAsync({
         category,
         subject: subjectText,
         description: message.trim(),
+        relatedSessionId: relatedSessionId ?? undefined,
       });
       router.replace({
         pathname: "/(patient)/support/[id]",
-        params: { id: res.item.id, returnTo: returnTo ?? "" },
+        params: { id: res.item.id, returnTo: toSingleParam(params.returnTo) ?? "" },
       } as any);
     } catch (err) {
       setError(extractApiErrorMessage(err));
@@ -77,6 +93,38 @@ export default function NewSupportChatScreen() {
       >
         {/* Body: empty chat-like area */}
         <View style={styles.body}>
+          {relatedSessionId ? (
+            <View
+              style={[
+                styles.sessionContextBox,
+                {
+                  backgroundColor: theme.colors.primaryLight,
+                  borderColor: theme.colors.borderLight,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
+              ]}
+            >
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <View style={styles.sessionContextCopy}>
+                <Text weight="600" style={[styles.sessionContextTitle, isRTL ? styles.subtitleRtl : null]}>
+                  {t("support.new.sessionContextTitle")}
+                </Text>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={[styles.sessionContextBody, isRTL ? styles.subtitleRtl : null]}
+                >
+                  {t("support.new.sessionContextBody", {
+                    sessionCode: linkedSessionCode ?? relatedSessionId,
+                  })}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           <Text
             color={theme.colors.textSecondary}
             style={[styles.subtitle, isRTL ? styles.subtitleRtl : null]}
@@ -221,6 +269,31 @@ export default function NewSupportChatScreen() {
   );
 }
 
+function toSingleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function normalizeCategory(value: string | undefined): SupportTicketType | null {
+  const allowed: SupportTicketType[] = [
+    "GENERAL",
+    "BOOKING",
+    "PAYMENT",
+    "SESSION",
+    "TECHNICAL",
+    "ACCOUNT",
+    "CHAT",
+    "OTHER",
+  ];
+
+  if (!value) {
+    return null;
+  }
+
+  return allowed.includes(value as SupportTicketType)
+    ? (value as SupportTicketType)
+    : null;
+}
+
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
@@ -235,6 +308,26 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     lineHeight: 19,
+  },
+  sessionContextBox: {
+    alignItems: "flex-start",
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  sessionContextCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  sessionContextTitle: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  sessionContextBody: {
+    fontSize: 12,
+    lineHeight: 18,
   },
   subtitleRtl: {
     textAlign: "right",

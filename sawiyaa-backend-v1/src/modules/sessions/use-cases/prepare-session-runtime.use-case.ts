@@ -62,6 +62,7 @@ export class PrepareSessionRuntimeUseCase {
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
+      videoRoomClosedAt: session.videoRoomClosedAt,
       now: new Date(),
     });
 

@@ -5,6 +5,8 @@
 export interface SpecialtyCategory {
   id: string;
   name: string;
+  nameAr: string | null;
+  nameEn: string | null;
   slug: string;
   description: string | null;
   isActive: boolean;
@@ -14,6 +16,8 @@ export interface SpecialtyCategory {
 export interface Specialty {
   id: string;
   name: string | null;
+  nameAr: string | null;
+  nameEn: string | null;
   slug: string;
   description: string | null;
   isActive: boolean;
@@ -48,14 +52,16 @@ export interface ListSpecialtiesParams {
 }
 
 export interface CreateSpecialtyCategoryRequest {
-  title: string;
+  nameAr: string;
+  nameEn: string;
   description?: string | null;
   sortOrder?: number;
   isActive?: boolean;
 }
 
 export interface UpdateSpecialtyCategoryRequest {
-  title?: string;
+  nameAr?: string;
+  nameEn?: string;
   description?: string | null;
   sortOrder?: number;
   isActive?: boolean;
@@ -64,7 +70,8 @@ export interface UpdateSpecialtyCategoryRequest {
 export interface CreateSpecialtyRequest {
   categoryId: string;
   slug: string;
-  title: string;
+  nameAr: string;
+  nameEn: string;
   description?: string | null;
   sortOrder?: number;
   isActive?: boolean;
@@ -73,7 +80,8 @@ export interface CreateSpecialtyRequest {
 export interface UpdateSpecialtyRequest {
   categoryId?: string;
   slug?: string;
-  title?: string;
+  nameAr?: string;
+  nameEn?: string;
   description?: string | null;
   sortOrder?: number;
   isActive?: boolean;

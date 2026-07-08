@@ -652,24 +652,4 @@ describe('OperationalNotificationService', () => {
     );
   });
 
-  it('queues training schedule reminder as queued notification hook', async () => {
-    const setup = buildService({ emailEnabled: false });
-
-    await setup.service.queueTrainingScheduleReminder({
-      userId: 'user_3',
-      enrollmentId: 'en_1',
-      scheduleId: 'schedule_1',
-      scheduledFor: new Date('2026-05-01T08:00:00.000Z'),
-      scheduledStartAt: new Date('2026-05-02T08:00:00.000Z'),
-    });
-
-    expect(setup.createNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        channel: NotificationChannel.IN_APP,
-        status: NotificationStatus.PENDING,
-        relatedEntityType: 'TRAINING_ENROLLMENT',
-        relatedEntityId: 'en_1',
-      }),
-    );
-  });
 });

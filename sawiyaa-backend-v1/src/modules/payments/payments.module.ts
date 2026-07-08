@@ -24,7 +24,7 @@ import { PaymentPatientRepository } from './repositories/payment-patient.reposit
 import { PaymentRepository } from './repositories/payment.repository';
 import { PaymentSessionRepository } from './repositories/payment-session.repository';
 import { OrchestrateSessionPaymentStatusService } from './services/orchestrate-session-payment-status.service';
-import { OrchestrateTrainingEnrollmentPaymentStatusService } from './services/orchestrate-training-enrollment-payment-status.service';
+import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from './services/orchestrate-academy-program-enrollment-payment-status.service';
 import { PaymentProviderCapabilitiesService } from './services/payment-provider-capabilities.service';
 import { PaymentConfigStartupValidationService } from './services/payment-config-startup-validation.service';
 import { PaymentRuntimeConfigService } from './services/payment-runtime-config.service';
@@ -89,7 +89,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     ValidatePaymentStatusTransitionService,
     ValidateRefundEligibilityService,
     OrchestrateSessionPaymentStatusService,
-    OrchestrateTrainingEnrollmentPaymentStatusService,
+    OrchestrateAcademyProgramEnrollmentPaymentStatusService,
     PaymentProviderCapabilitiesService,
     PaymentRuntimeConfigService,
     PaymentConfigStartupValidationService,

@@ -47,8 +47,10 @@ describe('ExpirePaymentUseCase', () => {
     const orchestrateSessionPaymentStatusService = {
       expireSessionFromPayment: jest.fn().mockResolvedValue({}),
     };
-    const orchestrateTrainingEnrollmentPaymentStatusService = {
+    const orchestrateAcademyProgramEnrollmentPaymentStatusService = {
       markEnrollmentPaymentExpired: jest.fn().mockResolvedValue({}),
+      markEnrollmentPaymentFailed: jest.fn().mockResolvedValue({}),
+      markEnrollmentConfirmedFromPayment: jest.fn().mockResolvedValue({}),
     };
     const paymentMapper = {
       toViewModel: jest.fn().mockReturnValue({ id: 'payment_1' }),
@@ -68,7 +70,7 @@ describe('ExpirePaymentUseCase', () => {
       paymentRepository as never,
       validatePaymentStatusTransitionService as never,
       orchestrateSessionPaymentStatusService as never,
-      orchestrateTrainingEnrollmentPaymentStatusService as never,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService as never,
       paymentMapper as never,
       customerWalletAccountingService as never,
       reconcilePackagePurchasePaymentUseCase as never,
@@ -78,6 +80,7 @@ describe('ExpirePaymentUseCase', () => {
     return {
       useCase,
       orchestrateSessionPaymentStatusService,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService,
       reconcilePackagePurchasePaymentUseCase,
       customerWalletAccountingService,
     };
@@ -123,6 +126,10 @@ describe('ExpirePaymentUseCase', () => {
     ).not.toHaveBeenCalled();
     expect(
       setup.customerWalletAccountingService.releaseReservationForPayment,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.orchestrateAcademyProgramEnrollmentPaymentStatusService
+        .markEnrollmentPaymentExpired,
     ).not.toHaveBeenCalled();
   });
 });

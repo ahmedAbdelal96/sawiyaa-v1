@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, Brain, Apple, Activity } from "lucide-react";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 
 const SPECIALTY_THEMES = [
   {
@@ -33,7 +34,13 @@ export default async function SpecialtiesSection() {
     getLocale(),
   ]);
 
-  let specialties: Array<{ id: string; name: string | null; slug: string }> = [];
+  let specialties: Array<{
+    id: string;
+    name: string | null;
+    nameAr: string | null;
+    nameEn: string | null;
+    slug: string;
+  }> = [];
   try {
     const data = await fetchPublicSpecialties(locale);
     specialties = data.specialties.slice(0, 6);
@@ -87,7 +94,7 @@ export default async function SpecialtiesSection() {
                 </div>
 
                 <h3 className="text-base font-bold text-text-primary transition-colors duration-200 group-hover:text-text-brand dark:text-white/90">
-                  {specialty.name}
+                  {getLocalizedSpecialtyName(specialty, locale)}
                 </h3>
 
                 <div className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors duration-200 group-hover:text-[#24564F]">

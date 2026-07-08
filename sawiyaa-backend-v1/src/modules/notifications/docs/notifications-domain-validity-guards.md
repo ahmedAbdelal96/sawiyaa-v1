@@ -18,9 +18,6 @@ This slice prevents stale or obsolete queued notifications from being sent.
 
 - `SESSION` notifications:
   - suppressed if session is missing or terminal-invalid (`CANCELLED`, `COMPLETED`, `NO_SHOW`, `EXPIRED`, `REFUNDED`)
-- `TRAINING_ENROLLMENT` notifications:
-  - suppressed if enrollment is missing or not `ACTIVE`
-  - suppressed if linked schedule is `CANCELLED`, `COMPLETED`, or `ARCHIVED`
 - `PAYMENT` notifications:
   - `payments.payment-succeeded` requires payment `CAPTURED` or `AUTHORIZED`
   - `payments.payment-failed` requires payment `FAILED`, `CANCELLED`, or `EXPIRED`

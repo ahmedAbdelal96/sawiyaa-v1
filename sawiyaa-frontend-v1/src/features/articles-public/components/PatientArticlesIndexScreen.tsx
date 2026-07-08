@@ -6,6 +6,10 @@ import type {
   PublicSpecialtyCategoryFilterItem,
   PublicSpecialtyFilterItem,
 } from "../api/articles-public-ssr.api";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   data: PublicArticlesListData;
@@ -59,7 +63,15 @@ export default async function PatientArticlesIndexScreen({
   const rootOptions = specialtyCategories
     .map((item) => ({
       value: item.slug.trim().toLowerCase(),
-      label: item.name,
+      label: getLocalizedSpecialtyCategoryName(
+        {
+          name: item.name,
+          nameAr: item.nameAr ?? null,
+          nameEn: item.nameEn ?? null,
+          slug: item.slug,
+        },
+        locale,
+      ),
     }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -73,7 +85,15 @@ export default async function PatientArticlesIndexScreen({
     .map((item) => ({
       id: item.id,
       slug: item.slug,
-      title: item.name ?? item.slug,
+      title: getLocalizedSpecialtyName(
+        {
+          name: item.name,
+          nameAr: item.nameAr ?? null,
+          nameEn: item.nameEn ?? null,
+          slug: item.slug,
+        },
+        locale,
+      ),
     }))
     .sort((a, b) => a.title.localeCompare(b.title));
 

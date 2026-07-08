@@ -54,7 +54,7 @@ export class BuildNormalizedCareSignalContextService {
       hasUpcomingSession,
       hasPastSession: snapshot.hasPastSession,
       hasRecentMatchingSession: snapshot.hasRecentMatchingSession,
-      hasActiveTrainingEnrollment: snapshot.hasActiveTrainingEnrollment,
+      hasActiveAcademyEnrollment: snapshot.hasActiveAcademyEnrollment,
       rulesApplied,
     });
 
@@ -85,8 +85,8 @@ export class BuildNormalizedCareSignalContextService {
       matching: {
         hasRecentSession: snapshot.hasRecentMatchingSession,
       },
-      training: {
-        hasActiveEnrollment: snapshot.hasActiveTrainingEnrollment,
+      academy: {
+        hasActiveEnrollment: snapshot.hasActiveAcademyEnrollment,
       },
       support: {
         hasOpenTicket: snapshot.hasOpenSupportTicket,
@@ -123,7 +123,7 @@ export class BuildNormalizedCareSignalContextService {
     hasUpcomingSession: boolean;
     hasPastSession: boolean;
     hasRecentMatchingSession: boolean;
-    hasActiveTrainingEnrollment: boolean;
+    hasActiveAcademyEnrollment: boolean;
     rulesApplied: string[];
   }): NormalizedCareSignalContext['continuity']['stage'] {
     if (input.hasPendingPayment) {
@@ -136,8 +136,8 @@ export class BuildNormalizedCareSignalContextService {
       return 'UPCOMING_SESSION';
     }
 
-    if (input.hasActiveTrainingEnrollment) {
-      input.rulesApplied.push('ACTIVE_TRAINING_COUNTS_AS_ACTIVE_CARE');
+    if (input.hasActiveAcademyEnrollment) {
+      input.rulesApplied.push('ACTIVE_ACADEMY_COUNTS_AS_ACTIVE_CARE');
       return 'ACTIVE_CARE';
     }
 

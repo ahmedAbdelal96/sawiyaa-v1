@@ -49,7 +49,7 @@ Rules:
 - the session is created in `PENDING_PAYMENT` after practitioner acceptance
 - join and chat remain locked until the backend confirms payment
 - the payment-return screen should refetch backend state before unlocking anything
-- external Paymob sandbox checkout verification is still deferred because the provider returned `403 Forbidden` during QA in this environment
+- provider-side checkout QA can still be deferred if the external provider returns `403 Forbidden` in this environment
 
 ## Payment time handling
 
@@ -80,7 +80,7 @@ Finance screens and backend flows should keep the following visible:
 - refund decisions
 - wallet balance updates
 - practitioner payouts
-- settlement generation
+- accounting reconciliation
 - exception handling
 
 ## Related routes
@@ -96,7 +96,8 @@ Finance screens and backend flows should keep the following visible:
 - package purchase payment flows
 - training enrollment payment flows
 - session payment return flows
-- practitioner settlements and payout tools
+- individual practitioner payout tools
+- accounting reconciliation
 
 ## Money copy guidance
 
@@ -104,3 +105,9 @@ Finance screens and backend flows should keep the following visible:
 - Do not bury the amount in paragraphs.
 - Do not repeat the same explanation in multiple cards.
 - If a refund is not available, explain why in one short sentence.
+
+## Related docs
+
+- [Finance and payouts](finance-and-payouts.md)
+- [Accounting reconciliation](accounting-reconciliation.md)
+- [Production rollout](production-rollout.md)

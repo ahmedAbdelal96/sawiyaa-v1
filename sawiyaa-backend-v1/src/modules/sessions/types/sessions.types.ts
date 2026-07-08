@@ -41,6 +41,9 @@ export interface SessionDetailsViewModel extends SessionListItemViewModel {
   completedAt: string | null;
   expiredAt: string | null;
   timezone: string | null;
+  videoRoomClosedAt: string | null;
+  videoRoomCloseReason: string | null;
+  videoRoomCloseNote: string | null;
 }
 
 export interface SessionJoinAvailabilityViewModel {

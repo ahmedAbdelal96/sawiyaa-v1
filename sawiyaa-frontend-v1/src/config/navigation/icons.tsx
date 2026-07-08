@@ -22,7 +22,7 @@ export const NavigationIcons = {
   auth: () => <Plug className="h-5 w-5" />,
   page: () => <FileText className="h-5 w-5" />,
   chat: () => <MessageCircle className="h-5 w-5" />,
-  training: () => (
+  academy: () => (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path
         strokeLinecap="round"

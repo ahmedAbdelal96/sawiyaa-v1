@@ -15,6 +15,7 @@ import {
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
 import { Link } from "@/i18n/navigation";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -120,7 +121,7 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
     specialtyLabels = Object.fromEntries(
       specialtiesData.specialties
         .filter((specialty) => specialty.isActive)
-        .map((specialty) => [specialty.slug, specialty.name ?? specialty.slug]),
+        .map((specialty) => [specialty.slug, getLocalizedSpecialtyName(specialty, locale)]),
     );
   } catch {
     // Non-critical: profile can render with slug fallback labels.

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SpecialtyCategoryRepository } from '../repositories/specialty-category.repository';
+import { localizeSpecialtyCategory } from '../utils/localize-specialty-category.util';
 
 /**
  * Admin read use case for specialty categories.
@@ -24,7 +25,9 @@ export class ListAdminSpecialtyCategoriesUseCase {
         'specialties.success.categoriesFetched',
         input.locale,
       ),
-      categories,
+      categories: categories.map((category) =>
+        localizeSpecialtyCategory(category, input.locale),
+      ),
     };
   }
 }

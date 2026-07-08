@@ -11,7 +11,7 @@ Articles module provides public trust-building content with SEO-ready public rea
 - Public trust-read enrichment metadata on article list/details
 
 ## Explicit Domain Boundaries
-- `ArticleCategory` is separate from specialties and training/course categories.
+- `ArticleCategory` is separate from specialties and academy/course categories.
 - Module is separate from support/care-chat/reviews/matching/assessments domain logic.
 
 ## Authoring Policy (Current Phase)

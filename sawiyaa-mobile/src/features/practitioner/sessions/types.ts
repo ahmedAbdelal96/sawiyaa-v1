@@ -126,7 +126,8 @@ export type SessionJoinBlockedReason =
   | "SESSION_NOT_VIDEO_MODE"
   | "SESSION_TIME_WINDOW_NOT_OPEN"
   | "SESSION_RUNTIME_NOT_PREPARED"
-  | "SESSION_JOIN_WINDOW_CLOSED";
+  | "SESSION_JOIN_WINDOW_CLOSED"
+  | "SESSION_ROOM_CLOSED";
 
 export interface SessionJoinAvailability {
   canJoin: boolean;
@@ -164,4 +165,32 @@ export interface PractitionerSessionJoinContract {
   roomUrl: string | null;
   joinToken: string | null;
   providerRuntime?: PractitionerSessionProviderRuntime | null;
+}
+
+export type PractitionerSessionRoomCloseReason =
+  | "TECHNICAL_ISSUE"
+  | "PATIENT_NO_SHOW"
+  | "ENDED_BY_AGREEMENT"
+  | "SAFETY_CONCERN"
+  | "OTHER";
+
+export interface ClosePractitionerSessionRuntimePayload {
+  reason?: PractitionerSessionRoomCloseReason;
+  note?: string;
+}
+
+export interface PractitionerSessionRoomCloseResult {
+  sessionId: string;
+  provider: SessionProvider;
+  isClosed: boolean;
+  wasAlreadyClosed: boolean;
+  roomName: string | null;
+  roomUrl: string | null;
+  closedAt: string;
+  closeReason: string | null;
+  closeNote: string | null;
+}
+
+export interface PractitionerSessionRoomCloseResponse {
+  item: PractitionerSessionRoomCloseResult;
 }

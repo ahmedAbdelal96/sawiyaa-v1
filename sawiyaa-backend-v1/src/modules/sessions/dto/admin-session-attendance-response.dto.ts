@@ -3,6 +3,9 @@ import {
   SessionAttendanceEventType,
   SessionAttendanceParticipantRole,
   SessionProvider,
+  SupportTicketPriority,
+  SupportTicketStatus,
+  SupportTicketType,
 } from '@prisma/client';
 import { SessionPresentationStatus } from '../types/session-video.types';
 
@@ -31,6 +34,49 @@ class AdminSessionParticipantsDto {
 
   @ApiProperty({ type: AdminSessionIdentityContactDto })
   practitioner!: AdminSessionIdentityContactDto;
+}
+
+class AdminSessionVideoRoomCloseDto {
+  @ApiProperty({ nullable: true })
+  closedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closedByUserId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closedByDisplayName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closeReason!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closeNote!: string | null;
+}
+
+class AdminSessionRelatedSupportTicketDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: SupportTicketType })
+  category!: SupportTicketType;
+
+  @ApiProperty({ enum: SupportTicketStatus })
+  status!: SupportTicketStatus;
+
+  @ApiProperty({ enum: SupportTicketPriority })
+  priority!: SupportTicketPriority;
+
+  @ApiProperty()
+  subject!: string;
+
+  @ApiProperty({ nullable: true })
+  lastMessageAt!: string | null;
+
+  @ApiProperty()
+  createdAt!: string;
+
+  @ApiProperty()
+  updatedAt!: string;
 }
 
 class AdminEvidenceTimelineItemDto {
@@ -407,6 +453,12 @@ class AdminSessionAttendanceDataResponseDto {
    */
   @ApiProperty({ type: AdminSessionParticipantsDto })
   participants!: AdminSessionParticipantsDto;
+
+  @ApiProperty({ type: AdminSessionVideoRoomCloseDto })
+  videoRoomClose!: AdminSessionVideoRoomCloseDto;
+
+  @ApiProperty({ type: AdminSessionRelatedSupportTicketDto, isArray: true })
+  relatedSupportTickets!: AdminSessionRelatedSupportTicketDto[];
 
   /**
    * Phase 3 — Lifecycle presentation status (UPCOMING / JOINABLE /

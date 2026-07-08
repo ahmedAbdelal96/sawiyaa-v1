@@ -19,6 +19,10 @@ import {
   LANGUAGE_CODES,
   type PublicPractitioner,
 } from "@/features/practitioners-discovery/types/practitioner";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -54,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return buildPublicMetadata({
       locale,
       pathname: `/specialties/${slug}`,
-      title: `${locale === "ar" ? "سويّة" : "Sawiyaa"} | ${data.specialty.name}`,
+      title: `${locale === "ar" ? "سويّة" : "Sawiyaa"} | ${getLocalizedSpecialtyName(data.specialty, locale)}`,
       description: data.specialty.description ?? fallback("description"),
     });
   } catch {
@@ -119,7 +123,7 @@ export default async function SpecialtyDetailPage({ params }: Props) {
   ]);
 
   const specialtyLabels = {
-    [specialty.slug]: specialty.name ?? specialty.slug,
+    [specialty.slug]: getLocalizedSpecialtyName(specialty, locale),
   };
 
   const languageLabels = Object.fromEntries(
@@ -141,7 +145,9 @@ export default async function SpecialtyDetailPage({ params }: Props) {
     },
     {
       label: tDetail("meta.category"),
-      value: specialty.category?.name ?? tDetail("categoryUnavailable"),
+      value: specialty.category
+        ? getLocalizedSpecialtyCategoryName(specialty.category, locale)
+        : tDetail("categoryUnavailable"),
     },
     {
       label: tDetail("meta.createdAt"),

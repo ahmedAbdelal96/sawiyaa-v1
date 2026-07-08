@@ -60,6 +60,10 @@ import {
   normalizeBankValue,
   normalizeWalletProviderValue,
 } from "@/lib/catalogs/payout";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 
 type UiStepKey = "basic" | "professional" | "credentials" | "paymentSubmit";
 
@@ -1432,7 +1436,7 @@ export default function PractitionerApplicationWizardThreeStep() {
                   <option value="">{locale === "ar" ? "اختر الفئة الرئيسية" : "Choose a main category"}</option>
                   {specialtyCategories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {category.name}
+                      {getLocalizedSpecialtyCategoryName(category, locale)}
                     </option>
                   ))}
                 </select>
@@ -1445,7 +1449,7 @@ export default function PractitionerApplicationWizardThreeStep() {
                   label=""
                   options={filteredSpecialties.map((specialty) => ({
                     value: specialty.id,
-                    text: specialty.name ?? specialty.slug,
+                    text: getLocalizedSpecialtyName(specialty, locale),
                     selected: activeSpecialtyIds.includes(specialty.id),
                   }))}
                   defaultSelected={activeSpecialtyIds}
@@ -1468,8 +1472,8 @@ export default function PractitionerApplicationWizardThreeStep() {
                 {selectedSpecialtyItems.length > 0 ? (
                   <p className="mt-1 text-xs text-text-secondary">
                     {locale === "ar"
-                      ? `سيتم اعتبار أول تخصص مختار كتخصص أساسي: ${selectedSpecialtyItems[0]?.name ?? selectedSpecialtyItems[0]?.slug ?? ""}`
-                      : `The first selected item will be treated as primary: ${selectedSpecialtyItems[0]?.name ?? selectedSpecialtyItems[0]?.slug ?? ""}`}
+                      ? `سيتم اعتبار أول تخصص مختار كتخصص أساسي: ${selectedSpecialtyItems[0] ? getLocalizedSpecialtyName(selectedSpecialtyItems[0], locale) : ""}`
+                      : `The first selected item will be treated as primary: ${selectedSpecialtyItems[0] ? getLocalizedSpecialtyName(selectedSpecialtyItems[0], locale) : ""}`}
                   </p>
                 ) : null}
               </div>

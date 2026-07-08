@@ -42,8 +42,6 @@ describe('GetAdminOperationalNotificationDetailsUseCase', () => {
         'payments.refund-succeeded',
         'sessions.session-confirmed',
         'sessions.session-confirmed-practitioner',
-        'training.schedule-reminder',
-        'training.enrollment-confirmed',
       ],
       ['auth.'],
     );

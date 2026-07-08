@@ -1,9 +1,11 @@
 import { apiClient, extractApiData } from "../../../lib/api";
 import type {
+  ClosePractitionerSessionRuntimePayload,
   ListSessionsQuery,
   PractitionerSessionDetails,
   PractitionerSessionJoinContract,
   PractitionerSessionRuntime,
+  PractitionerSessionRoomCloseResponse,
   PractitionerSessionSummaryResponse,
   SessionsListResponse,
 } from "./types";
@@ -41,6 +43,17 @@ export async function resolvePractitionerSessionJoinContract(
     `/practitioners/me/sessions/${sessionId}/runtime/join`,
   );
   return extractApiData<{ item: PractitionerSessionJoinContract }>(response);
+}
+
+export async function closePractitionerSessionRuntime(
+  sessionId: string,
+  payload: ClosePractitionerSessionRuntimePayload,
+) {
+  const response = await apiClient.post(
+    `/practitioners/me/sessions/${sessionId}/runtime/close`,
+    payload,
+  );
+  return extractApiData<PractitionerSessionRoomCloseResponse>(response);
 }
 
 export async function markPractitionerSessionCompleted(sessionId: string) {

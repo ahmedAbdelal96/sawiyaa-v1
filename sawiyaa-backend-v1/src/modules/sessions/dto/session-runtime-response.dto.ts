@@ -66,6 +66,7 @@ export class SessionJoinItemDto {
       'SESSION_TIME_WINDOW_NOT_OPEN',
       'SESSION_RUNTIME_NOT_PREPARED',
       'SESSION_JOIN_WINDOW_CLOSED',
+      'SESSION_ROOM_CLOSED',
     ],
   })
   blockedReason!: SessionJoinBlockedReason | null;
@@ -83,6 +84,35 @@ export class SessionJoinItemDto {
   providerRuntime!: SessionProviderRuntimeDto;
 }
 
+export class SessionRoomCloseItemDto {
+  @ApiProperty()
+  sessionId!: string;
+
+  @ApiProperty({ enum: SessionProvider })
+  provider!: SessionProvider;
+
+  @ApiProperty()
+  isClosed!: boolean;
+
+  @ApiProperty()
+  wasAlreadyClosed!: boolean;
+
+  @ApiProperty({ nullable: true })
+  roomName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  roomUrl!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closeReason!: string | null;
+
+  @ApiProperty({ nullable: true })
+  closeNote!: string | null;
+}
+
 export class SessionRuntimeItemDataResponseDto {
   @ApiProperty({ type: SessionRuntimeItemDto })
   item!: SessionRuntimeItemDto;
@@ -91,6 +121,11 @@ export class SessionRuntimeItemDataResponseDto {
 export class SessionJoinItemDataResponseDto {
   @ApiProperty({ type: SessionJoinItemDto })
   item!: SessionJoinItemDto;
+}
+
+export class SessionRoomCloseItemDataResponseDto {
+  @ApiProperty({ type: SessionRoomCloseItemDto })
+  item!: SessionRoomCloseItemDto;
 }
 
 export class SessionRuntimeItemSuccessResponseDto {
@@ -107,4 +142,12 @@ export class SessionJoinItemSuccessResponseDto {
 
   @ApiProperty({ type: SessionJoinItemDataResponseDto })
   data!: SessionJoinItemDataResponseDto;
+}
+
+export class SessionRoomCloseItemSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: SessionRoomCloseItemDataResponseDto })
+  data!: SessionRoomCloseItemDataResponseDto;
 }

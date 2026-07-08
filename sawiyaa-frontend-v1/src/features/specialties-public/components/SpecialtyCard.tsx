@@ -14,7 +14,9 @@ import {
   Activity,
   Sparkle
 } from "lucide-react";
+import { useLocale } from "next-intl";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   specialty: Specialty;
@@ -159,6 +161,7 @@ export default function SpecialtyCard({
   categoryBadge,
   categorySlug,
 }: Props) {
+  const locale = useLocale();
   const theme = getSpecialtyTheme(categorySlug);
   const SpecialtyIcon = getSpecialtyIcon(specialty.slug);
 
@@ -183,7 +186,7 @@ export default function SpecialtyCard({
       </div>
 
       <h3 className="text-xl font-bold leading-8 text-text-primary transition-colors duration-200 group-hover:text-text-brand dark:text-white/92">
-        {specialty.name}
+        {getLocalizedSpecialtyName(specialty, locale)}
       </h3>
 
       {specialty.description ? (

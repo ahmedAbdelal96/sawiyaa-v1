@@ -127,7 +127,8 @@
     "reviews": "Reviews",
     "moderationReports": "Moderation reports",
     "academy": "Academy",
-    "training": "Training"
+    "academyPrograms": "Programs",
+    "academyLegacyCourses": "Legacy courses"
   },
   "settings": {
     "title": "Settings",

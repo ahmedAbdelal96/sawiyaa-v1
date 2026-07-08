@@ -377,6 +377,8 @@ exports.Prisma.SpecialtyScalarFieldEnum = {
   id: 'id',
   categoryId: 'categoryId',
   slug: 'slug',
+  nameAr: 'nameAr',
+  nameEn: 'nameEn',
   sortOrder: 'sortOrder',
   isActive: 'isActive',
   createdAt: 'createdAt',
@@ -387,6 +389,8 @@ exports.Prisma.SpecialtyCategoryScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
   name: 'name',
+  nameAr: 'nameAr',
+  nameEn: 'nameEn',
   description: 'description',
   sortOrder: 'sortOrder',
   isActive: 'isActive',
@@ -800,6 +804,10 @@ exports.Prisma.SessionScalarFieldEnum = {
   provider: 'provider',
   providerRoomId: 'providerRoomId',
   providerSessionRef: 'providerSessionRef',
+  videoRoomClosedAt: 'videoRoomClosedAt',
+  videoRoomClosedByUserId: 'videoRoomClosedByUserId',
+  videoRoomCloseReason: 'videoRoomCloseReason',
+  videoRoomCloseNote: 'videoRoomCloseNote',
   notesInternal: 'notesInternal',
   packagePurchaseId: 'packagePurchaseId',
   packageSessionIndex: 'packageSessionIndex',
@@ -1951,20 +1959,6 @@ exports.Prisma.ReviewModerationEntryScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.TrainingInstructorScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  practitionerId: 'practitionerId',
-  instructorType: 'instructorType',
-  status: 'status',
-  displayName: 'displayName',
-  bio: 'bio',
-  avatarUrl: 'avatarUrl',
-  isOwnerDefault: 'isOwnerDefault',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.CourseCategoryScalarFieldEnum = {
   id: 'id',
   slugRoot: 'slugRoot',
@@ -1990,7 +1984,6 @@ exports.Prisma.CourseCategoryTranslationScalarFieldEnum = {
 exports.Prisma.CourseScalarFieldEnum = {
   id: 'id',
   primaryCategoryId: 'primaryCategoryId',
-  primaryInstructorId: 'primaryInstructorId',
   createdByUserId: 'createdByUserId',
   publishedByUserId: 'publishedByUserId',
   slugRoot: 'slugRoot',
@@ -2084,28 +2077,6 @@ exports.Prisma.EnrollmentScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.TrainingEnrollmentPaymentAttemptScalarFieldEnum = {
-  id: 'id',
-  enrollmentId: 'enrollmentId',
-  paymentId: 'paymentId',
-  provider: 'provider',
-  status: 'status',
-  amountSubtotal: 'amountSubtotal',
-  amountDiscount: 'amountDiscount',
-  amountTotal: 'amountTotal',
-  currencyCode: 'currencyCode',
-  providerPaymentRef: 'providerPaymentRef',
-  providerOrderRef: 'providerOrderRef',
-  providerCustomerRef: 'providerCustomerRef',
-  checkoutUrl: 'checkoutUrl',
-  clientSecret: 'clientSecret',
-  failureReason: 'failureReason',
-  failedAt: 'failedAt',
-  metadataJson: 'metadataJson',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.EnrollmentAttendanceScalarFieldEnum = {
   id: 'id',
   enrollmentId: 'enrollmentId',
@@ -2179,6 +2150,11 @@ exports.Prisma.AcademyLearnerScalarFieldEnum = {
   countryCodeSource: 'countryCodeSource',
   countryCodeMismatch: 'countryCodeMismatch',
   sourceLabel: 'sourceLabel',
+  city: 'city',
+  jobTitle: 'jobTitle',
+  employer: 'employer',
+  education: 'education',
+  notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -2228,6 +2204,122 @@ exports.Prisma.AcademyEnrollmentActivityLogScalarFieldEnum = {
   note: 'note',
   createdByUserId: 'createdByUserId',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.AcademyProgramScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  titleAr: 'titleAr',
+  titleEn: 'titleEn',
+  descriptionAr: 'descriptionAr',
+  descriptionEn: 'descriptionEn',
+  coverImageUrl: 'coverImageUrl',
+  categoryId: 'categoryId',
+  priceEgp: 'priceEgp',
+  priceUsd: 'priceUsd',
+  registrationOpen: 'registrationOpen',
+  maxSeats: 'maxSeats',
+  startAt: 'startAt',
+  endAt: 'endAt',
+  status: 'status',
+  createdByUserId: 'createdByUserId',
+  publishedAt: 'publishedAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AcademyProgramSessionScalarFieldEnum = {
+  id: 'id',
+  academyProgramId: 'academyProgramId',
+  titleAr: 'titleAr',
+  titleEn: 'titleEn',
+  descriptionAr: 'descriptionAr',
+  descriptionEn: 'descriptionEn',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  deliveryMethod: 'deliveryMethod',
+  internalDeliveryNote: 'internalDeliveryNote',
+  internalDeliveryLink: 'internalDeliveryLink',
+  sortOrder: 'sortOrder',
+  isPublished: 'isPublished',
+  publishedAt: 'publishedAt',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AcademyProgramEnrollmentScalarFieldEnum = {
+  id: 'id',
+  academyProgramId: 'academyProgramId',
+  academyLearnerId: 'academyLearnerId',
+  userId: 'userId',
+  publicAccessToken: 'publicAccessToken',
+  status: 'status',
+  paymentStatus: 'paymentStatus',
+  paymentId: 'paymentId',
+  registeredAt: 'registeredAt',
+  lockedAt: 'lockedAt',
+  seatReservedAt: 'seatReservedAt',
+  seatReservationExpiresAt: 'seatReservationExpiresAt',
+  confirmedAt: 'confirmedAt',
+  cancelledAt: 'cancelledAt',
+  expiredAt: 'expiredAt',
+  completedAt: 'completedAt',
+  certificateIssuedAt: 'certificateIssuedAt',
+  certificateFileStoragePath: 'certificateFileStoragePath',
+  certificateFileName: 'certificateFileName',
+  certificateUploadedAt: 'certificateUploadedAt',
+  certificateUploadedByUserId: 'certificateUploadedByUserId',
+  selectedCurrencyCode: 'selectedCurrencyCode',
+  selectedAmountSnapshot: 'selectedAmountSnapshot',
+  submittedCountry: 'submittedCountry',
+  lockedCountry: 'lockedCountry',
+  lockedCountrySource: 'lockedCountrySource',
+  contactFullName: 'contactFullName',
+  contactEmail: 'contactEmail',
+  contactPhone: 'contactPhone',
+  contactWhatsapp: 'contactWhatsapp',
+  contactCountry: 'contactCountry',
+  contactNotes: 'contactNotes',
+  attendanceSummarySnapshot: 'attendanceSummarySnapshot',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AcademyProgramSessionAttendanceScalarFieldEnum = {
+  id: 'id',
+  academyProgramSessionId: 'academyProgramSessionId',
+  academyProgramEnrollmentId: 'academyProgramEnrollmentId',
+  attendanceStatus: 'attendanceStatus',
+  markedByUserId: 'markedByUserId',
+  markedAt: 'markedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AcademyProgramPaymentAttemptScalarFieldEnum = {
+  id: 'id',
+  academyProgramId: 'academyProgramId',
+  academyProgramEnrollmentId: 'academyProgramEnrollmentId',
+  paymentId: 'paymentId',
+  provider: 'provider',
+  status: 'status',
+  amountSubtotal: 'amountSubtotal',
+  amountDiscount: 'amountDiscount',
+  amountTotal: 'amountTotal',
+  currencyCode: 'currencyCode',
+  providerPaymentRef: 'providerPaymentRef',
+  providerOrderRef: 'providerOrderRef',
+  providerCustomerRef: 'providerCustomerRef',
+  checkoutUrl: 'checkoutUrl',
+  clientSecret: 'clientSecret',
+  failureReason: 'failureReason',
+  expiresAt: 'expiresAt',
+  confirmedAt: 'confirmedAt',
+  failedAt: 'failedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SecurityAuditLogScalarFieldEnum = {
@@ -2798,6 +2890,7 @@ exports.PaymentPurpose = exports.$Enums.PaymentPurpose = {
   SESSION_EXTENSION: 'SESSION_EXTENSION',
   SESSION_PACKAGE_PURCHASE: 'SESSION_PACKAGE_PURCHASE',
   COURSE_ENROLLMENT: 'COURSE_ENROLLMENT',
+  ACADEMY_PROGRAM_ENROLLMENT: 'ACADEMY_PROGRAM_ENROLLMENT',
   MANUAL_INVOICE: 'MANUAL_INVOICE'
 };
 
@@ -3261,7 +3354,6 @@ exports.NotificationCategory = exports.$Enums.NotificationCategory = {
   SUPPORT: 'SUPPORT',
   CHAT: 'CHAT',
   SYSTEM: 'SYSTEM',
-  TRAINING: 'TRAINING',
   MARKETING: 'MARKETING'
 };
 
@@ -3342,7 +3434,6 @@ exports.ConfigCategory = exports.$Enums.ConfigCategory = {
   SUPPORT: 'SUPPORT',
   NOTIFICATION: 'NOTIFICATION',
   SECURITY: 'SECURITY',
-  TRAINING: 'TRAINING',
   SYSTEM: 'SYSTEM'
 };
 
@@ -3382,19 +3473,6 @@ exports.ReviewModerationAction = exports.$Enums.ReviewModerationAction = {
   REJECTED: 'REJECTED',
   RESTORED: 'RESTORED',
   ARCHIVED: 'ARCHIVED'
-};
-
-exports.InstructorType = exports.$Enums.InstructorType = {
-  OWNER: 'OWNER',
-  PRACTITIONER: 'PRACTITIONER',
-  INTERNAL_STAFF: 'INTERNAL_STAFF',
-  EXTERNAL: 'EXTERNAL'
-};
-
-exports.InstructorStatus = exports.$Enums.InstructorStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  PENDING_APPROVAL: 'PENDING_APPROVAL'
 };
 
 exports.CourseType = exports.$Enums.CourseType = {
@@ -3472,6 +3550,32 @@ exports.AcademyEnrollmentStatus = exports.$Enums.AcademyEnrollmentStatus = {
   PAYMENT_FAILED: 'PAYMENT_FAILED',
   CANCELLED: 'CANCELLED',
   REFUNDED: 'REFUNDED'
+};
+
+exports.AcademyProgramStatus = exports.$Enums.AcademyProgramStatus = {
+  DRAFT: 'DRAFT',
+  PUBLISHED: 'PUBLISHED',
+  ARCHIVED: 'ARCHIVED'
+};
+
+exports.AcademyProgramDeliveryMethod = exports.$Enums.AcademyProgramDeliveryMethod = {
+  ZOOM: 'ZOOM',
+  WHATSAPP: 'WHATSAPP',
+  GOOGLE_MEET: 'GOOGLE_MEET',
+  OFFLINE: 'OFFLINE',
+  OTHER: 'OTHER'
+};
+
+exports.AcademyProgramEnrollmentStatus = exports.$Enums.AcademyProgramEnrollmentStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED'
+};
+
+exports.AcademyProgramSessionAttendanceStatus = exports.$Enums.AcademyProgramSessionAttendanceStatus = {
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT'
 };
 
 exports.SecurityAuditOutcome = exports.$Enums.SecurityAuditOutcome = {
@@ -3674,7 +3778,6 @@ exports.Prisma.ModelName = {
   FeatureFlag: 'FeatureFlag',
   SessionReview: 'SessionReview',
   ReviewModerationEntry: 'ReviewModerationEntry',
-  TrainingInstructor: 'TrainingInstructor',
   CourseCategory: 'CourseCategory',
   CourseCategoryTranslation: 'CourseCategoryTranslation',
   Course: 'Course',
@@ -3682,7 +3785,6 @@ exports.Prisma.ModelName = {
   CourseSchedule: 'CourseSchedule',
   CourseSession: 'CourseSession',
   Enrollment: 'Enrollment',
-  TrainingEnrollmentPaymentAttempt: 'TrainingEnrollmentPaymentAttempt',
   EnrollmentAttendance: 'EnrollmentAttendance',
   CourseApproval: 'CourseApproval',
   AcademyCourse: 'AcademyCourse',
@@ -3691,6 +3793,11 @@ exports.Prisma.ModelName = {
   AcademyEnrollment: 'AcademyEnrollment',
   AcademyPaymentAttempt: 'AcademyPaymentAttempt',
   AcademyEnrollmentActivityLog: 'AcademyEnrollmentActivityLog',
+  AcademyProgram: 'AcademyProgram',
+  AcademyProgramSession: 'AcademyProgramSession',
+  AcademyProgramEnrollment: 'AcademyProgramEnrollment',
+  AcademyProgramSessionAttendance: 'AcademyProgramSessionAttendance',
+  AcademyProgramPaymentAttempt: 'AcademyProgramPaymentAttempt',
   SecurityAuditLog: 'SecurityAuditLog',
   CorporateOrganization: 'CorporateOrganization',
   CorporateContract: 'CorporateContract',

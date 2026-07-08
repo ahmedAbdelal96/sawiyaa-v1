@@ -21,6 +21,50 @@ export class AdminSpecialtySummaryResponseDto {
 
   @ApiProperty({ nullable: true })
   title!: string | null;
+
+  @ApiProperty({ nullable: true })
+  name!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameEn!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    example: {
+      id: "category-id",
+      slug: "mental-health",
+      name: "Mental Health",
+      nameAr: "الصحة النفسية",
+      nameEn: "Mental Health",
+    },
+  })
+  category!: {
+    id: string;
+    slug: string;
+    name: string;
+    nameAr: string | null;
+    nameEn: string | null;
+  } | null;
+}
+
+export class AdminSpecialtyCategorySummaryResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameEn!: string | null;
 }
 
 export class AdminProfileSpecialtyResponseDto extends AdminSpecialtySummaryResponseDto {
@@ -168,6 +212,12 @@ export class AdminPractitionerProfileSectionResponseDto {
 
   @ApiProperty({ nullable: true })
   primarySpecialtyCategoryId!: string | null;
+
+  @ApiProperty({
+    type: AdminSpecialtyCategorySummaryResponseDto,
+    nullable: true,
+  })
+  primarySpecialtyCategory!: AdminSpecialtyCategorySummaryResponseDto | null;
 
   @ApiProperty({ type: [String] })
   languages!: string[];

@@ -41,6 +41,8 @@ export type AdminSessionRuntimeInspectionItem = {
    * nullable when the user has no verified contact row.
    */
   participants?: AdminSessionParticipantIdentity;
+  videoRoomClose: AdminSessionVideoRoomCloseEvidence;
+  relatedSupportTickets: AdminSessionRelatedSupportTicket[];
   /**
    * Phase 3 — Lifecycle presentation status. Computed by the existing
    * presentation-status resolver.
@@ -202,6 +204,11 @@ export type AdminSessionAttendanceResponseData = {
   summary: AdminSessionAttendanceSummary;
   timeline: AdminSessionAttendanceTimelineItem[];
   /**
+   * Phase 3 — Persisted room-close evidence and related support tickets.
+   */
+  videoRoomClose: AdminSessionVideoRoomCloseEvidence;
+  relatedSupportTickets: AdminSessionRelatedSupportTicket[];
+  /**
    * Phase 3 — Platform-side evidence events. Empty array when none exist.
    */
   platformTimeline?: AdminSessionEvidenceTimelineItem[];
@@ -288,4 +295,23 @@ export type AdminSessionEvidenceTimelineItem = {
   severity: AdminSessionEvidenceSeverity;
   titleKey: string;
   safeMetadataSummary: AdminSessionSafeMetadata | null;
+};
+
+export type AdminSessionVideoRoomCloseEvidence = {
+  closedAt: string | null;
+  closedByUserId: string | null;
+  closedByDisplayName: string | null;
+  closeReason: string | null;
+  closeNote: string | null;
+};
+
+export type AdminSessionRelatedSupportTicket = {
+  id: string;
+  category: string;
+  status: string;
+  priority: string;
+  subject: string;
+  lastMessageAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };

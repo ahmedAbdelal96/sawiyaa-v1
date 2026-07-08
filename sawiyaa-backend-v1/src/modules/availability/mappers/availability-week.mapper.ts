@@ -14,6 +14,7 @@ import {
 } from '../types/availability-week.types';
 import { AvailabilityWeekDateRange } from '../services/availability-week-calendar.service';
 import { PractitionerAvailabilityWeekWithSlots } from '../repositories/practitioner-availability-week.repository';
+import { SlotEditabilityMetadata } from '../services/availability-slot-editability.service';
 
 @Injectable()
 export class AvailabilityWeekMapper {
@@ -45,6 +46,7 @@ export class AvailabilityWeekMapper {
     weekStartDate: Date;
     weekEndDate: Date;
     timezone: string;
+    editabilityMap?: Map<string, SlotEditabilityMetadata>;
   }): AvailabilityWeekViewModel {
     if (!input.week) {
       return {
@@ -77,9 +79,23 @@ export class AvailabilityWeekMapper {
       archivedAt: input.week.archivedAt?.toISOString() ?? null,
       createdAt: input.week.createdAt.toISOString(),
       updatedAt: input.week.updatedAt.toISOString(),
-      isEditable: input.week.status === AvailabilityWeekStatus.DRAFT,
+      isEditable:
+        input.week.status === AvailabilityWeekStatus.DRAFT ||
+        input.week.status === AvailabilityWeekStatus.PUBLISHED,
       hasSlots: input.week.slots.length > 0,
-      slots: input.week.slots.map((slot) => this.toSlot(slot)),
+      slots: input.week.slots.map((slot) => {
+        const base = this.toSlot(slot);
+        const sig = `${base.dayOfWeek}_${slot.durationMinutes}_${slot.startMinuteOfDay}_${slot.endMinuteOfDay}`;
+        const meta = input.editabilityMap?.get(sig);
+        return {
+          ...base,
+          canEdit: meta ? meta.canEdit : true,
+          canRemove: meta ? meta.canRemove : true,
+          isPast: meta ? meta.isPast : false,
+          isBookedOrReserved: meta ? meta.isBookedOrReserved : false,
+          reasonCode: meta ? meta.reasonCode : undefined,
+        };
+      }),
     };
   }
 
@@ -89,6 +105,8 @@ export class AvailabilityWeekMapper {
     nextWeek: PractitionerAvailabilityWeekWithSlots | null;
     currentWeekRange: AvailabilityWeekDateRange;
     nextWeekRange: AvailabilityWeekDateRange;
+    currentEditabilityMap?: Map<string, SlotEditabilityMetadata>;
+    nextEditabilityMap?: Map<string, SlotEditabilityMetadata>;
     now?: Date;
   }): AvailabilityWeekOverviewViewModel {
     const now = input.now ?? new Date();
@@ -107,12 +125,14 @@ export class AvailabilityWeekMapper {
         weekStartDate: input.currentWeekRange.startDate,
         weekEndDate: input.currentWeekRange.endDate,
         timezone: input.timezone,
+        editabilityMap: input.currentEditabilityMap,
       }),
       nextWeek: this.toWeek({
         week: input.nextWeek,
         weekStartDate: input.nextWeekRange.startDate,
         weekEndDate: input.nextWeekRange.endDate,
         timezone: input.timezone,
+        editabilityMap: input.nextEditabilityMap,
       }),
       reminderState: this.resolveReminderState(input.currentWeek, input.nextWeek),
       shouldPromptForNextWeek: reminderContext.shouldPromptForNextWeek,

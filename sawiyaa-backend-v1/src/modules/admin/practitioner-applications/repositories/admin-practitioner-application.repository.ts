@@ -127,9 +127,14 @@ export class AdminPractitionerApplicationRepository {
             specialties: {
               where: { isPrimary: true },
               take: 1,
-              include: {
+              select: {
+                specialtyId: true,
+                isPrimary: true,
                 specialty: {
-                  include: {
+                  select: {
+                    id: true,
+                    slug: true,
+                    categoryId: true,
                     translations: {
                       where: {
                         locale: {

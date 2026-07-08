@@ -49,11 +49,11 @@ describe('NotificationDeliveryAttemptEngineService', () => {
     subjectSnapshot: null,
     bodySnapshot: 'Body',
     payloadJson: {},
-    relatedEntityType: 'TRAINING_ENROLLMENT',
-    relatedEntityId: 'en_1',
+    relatedEntityType: 'SESSION',
+    relatedEntityId: 'session_1',
     notificationType: {
-      slug: 'training.schedule-reminder',
-      category: 'TRAINING',
+      slug: 'sessions.session-reminder-60',
+      category: 'SESSION',
     },
   };
 
@@ -266,7 +266,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
     });
     (domainValidityGuardService.evaluate as jest.Mock).mockResolvedValue({
       valid: false,
-      reason: 'TRAINING_ENROLLMENT_STATUS_CANCELLED',
+      reason: 'SESSION_STATUS_CANCELLED',
     });
 
     const result = await service.executeClaimedNotification({
@@ -275,7 +275,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
 
     expect(repository.markQueuedNotificationSuppressed).toHaveBeenCalledWith({
       notificationId: 'n6',
-      reason: 'TRAINING_ENROLLMENT_STATUS_CANCELLED',
+      reason: 'SESSION_STATUS_CANCELLED',
     });
     expect(repository.createDeliveryAttempt).not.toHaveBeenCalled();
     expect(channelExecutionService.execute).not.toHaveBeenCalled();
@@ -283,7 +283,7 @@ describe('NotificationDeliveryAttemptEngineService', () => {
       expect.objectContaining({
         outcome: 'SKIPPED',
         executed: true,
-        reason: 'SUPPRESSED_TRAINING_ENROLLMENT_STATUS_CANCELLED',
+        reason: 'SUPPRESSED_SESSION_STATUS_CANCELLED',
       }),
     );
   });

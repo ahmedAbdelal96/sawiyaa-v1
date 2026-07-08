@@ -52,7 +52,7 @@ export class ListAdminAuditEventsDto {
 
   @ApiPropertyOptional({
     description:
-      'Event family prefix, for example: auth, payments, sessions, training',
+      'Event family prefix, for example: auth, payments, sessions, academy',
   })
   @IsOptional()
   @IsString()

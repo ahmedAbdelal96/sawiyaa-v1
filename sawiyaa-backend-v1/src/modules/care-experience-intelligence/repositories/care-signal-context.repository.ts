@@ -26,7 +26,7 @@ export class CareSignalContextRepository {
       pendingPayment,
       recentMatchingSession,
       latestOpenSupportTicket,
-      activeTrainingEnrollment,
+      activeAcademyEnrollment,
     ] = await Promise.all([
       this.prisma.patientProfile.findUnique({
         where: { id: input.patientProfileId },
@@ -166,7 +166,7 @@ export class CareSignalContextRepository {
       hasRecentMatchingSession: Boolean(recentMatchingSession),
       hasOpenSupportTicket: Boolean(latestOpenSupportTicket),
       latestSupportTicketStatus: latestOpenSupportTicket?.status ?? null,
-      hasActiveTrainingEnrollment: Boolean(activeTrainingEnrollment),
+      hasActiveAcademyEnrollment: Boolean(activeAcademyEnrollment),
     };
   }
 }

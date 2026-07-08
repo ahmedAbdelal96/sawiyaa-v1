@@ -4,6 +4,7 @@ import { IntlErrorCode, NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 
 import { warnMissingTranslation } from "./missing-key-warning";
+import { ViewerTimeZoneCookieSync } from "./ViewerTimeZoneCookieSync";
 
 type Props = {
   children: ReactNode;
@@ -38,6 +39,7 @@ export function AppIntlProvider({ children, locale, messages }: Props) {
         return namespace ? `${namespace}.${key}` : key;
       }}
     >
+      <ViewerTimeZoneCookieSync />
       {children}
     </NextIntlClientProvider>
   );

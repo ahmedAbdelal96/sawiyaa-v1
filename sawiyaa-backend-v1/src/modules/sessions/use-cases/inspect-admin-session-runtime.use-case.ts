@@ -36,6 +36,7 @@ export class InspectAdminSessionRuntimeUseCase {
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
+      videoRoomClosedAt: session.videoRoomClosedAt,
       now,
     });
 
@@ -55,6 +56,7 @@ export class InspectAdminSessionRuntimeUseCase {
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
+      videoRoomClosedAt: session.videoRoomClosedAt,
       now,
       finalManualDecision: latestDecision?.decisionType ?? null,
     });

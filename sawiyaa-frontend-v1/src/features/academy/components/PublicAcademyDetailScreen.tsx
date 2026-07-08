@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
@@ -16,44 +16,388 @@ import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import { StateCard } from "@/components/shared/ContentStates";
 import { DataTable } from "@/components/ui/data-table";
-import { toAppError } from "@/lib/api/errors";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { useAuthStore } from "@/stores/auth-store";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import {
-  createPublicAcademyEnrollment,
-} from "../api/academy.api";
+  getPublicAcademyProgramErrorKey,
+} from "@/features/academy-programs/lib/academy-program-errors";
 import {
-  useCreatePublicAcademyEnrollment,
-  usePublicAcademyCourse,
-} from "../hooks/use-academy";
-import type { CreateAcademyEnrollmentInput } from "../types/academy.types";
+  resolveAcademyProgramDeliveryMethodLabel,
+  resolveAcademyProgramEnrollmentStatusLabel,
+  resolveAcademyProgramLocalizedValue,
+  resolveAcademyProgramPaymentStatusLabel,
+  resolveAcademyProgramRegistrationStateLabel,
+  resolveAcademyProgramSessionTitle,
+} from "@/features/academy-programs/lib/academy-program-localization";
+import {
+  useCreatePublicAcademyProgramEnrollment,
+  usePublicAcademyProgram,
+} from "@/features/academy-programs/hooks/use-academy-programs";
+import type {
+  AcademyProgramEnrollmentItem,
+  AcademyProgramItem,
+  CreateAcademyProgramEnrollmentInput,
+} from "@/features/academy-programs/types/academy-programs.types";
 
-function formatCurrency(amount: string | null, currency: string | null, locale: string) {
-  if (!amount || !currency) return null;
+function formatMoney(amount: string | null, currency: "EGP" | "USD", locale: string) {
+  if (!amount) {
+    return null;
+  }
+
   const value = Number(amount);
-  if (Number.isNaN(value)) return `${amount} ${currency}`;
-  return new Intl.NumberFormat(locale, {
+  if (Number.isNaN(value)) {
+    return `${amount} ${currency}`;
+  }
+
+  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-function formatDateLabel(value: string | null, locale: string) {
-  if (!value) return null;
+function formatDate(value: string | null, locale: string) {
+  if (!value) {
+    return null;
+  }
+
   return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", {
     dateStyle: "medium",
   }).format(new Date(value));
 }
 
-function formatPlanValue(value: number | null | undefined, locale: string, unit: string) {
-  if (!value || value < 1) return null;
-  const number = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(value);
-  return `${number} ${unit}`;
+function formatTime(value: string, locale: string) {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-export default function PublicAcademyDetailScreen({
+function formatDurationMinutes(startAt: string, endAt: string, locale: string) {
+  const durationMinutes = Math.max(
+    0,
+    Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60000),
+  );
+
+  if (locale === "ar") {
+    return `${new Intl.NumberFormat("ar-EG").format(durationMinutes || 60)} دقيقة`;
+  }
+
+  return `${durationMinutes || 60} mins`;
+}
+
+function resolveProgramTitle(program: AcademyProgramItem, locale: string) {
+  return (
+    resolveAcademyProgramLocalizedValue({
+      locale,
+      primary: program.titleAr,
+      secondary: program.titleEn,
+      fallback: program.title ?? program.slug,
+    }) || program.slug
+  );
+}
+
+function resolveProgramDescription(program: AcademyProgramItem, locale: string) {
+  return (
+    resolveAcademyProgramLocalizedValue({
+      locale,
+      primary: program.descriptionAr,
+      secondary: program.descriptionEn,
+      fallback: program.description ?? null,
+    }) || null
+  );
+}
+
+function resolvePricePairs(program: AcademyProgramItem, locale: string) {
+  return {
+    egp: formatMoney(program.priceEgp, "EGP", locale),
+    usd: formatMoney(program.priceUsd, "USD", locale),
+  };
+}
+
+function EnrollmentResultCard({
+  locale,
+  t,
+  enrollment,
+}: {
+  locale: string;
+  t: ReturnType<typeof useTranslations>;
+  enrollment: AcademyProgramEnrollmentItem;
+}) {
+  const statusLabel = resolveAcademyProgramEnrollmentStatusLabel(enrollment.status, t);
+  const paymentStatusLabel = resolveAcademyProgramPaymentStatusLabel(
+    enrollment.paymentStatus,
+    t,
+  );
+
+  return (
+    <div className="rounded-[24px] border border-primary/20 bg-primary/5 p-5 sm:p-6">
+      <div className="flex items-center gap-2 text-primary">
+        <Sparkles className="h-5 w-5" />
+        <span className="text-xs font-bold uppercase tracking-wider">
+          {t("public.result.eyebrow")}
+        </span>
+      </div>
+
+      <h3 className="mt-3 text-lg font-bold text-text-primary">{t("public.result.title")}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+        {t("public.result.status", { status: statusLabel })}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-border-light bg-white p-4 text-xs">
+          <div className="text-[10px] uppercase font-bold text-text-muted">
+            {t("public.result.reference")}
+          </div>
+          <div className="mt-1 break-all font-mono text-sm font-bold text-text-primary">
+            {enrollment.publicAccessToken}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border-light bg-white p-4 text-xs">
+          <div className="text-[10px] uppercase font-bold text-text-muted">
+            {t("public.result.paymentStatus")}
+          </div>
+          <div className="mt-1 font-bold text-text-primary">{paymentStatusLabel}</div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-border-light bg-white p-4 text-xs text-text-secondary">
+        <div className="text-[10px] uppercase font-bold text-text-muted">
+          {t("public.result.program")}
+        </div>
+        <div className="mt-1 text-sm font-bold text-text-primary">
+          {enrollment.program.title}
+        </div>
+      </div>
+
+      {enrollment.payment?.checkoutUrl ? (
+        <a
+          href={enrollment.payment.checkoutUrl}
+          className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+        >
+          {t("public.result.continuePayment")}
+        </a>
+      ) : null}
+
+    </div>
+  );
+}
+
+function PublicAcademyEnrollmentForm({
+  locale,
+  t,
+  program,
+  onSubmit,
+  form,
+  setForm,
+  pending,
+  feedback,
+  isRestrictedLearner,
+  disableSubmit,
+}: {
+  locale: string;
+  t: ReturnType<typeof useTranslations>;
+  program: AcademyProgramItem;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  form: CreateAcademyProgramEnrollmentInput;
+  setForm: React.Dispatch<React.SetStateAction<CreateAcademyProgramEnrollmentInput>>;
+  pending: boolean;
+  feedback: string | null;
+  isRestrictedLearner: boolean;
+  disableSubmit: boolean;
+}) {
+  const prices = resolvePricePairs(program, locale);
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6"
+    >
+      <div className="flex items-center gap-3">
+        <MessageSquareText className="h-5 w-5 text-primary" />
+        <div>
+          <h2 className="text-base font-bold text-text-primary">{t("public.form.title")}</h2>
+          <p className="mt-0.5 text-xs text-text-muted">{t("public.form.subtitle")}</p>
+        </div>
+      </div>
+
+      {isRestrictedLearner ? (
+        <div className="mt-4 rounded-[16px] border border-error/20 bg-error/5 px-4 py-3 text-xs leading-relaxed text-error-600">
+          {t("public.form.restricted")}
+        </div>
+      ) : null}
+
+      <div className="mt-5 space-y-4">
+        <Input
+          value={form.fullName}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, fullName: event.target.value }))
+          }
+          placeholder={t("public.form.fullName")}
+          error={Boolean(feedback && !form.fullName.trim())}
+          className="w-full"
+        />
+        <Input
+          value={form.phoneNumber}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, phoneNumber: event.target.value }))
+          }
+          placeholder={t("public.form.phoneNumber")}
+          error={Boolean(feedback && !form.phoneNumber.trim())}
+          className="w-full"
+        />
+        <Input
+          value={form.whatsappNumber ?? ""}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, whatsappNumber: event.target.value }))
+          }
+          placeholder={t("public.form.whatsappNumber")}
+          className="w-full"
+        />
+        <Input
+          type="email"
+          value={form.email ?? ""}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, email: event.target.value }))
+          }
+          placeholder={t("public.form.email")}
+          className="w-full"
+        />
+      </div>
+
+      <div className="mt-4 space-y-2 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3.5 text-xs leading-normal">
+        <div className="flex items-center justify-between gap-4">
+          <span className="font-bold text-text-secondary">{t("public.form.priceEgp")}</span>
+          <span className="text-sm font-extrabold text-primary">
+            {prices.egp ?? t("public.detail.free")}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="font-bold text-text-secondary">{t("public.form.priceUsd")}</span>
+          <span className="text-sm font-extrabold text-primary">
+            {prices.usd ?? t("public.detail.free")}
+          </span>
+        </div>
+      </div>
+
+      {program.registrationOpen ? (
+        <Button
+          type="submit"
+          className="mt-5 w-full rounded-[14px]"
+          disabled={pending || disableSubmit}
+        >
+          {pending ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("public.form.submitting")}
+            </>
+          ) : (
+            t("public.form.submit")
+          )}
+        </Button>
+      ) : (
+        <div className="mt-5 rounded-[14px] border border-border-light bg-surface-tertiary px-4 py-3 text-sm font-semibold text-text-secondary">
+          {t("public.form.closed")}
+        </div>
+      )}
+
+      {feedback ? (
+        <p className="mt-3 text-xs font-semibold text-text-muted">{feedback}</p>
+      ) : null}
+    </form>
+  );
+}
+
+function ProgramDetailsPanel({
+  locale,
+  t,
+  program,
+}: {
+  locale: string;
+  t: ReturnType<typeof useTranslations>;
+  program: AcademyProgramItem;
+}) {
+  const prices = resolvePricePairs(program, locale);
+  const registrationState = resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t);
+  const dateStart = formatDate(program.startAt, locale);
+  const dateEnd = formatDate(program.endAt, locale);
+  const sessions = program.sessions ?? [];
+  const deliveryMethods = Array.from(
+    new Set(sessions.map((session) => session.deliveryMethod)),
+  );
+  const deliveryMethodLabels =
+    deliveryMethods.length > 0
+      ? deliveryMethods.map((method) => resolveAcademyProgramDeliveryMethodLabel(method, t))
+      : [];
+
+  return (
+    <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
+      <div className="space-y-4">
+        <div className="text-sm font-bold text-text-primary">{t("public.detail.summary.title")}</div>
+        <p className="text-xs leading-relaxed text-text-secondary">
+          {resolveProgramDescription(program, locale) ?? t("public.detail.noFullDescription")}
+        </p>
+
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.price")}
+            </div>
+            <div className="mt-0.5 space-y-1 font-bold text-text-primary">
+              <div>{prices.egp ?? t("public.detail.free")}</div>
+              <div>{prices.usd ?? t("public.detail.free")}</div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.status")}
+            </div>
+            <div className="mt-0.5 font-bold text-text-primary">
+              {program.publishedAt
+                ? t("public.detail.summary.published")
+                : t("public.detail.summary.draft")}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.registration")}
+            </div>
+            <div className="mt-0.5 font-bold text-text-primary">{registrationState}</div>
+          </div>
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.deliveryMethod")}
+            </div>
+            <div className="mt-0.5 font-bold text-text-primary">
+              {deliveryMethodLabels.length > 0
+                ? deliveryMethodLabels.join(" · ")
+                : t("public.detail.summary.notSet")}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.startDate")}
+            </div>
+            <div className="mt-0.5 font-bold text-text-primary">
+              {dateStart ?? t("public.detail.summary.notSet")}
+            </div>
+          </div>
+          <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
+            <div className="text-[10px] uppercase font-bold text-text-muted">
+              {t("public.detail.summary.endDate")}
+            </div>
+            <div className="mt-0.5 font-bold text-text-primary">
+              {dateEnd ?? t("public.detail.summary.notSet")}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PublicAcademyProgramDetailScreen({
   locale,
   slug,
   backHref,
@@ -69,30 +413,27 @@ export default function PublicAcademyDetailScreen({
     if (!isInitialized) {
       return "bootstrapping";
     }
+
     if (!user) {
       return "guest";
     }
+
     return `auth:${user.id}:${user.role}`;
   }, [isInitialized, user]);
-  const {
-    data: course,
-    isLoading,
-    isError,
-    refetch,
-  } = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
+  const { data: program, isLoading, isError, refetch } = usePublicAcademyProgram(slug, {
+    cacheScopeKey: authScopeKey,
+  });
   const currentUserQuery = useCurrentUser(Boolean(user));
-  const createEnrollment = useCreatePublicAcademyEnrollment();
+  const createEnrollment = useCreatePublicAcademyProgramEnrollment();
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
+  const [form, setForm] = useState<CreateAcademyProgramEnrollmentInput>({
     fullName: "",
     phoneNumber: "",
     whatsappNumber: "",
     email: "",
-    sourceLabel: "public-academy",
+    sourceLabel: "public-academy-program",
   });
-  const [enrollment, setEnrollment] = useState<
-    Awaited<ReturnType<typeof createPublicAcademyEnrollment>> | null
-  >(null);
+  const [enrollment, setEnrollment] = useState<AcademyProgramEnrollmentItem | null>(null);
   const isRestrictedLearner = Boolean(
     currentUserQuery.data?.roles.hasAdminRole ||
       currentUserQuery.data?.roles.hasSupportAgentRole ||
@@ -108,8 +449,7 @@ export default function PublicAcademyDetailScreen({
       currentUserQuery.data?.displayName?.trim() ||
       [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
       null;
-    const profilePhone =
-      currentUserQuery.data?.identitySummary.primaryPhone?.trim() || null;
+    const profilePhone = currentUserQuery.data?.identitySummary.primaryPhone?.trim() || null;
     const profileEmail =
       currentUserQuery.data?.identitySummary.primaryEmail?.trim() ||
       user.email?.trim() ||
@@ -118,62 +458,25 @@ export default function PublicAcademyDetailScreen({
     setForm((current) => ({
       ...current,
       fullName: current.fullName.trim() ? current.fullName : profileName ?? current.fullName,
-      phoneNumber: current.phoneNumber.trim() ? current.phoneNumber : profilePhone ?? current.phoneNumber,
+      phoneNumber: current.phoneNumber.trim()
+        ? current.phoneNumber
+        : profilePhone ?? current.phoneNumber,
       email: current.email?.trim() ? current.email : profileEmail ?? current.email,
     }));
   }, [currentUserQuery.data, isRestrictedLearner, user]);
 
-  const priceLabel = useMemo(
-    () =>
-      formatCurrency(
-        course?.priceAmount ?? null,
-        resolvePatientCurrencyCode({
-          currencyCode: course?.currencyCode,
-          regionalPricingMode: course?.regionalPricingMode,
-          resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
-        }) ?? course?.currencyCode ?? null,
-        locale,
-      ),
-    [
-      course?.currencyCode,
-      course?.priceAmount,
-      course?.regionalPricingMode,
-      course?.resolvedCountryIsoCode,
-      locale,
-    ],
-  );
-
-  const courseDateLabel = useMemo(
-    () => formatDateLabel(course?.startsAt ?? null, locale),
-    [course?.startsAt, locale],
-  );
-  const courseEndDateLabel = useMemo(
-    () => formatDateLabel(course?.endsAt ?? null, locale),
-    [course?.endsAt, locale],
-  );
-  const courseDurationLabel = useMemo(
-    () =>
-      formatPlanValue(
-        course?.plannedDurationDays ?? null,
-        locale,
-        t("public.detail.summary.daysUnit"),
-      ),
-    [course?.plannedDurationDays, locale, t],
-  );
-  const lectureCountLabel = useMemo(
-    () =>
-      formatPlanValue(
-        course?.plannedLectureCount ?? null,
-        locale,
-        t("public.detail.summary.lectureUnit"),
-      ),
-    [course?.plannedLectureCount, locale, t],
-  );
-  const lectures = course?.lectures ?? [];
+  const canEnroll = Boolean(program?.publishedAt && program.registrationOpen);
+  const programTitle = program ? resolveProgramTitle(program, locale) : null;
+  const programDescription = program ? resolveProgramDescription(program, locale) : null;
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFeedback(null);
+
+    if (!program || !canEnroll) {
+      setFeedback(t("public.form.closed"));
+      return;
+    }
 
     if (isRestrictedLearner) {
       setFeedback(t("public.form.restricted"));
@@ -196,17 +499,10 @@ export default function PublicAcademyDetailScreen({
           sourceLabel: form.sourceLabel?.trim() || undefined,
         },
       });
-      setEnrollment(created as Awaited<ReturnType<typeof createPublicAcademyEnrollment>>);
+      setEnrollment(created);
       setFeedback(t("public.form.success"));
     } catch (error) {
-      const appError = toAppError(error);
-
-      if (appError.code === "ACADEMY_LEARNER_ENROLLMENT_RESTRICTED") {
-        setFeedback(t("public.form.restricted"));
-        return;
-      }
-
-      setFeedback(appError.message || t("errors.generic"));
+      setFeedback(t(getPublicAcademyProgramErrorKey(error)));
     }
   };
 
@@ -238,10 +534,10 @@ export default function PublicAcademyDetailScreen({
     );
   }
 
-  if (!course) {
+  if (!program) {
     return (
       <div className="px-4 py-6 sm:py-8">
-            <StateCard
+        <StateCard
           title={t("public.detail.notFound.title")}
           note={t("public.detail.notFound.note")}
           action={{
@@ -262,146 +558,112 @@ export default function PublicAcademyDetailScreen({
     );
   }
 
+  const prices = resolvePricePairs(program, locale);
+  const sessions = program.sessions ?? [];
+
   return (
     <div className="app-max-content mx-auto space-y-6 px-4 py-6 sm:py-8">
-      {/* Clinically warm, flat hero section */}
       <section className="overflow-hidden rounded-[24px] border border-border-light bg-surface-tertiary p-6 sm:p-8">
         <div className="grid gap-6 lg:grid-cols-[1.18fr_0.82fr] lg:items-start">
           <div className="space-y-5">
+            {program.coverImageUrl ? (
+              <div className="overflow-hidden rounded-[24px] border border-border-light bg-white shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={program.coverImageUrl}
+                  alt={programTitle ?? t("public.detail.badge")}
+                  className="max-h-[28rem] w-full bg-surface-tertiary object-contain p-2"
+                />
+              </div>
+            ) : null}
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-white px-3.5 py-1.5 text-xs font-semibold text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               {t("public.detail.badge")}
             </div>
-            
+
             <div className="space-y-3">
               <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-4xl">
-                {course.title}
+                {programTitle}
               </h1>
               <p className="max-w-3xl text-sm leading-relaxed text-text-secondary">
-                {course.shortDescription ?? t("public.detail.noShortDescription")}
+                {programDescription ?? t("public.detail.noShortDescription")}
               </p>
             </div>
 
-            {/* Chips block */}
             <div className="flex flex-wrap gap-2.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-text-primary border border-border-light/75 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
                 <CalendarClock className="h-3.5 w-3.5 text-primary" />
-                {courseDateLabel ?? t("public.detail.noDate")}
+                {formatDate(program.startAt, locale) ?? t("public.detail.noDate")}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-text-primary border border-border-light/75 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
                 <CalendarClock className="h-3.5 w-3.5 text-primary" />
-                {courseEndDateLabel ?? t("public.detail.noDate")}
+                {formatDate(program.endAt, locale) ?? t("public.detail.noDate")}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-text-primary border border-border-light/75 shadow-sm">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
                 <Globe className="h-3.5 w-3.5 text-primary" />
-                {priceLabel ?? t("public.detail.free")}
+                {prices.egp ?? t("public.detail.free")}
               </span>
-              {courseDurationLabel ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-text-primary border border-border-light/75 shadow-sm">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  {courseDurationLabel}
-                </span>
-              ) : null}
-              {lectureCountLabel ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-text-primary border border-border-light/75 shadow-sm">
-                  <BadgeCheck className="h-3.5 w-3.5 text-primary" />
-                  {lectureCountLabel}
-                </span>
-              ) : null}
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
+                <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                {resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t)}
+              </span>
             </div>
           </div>
 
-          {/* Details side block */}
-          <div className="rounded-[20px] border border-border-light bg-white p-5">
-            <div className="space-y-4">
-              <div className="text-sm font-bold text-text-primary">
-                {t("public.detail.summary.title")}
-              </div>
-              <p className="text-xs leading-relaxed text-text-secondary">
-                {course.fullDescription ?? t("public.detail.noFullDescription")}
-              </p>
-              
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.price")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {priceLabel ?? t("public.detail.free")}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.status")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {course.publishedAt
-                      ? t("public.detail.summary.published")
-                      : t("public.detail.summary.draft")}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.visibility")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {t(`statuses.visibility.${course.visibility}` as Parameters<typeof t>[0])}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.type")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {t("public.detail.summary.publicAccess")}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.duration")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {courseDurationLabel ?? t("public.detail.summary.notSet")}
-                  </div>
-                </div>
-                <div className="rounded-xl bg-surface-tertiary border border-border-light/50 px-3 py-2 text-xs">
-                  <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.detail.summary.lectures")}</div>
-                  <div className="font-bold text-text-primary mt-0.5">
-                    {lectureCountLabel ?? t("public.detail.summary.notSet")}
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
+          <ProgramDetailsPanel locale={locale} t={t} program={program} />
         </div>
       </section>
 
-      {/* Lectures Schedule Section */}
       <section className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4 pb-3 border-b border-border-light/60">
+        <div className="flex items-start justify-between gap-4 border-b border-border-light/60 pb-3">
           <div>
-            <h2 className="text-lg font-bold text-text-primary">{t("public.detail.schedule.title")}</h2>
-            <p className="mt-0.5 text-xs text-text-muted">{t("public.detail.schedule.subtitle")}</p>
+            <h2 className="text-lg font-bold text-text-primary">
+              {t("public.detail.schedule.title")}
+            </h2>
+            <p className="mt-0.5 text-xs text-text-muted">
+              {t("public.detail.schedule.subtitle")}
+            </p>
           </div>
           <span className="app-chip rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            {t("public.detail.schedule.count", { count: lectures.length })}
+            {t("public.detail.schedule.count", { count: sessions.length })}
           </span>
         </div>
 
-        {lectures.length > 0 ? (
+        {sessions.length > 0 ? (
           <DataTable
-            data={lectures}
+            data={sessions}
             columns={[
               {
                 id: "order",
                 header: t("public.detail.schedule.columns.order"),
                 width: "80px",
                 align: "center" as const,
-                accessor: (row) => row.lectureOrder,
+                accessor: (row) => row.sortOrder,
                 cell: (row) => (
                   <span className="font-semibold text-text-secondary">
-                    {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(row.lectureOrder)}
+                    {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US").format(
+                      row.sortOrder,
+                    )}
                   </span>
                 ),
               },
               {
                 id: "title",
                 header: t("public.detail.schedule.columns.title"),
-                accessor: (row) => row.lectureTitle,
+                accessor: (row) => row.titleAr,
                 cell: (row) => (
                   <span className="font-bold text-text-primary">
-                    {row.lectureTitle ?? t("public.detail.schedule.item.noTitle")}
+                    {resolveAcademyProgramSessionTitle(row, locale)}
+                  </span>
+                ),
+              },
+              {
+                id: "deliveryMethod",
+                header: t("public.detail.schedule.columns.deliveryMethod"),
+                accessor: (row) => row.deliveryMethod,
+                cell: (row) => (
+                  <span className="rounded-full border border-border-light bg-surface-tertiary px-2.5 py-1 text-xs font-semibold text-text-primary">
+                    {resolveAcademyProgramDeliveryMethodLabel(row.deliveryMethod, t)}
                   </span>
                 ),
               },
@@ -410,12 +672,8 @@ export default function PublicAcademyDetailScreen({
                 header: t("public.detail.schedule.columns.date"),
                 accessor: (row) => row.startsAt,
                 cell: (row) => (
-                  <span className="text-text-secondary font-medium">
-                    {new Date(row.startsAt).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                  <span className="font-medium text-text-secondary">
+                    {formatDate(row.startsAt, locale) ?? t("public.detail.noDate")}
                   </span>
                 ),
               },
@@ -423,44 +681,21 @@ export default function PublicAcademyDetailScreen({
                 id: "time",
                 header: t("public.detail.schedule.columns.time"),
                 accessor: (row) => row.startsAt,
-                cell: (row) => {
-                  const formatTime = (dateStr: string) => {
-                    return new Date(dateStr).toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    });
-                  };
-                  return (
-                    <span className="text-text-secondary font-medium" dir="ltr">
-                      {formatTime(row.startsAt)} - {formatTime(row.endsAt)}
-                    </span>
-                  );
-                },
+                cell: (row) => (
+                  <span className="font-medium text-text-secondary" dir="ltr">
+                    {formatTime(row.startsAt, locale)} - {formatTime(row.endsAt, locale)}
+                  </span>
+                ),
               },
               {
                 id: "duration",
                 header: t("public.detail.schedule.columns.duration"),
                 accessor: (row) => row.startsAt,
-                cell: (row) => {
-                  const durationMinutes = Math.round(
-                    (new Date(row.endsAt).getTime() - new Date(row.startsAt).getTime()) / 60000
-                  );
-                  
-                  const formatDuration = (minutes: number, loc: string) => {
-                    const isAr = loc === "ar";
-                    const finalMinutes = minutes <= 0 ? 60 : minutes;
-                    
-                    return isAr 
-                      ? `${new Intl.NumberFormat("ar-EG").format(finalMinutes)} دقيقة` 
-                      : `${finalMinutes} mins`;
-                  };
-                  
-                  return (
-                    <span className="text-text-secondary font-semibold">
-                      {formatDuration(durationMinutes, locale)}
-                    </span>
-                  );
-                },
+                cell: (row) => (
+                  <span className="font-semibold text-text-secondary">
+                    {formatDurationMinutes(row.startsAt, row.endsAt, locale)}
+                  </span>
+                ),
               },
             ]}
             getRowId={(row) => row.id}
@@ -479,180 +714,87 @@ export default function PublicAcademyDetailScreen({
         )}
       </section>
 
-      {/* Booking Form and Instructions */}
       <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        {/* Form container */}
-        <form
-          onSubmit={onSubmit}
-          className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6"
-        >
-          <div className="flex items-center gap-3">
-            <MessageSquareText className="h-5 w-5 text-primary" />
-            <div>
-              <h2 className="text-base font-bold text-text-primary">{t("public.form.title")}</h2>
-              <p className="text-xs text-text-muted mt-0.5">{t("public.form.subtitle")}</p>
-            </div>
-          </div>
+        {canEnroll ? (
+          <PublicAcademyEnrollmentForm
+            locale={locale}
+            t={t}
+            program={program}
+            onSubmit={onSubmit}
+            form={form}
+            setForm={setForm}
+            pending={createEnrollment.isPending}
+            feedback={feedback}
+            isRestrictedLearner={isRestrictedLearner}
+            disableSubmit={!programTitle}
+          />
+        ) : (
+          <StateCard
+            title={t("public.form.closedTitle")}
+            note={t("public.form.closedNote")}
+            className="rounded-[24px]"
+          />
+        )}
 
-          {user && !isRestrictedLearner ? (
-            <div className="mt-4 rounded-[16px] border border-primary/15 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-text-secondary">
-              {t("public.form.identityNote")}
-            </div>
-          ) : null}
-
-          {isRestrictedLearner ? (
-            <div className="mt-4 rounded-[16px] border border-error/20 bg-error/5 px-4 py-3 text-xs leading-relaxed text-error-600">
-              {t("public.form.restricted")}
-            </div>
-          ) : null}
-
-          <div className="mt-5 space-y-4">
-            <Input
-              value={form.fullName}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, fullName: event.target.value }))
-              }
-              placeholder={t("public.form.fullName")}
-              error={Boolean(feedback && !form.fullName.trim())}
-              className="w-full"
-            />
-            <Input
-              value={form.phoneNumber}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, phoneNumber: event.target.value }))
-              }
-              placeholder={t("public.form.phoneNumber")}
-              error={Boolean(feedback && !form.phoneNumber.trim())}
-              className="w-full"
-            />
-            <Input
-              value={form.whatsappNumber ?? ""}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, whatsappNumber: event.target.value }))
-              }
-              placeholder={t("public.form.whatsappNumber")}
-              className="w-full"
-            />
-            <Input
-              type="email"
-              value={form.email ?? ""}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder={t("public.form.email")}
-              className="w-full"
-            />
-          </div>
-
-          <div className="mt-4 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3.5 text-xs leading-normal">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-text-secondary">
-                {t("public.form.priceLabel")}
-              </span>
-              <span className="text-sm font-extrabold text-primary">
-                {priceLabel ?? t("public.detail.free")}
-              </span>
-            </div>
-          </div>
-
-          <Button type="submit" className="mt-5 w-full rounded-[14px]" disabled={createEnrollment.isPending}>
-            {createEnrollment.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t("public.form.submitting")}
-              </>
-            ) : (
-              t("public.form.submit")
-            )}
-          </Button>
-
-          {feedback ? (
-            <p className="mt-3 text-xs font-semibold text-text-muted">{feedback}</p>
-          ) : null}
-        </form>
-
-        {/* Instructions list */}
         <div className="space-y-4">
           <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
             <h2 className="text-base font-bold text-text-primary">{t("public.detail.howItWorks.title")}</h2>
             <div className="mt-4 space-y-3.5 text-sm leading-relaxed text-text-secondary">
-              <div className="flex gap-2.5 items-start">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary font-mono mt-0.5">1</span>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
+                  1
+                </span>
                 <p>{t("public.detail.howItWorks.step1")}</p>
               </div>
-              <div className="flex gap-2.5 items-start">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary font-mono mt-0.5">2</span>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
+                  2
+                </span>
                 <p>{t("public.detail.howItWorks.step2")}</p>
               </div>
-              <div className="flex gap-2.5 items-start">
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary font-mono mt-0.5">3</span>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-light font-mono text-xs font-bold text-primary">
+                  3
+                </span>
                 <p>{t("public.detail.howItWorks.step3")}</p>
               </div>
             </div>
           </div>
 
           {enrollment ? (
-            <div className="rounded-[24px] border border-primary/20 bg-primary/5 p-5 sm:p-6">
-              <h3 className="text-base font-bold text-text-primary">{t("public.result.title")}</h3>
-              <p className="mt-2 text-sm text-text-secondary leading-normal">
-                {t("public.result.status", {
-                  status: t(`statuses.enrollment.${enrollment.enrollmentStatus}` as Parameters<
-                    typeof t
-                  >[0]),
-                })}
+            <EnrollmentResultCard locale={locale} t={t} enrollment={enrollment} />
+          ) : (
+            <div className="rounded-[24px] border border-border-light bg-white p-5 sm:p-6">
+              <h3 className="text-base font-bold text-text-primary">
+                {t("public.result.preSubmitTitle")}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-text-secondary">
+                {t("public.result.preSubmitNote")}
               </p>
-              
-              <div className="mt-4 rounded-xl bg-white p-4 text-xs border border-border-light">
-                <div className="text-[10px] uppercase font-bold text-text-muted">{t("public.result.reference")}</div>
-                <div className="font-mono font-bold text-sm text-text-primary mt-1">{enrollment.publicAccessToken}</div>
-              </div>
-
-              {enrollment.payment?.checkoutUrl ? (
-                <a
-                  href={enrollment.payment.checkoutUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-[14px] bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover shadow-sm"
-                >
-                  {t("public.result.payNow")}
-                </a>
-              ) : (
-                <div className="mt-4 rounded-xl border border-border-light bg-white px-4 py-3 text-xs text-text-secondary text-center">
-                  {t("public.result.waiting")}
-                </div>
-              )}
-
-              {(enrollment.joinAccess.meetingUrl || enrollment.joinAccess.whatsappGroupUrl) ? (
-                <div className="mt-4 space-y-3 rounded-xl border border-border-light bg-white p-4 text-xs text-text-secondary">
-                  <div className="font-bold text-text-primary">
-                    {t("public.result.joinAccess.title")}
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 text-xs">
+                  <div className="text-[10px] uppercase font-bold text-text-muted">
+                    {t("public.result.paymentStatus")}
                   </div>
-                  {enrollment.joinAccess.meetingUrl ? (
-                    <a
-                      href={enrollment.joinAccess.meetingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block break-all text-primary underline-offset-4 hover:underline font-mono"
-                    >
-                      {t("public.result.joinAccess.meeting")}
-                    </a>
-                  ) : null}
-                  {enrollment.joinAccess.whatsappGroupUrl ? (
-                    <a
-                      href={enrollment.joinAccess.whatsappGroupUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block break-all text-primary underline-offset-4 hover:underline font-mono"
-                    >
-                      {t("public.result.joinAccess.whatsapp")}
-                    </a>
-                  ) : null}
+                  <div className="mt-0.5 font-bold text-text-primary">
+                    {t("public.result.pendingState")}
+                  </div>
                 </div>
-              ) : null}
+                <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2 text-xs">
+                  <div className="text-[10px] uppercase font-bold text-text-muted">
+                    {t("public.result.reference")}
+                  </div>
+                  <div className="mt-0.5 font-bold text-text-primary">
+                    {t("public.result.automatic")}
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
       </section>
     </div>
   );
 }
+
+export default PublicAcademyProgramDetailScreen;

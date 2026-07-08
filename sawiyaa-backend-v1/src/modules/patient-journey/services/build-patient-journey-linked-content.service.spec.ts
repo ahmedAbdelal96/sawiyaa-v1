@@ -70,7 +70,7 @@ describe('BuildPatientJourneyLinkedContentService', () => {
         matching: {
           hasRecentSession: false,
         },
-        training: {
+        academy: {
           hasActiveEnrollment: false,
         },
         support: {
@@ -151,7 +151,7 @@ describe('BuildPatientJourneyLinkedContentService', () => {
         matching: {
           hasRecentSession: false,
         },
-        training: {
+        academy: {
           hasActiveEnrollment: true,
         },
         support: {

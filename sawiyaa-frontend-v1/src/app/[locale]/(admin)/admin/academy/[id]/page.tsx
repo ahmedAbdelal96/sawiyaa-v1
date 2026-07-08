@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import AdminAcademyDetailScreen from "@/features/academy/components/AdminAcademyDetailScreen";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{ locale: string; id: string }>;
@@ -18,7 +18,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AdminAcademyDetailPage({ params }: Props) {
   const { locale, id } = await params;
-  setRequestLocale(locale);
-
-  return <AdminAcademyDetailScreen courseId={id} />;
+  redirect(`/${locale}/admin/academy/programs/${id}`);
 }

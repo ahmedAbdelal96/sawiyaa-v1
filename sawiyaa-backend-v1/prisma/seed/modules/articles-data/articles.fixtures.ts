@@ -289,7 +289,7 @@ const FITNESS_TOPICS = [
     titleEn: 'Choosing the Right Activity Based on Your Energy Levels',
     subtitleEn: 'Flexible planning beats a rigid routine',
     bullet1En: 'Assess your energy before choosing an activity — do not follow a strict schedule',
-    bullet2En: 'On high-energy days: running, swimming, or strength training',
+    bullet2En: 'On high-energy days: running, swimming, or strength exercise',
     bullet3En: 'On low-energy days: a short walk, stretching, or light exercises',
     bullet4En: 'Five minutes is better than zero — any movement is better than none',
     seekSupport1En: 'If you have completely lost motivation for exercise for weeks',

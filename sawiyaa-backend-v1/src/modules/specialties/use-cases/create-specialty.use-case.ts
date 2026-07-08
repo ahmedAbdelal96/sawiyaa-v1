@@ -12,7 +12,7 @@ import { normalizeSpecialtySlug } from '../utils/normalize-specialty-slug.util';
 
 /**
  * Admin create use case for practitioner specialties catalog.
- * It enforces canonical slug uniqueness and writes the locale-specific translation baseline.
+ * It enforces canonical slug uniqueness and writes localized baselines.
  */
 @Injectable()
 export class CreateSpecialtyUseCase {
@@ -27,7 +27,8 @@ export class CreateSpecialtyUseCase {
     locale: SupportedLocale;
     categoryId: string;
     slug: string;
-    title: string;
+    nameAr: string;
+    nameEn: string;
     description?: string | null;
     sortOrder?: number;
     isActive?: boolean;
@@ -43,9 +44,7 @@ export class CreateSpecialtyUseCase {
     }
 
     const normalizedSlug = normalizeSpecialtySlug(input.slug);
-
-    const existing =
-      await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
+    const existing = await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
 
     if (existing) {
       throw new ConflictException({
@@ -58,12 +57,12 @@ export class CreateSpecialtyUseCase {
     try {
       created = await this.specialtyRepository.create({
         slug: normalizedSlug,
+        nameAr: input.nameAr.trim(),
+        nameEn: input.nameEn.trim(),
         categoryId: input.categoryId,
-        title: input.title.trim(),
         description: input.description?.trim() ?? null,
         sortOrder: input.sortOrder ?? 0,
         isActive: input.isActive ?? true,
-        locale: input.locale,
       });
     } catch (error) {
       if ((error as { code?: string }).code === 'P2002') {

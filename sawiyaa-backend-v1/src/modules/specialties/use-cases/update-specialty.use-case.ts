@@ -13,7 +13,7 @@ import { normalizeSpecialtySlug } from '../utils/normalize-specialty-slug.util';
 
 /**
  * Admin update use case for specialties baseline data.
- * It keeps canonical slug consistency and locale translation updates in one flow.
+ * It keeps canonical slug consistency and localized names in one flow.
  */
 @Injectable()
 export class UpdateSpecialtyUseCase {
@@ -29,15 +29,13 @@ export class UpdateSpecialtyUseCase {
     locale: SupportedLocale;
     categoryId?: string;
     slug?: string;
-    title?: string;
+    nameAr?: string;
+    nameEn?: string;
     description?: string | null;
     sortOrder?: number;
     isActive?: boolean;
   }) {
-    const existing = await this.specialtyRepository.findById(
-      input.id,
-      input.locale,
-    );
+    const existing = await this.specialtyRepository.findById(input.id, input.locale);
 
     if (!existing) {
       throw new NotFoundException({
@@ -50,8 +48,7 @@ export class UpdateSpecialtyUseCase {
       input.slug !== undefined ? normalizeSpecialtySlug(input.slug) : undefined;
 
     if (normalizedSlug && normalizedSlug !== existing.slug) {
-      const slugOwner =
-        await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
+      const slugOwner = await this.specialtyRepository.findByCanonicalSlug(normalizedSlug);
       if (slugOwner && slugOwner.id !== input.id) {
         throw new ConflictException({
           messageKey: 'specialties.errors.specialtySlugAlreadyExists',
@@ -61,9 +58,7 @@ export class UpdateSpecialtyUseCase {
     }
 
     if (input.categoryId) {
-      const category = await this.specialtyCategoryRepository.findActiveById(
-        input.categoryId,
-      );
+      const category = await this.specialtyCategoryRepository.findActiveById(input.categoryId);
       if (!category) {
         throw new BadRequestException({
           messageKey: 'specialties.errors.specialtyCategoryNotFound',
@@ -72,46 +67,28 @@ export class UpdateSpecialtyUseCase {
       }
     }
 
-    const localeTranslation = existing.translations.find(
-      (item) => item.locale === input.locale,
-    );
-    const fallbackTitle =
-      localeTranslation?.title ??
+    const existingNameAr =
+      existing.translations.find((item) => item.locale === 'ar')?.title ??
       existing.translations.find((item) => item.locale === 'en')?.title ??
-      null;
-
-    const translationNeeded =
-      input.title !== undefined ||
-      input.description !== undefined ||
-      normalizedSlug !== undefined;
-
-    if (translationNeeded && !input.title && !fallbackTitle) {
-      throw new BadRequestException({
-        messageKey: 'specialties.errors.invalidSpecialtyState',
-        error: 'SPECIALTY_TRANSLATION_TITLE_REQUIRED',
-      });
-    }
+      existing.slug;
+    const existingNameEn =
+      existing.translations.find((item) => item.locale === 'en')?.title ??
+      existing.translations.find((item) => item.locale === 'ar')?.title ??
+      existing.slug;
+    const resolvedNameAr = input.nameAr?.trim() ?? existingNameAr;
+    const resolvedNameEn = input.nameEn?.trim() ?? existingNameEn;
 
     let updated;
     try {
       updated = await this.specialtyRepository.update(input.id, {
-        locale: input.locale,
         slug: normalizedSlug,
         categoryId: input.categoryId,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
-        translation: translationNeeded
-          ? {
-              createTitle: input.title?.trim() ?? fallbackTitle ?? '',
-              updateTitle:
-                input.title === undefined ? undefined : input.title.trim(),
-              updateDescription:
-                input.description === undefined
-                  ? undefined
-                  : (input.description?.trim() ?? null),
-              translationSlug: normalizedSlug ?? existing.slug,
-            }
-          : undefined,
+        nameAr: resolvedNameAr,
+        nameEn: resolvedNameEn,
+        description:
+          input.description === undefined ? undefined : input.description?.trim() ?? null,
       });
     } catch (error) {
       if ((error as { code?: string }).code === 'P2002') {

@@ -26,7 +26,7 @@ export type RawCareSignalSnapshot = {
   hasRecentMatchingSession: boolean;
   hasOpenSupportTicket: boolean;
   latestSupportTicketStatus: SupportTicketStatus | null;
-  hasActiveTrainingEnrollment: boolean;
+  hasActiveAcademyEnrollment: boolean;
 };
 
 export type NormalizedCareSignalContext = {
@@ -54,7 +54,7 @@ export type NormalizedCareSignalContext = {
   matching: {
     hasRecentSession: boolean;
   };
-  training: {
+  academy: {
     hasActiveEnrollment: boolean;
   };
   support: {

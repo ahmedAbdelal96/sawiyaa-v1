@@ -13,6 +13,7 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
 import { LoadingState, ErrorState } from "../../../src/components/ui";
 import { listSpecialties } from "../../../src/features/specialties/api";
+import { getLocalizedSpecialtyName } from "../../../src/features/specialties/localized";
 
 type ParamsShape = Record<string, string | string[]>;
 
@@ -37,7 +38,7 @@ function toParamsRecord(params: ParamsShape): Record<string, string> {
 export default function DiscoveryFiltersScreen() {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<ParamsShape>();
 
   const baseParams = useMemo(() => toParamsRecord(params), [params]);
@@ -88,13 +89,15 @@ export default function DiscoveryFiltersScreen() {
         if (categoryA !== categoryB) {
           return categoryA.localeCompare(categoryB);
         }
-        return (a.name ?? a.slug).localeCompare(b.name ?? b.slug);
+        return getLocalizedSpecialtyName(a, i18n.language || "en").localeCompare(
+          getLocalizedSpecialtyName(b, i18n.language || "en"),
+        );
       })
       .map((item) => ({
         id: item.slug,
-        label: item.name ?? item.slug,
+        label: getLocalizedSpecialtyName(item, i18n.language || "en"),
       }));
-  }, [specialtiesQuery.data?.specialties]);
+  }, [i18n.language, specialtiesQuery.data?.specialties]);
 
   const languageChoices = useMemo(
     () => [

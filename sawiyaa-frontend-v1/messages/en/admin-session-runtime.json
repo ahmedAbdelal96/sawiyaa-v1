@@ -355,6 +355,34 @@
       "toggleClose": "Hide technical details",
       "empty": "No technical details available."
     },
+    "roomClose": {
+      "title": "Room close evidence",
+      "subtitle": "Persisted room-close state and related support tickets.",
+      "empty": "Video room has not been closed manually.",
+      "status": {
+        "closed": "Room closed",
+        "available": "Room open"
+      },
+      "fields": {
+        "closedAt": "Closed at",
+        "closedBy": "Closed by",
+        "reason": "Close reason",
+        "note": "Close note"
+      },
+      "reasons": {
+        "closedAfterScheduledEnd": "Closed after the scheduled end time",
+        "technicalIssue": "Technical issue"
+      },
+      "tickets": {
+        "title": "Linked support tickets",
+        "count": "{count, number} tickets linked",
+        "empty": "No support tickets are linked to this session.",
+        "noLinkedTickets": "No related support tickets were found for this session.",
+        "openTicket": "Open ticket",
+        "createdAt": "Created {date}",
+        "lastUpdated": "Updated {date}"
+      }
+    },
     "emptyExtended": {
       "title": "No computed evidence available",
       "note": "The extended attendance summary has not been emitted for this session yet."

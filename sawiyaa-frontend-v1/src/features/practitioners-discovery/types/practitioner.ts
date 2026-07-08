@@ -67,10 +67,14 @@ export type PractitionerFilterSpecialtyOption = {
   id: string;
   slug: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   category: {
     id: string;
     slug: string;
     name: string;
+    nameAr?: string | null;
+    nameEn?: string | null;
   } | null;
   practitionerCount: number;
 };

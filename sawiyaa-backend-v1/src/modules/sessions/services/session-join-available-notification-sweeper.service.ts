@@ -140,6 +140,7 @@ export class SessionJoinAvailableNotificationSweeperService
       provider: currentSession.provider,
       providerRoomId: currentSession.providerRoomId,
       providerSessionRef: currentSession.providerSessionRef,
+      videoRoomClosedAt: currentSession.videoRoomClosedAt,
       now,
     });
 
@@ -260,6 +261,7 @@ export class SessionJoinAvailableNotificationSweeperService
       provider: candidate.provider,
       providerRoomId: candidate.providerRoomId,
       providerSessionRef: candidate.providerSessionRef,
+      videoRoomClosedAt: candidate.videoRoomClosedAt,
       now,
     });
 
@@ -335,6 +337,7 @@ export class SessionJoinAvailableNotificationSweeperService
       provider: updated.provider,
       providerRoomId: updated.providerRoomId,
       providerSessionRef: updated.providerSessionRef,
+      videoRoomClosedAt: updated.videoRoomClosedAt,
     };
   }
 

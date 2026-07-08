@@ -13,7 +13,7 @@ import { CustomerWalletAccountingService } from '@modules/customer-wallets/servi
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
-import { OrchestrateTrainingEnrollmentPaymentStatusService } from '../services/orchestrate-training-enrollment-payment-status.service';
+import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 
@@ -24,7 +24,7 @@ export class MarkPaymentFailedUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
-    private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
+    private readonly orchestrateAcademyProgramEnrollmentPaymentStatusService: OrchestrateAcademyProgramEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly operationalNotificationService: OperationalNotificationService,
@@ -109,7 +109,10 @@ export class MarkPaymentFailedUseCase {
       };
     }
 
-    if (updated.amountFromWallet.gt(0)) {
+    if (
+      payment.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT &&
+      updated.amountFromWallet.gt(0)
+    ) {
       await this.customerWalletAccountingService.releaseReservationForPayment({
         paymentId: updated.id,
         currencyCode: updated.currencyCode,
@@ -132,8 +135,11 @@ export class MarkPaymentFailedUseCase {
       unknown
     >;
     const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
+    const isAcademyProgramEnrollment =
+      payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
+      paymentMetadata.source === 'academy-program-enrollment';
 
-    if (!isAcademyEnrollment && updated.patientId) {
+    if (!isAcademyEnrollment && !isAcademyProgramEnrollment && updated.patientId) {
       await this.operationalNotificationService.notifyPaymentFailed({
         patientProfileId: updated.patientId,
         paymentId: updated.id,
@@ -161,8 +167,8 @@ export class MarkPaymentFailedUseCase {
               : null,
         },
       });
-    } else if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
-      await this.orchestrateTrainingEnrollmentPaymentStatusService.markEnrollmentPaymentFailed(
+    } else if (isAcademyProgramEnrollment) {
+      await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentPaymentFailed(
         payment.id,
       );
     }

@@ -573,50 +573,6 @@ export class OperationalNotificationService {
     await this.cancelSessionReminders({ sessionId: input.sessionId });
   }
 
-  async notifyTrainingEnrollmentConfirmed(input: {
-    userId: string;
-    enrollmentId: string;
-    scheduleId: string;
-    scheduledStartAt: Date | null;
-  }): Promise<void> {
-    const recipient = await this.resolveUserRecipient(input.userId);
-    const sessionAt = input.scheduledStartAt?.toISOString() ?? '-';
-
-    await this.sendBySlug({
-      recipient,
-      slug: 'training.enrollment-confirmed',
-      titleKey: 'training.notifications.enrollmentConfirmedTitle',
-      bodyKey: 'training.notifications.enrollmentConfirmedBody',
-      params: { sessionAt },
-      relatedEntityType: 'TRAINING_ENROLLMENT',
-      relatedEntityId: input.enrollmentId,
-      category: NotificationCategory.TRAINING,
-    });
-  }
-
-  async queueTrainingScheduleReminder(input: {
-    userId: string;
-    enrollmentId: string;
-    scheduleId: string;
-    scheduledFor: Date;
-    scheduledStartAt: Date | null;
-  }): Promise<void> {
-    const recipient = await this.resolveUserRecipient(input.userId);
-    const sessionAt = input.scheduledStartAt?.toISOString() ?? '-';
-
-    await this.queueBySlug({
-      recipient,
-      slug: 'training.schedule-reminder',
-      titleKey: 'training.notifications.scheduleReminderTitle',
-      bodyKey: 'training.notifications.scheduleReminderBody',
-      params: { sessionAt },
-      relatedEntityType: 'TRAINING_ENROLLMENT',
-      relatedEntityId: input.enrollmentId,
-      category: NotificationCategory.TRAINING,
-      scheduledFor: input.scheduledFor,
-    });
-  }
-
   async queuePractitionerAvailabilityWeekEndingReminder(input: {
     practitionerId: string;
     userId: string;

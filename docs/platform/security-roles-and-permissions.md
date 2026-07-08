@@ -23,7 +23,7 @@ The exact permission keys live in code, but the product organizes them into fami
 - sessions and scheduling
 - chat and moderation
 - payments and wallet
-- settlements and accounting
+- payouts and accounting
 - support and ticket handling
 - content and training
 - reports and diagnostics
@@ -34,7 +34,22 @@ The exact permission keys live in code, but the product organizes them into fami
 - Sensitive pages should be protected by both route guards and backend authorization.
 - Admin surfaces should never be available to patient users.
 - Read access and action access should be treated separately when possible.
-- Chat attachments, moderation actions, and financial tools should have explicit permissions.
+- Chat attachments, moderation actions, financial tools, and direct-create approval actions should have explicit permissions.
+
+## Step-up policy
+
+- Step-up should protect final trust-changing actions.
+- Admin direct-create credential upload does not require step-up, but it keeps authentication, permission checks, audit logging, and file validation.
+- Final direct-create submit requires step-up.
+- Approve, activate, and publish actions require step-up.
+- Reject and request-changes flows remain unchanged unless a later business decision changes them.
+
+## Support ownership rule
+
+- Support ownership is enforced at the backend and in the UI.
+- The first public staff reply on an unassigned ticket claims ownership.
+- Only the assigned owner can send public replies.
+- Internal notes do not claim ownership or change assignment.
 
 ## UX rule
 
@@ -46,6 +61,7 @@ This is especially important for:
 - financial operations
 - moderation actions
 - instant booking request handling
+- support reply ownership
 
 ## Route safety reminders
 
@@ -53,3 +69,4 @@ This is especially important for:
 - Do not expose raw enum names as permissions or statuses in the UI.
 - Do not assume frontend-only hiding is enough for protection.
 - Treat backend enforcement as the final source of truth.
+

@@ -82,6 +82,14 @@ function formatSessionTimeLabel(isoString: string | null, numLocale: string): st
   return formatViewerTime(isoString, { locale: numLocale, fallbackText: "—" });
 }
 
+function getSafeTranslation(
+  t: any,
+  key: string,
+  fallback: string,
+) {
+  return t.has?.(key) ? t(key) : fallback;
+}
+
 type SummaryFieldProps = {
   icon: ReactNode;
   label: string;
@@ -360,7 +368,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       ["CREATED", "PENDING", "REQUIRES_ACTION"].includes(sessionPayment.status) &&
       !isPaymentAttemptExpired
   );
-  const canJoinNow = session.joinAvailability?.canJoin === true;
+  const canJoinNow = joinResult?.canJoin ?? session.joinAvailability?.canJoin ?? false;
+  const blockedJoinReason =
+    joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
+  const isRoomClosed = blockedJoinReason === "SESSION_ROOM_CLOSED";
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
     session.presentationStatus,
   );
@@ -369,10 +380,12 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
-  const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
+  const prepareAllowed =
+    hasRuntimeAccess && !isRoomClosed && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
   const joinWindowOpen = isJoinWindowOpen(session, joinResult);
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
+    !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
   const cancellationPreview = previewCancellationMutation.data;
@@ -468,6 +481,26 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const sessionScheduledAt = session.scheduledStartAt ?? cancellationPreview?.sessionStartAt ?? null;
   const sessionScheduledDateLabel = formatSessionDateLabel(sessionScheduledAt, numLocale);
   const sessionScheduledTimeLabel = formatSessionTimeLabel(sessionScheduledAt, numLocale);
+  const supportHref = `/patient/messages?lane=support&relatedSessionId=${encodeURIComponent(
+    session.id,
+  )}`;
+  const roomCloseSupportHeading = getSafeTranslation(
+    t,
+    "detail.roomClose.support.heading",
+    locale.startsWith("ar") ? "هل تحتاج إلى مساعدة في هذه الجلسة؟" : "Need help with this session?",
+  );
+  const roomCloseSupportNote = getSafeTranslation(
+    t,
+    "detail.roomClose.support.note",
+    locale.startsWith("ar")
+      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
+      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
+  );
+  const roomCloseSupportAction = getSafeTranslation(
+    t,
+    "detail.roomClose.support.action",
+    locale.startsWith("ar") ? "اتصل بالدعم" : "Contact support",
+  );
   const sessionTypeLabel = sessionModeLabel;
 
   const handleCancel = async () => {
@@ -671,13 +704,33 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                     </p>
                   )}
 
-                  {joinResult && !joinResult.canJoin && (
-                    <p className="text-sm text-text-muted">
-                      {t(`detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as any)}
-                    </p>
+                  {blockedJoinReason && !canJoinNow && (
+                    <div className="space-y-3">
+                      <p className="text-sm text-text-muted">
+                        {t(
+                          `detail.runtime.blocked.${getRuntimeBlockedReasonKey(blockedJoinReason)}` as Parameters<
+                            typeof t
+                          >[0],
+                        )}
+                      </p>
+                      {blockedJoinReason === "SESSION_ROOM_CLOSED" ? (
+                        <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-4 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                          <p className="font-semibold">{roomCloseSupportHeading}</p>
+                          <p className="mt-1 text-sm text-text-secondary">
+                            {roomCloseSupportNote}
+                          </p>
+                          <Link
+                            href={supportHref}
+                            className="mt-3 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                          >
+                            {roomCloseSupportAction}
+                          </Link>
+                        </div>
+                      ) : null}
+                    </div>
                   )}
 
-                  {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && (
+                  {!joinResult?.canJoin && !prepareAllowed && !shouldShowJoinCheck && !isRoomClosed && (
                     <p className="text-sm text-text-muted">
                       {t("detail.liveFlow.phases.awaitingWindow.note")}
                     </p>

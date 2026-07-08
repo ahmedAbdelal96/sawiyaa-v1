@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { AxiosError } from "axios";
 import {
   Button,
   Card,
@@ -14,6 +15,7 @@ import {
   Text,
 } from "../../../src/components/ui";
 import {
+  useClosePractitionerSessionRuntime,
   useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
   usePractitionerSession,
@@ -21,6 +23,7 @@ import {
   useResolvePractitionerSessionJoinContract,
 } from "../../../src/features/practitioner/sessions/hooks";
 import type {
+  PractitionerSessionRoomCloseReason,
   PractitionerSessionDetails,
   PractitionerSessionJoinContract,
   SessionPresentationStatus,
@@ -35,7 +38,7 @@ import {
   formatTimeZoneLabel,
   formatViewerDateTime,
 } from "../../../src/lib/time-formatting";
-import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
 const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["JOINABLE", "IN_PROGRESS"];
 const NO_SHOW_ALLOWED: SessionPresentationStatus[] = [
@@ -65,11 +68,19 @@ export default function PractitionerSessionDetailScreen() {
   const sessionQuery = usePractitionerSession(id ?? null);
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
+  const closeRoomMutation = useClosePractitionerSessionRuntime();
   const completeMutation = useMarkPractitionerSessionCompleted();
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [joinContract, setJoinContract] =
     useState<PractitionerSessionJoinContract | null>(null);
+  const [roomCloseSheetVisible, setRoomCloseSheetVisible] = useState(false);
+  const [roomCloseReason, setRoomCloseReason] =
+    useState<PractitionerSessionRoomCloseReason | null>(null);
+  const [roomCloseResult, setRoomCloseResult] = useState<{
+    wasAlreadyClosed: boolean;
+  } | null>(null);
+  const [roomCloseError, setRoomCloseError] = useState<string | null>(null);
 
   const handleBackToSessions = () => {
     router.replace("/(practitioner)/sessions");
@@ -151,6 +162,18 @@ export default function PractitionerSessionDetailScreen() {
       },
     ];
   }, [i18n.language, session, t]);
+
+  const isRoomClosed =
+    roomCloseResult?.wasAlreadyClosed === true ||
+    session?.joinAvailability?.blockedReason === "SESSION_ROOM_CLOSED";
+  const canCloseRoom =
+    session?.sessionMode === "VIDEO" &&
+    !isRoomClosed &&
+    session ? ["UPCOMING", "JOINABLE", "IN_PROGRESS"].includes(session.presentationStatus) : false;
+  const roomCloseAfterEnd = Boolean(
+    session?.scheduledEndAt &&
+      Date.now() >= new Date(session.scheduledEndAt).getTime(),
+  );
 
   if (sessionQuery.isLoading) {
     return (
@@ -255,6 +278,71 @@ export default function PractitionerSessionDetailScreen() {
       router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
     } catch {
       setFeedback(t("practitioner.detail.openMessagesError"));
+    }
+  };
+
+  const openRoomCloseSheet = () => {
+    setRoomCloseError(null);
+    setRoomCloseReason(null);
+    setRoomCloseSheetVisible(true);
+  };
+
+  const closeRoomReasonOptions: Array<{
+    value: PractitionerSessionRoomCloseReason;
+    label: string;
+  }> = [
+    {
+      value: "TECHNICAL_ISSUE",
+      label: t("practitioner.detail.roomClose.options.technicalIssue"),
+    },
+    {
+      value: "PATIENT_NO_SHOW",
+      label: t("practitioner.detail.roomClose.options.patientNoShow"),
+    },
+    {
+      value: "ENDED_BY_AGREEMENT",
+      label: t("practitioner.detail.roomClose.options.endedByAgreement"),
+    },
+    {
+      value: "SAFETY_CONCERN",
+      label: t("practitioner.detail.roomClose.options.safetyConcern"),
+    },
+    {
+      value: "OTHER",
+      label: t("practitioner.detail.roomClose.options.other"),
+    },
+  ];
+
+  const handleCloseRoom = async () => {
+    setRoomCloseError(null);
+
+    if (!roomCloseAfterEnd && !roomCloseReason) {
+      setRoomCloseError(t("practitioner.detail.roomClose.errors.reasonRequired"));
+      return;
+    }
+
+    try {
+      const payload = await closeRoomMutation.mutateAsync({
+        sessionId: session.id,
+        payload: {
+          reason: roomCloseAfterEnd ? undefined : roomCloseReason ?? undefined,
+        },
+      });
+
+      setRoomCloseResult({
+        wasAlreadyClosed: payload.item.wasAlreadyClosed,
+      });
+      setRoomCloseSheetVisible(false);
+      setRoomCloseReason(null);
+      setRoomCloseError(null);
+      setFeedback(
+        payload.item.wasAlreadyClosed
+          ? t("practitioner.detail.roomClose.alreadyClosed")
+          : t("practitioner.detail.roomClose.success"),
+      );
+      await sessionQuery.refetch();
+    } catch (error) {
+      setRoomCloseError(getRoomCloseErrorMessage(error, t));
     }
   };
 
@@ -477,6 +565,27 @@ export default function PractitionerSessionDetailScreen() {
               </View>
             ) : null}
 
+            {canCloseRoom ? (
+              <View style={styles.closeRoomBlock}>
+                <Button
+                  title={t("practitioner.detail.roomClose.action")}
+                  variant="secondary"
+                  leftIcon={
+                    <Ionicons
+                      name="close-circle-outline"
+                      size={18}
+                      color={theme.colors.error}
+                    />
+                  }
+                  onPress={openRoomCloseSheet}
+                  style={[
+                    styles.closeRoomButton,
+                    { borderColor: theme.colors.error + "40" },
+                  ]}
+                />
+              </View>
+            ) : null}
+
             {/* No-show action */}
             {canNoShow ? (
               <View style={styles.noShowWrapper}>
@@ -530,6 +639,33 @@ export default function PractitionerSessionDetailScreen() {
           ) : null}
         </Card>
 
+        {isRoomClosed ? (
+          <Card variant="flat" padding="md">
+            <View style={[styles.roomClosedNotice, { flexDirection: rowDirection }]}>
+              <View
+                style={[
+                  styles.roomClosedIcon,
+                  { backgroundColor: theme.colors.success + "15" },
+                ]}
+              >
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color={theme.colors.success}
+                />
+              </View>
+              <View style={styles.roomClosedTextWrap}>
+                <Text weight="700" style={{ textAlign }}>
+                  {t("practitioner.detail.roomClose.alreadyClosed")}
+                </Text>
+                <Text color={theme.colors.textSecondary} style={{ textAlign }}>
+                  {t("practitioner.detail.roomClose.success")}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        ) : null}
+
         {/* Quick Information / Session Facts Card */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text weight="700" style={[styles.sectionTitle, { textAlign }]} color={theme.colors.textPrimary}>
@@ -552,6 +688,125 @@ export default function PractitionerSessionDetailScreen() {
           </Card>
         ) : null}
       </ScrollView>
+
+      <Modal
+        visible={roomCloseSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRoomCloseSheetVisible(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setRoomCloseSheetVisible(false)}
+        >
+          <View
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <View style={styles.modalHandle} />
+            <Text weight="700" style={[styles.modalTitle, { textAlign }]}>
+              {roomCloseAfterEnd
+                ? t("practitioner.detail.roomClose.afterTitle")
+                : t("practitioner.detail.roomClose.beforeTitle")}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={[styles.modalBody, { textAlign }]}>
+              {roomCloseAfterEnd
+                ? t("practitioner.detail.roomClose.afterNote")
+                : t("practitioner.detail.roomClose.beforeNote")}
+            </Text>
+
+            {!roomCloseAfterEnd ? (
+              <View style={styles.reasonList}>
+                <Text weight="600" style={{ textAlign }}>
+                  {t("practitioner.detail.roomClose.reasonLabel")}
+                </Text>
+                <Text color={theme.colors.textMuted} style={[styles.reasonHelp, { textAlign }]}>
+                  {t("practitioner.detail.roomClose.reasonHelp")}
+                </Text>
+
+                <View style={styles.reasonGrid}>
+                  {closeRoomReasonOptions.map((option) => {
+                    const selected = roomCloseReason === option.value;
+                    return (
+                      <TouchableOpacity
+                        key={option.value}
+                        onPress={() => setRoomCloseReason(option.value)}
+                        activeOpacity={0.85}
+                        style={[
+                          styles.reasonChip,
+                          {
+                            borderColor: selected
+                              ? theme.colors.primary
+                              : theme.colors.borderLight,
+                            backgroundColor: selected
+                              ? theme.colors.primary + "12"
+                              : theme.colors.surface,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={selected ? "radio-button-on" : "radio-button-off"}
+                          size={18}
+                          color={selected ? theme.colors.primary : theme.colors.textMuted}
+                        />
+                        <Text
+                          weight="600"
+                          style={[styles.reasonChipText, { textAlign }]}
+                          color={selected ? theme.colors.primary : theme.colors.textPrimary}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : null}
+
+            {roomCloseError ? (
+              <View
+                style={[
+                  styles.roomCloseError,
+                  { backgroundColor: theme.colors.error + "12" },
+                ]}
+              >
+                <Ionicons name="warning" size={16} color={theme.colors.error} />
+                <Text style={[styles.roomCloseErrorText, { color: theme.colors.error }]}>
+                  {roomCloseError}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.modalActions}>
+              <Button
+                title={
+                  roomCloseAfterEnd
+                    ? t("practitioner.detail.roomClose.submitAfter")
+                    : t("practitioner.detail.roomClose.submitBefore")
+                }
+                onPress={() => void handleCloseRoom()}
+                loading={closeRoomMutation.isPending}
+                disabled={!roomCloseAfterEnd && !roomCloseReason}
+              />
+              <Button
+                title={
+                  roomCloseAfterEnd
+                    ? t("practitioner.detail.roomClose.continue")
+                    : t("practitioner.detail.roomClose.cancel")
+                }
+                variant="secondary"
+                onPress={() => setRoomCloseSheetVisible(false)}
+                disabled={closeRoomMutation.isPending}
+              />
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -703,6 +958,41 @@ function buildJoinUrl(joinContract: PractitionerSessionJoinContract | null) {
     return `${joinContract.roomUrl}${joinContract.roomUrl.includes("?") ? "&" : "?"}t=${encodeURIComponent(joinContract.joinToken)}`;
   }
   return joinContract.roomUrl;
+}
+
+function getRoomCloseErrorMessage(
+  error: unknown,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  const code = getErrorCode(error);
+
+  switch (code) {
+    case "SESSION_VIDEO_ROOM_CLOSE_ONLY_AFTER_START":
+      return t("practitioner.detail.roomClose.errors.onlyAfterStart");
+    case "SESSION_ROOM_CLOSED":
+      return t("practitioner.detail.roomClose.alreadyClosed");
+    case "SESSION_VIDEO_ROOM_CLOSE_REASON_REQUIRED":
+      return t("practitioner.detail.roomClose.errors.reasonRequired");
+    case "SESSION_VIDEO_ROOM_CLOSE_NOT_ALLOWED":
+      return t("practitioner.detail.roomClose.errors.notAllowed");
+    default:
+      return t("practitioner.detail.roomClose.errors.generic");
+  }
+}
+
+function getErrorCode(error: unknown) {
+  if (error instanceof AxiosError) {
+    const payload = error.response?.data as
+      | {
+          errorCode?: string;
+          error?: string;
+        }
+      | undefined;
+
+    return payload?.errorCode ?? payload?.error ?? null;
+  }
+
+  return null;
 }
 
 function formatSessionDate(
@@ -976,6 +1266,12 @@ const styles = StyleSheet.create({
     gap: 6,
     width: "100%",
   },
+  closeRoomBlock: {
+    marginTop: 2,
+  },
+  closeRoomButton: {
+    borderRadius: 10,
+  },
   noShowWrapper: {
     marginTop: 4,
   },
@@ -1019,5 +1315,90 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
+  },
+  roomClosedNotice: {
+    alignItems: "center",
+    gap: 12,
+  },
+  roomClosedIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  roomClosedTextWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 18,
+    gap: 14,
+  },
+  modalHandle: {
+    width: 42,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#cbd5e1",
+    alignSelf: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  modalBody: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  reasonList: {
+    gap: 10,
+  },
+  reasonHelp: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  reasonGrid: {
+    gap: 10,
+  },
+  reasonChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  reasonChipText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  roomCloseError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  roomCloseErrorText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  modalActions: {
+    gap: 10,
   },
 });
