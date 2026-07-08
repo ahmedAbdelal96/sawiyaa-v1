@@ -63,6 +63,8 @@ export interface SpecialtyCatalog {
   categories: Array<{
     id: string;
     name: string;
+    nameAr: string | null;
+    nameEn: string | null;
     slug: string;
     description: string | null;
     isActive: boolean;
@@ -71,6 +73,8 @@ export interface SpecialtyCatalog {
   specialties: Array<{
     id: string;
     name: string | null;
+    nameAr: string | null;
+    nameEn: string | null;
     slug: string;
     description: string | null;
     isActive: boolean;
@@ -78,6 +82,8 @@ export interface SpecialtyCatalog {
     category: {
       id: string;
       name: string;
+      nameAr: string | null;
+      nameEn: string | null;
       slug: string;
       description: string | null;
       isActive: boolean;

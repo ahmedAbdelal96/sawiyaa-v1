@@ -28,6 +28,10 @@ import {
   usePractitionerRegister,
 } from "@/features/auth/hooks/use-auth";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 
 export const SIGN_UP_MODES = ["patient", "practitioner"] as const;
 export type SignUpMode = (typeof SIGN_UP_MODES)[number];
@@ -107,7 +111,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     }) ?? [];
   const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((category) => ({
     value: category.id,
-    label: category.name,
+    label: getLocalizedSpecialtyCategoryName(category, locale),
   }));
 
   const specialtiesForSelectedCategory = (specialtiesQuery.data?.specialties ?? []).filter(
@@ -116,7 +120,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
 
   const specialtyOptions = specialtiesForSelectedCategory.map((specialty) => ({
     value: specialty.id,
-    text: specialty.name ?? specialty.slug,
+    text: getLocalizedSpecialtyName(specialty, locale),
     selected: selectedSpecialtyIds.includes(specialty.id),
   }));
 

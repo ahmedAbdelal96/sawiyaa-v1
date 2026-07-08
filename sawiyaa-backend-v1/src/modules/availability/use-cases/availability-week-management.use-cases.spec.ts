@@ -8,6 +8,7 @@ import { AvailabilityWeekOverviewService } from '../services/availability-week-o
 import { AvailabilityPractitionerRepository } from '../repositories/availability-practitioner.repository';
 import { PractitionerAvailabilityWeekRepository } from '../repositories/practitioner-availability-week.repository';
 import { ValidateAvailabilityOverlapService } from '../services/validate-availability-overlap.service';
+import { AvailabilitySlotEditabilityService } from '../services/availability-slot-editability.service';
 import { CreatePractitionerAvailabilityWeekUseCase } from './create-practitioner-availability-week.use-case';
 import { UpdatePractitionerAvailabilityWeekUseCase } from './update-practitioner-availability-week.use-case';
 import { CopyPractitionerAvailabilityWeekToNextUseCase } from './copy-practitioner-availability-week-to-next.use-case';
@@ -32,6 +33,9 @@ describe('Availability week management use-cases', () => {
     $transaction: jest.fn(async (callback: (tx: never) => Promise<unknown>) =>
       callback({} as never),
     ),
+    session: {
+      findFirst: jest.fn(),
+    },
   } as unknown as PrismaService;
 
   const i18nService = {
@@ -44,6 +48,9 @@ describe('Availability week management use-cases', () => {
     buildForPractitioner: jest.fn(),
   } as unknown as AvailabilityWeekOverviewService;
   const overlapService = new ValidateAvailabilityOverlapService();
+  const editabilityService = {
+    calculateEditability: jest.fn(async () => new Map()),
+  } as unknown as AvailabilitySlotEditabilityService;
 
   const createUseCase = new CreatePractitionerAvailabilityWeekUseCase(
     weekRepository,
@@ -62,6 +69,8 @@ describe('Availability week management use-cases', () => {
     overviewService,
     mapper,
     overlapService,
+    calendarService,
+    editabilityService,
     i18nService,
   );
 
@@ -245,6 +254,113 @@ describe('Availability week management use-cases', () => {
 
     expect(result.week.status).toBe(AvailabilityWeekStatus.PUBLISHED);
     expect(weekRepository.publishWeek).toHaveBeenCalledWith('week-1');
+  });
+
+  it('updates a PUBLISHED week successfully when no locked slots are changed', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
+      id: 'practitioner-1',
+      user: { timezone: 'Africa/Cairo' },
+    });
+    const slots = [
+      {
+        id: 'slot-1',
+        weekday: AvailabilityWeekday.SUNDAY,
+        startMinuteOfDay: 600,
+        endMinuteOfDay: 630,
+        durationMinutes: 30,
+        timezone: 'Africa/Cairo',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    const week = buildWeek('week-1', '2026-06-21', AvailabilityWeekStatus.PUBLISHED, slots);
+    (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(week);
+    (weekRepository.updateWeek as jest.Mock).mockResolvedValue(week);
+    (weekRepository.updateDraftWeekSlots as jest.Mock).mockResolvedValue(week);
+    (overviewService.buildForPractitioner as jest.Mock).mockResolvedValue(buildOverview());
+
+    // Mock slot 1 as NOT locked
+    const editabilityMap = new Map();
+    editabilityMap.set('0_30_600_630', {
+      signature: '0_30_600_630',
+      canEdit: true,
+      canRemove: true,
+      isPast: false,
+      isBookedOrReserved: false,
+    });
+    (editabilityService.calculateEditability as jest.Mock).mockResolvedValue(editabilityMap);
+
+    const result = await updateUseCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      weekId: 'week-1',
+      timezone: 'Africa/Cairo',
+      slots: [], // We removed it because it's not locked!
+    });
+
+    expect(result.week).toBeDefined();
+  });
+
+  it('rejects updating a PUBLISHED week if a locked slot is removed', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
+      id: 'practitioner-1',
+      user: { timezone: 'Africa/Cairo' },
+    });
+    const slots = [
+      {
+        id: 'slot-1',
+        weekday: AvailabilityWeekday.SUNDAY,
+        startMinuteOfDay: 600,
+        endMinuteOfDay: 630,
+        durationMinutes: 30,
+        timezone: 'Africa/Cairo',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    const week = buildWeek('week-1', '2026-06-21', AvailabilityWeekStatus.PUBLISHED, slots);
+    (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(week);
+
+    // Mock slot 1 as locked (booked)
+    const editabilityMap = new Map();
+    editabilityMap.set('0_30_600_630', {
+      signature: '0_30_600_630',
+      canEdit: false,
+      canRemove: false,
+      isPast: false,
+      isBookedOrReserved: true,
+      reasonCode: 'BOOKED',
+    });
+    (editabilityService.calculateEditability as jest.Mock).mockResolvedValue(editabilityMap);
+
+    await expect(
+      updateUseCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        weekId: 'week-1',
+        timezone: 'Africa/Cairo',
+        slots: [], // Removed the locked slot!
+      }),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('rejects timezone modification on a PUBLISHED week', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
+      id: 'practitioner-1',
+      user: { timezone: 'Africa/Cairo' },
+    });
+    const week = buildWeek('week-1', '2026-06-21', AvailabilityWeekStatus.PUBLISHED);
+    (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(week);
+
+    await expect(
+      updateUseCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        weekId: 'week-1',
+        timezone: 'Europe/Paris', // Changing timezone!
+        slots: [],
+      }),
+    ).rejects.toThrow(ConflictException);
   });
 });
 

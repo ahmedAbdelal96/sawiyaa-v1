@@ -44,6 +44,10 @@ import type {
   UploadPractitionerCredentialRequest,
 } from "../../src/features/practitioner/onboarding";
 import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "../../src/features/specialties/localized";
+import {
   applicationTone,
   formatDate,
   formatDateTime,
@@ -116,10 +120,21 @@ function formatRequirementLabel(value: string) {
 
 function specialtyLabel(specialty: {
   name?: string | null;
+  nameAr?: string | null;
+  nameEn?: string | null;
   title?: string | null;
   slug: string;
-}) {
-  return specialty.title ?? specialty.name ?? specialty.slug;
+}, locale: string) {
+  return specialty.title
+    ?? getLocalizedSpecialtyName(
+      {
+        name: specialty.name ?? null,
+        nameAr: specialty.nameAr ?? null,
+        nameEn: specialty.nameEn ?? null,
+        slug: specialty.slug,
+      },
+      locale,
+    );
 }
 
 export default function PractitionerOnboardingWorkspaceScreen() {
@@ -713,7 +728,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                           : theme.colors.textPrimary
                       }
                     >
-                      {category.name}
+                      {getLocalizedSpecialtyCategoryName(category, i18n.language || "en")}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -727,7 +742,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             >
               {selectedCategory
                 ? t("practitioner.onboarding.specialties.specialtiesIn", {
-                    category: selectedCategory.name,
+                    category: getLocalizedSpecialtyCategoryName(selectedCategory, i18n.language || "en"),
                   })
                 : t("practitioner.onboarding.specialties.specialties")}
             </Text>
@@ -766,7 +781,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                             : theme.colors.textPrimary
                         }
                       >
-                        {specialtyLabel(specialty)}
+                        {specialtyLabel(specialty, i18n.language || "en")}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -785,7 +800,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                 )}
                 value={
                   selectedSpecialties.length
-                    ? selectedSpecialties.map(specialtyLabel).join(", ")
+                    ? selectedSpecialties
+                        .map((specialty) => specialtyLabel(specialty, i18n.language || "en"))
+                        .join(", ")
                     : t("practitioner.onboarding.specialties.none")
                 }
               />
@@ -1161,7 +1178,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           label={t("practitioner.onboarding.application.specialties")}
           value={
             selectedSpecialties.length
-              ? selectedSpecialties.map(specialtyLabel).join(", ")
+              ? selectedSpecialties
+                  .map((specialty) => specialtyLabel(specialty, i18n.language || "en"))
+                  .join(", ")
               : "-"
           }
         />

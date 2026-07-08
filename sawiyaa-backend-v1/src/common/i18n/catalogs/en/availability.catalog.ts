@@ -5,6 +5,11 @@ export const enAvailabilityCatalog = {
     exceptionCreated: 'Availability exception created successfully',
     exceptionUpdated: 'Availability exception updated successfully',
     exceptionDeleted: 'Availability exception deleted successfully',
+    weeksFetched: 'Availability schedule loaded successfully',
+    weekUpdated: 'Changes saved successfully',
+    weekCreated: 'Schedule created successfully',
+    weekPublished: 'Schedule approved and now available for booking',
+    weekCopied: 'Schedule copied to next week',
   },
   notifications: {
     weekEndingReminderTitle: 'Publish next week availability',
@@ -31,5 +36,11 @@ export const enAvailabilityCatalog = {
       'Availability range is too large for V1 and must not exceed {{maxDays}} days',
     publicAvailabilityNotFound:
       'Public practitioner availability was not found',
+    weekNotFound: 'Availability week was not found',
+    weekNotDraft: 'This schedule is not a draft and cannot be edited in this way',
+    weekNotEditable: 'This schedule cannot be edited',
+    slotInPast: 'Cannot modify a time slot that has already passed',
+    slotBooked: 'Cannot modify this time slot because it has an active booking',
+    publishedTimezoneLocked: 'Timezone cannot be changed after a schedule is approved',
   },
 };

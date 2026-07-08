@@ -7,6 +7,7 @@ import type {
   ListSessionsParams,
   SessionJoinResponseData,
   SessionItem,
+  SessionRoomCloseResponseData,
   SessionCancellationPreviewResponseData,
   SessionRuntimeResponseData,
   SessionSummary,
@@ -178,6 +179,21 @@ export async function preparePractitionerSessionRuntime(sessionId: string) {
   const response = await httpClient.post<ApiPayload<SessionRuntimeResponseData>>(
     `/practitioners/me/sessions/${sessionId}/runtime/prepare`,
     {},
+  );
+  return extractData(response.data).item;
+}
+
+/**
+ * Closes a practitioner-owned video room.
+ * Requires a short reason before the scheduled end time.
+ */
+export async function closePractitionerSessionRuntime(
+  sessionId: string,
+  payload: { reason?: string; note?: string } = {},
+): Promise<SessionRoomCloseResponseData["item"]> {
+  const response = await httpClient.post<ApiPayload<SessionRoomCloseResponseData>>(
+    `/practitioners/me/sessions/${sessionId}/runtime/close`,
+    payload,
   );
   return extractData(response.data).item;
 }

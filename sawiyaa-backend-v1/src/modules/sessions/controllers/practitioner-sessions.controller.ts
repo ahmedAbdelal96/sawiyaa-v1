@@ -1,5 +1,6 @@
 import {
   Controller,
+  Body,
   Get,
   HttpCode,
   Param,
@@ -36,11 +37,14 @@ import {
 import { PractitionerSessionSummarySuccessResponseDto } from '../dto/practitioner-session-summary-response.dto';
 import {
   SessionJoinItemSuccessResponseDto,
+  SessionRoomCloseItemSuccessResponseDto,
   SessionRuntimeItemSuccessResponseDto,
 } from '../dto/session-runtime-response.dto';
+import { CloseSessionVideoRoomDto } from '../dto/close-session-video-room.dto';
 import { GetMyPractitionerSessionsUseCase } from '../use-cases/get-my-practitioner-sessions.use-case';
 import { GetMyPractitionerSessionSummaryUseCase } from '../use-cases/get-my-practitioner-session-summary.use-case';
 import { GetSessionDetailsUseCase } from '../use-cases/get-session-details.use-case';
+import { CloseSessionVideoRoomByPractitionerUseCase } from '../use-cases/close-session-video-room-by-practitioner.use-case';
 import { MarkSessionCompletedByPractitionerUseCase } from '../use-cases/mark-session-completed-by-practitioner.use-case';
 import { MarkSessionNoShowByPractitionerUseCase } from '../use-cases/mark-session-no-show-by-practitioner.use-case';
 import { PrepareSessionRuntimeUseCase } from '../use-cases/prepare-session-runtime.use-case';
@@ -65,6 +69,7 @@ export class PractitionerSessionsController {
     private readonly getMyPractitionerSessionsUseCase: GetMyPractitionerSessionsUseCase,
     private readonly getMyPractitionerSessionSummaryUseCase: GetMyPractitionerSessionSummaryUseCase,
     private readonly getSessionDetailsUseCase: GetSessionDetailsUseCase,
+    private readonly closeSessionVideoRoomByPractitionerUseCase: CloseSessionVideoRoomByPractitionerUseCase,
     private readonly markSessionCompletedByPractitionerUseCase: MarkSessionCompletedByPractitionerUseCase,
     private readonly markSessionNoShowByPractitionerUseCase: MarkSessionNoShowByPractitionerUseCase,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
@@ -187,6 +192,36 @@ export class PractitionerSessionsController {
       userId: currentUser.id,
       sessionId,
       actorType: 'PRACTITIONER',
+    });
+  }
+
+  @Post(':id/runtime/close')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Close session video room',
+    description:
+      'Closes a practitioner-owned video room after the session has started and blocks further join/rejoin attempts.',
+  })
+  @ApiParam({ name: 'id', description: 'Session id' })
+  @ApiResponse({ status: 200, type: SessionRoomCloseItemSuccessResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, OTP-verified access, and owned session',
+  })
+  @ApiNotFoundResponse({ description: 'Session was not found' })
+  @ApiConflictResponse({
+    description: 'Session room close is not allowed in the current state',
+  })
+  closeRuntime(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('id') sessionId: string,
+    @Body() body: CloseSessionVideoRoomDto,
+  ) {
+    return this.closeSessionVideoRoomByPractitionerUseCase.execute({
+      userId: currentUser.id,
+      sessionId,
+      payload: body,
     });
   }
 

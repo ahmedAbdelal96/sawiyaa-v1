@@ -2,6 +2,148 @@ import { ContentLocale, PrismaClient } from '@prisma/client';
 import { seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 
+type SpecialtyCategorySeed = {
+  id: string;
+  slug: string;
+  nameAr: string;
+  nameEn: string;
+  description: string | null;
+  sortOrder: number;
+};
+
+type SpecialtySeed = {
+  id: string;
+  categorySlug: string;
+  slug: string;
+  sortOrder: number;
+  nameAr: string;
+  nameEn: string;
+  translations: {
+    en: {
+      title: string;
+      description: string;
+      slug: string;
+    };
+    ar: {
+      title: string;
+      description: string;
+      slug: string;
+    };
+  };
+};
+
+async function getColumnNames(
+  prisma: PrismaClient,
+  tableName: string,
+): Promise<Set<string>> {
+  const rows = await prisma.$queryRaw<Array<{ column_name: string }>>`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = ${tableName}
+  `;
+
+  return new Set(rows.map((row) => row.column_name));
+}
+
+function withLocalizedCategoryFields(
+  base: Record<string, unknown>,
+  category: SpecialtyCategorySeed,
+  hasLocalizedColumns: boolean,
+): Record<string, unknown> {
+  if (!hasLocalizedColumns) {
+    return base;
+  }
+
+  return {
+    ...base,
+    nameAr: category.nameAr,
+    nameEn: category.nameEn,
+  };
+}
+
+function withLocalizedSpecialtyFields(
+  base: Record<string, unknown>,
+  specialty: SpecialtySeed,
+  hasLocalizedColumns: boolean,
+): Record<string, unknown> {
+  if (!hasLocalizedColumns) {
+    return base;
+  }
+
+  return {
+    ...base,
+    nameAr: specialty.nameAr,
+    nameEn: specialty.nameEn,
+  };
+}
+
+async function upsertSpecialtyCategoryForLegacyDatabase(
+  prisma: PrismaClient,
+  category: SpecialtyCategorySeed,
+): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "SpecialtyCategory" (
+      "id",
+      "slug",
+      "name",
+      "description",
+      "sortOrder",
+      "isActive",
+      "createdAt",
+      "updatedAt"
+    ) VALUES (
+      ${category.id}::uuid,
+      ${category.slug},
+      ${category.nameEn},
+      ${category.description},
+      ${category.sortOrder},
+      true,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT ("id") DO UPDATE SET
+      "slug" = EXCLUDED."slug",
+      "name" = EXCLUDED."name",
+      "description" = EXCLUDED."description",
+      "sortOrder" = EXCLUDED."sortOrder",
+      "isActive" = EXCLUDED."isActive",
+      "updatedAt" = CURRENT_TIMESTAMP
+  `;
+}
+
+async function upsertSpecialtyForLegacyDatabase(
+  prisma: PrismaClient,
+  specialty: SpecialtySeed,
+  categoryId: string,
+): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "Specialty" (
+      "id",
+      "categoryId",
+      "slug",
+      "sortOrder",
+      "isActive",
+      "createdAt",
+      "updatedAt"
+    ) VALUES (
+      ${specialty.id}::uuid,
+      ${categoryId}::uuid,
+      ${specialty.slug},
+      ${specialty.sortOrder},
+      true,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT ("id") DO UPDATE SET
+      "categoryId" = EXCLUDED."categoryId",
+      "slug" = EXCLUDED."slug",
+      "sortOrder" = EXCLUDED."sortOrder",
+      "isActive" = EXCLUDED."isActive",
+      "updatedAt" = CURRENT_TIMESTAMP
+  `;
+}
+
 /**
  * Specialties seed module:
  * - creates main specialty categories
@@ -11,26 +153,38 @@ import { SeedModule } from '../shared/seed.types';
 export const specialtiesSeedModule: SeedModule = {
   name: 'specialties',
   async run(prisma: PrismaClient): Promise<void> {
-    const categories = [
+    const [specialtyCategoryColumns, specialtyColumns] = await Promise.all([
+      getColumnNames(prisma, 'SpecialtyCategory'),
+      getColumnNames(prisma, 'Specialty'),
+    ]);
+    const hasSpecialtyCategoryLocalizedColumns =
+      specialtyCategoryColumns.has('nameAr') && specialtyCategoryColumns.has('nameEn');
+    const hasSpecialtyLocalizedColumns =
+      specialtyColumns.has('nameAr') && specialtyColumns.has('nameEn');
+
+    const categories: SpecialtyCategorySeed[] = [
       {
         id: seedIds.specialtyCategories.mentalHealth,
         slug: 'mental-health',
-        name: 'النفسي',
-        description: 'تخصصات الصحة النفسية والعلاج النفسي',
+        nameAr: 'الصحة النفسية',
+        nameEn: 'Mental Health',
+        description: 'تخصصات الصحة النفسية والعلاج السلوكي',
         sortOrder: 1,
       },
       {
         id: seedIds.specialtyCategories.nutrition,
         slug: 'nutrition',
-        name: 'التغذية',
+        nameAr: 'التغذية',
+        nameEn: 'Nutrition',
         description: 'تخصصات التغذية العلاجية وإدارة الوزن',
         sortOrder: 2,
       },
       {
         id: seedIds.specialtyCategories.fitness,
-        slug: 'fitness',
-        name: 'الرياضة',
-        description: 'تخصصات الأداء الرياضي والتأهيل الحركي',
+        slug: 'sports-therapy',
+        nameAr: 'العلاج الرياضي',
+        nameEn: 'Sports Therapy',
+        description: 'تخصصات العلاج الرياضي والتأهيل الحركي',
         sortOrder: 3,
       },
     ];
@@ -47,23 +201,29 @@ export const specialtiesSeedModule: SeedModule = {
     });
 
     for (const category of categories) {
-      await prisma.specialtyCategory.upsert({
-        where: { id: category.id },
-        create: {
-          id: category.id,
-          slug: category.slug,
-          name: category.name,
-          description: category.description,
-          sortOrder: category.sortOrder,
-          isActive: true,
-        },
-        update: {
-          name: category.name,
-          description: category.description,
-          sortOrder: category.sortOrder,
-          isActive: true,
-        },
-      });
+      if (hasSpecialtyCategoryLocalizedColumns) {
+        await prisma.specialtyCategory.upsert({
+          where: { id: category.id },
+          create: {
+            id: category.id,
+            slug: category.slug,
+            name: category.nameEn,
+            description: category.description,
+            sortOrder: category.sortOrder,
+            isActive: true,
+            ...withLocalizedCategoryFields({}, category, true),
+          },
+          update: {
+            name: category.nameEn,
+            description: category.description,
+            sortOrder: category.sortOrder,
+            isActive: true,
+            ...withLocalizedCategoryFields({}, category, true),
+          },
+        });
+      } else {
+        await upsertSpecialtyCategoryForLegacyDatabase(prisma, category);
+      }
     }
 
     await prisma.specialtyCategory.updateMany({
@@ -80,11 +240,13 @@ export const specialtiesSeedModule: SeedModule = {
       },
     });
 
-    const specialties = [
+    const specialties: SpecialtySeed[] = [
       {
         id: seedIds.specialties.anxiety,
         categorySlug: 'mental-health',
         slug: 'anxiety-therapy',
+        nameAr: 'علاج القلق',
+        nameEn: 'Anxiety Therapy',
         sortOrder: 1,
         translations: {
           en: {
@@ -103,6 +265,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.depression,
         categorySlug: 'mental-health',
         slug: 'depression-counseling',
+        nameAr: 'إرشاد الاكتئاب',
+        nameEn: 'Depression Counseling',
         sortOrder: 2,
         translations: {
           en: {
@@ -121,6 +285,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.familyCounseling,
         categorySlug: 'mental-health',
         slug: 'family-counseling',
+        nameAr: 'الإرشاد الأسري',
+        nameEn: 'Family Counseling',
         sortOrder: 3,
         translations: {
           en: {
@@ -139,6 +305,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.childPsychology,
         categorySlug: 'mental-health',
         slug: 'child-psychology',
+        nameAr: 'علم نفس الطفل',
+        nameEn: 'Child Psychology',
         sortOrder: 4,
         translations: {
           en: {
@@ -157,6 +325,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.nutrition,
         categorySlug: 'nutrition',
         slug: 'clinical-nutrition',
+        nameAr: 'التغذية العلاجية',
+        nameEn: 'Clinical Nutrition',
         sortOrder: 5,
         translations: {
           en: {
@@ -175,6 +345,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.emotionalEating,
         categorySlug: 'nutrition',
         slug: 'emotional-eating-management',
+        nameAr: 'إدارة الأكل العاطفي',
+        nameEn: 'Emotional Eating Management',
         sortOrder: 6,
         translations: {
           en: {
@@ -193,6 +365,8 @@ export const specialtiesSeedModule: SeedModule = {
         id: seedIds.specialties.weightManagement,
         categorySlug: 'nutrition',
         slug: 'weight-management',
+        nameAr: 'إدارة الوزن',
+        nameEn: 'Weight Management',
         sortOrder: 7,
         translations: {
           en: {
@@ -209,8 +383,10 @@ export const specialtiesSeedModule: SeedModule = {
       },
       {
         id: seedIds.specialties.sportsInjuryRehab,
-        categorySlug: 'fitness',
+        categorySlug: 'sports-therapy',
         slug: 'sports-injury-rehabilitation',
+        nameAr: 'تأهيل إصابات رياضية',
+        nameEn: 'Sports Injury Rehabilitation',
         sortOrder: 8,
         translations: {
           en: {
@@ -227,8 +403,10 @@ export const specialtiesSeedModule: SeedModule = {
       },
       {
         id: seedIds.specialties.athleticPerformance,
-        categorySlug: 'fitness',
+        categorySlug: 'sports-therapy',
         slug: 'athletic-performance-improvement',
+        nameAr: 'تحسين الأداء الرياضي',
+        nameEn: 'Athletic Performance Improvement',
         sortOrder: 9,
         translations: {
           en: {
@@ -293,22 +471,28 @@ export const specialtiesSeedModule: SeedModule = {
         );
       }
 
-      await prisma.specialty.upsert({
-        where: { id: specialty.id },
-        create: {
-          id: specialty.id,
-          categoryId,
-          slug: specialty.slug,
-          sortOrder: specialty.sortOrder,
-          isActive: true,
-        },
-        update: {
-          slug: specialty.slug,
-          categoryId,
-          sortOrder: specialty.sortOrder,
-          isActive: true,
-        },
-      });
+      if (hasSpecialtyLocalizedColumns) {
+        await prisma.specialty.upsert({
+          where: { id: specialty.id },
+          create: {
+            id: specialty.id,
+            categoryId,
+            slug: specialty.slug,
+            sortOrder: specialty.sortOrder,
+            isActive: true,
+            ...withLocalizedSpecialtyFields({}, specialty, true),
+          },
+          update: {
+            slug: specialty.slug,
+            categoryId,
+            sortOrder: specialty.sortOrder,
+            isActive: true,
+            ...withLocalizedSpecialtyFields({}, specialty, true),
+          },
+        });
+      } else {
+        await upsertSpecialtyForLegacyDatabase(prisma, specialty, categoryId);
+      }
 
       const localeRows: Array<{
         locale: ContentLocale;

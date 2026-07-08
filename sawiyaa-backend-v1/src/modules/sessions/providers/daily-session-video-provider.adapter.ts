@@ -9,6 +9,7 @@ import videoConfig from '@config/video.config';
 import {
   SessionVideoJoinTokenResult,
   SessionVideoProviderAdapter,
+  SessionVideoRoomCloseResult,
   SessionVideoRoomResult,
 } from './session-video-provider.interface';
 
@@ -19,6 +20,11 @@ type DailyRoomResponse = {
 
 type DailyMeetingTokenResponse = {
   token?: string;
+};
+
+type DailyDeleteRoomResponse = {
+  deleted?: boolean;
+  name?: string;
 };
 
 @Injectable()
@@ -143,6 +149,49 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
       expiresAt: new Date(Date.now() + 3600 * 1000),
       joinMode: 'redirect_url',
       payload: {},
+      raw: payload,
+    };
+  }
+
+  async closeRoom(input: {
+    roomId: string;
+  }): Promise<SessionVideoRoomCloseResult> {
+    this.assertConfigured();
+
+    const response = await fetch(
+      `${this.dailyBaseUrl}/rooms/${encodeURIComponent(input.roomId)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${this.videoCfg.daily.apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new ServiceUnavailableException({
+        messageKey: 'sessions.errors.videoProviderRoomCloseFailed',
+        error: 'SESSION_VIDEO_PROVIDER_ROOM_CLOSE_FAILED',
+        messageParams: {
+          provider: SessionProvider.DAILY,
+        },
+      });
+    }
+
+    const payload = (await response.json()) as DailyDeleteRoomResponse;
+
+    if (payload.deleted !== true) {
+      throw new ServiceUnavailableException({
+        messageKey: 'sessions.errors.videoProviderRoomCloseFailed',
+        error: 'SESSION_VIDEO_PROVIDER_ROOM_CLOSE_FAILED',
+        messageParams: {
+          provider: SessionProvider.DAILY,
+        },
+      });
+    }
+
+    return {
+      closedAt: new Date(),
       raw: payload,
     };
   }

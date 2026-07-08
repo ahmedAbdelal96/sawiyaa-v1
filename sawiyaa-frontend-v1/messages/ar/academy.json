@@ -1,363 +1,1027 @@
 {
   "meta": {
     "publicTitle": "الأكاديمية",
-    "publicDescription": "تصفح دورات الأكاديمية العامة المسجلة على المنصة وسجل في الدورة المناسبة لك.",
-    "publicDetailTitle": "تفاصيل دورة الأكاديمية",
-    "publicDetailDescription": "راجع تفاصيل الدورة ثم أكمل التسجيل بخطوات بسيطة.",
+    "publicDescription": "تصفح الدورات التدريبية الخاصة بالمنصة وسجل في الدورة التدريبية الذي يناسب أهدافك.",
+    "publicDetailTitle": "تفاصيل الدورة التدريبية",
+    "publicDetailDescription": "قم بمراجعة تفاصيل الدورة التدريبية، ثم قم بتسجيل مقعدك في بضع خطوات سريعة.",
+    "publicPaymentReturnTitle": "عودة دفع الأكاديمية",
+    "publicPaymentReturnDescription": "سنؤكد تسجيلك بالواجهة الخلفية قبل عرض النتيجة النهائية.",
     "adminTitle": "إدارة الأكاديمية",
-    "adminDescription": "أنشئ وأدر دورات الأكاديمية العامة وراجع التسجيلات ومتابعة المدفوعات.",
-    "adminDetailTitle": "إدارة دورة الأكاديمية",
-    "adminDetailDescription": "راجع إعدادات الدورة وتابع التسجيلات وحدّث محتوى الأكاديمية."
+    "adminDescription": "إنشاء وإدارة الدورات العامة والتسجيل ومتابعة الدفع.",
+    "adminDetailTitle": "إدارة الدورات الأكاديمية",
+    "adminDetailDescription": "قم بمراجعة تكوين الدورة التدريبية وتتبع عمليات التسجيل وتحديث محتوى الأكاديمية.",
+    "adminProgramsTitle": "الدورات التدريبية",
+    "adminProgramsDescription": "إنشاء وإدارة الدورات التدريبية Academy v2 والجداول الزمنية ومحتوى المحاضرة.",
+    "adminProgramDetailTitle": "تفاصيل الدورة التدريبية",
+    "adminProgramDetailDescription": "مراجعة تكوين الدورة وإدارة المحاضرات.",
+    "adminProgramLearnersTitle": "طلاب الدورة التدريبية",
+    "adminProgramLearnersDescription": "مراجعة عمليات التسجيل وتحديث تفاصيل المتعلم وإدارة إجراءات الإكمال.",
+    "adminProgramAttendanceTitle": "إدارة حضور الدورة التدريبية",
+    "adminProgramAttendanceDescription": "اختر محاضرة وسجل حضور المتعلم من خلال تدفق إداري بسيط.",
+    "patientTitle": "تسجيلاتي في الأكاديمية",
+    "patientDescription": "عرض التسجيلات في الدورة التدريبية الخاصة بك وحالتها الحالية.",
+    "patientDetailTitle": "تفاصيل التسجيل في الأكاديمية",
+    "patientDetailDescription": "قم بمراجعة التسجيل والجدول الزمني والحضور وحالة الشهادة.",
+    "patientPayTitle": "متابعة دفع الأكاديمية",
+    "patientPayDescription": "متابعة عملية الدفع المعلقة لالدورة التدريبية بشكل آمن."
   },
   "errors": {
-    "generic": "حدث خطأ أثناء معالجة طلبك.",
-    "notFound": "تعذر العثور على دورة الأكاديمية.",
-    "loadFailed": "تعذر تحميل محتوى الأكاديمية الآن.",
-    "retry": "إعادة المحاولة"
+    "generic": "حدث خطأ ما أثناء معالجة طلبك.",
+    "notFound": "لا يمكن العثور على الدورة التدريبية.",
+    "loadFailed": "لم نتمكن من تحميل محتوى الأكاديمية في الوقت الحالي.",
+    "retry": "أعد المحاولة",
+    "certificateFileRequired": "الرجاء اختيار شهادة PDF قبل التحميل",
+    "certificateInvalidType": "يُسمح فقط بملفات شهادة PDF",
+    "certificateFileTooLarge": "ملف الشهادة كبير جدًا. الحد الأقصى للحجم هو 10 ميغابايت.",
+    "certificateEnrollmentNotEligible": "لا يمكن تحميل الشهادات إلا للتسجيلات المؤكدة",
+    "certificateNotFound": "لم يتم العثور على ملف الشهادة"
   },
   "statuses": {
     "course": {
       "DRAFT": "مسودة",
-      "PUBLISHED": "منشورة",
-      "ARCHIVED": "مؤرشفة"
+      "PUBLISHED": "تم النشر",
+      "ARCHIVED": "مؤرشف"
     },
     "visibility": {
-      "PUBLIC": "عامة",
-      "PRIVATE": "خاصة"
+      "PUBLIC": "عام",
+      "PRIVATE": "خاص"
     },
     "enrollment": {
-      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PAYMENT": "في انتظار الدفع",
       "PAID": "مدفوع",
       "CONFIRMED": "مؤكد",
       "PAYMENT_FAILED": "فشل الدفع",
-      "CANCELLED": "ملغي",
-      "REFUNDED": "مسترد"
+      "CANCELLED": "تم الإلغاء",
+      "REFUNDED": "ردها",
+      "UNKNOWN": "حالة غير معروفة"
     },
     "payment": {
-      "CREATED": "تم الإنشاء",
-      "PENDING": "بانتظار التنفيذ",
-      "REQUIRES_ACTION": "يتطلب إجراء",
-      "AUTHORIZED": "مصرّح به",
-      "CAPTURED": "تم التحصيل",
+      "CREATED": "مخلوق",
+      "PENDING": "قيد الانتظار",
+      "REQUIRES_ACTION": "يتطلب العمل",
+      "AUTHORIZED": "أذن",
+      "CAPTURED": "تم التقاطها",
       "FAILED": "فشل",
-      "CANCELLED": "ملغي",
-      "EXPIRED": "منتهي",
-      "REFUND_PENDING": "استرداد قيد المعالجة",
-      "PARTIALLY_REFUNDED": "مسترد جزئيًا",
-      "REFUNDED": "مسترد"
+      "CANCELLED": "تم الإلغاء",
+      "EXPIRED": "منتهي الصلاحية",
+      "REFUND_PENDING": "رد الأموال معلق",
+      "PARTIALLY_REFUNDED": "تم ردها جزئيا",
+      "REFUNDED": "ردها",
+      "UNKNOWN": "حالة غير معروفة"
     }
   },
   "public": {
-    "badge": "دورات الأكاديمية العامة",
+    "badge": "الالدورات التدريبية العامة",
+    "errors": {
+      "generic": "حدث خطأ ما أثناء تحميل هذا الدورة التدريبية.",
+      "notFound": "لا يمكن العثور على الدورة التدريبية المحدد.",
+      "registrationClosed": "التسجيل مغلق حاليا لهذا الدورة التدريبية.",
+      "capacityReached": "لقد وصل هذا الدورة التدريبية إلى مقاعده المتوفرة.",
+      "missingPricing": "يفتقد هذا الدورة التدريبية معلومات التسعير في الوقت الحالي.",
+      "unsupportedCurrency": "هذا الدورة التدريبية غير متوفر بالعملة المحددة.",
+      "alreadyEnrolled": "هذا المتعلم مسجل بالفعل في الدورة التدريبية."
+    },
     "hero": {
-      "title": "تعلٍم مع الأكاديمية",
-      "subtitle": "تصفح دورات الأكاديمية المفتوحة، راجع الموعد والسعر، وسجل في الدورة المناسبة بخطوات بسيطة."
+      "title": "تعلم مع الأكاديمية",
+      "subtitle": "تصفح الدورات التدريبية المفتوحة للمنصة، وراجع الجدول، وقم بتسجيل مقعدك بخطوات بسيطة."
     },
     "stats": {
       "courses": "الدورات",
-      "enrollments": "الاشتراكات",
-      "completed": "اشتراكات مدفوعة"
+      "enrollments": "التسجيلات",
+      "completed": "التسجيلات المدفوعة",
+      "programs": "الدورات التدريبية",
+      "open": "مفتوح للتسجيل",
+      "featured": "مميز"
     },
     "search": {
-      "title": "ابحث عن دورة",
-      "subtitle": "ابحث باسم الدورة أو الوصف.",
-      "placeholder": "ابحث عن دورة...",
-      "action": "بحث",
+      "title": "ابحث عن دورة تدريبية",
+      "subtitle": "البحث حسب العنوان أو الوصف.",
+      "placeholder": "ابحث عن دورة تدريبية...",
+      "action": "يبحث",
       "loading": "جارٍ البحث..."
     },
     "list": {
-      "title": "الدورات المتاحة",
-      "subtitle": "دورات الأكاديمية العامة المنشورة حاليًا.",
-      "count": "{count} دورة"
+      "title": "الالدورات التدريبية المتاحة",
+      "subtitle": "الدورات التدريبية متاحة الآن.",
+      "count": "{count} الالدورات التدريبية"
     },
     "card": {
-      "enrollments": "المشتركين",
-      "published": "منشورة",
+      "enrollments": "{count} التسجيل (التسجيلات)",
+      "published": "تم النشر",
       "draft": "مسودة",
-      "free": "مجانية",
-      "noDescription": "لا يتوفر وصف قصير.",
-      "noDate": "لم يُحدَّد التاريخ",
-      "open": "عرض الدورة"
+      "free": "حر",
+      "noDescription": "لا يوجد وصف قصير متاح.",
+      "noDate": "لم يتم تحديد التاريخ",
+      "open": "افتح الدورة التدريبية",
+      "priceEgp": "EGP {value}",
+      "priceUsd": "USD {value}",
+      "startsAt": "يبدأ في",
+      "endsAt": "ينتهي عند",
+      "maxSeats": "{count} seats",
+      "noSeatsLimit": "لا يوجد حد للمقعد",
+      "noEnrollments": "لا يوجد تسجيلات حتى الآن"
     },
     "empty": {
-      "filtered": "لا توجد دورات تطابق بحثك.",
-      "default": "لم يتم نشر أي دورات في الأكاديمية بعد."
+      "filtered": "لا توجد الدورات التدريبية تطابق بحثك.",
+      "default": "لم يتم نشر أي الدورات التدريبية أكاديمية حتى الآن."
     },
     "detail": {
-      "badge": "دورة الأكاديمية",
+      "badge": "الدورة التدريبية",
+      "noShortDescription": "لا يوجد وصف قصير متاح.",
+      "noFullDescription": "لا يوجد وصف تفصيلي متاح.",
+      "noDate": "لم يتم تحديد التاريخ",
+      "free": "حر",
       "notFound": {
-        "title": "الدورة غير موجودة",
-        "note": "قد تكون هذه الدورة مؤرشفة أو لم يعد الرابط متاحًا.",
+        "title": "لم يتم العثور على الدورة التدريبية",
+        "note": "ربما تمت أرشفة هذا الدورة التدريبية أو أن الرابط لم يعد متاحًا.",
         "back": "العودة إلى الأكاديمية"
       },
       "summary": {
-        "title": "ملخص الدورة",
-        "price": "السعر",
-        "status": "الحالة",
-        "published": "منشورة",
+        "title": "ملخص الدورة التدريبية",
+        "price": "سعر",
+        "status": "حالة",
+        "published": "تم النشر",
         "draft": "مسودة",
-        "visibility": "الظهور",
-        "type": "نوع الوصول",
-        "publicAccess": "دورة عامة",
+        "visibility": "الرؤية",
+        "type": "وصول",
+        "publicAccess": "دورة تدريبية عام",
         "duration": "المدة بالأيام",
-        "daysUnit": "يوم",
+        "daysUnit": "أيام",
         "lectures": "عدد المحاضرات",
         "lectureUnit": "محاضرات",
         "lecturesCreated": "تم إنشاء المحاضرات",
+        "registration": "تسجيل",
+        "deliveryMethod": "طريقة التسليم",
+        "startDate": "تاريخ البدء",
+        "endDate": "تاريخ الانتهاء",
         "notSet": "غير محدد"
       },
       "schedule": {
-        "title": "جدول المحاضرات",
-        "subtitle": "راجع مواعيد المحاضرات المحفوظة قبل التسجيل.",
-        "count": "{count} محاضرة",
+        "title": "جدول المحاضرة",
+        "subtitle": "قم بمراجعة توقيتات المحاضرة المحفوظة قبل التسجيل.",
+        "count": "{count} المحاضرة (المحاضرات)",
         "columns": {
           "order": "#",
-          "title": "المحاضرة",
-          "date": "التاريخ",
-          "time": "الوقت",
-          "duration": "المدة"
+          "title": "حصة",
+          "deliveryMethod": "طريقة التسليم",
+          "date": "تاريخ",
+          "time": "وقت",
+          "duration": "مدة"
         },
         "empty": {
-          "heading": "لا يوجد جدول محاضرات بعد",
-          "note": "ما زالت الدورة قيد التجهيز. عد لاحقًا عندما يصبح الجدول كاملًا."
+          "heading": "لا يوجد جدول زمني للمحاضرة بعد",
+          "note": "ولا يزال الدورة التدريبية قيد الإعداد. تحقق مرة أخرى بمجرد أن يصبح الجدول الزمني الكامل جاهزًا."
         },
         "item": {
-          "order": "محاضرة {order}",
-          "noTitle": "محاضرة بدون عنوان",
-          "startsAt": "تبدأ عند",
-          "endsAt": "تنتهي عند"
+          "order": "Session {order}",
+          "noTitle": "محاضرة بلا عنوان",
+          "startsAt": "يبدأ في",
+          "endsAt": "ينتهي عند"
         }
       },
       "stats": {
-        "enrollments": "{count} اشتراك"
+        "enrollments": "{count} التسجيل (التسجيلات)"
       },
       "howItWorks": {
-        "title": "كيف يعمل التسجيل",
-        "step1": "املأ نموذج التسجيل بالبيانات الأساسية للتواصل.",
-        "step2": "أكمل خطوة الدفع إذا كانت الدورة مدفوعة.",
-        "step3": "استخدم رقم التسجيل للمتابعة مع فريق الأكاديمية."
-      },
-      "noShortDescription": "لا يتوفر وصف قصير.",
-      "noFullDescription": "لا يتوفر وصف تفصيلي.",
-      "noDate": "لم يُحدَّد التاريخ",
-      "free": "مجانية"
+        "title": "كيف يعمل",
+        "step1": "املأ نموذج التسجيل بتفاصيل الاتصال الأساسية.",
+        "step2": "أكمل خطوة الدفع في حال تم دفع الدورة التدريبية.",
+        "step3": "استخدم مرجع التسجيل للمتابعة مع فريق الأكاديمية."
+      }
     },
     "form": {
-      "title": "سجّل مقعدك",
-      "subtitle": "حافظ على النموذج مختصرًا وبسيطًا لتبقى عملية التسجيل سريعة.",
-      "identityNote": "إذا كنت مسجلًا للدخول، فسنعيد استخدام بيانات حسابك المحفوظة كلما أمكن.",
-      "restricted": "حسابات الإدارة لا يمكنها التسجيل كدارس. استخدم حساب مريض أو مختص أو دارس منفصل.",
+      "title": "سجل مقعدك",
+      "subtitle": "اجعل النموذج قصيرًا وبسيطًا حتى يظل التسجيل سريعًا.",
+      "identityNote": "إذا قمت بتسجيل الدخول، فسنعيد استخدام تفاصيل حسابك المحفوظة حيثما كان ذلك متاحًا.",
+      "restricted": "لا يمكن لحسابات المسؤول التسجيل كمتعلمين. يرجى استخدام حساب المريض أو الممارس أو المتعلم.",
       "fullName": "الاسم الكامل",
-      "phoneNumber": "رقم الهاتف",
-      "whatsappNumber": "رقم واتساب",
-      "email": "البريد الإلكتروني",
-      "submit": "سجّل الآن",
-      "submitting": "جارٍ التسجيل...",
+      "phoneNumber": "رقم التليفون",
+      "whatsappNumber": "رقم الواتساب",
+      "email": "عنوان البريد الإلكتروني",
+      "submit": "سجل الآن",
+      "submitting": "جاري التسجيل...",
       "priceLabel": "سعر الاشتراك",
-      "noteTitle": "تسعير تلقائي",
-      "noteBody": "تحدد المنصة سعرًا نهائيًا واحدًا لحسابك على الخادم. لا تحتاج إلى اختيار دولة هنا.",
+      "priceEgp": "السعر بالجنيه المصري",
+      "priceUsd": "السعر بالدولار الأمريكي",
+      "closed": "تم إغلاق التسجيل لهذا الدورة التدريبية.",
+      "closedTitle": "التسجيل مغلق",
+      "closedNote": "هذا الدورة التدريبية لا يقبل حاليًا تسجيلات جديدة.",
+      "noteTitle": "التسعير التلقائي",
+      "noteBody": "تحدد المنصة سعرًا نهائيًا واحدًا لحسابك على الخادم. لا تحتاج إلى اختيار بلد هنا.",
       "validation": {
-        "required": "يرجى إدخال الاسم ورقم الهاتف أولًا."
+        "required": "الرجاء إدخال اسمك ورقم الهاتف أولا."
       },
-      "success": "تم إنشاء التسجيل بنجاح."
+      "success": "لقد تم إنشاء التسجيل الخاص بك بنجاح."
     },
     "result": {
+      "eyebrow": "تم إنشاء التسجيل",
       "title": "نتيجة التسجيل",
-      "status": "الحالة الحالية: {status}",
-      "reference": "المرجع",
+      "status": "الوضع الحالي: {status}",
+      "reference": "مرجع",
       "payNow": "ادفع الآن",
-      "waiting": "جارٍ تجهيز تسجيلك.",
+      "waiting": "التسجيل الخاص بك قيد الإعداد.",
+      "paymentStatus": "حالة الدفع",
+      "program": "دورة تدريبية",
+      "continuePayment": "الاستمرار في الدفع",
+      "preSubmitTitle": "سيتم إنشاء التسجيل بعد التقديم",
+      "preSubmitNote": "ستتلقى خطوة دفع آمنة بعد أن تقوم الواجهة الخلفية بتسجيلك.",
+      "pendingState": "في انتظار التقديم",
+      "automatic": "تلقائي",
       "joinAccess": {
-        "title": "الوصول للانضمام",
-        "meeting": "فتح رابط الاجتماع",
-        "whatsapp": "فتح مجموعة واتساب"
+        "title": "الانضمام إلى الوصول",
+        "meeting": "فتح رابط اللقاء",
+        "whatsapp": "افتح مجموعة واتساب"
+      }
+    }
+  },
+  "return": {
+    "error": {
+      "heading": "لم نتمكن من التحقق من هذه الدفعة",
+      "note": "يرجى العودة إلى صفحة الدورة التدريبية والمحاولة مرة أخرى.",
+      "missing": "تفاصيل التسجيل مفقودة."
+    },
+    "verifying": {
+      "heading": "جارٍ التحقق من دفعتك...",
+      "note": "نحن نؤكد أحدث حالة للواجهة الخلفية قبل عرض النتيجة النهائية.",
+      "polling": "لا تزال الواجهة الخلفية تقوم بتحديث حالة التسجيل. من فضلك انتظر لحظة."
+    },
+    "pending": {
+      "heading": "لا تزال دفعتك قيد المراجعة",
+      "note": "إذا كانت عملية الدفع قد اكتملت للتو، فيرجى تحديث الصفحة أو المحاولة مرة أخرى من صفحة الدورة التدريبية."
+    },
+    "confirmed": {
+      "heading": "تم تأكيد التسجيل",
+      "note": "لقد تم تأكيد دفعتك من خلال الواجهة الخلفية.",
+      "cta": "تم تأكيد التسجيل"
+    },
+    "failed": {
+      "heading": "لا يمكن تأكيد الدفع",
+      "note": "يمكنك تجربة الدفع مرة أخرى أو العودة إلى تفاصيل الدورة التدريبية."
+    },
+    "canceled": {
+      "heading": "تم إلغاء الدفع",
+      "note": "يمكنك العودة إلى صفحة الدورة التدريبية والمتابعة عندما تكون مستعدًا."
+    },
+    "expired": {
+      "heading": "انتهت محاضرة الدفع",
+      "note": "يرجى بدء الدفع مرة أخرى لمواصلة تسجيلك."
+    },
+    "unavailable": {
+      "heading": "رابط الدفع غير متاح",
+      "note": "لم نتمكن من تحميل رابط دفع صالح لهذا التسجيل."
+    },
+    "details": {
+      "program": "دورة تدريبية",
+      "reference": "مرجع",
+      "enrollmentStatus": "حالة التسجيل",
+      "paymentStatus": "حالة الدفع",
+      "providerReference": "مرجع المزود",
+      "unknown": "مجهول"
+    },
+    "backToAcademy": "العودة إلى الأكاديمية",
+    "backToProgram": "العودة إلى الدورة التدريبية",
+    "retryPayment": "أعد محاولة الدفع",
+    "refresh": "تحديث الحالة"
+  },
+  "programs": {
+    "badge": "الدورات التدريبية",
+    "title": "إدارة الدورات التدريبية",
+    "note": "إنشاء ونشر وتنظيم المسارات التعليمية للأكاديمية v2.",
+    "actions": {
+      "create": "إنشاء دورة تدريبية",
+      "manage": "يدير",
+      "edit": "تحرير الدورة التدريبية",
+      "publish": "نشر",
+      "publishing": "نشر...",
+      "archive": "أرشيف",
+      "archiving": "أرشفة...",
+      "archiveSuccess": "تمت أرشفة الدورة التدريبية بنجاح.",
+      "publishSuccess": "تم نشر الدورة التدريبية بنجاح",
+      "failure": "غير قادر على إكمال الإجراء الآن.",
+      "archiveConfirm": {
+        "title": "دورة تدريبية الأرشيف",
+        "description": "الأرشفة تخفي الدورة التدريبية من الكتالوج العام.",
+        "cancel": "يلغي"
+      }
+    },
+    "tabs": {
+      "overview": "ملخص",
+      "learners": "المتعلمين",
+      "attendance": "الحضور"
+    },
+    "registration": {
+      "open": "مفتوح للتسجيل",
+      "closed": "التسجيل مغلق"
+    },
+    "statuses": {
+      "DRAFT": "مسودة",
+      "PUBLISHED": "تم النشر",
+      "ARCHIVED": "مؤرشف"
+    },
+    "deliveryMethods": {
+      "ZOOM": "زوم",
+      "WHATSAPP": "واتساب",
+      "GOOGLE_MEET": "جوجل ميت",
+      "OFFLINE": "حضوري",
+      "OTHER": "آخر"
+    },
+    "stats": {
+      "total": "مجموع الالدورات التدريبية",
+      "published": "تم النشر",
+      "drafts": "المسودات",
+      "archived": "مؤرشف"
+    },
+    "filters": {
+      "all": "الجميع",
+      "status": "حالة",
+      "search": "يبحث",
+      "searchPlaceholder": "البحث حسب العنوان أو الوصف أو سبيكة..."
+    },
+    "list": {
+      "title": "قائمة الالدورات التدريبية",
+      "count": "تم العثور على دورة تدريبية/الدورات التدريبية {count}",
+      "actionsHeader": "الإجراءات",
+      "columns": {
+        "title": "دورة تدريبية",
+        "category": "فئة",
+        "status": "حالة",
+        "registration": "تسجيل",
+        "price": "سعر",
+        "schedule": "جدول",
+        "updatedAt": "تم التحديث"
+      },
+      "noDescription": "لم يتم تقديم أي وصف",
+      "noCategory": "لا توجد فئة",
+      "noCategorySlug": "لا يوجد فئة سبيكة",
+      "free": "حر",
+      "priceMarkets": "جنيه مصري {egp} · دولار أمريكي {usd}",
+      "seats": "المقاعد: {maxSeats}",
+      "noSeats": "غير محدود"
+    },
+    "states": {
+      "error": {
+        "heading": "غير قادر على تحميل الالدورات التدريبية",
+        "note": "تعذر تحميل قائمة الالدورات التدريبية الآن.",
+        "retry": "أعد المحاولة"
+      },
+      "empty": {
+        "heading": "لم يتم العثور على أي الدورات التدريبية",
+        "note": "حاول مسح عوامل التصفية أو إنشاء المسودة الأولى لالدورة التدريبية."
+      }
+    },
+    "errors": {
+      "generic": "حدث خطأ ما أثناء حفظ الدورة التدريبية.",
+      "genericSave": "غير قادر على الحفظ. يرجى مراجعة الحقول والمحاولة مرة أخرى.",
+      "notFound": "لم يتم العثور على الدورة التدريبية.",
+      "categoryNotFound": "لا يمكن العثور على الفئة المحددة.",
+      "basicDetailsRequired": "أكمل تفاصيل الدورة الأساسية قبل النشر.",
+      "archivedProgramCannotBePublished": "لا يمكن نشر الالدورات التدريبية المؤرشفة.",
+      "archivedReadOnly": "لا يمكن تحرير الالدورات التدريبية المؤرشفة أو تسجيلها يدويًا.",
+      "invalidWindow": "يجب أن يكون وقت بدء الدورة التدريبية قبل وقت الانتهاء.",
+      "invalidDate": "أدخل تاريخًا ووقتًا صالحًا.",
+      "invalidPrice": "أدخل سعرًا صالحًا.",
+      "missingSlugSource": "قم بتوفير سبيكة أو عنوان قبل الحفظ.",
+      "sessionNotFound": "لم يتم العثور على محاضرة الدورة التدريبية.",
+      "attendanceInvalidStatus": "حالة الحضور غير صالحة.",
+      "forbidden": "ليس لديك الإذن للقيام بهذا الإجراء.",
+      "duplicateSlug": "هذه سبيكة قيد الاستخدام بالفعل.",
+      "enrollmentAlreadyExists": "هذا المتعلم مسجل بالفعل في الدورة التدريبية.",
+      "learnerContactAlreadyExists": "جهة اتصال المتعلم هذه مرتبطة بالفعل بمتعلم آخر.",
+      "coverFileRequired": "الرجاء اختيار صورة الغلاف قبل التحميل.",
+      "coverInvalidType": "يُسمح فقط بصور الغلاف JPG أو PNG أو WebP.",
+      "coverFileTooLarge": "ملف صورة الغلاف كبير جدًا. الحد الأقصى للحجم هو 10 ميغابايت.",
+      "coverUploadFailed": "تعذر تحميل صورة الغلاف."
+    },
+    "form": {
+      "createTitle": "إنشاء دورة تدريبية",
+      "editTitle": "تحرير الدورة التدريبية",
+      "createNote": "أدخل تفاصيل الدورة الأساسية. يمكن إضافة المحاضرات عندما تكون مستعدا.",
+      "editNote": "قم بتحديث تفاصيل الدورة الأساسية. يمكن إضافة المحاضرات عندما تكون مستعدا.",
+      "cancel": "يلغي",
+      "create": "إنشاء دورة",
+      "save": "حفظ التغييرات",
+      "creating": "جارٍ الإنشاء...",
+      "saving": "توفير...",
+      "createSuccess": "تم إنشاء الدورة التدريبية بنجاح.",
+      "updateSuccess": "تم تحديث الدورة التدريبية بنجاح.",
+      "sections": {
+        "pricing": "التسعير",
+        "schedule": "الجدول الزمني للدورة",
+        "basic": "تفاصيل الدورة",
+        "scheduleNote": "يمكنك إضافة محاضرات عندما تكون مستعدا.",
+        "registration": "تسجيل"
+      },
+      "fields": {
+        "titleAr": "عنوان عربي",
+        "titleEn": "العنوان باللغة الإنجليزية",
+        "descriptionAr": "وصف عربي",
+        "descriptionEn": "وصف باللغة الإنجليزية",
+        "coverImage": "صورة الغلاف",
+        "priceEgp": "السعر بالجنيه المصري",
+        "priceUsd": "السعر بالدولار الأمريكي",
+        "startAt": "يبدأ في",
+        "endAt": "ينتهي عند",
+        "maxSeats": "ماكس المتعلمين",
+        "registrationOpen": "التسجيل مفتوح",
+        "registrationOpenHint": "السماح للمتدربين بالتسجيل في هذه الدورة"
+      },
+      "coverUpload": {
+        "choose": "اختر صورة الغلاف",
+        "change": "تغيير صورة الغلاف",
+        "uploading": "جارٍ التحميل...",
+        "hint": "PNG أو JPG أو WebP. الحد الأقصى للحجم 10 ميغابايت."
+      },
+      "placeholders": {
+        "titleAr": "على سبيل المثال: دورة تدريبية في مجال الصحة العقلية",
+        "titleEn": "مثال: دورة الصحة العقلية",
+        "descriptionAr": "وصف مختصر للبيضة",
+        "descriptionEn": "وصف قصير للدورة",
+        "priceEgp": "0",
+        "priceUsd": "0",
+        "maxSeats": "غير محدود"
+      },
+      "validation": {
+        "reviewRequired": "يرجى مراجعة الحقول المميزة.",
+        "titleArRequired": "العنوان العربي مطلوب.",
+        "titleEnRequired": "العنوان باللغة الإنجليزية مطلوب.",
+        "descriptionArRequired": "الوصف العربي مطلوب.",
+        "descriptionEnRequired": "الوصف باللغة الإنجليزية مطلوب.",
+        "priceEgpRequired": "السعر بالجنيه المصري مطلوب.",
+        "priceUsdRequired": "مطلوب سعر الدولار.",
+        "startAtRequired": "تاريخ بدء الدورة مطلوب.",
+        "endAtRequired": "تاريخ انتهاء الدورة مطلوب.",
+        "invalidWindow": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.",
+        "invalidDate": "أدخل تاريخًا ووقتًا صالحًا.",
+        "invalidPrice": "أدخل سعرًا صالحًا.",
+        "negativePrice": "لا يمكن أن يكون السعر أقل من الصفر.",
+        "invalidMaxSeats": "أدخل عدداً صحيحاً من المتعلمين.",
+        "maxSeatsPositive": "يجب أن يكون الحد الأقصى للمتعلمين أكبر من الصفر."
+      }
+    },
+    "detail": {
+      "notFound": {
+        "title": "لم يتم العثور على الدورة التدريبية",
+        "note": "ربما تمت أرشفة هذا الدورة التدريبية أو أن الرابط لم يعد متاحًا.",
+        "back": "العودة إلى الدورات التدريبية"
+      },
+      "noDescription": "لا يوجد وصف متاح.",
+      "noCategory": "لم يتم تعيين فئة",
+      "notSet": "لم يتم ضبطه",
+      "overviewNote": "قم بمراجعة حالة النشر ومعلومات جدول المحاضرات.",
+      "sections": {
+        "overview": "نظرة عامة على الدورة التدريبية",
+        "sessions": "جدول المحاضرات",
+        "summary": "ملخص سريع",
+        "raw": "التفاصيل الأساسية"
+      },
+      "actions": {
+        "edit": "تحرير الدورة التدريبية",
+        "publish": "نشر",
+        "publishing": "نشر...",
+        "publishSuccess": "تم نشر الدورة التدريبية بنجاح",
+        "archive": "أرشيف",
+        "archiving": "أرشفة...",
+        "archiveSuccess": "تمت أرشفة الدورة التدريبية بنجاح.",
+        "failure": "غير قادر على إكمال الإجراء الآن.",
+        "archiveConfirm": {
+          "title": "دورة تدريبية الأرشيف",
+          "description": "سيؤدي هذا إلى إخفاء الدورة التدريبية من الكتالوج العام.",
+          "cancel": "يلغي"
+        },
+        "openRegistration": "??? ???????",
+        "closeRegistration": "????? ???????",
+        "updatingRegistration": "???? ????? ???? ???????...",
+        "registrationOpenedSuccess": "?? ??? ??????? ???? ??????.",
+        "registrationClosedSuccess": "?? ????? ??????? ???? ??????.",
+        "registrationToggleFailure": "???? ????? ???? ???????. ???? ??? ????."
+      },
+      "stats": {
+        "sessions": "محاضرات",
+        "publishedSessions": "المحاضرات المنشورة",
+        "seats": "مقاعد ماكس",
+        "registration": "تسجيل"
+      },
+      "summary": {
+        "priceEgp": "السعر بالجنيه المصري",
+        "priceUsd": "السعر بالدولار الأمريكي",
+        "category": "فئة",
+        "updatedAt": "تم التحديث",
+        "schedule": "جدول المحاضرات"
+      },
+      "raw": {
+        "slug": "سبيكة",
+        "titleAr": "عنوان عربي",
+        "titleEn": "العنوان باللغة الإنجليزية"
+      },
+      "sessionsNote": "إضافة وإدارة محتوى المحاضرة لهذه الدورة.",
+      "sessions": {
+        "open": "إضافة محاضرة",
+        "heading": "محاضرات الدورة",
+        "edit": "يحرر",
+        "actions": "الإجراءات",
+        "published": "تم النشر",
+        "draft": "مسودة",
+        "columns": {
+          "order": "طلب",
+          "title": "محاضرة",
+          "startsAt": "يبدأ في",
+          "endsAt": "ينتهي عند",
+          "published": "حالة"
+        },
+        "empty": {
+          "heading": "لا توجد محاضرات بعد",
+          "note": "لم تتم إضافة أي محاضرات حتى الآن."
+        },
+        "createNote": "أدخل تفاصيل المحاضرة واحفظها."
+      },
+      "registrationClosedNote": "?????? ??????? ??? ??????? ???? ??????.",
+      "registrationOpenNote": "?????? ?????? ???????? ????? ??????."
+    },
+    "sessionForm": {
+      "createTitle": "إضافة محاضرة إلى {title}",
+      "editTitle": "تحرير المحاضرة في {title}",
+      "createNote": "أدخل تفاصيل المحاضرة واحفظها.",
+      "editNote": "تحديث المحاضرة دون تغيير الجدول المحيط بها.",
+      "cancel": "يلغي",
+      "create": "إضافة محاضرة",
+      "save": "حفظ المحاضرة",
+      "creating": "جارٍ الإنشاء...",
+      "saving": "توفير...",
+      "createSuccess": "تمت إضافة المحاضرة بنجاح.",
+      "updateSuccess": "تم تحديث المحاضرة بنجاح.",
+      "sections": {
+        "content": "تفاصيل المحاضرة"
+      },
+      "fields": {
+        "titleAr": "عنوان المحاضرة باللغة العربية",
+        "titleEn": "عنوان المحاضرة بالانجليزية",
+        "startsAt": "تبدأ المحاضرة في",
+        "endsAt": "تنتهي المحاضرة في",
+        "deliveryMethod": "طريقة إلقاء المحاضرة",
+        "descriptionAr": "وصف عربي",
+        "descriptionEn": "وصف باللغة الإنجليزية",
+        "internalDeliveryNote": "ملاحظة الفريق",
+        "internalDeliveryLink": "رابط المحاضرة",
+        "sortOrder": "ترتيب المحاضرة",
+        "isPublished": "عرض المحاضرة على المتعلمين",
+        "isPublishedHint": "ستظهر المحاضرة في الجدول عند تفعيلها."
+      },
+      "placeholders": {
+        "titleAr": "مثال: المحاضرة الأولى",
+        "titleEn": "على سبيل المثال: المحاضرة الأولى",
+        "deliveryMethod": "اختر طريقة التسليم",
+        "descriptionAr": "وصف المحاضرة باللغة العربية",
+        "descriptionEn": "وصف المحاضرة باللغة الإنجليزية",
+        "internalDeliveryNote": "ملاحظة قصيرة للفريق",
+        "internalDeliveryLink": "https://...",
+        "sortOrder": "0"
+      },
+      "validation": {
+        "reviewRequired": "يرجى مراجعة حقول المحاضرة المميزة.",
+        "titleArRequired": "مطلوب عنوان المحاضرة باللغة العربية.",
+        "titleEnRequired": "مطلوب عنوان المحاضرة باللغة الإنجليزية.",
+        "startsAtRequired": "مطلوب وقت بدء المحاضرة.",
+        "endsAtRequired": "مطلوب وقت نهاية المحاضرة.",
+        "deliveryMethodRequired": "مطلوب طريقة إلقاء المحاضرة.",
+        "invalidWindow": "يجب أن يكون وقت انتهاء المحاضرة بعد وقت البدء.",
+        "invalidDate": "أدخل تاريخًا ووقتًا صالحًا."
+      }
+    },
+    "learners": {
+      "title": "طلاب الدورة التدريبية",
+      "note": "مراجعة المتعلمين المسجلين في هذا الدورة التدريبية وتحديث بياناتهم وإدارة سجلات الإنجاز.",
+      "back": "العودة إلى الدورة التدريبية",
+      "export": "يصدّر",
+      "addLearner": "إضافة المتعلم",
+      "summary": {
+        "total": "إجمالي التسجيلات",
+        "page": "الصفحة الحالية",
+        "selected": "صفوف مختارة"
+      },
+      "selectionCount": "{count} selected",
+      "filters": {
+        "all": "الجميع",
+        "search": "يبحث",
+        "searchPlaceholder": "البحث حسب الاسم أو الهاتف أو البريد الإلكتروني أو المرجع...",
+        "enrollmentStatus": "حالة التسجيل",
+        "paymentStatus": "حالة الدفع",
+        "country": "دولة"
+      },
+      "columns": {
+        "fullName": "المتعلم",
+        "email": "بريد إلكتروني",
+        "mobileNumber": "متحرك",
+        "whatsappNumber": "واتساب",
+        "country": "دولة",
+        "enrollmentStatus": "حالة التسجيل",
+        "paymentStatus": "حالة الدفع",
+        "registrationDate": "مسجل",
+        "attendance": "حضور",
+        "certificate": "شهادة"
+      },
+      "statuses": {
+        "PENDING_PAYMENT": "في انتظار الدفع",
+        "CONFIRMED": "مؤكد",
+        "CANCELLED": "تم الإلغاء",
+        "EXPIRED": "منتهي الصلاحية"
+      },
+      "certificateStatuses": {
+        "NOT_ISSUED": "لم تصدر",
+        "ISSUED": "صادر",
+        "REISSUED": "أعيد إصدارها"
+      },
+      "metrics": {
+        "registrationDate": "تاريخ التسجيل",
+        "enrollmentStatus": "حالة التسجيل",
+        "paymentStatus": "حالة الدفع",
+        "attendance": "حضور"
+      },
+      "certificate": {
+        "status": "حالة",
+        "issuedAt": "صدرت في",
+        "uploadedAt": "تم الرفع على",
+        "fileName": "اسم الملف",
+        "noFile": "لم يتم إرفاق شهادة PDF حتى الآن.",
+        "download": "افتح ملف PDF",
+        "uploadPdf": "تحميل PDF",
+        "replacePdf": "استبدال قوات الدفاع الشعبي",
+        "choosePdf": "اختر شهادة PDF",
+        "pdfOnly": "PDF فقط. الحد الأقصى للحجم هو 10 ميغابايت.",
+        "uploadSuccess": "تم تحميل الشهادة بصيغة PDF بنجاح",
+        "uploading": "جارٍ التحميل...",
+        "noAccess": "ليس لديك الإذن بتحميل الشهادات."
+      },
+      "sourceLabels": {
+        "publicProgram": "الالتحاق بالأكاديمية العامة",
+        "patientPortal": "التسجيل في أكاديمية المريض",
+        "mobileApp": "التسجيل في أكاديمية موبايل",
+        "adminManual": "التسجيل اليدوي للمسؤول",
+        "unknown": "مصدر غير معروف"
+      },
+      "sections": {
+        "personal": "التفاصيل الشخصية",
+        "enrollment": "تفاصيل التسجيل",
+        "payment": "تفاصيل الدفع",
+        "attendance": "ملخص الحضور",
+        "certificate": "شهادة"
+      },
+      "fields": {
+        "fullName": "الاسم الكامل",
+        "phoneNumber": "رقم التليفون",
+        "whatsappNumber": "رقم الواتساب",
+        "email": "بريد إلكتروني",
+        "country": "دولة",
+        "city": "مدينة",
+        "jobTitle": "مسمى وظيفي",
+        "employer": "صاحب العمل",
+        "education": "تعليم",
+        "notes": "ملحوظات",
+        "source": "مصدر",
+        "program": "دورة تدريبية",
+        "registrationDate": "تاريخ التسجيل",
+        "enrollmentStatus": "حالة التسجيل",
+        "paymentStatus": "حالة الدفع"
+      },
+      "actions": {
+        "edit": "تحرير المتعلم",
+        "complete": "تم الانتهاء من العلامة",
+        "certify": "إصدار الشهادة",
+        "cancel": "إلغاء التسجيل"
+      },
+      "drawer": {
+        "eyebrow": "تفاصيل المتعلم",
+        "editTitle": "تحرير المتعلم",
+        "editNote": "قم بتحديث تفاصيل المتعلم المرفقة بهذا التسجيل.",
+        "createTitle": "إضافة المتعلم يدويا",
+        "createNote": "إنشاء تسجيل للمتعلم دون الدفع عبر الإنترنت.",
+        "create": "إنشاء التسجيل",
+        "creating": "جارٍ الإنشاء...",
+        "cancel": "يلغي",
+        "save": "حفظ التغييرات",
+        "saving": "توفير..."
+      },
+      "detail": {
+        "eyebrow": "ملف التسجيل",
+        "title": "تفاصيل المتعلم",
+        "note": "حدد التسجيل لمراجعة ملف تعريف المتعلم وتاريخ الدورة التدريبية."
+      },
+      "feedback": {
+        "updateSuccess": "تم تحديث تفاصيل المتعلم بنجاح.",
+        "cancelSuccess": "تم إلغاء التسجيل بنجاح.",
+        "completeSuccess": "تم وضع علامة على التسجيل كمكتمل.",
+        "certifySuccess": "تم إصدار الشهادة بنجاح.",
+        "manualCreateSuccess": "تم إنشاء التسجيل اليدوي بنجاح.",
+        "manualCreateFailure": "لم نتمكن من إنشاء التسجيل اليدوي الآن.",
+        "bulkCancelSuccess": "تم إلغاء التسجيلات المختارة.",
+        "bulkCompleteSuccess": "تم وضع علامة على التسجيلات المحددة كمكتملة.",
+        "bulkCertifySuccess": "تم إصدار الشهادات للتسجيلات المختارة.",
+        "certificateUploadFailure": "تعذر رفع ملف الشهادة الآن."
+      },
+      "bulk": {
+        "complete": "تم الانتهاء من العلامة",
+        "certify": "إصدار الشهادات",
+        "cancel": "إلغاء المحدد",
+        "note": "تنطبق الإجراءات المجمعة على صفوف التسجيل المحددة."
+      },
+      "cancelConfirm": {
+        "title": "إلغاء التسجيل",
+        "description": "سيؤدي هذا إلى إلغاء تسجيل المتعلم المحدد.",
+        "confirm": "إلغاء التسجيل",
+        "close": "يغلق",
+        "saving": "جارٍ الإلغاء..."
+      },
+      "bulkCancelConfirm": {
+        "title": "إلغاء التسجيلات المحددة",
+        "description": "سيؤدي هذا إلى إلغاء جميع التسجيلات المحددة في هذا الدورة التدريبية.",
+        "summary": "{count} سيتم إلغاء التسجيل (التسجيلات).",
+        "confirm": "إلغاء المحدد",
+        "close": "يغلق",
+        "saving": "جارٍ الإلغاء..."
+      },
+      "states": {
+        "error": "غير قادر على تحميل التسجيلات الآن.",
+        "empty": "لم يتم العثور على التسجيلات",
+        "emptyNote": "ستظهر التسجيلات هنا بمجرد أن يبدأ المتعلمون بالتسجيل."
+      },
+      "payment": {
+        "noOnlinePayment": "لا يوجد دفع عبر الإنترنت مرتبط بهذا التسجيل.",
+        "amount": "كمية",
+        "status": "حالة الدفع",
+        "currency": "عملة"
+      },
+      "retry": "أعد المحاولة"
+    },
+    "attendance": {
+      "totalSessions": "إجمالي المحاضرات",
+      "attendedSessions": "المحاضرات التي حضرها",
+      "absentSessions": "محاضرات غائبة",
+      "percentage": "نسبة الحضور"
+    },
+    "certificate": {
+      "statuses": {
+        "NOT_ISSUED": "لم تصدر",
+        "ISSUED": "صادر",
+        "REISSUED": "أعيد إصدارها"
       }
     }
   },
   "admin": {
     "badge": "إدارة الأكاديمية",
-    "title": "إدارة دورات الأكاديمية العامة",
-    "note": "أنشئ الدورات، راقب التسجيلات، وتابع حركة الدفع من مكان واحد.",
+    "title": "إدارة الدورات العامة",
+    "note": "قم بإنشاء دورات الأكاديمية ومراقبة عمليات التسجيل ومتابعة نشاط الدفع من مكان واحد.",
     "errors": {
-      "generic": "Something went wrong while saving academy changes.",
-      "notFound": "Academy course not found.",
-      "archivedReadOnly": "This academy course is archived and read-only.",
-      "missingPricing": "A final price is required before publishing this academy course.",
-      "unsupportedCurrency": "The selected currency is not supported for this academy course.",
-      "invalidPublishTransition": "This academy course cannot be published from its current status.",
-      "invalidArchiveTransition": "This academy course cannot be archived from its current status.",
-      "missingPlan": "Set the course duration, lecture count, and timing before publishing.",
-      "invalidPlanWindow": "The course start time must be before the end time.",
-      "invalidDuration": "Enter a valid course duration in days.",
-      "invalidLectureCount": "Enter a valid lecture count.",
-      "scheduleIncomplete": "Set the course duration, lecture count, and timing before publishing.",
-      "missingLectureSchedule": "Add {count} more lecture(s) before publishing.",
-      "missingLecturePlan": "Set the course duration, lecture count, and timing before adding lectures.",
-      "invalidLectureWindow": "Each lecture must stay within the course window.",
-      "lectureLimitReached": "This course already has the planned number of lectures.",
-      "lectureOrderTaken": "That lecture order is already in use.",
-      "lectureOverlap": "Lecture schedule overlaps with another lecture."
+      "generic": "حدث خطأ ما أثناء حفظ تغييرات الأكاديمية.",
+      "notFound": "لم يتم العثور على دورة الأكاديمية.",
+      "archivedReadOnly": "تم أرشفة دورة الأكاديمية هذه للقراءة فقط.",
+      "missingPricing": "مطلوب السعر النهائي قبل نشر هذه الدورة التدريبية للأكاديمية.",
+      "unsupportedCurrency": "العملة المحددة غير مدعومة لدورة الأكاديمية هذه.",
+      "invalidPublishTransition": "لا يمكن نشر دورة الأكاديمية هذه من وضعها الحالي.",
+      "invalidArchiveTransition": "لا يمكن أرشفة دورة الأكاديمية هذه من وضعها الحالي.",
+      "missingPlan": "قم بتعيين مدة الدورة وعدد المحاضرات والتوقيت قبل النشر.",
+      "invalidPlanWindow": "يجب أن يكون وقت بدء الدورة قبل وقت الانتهاء.",
+      "invalidDuration": "أدخل مدة صالحة للدورة بالأيام.",
+      "invalidLectureCount": "أدخل عددًا صالحًا للمحاضرات.",
+      "scheduleIncomplete": "قم بتعيين مدة الدورة وعدد المحاضرات والتوقيت قبل النشر.",
+      "missingLectureSchedule": "أضف {count} المزيد من المحاضرات قبل النشر.",
+      "missingLecturePlan": "قم بتعيين مدة الدورة وعدد المحاضرات والتوقيت قبل إضافة المحاضرات.",
+      "invalidLectureWindow": "يجب أن تبقى كل محاضرة داخل نافذة الدورة التدريبية.",
+      "lectureLimitReached": "تحتوي هذه الدورة بالفعل على العدد المخطط له من المحاضرات.",
+      "lectureOrderTaken": "ترتيب المحاضرة هذا قيد الاستخدام بالفعل.",
+      "lectureOverlap": "يتداخل جدول المحاضرات مع محاضرة أخرى."
     },
     "stats": {
       "totalCourses": "إجمالي الدورات",
       "publishedCourses": "الدورات المنشورة",
-      "totalEnrollments": "إجمالي الاشتراكات",
+      "totalEnrollments": "التسجيلات",
       "pendingPayments": "المدفوعات المعلقة"
     },
     "create": {
-      "badge": "Draft builder",
-      "title": "Create a new course",
-      "note": "Start with a draft, then publish once the course content and scheduling are ready.",
+      "badge": "مشروع البناء",
+      "title": "إنشاء دورة جديدة",
+      "note": "ابدأ بمسودة، ثم قم بالنشر بمجرد أن يصبح محتوى الدورة التدريبية والجدول الزمني جاهزين.",
       "adminOnlyNote": "يمكن للمسؤولين فقط إنشاء دورات الأكاديمية.",
       "open": "إنشاء دورة",
-      "cancel": "Cancel",
-      "submit": "إنشاء الدورة",
-      "saving": "Creating...",
-      "helper": "حدّد المدة وعدد المحاضرات والمواعيد قبل حفظ الدورة.",
-      "success": "Course created successfully.",
-      "failure": "Unable to create the course right now.",
+      "cancel": "يلغي",
+      "submit": "إنشاء دورة",
+      "saving": "جارٍ الإنشاء...",
+      "helper": "قم بتعيين المدة وعدد المحاضرات والتوقيت قبل حفظ هذه الدورة.",
+      "success": "تم إنشاء الدورة بنجاح.",
+      "failure": "غير قادر على إنشاء الدورة التدريبية الآن.",
       "validation": {
-        "required": "Title is required.",
-        "price": "Enter a valid amount for EGP or USD.",
-        "scheduleRequired": "Duration, lecture count, and timing are required.",
-        "durationRequired": "Course duration is required.",
-        "lectureCountRequired": "Lecture count is required.",
-        "startsAtRequired": "Start time is required.",
-        "endsAtRequired": "End time is required.",
-        "invalidPlanWindow": "End time must be after start time.",
-        "invalidDuration": "Enter a valid course duration in days.",
-        "invalidLectureCount": "Enter a valid lecture count."
+        "required": "العنوان مطلوب.",
+        "price": "أدخل مبلغًا صالحًا بالجنيه المصري أو الدولار الأمريكي.",
+        "scheduleRequired": "مطلوب المدة وعدد المحاضرات والتوقيت.",
+        "durationRequired": "مدة الدورة مطلوبة.",
+        "lectureCountRequired": "مطلوب عدد المحاضرات",
+        "startsAtRequired": "وقت البدء مطلوب.",
+        "endsAtRequired": "وقت الانتهاء مطلوب.",
+        "invalidPlanWindow": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+        "invalidDuration": "أدخل مدة صالحة للدورة بالأيام.",
+        "invalidLectureCount": "أدخل عددًا صالحًا للمحاضرات."
       },
       "sections": {
         "basics": "تفاصيل الدورة",
         "pricing": "التسعير",
-        "planning": "خطة الدورة"
+        "planning": "تخطيط الدورة"
       },
       "fields": {
-        "title": "Title",
-        "visibility": "Visibility",
-        "priceAmountEgp": "Price in EGP",
-        "priceAmountUsd": "Price in USD",
-        "startsAt": "Starts at",
-        "endsAt": "Ends at",
-        "shortDescription": "Short description",
-        "fullDescription": "Full description",
-        "plannedDurationDays": "Duration in days",
-        "plannedLectureCount": "Lecture count",
-        "endsAtPreview": "End time"
+        "title": "عنوان",
+        "visibility": "الرؤية",
+        "priceAmountEgp": "السعر بالجنيه المصري",
+        "priceAmountUsd": "السعر بالدولار الأمريكي",
+        "startsAt": "يبدأ في",
+        "endsAt": "ينتهي عند",
+        "shortDescription": "وصف قصير",
+        "fullDescription": "الوصف الكامل",
+        "plannedDurationDays": "المدة بالأيام",
+        "plannedLectureCount": "عدد المحاضرات",
+        "endsAtPreview": "وقت الانتهاء"
       },
       "placeholders": {
-        "title": "Course title",
+        "title": "عنوان الدورة",
         "priceAmountEgp": "0",
         "priceAmountUsd": "0",
-        "shortDescription": "A short summary for the public listing",
-        "fullDescription": "Detailed course description",
+        "shortDescription": "ملخص قصير للإدراج العام",
+        "fullDescription": "وصف مفصل للدورة",
         "plannedDurationDays": "14",
         "plannedLectureCount": "4",
-        "endsAtPreview": "Will be calculated automatically"
+        "endsAtPreview": "سيتم حسابها تلقائيا"
       },
-      "endsAtPreviewHelper": "The end time is calculated automatically from the start time and course duration."
+      "endsAtPreviewHelper": "يتم حساب وقت الانتهاء تلقائيًا من وقت البدء ومدة الدورة."
     },
     "filters": {
-      "status": "الحالة",
-      "statusAll": "كل الحالات",
-      "search": "بحث",
-      "searchPlaceholder": "ابحث باسم الدورة أو الوصف..."
+      "status": "حالة",
+      "statusAll": "جميع الحالات",
+      "search": "يبحث",
+      "searchPlaceholder": "البحث حسب العنوان أو الوصف..."
     },
     "list": {
-      "title": "قائمة الدورات",
-      "count": "{count} دورة",
-      "manage": "إدارة",
+      "title": "قائمة الدورة",
+      "count": "تم العثور على {count} الدورة/الدورات",
+      "manage": "يدير",
       "actionsHeader": "الإجراءات",
       "columns": {
-        "title": "الدورة",
-        "status": "الحالة",
-        "visibility": "الظهور",
-        "enrollments": "الاشتراكات",
-        "price": "السعر",
-        "published": "المنشور",
-        "updated": "آخر تحديث"
+        "title": "دورة",
+        "status": "حالة",
+        "visibility": "الرؤية",
+        "enrollments": "التسجيلات",
+        "price": "سعر",
+        "published": "تم النشر",
+        "updated": "تم التحديث"
       },
       "markets": {
         "egp": "EGP",
         "usd": "USD"
       },
-      "enrollmentSummary": "{total} total, {paid} paid",
-      "pendingSummary": "{total} pending, {failed} failed",
-      "free": "مجانية",
-      "noDescription": "لا يوجد وصف"
+      "enrollmentSummary": "{total} الإجمالي، {paid} مدفوع",
+      "pendingSummary": "{total} معلق، {failed} فشل",
+      "free": "حر",
+      "noDescription": "لم يتم تقديم أي وصف"
     },
     "states": {
       "error": {
-        "heading": "Unable to load courses",
-        "note": "The list could not be loaded right now.",
-        "retry": "Retry"
+        "heading": "غير قادر على تحميل الدورات",
+        "note": "لا يمكن تحميل القائمة الآن.",
+        "retry": "أعد المحاولة"
       },
       "empty": {
-        "heading": "No courses found",
-        "note": "Try clearing filters or create the first course draft."
+        "heading": "لم يتم العثور على دورات",
+        "note": "حاول مسح عوامل التصفية أو إنشاء مسودة الدورة التدريبية الأولى."
       }
     },
     "detail": {
-      "badge": "إدارة الدورة",
+      "badge": "إدارة الدورات الأكاديمية",
       "notFound": {
-        "title": "الدورة غير موجودة",
-        "note": "قد تكون الدورة محذوفة أو لم يعد الرابط صالحًا.",
+        "title": "لم يتم العثور على الدورة",
+        "note": "ربما تم حذف هذه الدورة أو الرابط لم يعد صالحا.",
         "back": "العودة إلى الأكاديمية"
       },
-      "noShortDescription": "No short description available.",
+      "attendance": {
+        "eyebrow": "حضور",
+        "title": "حضور الدورة التدريبية",
+        "note": "اختر محاضرة، ثم قم بوضع علامة على كل متعلم مسجل كحاضر أو ​​غائب.",
+        "meta": {
+          "sessionCount": "عدد المحاضرات"
+        },
+        "sessionLabel": "المحاضرة",
+        "sessionPlaceholder": "اختر المحاضرة",
+        "sessionNote": "اختر محاضرة لتسجيل حضور المتدربين فيها.",
+        "sessionStates": {
+          "published": "منشورة",
+          "draft": "مسودة"
+        },
+        "summary": {
+          "totalLearners": "إجمالي المتدربين",
+          "markedPresent": "تم تسجيلهم حضور",
+          "markedAbsent": "تم تسجيلهم غياب",
+          "unmarked": "لم يتم تسجيلهم",
+          "percentage": "نسبة التسجيل",
+          "noSummary": "لا توجد خلاصة حضور حتى الآن."
+        },
+        "table": {
+          "title": "قائمة الحضور",
+          "note": "حدّد حالة كل متدرب ثم احفظ التغييرات.",
+          "learner": "المتدرب",
+          "status": "الحالة",
+          "actions": "الإجراء"
+        },
+        "row": {
+          "currentState": "الحالة الحالية",
+          "markedAt": "تم التسجيل في",
+          "notMarked": "لم يُسجل بعد"
+        },
+        "statuses": {
+          "present": "حاضر",
+          "absent": "غائب",
+          "unmarked": "لم يتم وضع علامة",
+          "clear": "واضح"
+        },
+        "controls": {
+          "present": "حاضر",
+          "absent": "غائب",
+          "clear": "مسح"
+        },
+        "actions": {
+          "save": "حفظ الحضور",
+          "saving": "جارٍ الحفظ..."
+        },
+        "feedback": {
+          "saved": "تم حفظ الحضور بنجاح.",
+          "saveFailed": "لم نتمكن من حفظ الحضور الآن.",
+          "pending": "لديك {count} تغيير غير محفوظ.",
+          "noChanges": "لا توجد تغييرات غير محفوظة."
+        },
+        "states": {
+          "loading": "جارٍ تحميل الحضور...",
+          "error": {
+            "title": "تعذر تحميل الحضور",
+            "note": "تعذر تحميل سجل الحضور الآن."
+          },
+          "emptyLearners": {
+            "title": "لم يتم تسجيل أي متعلمين حتى الآن",
+            "note": "سيظهر المتدربون هنا بعد تسجيلهم في الدورة."
+          },
+          "noSessions": {
+            "title": "لا توجد محاضرات",
+            "note": "أضف محاضرات للدورة قبل تسجيل الحضور."
+          }
+        }
+      },
+      "noShortDescription": "لا يوجد وصف قصير متاح.",
       "sections": {
         "course": "تفاصيل الدورة",
         "courseSummary": "ملخص سريع",
-        "lectures": "المحاضرات",
+        "lectures": "محاضرات",
         "enrollments": "التسجيلات",
-        "join": "روابط الانضمام"
+        "join": "الانضمام إلى الروابط"
       },
       "update": {
-        "open": "تعديل الدورة",
-        "cancel": "Cancel",
-        "note": "يمكنك تعديل تفاصيل الدورة، وإضافة المحاضرات وتحديث الروابط العامة من هذه الصفحة.",
-        "success": "Course updated successfully.",
-        "failure": "Unable to update the course right now.",
-        "helper": "Changes are applied immediately after saving. Leave a market empty if you do not sell in that currency.",
+        "open": "تحرير الدورة",
+        "cancel": "يلغي",
+        "note": "افتح نموذج التحرير لتحديث معلومات الدورة العامة وروابط الدورة التدريبية.",
+        "success": "تم تحديث الدورة بنجاح.",
+        "failure": "غير قادر على تحديث الدورة التدريبية الآن.",
+        "helper": "يتم تطبيق التغييرات مباشرة بعد الحفظ. اترك السوق فارغًا إذا كنت لا تبيع بهذه العملة.",
         "validation": {
-          "required": "Title is required.",
-          "price": "Enter a valid amount for EGP or USD.",
-          "scheduleRequired": "Duration, lecture count, and timing are required.",
-          "durationRequired": "Course duration is required.",
-          "lectureCountRequired": "Lecture count is required.",
-          "startsAtRequired": "Start time is required.",
-          "endsAtRequired": "End time is required.",
-          "invalidPlanWindow": "End time must be after start time.",
-          "invalidDuration": "Enter a valid course duration in days.",
-          "invalidLectureCount": "Enter a valid lecture count."
+          "required": "العنوان مطلوب.",
+          "price": "أدخل مبلغًا صالحًا بالجنيه المصري أو الدولار الأمريكي.",
+          "scheduleRequired": "مطلوب المدة وعدد المحاضرات والتوقيت.",
+          "durationRequired": "مدة الدورة مطلوبة.",
+          "lectureCountRequired": "مطلوب عدد المحاضرات",
+          "startsAtRequired": "وقت البدء مطلوب.",
+          "endsAtRequired": "وقت الانتهاء مطلوب.",
+          "invalidPlanWindow": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+          "invalidDuration": "أدخل مدة صالحة للدورة بالأيام.",
+          "invalidLectureCount": "أدخل عددًا صالحًا للمحاضرات."
         },
         "sections": {
           "basics": "تفاصيل الدورة",
-          "planning": "خطة الدورة"
+          "pricing": "التسعير",
+          "links": "الروابط العامة",
+          "planning": "تخطيط الدورة"
         },
         "fields": {
-          "title": "Title",
-          "visibility": "Visibility",
-          "status": "Status",
-          "shortDescription": "Short description",
-          "fullDescription": "Full description",
-          "priceAmountEgp": "Price in EGP",
-          "priceAmountUsd": "Price in USD",
-          "startsAt": "Starts at",
-          "endsAt": "Ends at",
-          "coverImageUrl": "Cover image URL",
-          "thumbnailUrl": "Thumbnail URL",
-          "meetingUrl": "Meeting URL",
-          "whatsappGroupUrl": "WhatsApp group URL",
-          "plannedDurationDays": "Duration in days",
-          "plannedLectureCount": "Lecture count",
-          "endsAtPreview": "End time"
+          "title": "عنوان",
+          "visibility": "الرؤية",
+          "status": "حالة",
+          "shortDescription": "وصف قصير",
+          "fullDescription": "الوصف الكامل",
+          "priceAmountEgp": "السعر بالجنيه المصري",
+          "priceAmountUsd": "السعر بالدولار الأمريكي",
+          "startsAt": "يبدأ في",
+          "endsAt": "ينتهي عند",
+          "coverImageUrl": "عنوان URL لصورة الغلاف",
+          "thumbnailUrl": "عنوان URL للصورة المصغرة",
+          "meetingUrl": "عنوان URL للاجتماع",
+          "whatsappGroupUrl": "عنوان URL لمجموعة WhatsApp",
+          "plannedDurationDays": "المدة بالأيام",
+          "plannedLectureCount": "عدد المحاضرات",
+          "endsAtPreview": "وقت الانتهاء"
         },
         "placeholders": {
-          "title": "Course title",
-          "shortDescription": "Short summary",
-          "fullDescription": "Detailed description",
+          "title": "عنوان الدورة",
+          "shortDescription": "ملخص قصير",
+          "fullDescription": "وصف تفصيلي",
           "priceAmountEgp": "0",
           "priceAmountUsd": "0",
           "coverImageUrl": "https://...",
@@ -366,117 +1030,444 @@
           "whatsappGroupUrl": "https://...",
           "plannedDurationDays": "14",
           "plannedLectureCount": "4",
-          "endsAtPreview": "Will be calculated automatically"
+          "endsAtPreview": "سيتم حسابها تلقائيا"
         },
-        "submit": "Save changes",
-        "endsAtPreviewHelper": "The end time is calculated automatically from the start time and course duration."
+        "submit": "حفظ التغييرات",
+        "endsAtPreviewHelper": "يتم حساب وقت الانتهاء تلقائيًا من وقت البدء ومدة الدورة."
       },
       "summary": {
-        "price": "Price",
-        "priceEgp": "Price in EGP",
-        "priceUsd": "Price in USD",
-        "startsAt": "Starts at",
-        "endsAt": "Ends at",
-        "duration": "Duration in days",
-        "updatedAt": "Updated at",
-        "notSet": "Not set",
-        "daysUnit": "days",
-        "lectures": "Lecture count",
-        "lectureUnit": "lectures",
-        "lecturesCreated": "Lectures created"
+        "price": "سعر",
+        "priceEgp": "السعر بالجنيه المصري",
+        "priceUsd": "السعر بالدولار الأمريكي",
+        "startsAt": "يبدأ في",
+        "endsAt": "ينتهي عند",
+        "duration": "المدة بالأيام",
+        "updatedAt": "تم التحديث في",
+        "notSet": "لم يتم ضبطه",
+        "daysUnit": "أيام",
+        "lectures": "عدد المحاضرات",
+        "lectureUnit": "محاضرات",
+        "lecturesCreated": "تم إنشاء المحاضرات"
       },
       "stats": {
-        "totalEnrollments": "Total enrollments",
-        "paidEnrollments": "Paid enrollments",
-        "confirmedEnrollments": "Confirmed enrollments",
-        "pendingPayments": "Pending payments",
-        "lecturesCreated": "Lectures created"
+        "totalEnrollments": "إجمالي التسجيلات",
+        "paidEnrollments": "التسجيلات المدفوعة",
+        "confirmedEnrollments": "التسجيلات المؤكدة",
+        "pendingPayments": "المدفوعات المعلقة",
+        "lecturesCreated": "تم إنشاء المحاضرات"
       },
       "actions": {
-        "publish": "Publish",
-        "publishing": "Publishing...",
-        "publishSuccess": "Course published successfully.",
-        "archive": "Archive",
-        "archiving": "Archiving...",
-        "archiveSuccess": "Course archived successfully.",
-        "failure": "Unable to complete the action right now.",
-        "resetFeedback": "Clear message",
+        "publish": "نشر",
+        "publishing": "نشر...",
+        "publishSuccess": "تم نشر الدورة بنجاح.",
+        "archive": "أرشيف",
+        "archiving": "أرشفة...",
+        "archiveSuccess": "تم أرشفة الدورة بنجاح.",
+        "failure": "غير قادر على إكمال الإجراء الآن.",
+        "resetFeedback": "رسالة واضحة",
         "archiveConfirm": {
-          "title": "Archive course",
-          "description": "This will hide the course from the public catalog.",
-          "cancel": "Cancel"
+          "title": "دورة الأرشيف",
+          "description": "سيؤدي هذا إلى إخفاء الدورة التدريبية من الكتالوج العام.",
+          "cancel": "يلغي"
         }
       },
       "lectures": {
-        "heading": "Course lectures",
-        "note": "Add the actual lecture schedule before publishing. The course stays hidden until the lecture plan is complete.",
-        "open": "Add lecture",
-        "noTitle": "Untitled lecture",
-        "capacityNote": "{created} of {expected} lecture(s) created",
+        "heading": "محاضرات الدورة",
+        "note": "أضف جدول المحاضرات الفعلي قبل النشر. تظل الدورة مخفية حتى اكتمال خطة المحاضرة.",
+        "open": "إضافة محاضرة",
+        "noTitle": "محاضرة بلا عنوان",
+        "capacityNote": "تم إنشاء {created} من {expected} من المحاضرات",
         "empty": {
-          "heading": "No lectures yet",
-          "note": "Create the planned lecture timings here so the course can be published."
+          "heading": "لا توجد محاضرات بعد",
+          "note": "قم بإنشاء مواعيد المحاضرات المخططة هنا حتى يمكن نشر الدورة."
         },
         "columns": {
           "order": "#",
-          "title": "Lecture",
-          "startsAt": "Starts at",
-          "endsAt": "Ends at"
+          "title": "محاضرة",
+          "startsAt": "يبدأ في",
+          "endsAt": "ينتهي عند"
         },
         "create": {
-          "eyebrow": "Lecture builder",
-          "title": "Add a lecture for {title}",
-          "titleFallback": "Add a lecture",
-          "note": "Set the lecture order and timing. The course can only be published after the full lecture plan is saved.",
-          "cancel": "Cancel",
-          "submit": "Save lecture",
-          "submitting": "Saving...",
-          "endsAtPreview": "Will be calculated automatically",
-          "endsAtHelper": "The lecture end time is calculated automatically from the start time and selected duration.",
+          "eyebrow": "منشئ المحاضرات",
+          "title": "إضافة محاضرة لـ {title}",
+          "titleFallback": "إضافة محاضرة",
+          "note": "ضبط ترتيب المحاضرة وتوقيتها. لا يمكن نشر الدورة إلا بعد حفظ خطة المحاضرة كاملة.",
+          "cancel": "يلغي",
+          "submit": "حفظ المحاضرة",
+          "submitting": "توفير...",
+          "endsAtPreview": "سيتم حسابها تلقائيا",
+          "endsAtHelper": "يتم حساب وقت انتهاء المحاضرة تلقائيًا من وقت البدء والمدة المحددة.",
           "fields": {
-            "lectureOrder": "Lecture order",
-            "lectureTitle": "Lecture title",
-            "startsAt": "Starts at",
-            "durationMinutes": "Duration",
-            "endsAt": "Ends at"
+            "lectureOrder": "ترتيب المحاضرة",
+            "lectureTitle": "عنوان المحاضرة",
+            "startsAt": "يبدأ في",
+            "durationMinutes": "مدة",
+            "endsAt": "ينتهي عند"
           },
           "durationOption": "{duration} minutes",
           "placeholders": {
-            "lectureTitle": "Lecture title"
+            "lectureTitle": "عنوان المحاضرة"
           }
         },
         "validation": {
-          "orderRequired": "Lecture order is required.",
-          "titleRequired": "Lecture title is required.",
-          "windowRequired": "Lecture start time is required.",
-          "invalidWindow": "Lecture time must fit within the course window.",
-          "limitReached": "This course already has the planned number of lectures.",
-          "orderTaken": "That lecture order is already in use."
+          "orderRequired": "مطلوب ترتيب المحاضرة.",
+          "titleRequired": "مطلوب عنوان المحاضرة.",
+          "windowRequired": "مطلوب وقت بدء المحاضرة.",
+          "invalidWindow": "يجب أن يتناسب وقت المحاضرة مع نافذة الدورة التدريبية.",
+          "limitReached": "تحتوي هذه الدورة بالفعل على العدد المخطط له من المحاضرات.",
+          "orderTaken": "ترتيب المحاضرة هذا قيد الاستخدام بالفعل."
         }
       },
       "enrollments": {
-        "heading": "Course enrollments",
+        "heading": "التسجيل في الدورة",
         "empty": {
-          "heading": "No enrollments yet",
-          "note": "Registrations will appear here once learners start enrolling."
+          "heading": "لا يوجد تسجيلات حتى الآن",
+          "note": "ستظهر التسجيلات هنا بمجرد أن يبدأ المتعلمون بالتسجيل."
         },
         "columns": {
-          "learner": "Learner",
-          "status": "Status",
-          "paymentStatus": "Payment",
-          "registeredAt": "Registered at",
-          "reference": "Reference",
-          "actions": "Actions"
+          "learner": "المتعلم",
+          "status": "حالة",
+          "paymentStatus": "قسط",
+          "registeredAt": "مسجل في",
+          "reference": "مرجع",
+          "actions": "الإجراءات"
         },
         "actions": {
-          "view": "View learner"
+          "view": "عرض المتعلم"
         }
       },
       "join": {
-        "note": "Share these links only with the right participants once the course is ready.",
-        "meetingUrl": "Meeting link",
-        "whatsappGroupUrl": "WhatsApp group link",
-        "none": "Not set"
+        "note": "لا تشارك هذه الروابط إلا مع المشاركين المناسبين بمجرد أن تصبح الدورة التدريبية جاهزة.",
+        "meetingUrl": "رابط اللقاء",
+        "whatsappGroupUrl": "رابط مجموعة الواتساب",
+        "none": "لم يتم ضبطه"
+      },
+      "learners": {
+        "title": "طلاب الدورة التدريبية",
+        "note": "مراجعة المتعلمين المسجلين في هذا الدورة التدريبية وتحديث بياناتهم وإدارة سجلات الإنجاز.",
+        "back": "العودة إلى الدورة التدريبية",
+        "export": "يصدّر",
+        "addLearner": "إضافة المتعلم",
+        "summary": {
+          "total": "إجمالي التسجيلات",
+          "page": "الصفحة الحالية",
+          "selected": "صفوف مختارة"
+        },
+        "selectionCount": "{count} selected",
+        "filters": {
+          "all": "الجميع",
+          "search": "يبحث",
+          "searchPlaceholder": "البحث حسب الاسم أو الهاتف أو البريد الإلكتروني أو المرجع...",
+          "enrollmentStatus": "حالة التسجيل",
+          "paymentStatus": "حالة الدفع",
+          "country": "دولة"
+        },
+        "columns": {
+          "fullName": "المتعلم",
+          "email": "بريد إلكتروني",
+          "mobileNumber": "متحرك",
+          "whatsappNumber": "واتساب",
+          "country": "دولة",
+          "enrollmentStatus": "حالة التسجيل",
+          "paymentStatus": "حالة الدفع",
+          "registrationDate": "مسجل",
+          "attendance": "حضور",
+          "certificate": "شهادة"
+        },
+        "statuses": {
+          "PENDING_PAYMENT": "في انتظار الدفع",
+          "CONFIRMED": "مؤكد",
+          "CANCELLED": "تم الإلغاء",
+          "EXPIRED": "منتهي الصلاحية"
+        },
+        "certificateStatuses": {
+          "NOT_ISSUED": "لم تصدر",
+          "ISSUED": "صادر"
+        },
+        "metrics": {
+          "registrationDate": "تاريخ التسجيل",
+          "enrollmentStatus": "حالة التسجيل",
+          "paymentStatus": "حالة الدفع",
+          "attendance": "حضور"
+        },
+        "attendance": {
+          "totalSessions": "إجمالي المحاضرات",
+          "attendedSessions": "المحاضرات المحضورة",
+          "absentSessions": "المحاضرات الغائبة",
+          "percentage": "النسبة"
+        },
+        "certificate": {
+          "status": "حالة الشهادة",
+          "issuedAt": "صدرت في"
+        },
+        "sourceLabels": {
+          "publicProgram": "الالتحاق بالأكاديمية العامة",
+          "patientPortal": "التسجيل في أكاديمية المريض",
+          "mobileApp": "التسجيل في أكاديمية موبايل",
+          "adminManual": "التسجيل اليدوي للمسؤول",
+          "unknown": "مصدر غير معروف"
+        },
+        "sections": {
+          "personal": "التفاصيل الشخصية",
+          "enrollment": "تفاصيل التسجيل",
+          "payment": "تفاصيل الدفع",
+          "attendance": "ملخص الحضور",
+          "certificate": "شهادة"
+        },
+        "fields": {
+          "fullName": "الاسم الكامل",
+          "phoneNumber": "رقم التليفون",
+          "whatsappNumber": "رقم الواتساب",
+          "email": "بريد إلكتروني",
+          "country": "دولة",
+          "city": "مدينة",
+          "jobTitle": "مسمى وظيفي",
+          "employer": "صاحب العمل",
+          "education": "تعليم",
+          "notes": "ملحوظات",
+          "source": "مصدر",
+          "program": "دورة تدريبية",
+          "registrationDate": "تاريخ التسجيل",
+          "enrollmentStatus": "حالة التسجيل",
+          "paymentStatus": "حالة الدفع"
+        },
+        "actions": {
+          "edit": "تحرير المتعلم",
+          "complete": "تم الانتهاء من العلامة",
+          "certify": "إصدار الشهادة",
+          "cancel": "إلغاء التسجيل"
+        },
+        "drawer": {
+          "eyebrow": "تفاصيل المتعلم",
+          "editTitle": "تحرير المتعلم",
+          "editNote": "قم بتحديث تفاصيل المتعلم المرفقة بهذا التسجيل.",
+          "createTitle": "إضافة المتعلم يدويا",
+          "createNote": "إنشاء تسجيل للمتعلم دون الدفع عبر الإنترنت.",
+          "create": "إنشاء التسجيل",
+          "creating": "جارٍ الإنشاء...",
+          "cancel": "يلغي",
+          "save": "حفظ التغييرات",
+          "saving": "توفير..."
+        },
+        "detail": {
+          "eyebrow": "ملف التسجيل",
+          "title": "تفاصيل المتعلم",
+          "note": "حدد التسجيل لمراجعة ملف تعريف المتعلم وتاريخ الدورة التدريبية."
+        },
+        "feedback": {
+          "updateSuccess": "تم تحديث تفاصيل المتعلم بنجاح.",
+          "cancelSuccess": "تم إلغاء التسجيل بنجاح.",
+          "completeSuccess": "تم وضع علامة على التسجيل كمكتمل.",
+          "certifySuccess": "تم إصدار الشهادة بنجاح.",
+          "manualCreateSuccess": "تم إنشاء التسجيل اليدوي بنجاح.",
+          "manualCreateFailure": "لم نتمكن من إنشاء التسجيل اليدوي الآن.",
+          "certificateUploadFailure": "لم نتمكن من تحميل الشهادة الآن.",
+          "bulkCancelSuccess": "تم إلغاء التسجيلات المختارة.",
+          "bulkCompleteSuccess": "تم وضع علامة على التسجيلات المحددة كمكتملة.",
+          "bulkCertifySuccess": "تم إصدار الشهادات للتسجيلات المختارة."
+        },
+        "bulk": {
+          "complete": "تم الانتهاء من العلامة",
+          "certify": "إصدار الشهادات",
+          "cancel": "إلغاء المحدد",
+          "note": "تنطبق الإجراءات المجمعة على صفوف التسجيل المحددة."
+        },
+        "cancelConfirm": {
+          "title": "إلغاء التسجيل",
+          "description": "سيؤدي هذا إلى إلغاء تسجيل المتعلم المحدد.",
+          "confirm": "إلغاء التسجيل",
+          "close": "يغلق",
+          "saving": "جارٍ الإلغاء..."
+        },
+        "bulkCancelConfirm": {
+          "title": "إلغاء التسجيلات المحددة",
+          "description": "سيؤدي هذا إلى إلغاء جميع التسجيلات المحددة في هذا الدورة التدريبية.",
+          "summary": "{count} سيتم إلغاء التسجيل (التسجيلات).",
+          "confirm": "إلغاء المحدد",
+          "close": "يغلق",
+          "saving": "جارٍ الإلغاء..."
+        },
+        "states": {
+          "error": "غير قادر على تحميل التسجيلات الآن.",
+          "empty": "لم يتم العثور على التسجيلات",
+          "emptyNote": "ستظهر التسجيلات هنا بمجرد أن يبدأ المتعلمون بالتسجيل."
+        },
+        "payment": {
+          "noOnlinePayment": "لا يوجد دفع عبر الإنترنت مرتبط بهذا التسجيل.",
+          "amount": "كمية",
+          "status": "حالة الدفع",
+          "currency": "عملة"
+        },
+        "retry": "أعد المحاولة"
+      }
+    }
+  },
+  "patient": {
+    "home": {
+      "badge": "بوابة المتعلم",
+      "title": "تسجيلاتي في الأكاديمية",
+      "note": "قم بمراجعة كل دورة تدريبية أكاديمية قمت بالتسجيل فيه، وتتبع حالة الدفع، وافتح تفاصيل التسجيل عند الحاجة.",
+      "card": {
+        "program": "دورة تدريبية",
+        "view": "عرض التفاصيل",
+        "pay": "مواصلة الدفع",
+        "noDescription": "لا يوجد وصف متاح.",
+        "startAt": "تاريخ البدء",
+        "endAt": "تاريخ الانتهاء",
+        "amount": "كمية",
+        "noDate": "لم يتم تحديد التاريخ"
+      },
+      "stats": {
+        "total": "إجمالي التسجيلات",
+        "pending": "في انتظار الدفع",
+        "active": "مؤكد",
+        "finished": "مغلق"
+      },
+      "list": {
+        "title": "التسجيلات الخاصة بك",
+        "subtitle": "التسجيل في الدورة التدريبية النشط والتاريخي.",
+        "count": "{count} التسجيل (التسجيلات)"
+      },
+      "empty": {
+        "title": "لا يوجد تسجيلات في الأكاديمية حتى الآن",
+        "note": "بمجرد التسجيل في أحد الدورات التدريبية، سيظهر هنا مع حالة الدفع والتسجيل الحالية.",
+        "action": "تصفح الدورات التدريبية"
+      },
+      "error": {
+        "title": "تعذر تحميل التسجيلات الخاصة بك",
+        "note": "لم نتمكن من الوصول إلى خدمة التسجيل في الأكاديمية في الوقت الحالي."
+      }
+    },
+    "detail": {
+      "badge": "تفاصيل التسجيل",
+      "back": "العودة إلى التسجيلات",
+      "support": "دعم مفتوح",
+      "noDescription": "لا يوجد وصف متاح.",
+      "error": {
+        "title": "تعذر تحميل التسجيل",
+        "note": "لم نتمكن من الوصول إلى تفاصيل التسجيل في الوقت الحالي.",
+        "retry": "أعد المحاولة"
+      },
+      "summary": {
+        "title": "ملخص التسجيل",
+        "description": "قم بمراجعة الحالة الحالية والجدول الزمني والدفع والشهادة في لمحة سريعة.",
+        "startAt": "تاريخ البدء",
+        "endAt": "تاريخ الانتهاء",
+        "payment": "مبلغ الدفع",
+        "certificate": "حالة الشهادة"
+      },
+      "state": {
+        "title": "حالة التسجيل",
+        "default": "تسجيلك نشط.",
+        "confirmed": "تم تأكيد تسجيلك وجاهز لجدول الدورة التدريبية.",
+        "pendingPayment": "تسجيلك في انتظار الدفع.",
+        "cancelled": "تم إلغاء هذا التسجيل.",
+        "expired": "انتهت صلاحية هذا التسجيل."
+      },
+      "pendingPaymentNote": "أكمل عملية الدفع لتحتفظ بمقعدك محجوزًا وتستمر في الدورة التدريبية.",
+      "schedule": {
+        "title": "جدول المحاضرات",
+        "subtitle": "قم بمراجعة المحاضرات المرتبطة بهذا التسجيل.",
+        "noDescription": "لا يتوفر وصف للمحاضرة.",
+        "empty": {
+          "title": "لا توجد محاضرات بعد",
+          "note": "سيتم إضافة جدول المحاضرات قريبا."
+        }
+      },
+      "attendance": {
+        "title": "ملخص الحضور",
+        "note": "سيظهر الحضور هنا بعد أن يقوم فريق الأكاديمية بتسجيله.",
+        "recordedNote": "يظهر الحضور المسجل أدناه.",
+        "total": "إجمالي المحاضرات",
+        "attended": "حضر",
+        "absent": "غائب",
+        "unmarked": "غير مميزة",
+        "rate": "معدل الحضور",
+        "empty": "بيانات الحضور غير متاحة لهذا التسجيل حتى الآن.",
+        "sessionRecordsUnavailable": "الحضور على مستوى المحاضرة غير متوفر بعد."
+      },
+      "certificate": {
+        "title": "شهادة",
+        "note": "تظهر حالة شهادتك هنا. عندما يصبح ملف PDF جاهزًا، يمكنك فتحه أو تنزيله من هذه البطاقة.",
+        "notIssued": "لم يتم إصدار شهادتك بعد.",
+        "issued": "صادر",
+        "reissued": "أعيد إصدارها",
+        "uploadedAt": "تم الرفع على",
+        "issuedAt": "صدرت في",
+        "fileName": "اسم الملف",
+        "download": "فتح الشهادة PDF",
+        "availableNote": "الشهادة PDF جاهزة.",
+        "notAvailable": "الشهادة PDF غير متوفرة بعد.",
+        "downloadUnavailable": "لم يتم إرفاق الشهادة PDF بعد."
+      },
+      "actions": {
+        "retryPayment": "أعد محاولة الدفع"
+      }
+    },
+    "pay": {
+      "badge": "قسط",
+      "title": "مواصلة دفع التسجيل الخاص بك",
+      "note": "سوف نقوم بتأكيد أحدث حالة للواجهة الخلفية قبل فتح الخروج المستضاف.",
+      "program": "دورة تدريبية",
+      "status": "حالة التسجيل",
+      "paymentStatus": "حالة الدفع",
+      "amount": "كمية",
+      "hostedCheckoutNote": "يؤدي هذا إلى فتح تدفق الدفع الآمن الذي توفره الواجهة الخلفية.",
+      "openCheckout": "فتح الخروج",
+      "error": {
+        "title": "تعذر تحميل تفاصيل الدفع",
+        "note": "لم نتمكن من الوصول إلى خدمة الدفع في الوقت الحالي.",
+        "retry": "أعد المحاولة"
+      },
+      "notPayable": {
+        "title": "الدفع غير متوفر",
+        "note": "هذا التسجيل لا ينتظر الدفع حاليًا.",
+        "back": "العودة إلى التسجيل"
+      },
+      "summary": {
+        "title": "ملخص الدفع",
+        "description": "قم بمراجعة الدورة التدريبية والمبلغ وحالة الدفع قبل المتابعة.",
+        "program": "دورة تدريبية",
+        "enrollmentStatus": "حالة التسجيل",
+        "paymentStatus": "حالة الدفع",
+        "amount": "كمية"
+      },
+      "state": {
+        "payable": {
+          "title": "الدفع جاهز",
+          "note": "مقعدك لا يزال في انتظارك. تابع إلى الخروج الآمن لإكمال الدفع.",
+          "cta": "الاستمرار في الخروج"
+        },
+        "confirmed": {
+          "title": "تم تأكيد الدفع بالفعل",
+          "note": "تم تأكيد هذا التسجيل بالفعل في الواجهة الخلفية. يمكنك العودة إلى تفاصيل التسجيل.",
+          "cta": "العودة إلى التسجيل"
+        },
+        "pending": {
+          "title": "الدفع لا يزال معلقا",
+          "note": "لا تزال الواجهة الخلفية تقوم بمراجعة حالة الدفع الأخيرة. قم بالتحديث أو حاول مرة أخرى إذا لزم الأمر.",
+          "cta": "حاول ثانية"
+        },
+        "failed": {
+          "title": "فشل الدفع",
+          "note": "لم تكتمل محاولة الدفع الأخيرة. يمكنك المحاولة مرة أخرى من خلال الخروج الآمن.",
+          "cta": "حاول ثانية"
+        },
+        "expired": {
+          "title": "انتهت محاضرة الدفع",
+          "note": "رابط الدفع لم يعد صالحا. قم بتحديث الصفحة للحصول على رابط الخروج الجديد.",
+          "cta": "تحديث الحالة"
+        },
+        "cancelled": {
+          "title": "تم إلغاء الدفع",
+          "note": "يمكنك العودة إلى التسجيل والمتابعة عندما تكون جاهزًا.",
+          "cta": "العودة إلى التسجيل"
+        },
+        "unavailable": {
+          "title": "الدفع غير متاح",
+          "note": "لا يمكن لهذا التسجيل الاستمرار في الخروج الآن.",
+          "cta": "العودة إلى التسجيل"
+        }
       }
     }
   }

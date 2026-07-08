@@ -5,6 +5,8 @@
 export interface SpecialtyCategoryViewModel {
   id: string;
   name: string;
+  nameAr: string | null;
+  nameEn: string | null;
   slug: string;
   description: string | null;
   isActive: boolean;
@@ -14,6 +16,8 @@ export interface SpecialtyCategoryViewModel {
 export interface SpecialtyViewModel {
   id: string;
   name: string | null;
+  nameAr: string | null;
+  nameEn: string | null;
   slug: string;
   description: string | null;
   isActive: boolean;

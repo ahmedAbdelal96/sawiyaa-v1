@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelPatientSession,
+  closePractitionerSessionRuntime,
   createScheduledSession,
   getPatientSession,
   getPatientSessions,
@@ -222,6 +223,29 @@ export function usePreparePractitionerSessionRuntime() {
       });
       queryClient.invalidateQueries({
         queryKey: practitionerSessionQueryKeys.detail(sessionId),
+      });
+    },
+  });
+}
+
+export function useClosePractitionerSessionRuntime() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      reason,
+      note,
+    }: {
+      sessionId: string;
+      reason?: string;
+      note?: string;
+    }) => closePractitionerSessionRuntime(sessionId, { reason, note }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.detail(variables.sessionId),
       });
     },
   });

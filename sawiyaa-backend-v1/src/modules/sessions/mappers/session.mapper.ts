@@ -47,6 +47,7 @@ export class SessionMapper {
         provider: session.provider,
         providerRoomId: session.providerRoomId,
         providerSessionRef: session.providerSessionRef,
+        videoRoomClosedAt: session.videoRoomClosedAt,
         now,
         runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
         finalManualDecision,
@@ -73,6 +74,7 @@ export class SessionMapper {
         provider: session.provider,
         providerRoomId: session.providerRoomId,
         providerSessionRef: session.providerSessionRef,
+        videoRoomClosedAt: session.videoRoomClosedAt,
         now,
         runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
       }),
@@ -84,6 +86,7 @@ export class SessionMapper {
         provider: session.provider,
         providerRoomId: session.providerRoomId,
         providerSessionRef: session.providerSessionRef,
+        videoRoomClosedAt: session.videoRoomClosedAt,
         now,
         runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
       }),
@@ -109,6 +112,9 @@ export class SessionMapper {
       completedAt: session.completedAt?.toISOString() ?? null,
       expiredAt: session.expiredAt?.toISOString() ?? null,
       timezone: session.timezoneSnapshot ?? null,
+      videoRoomClosedAt: session.videoRoomClosedAt?.toISOString() ?? null,
+      videoRoomCloseReason: session.videoRoomCloseReason ?? null,
+      videoRoomCloseNote: session.videoRoomCloseNote ?? null,
     };
   }
 }

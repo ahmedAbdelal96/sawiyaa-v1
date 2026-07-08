@@ -26,6 +26,11 @@ export class AdminSpecialtyRepository {
       id: string;
       slug: string;
       categoryId: string | null;
+      category: {
+        id: string;
+        slug: string;
+        name: string;
+      } | null;
       translations: Array<{ locale: ContentLocale; title: string }>;
     }>
   > {
@@ -35,6 +40,11 @@ export class AdminSpecialtyRepository {
           id: string;
           slug: string;
           categoryId: string | null;
+          category: {
+            id: string;
+            slug: string;
+            name: string;
+          } | null;
           translations: Array<{ locale: ContentLocale; title: string }>;
         }>
       >([]);
@@ -46,7 +56,17 @@ export class AdminSpecialtyRepository {
           in: ids,
         },
       },
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+          },
+        },
         translations: {
           where: {
             locale: {

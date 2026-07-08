@@ -53,8 +53,10 @@ describe('MarkPaymentSucceededUseCase', () => {
     const orchestrateSessionPaymentStatusService = {
       markSessionConfirmedFromPayment: jest.fn().mockResolvedValue({}),
     };
-    const orchestrateTrainingEnrollmentPaymentStatusService = {
-      markEnrollmentActiveFromPayment: jest.fn().mockResolvedValue({}),
+    const orchestrateAcademyProgramEnrollmentPaymentStatusService = {
+      markEnrollmentConfirmedFromPayment: jest.fn().mockResolvedValue({}),
+      markEnrollmentPaymentFailed: jest.fn().mockResolvedValue({}),
+      markEnrollmentPaymentExpired: jest.fn().mockResolvedValue({}),
     };
     const paymentMapper = {
       toViewModel: jest.fn().mockReturnValue({ id: 'payment_1' }),
@@ -95,7 +97,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       paymentRepository as never,
       validatePaymentStatusTransitionService as never,
       orchestrateSessionPaymentStatusService as never,
-      orchestrateTrainingEnrollmentPaymentStatusService as never,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService as never,
       paymentMapper as never,
       postPaymentLedgerEntriesUseCase as never,
       customerWalletAccountingService as never,
@@ -111,6 +113,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       prisma,
       paymentRepository,
       orchestrateSessionPaymentStatusService,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService,
       postPaymentLedgerEntriesUseCase,
       operationalNotificationService,
       reconcilePackagePurchasePaymentUseCase,

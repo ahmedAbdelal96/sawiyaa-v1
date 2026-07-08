@@ -126,7 +126,8 @@
     "reviews": "التقييمات",
     "moderationReports": "بلاغات الإشراف",
     "academy": "الأكاديمية",
-    "training": "التدريب",
+    "academyPrograms": "البرامج",
+    "academyLegacyCourses": "الدورات القديمة",
     "adminUsers": "مستخدمو الإدارة"
   },
   "settings": {

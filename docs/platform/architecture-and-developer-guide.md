@@ -27,10 +27,9 @@ Typical backend domains include:
 - sessions and availability
 - instant booking
 - chat and moderation
-- payments and wallet
-- reports and support
+- payments, payouts, and accounting
+- support and notifications
 - content and training
-- notifications and settings
 
 ## Frontend shape
 
@@ -61,6 +60,7 @@ The mobile app mirrors the patient and practitioner journeys where it matters mo
 - **Chat states**: available, read-only, unavailable, and error states must be explicit.
 - **Cancellation and refunds**: must be data-driven and policy-based, not guessed.
 - **Instant booking**: pricing stays backend-owned and payment confirmation must come before session access.
+- **Localized specialties**: admin edits raw fields; public displays use locale-aware helpers.
 
 ## Data and contracts
 
@@ -86,7 +86,7 @@ Sawiyaa should use one explicit timezone contract across backend, web, mobile, a
 - Weekly availability is practitioner-local wall time plus an IANA timezone.
 - Availability exceptions are stored as UTC ranges, but they must be created from an explicit local date/time plus timezone context.
 - A session timezone snapshot is for audit and display context only; it is not the primary source of scheduling truth.
-- Write boundaries validate timezone values as IANA names; fixed offsets such as `+02:00` are rejected, and blank values normalize to null or fallback handling only where the flow already intends that behavior.
+- Write boundaries validate timezone values as IANA names.
 
 ### Timezone ownership
 
@@ -95,13 +95,6 @@ Sawiyaa should use one explicit timezone contract across backend, web, mobile, a
 - Practitioner session display uses the practitioner timezone or the session snapshot when helpful.
 - Admin views may show patient time, practitioner time, and UTC together when needed.
 - Backend remains the source of truth for slot generation, conflicts, join windows, payment unlocks, and request expiry.
-
-### Source priority
-
-- Practitioner timezone: saved practitioner/user timezone first, then the availability slot timezone, then UTC as the final safe fallback.
-- Patient/viewer timezone: saved user timezone first, then device/browser timezone for display fallback, then UTC only as a last resort.
-- Admin timezone: admin profile timezone if available, otherwise viewer/device timezone for display only.
-- Anonymous/public visitor timezone: device/browser timezone for display only, with UTC as final safe fallback.
 
 ### API contract
 
@@ -127,64 +120,6 @@ Time-sensitive APIs should return:
 - Day-boundary changes between countries should not change the underlying UTC session record.
 - If a user travels after booking, the session remains the same UTC session; only the display timezone changes.
 - If a practitioner changes timezone after existing bookings, new availability should use the new timezone, but historical sessions must keep their original audit context.
-
-### Target architecture
-
-The long-term model should be:
-
-- UTC for runtime facts
-- IANA timezone for recurring availability interpretation
-- timezone snapshots for audit and human-readable context
-- viewer-local display for patient-facing readouts unless the screen is explicitly practitioner-facing
-- backend-only authority for all scheduling, conflicts, join windows, and payment unlocks
-
-### Phased implementation plan
-
-#### Phase 3: timezone profile validation and defaults
-
-- Likely touched: user/practitioner profile DTOs, settings forms, seed/default profile values.
-- Risk level: medium.
-- Expected verification: timezone fields are valid IANA names and default cleanly when missing.
-- Must not change: booking logic, session timing, payment behavior.
-
-#### Phase 4: backend timezone utility/service consolidation
-
-- Likely touched: backend availability utilities, session scheduling helpers, join policy helpers, payment return helpers.
-- Risk level: medium.
-- Expected verification: one shared conversion path for wall time to UTC and UTC back to display context.
-- Must not change: state machines, public API contracts, or money logic.
-
-#### Phase 5: availability engine hardening tests
-
-- Likely touched: availability generation tests, conflict tests, schedule compatibility tests, instant booking eligibility tests.
-- Risk level: medium to high.
-- Expected verification: weekly recurrence, exceptions, booked-session subtraction, and cross-timezone cases stay correct.
-- Must not change: user-facing wording or route structure.
-
-#### Phase 6: web/mobile formatting normalization
-
-- Likely touched: shared date/time formatters, patient session views, practitioner availability editor, payment-return screens, mobile session screens.
-- Risk level: medium.
-- Expected verification: practitioner-local views and viewer-local views are intentionally different where required.
-- Must not change: backend timestamps or session status rules.
-
-#### Phase 7: admin/support multi-timezone display
-
-- Likely touched: admin read models, support dashboards, finance views, session detail views with dual-time display.
-- Risk level: low to medium.
-- Expected verification: admin can see UTC, practitioner time, and patient time when useful.
-- Must not change: permissions, read-only vs action states, or financial totals.
-
-#### Phase 8: QA matrix
-
-- Likely touched: QA documentation and test plans.
-- Risk level: low.
-- Expected verification: Egypt, Gulf, traveler, and DST-adjacent cases are covered.
-- Must not change: production behavior.
-
-### First safest implementation task
-
-The safest first implementation step after this contract is to validate and normalize timezone fields consistently at the profile and availability boundaries, before changing any display formatting or scheduling behavior.
 
 ## Route map
 
@@ -218,7 +153,7 @@ The safest first implementation step after this contract is to validate and norm
 - `/[locale]/patient/care-chat/[id]`
 - `/[locale]/patient/assessments`
 - `/[locale]/patient/assessments/[slug]`
-- `/[locale]/patient/training`
+- `/[locale]/patient/training` legacy redirect to `/[locale]/patient/academy`
 - `/[locale]/patient/package-purchases`
 - `/[locale]/patient/messages`
 - `/[locale]/patient/instant-booking`
@@ -254,66 +189,47 @@ The safest first implementation step after this contract is to validate and norm
 - `/[locale]/admin/chat`
 - `/[locale]/admin/chat-conversations`
 - `/[locale]/admin/payments`
-- `/[locale]/admin/settlements`
+- `/[locale]/admin/practitioner-payouts`
+- `/[locale]/admin/practitioner-payouts/history`
+- `/[locale]/admin/finance/accounting/reconciliation`
 - `/[locale]/admin/refund-policies`
 - `/[locale]/admin/support`
 - `/[locale]/admin/reports`
 - `/[locale]/admin/articles`
-- `/[locale]/admin/training`
+- `/[locale]/admin/training` legacy redirect to `/[locale]/admin/academy/programs`
 - `/[locale]/admin/notifications`
 - `/[locale]/admin/settings`
 
-## Platform Module Catalog
-
-This catalog is intentionally practical. It tells you what each module is for, who uses it, where the logic tends to live, and what depends on it.
+## Platform module catalog
 
 | Module | Purpose | Main users | Key backend area | Key web/mobile surfaces | Current status | Important business rules / dependencies |
 | --- | --- | --- | --- | --- | --- | --- |
 | Identity and Auth | Login, persistence, route protection, and role-based access | Patients, practitioners, admins | auth, identity, permissions | login/signup, guarded dashboards, mobile session persistence | Closed | Backend is the final source of truth for access. |
 | Practitioner Onboarding and Profile | Application, review, professional identity, pricing, instant booking pricing, direct create | Practitioners, admins | practitioners, admin practitioner applications | practitioner application, profile forms, admin create forms | Closed | Profile/pricing contracts must stay synchronized across web and backend. |
 | Discovery and Matching | Help patients find the right practitioner | Patients | matching, practitioner read models | public directory, patient discovery, guided matching entry points | Closed / evolving | Discovery should stay clearer than a raw list. |
-| Availability and Schedule | Recurring schedule, specific-day adjustments, exceptions, booked-session subtraction | Practitioners, patients | availability, booking slot generation | practitioner availability page, patient booking screens | Closed | Weekly schedule repeats; `BLOCK` and `OPEN_EXTRA` are the key override types. |
+| Availability and Schedule | Week-by-week windows, specific-day adjustments, exceptions, booked-session subtraction | Practitioners, patients | availability, booking slot generation | practitioner availability page, patient booking screens | Closed | Public reads only `PUBLISHED` weeks; `DRAFT` and `ARCHIVED` weeks do not authorize booking. |
 | Scheduled Booking | Normal session booking with duration/price/time selection | Patients, practitioners, finance | sessions, payments, financial rules | patient session booking, payment return screens | Closed | Booking depends on availability and payment confirmation. |
-| Instant Booking | Available-now flow with frozen backend pricing and request/accept/reject cycle | Patients, practitioners | instant-booking, payments, sessions | patient instant booking, practitioner queue, payment-return handling | Closed with external blocker | Provider-side Paymob QA is still deferred; join remains locked until backend confirmation. |
+| Instant Booking | Available-now flow with frozen backend pricing and request/accept/reject cycle | Patients, practitioners | instant-booking, payments, sessions | patient instant booking, practitioner queue, payment-return handling | Closed with external blocker | Provider-side checkout QA is still deferred; join remains locked until backend confirmation. |
 | Sessions and Join | Session detail, presentation status, join availability, join window rules | Patients, practitioners, admins | sessions, session mapping, join policy | session detail pages, join actions, session states | Closed | No join before backend permission; `joinAvailability` and `presentationStatus` must stay accurate. |
 | Session Chat and Care/Support Chat | Session chat plus broader support/care chat distinction | Patients, practitioners, support, admins | chat, moderation, support conversations | session chat, care chat, support hub | Closed | Read-only and disabled states must be explicit; chat is not the same as the session itself. |
-| Payments, Wallet, Refunds, and Finance | Session payments, instant-booking payment purpose, package/training payments, wallet, refunds, settlements | Patients, practitioners, finance, admins | payments, wallet, refunds, settlements, financial rules | payment-return screens, wallet, payments history, settlements, ledgers | Closed | Money must stay currency-aware and backend-owned; Paymob external QA remains deferred. |
-| Admin Operations | Visibility, moderation, support, finance tools, reports, settings | Admins, support, finance | admin, moderation, support, finance ops | admin dashboards, lists, tables, review pages, settlement tools | Closed | Admin actions must be auditable and explicit. |
+| Payments, Wallet, Refunds, Payouts, and Accounting | Session payments, instant-booking payment purpose, package/training payments, wallet, refunds, individual practitioner payouts, reconciliation | Patients, practitioners, finance, admins | payments, wallet, refunds, payouts, accounting | payment-return screens, wallet, payments history, payout pages, reconciliation | Closed | Money must stay currency-aware and backend-owned. |
+| Admin Operations | Visibility, moderation, support, finance tools, reports, settings | Admins, support, finance | admin, moderation, support, finance ops | admin dashboards, lists, tables, review pages, payout and reconciliation tools | Closed | Admin actions must be auditable and explicit. |
 | Mobile App | Patient and practitioner mobile parity | Patients, practitioners | mobile-specific routing and screens | Expo patient/practitioner screens, payment-return, instant booking | Closed | Mobile should mirror the core flow, not invent a separate product contract. |
-| Content, Training, and Assessments | Articles, training enrollments, assessments, matching support | Patients, admins, content teams | content, training, assessments | content pages, enrollments, assessments | Closed / partial by feature | Useful as care-adjacent expansion; not the core booking contract. |
-| Notifications | Reminders, presence nudges, request alerts, push behavior | Patients, practitioners, admins | notifications, push settings | in-app, email, SMS, push surfaces | Planned / partial | Important for instant booking and session reminders; not fully treated as core closure here. |
+| Content, Training, and Assessments | Articles, Academy v2 learner surfaces, legacy training compatibility, assessments | Patients, admins, content teams | content, academy, training, assessments | content pages, Academy public/admin/learner surfaces, assessments | Closed / complete for Academy v2; Training stays legacy and redirect-only | Academy is the visible learning product; Training remains backend compatibility only. |
+| Notifications | Reminders, presence nudges, request alerts, push behavior | Patients, practitioners, admins | notifications, push settings | in-app, email, SMS, push surfaces | Closed / active | Operational notification service and catalog sync matter. |
 
-## Core Business Rules
-
-### Session contract implementation notes
-
-The session contract fields `presentationStatus`, `joinAvailability`, and `chatAvailability` are the authoritative source for all session UI state.
-
-Key implementation rules:
-
-- **React Query hooks for session detail** (`usePatientSession`, `usePractitionerSession`) must preserve the `SessionItem` response type explicitly. Do not let the `useQuery` return type degrade to `unknown` or `{}`. Pass the correct generic so that `sessionQuery.data` remains typed as `SessionItem`. This prevents cascade errors in consumer components that depend on `session.presentationStatus`, `session.joinAvailability`, or `session.chatAvailability`.
-- **Web and mobile must not infer join access from local clock or raw session status alone.** Only `joinAvailability.canJoin` from the backend response should control the Join CTA visibility.
-- **UI must not render raw enum values.** `presentationStatus` values like `NO_SHOW` and `UNDER_REVIEW` must be translated through the i18n system before display. The raw enum must not appear in visible user text.
-- **Adding a new `presentationStatus` value** requires updating all translation namespaces where session state copy appears: badge labels, list hints, patient detail copy, practitioner detail copy, and mobile equivalents. Ship the translations before or alongside the backend change.
-
-Phase 5A cleared a build blocker in `src/features/sessions/hooks/use-sessions.ts` where session detail hooks were missing explicit `SessionItem` generics, causing TypeScript to infer `unknown` and blocking the production build.
-
-- Backend contract fields: `presentationStatus`, `joinAvailability`, `chatAvailability`
-- Key files: `src/features/sessions/hooks/use-sessions.ts`, `messages/en/sessions.json`, `messages/ar/sessions.json`
-
-### General platform rules
+## Core business rules
 
 - The backend is the source of truth.
 - Frontend and mobile do not calculate session or instant booking prices.
 - No join before backend `joinAvailability` allows it.
 - No payment unlock before backend confirmation.
 - Instant booking requires online/present readiness, current availability, backend pricing, and no conflict.
-- The weekly schedule repeats automatically unless changed.
-- Exceptions do not delete booked sessions.
+- The availability contract is week-by-week, not legacy recurring runtime slots.
 - Money must be currency-aware at every surface.
 - User-facing copy must not expose raw enums or keys.
-- Timezone rules must stay explicit: UTC for runtime facts, IANA timezones for recurring availability, and viewer-local display only where intended.
-- Paymob provider QA is external and deferred.
+- Timezone rules must stay explicit: UTC for runtime facts, IANA timezones for recurring interpretation, and viewer-local display only where intended.
+- Localized specialty names must use raw edit fields in admin and locale-aware display helpers in public UI.
 
 ## How to test locally
 
@@ -349,7 +265,7 @@ Use the app roots, not this docs folder, for runtime checks.
 
 ### Payment and provider note
 
-- The Paymob sandbox/provider checkout may return `403 Forbidden` in the current dev setup.
+- Provider checkout may still return `403 Forbidden` in the current dev setup.
 - That is a provider-side blocker, not a platform logic change.
 - Internal return / confirmation / join-lock guards still need to be verified before external provider QA is considered complete.
 
@@ -376,9 +292,17 @@ When you are new to the repo:
 
 - [Platform overview](platform-overview.md)
 - [Users and journeys](users-and-journeys.md)
+- [Availability system](availability-system.md)
 - [Booking, sessions, and availability](booking-sessions-and-availability.md)
 - [Payments, wallet, and finance](payments-wallet-and-finance.md)
+- [Finance and payouts](finance-and-payouts.md)
+- [Practitioner onboarding](practitioner-onboarding.md)
 - [Operations and support](operations-and-support.md)
 - [Security, roles, and permissions](security-roles-and-permissions.md)
 - [Design, content, and i18n](design-content-and-i18n.md)
+- [Specialties localization](specialties-localization.md)
+- [Notifications and alerting](notifications-and-alerting.md)
+- [Accounting reconciliation](accounting-reconciliation.md)
+- [Production rollout](production-rollout.md)
+- [Removed and deprecated flows](removed-and-deprecated-flows.md)
 - [Glossary](glossary.md)

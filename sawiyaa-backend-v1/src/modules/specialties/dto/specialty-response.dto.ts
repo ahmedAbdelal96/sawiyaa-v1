@@ -7,6 +7,12 @@ export class SpecialtyCategoryResponseDto {
   @ApiProperty()
   name!: string;
 
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameEn!: string | null;
+
   @ApiProperty()
   slug!: string;
 
@@ -26,6 +32,12 @@ export class SpecialtyResponseDto {
 
   @ApiProperty({ nullable: true })
   name!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameAr!: string | null;
+
+  @ApiProperty({ nullable: true })
+  nameEn!: string | null;
 
   @ApiProperty()
   slug!: string;

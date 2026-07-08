@@ -3,16 +3,22 @@ import { AvailabilityWeekCalendarService } from './availability-week-calendar.se
 import { AvailabilityWeekMapper } from '../mappers/availability-week.mapper';
 import { AvailabilityWeekOverviewService } from './availability-week-overview.service';
 import { PractitionerAvailabilityWeekRepository } from '../repositories/practitioner-availability-week.repository';
+import { AvailabilitySlotEditabilityService } from './availability-slot-editability.service';
 
 describe('AvailabilityWeekOverviewService', () => {
   const availabilityWeekRepository = {
     findManyByPractitionerAndWeekStarts: jest.fn(),
   } as unknown as PractitionerAvailabilityWeekRepository;
 
+  const availabilitySlotEditabilityService = {
+    calculateEditability: jest.fn(async () => new Map()),
+  } as unknown as AvailabilitySlotEditabilityService;
+
   const service = new AvailabilityWeekOverviewService(
     availabilityWeekRepository,
     new AvailabilityWeekCalendarService(),
     new AvailabilityWeekMapper(),
+    availabilitySlotEditabilityService,
   );
 
   beforeEach(() => {

@@ -4,7 +4,7 @@ import { type KeyboardEvent, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -12,6 +12,10 @@ import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
 import Checkbox from "@/components/form/input/Checkbox";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 import { useCreateMatchingSession } from "../hooks/use-guided-matching";
 import type {
   CreateMatchingSessionRequest,
@@ -232,6 +236,7 @@ const dynamicIcons = [
 
 export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchingStartScreenProps) {
   const t = useTranslations("guided-matching");
+  const locale = useLocale();
   const router = useRouter();
   const createSession = useCreateMatchingSession();
   const [stepIndex, setStepIndex] = useState(0);
@@ -310,10 +315,16 @@ export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchin
         new Map(
           specialties
             .filter((item) => item.isActive && item.category)
-            .map((item) => [item.category!.slug, { slug: item.category!.slug, title: item.category!.name }]),
+            .map((item) => [
+              item.category!.slug,
+              {
+                slug: item.category!.slug,
+                title: getLocalizedSpecialtyCategoryName(item.category!, locale),
+              },
+            ]),
         ).values(),
       ),
-    [specialties],
+    [locale, specialties],
   );
 
   const specialtyOptions = useMemo(
@@ -322,11 +333,13 @@ export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchin
         .filter((item) => item.isActive)
         .map((item) => ({
           slug: item.slug,
-          title: item.name ?? item.slug,
+          title: getLocalizedSpecialtyName(item, locale),
           categorySlug: item.category?.slug ?? "",
-          categoryTitle: item.category?.name ?? "",
+          categoryTitle: item.category
+            ? getLocalizedSpecialtyCategoryName(item.category, locale)
+            : "",
         })),
-    [specialties],
+    [locale, specialties],
   );
 
   const selectedCategory = useWatch({

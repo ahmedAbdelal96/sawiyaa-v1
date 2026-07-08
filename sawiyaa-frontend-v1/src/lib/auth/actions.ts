@@ -45,6 +45,7 @@ interface ApiUser {
   firstName?: string;
   lastName?: string;
   companyId?: string | null;
+  timezone?: string | null;
 }
 
 interface ApiTenant {
@@ -67,6 +68,7 @@ interface ProcessedUser {
   firstName: string;
   lastName: string;
   role: string;
+  timezone?: string | null;
 }
 
 interface ProcessedTenant {
@@ -122,6 +124,7 @@ function normalizeAuthPayload(
     firstName,
     lastName,
     role: body.user.role || body.user.roles?.[0] || "",
+    timezone: body.user.timezone ?? null,
   };
 
   const tenant: ProcessedTenant = {

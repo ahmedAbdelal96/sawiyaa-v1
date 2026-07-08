@@ -1,6 +1,6 @@
 # Care Experience Intelligence Slice 5: Deeper Continuity and Journey Composition
 
-This slice strengthens journey composition by combining continuity stage, training/activity state, operational blockers, and assessment-derived recommendations into deterministic next-step output.
+This slice strengthens journey composition by combining continuity stage, academy/activity state, operational blockers, and assessment-derived recommendations into deterministic next-step output.
 
 ## Continuity scenarios covered
 
@@ -8,14 +8,14 @@ This slice strengthens journey composition by combining continuity stage, traini
 - Payment-blocked continuity (`PAYMENT_BLOCKED`)
 - Upcoming-session continuity (`UPCOMING_SESSION`)
 - Returning continuity (`RETURNING`)
-- Active care/training continuity (`ACTIVE_CARE`)
+- Active care/academy continuity (`ACTIVE_CARE`)
 
 ## Composition behavior
 
 - Journey now composes recommendations from:
   - continuity stage
   - pending payment/upcoming session/support state
-  - active training signal
+  - active academy signal
   - assessment-derived recommendation items
 - Ordering remains deterministic through shared precedence.
 - Dedupe is applied after ordering so highest-priority same-type item is preserved.

@@ -264,7 +264,9 @@
         "SESSION_NOT_JOINABLE_STATUS": "This session cannot be joined in its current status.",
         "SESSION_NOT_VIDEO_MODE": "Live session access is only available for video sessions.",
         "SESSION_TIME_WINDOW_NOT_OPEN": "Session access is not open yet. Try again closer to the scheduled time.",
-        "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment."
+        "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment.",
+        "SESSION_JOIN_WINDOW_CLOSED": "The join window has closed for this session.",
+        "SESSION_ROOM_CLOSED": "This video room is already closed."
       },
       "status": {
         "DRAFT": "This session is still being prepared.",
@@ -280,6 +282,35 @@
         "EXPIRED": "This expired session no longer has live access.",
         "REFUND_PENDING": "This session is no longer active while the refund is being processed.",
         "REFUNDED": "This refunded session no longer has live access."
+      }
+    },
+    "roomClose": {
+      "action": "Close room",
+      "closing": "Closing room...",
+      "cancel": "Keep room open",
+      "modal": {
+        "beforeTitle": "Close the video room now?",
+        "beforeNote": "The session has started, but it has not reached the scheduled end yet. Please give a short reason before closing the room.",
+        "afterTitle": "Close the video room?",
+        "afterNote": "The scheduled end time has passed. You can close the room with a simple confirmation now."
+      },
+      "reasonLabel": "Reason for closing",
+      "reasonPlaceholder": "Example: The patient left early",
+      "reasonHelp": "A short reason is required before the scheduled end time.",
+      "afterEndHelper": "The scheduled end time has passed, so a simple confirmation is enough.",
+      "success": "The video room is now closed. No one can rejoin it.",
+      "alreadyClosed": "The video room was already closed.",
+      "support": {
+        "heading": "Need help with this session?",
+        "note": "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
+        "action": "Contact support"
+      },
+      "errors": {
+        "onlyAfterStart": "You can close the room only after the session has started.",
+        "reasonRequired": "Please enter a short reason before closing the room.",
+        "notAllowed": "This session cannot be closed right now.",
+        "providerFailed": "We could not close the video room in the provider service. Please try again.",
+        "generic": "We could not close the video room right now. Please try again."
       }
     },
     "liveFlow": {
@@ -727,8 +758,10 @@
           "SESSION_NOT_JOINABLE_STATUS": "This session cannot be joined in its current status.",
           "SESSION_NOT_VIDEO_MODE": "Live session access is only available for video sessions.",
           "SESSION_TIME_WINDOW_NOT_OPEN": "Session access is not open yet. Try again closer to the scheduled time.",
-          "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment."
-        },
+        "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment.",
+        "SESSION_JOIN_WINDOW_CLOSED": "The join window has closed for this session.",
+        "SESSION_ROOM_CLOSED": "This video room is already closed."
+      },
         "status": {
           "DRAFT": "This session is still being prepared.",
           "PENDING_PAYMENT": "The patient still needs to complete payment before session access becomes available.",

@@ -14,6 +14,7 @@ export function getMessagesPath(
   params?: {
     lane?: MessagesLane;
     id?: string;
+    relatedSessionId?: string;
   },
 ) {
   const prefix = locale ? `/${locale}` : "";
@@ -32,6 +33,10 @@ export function getMessagesPath(
 
   if (params?.id) {
     search.set("id", params.id);
+  }
+
+  if (params?.relatedSessionId) {
+    search.set("relatedSessionId", params.relatedSessionId);
   }
 
   const query = search.toString();

@@ -18,7 +18,7 @@ It is intentionally not responsible for:
 
 - auth flows
 - users summary endpoints
-- sessions, payments, chat, reviews, training
+- sessions, payments, chat, reviews, academy
 - medical records or intake forms
 - practitioner-facing logic
 
@@ -104,6 +104,6 @@ It is intentionally not responsible for:
 
 - auth flows and token/session management
 - practitioner onboarding or applications
-- support, chat, content, reviews, training
+- support, chat, content, reviews, academy
 - sessions, payments, wallets
 - advanced preferences or intake workflows

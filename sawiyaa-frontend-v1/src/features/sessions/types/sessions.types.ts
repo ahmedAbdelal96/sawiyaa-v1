@@ -74,7 +74,8 @@ export type SessionJoinBlockedReason =
   | "SESSION_NOT_VIDEO_MODE"
   | "SESSION_TIME_WINDOW_NOT_OPEN"
   | "SESSION_RUNTIME_NOT_PREPARED"
-  | "SESSION_JOIN_WINDOW_CLOSED";
+  | "SESSION_JOIN_WINDOW_CLOSED"
+  | "SESSION_ROOM_CLOSED";
 
 export type SessionChatAvailabilityReason =
   | "ALLOWED"
@@ -252,6 +253,22 @@ export type SessionRuntimeItem = {
 
 export type SessionRuntimeResponseData = {
   item: SessionRuntimeItem;
+};
+
+export type SessionRoomCloseItem = {
+  sessionId: string;
+  provider: SessionProvider;
+  isClosed: boolean;
+  wasAlreadyClosed: boolean;
+  roomName: string | null;
+  roomUrl: string | null;
+  closedAt: string | null;
+  closeReason: string | null;
+  closeNote: string | null;
+};
+
+export type SessionRoomCloseResponseData = {
+  item: SessionRoomCloseItem;
 };
 
 export type SessionCancellationPreviewOutcomeType =

@@ -45,8 +45,6 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
           'payments.refund-succeeded',
           'sessions.session-confirmed',
           'sessions.session-confirmed-practitioner',
-          'training.schedule-reminder',
-          'training.enrollment-confirmed',
         ],
         excludedTypePrefixes: ['auth.'],
         statuses: [
@@ -75,8 +73,6 @@ describe('ListAdminOperationalNotificationsUseCase', () => {
           'payments.refund-succeeded',
           'sessions.session-confirmed',
           'sessions.session-confirmed-practitioner',
-          'training.schedule-reminder',
-          'training.enrollment-confirmed',
         ],
         excludedTypePrefixes: ['auth.'],
         statuses: [NotificationStatus.FAILED],

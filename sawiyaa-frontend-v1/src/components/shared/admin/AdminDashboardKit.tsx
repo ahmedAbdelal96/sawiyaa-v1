@@ -465,10 +465,10 @@ export function AdminTableSection({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light/70 px-5 py-3.5">
           <div className="min-w-0">
             {title ? (
-              <p className="text-sm font-semibold text-text-primary">{title}</p>
+              <div className="text-sm font-semibold text-text-primary">{title}</div>
             ) : null}
             {subtitle ? (
-              <p className="mt-0.5 text-xs text-text-secondary">{subtitle}</p>
+              <div className="mt-0.5 text-xs text-text-secondary">{subtitle}</div>
             ) : null}
           </div>
           {actions ? (

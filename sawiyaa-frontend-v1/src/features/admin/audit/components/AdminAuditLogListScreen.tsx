@@ -40,7 +40,6 @@ const CATEGORY_FILTERS: AdminAuditCategory[] = [
   "SUPPORT",
   "CHAT",
   "SYSTEM",
-  "TRAINING",
   "MARKETING",
 ];
 
@@ -55,7 +54,6 @@ type AuditTrackingPreset =
   | "FINANCIAL"
   | "SESSIONS"
   | "SUPPORT"
-  | "TRAINING"
   | "ADMIN_ACTIONS"
   | "SYSTEM";
 
@@ -112,15 +110,6 @@ const TRACKING_PRESETS: TrackingPresetConfig[] = [
     labelAr: "الدعم والمساعدة",
     filters: {
       category: "SUPPORT",
-    },
-  },
-  {
-    id: "TRAINING",
-    labelEn: "Training",
-    labelAr: "التدريب والأكاديمية",
-    filters: {
-      eventFamily: "training",
-      category: "TRAINING",
     },
   },
   {

@@ -35,8 +35,10 @@ describe('MarkPaymentFailedUseCase', () => {
         .fn()
         .mockReturnValue('PAYMENT_FAILED'),
     };
-    const orchestrateTrainingEnrollmentPaymentStatusService = {
+    const orchestrateAcademyProgramEnrollmentPaymentStatusService = {
       markEnrollmentPaymentFailed: jest.fn().mockResolvedValue({}),
+      markEnrollmentPaymentExpired: jest.fn().mockResolvedValue({}),
+      markEnrollmentConfirmedFromPayment: jest.fn().mockResolvedValue({}),
     };
     const paymentMapper = {
       toViewModel: jest.fn().mockReturnValue({ id: 'payment_1' }),
@@ -59,7 +61,7 @@ describe('MarkPaymentFailedUseCase', () => {
       paymentRepository as never,
       validatePaymentStatusTransitionService as never,
       orchestrateSessionPaymentStatusService as never,
-      orchestrateTrainingEnrollmentPaymentStatusService as never,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService as never,
       paymentMapper as never,
       customerWalletAccountingService as never,
       operationalNotificationService as never,
@@ -72,7 +74,7 @@ describe('MarkPaymentFailedUseCase', () => {
       operationalNotificationService,
       reconcilePackagePurchasePaymentUseCase,
       customerWalletAccountingService,
-      orchestrateTrainingEnrollmentPaymentStatusService,
+      orchestrateAcademyProgramEnrollmentPaymentStatusService,
     };
   }
 
@@ -111,7 +113,7 @@ describe('MarkPaymentFailedUseCase', () => {
       setup.customerWalletAccountingService.releaseReservationForPayment,
     ).not.toHaveBeenCalled();
     expect(
-      setup.orchestrateTrainingEnrollmentPaymentStatusService
+      setup.orchestrateAcademyProgramEnrollmentPaymentStatusService
         .markEnrollmentPaymentFailed,
     ).not.toHaveBeenCalled();
   });

@@ -37,6 +37,7 @@ import { SessionAccessPolicy } from './policies/session-access.policy';
 import { ExpireUnpaidSessionSweeperService } from './services/expire-unpaid-session-sweeper.service';
 import { CancelSessionUseCase } from './use-cases/cancel-session.use-case';
 import { CreateScheduledSessionUseCase } from './use-cases/create-scheduled-session.use-case';
+import { CloseSessionVideoRoomByPractitionerUseCase } from './use-cases/close-session-video-room-by-practitioner.use-case';
 import { ExpireUnpaidSessionUseCase } from './use-cases/expire-unpaid-session.use-case';
 import { GetMyPatientSessionsUseCase } from './use-cases/get-my-patient-sessions.use-case';
 import { GetMyPatientSessionSummaryUseCase } from './use-cases/get-my-patient-session-summary.use-case';
@@ -102,6 +103,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
     ValidateSessionScheduleCompatibilityService,
     ValidateSessionConflictsService,
     CreateScheduledSessionUseCase,
+    CloseSessionVideoRoomByPractitionerUseCase,
     GetMyPatientSessionsUseCase,
     GetMyPatientSessionSummaryUseCase,
     GetMyPractitionerSessionsUseCase,

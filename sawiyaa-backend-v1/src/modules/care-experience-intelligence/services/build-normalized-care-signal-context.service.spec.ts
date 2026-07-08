@@ -36,7 +36,7 @@ describe('BuildNormalizedCareSignalContextService', () => {
       hasRecentMatchingSession: true,
       hasOpenSupportTicket: false,
       latestSupportTicketStatus: null,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
     });
 
     expect(result.profile.countryCode).toBe('EG');
@@ -64,7 +64,7 @@ describe('BuildNormalizedCareSignalContextService', () => {
       hasRecentMatchingSession: true,
       hasOpenSupportTicket: true,
       latestSupportTicketStatus: SupportTicketStatus.OPEN,
-      hasActiveTrainingEnrollment: true,
+      hasActiveAcademyEnrollment: true,
     });
 
     expect(result.continuity.stage).toBe('PAYMENT_BLOCKED');
@@ -90,7 +90,7 @@ describe('BuildNormalizedCareSignalContextService', () => {
       hasRecentMatchingSession: false,
       hasOpenSupportTicket: false,
       latestSupportTicketStatus: null,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
     };
 
     expect(service.buildFromSnapshot(snapshot)).toEqual(
@@ -112,7 +112,7 @@ describe('BuildNormalizedCareSignalContextService', () => {
       hasRecentMatchingSession: false,
       hasOpenSupportTicket: false,
       latestSupportTicketStatus: null,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
     });
 
     const result = await service.buildFromRepository({

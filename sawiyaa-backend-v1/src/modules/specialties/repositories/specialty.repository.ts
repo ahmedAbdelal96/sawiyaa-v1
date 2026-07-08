@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ContentLocale, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 
@@ -16,30 +16,135 @@ export class SpecialtyRepository {
   private readonly categorySelect = {
     id: true,
     name: true,
+    nameAr: true,
+    nameEn: true,
     slug: true,
     description: true,
     isActive: true,
     sortOrder: true,
+    createdAt: true,
+    updatedAt: true,
+  } as const;
+
+  private readonly specialtySelect = {
+    id: true,
+    slug: true,
+    categoryId: true,
+    nameAr: true,
+    nameEn: true,
+    sortOrder: true,
+    isActive: true,
+    createdAt: true,
+    updatedAt: true,
   } as const;
 
   private getDb(tx?: Prisma.TransactionClient): DbClient {
     return tx ?? this.prisma;
   }
 
+  private buildSearchFilter(search?: string) {
+    const normalizedSearch = search?.trim();
+    if (!normalizedSearch) return undefined;
+
+    return {
+      OR: [
+        {
+          slug: {
+            contains: normalizedSearch,
+            mode: 'insensitive' as const,
+          },
+        },
+        {
+          nameAr: {
+            contains: normalizedSearch,
+            mode: 'insensitive' as const,
+          },
+        },
+        {
+          nameEn: {
+            contains: normalizedSearch,
+            mode: 'insensitive' as const,
+          },
+        },
+        {
+          translations: {
+            some: {
+              title: {
+                contains: normalizedSearch,
+                mode: 'insensitive' as const,
+              },
+            },
+          },
+        },
+        {
+          category: {
+            OR: [
+              {
+                name: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                nameAr: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                nameEn: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                slug: {
+                  contains: normalizedSearch,
+                  mode: 'insensitive' as const,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+  }
+
+  private buildSelectArgs(locale?: SupportedLocale) {
+    return {
+      ...this.specialtySelect,
+      category: {
+        select: this.categorySelect,
+      },
+      translations: {
+        where: locale
+          ? {
+              locale: {
+                in: [locale, ContentLocale.en],
+              },
+            }
+          : {
+              locale: {
+                in: [ContentLocale.ar, ContentLocale.en],
+              },
+            },
+        orderBy: {
+          locale: 'asc' as const,
+        },
+        select: {
+          locale: true,
+          title: true,
+          description: true,
+        },
+      },
+    } as const;
+  }
+
   listActive(locale: SupportedLocale, search?: string) {
     return this.prisma.specialty.findMany({
       where: {
         isActive: true,
-        translations: search
-          ? {
-              some: {
-                title: {
-                  contains: search.trim(),
-                  mode: 'insensitive',
-                },
-              },
-            }
-          : undefined,
+        ...this.buildSearchFilter(search),
       },
       orderBy: [
         { category: { sortOrder: 'asc' } },
@@ -47,69 +152,20 @@ export class SpecialtyRepository {
         { sortOrder: 'asc' },
         { createdAt: 'asc' },
       ],
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs(locale),
     });
   }
 
   listForAdmin(locale: SupportedLocale, search?: string) {
     return this.prisma.specialty.findMany({
-      where: {
-        translations: search
-          ? {
-              some: {
-                title: {
-                  contains: search.trim(),
-                  mode: 'insensitive',
-                },
-              },
-            }
-          : undefined,
-      },
+      where: this.buildSearchFilter(search),
       orderBy: [
         { category: { sortOrder: 'asc' } },
         { category: { createdAt: 'asc' } },
         { sortOrder: 'asc' },
         { createdAt: 'asc' },
       ],
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs(locale),
     });
   }
 
@@ -137,52 +193,14 @@ export class SpecialtyRepository {
           },
         ],
       },
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs(locale),
     });
   }
 
   findById(id: string, locale: SupportedLocale, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).specialty.findUnique({
       where: { id },
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs(locale),
     });
   }
 
@@ -195,48 +213,39 @@ export class SpecialtyRepository {
 
   create(input: {
     slug: string;
+    nameAr: string;
+    nameEn: string;
     categoryId?: string | null;
     sortOrder: number;
     isActive: boolean;
-    locale: SupportedLocale;
-    title: string;
     description?: string | null;
   }) {
     return this.prisma.specialty.create({
       data: {
         slug: input.slug,
         categoryId: input.categoryId ?? null,
+        nameAr: input.nameAr,
+        nameEn: input.nameEn,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
         translations: {
-          create: {
-            locale: input.locale,
-            title: input.title,
-            description: input.description ?? null,
-            slug: input.slug,
-          },
-        },
-      },
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [input.locale, 'en'],
+          create: [
+            {
+              locale: 'ar',
+              title: input.nameAr,
+              description: input.description ?? null,
+              slug: input.slug,
             },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
+            {
+              locale: 'en',
+              title: input.nameEn,
+              description: input.description ?? null,
+              slug: input.slug,
+            },
+          ],
         },
       },
+      select: this.buildSelectArgs('ar'),
     });
   }
 
@@ -244,16 +253,12 @@ export class SpecialtyRepository {
     id: string,
     input: {
       slug?: string;
+      nameAr?: string;
+      nameEn?: string;
       categoryId?: string | null;
       sortOrder?: number;
       isActive?: boolean;
-      locale: SupportedLocale;
-      translation?: {
-        createTitle: string;
-        updateTitle?: string;
-        updateDescription?: string | null;
-        translationSlug?: string;
-      };
+      description?: string | null;
     },
   ) {
     return this.prisma.specialty.update({
@@ -261,52 +266,60 @@ export class SpecialtyRepository {
       data: {
         slug: input.slug,
         categoryId: input.categoryId,
+        nameAr: input.nameAr,
+        nameEn: input.nameEn,
         sortOrder: input.sortOrder,
         isActive: input.isActive,
-        translations: input.translation
-          ? {
-              upsert: {
-                where: {
-                  specialtyId_locale: {
-                    specialtyId: id,
-                    locale: input.locale,
+        translations:
+          input.nameAr !== undefined ||
+          input.nameEn !== undefined ||
+          input.description !== undefined ||
+          input.slug !== undefined
+            ? {
+                upsert: [
+                  {
+                    where: {
+                      specialtyId_locale: {
+                        specialtyId: id,
+                        locale: 'ar',
+                      },
+                    },
+                    create: {
+                      locale: 'ar',
+                      title: input.nameAr ?? '',
+                      description: input.description ?? null,
+                      slug: input.slug ?? '',
+                    },
+                    update: {
+                      title: input.nameAr,
+                      description: input.description,
+                      slug: input.slug,
+                    },
                   },
-                },
-                create: {
-                  locale: input.locale,
-                  title: input.translation.createTitle,
-                  description: input.translation.updateDescription ?? null,
-                  slug: input.translation.translationSlug ?? input.slug ?? '',
-                },
-                update: {
-                  title: input.translation.updateTitle,
-                  description: input.translation.updateDescription,
-                  slug: input.translation.translationSlug,
-                },
-              },
-            }
-          : undefined,
+                  {
+                    where: {
+                      specialtyId_locale: {
+                        specialtyId: id,
+                        locale: 'en',
+                      },
+                    },
+                    create: {
+                      locale: 'en',
+                      title: input.nameEn ?? '',
+                      description: input.description ?? null,
+                      slug: input.slug ?? '',
+                    },
+                    update: {
+                      title: input.nameEn,
+                      description: input.description,
+                      slug: input.slug,
+                    },
+                  },
+                ],
+              }
+            : undefined,
       },
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [input.locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs('ar'),
     });
   }
 
@@ -314,26 +327,7 @@ export class SpecialtyRepository {
     return this.prisma.specialty.update({
       where: { id },
       data: { isActive },
-      include: {
-        category: {
-          select: this.categorySelect,
-        },
-        translations: {
-          where: {
-            locale: {
-              in: [locale, 'en'],
-            },
-          },
-          orderBy: {
-            locale: 'asc',
-          },
-          select: {
-            locale: true,
-            title: true,
-            description: true,
-          },
-        },
-      },
+      select: this.buildSelectArgs(locale),
     });
   }
 }

@@ -61,7 +61,6 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { SupportModule } from './modules/support/support.module';
 import { AcademyModule } from './modules/academy/academy.module';
-import { TrainingModule } from './modules/training/training.module';
 import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corporate-sponsorship.module';
@@ -123,7 +122,6 @@ import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corp
     SpecialtiesModule,
     SupportModule,
     AcademyModule,
-    TrainingModule,
     UsersModule,
     ReportsModule,
     CorporateSponsorshipModule,

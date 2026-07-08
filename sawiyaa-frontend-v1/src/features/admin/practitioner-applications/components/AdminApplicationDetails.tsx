@@ -8,6 +8,10 @@ import { isAppError } from "@/lib/api/errors";
 import { API_BASE_URL } from "@/config/api";
 import { getLocalizedCountryOptions } from "@/features/practitioners/constants/country-options";
 import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
+import {
   getCatalogItemCountryCodes,
   resolveBankLabel,
   resolveWalletProviderLabel,
@@ -181,11 +185,35 @@ function formatPayoutMethodLabel(
 }
 
 function formatSpecialtyList(
-  specialties: Array<{ specialtyId: string; slug: string; title: string | null; isPrimary: boolean }>,
+  specialties: Array<{
+    specialtyId: string;
+    slug: string;
+    title: string | null;
+    name: string | null;
+    nameAr: string | null;
+    nameEn: string | null;
+    isPrimary: boolean;
+  }>,
+  locale: string,
   primaryLabel: string,
 ) {
   if (specialties.length === 0) return "-";
-  return specialties.map((item) => `${item.title ?? item.slug}${item.isPrimary ? ` (${primaryLabel})` : ""}`).join("، ");
+  return specialties
+    .map((item) => {
+      const label =
+        item.title ??
+        getLocalizedSpecialtyName(
+          {
+            name: item.name,
+            nameAr: item.nameAr,
+            nameEn: item.nameEn,
+            slug: item.slug,
+          },
+          locale,
+        );
+      return `${label}${item.isPrimary ? ` (${primaryLabel})` : ""}`;
+    })
+    .join("، ");
 }
 
 function getReadinessRecommendation(
@@ -820,8 +848,23 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               { label: t("applicationDetails.profile.type"), value: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-" },
               { label: t("applicationDetails.profile.title"), value: getReadableValue(profile.professionalTitle) },
               { label: t("applicationDetails.profile.years"), value: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-" },
-              { label: t("applicationDetails.profile.primarySpecialtyCategory"), value: getReadableValue(profile.primarySpecialtyCategoryId) },
-              { label: t("applicationDetails.profile.specialties"), value: formatSpecialtyList(profile.specialties, t("applicationDetails.profile.primary")) },
+              {
+                label: t("applicationDetails.profile.primarySpecialtyCategory"),
+                value: profile.primarySpecialtyCategory
+                  ? getLocalizedSpecialtyCategoryName(
+                      profile.primarySpecialtyCategory,
+                      locale,
+                    )
+                  : getReadableValue(profile.primarySpecialtyCategoryId),
+              },
+              {
+                label: t("applicationDetails.profile.specialties"),
+                value: formatSpecialtyList(
+                  profile.specialties,
+                  locale,
+                  t("applicationDetails.profile.primary"),
+                ),
+              },
               { label: t("applicationDetails.profile.languages"), value: formatLanguageList(locale, profile.languages) },
             ]}
             bio={getReadableValue(profile.bio)}

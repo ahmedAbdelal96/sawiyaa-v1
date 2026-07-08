@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import { formatPublicMoney } from "../lib/public-pricing";
+import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import type {
   PractitionerFeeBounds,
   PractitionerFiltersMetadata,
@@ -361,7 +362,18 @@ export default function FilterControls({
       .filter((item) =>
         currentSpecialtyCategorySlug ? item.category?.slug === currentSpecialtyCategorySlug : true,
       )
-      .map((item) => ({ value: item.slug, label: item.name })),
+      .map((item) => ({
+        value: item.slug,
+        label: getLocalizedSpecialtyName(
+          {
+            name: item.name,
+            nameAr: item.nameAr ?? null,
+            nameEn: item.nameEn ?? null,
+            slug: item.slug,
+          },
+          locale,
+        ),
+      })),
   ];
   const languageOptions = [
     { value: "", label: t("filter.allLanguages") },

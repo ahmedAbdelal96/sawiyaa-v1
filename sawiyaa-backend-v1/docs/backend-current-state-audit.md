@@ -9,7 +9,7 @@ Backend is in a strong production-meaningful baseline for the current guided-car
 Current truth from code:
 
 - Core domains are implemented with real controllers/use-cases and contract-oriented DTOs.
-- Training, settings, and general chat are implemented as backend modules (not `.gitkeep`-only).
+- Academy, settings, and general chat are implemented as backend modules (not `.gitkeep`-only).
 - Payment providers include Stripe and Paymob adapters with webhook handling; parity still depends on environment enablement and operational hardening.
 - Main remaining debt is documentation alignment and additive depth decisions, not missing core modules.
 
@@ -44,7 +44,7 @@ Primary code evidence:
 - Public availability/presence: `/public/practitioners/:slug/availability`, `/public/practitioners/:slug/presence`
 - Public reviews/trust: `/public/practitioners/:slug/reviews`, `/trust-summary`, `/trust-block`
 - Public specialties routes and public articles routes
-- Public trainings: `/trainings`, `/trainings/:slug`
+- Training public routes have been retired from the active backend surface.
 
 ### 3.4 Patient / Practitioner / Admin Operational Domains
 
@@ -81,7 +81,7 @@ Primary code evidence:
 - Admin specialties: `/admin/specialties/*`
 - Admin articles + article categories
 - Admin session runtime operations routes
-- Admin trainings management: `/admin/trainings/*` (+ schedules/enrollments attendance operations)
+- Academy admin management: `/admin/academy/programs/*`
 
 ### 3.7 Settings and General Chat (Backend-Real, Product-Deferred in Frontend)
 
@@ -96,7 +96,7 @@ They remain deferred in frontend product scope by explicit choice.
 - Contract-first modular architecture with thin controllers and use-case boundaries.
 - Broad controller coverage across public/patient/practitioner/admin operational lanes.
 - Real machine-readable error strategy and normalized success/error envelopes.
-- Training and financial operations are no longer conceptual; both have active API surfaces.
+- Financial operations are no longer conceptual; Academy operations are active and Training has been retired.
 
 ## 5) Partial / Intentionally Narrow Areas
 
@@ -115,7 +115,7 @@ Backend has contracts; frontend deferral is a product-scope decision.
 
 No longer accurate and now corrected:
 
-- "training module not started / `.gitkeep` only"
+- "training module not started / `.gitkeep` only" (historical note only)
 - "settings module not started"
 - "chat module not started"
 - "Paymob webhook/use-case not implemented"

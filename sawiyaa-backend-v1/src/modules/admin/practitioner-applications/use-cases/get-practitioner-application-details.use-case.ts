@@ -9,6 +9,7 @@ import { AdminPractitionerProfileRepository } from '../repositories/admin-practi
 import { AdminPractitionerSpecialtyRepository } from '../repositories/admin-practitioner-specialty.repository';
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
 import { AdminUserRepository } from '../repositories/admin-user.repository';
+import type { AdminSpecialtyCategorySummaryViewModel } from '../types/practitioner-applications-admin.types';
 import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 
@@ -75,6 +76,22 @@ export class GetPractitionerApplicationDetailsUseCase {
     const specialtyMap = new Map(
       specialties.map((item) => [item.id, item] as const),
     );
+    const categoryMap = new Map(
+      specialties
+        .map((item) => item.category)
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .map((item) => [item.id, item] as const),
+    );
+    const normalizeCategory = (
+      category: (typeof categoryMap extends Map<string, infer TValue> ? TValue : never) | null,
+    ): AdminSpecialtyCategorySummaryViewModel | null =>
+      category
+        ? {
+            ...category,
+            nameAr: null,
+            nameEn: null,
+          }
+        : null;
 
     const snapshot = (application.submissionSnapshot ?? null) as Record<
       string,
@@ -98,6 +115,18 @@ export class GetPractitionerApplicationDetailsUseCase {
         slug: specialty?.slug ?? '',
         title: specialty
           ? this.mapper.pickLocalizedTitle(specialty.translations, input.locale)
+          : null,
+        name: null,
+        nameAr: null,
+        nameEn: null,
+        category: specialty?.category
+          ? {
+              id: specialty.category.id,
+              slug: specialty.category.slug,
+              name: specialty.category.name,
+              nameAr: null,
+              nameEn: null,
+            }
           : null,
         isPrimary: link.isPrimary,
       };
@@ -131,6 +160,9 @@ export class GetPractitionerApplicationDetailsUseCase {
       bio: profile.bio ?? null,
       yearsOfExperience: profile.yearsOfExperience ?? null,
       primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
+      primarySpecialtyCategory: profile.primarySpecialtyCategoryId
+        ? normalizeCategory(categoryMap.get(profile.primarySpecialtyCategoryId) ?? null)
+        : null,
       pricing: {
         session30: {
           egp: profile.sessionPrice30Egp
@@ -202,6 +234,14 @@ export class GetPractitionerApplicationDetailsUseCase {
       primarySpecialtyCategoryId:
         snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
         liveProfile.primarySpecialtyCategoryId,
+      primarySpecialtyCategory:
+        normalizeCategory(
+          categoryMap.get(
+          snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
+            liveProfile.primarySpecialtyCategoryId ??
+            '',
+          ) ?? liveProfile.primarySpecialtyCategory,
+        ),
       instantBookingPrice30Egp:
         snapshotProfile?.instantBookingPrice30Egp ?? liveProfile.instantBookingPrice30Egp,
       instantBookingPrice30Usd:
@@ -213,7 +253,48 @@ export class GetPractitionerApplicationDetailsUseCase {
       pricing: snapshotProfile?.pricing ?? liveProfile.pricing,
       languages: snapshotLanguageCodes ?? liveProfile.languages,
       specialties:
-        snapshotSpecialtySelection?.specialties ?? liveProfile.specialties,
+        (Array.isArray(snapshotSpecialtySelection?.specialties)
+          ? snapshotSpecialtySelection.specialties.map(
+              (item: {
+                specialtyId?: unknown;
+                slug?: unknown;
+                title?: unknown;
+                isPrimary?: unknown;
+              }) => {
+                const specialtyId =
+                  typeof item?.specialtyId === 'string' ? item.specialtyId : '';
+                const catalogSpecialty = specialtyMap.get(specialtyId);
+                return {
+                  specialtyId,
+                  slug:
+                    catalogSpecialty?.slug ??
+                    (typeof item?.slug === 'string' ? item.slug : ''),
+                  title:
+                    catalogSpecialty
+                      ? this.mapper.pickLocalizedTitle(
+                          catalogSpecialty.translations,
+                          input.locale,
+                        )
+                      : typeof item?.title === 'string'
+                        ? item.title
+                        : null,
+                  name: null,
+                  nameAr: null,
+                  nameEn: null,
+                  category: catalogSpecialty?.category
+                    ? {
+                        id: catalogSpecialty.category.id,
+                        slug: catalogSpecialty.category.slug,
+                        name: catalogSpecialty.category.name,
+                        nameAr: null,
+                        nameEn: null,
+                      }
+                    : null,
+                  isPrimary: Boolean(item?.isPrimary),
+                };
+              },
+            )
+          : null) ?? liveProfile.specialties,
     };
 
     const requestedPayoutDestination = snapshotPayoutDestination

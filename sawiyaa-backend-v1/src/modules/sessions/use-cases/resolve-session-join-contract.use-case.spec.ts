@@ -2,6 +2,10 @@ import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { ResolveSessionJoinContractUseCase } from './resolve-session-join-contract.use-case';
 
 describe('ResolveSessionJoinContractUseCase', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   const baseSession = {
     id: 'session_1',
     status: SessionStatus.UPCOMING,
@@ -11,6 +15,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
     provider: SessionProvider.DAILY,
     providerRoomId: 'room_1',
     providerSessionRef: 'https://room.daily.co',
+    videoRoomClosedAt: null,
+    videoRoomCloseReason: null,
+    videoRoomCloseNote: null,
     patient: {
       id: 'patient_1',
       user: { displayName: 'Patient One' },
@@ -33,6 +40,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     session?: any;
     patientId?: string;
     provider?: SessionProvider;
+    hasPriorJoinEvidence?: boolean;
   }) {
     const createdEvents: Array<{ eventType: string; actorUserId: string }> = [];
     const prisma = {
@@ -51,6 +59,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
         createdEvents.push(data);
         return Promise.resolve({});
       }),
+      hasJoinAllowanceOrAttendanceBefore: jest
+        .fn()
+        .mockResolvedValue(overrides?.hasPriorJoinEvidence ?? false),
     };
     const sessionPatientRepository = {
       findByUserId: jest
@@ -243,5 +254,95 @@ describe('ResolveSessionJoinContractUseCase', () => {
     ).rejects.toMatchObject({
       response: { error: 'SESSION_ACCESS_DENIED' },
     });
+  });
+
+  it('blocks first-time late join after scheduledEndAt when no prior join evidence exists', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-02T11:05:00.000Z'));
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_JOIN_WINDOW_CLOSED',
+      session: {
+        ...baseSession,
+        status: SessionStatus.IN_PROGRESS,
+      },
+      hasPriorJoinEvidence: false,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(false);
+    expect(result.item.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
+  it('allows post-end reconnect within grace for a user with prior join evidence', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-02T11:05:00.000Z'));
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_JOIN_WINDOW_CLOSED',
+      session: {
+        ...baseSession,
+        status: SessionStatus.IN_PROGRESS,
+      },
+      hasPriorJoinEvidence: true,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(true);
+    expect(result.item.blockedReason).toBeNull();
+    expect(result.item.expiresAt).toBe('2026-04-02T11:10:00.000Z');
+  });
+
+  it('blocks post-end reconnect after grace even with prior join evidence', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-02T11:11:00.000Z'));
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_JOIN_WINDOW_CLOSED',
+      session: {
+        ...baseSession,
+        status: SessionStatus.IN_PROGRESS,
+      },
+      hasPriorJoinEvidence: true,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(false);
+    expect(result.item.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
+  });
+
+  it('blocks reconnect when the practitioner has already closed the room', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-02T11:05:00.000Z'));
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_ROOM_CLOSED',
+      session: {
+        ...baseSession,
+        status: SessionStatus.IN_PROGRESS,
+        videoRoomClosedAt: new Date('2026-04-02T10:55:00.000Z'),
+      },
+      hasPriorJoinEvidence: true,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(false);
+    expect(result.item.blockedReason).toBe('SESSION_ROOM_CLOSED');
   });
 });

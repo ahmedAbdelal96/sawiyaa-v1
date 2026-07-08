@@ -21,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listSpecialties } from "../../../src/features/specialties/api";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { useCreateMatchingSession } from "../../../src/features/patient/matching/api";
+import { getLocalizedSpecialtyName } from "../../../src/features/specialties/localized";
 import {
   MatchingUrgencyPreference,
   PractitionerGenderPreference,
@@ -70,9 +71,9 @@ export default function MatchingQuestionsScreen() {
       .slice(0, 8)
       .map((item) => ({
         id: item.slug,
-        title: item.name ?? item.slug,
+        title: getLocalizedSpecialtyName(item, i18n.language || "en"),
       }));
-  }, [specialtiesQuery.data?.specialties]);
+  }, [i18n.language, specialtiesQuery.data?.specialties]);
 
   const genderChoices: ChoiceItem<PractitionerGenderPreference>[] = [
     {

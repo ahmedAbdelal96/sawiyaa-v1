@@ -13,7 +13,6 @@ Planned feature modules:
 - `articles`
 - `chat`
 - `reviews`
-- `training`
 - `settings`
 
 Business logic should be added here gradually while `src/components` stays focused

@@ -9,14 +9,14 @@ The product is not a generic SaaS dashboard. It is a care platform, so the exper
 - Help patients find the right practitioner with less confusion.
 - Help practitioners manage availability, sessions, and earnings with less friction.
 - Help admins operate the platform safely and consistently.
-- Keep money, chat, session, and instant booking flows understandable at every step.
+- Keep money, chat, session, availability, and instant booking flows understandable at every step.
 
 ## Main product surfaces
 
 - **Public web**: marketing pages, help, policies, practitioner discovery, articles, sign-in, sign-up, and public session booking flows.
 - **Patient web**: dashboard, instant booking, sessions, chat, wallet, payments, profile, support, help, and related care flows.
 - **Practitioner web**: dashboard, profile, availability, instant booking queue, sessions, chat, wallet, ledger, promo codes, support, and practice operations.
-- **Admin web**: user management, moderation, support, content, finance, settlements, refunds, reports, policies, and platform operations.
+- **Admin web**: user management, moderation, support, content, finance, practitioner payouts, accounting reconciliation, refunds, reports, policies, and platform operations.
 - **Mobile**: patient and practitioner Expo app surfaces that mirror the core care flows, including instant booking and payment-return states where applicable.
 
 ## What makes the product different
@@ -24,7 +24,7 @@ The product is not a generic SaaS dashboard. It is a care platform, so the exper
 - Arabic-first behavior with full RTL support.
 - Bilingual UX where English is available and should feel equally polished.
 - Clinical Warmth design language instead of generic startup styling.
-- Instant booking for same-day or now care, with backend-owned pricing and backend-confirmed payment before join.
+- Week-by-week availability with explicit week statuses.
 - Sensitive financial and medical-adjacent flows that must be explicit and data-driven.
 - Two chat models:
   - session chat for a specific booked session
@@ -36,7 +36,8 @@ The product is not a generic SaaS dashboard. It is a care platform, so the exper
 2. **Trust through consistency** - use predictable page structures and familiar controls.
 3. **Warmth without playfulness** - calm, professional, human, and not sterile.
 4. **Data-driven money** - never fake amounts, currencies, or refund states.
-5. **No route leakage** - never expose raw paths or technical reasons to patients.
+5. **Backend source of truth** - do not invent frontend-only business rules.
+6. **No route leakage** - never expose raw paths or technical reasons to patients.
 
 ## Business model snapshot
 
@@ -51,9 +52,9 @@ In practical terms, the product is centered on:
 - session-based transactions
 - instant booking fast-path sessions with backend-owned pricing
 - platform-controlled money flow
-- wallet and settlement handling
+- wallet, payouts, and accounting reconciliation
 - refund and cancellation policy enforcement
-- practitioner payout or settlement operations
+- practitioner payout operations
 - optional training and content expansion paths
 - future B2B / AI expansion as deferred work, not current core
 
@@ -63,7 +64,7 @@ Only document fee and revenue rules that the code currently enforces.
 
 Sawiyaa is a managed healthcare marketplace.
 
-It connects patients with practitioners and combines discovery, booking, instant booking, availability, sessions, payments, wallet, support, chat, admin operations, and mobile parity into one care platform.
+It connects patients with practitioners and combines discovery, booking, instant booking, availability, sessions, payments, wallet, support, chat, admin operations, notifications, and mobile parity into one care platform.
 
 Its value is more than taking a booking. It gives the platform:
 
@@ -98,8 +99,9 @@ The core handles the operational backbone:
 - sessions and scheduling
 - availability and presence
 - instant booking
-- payments, refunds, wallet, and settlements
+- payments, refunds, wallet, payouts, and accounting
 - support and moderation
+- notifications
 - content and training
 - admin operations and diagnostics
 
@@ -121,7 +123,7 @@ The competitor study exists to sharpen product choices, not to encourage imitati
 
 - Shezlong shows the value of depth, trust, and structured mental-health booking.
 - Esaal shows the value of mobile-first access and multi-specialty breadth.
-- Sawiyaa should compete through clearer UX, stronger session-state handling, better financial correctness, and guided care.
+- Sawiyaa should compete through clearer UX, stronger session-state handling, better financial correctness, localized specialty names, and guided care.
 
 The practical outcome is that Sawiyaa should feel easier to trust, easier to navigate, and more operationally consistent than a generic booking product.
 
@@ -134,3 +136,6 @@ The root `DESIGN.md` remains the canonical source for the visual token palette a
 - [Competitor study: Shezlong and Esaal](fayed_competitor_study_shezlong_esaal.md)
 - [Architecture and developer guide](architecture-and-developer-guide.md)
 - [Users and journeys](users-and-journeys.md)
+- [Availability system](availability-system.md)
+- [Finance and payouts](finance-and-payouts.md)
+- [Specialties localization](specialties-localization.md)

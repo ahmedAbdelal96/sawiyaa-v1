@@ -23,18 +23,21 @@ type Props = {
 };
 
 type FormState = {
-  title: string;
+  nameAr: string;
+  nameEn: string;
   description: string;
 };
 
 const EMPTY_FORM: FormState = {
-  title: "",
+  nameAr: "",
+  nameEn: "",
   description: "",
 };
 
 function toFormState(category: SpecialtyCategory): FormState {
   return {
-    title: category.name,
+    nameAr: category.nameAr ?? "",
+    nameEn: category.nameEn ?? "",
     description: category.description ?? "",
   };
 }
@@ -54,7 +57,10 @@ export default function SpecialtyCategoryFormModal({
     mode === "edit" && category ? toFormState(category) : EMPTY_FORM,
   );
   const [error, setError] = useState<string | null>(null);
-  const [titleError, setTitleError] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    nameAr?: boolean;
+    nameEn?: boolean;
+  }>({});
   const isSubmitting =
     createCategoryMutation.isPending || updateCategoryMutation.isPending;
 
@@ -65,9 +71,15 @@ export default function SpecialtyCategoryFormModal({
   }, [categoriesQuery.data?.categories]);
 
   const handleSubmit = async () => {
-    const title = form.title.trim();
-    if (!title) {
-      setTitleError(true);
+    const nameAr = form.nameAr.trim();
+    const nameEn = form.nameEn.trim();
+    const nextErrors = {
+      nameAr: !nameAr,
+      nameEn: !nameEn,
+    };
+
+    if (nextErrors.nameAr || nextErrors.nameEn) {
+      setFieldErrors(nextErrors);
       setError(t("specialtiesAdmin.feedback.validation"));
       return;
     }
@@ -75,7 +87,8 @@ export default function SpecialtyCategoryFormModal({
     try {
       if (mode === "create") {
         await createCategoryMutation.mutateAsync({
-          title,
+          nameAr,
+          nameEn,
           description: form.description.trim() || null,
           sortOrder: nextSortOrder,
         });
@@ -84,7 +97,8 @@ export default function SpecialtyCategoryFormModal({
         await updateCategoryMutation.mutateAsync({
           id: category.id,
           data: {
-            title,
+            nameAr,
+            nameEn,
             description: form.description.trim() || null,
           },
         });
@@ -139,19 +153,36 @@ export default function SpecialtyCategoryFormModal({
       <div className="grid gap-4">
         <div className="block">
           <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("specialtiesAdmin.categoryForm.title")}{" "}
-            <span className="text-error-500">*</span>
+            Arabic name <span className="text-error-500">*</span>
           </Label>
           <InputField
-            value={form.title}
+            value={form.nameAr}
             required
-            error={titleError}
+            error={!!fieldErrors.nameAr}
             onChange={(event) => {
-              setTitleError(false);
+              setFieldErrors((current) => ({ ...current, nameAr: false }));
               setError(null);
-              setForm((current) => ({ ...current, title: event.target.value }));
+              setForm((current) => ({ ...current, nameAr: event.target.value }));
             }}
-            placeholder={t("specialtiesAdmin.categoryForm.titlePlaceholder")}
+            placeholder="مثال: الصحة النفسية"
+            className="px-4 py-3"
+          />
+        </div>
+
+        <div className="block">
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            English name <span className="text-error-500">*</span>
+          </Label>
+          <InputField
+            value={form.nameEn}
+            required
+            error={!!fieldErrors.nameEn}
+            onChange={(event) => {
+              setFieldErrors((current) => ({ ...current, nameEn: false }));
+              setError(null);
+              setForm((current) => ({ ...current, nameEn: event.target.value }));
+            }}
+            placeholder="For example: Mental Health"
             className="px-4 py-3"
           />
         </div>
@@ -181,4 +212,3 @@ export default function SpecialtyCategoryFormModal({
     </FormModal>
   );
 }
-

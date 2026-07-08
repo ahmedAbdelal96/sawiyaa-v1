@@ -2,6 +2,7 @@ import { getRequestConfig } from "next-intl/server";
 import { IntlErrorCode } from "next-intl";
 import { routing } from "./routing";
 import { warnMissingTranslation } from "./missing-key-warning";
+import { resolveRequestTimeZone } from "./resolve-request-time-zone";
 
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
@@ -71,7 +72,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "public-articles",
     "public-pages",
     "academy",
-    "training",
     "errors",
     "help",
     "admin-help",
@@ -81,10 +81,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const messages = Object.fromEntries(
     namespaces.map((namespace, index) => [namespace, loadedMessages[index]])
   );
+  const timeZone = await resolveRequestTimeZone();
 
   return {
     locale,
     messages,
+    timeZone,
     onError(error) {
       if (process.env.NODE_ENV === "development" && error.code !== IntlErrorCode.MISSING_MESSAGE) {
         console.error("[i18n] Error:", error.message);

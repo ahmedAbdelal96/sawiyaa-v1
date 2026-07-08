@@ -18,12 +18,13 @@ export class ResolveSessionJoinReadinessService {
     status: SessionStatus;
     sessionMode: SessionMode;
     scheduledStartAt: Date | null;
-    scheduledEndAt: Date | null;
-    provider: SessionProvider;
-    providerRoomId: string | null;
-    providerSessionRef: string | null;
-    now: Date;
-  }): {
+      scheduledEndAt: Date | null;
+      provider: SessionProvider;
+      providerRoomId: string | null;
+      providerSessionRef: string | null;
+      videoRoomClosedAt?: Date | null;
+      now: Date;
+    }): {
     canPrepareRuntime: boolean;
     canJoin: boolean;
     blockedReason: SessionJoinBlockedReason | null;

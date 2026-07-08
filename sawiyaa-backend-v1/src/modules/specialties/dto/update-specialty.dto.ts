@@ -34,7 +34,24 @@ export class UpdateSpecialtyDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Localized title for current locale',
+    description: 'Arabic specialty name',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  nameAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English specialty name',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  nameEn?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Legacy compatibility field. When provided it is ignored in favor of nameEn/nameAr.',
   })
   @IsOptional()
   @IsString()

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChatThreadListItem, ChatEmptyState } from "@/components/shared/chat/ChatKit";
+import SupportLaneThread from "@/features/messages-shell/components/SupportLaneThread";
 import {
   usePatientSupportTickets,
   usePractitionerSupportTickets,
@@ -15,6 +16,7 @@ import PractitionerSupportTicketScreen from "@/features/support/components/Pract
 import AdminSupportTicketScreen from "@/features/support/components/AdminSupportTicketScreen";
 import { parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import { formatDateTime } from "./messages-workspace.utils";
+import { getMessagesPath } from "@/features/messages-shell/utils/messages-routes";
 import type { LaneWorkspaceProps } from "./messages-workspace.types";
 import type {
   SupportTicketPriority,
@@ -59,6 +61,7 @@ export default function SupportLaneWorkspace({
   role,
   locale,
   selectedId,
+  relatedSessionId,
   page,
   limit,
   updateListQuery,
@@ -130,6 +133,11 @@ export default function SupportLaneWorkspace({
       : adminSupportQuery;
 
   const supportData = supportQuery.data;
+  const shouldOpenSupportCompose =
+    renderMode === "detail" &&
+    role !== "admin" &&
+    Boolean(relatedSessionId?.trim()) &&
+    !selectedId;
 
   const filteredSupportItems = useMemo(() => {
     const items = supportData?.items ?? [];
@@ -143,7 +151,7 @@ export default function SupportLaneWorkspace({
   }, [supportData?.items, searchQuery]);
 
   const defaultSupportTicketId = supportData?.items?.[0]?.id || null;
-  const activeSupportTicketId = selectedId || defaultSupportTicketId;
+  const activeSupportTicketId = selectedId || (shouldOpenSupportCompose ? null : defaultSupportTicketId);
 
   useEffect(() => {
     if (activeSupportTicketId && supportData?.items) {
@@ -352,7 +360,42 @@ export default function SupportLaneWorkspace({
   // renderMode === "detail"
   return (
     <div className="h-full flex flex-col flex-1">
-      {activeSupportTicketId ? (
+      {shouldOpenSupportCompose ? (
+        <SupportLaneThread
+          role={role}
+          ticketId={null}
+          fullViewHref={getMessagesPath(null, role, {
+            lane: "support",
+            relatedSessionId: relatedSessionId ?? undefined,
+          })}
+          locale={locale}
+          prefillRelatedSessionId={relatedSessionId}
+          copy={{
+            heading: t("practitioner.thread.heading"),
+            note: t("practitioner.thread.note"),
+            empty: t("states.empty.heading"),
+            loading: t("states.listError.note"),
+            error: t("states.listError.note"),
+            composerPlaceholder: t("reply.placeholder"),
+            send: t("reply.submit"),
+            createHeading: t("create.heading"),
+            createNote: t("create.note"),
+            createSubjectPlaceholder: t("create.placeholders.subject"),
+            createMessagePlaceholder: t("create.placeholders.description"),
+            createAction: t("create.submit"),
+            creating: t("create.submitting"),
+            openFull: t("practitioner.thread.heading"),
+          }}
+          onOpenFull={() => updateListQuery({ lane: "support" })}
+          onCreatedTicket={(ticketId) =>
+            updateListQuery({
+              id: ticketId,
+              relatedSessionId: null,
+              page: 1,
+            })
+          }
+        />
+      ) : activeSupportTicketId ? (
         role === "patient" ? (
           <PatientSupportTicketScreen key={activeSupportTicketId} ticketId={activeSupportTicketId} />
         ) : role === "practitioner" ? (

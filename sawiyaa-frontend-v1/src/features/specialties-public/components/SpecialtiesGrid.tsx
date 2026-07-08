@@ -1,11 +1,12 @@
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, Layers, Sparkles, Brain, Apple, Activity } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import SpecialtyCard from "./SpecialtyCard";
 import type {
   Specialty,
   SpecialtyCategory,
 } from "@/features/specialties/types/specialties.types";
+import { getLocalizedSpecialtyCategoryName } from "@/features/specialties/utils/localized-specialty";
 
 type Props = {
   groups: Array<{
@@ -96,6 +97,7 @@ export default async function SpecialtiesGrid({
   uncategorizedSpecialties,
 }: Props) {
   const t = await getTranslations("specialties-public.listing");
+  const locale = await getLocale();
 
   if (groups.length === 0 && uncategorizedSpecialties.length === 0) {
     return (
@@ -137,7 +139,7 @@ export default async function SpecialtiesGrid({
                 </div>
 
                 <h2 className="text-2xl font-bold tracking-tight text-white">
-                  {group.category.name}
+                  {getLocalizedSpecialtyCategoryName(group.category, locale)}
                 </h2>
 
                 <p className="mt-3 flex-1 text-xs leading-6 text-white/80">
@@ -166,7 +168,9 @@ export default async function SpecialtiesGrid({
                     {t("groupEyebrow")}
                   </p>
                   <h3 className="mt-1.5 text-xl font-bold text-text-primary dark:text-white/90">
-                    {t("groupTitle", { category: group.category.name })}
+                    {t("groupTitle", {
+                      category: getLocalizedSpecialtyCategoryName(group.category, locale),
+                    })}
                   </h3>
                 </div>
 
@@ -180,7 +184,9 @@ export default async function SpecialtiesGrid({
                         learnMoreLabel={t("learnMore")}
                         categoryBadge={
                           specialty.category?.name
-                            ? t("categoryBadge", { category: specialty.category.name })
+                            ? t("categoryBadge", {
+                                category: getLocalizedSpecialtyCategoryName(specialty.category, locale),
+                              })
                             : null
                         }
                         categorySlug={group.category.slug}

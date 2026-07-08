@@ -48,7 +48,6 @@ const CATEGORY_FILTERS: AdminNotificationCategory[] = [
   "SUPPORT",
   "CHAT",
   "SYSTEM",
-  "TRAINING",
   "MARKETING",
 ];
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;

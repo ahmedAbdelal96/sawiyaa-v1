@@ -13,7 +13,7 @@ import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/u
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
-import { OrchestrateTrainingEnrollmentPaymentStatusService } from '../services/orchestrate-training-enrollment-payment-status.service';
+import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 
 @Injectable()
@@ -23,7 +23,7 @@ export class ExpirePaymentUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
-    private readonly orchestrateTrainingEnrollmentPaymentStatusService: OrchestrateTrainingEnrollmentPaymentStatusService,
+    private readonly orchestrateAcademyProgramEnrollmentPaymentStatusService: OrchestrateAcademyProgramEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly reconcilePackagePurchasePaymentUseCase: ReconcilePackagePurchasePaymentUseCase,
@@ -86,6 +86,9 @@ export class ExpirePaymentUseCase {
       unknown
     >;
     const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
+    const isAcademyProgramEnrollment =
+      payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
+      paymentMetadata.source === 'academy-program-enrollment';
 
     if (payment.paymentPurpose === PaymentPurpose.SESSION_PACKAGE_PURCHASE) {
       await this.reconcilePackagePurchasePaymentUseCase.execute({
@@ -110,7 +113,10 @@ export class ExpirePaymentUseCase {
       };
     }
 
-    if (updated.amountFromWallet.gt(0)) {
+    if (
+      payment.paymentPurpose !== PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT &&
+      updated.amountFromWallet.gt(0)
+    ) {
       await this.customerWalletAccountingService.releaseReservationForPayment({
         paymentId: updated.id,
         currencyCode: updated.currencyCode,
@@ -142,8 +148,8 @@ export class ExpirePaymentUseCase {
           failedReason: 'Payment expired',
         },
       });
-    } else if (payment.paymentPurpose === PaymentPurpose.COURSE_ENROLLMENT) {
-      await this.orchestrateTrainingEnrollmentPaymentStatusService.markEnrollmentPaymentExpired(
+    } else if (isAcademyProgramEnrollment) {
+      await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentPaymentExpired(
         payment.id,
       );
     }

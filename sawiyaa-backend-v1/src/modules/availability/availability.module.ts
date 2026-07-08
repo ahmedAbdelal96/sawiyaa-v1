@@ -14,6 +14,7 @@ import { AvailabilityWeekOverviewService } from './services/availability-week-ov
 import { ResolvePractitionerTimezoneService } from './services/resolve-practitioner-timezone.service';
 import { ValidateAvailabilitySessionConflictsService } from './services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from './services/validate-availability-overlap.service';
+import { AvailabilitySlotEditabilityService } from './services/availability-slot-editability.service';
 import { CopyPractitionerAvailabilityWeekToNextUseCase } from './use-cases/copy-practitioner-availability-week-to-next.use-case';
 import { CreatePractitionerAvailabilityWeekUseCase } from './use-cases/create-practitioner-availability-week.use-case';
 import { GetMyAvailabilityWeeksUseCase } from './use-cases/get-my-availability-weeks.use-case';
@@ -39,6 +40,7 @@ import { UpdatePractitionerAvailabilityWeekUseCase } from './use-cases/update-pr
     PractitionerAvailabilityWeekRepository,
     AvailabilityExceptionRepository,
     ValidateAvailabilityOverlapService,
+    AvailabilitySlotEditabilityService,
     ValidateAvailabilitySessionConflictsService,
     ResolvePractitionerTimezoneService,
     BuildPublishedWeekAvailabilityWindowsService,

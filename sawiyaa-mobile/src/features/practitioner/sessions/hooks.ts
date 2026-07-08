@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import {
+  closePractitionerSessionRuntime,
   getPractitionerSession,
   getPractitionerSessions,
   getPractitionerSessionSummary,
@@ -14,7 +15,10 @@ import {
   preparePractitionerSessionRuntime,
   resolvePractitionerSessionJoinContract,
 } from "./api";
-import type { ListSessionsQuery } from "./types";
+import type {
+  ClosePractitionerSessionRuntimePayload,
+  ListSessionsQuery,
+} from "./types";
 
 export const practitionerSessionQueryKeys = {
   all: ["practitioner-sessions"] as const,
@@ -110,6 +114,28 @@ export function useResolvePractitionerSessionJoinContract() {
   return useMutation({
     mutationFn: (sessionId: string) =>
       resolvePractitionerSessionJoinContract(sessionId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: practitionerSessionQueryKeys.detail(data.item.sessionId),
+      });
+    },
+  });
+}
+
+export function useClosePractitionerSessionRuntime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      sessionId,
+      payload,
+    }: {
+      sessionId: string;
+      payload: ClosePractitionerSessionRuntimePayload;
+    }) => closePractitionerSessionRuntime(sessionId, payload),
     onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: practitionerSessionQueryKeys.all,

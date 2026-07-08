@@ -2,7 +2,9 @@ import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import {
   buildSessionJoinAvailabilityViewModel,
   buildSessionPresentationFilterWhere,
+  computeSessionPostEndReconnectGraceClosesAt,
   resolveSessionPresentationStatus,
+  resolveSessionJoinPolicy,
   summarizeSessionPresentations,
 } from './session-join-policy.util';
 import { SessionPresentationFilter } from '../types/session-video.types';
@@ -66,6 +68,40 @@ describe('session-join-policy util', () => {
       providerRoomId: 'room-1',
       providerSessionRef: 'room-ref-1',
       now: new Date('2026-08-02T12:30:01.000Z'),
+    });
+
+    expect(result).toBe('ENDED');
+  });
+
+  it('blocks joining with SESSION_ROOM_CLOSED when the practitioner has closed the room', () => {
+    const result = resolveSessionJoinPolicy({
+      status: SessionStatus.IN_PROGRESS,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt,
+      scheduledEndAt,
+      provider: SessionProvider.DAILY,
+      providerRoomId: 'room-1',
+      providerSessionRef: 'room-ref-1',
+      videoRoomClosedAt: new Date('2026-08-02T12:12:00.000Z'),
+      now: new Date('2026-08-02T12:15:00.000Z'),
+    });
+
+    expect(result.canPrepareRuntime).toBe(false);
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_ROOM_CLOSED');
+  });
+
+  it('treats room-closed sessions as ended for presentation status', () => {
+    const result = resolveSessionPresentationStatus({
+      status: SessionStatus.IN_PROGRESS,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt,
+      scheduledEndAt,
+      provider: SessionProvider.DAILY,
+      providerRoomId: 'room-1',
+      providerSessionRef: 'room-ref-1',
+      videoRoomClosedAt: new Date('2026-08-02T12:12:00.000Z'),
+      now: new Date('2026-08-02T12:15:00.000Z'),
     });
 
     expect(result).toBe('ENDED');
@@ -275,6 +311,11 @@ describe('session-join-policy util', () => {
     expect(finishedWhere.OR).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          videoRoomClosedAt: {
+            not: null,
+          },
+        }),
+        expect.objectContaining({
           scheduledEndAt: {
             not: null,
             lt: new Date('2026-08-02T11:58:30.000Z'),
@@ -348,5 +389,11 @@ describe('session-join-policy util', () => {
       availableAt: '2026-08-02T11:58:00.000Z',
       expiresAt: '2026-08-02T12:30:00.000Z',
     });
+  });
+
+  it('computes reconnect grace close time from scheduled end', () => {
+    expect(
+      computeSessionPostEndReconnectGraceClosesAt(scheduledEndAt)?.toISOString(),
+    ).toBe('2026-08-02T12:40:00.000Z');
   });
 });

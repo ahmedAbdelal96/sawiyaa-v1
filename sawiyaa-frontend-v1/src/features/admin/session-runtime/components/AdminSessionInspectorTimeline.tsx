@@ -299,6 +299,8 @@ export default function AdminSessionInspectorTimeline({
     MEETING_ENDED: t("inspector.evidenceTimeline.eventTypes.MEETING_ENDED"),
     ATTENDANCE_JOINED: t("inspector.evidenceTimeline.eventTypes.ATTENDANCE_JOINED"),
     ATTENDANCE_LEFT: t("inspector.evidenceTimeline.eventTypes.ATTENDANCE_LEFT"),
+    PROVIDER_ROOM_CREATED: t("inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_CREATED"),
+    PROVIDER_ROOM_ENDED: t("inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_ENDED"),
   };
 
   const sourceLabels: Record<

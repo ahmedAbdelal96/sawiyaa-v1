@@ -15,6 +15,11 @@ export interface SessionVideoJoinTokenResult {
   raw?: unknown;
 }
 
+export interface SessionVideoRoomCloseResult {
+  closedAt?: Date | string | null;
+  raw?: unknown;
+}
+
 export interface SessionVideoProviderAdapter {
   readonly provider: SessionProvider;
 
@@ -30,4 +35,8 @@ export interface SessionVideoProviderAdapter {
     displayName: string | null;
     actorType: 'PATIENT' | 'PRACTITIONER';
   }): Promise<SessionVideoJoinTokenResult>;
+
+  closeRoom(input: {
+    roomId: string;
+  }): Promise<SessionVideoRoomCloseResult>;
 }

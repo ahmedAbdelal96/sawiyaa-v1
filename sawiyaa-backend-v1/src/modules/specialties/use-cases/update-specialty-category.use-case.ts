@@ -9,8 +9,8 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SpecialtyCategoryRepository } from '../repositories/specialty-category.repository';
 import { normalizeSpecialtySlug } from '../utils/normalize-specialty-slug.util';
 
-function buildCategoryBaseSlug(title: string) {
-  const normalized = normalizeSpecialtySlug(title);
+function buildCategoryBaseSlug(nameEn: string, nameAr: string) {
+  const normalized = normalizeSpecialtySlug(nameEn) || normalizeSpecialtySlug(nameAr);
   if (normalized.length > 0) return normalized;
   return 'category';
 }
@@ -28,7 +28,8 @@ export class UpdateSpecialtyCategoryUseCase {
   async execute(input: {
     id: string;
     locale: SupportedLocale;
-    title?: string;
+    nameAr?: string;
+    nameEn?: string;
     description?: string | null;
     sortOrder?: number;
     isActive?: boolean;
@@ -41,22 +42,29 @@ export class UpdateSpecialtyCategoryUseCase {
       });
     }
 
-    const nextName = input.title?.trim();
-    if (typeof input.title === 'string' && nextName?.length === 0) {
+    const nextNameAr = input.nameAr?.trim();
+    const nextNameEn = input.nameEn?.trim();
+
+    if (
+      (typeof input.nameAr === 'string' && nextNameAr?.length === 0) ||
+      (typeof input.nameEn === 'string' && nextNameEn?.length === 0)
+    ) {
       throw new BadRequestException({
         messageKey: 'specialties.errors.invalidSpecialtyState',
         error: 'INVALID_SPECIALTY_CATEGORY_TITLE',
       });
     }
 
+    const resolvedNameAr = nextNameAr ?? existing.nameAr ?? existing.name;
+    const resolvedNameEn = nextNameEn ?? existing.nameEn ?? existing.name;
+
     let slugToSave: string | undefined;
-    if (nextName) {
-      const baseSlug = buildCategoryBaseSlug(nextName);
+    if (nextNameAr !== undefined || nextNameEn !== undefined) {
+      const baseSlug = buildCategoryBaseSlug(resolvedNameEn, resolvedNameAr);
       let candidate = baseSlug;
       let suffix = 2;
       while (true) {
-        const found =
-          await this.specialtyCategoryRepository.findBySlug(candidate);
+        const found = await this.specialtyCategoryRepository.findBySlug(candidate);
         if (!found || found.id === existing.id) break;
         candidate = `${baseSlug}-${suffix}`;
         suffix += 1;
@@ -72,7 +80,9 @@ export class UpdateSpecialtyCategoryUseCase {
 
     const category = await this.specialtyCategoryRepository.update(input.id, {
       slug: slugToSave,
-      name: nextName,
+      name: resolvedNameEn || resolvedNameAr,
+      nameAr: resolvedNameAr,
+      nameEn: resolvedNameEn,
       description: input.description,
       sortOrder: input.sortOrder,
       isActive: input.isActive,

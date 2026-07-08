@@ -24,7 +24,7 @@ It is intentionally not responsible for:
 - sessions, availability, presence
 - pricing runtime orchestration
 - payments, wallets, settlements
-- content/reviews/training flows
+- content/reviews/academy flows
 
 ## Endpoints
 
@@ -117,4 +117,4 @@ Notes:
 - sessions/availability/presence
 - payments/wallet/settlements
 - public practitioner discovery listing
-- articles/reviews/training flows
+- articles/reviews/academy flows

@@ -15,12 +15,18 @@ import {
   useUpdateSpecialty,
 } from "@/features/specialties/hooks/use-specialties";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
+import {
+  getLocalizedSpecialtyCategoryName,
+} from "@/features/specialties/utils/localized-specialty";
+import { useLocale } from "next-intl";
 
 type FormState = {
   categoryId: string;
-  title: string;
+  nameAr: string;
+  nameEn: string;
   description: string;
-  newCategoryTitle: string;
+  newCategoryNameAr: string;
+  newCategoryNameEn: string;
 };
 
 type Props = {
@@ -35,9 +41,11 @@ type Props = {
 
 const EMPTY_FORM: FormState = {
   categoryId: "",
-  title: "",
+  nameAr: "",
+  nameEn: "",
   description: "",
-  newCategoryTitle: "",
+  newCategoryNameAr: "",
+  newCategoryNameEn: "",
 };
 
 const CREATE_CATEGORY_SENTINEL = "__create_new_category__";
@@ -45,9 +53,11 @@ const CREATE_CATEGORY_SENTINEL = "__create_new_category__";
 function toFormState(specialty: Specialty): FormState {
   return {
     categoryId: specialty.category?.id ?? "",
-    title: specialty.name ?? "",
+    nameAr: specialty.nameAr ?? "",
+    nameEn: specialty.nameEn ?? "",
     description: specialty.description ?? "",
-    newCategoryTitle: "",
+    newCategoryNameAr: "",
+    newCategoryNameEn: "",
   };
 }
 
@@ -76,6 +86,7 @@ export default function SpecialtyFormModal({
   onSuccess,
 }: Props) {
   const t = useTranslations("admin-area");
+  const locale = useLocale();
   const safeT = (key: string, fallback: string) => {
     try {
       return t(key as Parameters<typeof t>[0]);
@@ -99,7 +110,7 @@ export default function SpecialtyFormModal({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     categoryId?: boolean;
-    title?: boolean;
+    names?: boolean;
   }>({});
 
   const isSubmitting =
@@ -109,21 +120,25 @@ export default function SpecialtyFormModal({
 
   const handleChange = (field: keyof FormState, value: string) => {
     setError(null);
-    setFieldErrors((current) => ({ ...current, [field]: false }));
+    setFieldErrors((current) => ({ ...current, [field]: false, names: false }));
     setForm((current) => ({ ...current, [field]: value }));
   };
 
   const handleSubmit = async () => {
-    const title = form.title.trim();
+    const nameAr = form.nameAr.trim();
+    const nameEn = form.nameEn.trim();
     const isCreatingCategory = form.categoryId === CREATE_CATEGORY_SENTINEL;
-    const newCategoryTitle = form.newCategoryTitle.trim();
-    const nextFieldErrors: { categoryId?: boolean; title?: boolean } = {};
+    const newCategoryNameAr = form.newCategoryNameAr.trim();
+    const newCategoryNameEn = form.newCategoryNameEn.trim();
+    const nextFieldErrors: { categoryId?: boolean; names?: boolean } = {};
 
     if (!form.categoryId) nextFieldErrors.categoryId = true;
-    if (!title) nextFieldErrors.title = true;
-    if (isCreatingCategory && !newCategoryTitle) nextFieldErrors.categoryId = true;
+    if (!nameAr || !nameEn) nextFieldErrors.names = true;
+    if (isCreatingCategory && (!newCategoryNameAr || !newCategoryNameEn)) {
+      nextFieldErrors.categoryId = true;
+    }
 
-    if (nextFieldErrors.categoryId || nextFieldErrors.title) {
+    if (nextFieldErrors.categoryId || nextFieldErrors.names) {
       setFieldErrors((current) => ({ ...current, ...nextFieldErrors }));
       setError(t("specialtiesAdmin.feedback.validation"));
       return;
@@ -132,12 +147,13 @@ export default function SpecialtyFormModal({
     const resolvedSlug =
       mode === "edit" && specialty
         ? specialty.slug
-        : generateSpecialtySlug(title);
+        : generateSpecialtySlug(nameEn || nameAr);
     let resolvedCategoryId = form.categoryId;
     if (isCreatingCategory) {
       try {
         const categoryResult = await createCategoryMutation.mutateAsync({
-          title: newCategoryTitle,
+          nameAr: newCategoryNameAr,
+          nameEn: newCategoryNameEn,
         });
         resolvedCategoryId = categoryResult.category.id;
       } catch {
@@ -151,14 +167,13 @@ export default function SpecialtyFormModal({
       }
     }
     const resolvedSortOrder =
-      mode === "edit" && specialty
-        ? specialty.sortOrder
-        : defaultSortOrder;
+      mode === "edit" && specialty ? specialty.sortOrder : defaultSortOrder;
 
     const payload = {
       categoryId: resolvedCategoryId,
       slug: resolvedSlug,
-      title,
+      nameAr,
+      nameEn,
       description: form.description.trim() || null,
       sortOrder: resolvedSortOrder,
     };
@@ -225,7 +240,7 @@ export default function SpecialtyFormModal({
             options={[
               ...(categoriesQuery.data?.categories ?? []).map((category) => ({
                 value: category.id,
-                label: category.name,
+                label: getLocalizedSpecialtyCategoryName(category, locale),
               })),
               {
                 value: CREATE_CATEGORY_SENTINEL,
@@ -243,36 +258,60 @@ export default function SpecialtyFormModal({
         </div>
 
         {form.categoryId === CREATE_CATEGORY_SENTINEL ? (
-          <div className="block md:col-span-2">
-            <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {safeT("specialtiesAdmin.form.newCategoryTitle", "Primary category name")}{" "}
-              <span className="text-error-500">*</span>
-            </Label>
-            <InputField
-              value={form.newCategoryTitle}
-              required
-              error={!!fieldErrors.categoryId}
-              onChange={(event) => handleChange("newCategoryTitle", event.target.value)}
-              placeholder={safeT(
-                "specialtiesAdmin.form.newCategoryTitlePlaceholder",
-                "For example: Clinical Psychology",
-              )}
-              className="px-4 py-3"
-            />
+          <div className="block md:col-span-2 space-y-4">
+            <div>
+              <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                Arabic primary category name <span className="text-error-500">*</span>
+              </Label>
+              <InputField
+                value={form.newCategoryNameAr}
+                required
+                error={!!fieldErrors.categoryId}
+                onChange={(event) => handleChange("newCategoryNameAr", event.target.value)}
+                placeholder="مثال: علم النفس الإكلينيكي"
+                className="px-4 py-3"
+              />
+            </div>
+            <div>
+              <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                English primary category name <span className="text-error-500">*</span>
+              </Label>
+              <InputField
+                value={form.newCategoryNameEn}
+                required
+                error={!!fieldErrors.categoryId}
+                onChange={(event) => handleChange("newCategoryNameEn", event.target.value)}
+                placeholder="For example: Clinical Psychology"
+                className="px-4 py-3"
+              />
+            </div>
           </div>
         ) : null}
 
         <div className="block">
           <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("specialtiesAdmin.fields.title")}{" "}
-            <span className="text-error-500">*</span>
+            Arabic name <span className="text-error-500">*</span>
           </Label>
           <InputField
-            value={form.title}
+            value={form.nameAr}
             required
-            error={!!fieldErrors.title}
-            onChange={(event) => handleChange("title", event.target.value)}
-            placeholder={t("specialtiesAdmin.form.titleSimplePlaceholder")}
+            error={!!fieldErrors.names}
+            onChange={(event) => handleChange("nameAr", event.target.value)}
+            placeholder="مثال: العلاج السلوكي المعرفي"
+            className="px-4 py-3"
+          />
+        </div>
+
+        <div className="block">
+          <Label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            English name <span className="text-error-500">*</span>
+          </Label>
+          <InputField
+            value={form.nameEn}
+            required
+            error={!!fieldErrors.names}
+            onChange={(event) => handleChange("nameEn", event.target.value)}
+            placeholder="For example: Cognitive Behavioral Therapy"
             className="px-4 py-3"
           />
         </div>
@@ -289,7 +328,6 @@ export default function SpecialtyFormModal({
             className="min-h-[132px] px-4 py-3"
           />
         </div>
-
       </div>
 
       {error ? (

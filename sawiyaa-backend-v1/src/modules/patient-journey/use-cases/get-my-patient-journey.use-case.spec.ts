@@ -90,7 +90,7 @@ describe('GetMyPatientJourneyUseCase', () => {
         },
         payments: { hasPendingPayment: false, pendingStatus: null },
         matching: { hasRecentSession: false },
-        training: { hasActiveEnrollment: false },
+        academy: { hasActiveEnrollment: false },
         support: { hasOpenTicket: false, latestOpenTicketStatus: null },
         continuity: {
           stage: 'UPCOMING_SESSION',

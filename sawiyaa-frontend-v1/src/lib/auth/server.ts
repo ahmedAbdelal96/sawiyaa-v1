@@ -18,6 +18,7 @@ export interface AuthUser {
   lastName: string;
   role: string;
   avatar?: string;
+  timezone?: string | null;
 }
 
 export interface AuthTenant {
@@ -104,6 +105,7 @@ export async function setAuthCookies(session: AuthSession): Promise<void> {
     lastName: session.user.lastName,
     role: session.user.role,
     avatar: session.user.avatar,
+    timezone: session.user.timezone ?? null,
     context: {
       id: session.tenant.id,
       name: session.tenant.name,

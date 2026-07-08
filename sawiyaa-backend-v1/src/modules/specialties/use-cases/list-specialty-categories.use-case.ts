@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SpecialtyCategoryRepository } from '../repositories/specialty-category.repository';
+import { localizeSpecialtyCategory } from '../utils/localize-specialty-category.util';
 
 /**
  * Lists active practitioner specialty categories.
@@ -22,7 +23,9 @@ export class ListSpecialtyCategoriesUseCase {
         'specialties.success.categoriesFetched',
         locale,
       ),
-      categories,
+      categories: categories.map((category) =>
+        localizeSpecialtyCategory(category, locale),
+      ),
     };
   }
 }

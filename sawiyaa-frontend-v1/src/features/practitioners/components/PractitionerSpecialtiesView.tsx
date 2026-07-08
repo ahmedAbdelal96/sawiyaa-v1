@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { CheckCircle2, Info, Loader2, Plus, Star, Tag, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormModal } from "@/components/ui/modal";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
 import type { Specialty } from "@/features/specialties/types/specialties.types";
+import {
+  getLocalizedSpecialtyCategoryName,
+  getLocalizedSpecialtyName,
+} from "@/features/specialties/utils/localized-specialty";
 import Select from "@/components/form/Select";
 import {
   usePractitionerSpecialties,
@@ -40,12 +44,12 @@ function createSignature(items: EditableSpecialty[]) {
   );
 }
 
-function getSpecialtyLabel(specialty: EditableSpecialty | Specialty) {
+function getSpecialtyLabel(specialty: EditableSpecialty | Specialty, locale: string) {
   if ("title" in specialty) {
     return specialty.title ?? specialty.slug;
   }
 
-  return specialty.name ?? specialty.slug;
+  return getLocalizedSpecialtyName(specialty, locale);
 }
 
 type PractitionerSpecialtiesViewProps = {
@@ -56,6 +60,7 @@ export default function PractitionerSpecialtiesView({
   isEditable = true,
 }: PractitionerSpecialtiesViewProps) {
   const t = useTranslations("practitioner-area");
+  const locale = useLocale();
 
   const {
     data: currentData,
@@ -118,9 +123,9 @@ export default function PractitionerSpecialtiesView({
     () =>
       availableCategories.map((category) => ({
         value: category.id,
-        label: category.name,
+        label: getLocalizedSpecialtyCategoryName(category, locale),
       })),
-    [availableCategories],
+    [availableCategories, locale],
   );
 
   useEffect(() => {
@@ -199,7 +204,7 @@ export default function PractitionerSpecialtiesView({
         {
           specialtyId: specialty.id,
           slug: specialty.slug,
-          title: specialty.name,
+          title: getLocalizedSpecialtyName(specialty, locale),
           isPrimary: currentDraft.length === 0,
         },
       ]),
@@ -421,7 +426,7 @@ export default function PractitionerSpecialtiesView({
                     {/* Card Title Body */}
                     <div className="mt-3.5 mb-5">
                       <h3 className="text-sm font-bold text-text-primary dark:text-white/90">
-                        {getSpecialtyLabel(specialty)}
+                        {getSpecialtyLabel(specialty, locale)}
                       </h3>
                     </div>
                   </div>
@@ -575,7 +580,7 @@ export default function PractitionerSpecialtiesView({
               ) : (
                 unselectedSpecialties.map((specialty) => (
                   <option key={specialty.id} value={specialty.id}>
-                    {getSpecialtyLabel(specialty)}
+                    {getSpecialtyLabel(specialty, locale)}
                   </option>
                 ))
               )}

@@ -126,5 +126,5 @@ Auth payload examples inside `data`:
 - patient profile management beyond minimal auth bootstrap
 - practitioner onboarding/profile completion/application submission
 - advanced RBAC beyond auth baseline
-- sessions, payments, chat, articles, reviews, training
+- sessions, payments, chat, articles, reviews, academy
 - advanced notification delivery orchestration

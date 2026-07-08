@@ -14,7 +14,6 @@ export type AdminAuditCategory =
   | "SUPPORT"
   | "CHAT"
   | "SYSTEM"
-  | "TRAINING"
   | "MARKETING";
 
 export type AdminAuditSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";

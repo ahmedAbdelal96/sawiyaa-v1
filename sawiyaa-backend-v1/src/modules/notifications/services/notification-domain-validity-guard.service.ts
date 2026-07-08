@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import {
-  CourseScheduleStatus,
-  EnrollmentStatus,
   PaymentStatus,
   SessionStatus,
   RefundStatus,
@@ -36,12 +34,6 @@ export class NotificationDomainValidityGuardService {
     SessionStatus.EXPIRED,
     SessionStatus.REFUNDED,
   ]);
-  private readonly invalidTrainingScheduleStatuses =
-    new Set<CourseScheduleStatus>([
-      CourseScheduleStatus.CANCELLED,
-      CourseScheduleStatus.COMPLETED,
-      CourseScheduleStatus.ARCHIVED,
-    ]);
   private readonly paymentSuccessStatuses = new Set<PaymentStatus>([
     PaymentStatus.CAPTURED,
     PaymentStatus.AUTHORIZED,
@@ -75,10 +67,6 @@ export class NotificationDomainValidityGuardService {
       return this.evaluateSession(notification.relatedEntityId);
     }
 
-    if (notification.relatedEntityType === 'TRAINING_ENROLLMENT') {
-      return this.evaluateTrainingEnrollment(notification.relatedEntityId);
-    }
-
     if (notification.relatedEntityType === 'PAYMENT') {
       return this.evaluatePayment(
         notification.relatedEntityId,
@@ -105,36 +93,6 @@ export class NotificationDomainValidityGuardService {
 
     if (this.invalidSessionStatuses.has(session.status)) {
       return { valid: false, reason: `SESSION_STATUS_${session.status}` };
-    }
-
-    return { valid: true };
-  }
-
-  private async evaluateTrainingEnrollment(
-    enrollmentId: string,
-  ): Promise<GuardDecision> {
-    const enrollment =
-      await this.repository.findTrainingEnrollmentDeliveryGuardState(
-        enrollmentId,
-      );
-    if (!enrollment) {
-      return { valid: false, reason: 'TRAINING_ENROLLMENT_NOT_FOUND' };
-    }
-
-    if (enrollment.enrollmentStatus !== EnrollmentStatus.ACTIVE) {
-      return {
-        valid: false,
-        reason: `TRAINING_ENROLLMENT_STATUS_${enrollment.enrollmentStatus}`,
-      };
-    }
-
-    if (
-      this.invalidTrainingScheduleStatuses.has(enrollment.courseSchedule.status)
-    ) {
-      return {
-        valid: false,
-        reason: `TRAINING_SCHEDULE_STATUS_${enrollment.courseSchedule.status}`,
-      };
     }
 
     return { valid: true };

@@ -18,12 +18,14 @@ import {
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
 import { ConfirmModal, DestructiveConfirmModal } from "@/components/ui/modal";
+import { toAppError } from "@/lib/api/errors";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import {
   formatPractitionerOrViewerDateTime,
   formatTimeZoneLabel,
 } from "@/lib/time-formatting";
 import {
+  useClosePractitionerSessionRuntime,
   useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
   usePreparePractitionerSessionRuntime,
@@ -65,6 +67,31 @@ type Props = {
   sessionId: string;
 };
 
+type RoomCloseFeedback = "closed" | "alreadyClosed" | null;
+
+function getRoomCloseErrorMessage(code: string | undefined, t: any) {
+  switch (code) {
+    case "SESSION_VIDEO_ROOM_CLOSE_ONLY_AFTER_START":
+      return t("detail.roomClose.errors.onlyAfterStart");
+    case "SESSION_VIDEO_ROOM_CLOSE_REASON_REQUIRED":
+      return t("detail.roomClose.errors.reasonRequired");
+    case "SESSION_VIDEO_ROOM_CLOSE_NOT_ALLOWED":
+      return t("detail.roomClose.errors.notAllowed");
+    case "SESSION_VIDEO_PROVIDER_ROOM_CLOSE_FAILED":
+      return t("detail.roomClose.errors.providerFailed");
+    default:
+      return t("detail.roomClose.errors.generic");
+  }
+}
+
+function getSafeTranslation(
+  t: any,
+  key: string,
+  fallback: string,
+) {
+  return t.has?.(key) ? t(key) : fallback;
+}
+
 export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions.practitioner");
   const commonT = useTranslations("sessions");
@@ -72,18 +99,22 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const profileQuery = usePractitionerProfile();
 
-  const [confirmingAction, setConfirmingAction] = useState<"complete" | "no-show" | null>(
-    null,
-  );
+  const [confirmingAction, setConfirmingAction] = useState<
+    "complete" | "no-show" | "close-room" | null
+  >(null);
   const [recentAction, setRecentAction] = useState<"complete" | "no-show" | null>(null);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
+  const [roomCloseReason, setRoomCloseReason] = useState("");
+  const [roomCloseFeedback, setRoomCloseFeedback] = useState<RoomCloseFeedback>(null);
+  const [roomCloseError, setRoomCloseError] = useState<string | null>(null);
 
   const { data: session, isLoading, isError } = usePractitionerSession(sessionId);
   const completeMutation = useMarkPractitionerSessionCompleted();
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
+  const closeRoomMutation = useClosePractitionerSessionRuntime();
   const practitionerTimeZone = profileQuery.data?.profile.timezone ?? session?.timezone ?? null;
   const practitionerTimeZoneLabel = practitionerTimeZone
     ? formatTimeZoneLabel(practitionerTimeZone, { locale })
@@ -130,15 +161,42 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     session.presentationStatus,
   );
   const isBusy =
-    completeMutation.isPending || noShowMutation.isPending || joinMutation.isPending;
+    completeMutation.isPending ||
+    noShowMutation.isPending ||
+    joinMutation.isPending ||
+    closeRoomMutation.isPending;
+  const now = Date.now();
+  const scheduledStartTime = session.scheduledStartAt
+    ? new Date(session.scheduledStartAt).getTime()
+    : null;
+  const scheduledEndTime = session.scheduledEndAt
+    ? new Date(session.scheduledEndAt).getTime()
+    : null;
+  const hasSessionStarted = scheduledStartTime !== null && now >= scheduledStartTime;
+  const isRoomClosed =
+    roomCloseFeedback !== null ||
+    joinResult?.blockedReason === "SESSION_ROOM_CLOSED" ||
+    session.joinAvailability?.blockedReason === "SESSION_ROOM_CLOSED";
+  const roomCloseRequiresReason =
+    hasSessionStarted && scheduledEndTime !== null && now < scheduledEndTime;
+  const canCloseRoom =
+    hasRuntimeAccess &&
+    hasSessionStarted &&
+    !isRoomClosed &&
+    session.status !== "CANCELLED" &&
+    session.status !== "NO_SHOW" &&
+    session.status !== "COMPLETED";
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
-  const prepareAllowed = hasRuntimeAccess && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
+  const prepareAllowed =
+    hasRuntimeAccess && !isRoomClosed && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
   const joinWindowOpen = isJoinWindowOpen(session, joinResult);
-  const canJoinNow = session.joinAvailability?.canJoin === true;
+  const canJoinNow = joinResult?.canJoin ?? session.joinAvailability?.canJoin ?? false;
+  const blockedJoinReason =
+    joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
     session.presentationStatus,
   );
@@ -151,8 +209,26 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const presentationCloseout = t(
     `detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0],
   );
+  const roomCloseSupportHeading = getSafeTranslation(
+    t,
+    "detail.roomClose.support.heading",
+    locale.startsWith("ar") ? "هل تحتاج إلى مساعدة في هذه الجلسة؟" : "Need help with this session?",
+  );
+  const roomCloseSupportNote = getSafeTranslation(
+    t,
+    "detail.roomClose.support.note",
+    locale.startsWith("ar")
+      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
+      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
+  );
+  const roomCloseActionLabel = getSafeTranslation(
+    t,
+    "detail.roomClose.action",
+    locale.startsWith("ar") ? "إغلاق الجلسة" : "Close room",
+  );
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
+    !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
   const openInMessagesLabel = locale.startsWith("ar")
@@ -161,6 +237,8 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
+    : isRoomClosed
+      ? "unavailable"
     : session.presentationStatus === "IN_PROGRESS"
       ? "liveNow"
       : joinResult?.canJoin && canLaunchProviderRuntime(joinResult)
@@ -208,6 +286,50 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
       setPrepareResult(result);
     } catch {
       setPrepareResult(null);
+    }
+  };
+
+  const openCloseRoomModal = () => {
+    setRoomCloseError(null);
+    closeRoomMutation.reset();
+    setConfirmingAction("close-room");
+    setRoomCloseReason("");
+  };
+
+  const handleCloseRoom = async () => {
+    const reason = roomCloseRequiresReason ? roomCloseReason.trim() : undefined;
+
+    if (roomCloseRequiresReason && !reason) {
+      setRoomCloseError(t("detail.roomClose.errors.reasonRequired"));
+      return;
+    }
+
+    try {
+      const result = await closeRoomMutation.mutateAsync({
+        sessionId: session.id,
+        reason,
+      });
+      setConfirmingAction(null);
+      setRoomCloseError(null);
+      setRoomCloseFeedback(result.wasAlreadyClosed ? "alreadyClosed" : "closed");
+      setRoomCloseReason("");
+      setPrepareResult(null);
+      setJoinResult({
+        sessionId: session.id,
+        status: session.status,
+        provider: result.provider,
+        canJoin: false,
+        blockedReason: "SESSION_ROOM_CLOSED",
+        availableAt: null,
+        expiresAt: null,
+        roomName: result.roomName,
+        roomUrl: result.roomUrl,
+        joinToken: null,
+        providerRuntime: null,
+      });
+    } catch (error) {
+      const appError = toAppError(error);
+      setRoomCloseError(getRoomCloseErrorMessage(appError.code, t));
     }
   };
 
@@ -310,42 +432,58 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   </a>
                 </>
               ) : (
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  {prepareAllowed && (
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                    {prepareAllowed && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrepareRuntime}
+                        disabled={prepareMutation.isPending}
+                        className="w-full sm:w-auto"
+                      >
+                        {prepareMutation.isPending ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            {t("detail.runtime.actions.preparing")}
+                          </>
+                        ) : (
+                          t("detail.runtime.actions.prepare")
+                        )}
+                      </Button>
+                    )}
+                    {shouldShowJoinCheck && (
+                      <Button
+                        size="sm"
+                        onClick={handleResolveJoin}
+                        disabled={joinMutation.isPending}
+                        className="w-full sm:w-auto"
+                      >
+                        {joinMutation.isPending ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            {t("detail.runtime.actions.checking")}
+                          </>
+                        ) : canJoinNow
+                          ? t("detail.runtime.actions.joinNow")
+                          : t("detail.runtime.actions.checkAccess")}
+                      </Button>
+                    )}
+                  </div>
+
+                  {canCloseRoom && (
                     <Button
-                      variant="outline"
+                      variant="danger"
                       size="sm"
-                      onClick={handlePrepareRuntime}
-                      disabled={prepareMutation.isPending}
+                      onClick={openCloseRoomModal}
+                      disabled={closeRoomMutation.isPending}
                       className="w-full sm:w-auto"
                     >
-                      {prepareMutation.isPending ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          {t("detail.runtime.actions.preparing")}
-                        </>
-                      ) : (
-                        t("detail.runtime.actions.prepare")
-                      )}
+                      {roomCloseActionLabel}
                     </Button>
                   )}
-                  {shouldShowJoinCheck && (
-                    <Button
-                      size="sm"
-                      onClick={handleResolveJoin}
-                      disabled={joinMutation.isPending}
-                      className="w-full sm:w-auto"
-                    >
-                      {joinMutation.isPending ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin" />
-                          {t("detail.runtime.actions.checking")}
-                        </>
-                    ) : canJoinNow ? t("detail.runtime.actions.joinNow") : t("detail.runtime.actions.checkAccess")}
-                  </Button>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
               {prepareResult?.isPrepared && !joinResult?.canJoin && (
                 <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
@@ -356,11 +494,23 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 </div>
               )}
 
-              {joinResult && !joinResult.canJoin && (
-                <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
-                  {t(
-                    `detail.runtime.blocked.${getRuntimeBlockedReasonKey(joinResult.blockedReason)}` as Parameters<typeof t>[0],
-                  )}
+              {blockedJoinReason && !canJoinNow && (
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+                    {t(
+                      `detail.runtime.blocked.${getRuntimeBlockedReasonKey(blockedJoinReason)}` as Parameters<
+                        typeof t
+                      >[0],
+                    )}
+                  </div>
+                  {blockedJoinReason === "SESSION_ROOM_CLOSED" ? (
+                    <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                      <p className="font-semibold">{roomCloseSupportHeading}</p>
+                      <p className="mt-1 text-sm text-text-secondary">
+                        {roomCloseSupportNote}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -375,6 +525,19 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   {t("detail.runtime.error")}
                 </div>
               )}
+
+              {roomCloseFeedback ? (
+                <div className="rounded-2xl border border-primary/15 bg-primary-light px-4 py-3 text-sm text-text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-white/90">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-primary" />
+                    <p>
+                      {roomCloseFeedback === "alreadyClosed"
+                        ? t("detail.roomClose.alreadyClosed")
+                        : t("detail.roomClose.success")}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -694,6 +857,71 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               </p>
             </div>
           </div>
+        </div>
+      </DestructiveConfirmModal>
+
+      <DestructiveConfirmModal
+        isOpen={confirmingAction === "close-room"}
+        onClose={() => {
+          setConfirmingAction(null);
+          closeRoomMutation.reset();
+          setRoomCloseError(null);
+        }}
+        size="sm"
+        title={
+          roomCloseRequiresReason
+            ? t("detail.roomClose.modal.beforeTitle")
+            : t("detail.roomClose.modal.afterTitle")
+        }
+        description={
+          roomCloseRequiresReason
+            ? t("detail.roomClose.modal.beforeNote")
+            : t("detail.roomClose.modal.afterNote")
+        }
+        confirmLabel={
+          closeRoomMutation.isPending ? (
+            <>
+              <Loader2 size={14} className="animate-spin" />
+              {t("detail.roomClose.closing")}
+            </>
+          ) : (
+            roomCloseActionLabel
+          )
+        }
+        cancelLabel={t("detail.roomClose.cancel")}
+        onConfirm={handleCloseRoom}
+        loading={closeRoomMutation.isPending}
+        confirmDisabled={roomCloseRequiresReason && roomCloseReason.trim().length === 0}
+      >
+        <div className="space-y-4">
+          {roomCloseRequiresReason ? (
+            <div>
+              <label className="block text-sm font-medium text-text-primary dark:text-white/90">
+                {t("detail.roomClose.reasonLabel")}
+              </label>
+              <input
+                type="text"
+                value={roomCloseReason}
+                onChange={(event) => setRoomCloseReason(event.target.value)}
+                maxLength={200}
+                placeholder={t("detail.roomClose.reasonPlaceholder")}
+                className="app-control mt-2 w-full px-3 py-2.5"
+              />
+              <p className="mt-2 text-xs leading-5 text-text-secondary">
+                {t("detail.roomClose.reasonHelp")}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-sm text-text-secondary dark:bg-white/5">
+              {t("detail.roomClose.afterEndHelper")}
+            </div>
+          )}
+
+          {roomCloseError ? (
+            <div className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700 dark:border-danger-500/20 dark:bg-danger-500/10 dark:text-danger-200">
+              {roomCloseError}
+            </div>
+          ) : null}
         </div>
       </DestructiveConfirmModal>
     </div>

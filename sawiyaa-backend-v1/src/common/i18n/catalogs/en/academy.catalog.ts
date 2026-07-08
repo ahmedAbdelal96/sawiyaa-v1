@@ -1,4 +1,42 @@
 export const enAcademyCatalog = {
+  academyProgram: {
+    errors: {
+      notFound: 'Academy program was not found',
+      registrationClosed: 'Academy program registration is closed',
+      seatCapacityReached: 'Academy program seat capacity has been reached',
+      missingPricing: 'Academy program pricing is missing',
+      unsupportedCurrency:
+        'Academy program currency is not supported by routing policy',
+      enrollmentNotFound: 'Academy program enrollment was not found',
+      learnersRestricted:
+        'Academy program enrollment is available only to patients and practitioners',
+      learnerContactAlreadyExists:
+        'This phone number, WhatsApp number, or email is already linked to another learner',
+      enrollmentAlreadyExists:
+        'Enrollment already exists for this academy program and learner',
+      invalidPrice: 'Academy program price is invalid',
+      invalidDate: 'Academy program date is invalid',
+      invalidWindow: 'Academy program date window is invalid',
+      missingSlugSource: 'Academy program slug source is missing',
+      categoryNotFound: 'Academy program category was not found',
+      archivedProgramCannotBePublished:
+        'Archived academy program cannot be published',
+      archivedReadOnly: 'Archived academy program cannot be edited',
+      sessionNotFound: 'Academy program session was not found',
+      attendanceInvalidStatus: 'Academy program attendance status is invalid',
+      certificateFileRequired:
+        'Please choose a certificate PDF before uploading',
+      certificateInvalidType: 'Only PDF certificate files are allowed',
+      certificateFileTooLarge:
+        'Certificate file is too large. Maximum size is 10MB',
+      certificateEnrollmentNotEligible:
+        'Certificate can only be uploaded for a confirmed enrollment',
+      certificateNotFound: 'Certificate file was not found',
+      coverFileRequired: 'Please choose a cover image before uploading',
+      coverInvalidType: 'Only JPG, PNG, or WebP cover images are allowed',
+      coverFileTooLarge: 'Cover image file is too large. Maximum size is 10MB',
+    },
+  },
   errors: {
     notFound: 'Academy course was not found',
     archivedReadOnly: 'Archived academy course cannot be edited',

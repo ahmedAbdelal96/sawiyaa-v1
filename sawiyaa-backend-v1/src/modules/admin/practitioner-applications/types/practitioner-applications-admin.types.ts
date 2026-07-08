@@ -43,6 +43,24 @@ export interface AdminPractitionerApplicationListItemViewModel {
   updatedAt: Date;
 }
 
+export interface AdminSpecialtyCategorySummaryViewModel {
+  id: string;
+  slug: string;
+  name: string;
+  nameAr: string | null;
+  nameEn: string | null;
+}
+
+export interface AdminSpecialtySummaryViewModel {
+  specialtyId: string;
+  slug: string;
+  title: string | null;
+  name: string | null;
+  nameAr: string | null;
+  nameEn: string | null;
+  category: AdminSpecialtyCategorySummaryViewModel | null;
+}
+
 export interface AdminPractitionerApplicationSummaryViewModel {
   total: number;
   newApplications: number;
@@ -102,6 +120,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     bio: string | null;
     yearsOfExperience: number | null;
     primarySpecialtyCategoryId: string | null;
+    primarySpecialtyCategory: AdminSpecialtyCategorySummaryViewModel | null;
     pricing: {
       session30: {
         egp: number | null;
@@ -113,12 +132,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
       };
     };
     languages: string[];
-    specialties: Array<{
-      specialtyId: string;
-      slug: string;
-      title: string | null;
-      isPrimary: boolean;
-    }>;
+    specialties: Array<AdminSpecialtySummaryViewModel & { isPrimary: boolean }>;
   };
   liveProfile: {
     practitionerType: PractitionerType;
@@ -129,6 +143,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
     bio: string | null;
     yearsOfExperience: number | null;
     primarySpecialtyCategoryId: string | null;
+    primarySpecialtyCategory: AdminSpecialtyCategorySummaryViewModel | null;
     pricing: {
       session30: {
         egp: number | null;
@@ -140,12 +155,7 @@ export interface AdminPractitionerApplicationDetailsViewModel {
       };
     };
     languages: string[];
-    specialties: Array<{
-      specialtyId: string;
-      slug: string;
-      title: string | null;
-      isPrimary: boolean;
-    }>;
+    specialties: Array<AdminSpecialtySummaryViewModel & { isPrimary: boolean }>;
   };
   credentials: Array<{
     credentialId: string;

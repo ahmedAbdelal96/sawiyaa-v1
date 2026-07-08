@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   AlertTriangle,
@@ -350,9 +350,59 @@ function WeekDraftEditor({
     }
   }, [selectedDay, week.slots]);
 
-  const isEditable = week.status === "DRAFT";
+  const isEditable = week.status === "DRAFT" || week.status === "PUBLISHED";
   const isPublished = week.status === "PUBLISHED";
   const isNotSet = week.status === "NOT_SET";
+
+  const isSlotInPast = useCallback(
+    (dayOfWeek: number, duration: number, startMinute: number) => {
+      try {
+        const [year, month, day] = week.weekStartDate.split("-").map(Number);
+        const weekStartUtc = new Date(Date.UTC(year, month - 1, day));
+        const targetDate = new Date(weekStartUtc.getTime() + dayOfWeek * 24 * 60 * 60 * 1000);
+
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: week.timezone,
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          hour12: false,
+        });
+        const nowParts = formatter.formatToParts(new Date());
+        const getPart = (type: string) => Number(nowParts.find((p) => p.type === type)?.value);
+        const tzNow = new Date(
+          Date.UTC(
+            getPart("year"),
+            getPart("month") - 1,
+            getPart("day"),
+            getPart("hour"),
+            getPart("minute"),
+            getPart("second"),
+          ),
+        );
+
+        const slotHour = Math.floor(startMinute / 60);
+        const slotMinute = startMinute % 60;
+        const slotDateInTz = new Date(
+          Date.UTC(
+            targetDate.getUTCFullYear(),
+            targetDate.getUTCMonth(),
+            targetDate.getUTCDate(),
+            slotHour,
+            slotMinute,
+          ),
+        );
+
+        return slotDateInTz.getTime() < tzNow.getTime();
+      } catch (e) {
+        return false;
+      }
+    },
+    [week.weekStartDate, week.timezone],
+  );
 
   const selectedDaySlots = draft[selectedDay];
   const selectedDayRanges30 = useMemo(
@@ -404,6 +454,20 @@ function WeekDraftEditor({
       return;
     }
 
+    const originalSlot = week.slots.find(
+      (s) =>
+        s.dayOfWeek === day &&
+        s.durationMinutes === duration &&
+        s.startMinuteOfDay === minute,
+    );
+    if (originalSlot && originalSlot.canEdit === false) {
+      return;
+    }
+
+    if (isSlotInPast(day, duration, minute)) {
+      return;
+    }
+
     setDraft((current) => {
       const currentStarts = current[day][duration];
       const exists = currentStarts.includes(minute);
@@ -420,13 +484,23 @@ function WeekDraftEditor({
   }
 
   function clearDuration(day: DayOfWeek, duration: SessionBlockDuration) {
-    updateDurationStarts(day, duration, []);
+    const lockedStarts = week.slots
+      .filter((s) => s.dayOfWeek === day && s.durationMinutes === duration && s.canEdit === false)
+      .map((s) => s.startMinuteOfDay);
+    updateDurationStarts(day, duration, lockedStarts);
   }
 
   function clearSelectedDay() {
+    const lockedStarts30 = week.slots
+      .filter((s) => s.dayOfWeek === selectedDay && s.durationMinutes === 30 && s.canEdit === false)
+      .map((s) => s.startMinuteOfDay);
+    const lockedStarts60 = week.slots
+      .filter((s) => s.dayOfWeek === selectedDay && s.durationMinutes === 60 && s.canEdit === false)
+      .map((s) => s.startMinuteOfDay);
+
     setDraft((current) => ({
       ...current,
-      [selectedDay]: { 30: [], 60: [] },
+      [selectedDay]: { 30: lockedStarts30, 60: lockedStarts60 },
     }));
   }
 
@@ -748,7 +822,15 @@ function WeekDraftEditor({
               <div className={cn("mt-4 grid gap-2", timeGridColumnsClass)}>
                 {timeSteps.map((minute) => {
                   const isActive = (draft[selectedDay][selectedDuration] ?? []).includes(minute);
-                  const isDisabled = minute + selectedDuration > DAY_END_MINUTE || !isEditable;
+                  const originalSlot = week.slots.find(
+                    (s) =>
+                      s.dayOfWeek === selectedDay &&
+                      s.durationMinutes === selectedDuration &&
+                      s.startMinuteOfDay === minute,
+                  );
+                  const isLocked = originalSlot && originalSlot.canEdit === false;
+                  const isPast = isSlotInPast(selectedDay, selectedDuration, minute);
+                  const isDisabled = minute + selectedDuration > DAY_END_MINUTE || !isEditable || isLocked || isPast;
                   return (
                     <button
                       key={minute}
@@ -757,12 +839,24 @@ function WeekDraftEditor({
                       disabled={isDisabled}
                       aria-pressed={isActive}
                       aria-label={`${selectedDurationLabel} ${formatTimeLabel(minute, locale)}`}
+                      title={
+                        isLocked
+                          ? originalSlot?.reasonCode === "PAST"
+                            ? "الوقت انتهى بالفعل"
+                            : "الوقت محجوز أو مرتبط بجلسة نشطة"
+                          : isPast
+                            ? "الوقت انتهى بالفعل"
+                            : undefined
+                      }
                       className={cn(
                         "w-full min-h-[3rem] rounded-2xl border px-2 py-2 text-[11px] font-semibold transition sm:text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
                         isActive
-                          ? "border-primary/35 bg-primary-light text-text-brand shadow-[0_12px_24px_-18px_rgba(68,161,148,0.36)]"
+                          ? isLocked
+                            ? "border-primary/20 bg-primary-light/40 text-primary-dark/65"
+                            : "border-primary/35 bg-primary-light text-text-brand shadow-[0_12px_24px_-18px_rgba(68,161,148,0.36)]"
                           : "border-border-light bg-white text-text-secondary hover:border-primary/25 hover:bg-brand-25 dark:bg-surface-secondary dark:hover:bg-white/5",
                         isDisabled && "cursor-not-allowed opacity-40 hover:border-border-light hover:bg-white",
+                        isPast && !isLocked && "bg-gray-50 text-gray-400 dark:bg-neutral-800/30 dark:text-neutral-500",
                       )}
                     >
                       {formatTimeLabel(minute, locale)}

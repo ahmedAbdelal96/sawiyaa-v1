@@ -1611,25 +1611,6 @@ export const regionalBulkSeedModule: SeedModule = {
     }
 
     for (let i = 1; i <= cfg.courses; i += 1) {
-      const instructor = pick(practitionerUsers, i);
-      const instructorId = uuid(`bulk-instructor-${i}`);
-      await prisma.trainingInstructor.upsert({
-        where: { id: instructorId },
-        create: {
-          id: instructorId,
-          userId: instructor.userId,
-          practitionerId: instructor.profileId,
-          instructorType: 'PRACTITIONER',
-          status: 'ACTIVE',
-          displayName: `Trainer ${i}`,
-        },
-        update: {
-          userId: instructor.userId,
-          practitionerId: instructor.profileId,
-          displayName: `Trainer ${i}`,
-        },
-      });
-
       const categoryId = uuid(`bulk-course-category-${(i % 5) + 1}`);
       await prisma.courseCategory.upsert({
         where: { slugRoot: `bulk-course-category-${(i % 5) + 1}` },
@@ -1647,7 +1628,6 @@ export const regionalBulkSeedModule: SeedModule = {
         create: {
           id: courseId,
           primaryCategoryId: categoryId,
-          primaryInstructorId: instructorId,
           slugRoot: `bulk-course-${i}`,
           courseType: CourseType.LIVE_COURSE,
           deliveryMode: CourseDeliveryMode.EXTERNAL_LIVE_ROOM,

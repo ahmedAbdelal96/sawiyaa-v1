@@ -95,8 +95,8 @@ export class GetMyPatientJourneyUseCase {
       hasAnyAssessment:
         normalizedSignalContext.assessments.hasCompletedAssessment,
       hasPastSessions: normalizedSignalContext.sessions.hasPastSession,
-      hasActiveTrainingEnrollment:
-        normalizedSignalContext.training.hasActiveEnrollment,
+      hasActiveAcademyEnrollment:
+        normalizedSignalContext.academy.hasActiveEnrollment,
       continuityStage: normalizedSignalContext.continuity.stage,
       assessmentRecommendations,
     });

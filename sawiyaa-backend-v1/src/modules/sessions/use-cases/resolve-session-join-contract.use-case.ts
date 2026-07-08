@@ -17,7 +17,10 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
-import { resolveSessionJoinPolicy } from '../utils/session-join-policy.util';
+import {
+  computeSessionPostEndReconnectGraceClosesAt,
+  resolveSessionJoinPolicy,
+} from '../utils/session-join-policy.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 
 @Injectable()
@@ -39,6 +42,7 @@ export class ResolveSessionJoinContractUseCase {
     actorType: 'PATIENT' | 'PRACTITIONER';
     sessionId: string;
   }) {
+    const now = new Date();
     const session = await this.sessionRepository.findById(input.sessionId);
 
     if (!session) {
@@ -63,10 +67,12 @@ export class ResolveSessionJoinContractUseCase {
         actorType: input.actorType,
         sessionStatus: session.status,
         sessionMode: session.sessionMode,
+        occurredAt: now.toISOString(),
       },
     });
 
     let effectiveSession = session;
+    let usedPostEndReconnectGrace = false;
     let readiness = this.resolveSessionJoinReadinessService.resolve({
       status: effectiveSession.status,
       sessionMode: effectiveSession.sessionMode,
@@ -75,7 +81,8 @@ export class ResolveSessionJoinContractUseCase {
       provider: effectiveSession.provider,
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
-      now: new Date(),
+      videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      now,
     });
 
     if (
@@ -99,8 +106,30 @@ export class ResolveSessionJoinContractUseCase {
         provider: effectiveSession.provider,
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
-        now: new Date(),
+        videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        now,
       });
+    }
+
+    if (
+      !readiness.canJoin &&
+      readiness.blockedReason === 'SESSION_JOIN_WINDOW_CLOSED'
+    ) {
+      const graceJoinAllowed =
+        await this.canUsePostEndReconnectGrace({
+          session: effectiveSession,
+          userId: input.userId,
+          now,
+        });
+
+      if (graceJoinAllowed) {
+        usedPostEndReconnectGrace = true;
+        readiness = {
+          canPrepareRuntime: false,
+          canJoin: true,
+          blockedReason: null,
+        };
+      }
     }
 
     // JOIN_BLOCKED — emitted when the user is not allowed to join
@@ -113,7 +142,8 @@ export class ResolveSessionJoinContractUseCase {
         provider: effectiveSession.provider,
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
-        now: new Date(),
+        videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        now,
       });
 
       await this.emitEvent({
@@ -124,6 +154,7 @@ export class ResolveSessionJoinContractUseCase {
           actorType: input.actorType,
           blockedReason: readiness.blockedReason,
           sessionStatus: effectiveSession.status,
+          occurredAt: now.toISOString(),
         },
       });
 
@@ -183,6 +214,7 @@ export class ResolveSessionJoinContractUseCase {
           provider: resolvedProvider,
           roomId: effectiveSession.providerRoomId,
           tokenExpiresAt,
+          occurredAt: now.toISOString(),
         },
       });
     } catch (err) {
@@ -194,6 +226,7 @@ export class ResolveSessionJoinContractUseCase {
           actorType: input.actorType,
           provider: resolvedProvider,
           error: err instanceof Error ? err.message : String(err),
+          occurredAt: now.toISOString(),
         },
       });
       throw err;
@@ -207,6 +240,8 @@ export class ResolveSessionJoinContractUseCase {
       metadata: {
         actorType: input.actorType,
         provider: resolvedProvider,
+        occurredAt: now.toISOString(),
+        usedPostEndReconnectGrace,
       },
     });
 
@@ -251,8 +286,14 @@ export class ResolveSessionJoinContractUseCase {
       provider: effectiveSession.provider,
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
-      now: new Date(),
+      videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      now,
     });
+    const reconnectGraceClosesAt = usedPostEndReconnectGrace
+      ? computeSessionPostEndReconnectGraceClosesAt(
+          effectiveSession.scheduledEndAt,
+        )
+      : null;
 
     return {
       item: {
@@ -262,7 +303,10 @@ export class ResolveSessionJoinContractUseCase {
         canJoin: true,
         blockedReason: null,
         availableAt: policy.joinOpensAt?.toISOString() ?? null,
-        expiresAt: policy.joinClosesAt?.toISOString() ?? null,
+        expiresAt:
+          reconnectGraceClosesAt?.toISOString() ??
+          policy.joinClosesAt?.toISOString() ??
+          null,
         roomName: effectiveSession.providerRoomId,
         roomUrl: effectiveSession.providerSessionRef,
         joinToken,
@@ -375,5 +419,41 @@ export class ResolveSessionJoinContractUseCase {
 
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  }
+
+  private async canUsePostEndReconnectGrace(input: {
+    session: NonNullable<Awaited<ReturnType<SessionRepository['findById']>>>;
+    userId: string;
+    now: Date;
+  }): Promise<boolean> {
+    if (!input.session.scheduledEndAt) {
+      return false;
+    }
+
+    if (input.session.videoRoomClosedAt) {
+      return false;
+    }
+
+    const reconnectGraceClosesAt = computeSessionPostEndReconnectGraceClosesAt(
+      input.session.scheduledEndAt,
+    );
+    if (!reconnectGraceClosesAt || input.now > reconnectGraceClosesAt) {
+      return false;
+    }
+
+    const runtimePrepared =
+      input.session.provider !== SessionProvider.NONE &&
+      Boolean(input.session.providerRoomId) &&
+      Boolean(input.session.providerSessionRef);
+
+    if (!runtimePrepared) {
+      return false;
+    }
+
+    return this.sessionRepository.hasJoinAllowanceOrAttendanceBefore({
+      sessionId: input.session.id,
+      userId: input.userId,
+      occurredBeforeOrAt: input.session.scheduledEndAt,
+    });
   }
 }

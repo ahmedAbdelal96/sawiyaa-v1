@@ -51,6 +51,7 @@ import {
   useAdminSessionAttendance,
   useAdminSessionRuntimeInspection,
 } from "@/features/admin/session-runtime/hooks/use-admin-session-runtime";
+import AdminSessionRoomCloseEvidencePanel from "@/features/admin/session-runtime/components/AdminSessionRoomCloseEvidencePanel";
 
 const STATUS_FILTERS: Array<SessionStatus | "ALL"> = [
   "ALL",
@@ -1023,7 +1024,15 @@ export default function AdminSessionsListScreen() {
                     </p>
                   )}
                 </div>
+
               </div>
+
+              {attendanceData ? (
+                <AdminSessionRoomCloseEvidencePanel
+                  videoRoomClose={attendanceData.videoRoomClose}
+                  relatedSupportTickets={attendanceData.relatedSupportTickets}
+                />
+              ) : null}
             </>
           ) : (
             <div className="rounded-[24px] border border-border-light bg-surface-secondary/50 p-6 text-sm text-text-secondary">

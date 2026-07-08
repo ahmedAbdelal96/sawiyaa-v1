@@ -13,7 +13,7 @@ The platform has a clear operational layer that keeps the product safe, financia
 - support requests
 - chat moderation
 - content moderation
-- payouts and settlements
+- payouts and accounting review
 - notifications and escalations
 - policy changes and system settings
 
@@ -23,7 +23,7 @@ The current product model supports these operational actors:
 
 - **Admin** - broad platform operations and governance.
 - **Support** - handles user-facing issues and triage.
-- **Finance / operations** - manages wallet, refunds, settlement, and payout activity.
+- **Finance / operations** - manages wallet, refunds, payout activity, and accounting review.
 - **Moderation** - handles sensitive content or conversation review.
 - **Content review** - manages article or content approval workflows where relevant.
 
@@ -49,11 +49,11 @@ Admins can apply explicit manual decisions to close a session outside the normal
 
 The admin decision endpoint accepts:
 
-- `decisionType` — the target state such as `NO_SHOW` or `UNDER_REVIEW`
-- `reasonCode` — operational reason for the decision
-- `confirmEvidenceReviewed` — confirms the admin has reviewed the relevant context
-- `confirmNoAutomaticRefund` — explicitly confirms no automatic refund should trigger
-- `confirmNoAutomaticPayout` — explicitly confirms no automatic payout should trigger
+- `decisionType` - the target state such as `NO_SHOW` or `UNDER_REVIEW`
+- `reasonCode` - operational reason for the decision
+- `confirmEvidenceReviewed` - confirms the admin has reviewed the relevant context
+- `confirmNoAutomaticRefund` - explicitly confirms no automatic refund should trigger
+- `confirmNoAutomaticPayout` - explicitly confirms no automatic payout should trigger
 
 **Propagation**: Manual decisions update the session `presentationStatus` through the backend contract. The change propagates to all surfaces that read session state:
 
@@ -76,7 +76,7 @@ The money loop covers:
 - refund decisions
 - wallet balance updates
 - practitioner payouts
-- settlement generation
+- accounting reconciliation
 - exception handling
 
 ### 3. Chat operations
@@ -96,8 +96,11 @@ The support loop covers:
 - issue intake
 - routing to the correct team
 - status tracking
+- ownership transfer
 - escalation
 - resolution and follow-up
+
+Support ownership must follow the current gate rules. The first public staff reply on an unassigned ticket claims ownership, and only the assigned owner can send public replies.
 
 ## Operating principles
 
@@ -116,7 +119,8 @@ The admin web app is the primary operations console for:
 - chat moderation
 - support queues
 - financial records
-- settlements and payout tools
+- practitioner payouts
+- accounting reconciliation
 - policy configuration
 - reporting and diagnostics
 
@@ -131,7 +135,6 @@ The admin web app is the primary operations console for:
 
 Some checks are intentionally not treated as product failures:
 
-- Paymob provider sandbox QA still needs external approval
 - provider checkout can return `403 Forbidden` in this environment
 - any external provider verification should be tracked as deferred, not as a product logic change
 
@@ -146,3 +149,9 @@ An operational platform needs screens that are:
 - explicit about next steps
 
 This is why Sawiyaa screens should prioritize clarity, hierarchy, and policy-aware messaging.
+
+## Related docs
+
+- [Support and care chat](support-and-care-chat.md)
+- [Notifications and alerting](notifications-and-alerting.md)
+- [Accounting reconciliation](accounting-reconciliation.md)

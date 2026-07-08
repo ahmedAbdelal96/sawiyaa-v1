@@ -49,14 +49,6 @@
         "title": "Reviews — Admin",
         "description": "Manage and moderate user reviews."
       }
-    },
-    "training": {
-      "title": "Training",
-      "description": "Training resources, onboarding materials, and certification management will be available here.",
-      "meta": {
-        "title": "Training — Admin",
-        "description": "Manage training programs and onboarding content."
-      }
     }
   },
   "status": {
@@ -177,10 +169,6 @@
       "chat": {
         "title": "Chat",
         "description": "Messaging oversight and conversation moderation."
-      },
-      "training": {
-        "title": "Training",
-        "description": "Training resources and onboarding materials."
       }
     }
   },

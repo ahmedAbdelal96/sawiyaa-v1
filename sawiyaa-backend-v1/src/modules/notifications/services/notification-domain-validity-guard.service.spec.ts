@@ -1,6 +1,4 @@
 import {
-  CourseScheduleStatus,
-  EnrollmentStatus,
   PaymentStatus,
   RefundStatus,
   SessionStatus,
@@ -11,7 +9,6 @@ import { NotificationDomainValidityGuardService } from './notification-domain-va
 describe('NotificationDomainValidityGuardService', () => {
   const repository = {
     findSessionDeliveryGuardState: jest.fn(),
-    findTrainingEnrollmentDeliveryGuardState: jest.fn(),
     findPaymentDeliveryGuardState: jest.fn(),
     findRefundDeliveryGuardState: jest.fn(),
   } as unknown as OperationalNotificationRepository;
@@ -20,29 +17,6 @@ describe('NotificationDomainValidityGuardService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('allows valid training reminder notifications', async () => {
-    (
-      repository.findTrainingEnrollmentDeliveryGuardState as jest.Mock
-    ).mockResolvedValue({
-      enrollmentStatus: EnrollmentStatus.ACTIVE,
-      courseSchedule: {
-        status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
-      },
-    });
-
-    const result = await service.evaluate({
-      id: 'n1',
-      relatedEntityType: 'TRAINING_ENROLLMENT',
-      relatedEntityId: 'en_1',
-      notificationType: {
-        slug: 'training.schedule-reminder',
-        category: 'TRAINING',
-      },
-    });
-
-    expect(result).toEqual({ valid: true });
   });
 
   it('suppresses invalid session notifications when session became cancelled', async () => {

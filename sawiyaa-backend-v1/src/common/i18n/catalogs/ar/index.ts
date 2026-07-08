@@ -24,12 +24,12 @@ import { arSessionsCatalog } from './sessions.catalog';
 import { arSettingsCatalog } from './settings.catalog';
 import { arSpecialtiesCatalog } from './specialties.catalog';
 import { arSupportCatalog } from './support.catalog';
-import { arTrainingCatalog } from './training.catalog';
 import { arUsersCatalog } from './users.catalog';
 import { arValidationCatalog } from './validation.catalog';
 
 export const arCatalog = {
   academy: arAcademyCatalog,
+  academyProgram: arAcademyCatalog.academyProgram,
   auth: arAuthCatalog,
   admin: arAdminCatalog,
   assessments: arAssessmentsCatalog,
@@ -56,6 +56,5 @@ export const arCatalog = {
   settings: arSettingsCatalog,
   specialties: arSpecialtiesCatalog,
   support: arSupportCatalog,
-  training: arTrainingCatalog,
   users: arUsersCatalog,
 };

@@ -18,6 +18,7 @@ export class SessionJoinAvailabilityDto {
       'SESSION_TIME_WINDOW_NOT_OPEN',
       'SESSION_RUNTIME_NOT_PREPARED',
       'SESSION_JOIN_WINDOW_CLOSED',
+      'SESSION_ROOM_CLOSED',
     ],
   })
   blockedReason!: SessionJoinBlockedReason | null;
@@ -123,6 +124,15 @@ export class SessionDetailsResponseDto extends SessionItemResponseDto {
 
   @ApiProperty({ nullable: true })
   timezone!: string | null;
+
+  @ApiProperty({ nullable: true })
+  videoRoomClosedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  videoRoomCloseReason!: string | null;
+
+  @ApiProperty({ nullable: true })
+  videoRoomCloseNote!: string | null;
 }
 
 export class SessionsPaginationResponseDto {

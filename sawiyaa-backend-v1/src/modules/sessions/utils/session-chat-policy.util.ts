@@ -17,6 +17,7 @@ export interface SessionChatPolicyInput {
   provider: SessionProvider;
   providerRoomId: string | null;
   providerSessionRef: string | null;
+  videoRoomClosedAt?: Date | null;
   now: Date;
   runtimePrepareLeadMinutes?: number;
 }
@@ -62,6 +63,7 @@ export function resolveSessionChatAvailability(
     provider: input.provider,
     providerRoomId: input.providerRoomId,
     providerSessionRef: input.providerSessionRef,
+    videoRoomClosedAt: input.videoRoomClosedAt,
     now: input.now,
     runtimePrepareLeadMinutes:
       input.runtimePrepareLeadMinutes ?? DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,

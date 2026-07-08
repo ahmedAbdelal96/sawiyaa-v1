@@ -138,7 +138,12 @@ export const adminNavigation: NavigationConfig = [
         namespace: "main",
       },
       { key: "articles", icon: <NavigationIcons.page />, path: "/articles", namespace: "workspace" },
-      { key: "academy", icon: <NavigationIcons.training />, path: "/academy", namespace: "workspace" },
+      {
+        key: "academy",
+        icon: <NavigationIcons.academy />,
+        path: "/academy/programs",
+        namespace: "workspace",
+      },
       { key: "specialties", icon: <NavigationIcons.specialties />, path: "/specialties", namespace: "workspace" },
     ],
   },

@@ -12,6 +12,7 @@ import {
 
 export const SESSION_JOIN_LEAD_MINUTES = 2;
 export const SESSION_JOIN_LAG_MINUTES = 0;
+export const SESSION_POST_END_RECONNECT_GRACE_MINUTES = 10;
 export const DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES = 24 * 60;
 
 export type SessionPresentationStatus =
@@ -33,6 +34,7 @@ export interface SessionJoinPolicyInput {
   provider: SessionProvider;
   providerRoomId: string | null;
   providerSessionRef: string | null;
+  videoRoomClosedAt?: Date | null;
   now: Date;
   runtimePrepareLeadMinutes?: number;
   /** If set, a final manual admin decision exists and should override presentationStatus */
@@ -68,6 +70,7 @@ export interface SessionPresentationSummaryInput {
   provider: SessionProvider;
   providerRoomId: string | null;
   providerSessionRef: string | null;
+  videoRoomClosedAt?: Date | null;
 }
 
 export interface SessionPresentationSummaryCounts {
@@ -158,6 +161,17 @@ export function resolveSessionJoinPolicy(
     Boolean(input.providerRoomId) &&
     Boolean(input.providerSessionRef);
 
+  if (input.videoRoomClosedAt) {
+    return {
+      canPrepareRuntime: false,
+      canJoin: false,
+      blockedReason: 'SESSION_ROOM_CLOSED',
+      prepareOpensAt,
+      joinOpensAt,
+      joinClosesAt,
+    };
+  }
+
   if (input.now > joinClosesAt) {
     return {
       canPrepareRuntime,
@@ -214,6 +228,19 @@ export function buildSessionJoinAvailabilityViewModel(
   };
 }
 
+export function computeSessionPostEndReconnectGraceClosesAt(
+  scheduledEndAt: Date | null,
+): Date | null {
+  if (!scheduledEndAt) {
+    return null;
+  }
+
+  return new Date(
+    scheduledEndAt.getTime() +
+      SESSION_POST_END_RECONNECT_GRACE_MINUTES * 60_000,
+  );
+}
+
 export function resolveSessionPresentationStatus(
   input: SessionJoinPolicyInput,
 ): SessionPresentationStatus {
@@ -249,6 +276,10 @@ export function resolveSessionPresentationStatus(
     scheduledEndAt !== null &&
     input.now >= scheduledStartAt &&
     input.now <= scheduledEndAt;
+
+  if (input.videoRoomClosedAt) {
+    return 'ENDED';
+  }
 
   if (
     input.status === SessionStatus.CANCELLED ||
@@ -367,6 +398,7 @@ export function buildSessionPresentationFilterWhere(input: {
     case SessionPresentationFilter.JOINABLE:
       return {
         sessionMode: SessionMode.VIDEO,
+        videoRoomClosedAt: null,
         status: {
           in: joinablePresentationStatuses,
         },
@@ -392,6 +424,7 @@ export function buildSessionPresentationFilterWhere(input: {
     case SessionPresentationFilter.LIVE:
       return {
         sessionMode: SessionMode.VIDEO,
+        videoRoomClosedAt: null,
         status: SessionStatus.IN_PROGRESS,
         scheduledStartAt: {
           not: null,
@@ -410,6 +443,7 @@ export function buildSessionPresentationFilterWhere(input: {
             sessionMode: {
               not: SessionMode.VIDEO,
             },
+            videoRoomClosedAt: null,
             status: {
               notIn: [...finishedPresentationStatuses, SessionStatus.IN_PROGRESS],
             },
@@ -423,6 +457,7 @@ export function buildSessionPresentationFilterWhere(input: {
           },
           {
             sessionMode: SessionMode.VIDEO,
+            videoRoomClosedAt: null,
             status: {
               in: [
                 SessionStatus.DRAFT,
@@ -440,6 +475,7 @@ export function buildSessionPresentationFilterWhere(input: {
           },
           {
             sessionMode: SessionMode.VIDEO,
+            videoRoomClosedAt: null,
             status: {
               in: joinablePresentationStatuses,
             },
@@ -464,6 +500,11 @@ export function buildSessionPresentationFilterWhere(input: {
             },
           },
           {
+            videoRoomClosedAt: {
+              not: null,
+            },
+          },
+          {
             scheduledEndAt: {
               not: null,
               lt: now,
@@ -483,6 +524,7 @@ export function buildSessionPresentationFilterWhere(input: {
           },
           {
             sessionMode: SessionMode.VIDEO,
+            videoRoomClosedAt: null,
             status: {
               in: joinablePresentationStatuses,
             },

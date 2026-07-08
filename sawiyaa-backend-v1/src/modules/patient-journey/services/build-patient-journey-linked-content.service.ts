@@ -166,17 +166,14 @@ export class BuildPatientJourneyLinkedContentService {
         break;
     }
 
-    if (
-      stage === 'ACTIVE_CARE' ||
-      input.normalizedContext.training.hasActiveEnrollment
-    ) {
+    if (stage === 'ACTIVE_CARE' || input.normalizedContext.academy.hasActiveEnrollment) {
       rules.push({
         key: 'active-care',
         priority: 65,
-        query: 'training',
+        query: 'academy',
         reasonCode: 'CONTENT_ACTIVE_CARE_CONTINUITY',
         reasonText:
-          'Selected to support continuity while you are in an active care/training stage.',
+          'Selected to support continuity while you are in an active care/academy stage.',
       });
     }
 

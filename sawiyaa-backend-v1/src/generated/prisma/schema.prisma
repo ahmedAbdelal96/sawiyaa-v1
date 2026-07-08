@@ -1,5 +1,5 @@
 // Full Combined Prisma Database Final Schema
-// Platform domain: mental health / consultations / content / training
+// Platform domain: mental health / consultations / content / academy
 // Notes:
 // - This is a combined schema draft intended as a strong foundation for NestJS + PostgreSQL + Prisma
 // - UUID primary keys across all models
@@ -326,6 +326,7 @@ enum PaymentPurpose {
   SESSION_EXTENSION
   SESSION_PACKAGE_PURCHASE
   COURSE_ENROLLMENT
+  ACADEMY_PROGRAM_ENROLLMENT
   MANUAL_INVOICE
 }
 
@@ -1044,7 +1045,6 @@ enum NotificationCategory {
   SUPPORT
   CHAT
   SYSTEM
-  TRAINING
   MARKETING
 }
 
@@ -1118,7 +1118,6 @@ enum ConfigCategory {
   SUPPORT
   NOTIFICATION
   SECURITY
-  TRAINING
   SYSTEM
 }
 
@@ -1273,6 +1272,20 @@ enum CourseReviewDecision {
   CHANGES_REQUESTED
 }
 
+enum AcademyProgramStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AcademyProgramDeliveryMethod {
+  ZOOM
+  WHATSAPP
+  GOOGLE_MEET
+  OFFLINE
+  OTHER
+}
+
 //////////////////////////////
 // Foundation / Identity
 //////////////////////////////
@@ -1287,18 +1300,21 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  emails                UserEmail[]
-  phones                UserPhone[]
-  authIdentities        AuthIdentity[]
-  roles                 UserRole[]
-  permissionOverrides   UserPermissionOverride[]
-  sessions              UserSession[]
-  otpChallenges         OtpChallenge[]
-  passwordResetSessions PasswordResetSession[]
-  twoFactorSettings     TwoFactorSetting?
-  patientProfile        PatientProfile?
-  practitionerProfile   PractitionerProfile?
-  academyLearner        AcademyLearner?
+  emails                                 UserEmail[]
+  phones                                 UserPhone[]
+  authIdentities                         AuthIdentity[]
+  roles                                  UserRole[]
+  permissionOverrides                    UserPermissionOverride[]
+  sessions                               UserSession[]
+  otpChallenges                          OtpChallenge[]
+  passwordResetSessions                  PasswordResetSession[]
+  twoFactorSettings                      TwoFactorSetting?
+  patientProfile                         PatientProfile?
+  practitionerProfile                    PractitionerProfile?
+  academyLearner                         AcademyLearner?
+  academyProgramEnrollments              AcademyProgramEnrollment[]
+  academyProgramCertificatesUploaded     AcademyProgramEnrollment[]        @relation("AcademyProgramEnrollmentCertificateUploadedByUser")
+  academyProgramSessionAttendancesMarked AcademyProgramSessionAttendance[] @relation("AcademyProgramSessionAttendanceMarkedByUser")
 
   authoredArticles                              Article[]                               @relation("ArticleAuthorUser")
   configChanges                                 ConfigChangeLog[]                       @relation("ConfigChangeByUser")
@@ -1309,12 +1325,13 @@ model User {
   refundPolicyAcceptances                       RefundPolicyAcceptance[]
   inAppNotificationFeedStates                   InAppNotificationFeedState[]
   sessionReminderQueueRecipientEntries          SessionReminderQueue[]
-  trainingInstructors                           TrainingInstructor[]
-  trainingCoursesCreated                        Course[]                                @relation("TrainingCourseCreatedByUser")
-  trainingCoursesPublished                      Course[]                                @relation("TrainingCoursePublishedByUser")
-  trainingCourseSchedulesCreated                CourseSchedule[]                        @relation("TrainingCourseScheduleCreatedByUser")
-  trainingCourseSessionsCreated                 CourseSession[]                         @relation("TrainingCourseSessionCreatedByUser")
+  academyCoursesCreated                         Course[]                                @relation("AcademyCourseCreatedByUser")
+  academyCoursesPublished                       Course[]                                @relation("AcademyCoursePublishedByUser")
+  academyCourseSchedulesCreated                 CourseSchedule[]                        @relation("AcademyCourseScheduleCreatedByUser")
+  academyCourseSessionsCreated                  CourseSession[]                         @relation("AcademyCourseSessionCreatedByUser")
   academyCoursesLecturesCreated                 AcademyCourseLecture[]                  @relation("AcademyCourseLectureCreatedByUser")
+  academyProgramsCreated                        AcademyProgram[]                        @relation("AcademyProgramCreatedByUser")
+  academyProgramSessionsCreated                 AcademyProgramSession[]                 @relation("AcademyProgramSessionCreatedByUser")
   enrollments                                   Enrollment[]
   settlementPayouts                             PractitionerSettlementPayout[]
   recordedManualPayouts                         PractitionerManualPayout[]
@@ -1574,6 +1591,8 @@ model Specialty {
   id         String   @id @default(uuid()) @db.Uuid
   categoryId String?  @db.Uuid
   slug       String   @unique @db.VarChar(191)
+  nameAr     String?  @db.VarChar(191)
+  nameEn     String?  @db.VarChar(191)
   sortOrder  Int      @default(0)
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
@@ -1593,6 +1612,8 @@ model SpecialtyCategory {
   id          String   @id @default(uuid()) @db.Uuid
   slug        String   @unique @db.VarChar(191)
   name        String   @db.VarChar(191)
+  nameAr      String?  @db.VarChar(191)
+  nameEn      String?  @db.VarChar(191)
   description String?  @db.VarChar(1000)
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
@@ -1682,7 +1703,6 @@ model PractitionerProfile {
   chatApprovalRequests    ChatApprovalRequest[]
   couponRedemptions       CouponRedemption[]
   sessionReviews          SessionReview[]
-  coursesAsInstructor     TrainingInstructor[]
   matchingRecommendations MatchingRecommendation[]
   corporateBenefitPlans   CorporateBenefitPlanPractitioner[]
   patientViews            PatientPractitionerView[]
@@ -2220,15 +2240,19 @@ model Session {
   completedAt        DateTime?
   expiredAt          DateTime?
 
-  timezoneSnapshot    String?                    @db.VarChar(50)
-  provider            SessionProvider            @default(NONE)
-  providerRoomId      String?                    @db.VarChar(191)
-  providerSessionRef  String?                    @db.VarChar(191)
-  notesInternal       String?                    @db.VarChar(1000)
-  packagePurchaseId   String?                    @db.Uuid
-  packageSessionIndex Int?
-  packageSessionCount Int?
-  paymentCoverageType SessionPaymentCoverageType @default(DIRECT_PAYMENT)
+  timezoneSnapshot        String?                    @db.VarChar(50)
+  provider                SessionProvider            @default(NONE)
+  providerRoomId          String?                    @db.VarChar(191)
+  providerSessionRef      String?                    @db.VarChar(191)
+  videoRoomClosedAt       DateTime?
+  videoRoomClosedByUserId String?                    @db.Uuid
+  videoRoomCloseReason    String?                    @db.VarChar(500)
+  videoRoomCloseNote      String?                    @db.VarChar(1000)
+  notesInternal           String?                    @db.VarChar(1000)
+  packagePurchaseId       String?                    @db.Uuid
+  packageSessionIndex     Int?
+  packageSessionCount     Int?
+  paymentCoverageType     SessionPaymentCoverageType @default(DIRECT_PAYMENT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2263,6 +2287,7 @@ model Session {
   @@index([status, joinOpenAt])
   @@index([scheduledStartAt])
   @@index([scheduledEndAt])
+  @@index([videoRoomClosedAt])
   @@index([flowType, status])
   @@index([provider, providerRoomId])
   @@index([paymentCoverageType, status])
@@ -2506,17 +2531,18 @@ model Payment {
   commissionRule CommissionRule?      @relation(fields: [commissionRuleId], references: [id], onDelete: SetNull)
   coupon         Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
-  events                           PaymentEvent[]
-  refunds                          Refund[]
-  walletEntries                    CustomerWalletEntry[]
-  walletReservation                CustomerWalletReservation?
-  ledgerEntries                    LedgerEntry[]
-  couponRedemptions                CouponRedemption[]
-  enrollments                      Enrollment[]
-  academyEnrollment                AcademyEnrollment?                @relation("AcademyEnrollmentPayment")
-  academyPaymentAttempt            AcademyPaymentAttempt?            @relation("AcademyPaymentAttemptPayment")
-  trainingEnrollmentPaymentAttempt TrainingEnrollmentPaymentAttempt? @relation("TrainingEnrollmentPaymentAttemptPayment")
-  patientPackagePurchase           PatientPackagePurchase?           @relation("PatientPackagePurchasePayment")
+  events                       PaymentEvent[]
+  refunds                      Refund[]
+  walletEntries                CustomerWalletEntry[]
+  walletReservation            CustomerWalletReservation?
+  ledgerEntries                LedgerEntry[]
+  couponRedemptions            CouponRedemption[]
+  enrollments                  Enrollment[]
+  academyEnrollment            AcademyEnrollment?            @relation("AcademyEnrollmentPayment")
+  academyPaymentAttempt        AcademyPaymentAttempt?        @relation("AcademyPaymentAttemptPayment")
+  academyProgramEnrollment     AcademyProgramEnrollment?     @relation("AcademyProgramEnrollmentPayment")
+  academyProgramPaymentAttempt AcademyProgramPaymentAttempt? @relation("AcademyProgramPaymentAttemptPayment")
+  patientPackagePurchase       PatientPackagePurchase?       @relation("PatientPackagePurchasePayment")
 
   @@unique([provider, providerPaymentRef], map: "uq_payment_provider_payment_ref")
   @@index([provider, providerOrderRef])
@@ -4131,33 +4157,8 @@ model ReviewModerationEntry {
 }
 
 //////////////////////////////
-// Training / Courses / Enrollments
+// Academy / Courses / Enrollments
 //////////////////////////////
-
-model TrainingInstructor {
-  id             String  @id @default(uuid()) @db.Uuid
-  userId         String? @db.Uuid
-  practitionerId String? @db.Uuid
-
-  instructorType InstructorType
-  status         InstructorStatus @default(ACTIVE)
-
-  displayName    String  @db.VarChar(191)
-  bio            String? @db.VarChar(2000)
-  avatarUrl      String? @db.VarChar(500)
-  isOwnerDefault Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
-  practitioner PractitionerProfile? @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
-  courses      Course[]
-
-  @@index([status, instructorType])
-  @@index([userId])
-  @@index([practitionerId])
-}
 
 model CourseCategory {
   id        String   @id @default(uuid()) @db.Uuid
@@ -4167,8 +4168,9 @@ model CourseCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  translations CourseCategoryTranslation[]
-  courses      Course[]
+  translations    CourseCategoryTranslation[]
+  courses         Course[]
+  academyPrograms AcademyProgram[]
 
   @@index([isActive, sortOrder])
 }
@@ -4193,11 +4195,10 @@ model CourseCategoryTranslation {
 }
 
 model Course {
-  id                  String  @id @default(uuid()) @db.Uuid
-  primaryCategoryId   String? @db.Uuid
-  primaryInstructorId String? @db.Uuid
-  createdByUserId     String? @db.Uuid
-  publishedByUserId   String? @db.Uuid
+  id                String  @id @default(uuid()) @db.Uuid
+  primaryCategoryId String? @db.Uuid
+  createdByUserId   String? @db.Uuid
+  publishedByUserId String? @db.Uuid
 
   slugRoot     String             @unique @db.VarChar(191)
   courseType   CourseType
@@ -4221,10 +4222,9 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  primaryCategory   CourseCategory?     @relation(fields: [primaryCategoryId], references: [id], onDelete: SetNull)
-  primaryInstructor TrainingInstructor? @relation(fields: [primaryInstructorId], references: [id], onDelete: SetNull)
-  createdByUser     User?               @relation("TrainingCourseCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  publishedByUser   User?               @relation("TrainingCoursePublishedByUser", fields: [publishedByUserId], references: [id], onDelete: SetNull)
+  primaryCategory CourseCategory? @relation(fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  createdByUser   User?           @relation("AcademyCourseCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  publishedByUser User?           @relation("AcademyCoursePublishedByUser", fields: [publishedByUserId], references: [id], onDelete: SetNull)
 
   translations CourseTranslation[]
   schedules    CourseSchedule[]
@@ -4232,7 +4232,6 @@ model Course {
   enrollments  Enrollment[]
 
   @@index([primaryCategoryId, status, visibility, publishedAt])
-  @@index([primaryInstructorId, status])
   @@index([createdByUserId, createdAt])
   @@index([publishedByUserId, publishedAt])
   @@index([isFeatured, status, publishedAt])
@@ -4288,7 +4287,7 @@ model CourseSchedule {
   updatedAt DateTime @updatedAt
 
   course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  createdByUser User?           @relation("TrainingCourseScheduleCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser User?           @relation("AcademyCourseScheduleCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   sessions      CourseSession[]
   enrollments   Enrollment[]
 
@@ -4320,7 +4319,7 @@ model CourseSession {
   updatedAt DateTime @updatedAt
 
   courseSchedule CourseSchedule         @relation(fields: [courseScheduleId], references: [id], onDelete: Cascade)
-  createdByUser  User?                  @relation("TrainingCourseSessionCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdByUser  User?                  @relation("AcademyCourseSessionCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   attendances    EnrollmentAttendance[]
 
   @@unique([courseScheduleId, sessionOrder])
@@ -4349,50 +4348,17 @@ model Enrollment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  course          Course                             @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  courseSchedule  CourseSchedule                     @relation(fields: [courseScheduleId], references: [id], onDelete: Cascade)
-  user            User                               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  payment         Payment?                           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  attendances     EnrollmentAttendance[]
-  paymentAttempts TrainingEnrollmentPaymentAttempt[]
+  course         Course                 @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  courseSchedule CourseSchedule         @relation(fields: [courseScheduleId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  payment        Payment?               @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  attendances    EnrollmentAttendance[]
 
   @@unique([courseScheduleId, userId])
   @@index([courseId, enrollmentStatus, enrolledAt])
   @@index([courseScheduleId, enrollmentStatus])
   @@index([paymentStatus])
   @@index([userId, enrollmentStatus])
-}
-
-model TrainingEnrollmentPaymentAttempt {
-  id           String  @id @default(uuid()) @db.Uuid
-  enrollmentId String  @db.Uuid
-  paymentId    String? @unique @db.Uuid
-
-  provider       PaymentProvider
-  status         PaymentStatus
-  amountSubtotal Decimal         @db.Decimal(18, 2)
-  amountDiscount Decimal         @default(0) @db.Decimal(18, 2)
-  amountTotal    Decimal         @db.Decimal(18, 2)
-  currencyCode   String          @db.VarChar(3)
-
-  providerPaymentRef  String? @db.VarChar(191)
-  providerOrderRef    String? @db.VarChar(191)
-  providerCustomerRef String? @db.VarChar(191)
-
-  checkoutUrl   String?   @db.VarChar(500)
-  clientSecret  String?   @db.VarChar(500)
-  failureReason String?   @db.VarChar(500)
-  failedAt      DateTime?
-  metadataJson  Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  payment    Payment?   @relation("TrainingEnrollmentPaymentAttemptPayment", fields: [paymentId], references: [id], onDelete: SetNull)
-
-  @@index([enrollmentId, status, createdAt])
-  @@index([providerPaymentRef])
 }
 
 model EnrollmentAttendance {
@@ -4510,12 +4476,18 @@ model AcademyLearner {
   countryCodeSource   String? @db.VarChar(30)
   countryCodeMismatch Boolean @default(false)
   sourceLabel         String? @db.VarChar(191)
+  city                String? @db.VarChar(191)
+  jobTitle            String? @db.VarChar(191)
+  employer            String? @db.VarChar(191)
+  education           String? @db.VarChar(191)
+  notes               String? @db.VarChar(1000)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user        User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
-  enrollments AcademyEnrollment[]
+  user                      User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  enrollments               AcademyEnrollment[]
+  academyProgramEnrollments AcademyProgramEnrollment[]
 
   @@index([fullName])
   @@index([sourceLabel])
@@ -4596,6 +4568,18 @@ enum AcademyEnrollmentStatus {
   REFUNDED
 }
 
+enum AcademyProgramEnrollmentStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum AcademyProgramSessionAttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
 model AcademyEnrollmentActivityLog {
   id                  String   @id @default(uuid()) @db.Uuid
   academyCourseId     String   @db.Uuid
@@ -4611,6 +4595,176 @@ model AcademyEnrollmentActivityLog {
   @@index([academyCourseId, createdAt])
   @@index([academyEnrollmentId, createdAt])
   @@index([action, createdAt])
+}
+
+model AcademyProgram {
+  id               String               @id @default(uuid()) @db.Uuid
+  slug             String               @unique @db.VarChar(191)
+  titleAr          String               @db.VarChar(191)
+  titleEn          String               @db.VarChar(191)
+  descriptionAr    String?
+  descriptionEn    String?
+  coverImageUrl    String?              @db.VarChar(500)
+  categoryId       String?              @db.Uuid
+  priceEgp         Decimal?             @db.Decimal(18, 2)
+  priceUsd         Decimal?             @db.Decimal(18, 2)
+  registrationOpen Boolean              @default(false)
+  maxSeats         Int?
+  startAt          DateTime?
+  endAt            DateTime?
+  status           AcademyProgramStatus @default(DRAFT)
+  createdByUserId  String?              @db.Uuid
+  publishedAt      DateTime?
+  archivedAt       DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  category        CourseCategory?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdByUser   User?                          @relation("AcademyProgramCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  sessions        AcademyProgramSession[]
+  enrollments     AcademyProgramEnrollment[]
+  paymentAttempts AcademyProgramPaymentAttempt[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status])
+  @@index([registrationOpen, status])
+  @@index([startAt, endAt])
+  @@index([createdByUserId, createdAt])
+}
+
+model AcademyProgramSession {
+  id                   String                       @id @default(uuid()) @db.Uuid
+  academyProgramId     String                       @db.Uuid
+  titleAr              String                       @db.VarChar(191)
+  titleEn              String                       @db.VarChar(191)
+  descriptionAr        String?
+  descriptionEn        String?
+  startsAt             DateTime
+  endsAt               DateTime
+  deliveryMethod       AcademyProgramDeliveryMethod
+  internalDeliveryNote String?
+  internalDeliveryLink String?                      @db.VarChar(500)
+  sortOrder            Int                          @default(0)
+  isPublished          Boolean                      @default(false)
+  publishedAt          DateTime?
+  createdByUserId      String?                      @db.Uuid
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+
+  academyProgram    AcademyProgram                    @relation(fields: [academyProgramId], references: [id], onDelete: Cascade)
+  createdByUser     User?                             @relation("AcademyProgramSessionCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  attendanceRecords AcademyProgramSessionAttendance[]
+
+  @@index([academyProgramId, sortOrder])
+  @@index([academyProgramId, startsAt])
+  @@index([isPublished, startsAt])
+  @@index([createdByUserId, createdAt])
+}
+
+model AcademyProgramEnrollment {
+  id                          String                         @id @default(uuid()) @db.Uuid
+  academyProgramId            String                         @db.Uuid
+  academyLearnerId            String                         @db.Uuid
+  userId                      String?                        @db.Uuid
+  publicAccessToken           String                         @unique @db.VarChar(80)
+  status                      AcademyProgramEnrollmentStatus @default(PENDING_PAYMENT)
+  paymentStatus               PaymentStatus                  @default(CREATED)
+  paymentId                   String?                        @unique @db.Uuid
+  registeredAt                DateTime                       @default(now())
+  lockedAt                    DateTime?
+  seatReservedAt              DateTime?
+  seatReservationExpiresAt    DateTime?
+  confirmedAt                 DateTime?
+  cancelledAt                 DateTime?
+  expiredAt                   DateTime?
+  completedAt                 DateTime?
+  certificateIssuedAt         DateTime?
+  certificateFileStoragePath  String?                        @db.VarChar(500)
+  certificateFileName         String?                        @db.VarChar(255)
+  certificateUploadedAt       DateTime?
+  certificateUploadedByUserId String?                        @db.Uuid
+  selectedCurrencyCode        String                         @db.VarChar(3)
+  selectedAmountSnapshot      Decimal                        @db.Decimal(18, 2)
+  submittedCountry            String?                        @db.VarChar(3)
+  lockedCountry               String?                        @db.VarChar(3)
+  lockedCountrySource         String?                        @db.VarChar(30)
+  contactFullName             String                         @db.VarChar(191)
+  contactEmail                String?                        @db.VarChar(191)
+  contactPhone                String                         @db.VarChar(50)
+  contactWhatsapp             String?                        @db.VarChar(50)
+  contactCountry              String?                        @db.VarChar(3)
+  contactNotes                String?                        @db.VarChar(1000)
+  attendanceSummarySnapshot   Json?
+  createdAt                   DateTime                       @default(now())
+  updatedAt                   DateTime                       @updatedAt
+
+  academyProgram            AcademyProgram                    @relation(fields: [academyProgramId], references: [id], onDelete: Restrict)
+  academyLearner            AcademyLearner                    @relation(fields: [academyLearnerId], references: [id], onDelete: Restrict)
+  user                      User?                             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  certificateUploadedByUser User?                             @relation("AcademyProgramEnrollmentCertificateUploadedByUser", fields: [certificateUploadedByUserId], references: [id], onDelete: SetNull)
+  payment                   Payment?                          @relation("AcademyProgramEnrollmentPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  paymentAttempts           AcademyProgramPaymentAttempt[]
+  attendanceRecords         AcademyProgramSessionAttendance[]
+
+  @@unique([academyProgramId, academyLearnerId])
+  @@index([academyProgramId, status, registeredAt])
+  @@index([academyProgramId, seatReservationExpiresAt])
+  @@index([academyLearnerId, status])
+  @@index([userId, status])
+  @@index([paymentStatus])
+  @@index([paymentId])
+}
+
+model AcademyProgramSessionAttendance {
+  id                         String                                @id @default(uuid()) @db.Uuid
+  academyProgramSessionId    String                                @db.Uuid
+  academyProgramEnrollmentId String                                @db.Uuid
+  attendanceStatus           AcademyProgramSessionAttendanceStatus
+  markedByUserId             String?                               @db.Uuid
+  markedAt                   DateTime                              @default(now())
+  createdAt                  DateTime                              @default(now())
+  updatedAt                  DateTime                              @updatedAt
+
+  academyProgramSession    AcademyProgramSession    @relation(fields: [academyProgramSessionId], references: [id], onDelete: Cascade)
+  academyProgramEnrollment AcademyProgramEnrollment @relation(fields: [academyProgramEnrollmentId], references: [id], onDelete: Cascade)
+  markedByUser             User?                    @relation("AcademyProgramSessionAttendanceMarkedByUser", fields: [markedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([academyProgramSessionId, academyProgramEnrollmentId])
+  @@index([academyProgramSessionId, attendanceStatus])
+  @@index([academyProgramEnrollmentId, attendanceStatus])
+  @@index([markedByUserId, markedAt])
+}
+
+model AcademyProgramPaymentAttempt {
+  id                         String          @id @default(uuid()) @db.Uuid
+  academyProgramId           String          @db.Uuid
+  academyProgramEnrollmentId String          @db.Uuid
+  paymentId                  String?         @unique @db.Uuid
+  provider                   PaymentProvider
+  status                     PaymentStatus
+  amountSubtotal             Decimal         @db.Decimal(18, 2)
+  amountDiscount             Decimal         @default(0) @db.Decimal(18, 2)
+  amountTotal                Decimal         @db.Decimal(18, 2)
+  currencyCode               String          @db.VarChar(3)
+  providerPaymentRef         String?         @db.VarChar(191)
+  providerOrderRef           String?         @db.VarChar(191)
+  providerCustomerRef        String?         @db.VarChar(191)
+  checkoutUrl                String?         @db.VarChar(500)
+  clientSecret               String?         @db.VarChar(500)
+  failureReason              String?         @db.VarChar(500)
+  expiresAt                  DateTime?
+  confirmedAt                DateTime?
+  failedAt                   DateTime?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  academyProgram           AcademyProgram           @relation(fields: [academyProgramId], references: [id], onDelete: Cascade)
+  academyProgramEnrollment AcademyProgramEnrollment @relation(fields: [academyProgramEnrollmentId], references: [id], onDelete: Cascade)
+  payment                  Payment?                 @relation("AcademyProgramPaymentAttemptPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([academyProgramId, status, createdAt])
+  @@index([academyProgramEnrollmentId, createdAt])
+  @@index([providerPaymentRef])
 }
 
 //////////////////////////////

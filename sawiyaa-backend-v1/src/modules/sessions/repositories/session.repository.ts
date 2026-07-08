@@ -23,6 +23,7 @@ const sessionJoinNotificationCandidateSelect = {
   provider: true,
   providerRoomId: true,
   providerSessionRef: true,
+  videoRoomClosedAt: true,
   packagePurchaseId: true,
   packageSessionIndex: true,
   packageSessionCount: true,
@@ -111,6 +112,7 @@ const sessionSummaryCandidateSelect = {
   provider: true,
   providerRoomId: true,
   providerSessionRef: true,
+  videoRoomClosedAt: true,
 } as const;
 
 export type SessionReminderNotificationCandidate = Prisma.SessionGetPayload<{
@@ -227,6 +229,7 @@ export class SessionRepository {
         scheduledStartAt: {
           not: null,
         },
+        videoRoomClosedAt: null,
         scheduledEndAt: {
           not: null,
           gte: input.windowStart,
@@ -931,6 +934,43 @@ export class SessionRepository {
     });
   }
 
+  async hasJoinAllowanceOrAttendanceBefore(input: {
+    sessionId: string;
+    userId: string;
+    occurredBeforeOrAt: Date;
+  }): Promise<boolean> {
+    const [joinAllowedEvent, attendanceJoinEvent] = await Promise.all([
+      this.prisma.sessionEvent.findFirst({
+        where: {
+          sessionId: input.sessionId,
+          actorUserId: input.userId,
+          eventType: SessionEventType.JOIN_ALLOWED,
+          createdAt: {
+            lte: input.occurredBeforeOrAt,
+          },
+        },
+        select: {
+          id: true,
+        },
+      }),
+      this.prisma.sessionAttendanceEvent.findFirst({
+        where: {
+          sessionId: input.sessionId,
+          participantUserId: input.userId,
+          attendanceEventType: 'JOINED',
+          occurredAt: {
+            lte: input.occurredBeforeOrAt,
+          },
+        },
+        select: {
+          id: true,
+        },
+      }),
+    ]);
+
+    return Boolean(joinAllowedEvent || attendanceJoinEvent);
+  }
+
   listSessionEventsBySessionId(sessionId: string) {
     return this.prisma.sessionEvent.findMany({
       where: { sessionId },
@@ -1136,6 +1176,10 @@ export class SessionRepository {
     provider: true,
     providerRoomId: true,
     providerSessionRef: true,
+    videoRoomClosedAt: true,
+    videoRoomClosedByUserId: true,
+    videoRoomCloseReason: true,
+    videoRoomCloseNote: true,
     patientId: true,
     practitionerId: true,
     practitioner: {

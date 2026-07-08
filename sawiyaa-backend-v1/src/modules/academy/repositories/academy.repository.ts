@@ -168,6 +168,11 @@ export class AcademyRepository {
     countryCodeSource?: string | null;
     countryCodeMismatch?: boolean;
     sourceLabel?: string | null;
+    city?: string | null;
+    jobTitle?: string | null;
+    employer?: string | null;
+    education?: string | null;
+    notes?: string | null;
   }) {
     return this.prisma.academyLearner.upsert({
       where: { phoneNumber: input.phoneNumber },
@@ -180,6 +185,11 @@ export class AcademyRepository {
         countryCodeSource: input.countryCodeSource ?? null,
         countryCodeMismatch: input.countryCodeMismatch ?? false,
         sourceLabel: input.sourceLabel ?? null,
+        city: input.city ?? null,
+        jobTitle: input.jobTitle ?? null,
+        employer: input.employer ?? null,
+        education: input.education ?? null,
+        notes: input.notes ?? null,
       },
       create: {
         fullName: input.fullName,
@@ -191,6 +201,11 @@ export class AcademyRepository {
         countryCodeSource: input.countryCodeSource ?? null,
         countryCodeMismatch: input.countryCodeMismatch ?? false,
         sourceLabel: input.sourceLabel ?? null,
+        city: input.city ?? null,
+        jobTitle: input.jobTitle ?? null,
+        employer: input.employer ?? null,
+        education: input.education ?? null,
+        notes: input.notes ?? null,
       },
     });
   }

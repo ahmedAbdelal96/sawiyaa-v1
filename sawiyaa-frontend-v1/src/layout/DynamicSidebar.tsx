@@ -239,20 +239,20 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
   };
 
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") {
-      return {};
-    }
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  useEffect(() => {
     try {
       const stored = localStorage.getItem("sawiyaa.admin.sidebar.groups");
-      return stored ? JSON.parse(stored) : {};
+      setExpandedSections(stored ? JSON.parse(stored) : {});
     } catch (e) {
       console.error("Failed to load sidebar state:", e);
-      return {};
+      setExpandedSections({});
+    } finally {
+      setIsLoaded(true);
     }
-  });
-  const [isLoaded] = useState(true);
+  }, []);
 
   const toggleSection = (sectionKey: string) => {
     setExpandedSections((prev) => {

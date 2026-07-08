@@ -2,71 +2,89 @@
 
 This is the consolidated English handbook for the Sawiyaa healthcare platform.
 
-It explains how the platform works today:
+It explains the current product model across:
 
 - public web
 - patient web
 - practitioner web
 - admin web
+- mobile
 - backend service boundaries
-- money, sessions, chat, support, and content flows
+- money, sessions, support, and content flows
 - the Sawiyaa Clinical Warmth design language
 
-Start here when you need the product model, the current status, or the practical rules behind the screens.
+Start here when you need the current status or the practical rules behind the screens.
 
 ## Current platform status
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Availability and schedule system | Closed | Weekly recurring availability, specific-day adjustments, and current/future exceptions form the booking base. |
-| Instant Booking | Closed with one deferred external check | Phases 1-4 and 6-6C are closed; Phase 5 is implemented, but Paymob sandbox QA still returns `403 Forbidden` here. |
-| Payments | Closed for internal flows | Session, package, and training payment returns are documented; provider-side Paymob QA stays deferred. |
-| Mobile parity | Closed | Patient and practitioner Expo flows mirror the core booking and payment surfaces. |
-| Known external blockers | Deferred | Paymob sandbox/provider checkout QA. |
-| Known technical blockers | None — Phase 5A/5B cleared | Web release-candidate P0/P1 blockers from Phase 5 were cleared; session presentation and `joinAvailability` are closed across backend, web, and mobile. Repo-local issues are tracked separately from product documentation. |
+| Availability | Closed | Week-by-week availability is the current model. `DRAFT`, `PUBLISHED`, and `ARCHIVED` weeks are explicit. |
+| Instant Booking | Closed with one deferred external check | Core product flow is closed; provider-side checkout QA can still lag behind. |
+| Payments and payouts | Closed for current workflows | Money flows are backend-owned and currency-aware. Individual practitioner payout is the active payout path. |
+| Specialties localization | Closed | `nameAr` and `nameEn` are part of the live contract and must be filled and displayed correctly. |
+| Academy v2 | Closed / complete | Academy is the only visible learning product. Public program browsing, enrollment, payment return, learner portal, admin learners, attendance, manual enrollment, and certificates are implemented and smoke-tested. |
+| Practitioner onboarding | Closed | Self-application and admin direct-create have distinct step-up rules. |
+| Support and care chat | Closed | Support ownership and care-chat approval are explicit operational rules. |
+| Notifications | Closed / active | Operational notifications, reminders, and care-chat approval messages are documented. |
+| Mobile parity | Closed | Mobile mirrors the core booking, session, and finance contracts. |
+| External provider QA | Deferred | Provider-side sandbox behavior can still block final end-to-end verification. |
+| Removed flows | Retired | `/admin/settlements` and the legacy recurring availability runtime flow are not active product paths. |
 
 ## Feature status matrix
 
-| Area | Feature | Status | Web | Mobile | Backend | Notes / blocker |
-| --- | --- | --- | --- | --- | --- | --- |
-| Availability | Weekly schedule | Closed | Closed | Closed | Closed | Recurring schedule repeats weekly. |
-| Availability | Specific-day adjustments | Closed | Closed | Closed | Closed | Exceptions stay separate from the weekly schedule. |
-| Availability | Exceptions table | Closed | Closed | Closed | Closed | Global current/future exception visibility exists. |
-| Booking | Scheduled booking | Closed | Closed | Closed | Closed | Normal booking depends on availability and payment. |
-| Booking | Instant Booking | Closed | Closed | Closed | Closed | Phase 5 remains externally blocked by Paymob QA. |
-| Sessions | Session join / joinAvailability | Closed | Closed | Closed | Closed | `presentationStatus` and `joinAvailability.canJoin` are closed across backend, web, and mobile. Manual no-show/under-review decisions propagate via backend contract without automatic refund/payout side effects unless finance policy explicitly handles them. |
-| Sessions | Session chat | Closed | Closed | Closed | Closed | Read-only/disabled states are documented. |
-| Finance | Payments | Closed | Closed | Closed | Closed | Session, package, and training payments documented. |
-| Finance | Wallet / refunds / settlements | Closed | Closed | Closed | Closed | Backend remains the source of truth. |
-| Practitioner | Onboarding / profile | Closed | Closed | Closed | Closed | Includes application, review, and pricing contract. |
-| Admin | Operations | Closed | Closed | Closed | Closed | Finance, moderation, support, and reporting are documented. |
-| Mobile | Patient and practitioner parity | Closed | Closed | Closed | Closed | Patient and practitioner Expo flows mirror the core booking and payment surfaces. Session presentation states (`presentationStatus`, `joinAvailability`) are consistent with web. |
-| External | Paymob provider QA | Deferred | Deferred | Deferred | Deferred | Sandbox/provider checkout still returns `403 Forbidden` in this environment. |
-| Platform | Notifications / push | Planned | Planned | Planned | Planned | Important related area; not the core closure focus of this docs set. |
+| Area | Feature | Status | Notes |
+| --- | --- | --- | --- |
+| Availability | Week-by-week availability | Closed | Public booking reads only `PUBLISHED` weeks. |
+| Availability | Week statuses | Closed | `DRAFT`, `PUBLISHED`, `ARCHIVED`. |
+| Availability | Legacy recurring runtime flow | Retired | Do not reintroduce `AvailabilitySlot` runtime behavior. |
+| Booking | Scheduled booking | Closed | Backend owns availability and payment validation. |
+| Booking | Instant Booking | Closed | Frozen pricing, eligibility, and payment confirmation remain backend-owned. |
+| Sessions | Session join and joinAvailability | Closed | `joinAvailability.canJoin` controls the Join CTA. |
+| Sessions | Session presentation state | Closed | `presentationStatus` is translated, not rendered raw. |
+| Finance | Wallet, refunds, payouts | Closed | Individual practitioner payout is the active payout workflow. |
+| Finance | Accounting reconciliation | Closed | Diagnostic only, no money movement. |
+| Academy | Public Academy, learner portal, attendance, certificates | Closed / complete | Academy is the only visible training product; Training stays legacy/internal only. |
+| Practitioner | Onboarding / profile | Closed | Self-apply and admin direct-create are separate flows. |
+| Admin | Support / moderation / finance | Closed | Support ownership, care chat approval, and payout rules are explicit. |
+| Specialties | Localized names | Closed | Admin uses raw `nameAr` / `nameEn`; public pages use locale-aware display helpers. |
 
 ## How to read this set
 
 1. Start with [Platform overview](platform-overview.md).
 2. Read [Architecture and developer guide](architecture-and-developer-guide.md) next for the repo and route map.
 3. Use [Users and journeys](users-and-journeys.md) to understand the experience by audience.
-4. Use [Booking, sessions, and availability](booking-sessions-and-availability.md) for the care flow core.
-5. Use [Payments, wallet, and finance](payments-wallet-and-finance.md) for money flows.
-6. Use [Operations and support](operations-and-support.md) for admin and support workflows.
-7. Use [Security, roles, and permissions](security-roles-and-permissions.md) for access rules.
-8. Use [Design, content, and i18n](design-content-and-i18n.md) for tone and visual guidance.
-9. Keep [Glossary](glossary.md) open for shared terms.
-10. Review [Deferred work and risks](deferred-work-and-risks.md) for external blockers and follow-ups.
+4. Use [Availability system](availability-system.md) for the current scheduling contract.
+5. Use [Booking, sessions, and availability](booking-sessions-and-availability.md) for the care flow core.
+6. Use [Specialties localization](specialties-localization.md) for localized specialty names.
+7. Use [Payments, wallet, and finance](payments-wallet-and-finance.md) and [Finance and payouts](finance-and-payouts.md) for money flows.
+8. Use [Practitioner onboarding](practitioner-onboarding.md) for direct-create and approval policy.
+9. Use [Operations and support](operations-and-support.md) and [Support and care chat](support-and-care-chat.md) for admin and support workflows.
+10. Use [Security, roles, and permissions](security-roles-and-permissions.md) for access rules.
+11. Use [Design, content, and i18n](design-content-and-i18n.md) for tone and visual guidance.
+12. Keep [Glossary](glossary.md) open for shared terms.
+13. Review [Deferred work and risks](deferred-work-and-risks.md) and [Production rollout](production-rollout.md) for rollout safety.
 
 ## Core docs
 
 - [Platform overview](platform-overview.md)
 - [Architecture and developer guide](architecture-and-developer-guide.md)
 - [Users and journeys](users-and-journeys.md)
+- [Availability system](availability-system.md)
 - [Booking, sessions, and availability](booking-sessions-and-availability.md)
+- [Specialties localization](specialties-localization.md)
 - [Payments, wallet, and finance](payments-wallet-and-finance.md)
+- [Finance and payouts](finance-and-payouts.md)
+- [Practitioner onboarding](practitioner-onboarding.md)
 - [Operations and support](operations-and-support.md)
+- [Support and care chat](support-and-care-chat.md)
 - [Security, roles, and permissions](security-roles-and-permissions.md)
 - [Design, content, and i18n](design-content-and-i18n.md)
+- [Notifications and alerting](notifications-and-alerting.md)
+- [Provider abstractions](provider-abstractions.md)
+- [Accounting reconciliation](accounting-reconciliation.md)
+- [Production rollout](production-rollout.md)
+- [Removed and deprecated flows](removed-and-deprecated-flows.md)
 - [Glossary](glossary.md)
 - [Deferred work and risks](deferred-work-and-risks.md)
 
@@ -82,6 +100,7 @@ Update this handbook whenever the product changes in a way users can feel:
 
 - a new route is added
 - a role or permission changes
-- a payment or refund flow changes
+- a payment, payout, or refund flow changes
 - a patient journey screen changes
 - a chat state or cancellation policy changes
+- a localization contract changes

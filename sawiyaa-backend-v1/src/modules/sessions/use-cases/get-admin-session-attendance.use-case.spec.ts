@@ -9,6 +9,14 @@ import { GetAdminSessionAttendanceUseCase } from './get-admin-session-attendance
 
 describe('GetAdminSessionAttendanceUseCase', () => {
   function buildUseCase() {
+    const prisma = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      supportTicket: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
     const sessionRepository = {
       findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(null),
       findByIdWithParticipants: jest.fn().mockResolvedValue({
@@ -23,6 +31,10 @@ describe('GetAdminSessionAttendanceUseCase', () => {
         provider: SessionProvider.DAILY,
         providerRoomId: 'room_1',
         providerSessionRef: 'https://room.daily.co',
+        videoRoomClosedAt: null,
+        videoRoomClosedByUserId: null,
+        videoRoomCloseReason: null,
+        videoRoomCloseNote: null,
         patientId: 'user_patient_1',
         practitionerId: 'user_pract_1',
         patient: {
@@ -49,10 +61,11 @@ describe('GetAdminSessionAttendanceUseCase', () => {
     };
 
     const useCase = new GetAdminSessionAttendanceUseCase(
+      prisma as never,
       sessionRepository as never,
     );
 
-    return { useCase, sessionRepository };
+    return { useCase, sessionRepository, prisma };
   }
 
   it('returns deterministic empty summary and timeline when no events exist', async () => {
@@ -88,6 +101,14 @@ describe('GetAdminSessionAttendanceUseCase', () => {
         phone: null,
       },
     });
+    expect(result.videoRoomClose).toEqual({
+      closedAt: null,
+      closedByUserId: null,
+      closedByDisplayName: null,
+      closeReason: null,
+      closeNote: null,
+    });
+    expect(result.relatedSupportTickets).toEqual([]);
   });
 
   it('derives joined/left summary from persisted timeline events', async () => {

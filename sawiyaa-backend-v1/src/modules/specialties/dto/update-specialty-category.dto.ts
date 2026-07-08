@@ -11,11 +11,28 @@ import { Type } from 'class-transformer';
 
 /**
  * Admin update DTO for primary specialty categories.
- * Title update is optional; when provided backend regenerates slug safely.
+ * Name updates are optional; when provided backend regenerates slug safely.
  */
 export class UpdateSpecialtyCategoryDto {
   @ApiPropertyOptional({
-    description: 'Primary specialty category title',
+    description: 'Arabic primary specialty category name',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  nameAr?: string;
+
+  @ApiPropertyOptional({
+    description: 'English primary specialty category name',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  nameEn?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Legacy compatibility field. When provided it is ignored in favor of nameEn/nameAr.',
   })
   @IsOptional()
   @IsString()

@@ -18,6 +18,11 @@ export interface AvailabilityWeekSlotViewModel {
   timezone: string;
   createdAt: string;
   updatedAt: string;
+  canEdit?: boolean;
+  canRemove?: boolean;
+  isPast?: boolean;
+  isBookedOrReserved?: boolean;
+  reasonCode?: 'PAST' | 'BOOKED' | 'ARCHIVED';
 }
 
 export interface AvailabilityWeekViewModel {

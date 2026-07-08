@@ -11,15 +11,31 @@ import { Type } from 'class-transformer';
 
 /**
  * Admin create DTO for primary specialty categories.
- * Slug is generated safely on backend from title to reduce admin input burden.
+ * Slug is generated safely on backend from english/arabic title to reduce admin input burden.
  */
 export class CreateSpecialtyCategoryDto {
   @ApiProperty({
-    description: 'Primary specialty category title',
+    description: 'Arabic primary specialty category name',
   })
   @IsString()
   @MaxLength(191)
-  title!: string;
+  nameAr!: string;
+
+  @ApiProperty({
+    description: 'English primary specialty category name',
+  })
+  @IsString()
+  @MaxLength(191)
+  nameEn!: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Legacy compatibility field. When provided it is ignored in favor of nameEn/nameAr.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  title?: string;
 
   @ApiPropertyOptional({
     description: 'Optional primary category description',

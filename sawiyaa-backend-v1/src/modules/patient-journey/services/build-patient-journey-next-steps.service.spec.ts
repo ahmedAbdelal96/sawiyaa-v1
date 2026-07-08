@@ -20,7 +20,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: true,
       hasAnyAssessment: true,
       hasPastSessions: true,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'PAYMENT_BLOCKED',
     });
 
@@ -37,7 +37,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: true,
       hasAnyAssessment: true,
       hasPastSessions: false,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'UPCOMING_SESSION',
     });
 
@@ -52,7 +52,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: false,
       hasAnyAssessment: false,
       hasPastSessions: false,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'NEW',
     });
 
@@ -74,7 +74,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: true,
       hasAnyAssessment: true,
       hasPastSessions: true,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'RETURNING',
     });
 
@@ -90,7 +90,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: true,
       hasAnyAssessment: true,
       hasPastSessions: false,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'RETURNING',
       assessmentRecommendations: [
         {
@@ -114,7 +114,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
     expect(result.nextSteps[0].reasonCode).toBe('ASSESSMENT_BAND_HIGH');
   });
 
-  it('handles active training continuity explicitly', () => {
+  it('handles active academy continuity explicitly', () => {
     const result = service.build({
       hasPendingPayment: false,
       hasUpcomingSession: false,
@@ -122,13 +122,13 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: false,
       hasAnyAssessment: true,
       hasPastSessions: false,
-      hasActiveTrainingEnrollment: true,
+      hasActiveAcademyEnrollment: true,
       continuityStage: 'ACTIVE_CARE',
     });
 
     expect(result.suggestedNextAction).toBe('BOOK_NEXT_SESSION');
     expect(result.nextSteps[0].reasonCode).toBe('ACTIVE_CARE_CONTINUITY');
-    expect(result.nextSteps[0].action.type).toBe('OPEN_TRAINING');
+    expect(result.nextSteps[0].action.type).toBe('OPEN_ACADEMY');
   });
 
   it('removes contradictory actions when payment-block recommendation exists', () => {
@@ -139,7 +139,7 @@ describe('BuildPatientJourneyNextStepsService', () => {
       hasRecentMatching: false,
       hasAnyAssessment: false,
       hasPastSessions: false,
-      hasActiveTrainingEnrollment: false,
+      hasActiveAcademyEnrollment: false,
       continuityStage: 'PAYMENT_BLOCKED',
       assessmentRecommendations: [
         {
