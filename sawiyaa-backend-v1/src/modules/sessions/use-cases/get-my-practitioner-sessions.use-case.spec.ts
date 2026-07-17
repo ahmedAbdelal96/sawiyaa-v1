@@ -17,7 +17,7 @@ describe('GetMyPractitionerSessionsUseCase', () => {
       {
         id: 'session_1',
         sessionCode: 'SES-2026-000001',
-        status: SessionStatus.CONFIRMED,
+        status: SessionStatus.UPCOMING,
         sessionMode: SessionMode.VIDEO,
         scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
         scheduledEndAt: new Date('2026-08-02T12:30:00.000Z'),

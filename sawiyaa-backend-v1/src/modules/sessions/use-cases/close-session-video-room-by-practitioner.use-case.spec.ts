@@ -32,7 +32,7 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
     };
     const sessionRepository = {
       findById: jest.fn().mockResolvedValue(currentSession),
-      updateStatus: jest.fn().mockImplementation(async (_sessionId, data) => ({
+      updateRuntimeFields: jest.fn().mockImplementation(async (_sessionId, data) => ({
         ...currentSession,
         ...data,
       })),
@@ -143,7 +143,7 @@ describe('CloseSessionVideoRoomByPractitionerUseCase', () => {
       },
     });
 
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledWith(
+    expect(setup.sessionRepository.updateRuntimeFields).toHaveBeenCalledWith(
       'session_1',
       expect.not.objectContaining({
         status: SessionStatus.COMPLETED,

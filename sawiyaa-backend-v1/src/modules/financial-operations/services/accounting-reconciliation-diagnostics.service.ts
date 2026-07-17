@@ -1069,6 +1069,19 @@ export class AccountingReconciliationDiagnosticsService {
         : Promise.resolve(null),
     ]);
 
+    const practitionerRecoveries = await this.prisma.practitionerRecovery.findMany(
+      {
+        where: {
+          refundId: refund.id,
+        },
+        select: {
+          amount: true,
+          recoveredAmount: true,
+          status: true,
+        },
+      },
+    );
+
     const issues: ReconciliationIssue[] = [];
     if (refund.status === RefundStatus.SUCCEEDED) {
       const baseEvaluation =
@@ -1127,7 +1140,7 @@ export class AccountingReconciliationDiagnosticsService {
     }
 
     if (refund.status === RefundStatus.SUCCEEDED) {
-      if (ledgerEntries.length === 0) {
+      if (ledgerEntries.length === 0 && practitionerRecoveries.length === 0) {
         issues.push(
           this.issue(
             ACCOUNTING_RECONCILIATION_ISSUE_CODES.REFUND_LEDGER_MISMATCH,
@@ -1161,6 +1174,10 @@ export class AccountingReconciliationDiagnosticsService {
         ),
       );
       const practitionerLedgerTotalAbsolute = practitionerLedgerTotal.abs();
+      const recoveryTotal = practitionerRecoveries.reduce(
+        (sum, recovery) => sum.add(recovery.amount),
+        new Prisma.Decimal(0),
+      );
       const platformLedgerTotal = this.sumLedgerEntries(
         ledgerEntries.filter(
           (entry) =>
@@ -1170,16 +1187,20 @@ export class AccountingReconciliationDiagnosticsService {
       );
       const platformLedgerTotalAbsolute = platformLedgerTotal.abs();
 
-      if (!practitionerLedgerTotalAbsolute.equals(expectedPractitionerRefund)) {
+      if (
+        !practitionerLedgerTotalAbsolute.add(recoveryTotal).equals(
+          expectedPractitionerRefund,
+        )
+      ) {
         issues.push(
           this.issue(
             ACCOUNTING_RECONCILIATION_ISSUE_CODES.REFUND_LEDGER_MISMATCH,
             'ERROR',
-            'Refund practitioner reversal does not match the expected ratio.',
+            'Refund practitioner reversal and recovery do not match the expected ratio.',
             'Refund',
             refund.id,
             expectedPractitionerRefund.toFixed(2),
-            practitionerLedgerTotalAbsolute.toFixed(2),
+            practitionerLedgerTotalAbsolute.add(recoveryTotal).toFixed(2),
             refund.currencyCode,
           ),
         );
@@ -1214,6 +1235,7 @@ export class AccountingReconciliationDiagnosticsService {
           ),
         );
       }
+
     } else if (ledgerEntries.length > 0 || Boolean(journal) || Boolean(walletCreditEntry)) {
       issues.push(
         this.issue(

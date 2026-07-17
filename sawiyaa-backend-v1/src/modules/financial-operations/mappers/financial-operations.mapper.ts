@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import {
   LedgerEntry,
   PackageSettlement,
@@ -168,6 +168,7 @@ export class FinancialOperationsMapper {
     reservedBalance: string;
     totalEarned: string;
     lifetimePaidOut: string;
+    manualRecoveryAmount: string;
     lastLedgerEntryAt: string | null;
     updatedAt: string | null;
   }): WalletViewModel {
@@ -582,6 +583,7 @@ export class FinancialOperationsMapper {
     packageReleasedPayableAmount: Prisma.Decimal | string;
     packageHeldAmount: Prisma.Decimal | string;
     totalPayableAmount: Prisma.Decimal | string;
+    manualRecoveryAmount: Prisma.Decimal | string;
     lastPayoutAt: Date | null;
   }): PractitionerPayoutBalanceViewModel {
     return {
@@ -596,6 +598,7 @@ export class FinancialOperationsMapper {
         input.packageReleasedPayableAmount.toString(),
       packageHeldAmount: input.packageHeldAmount.toString(),
       totalPayableAmount: input.totalPayableAmount.toString(),
+      manualRecoveryAmount: input.manualRecoveryAmount.toString(),
       lastPayoutAt: input.lastPayoutAt?.toISOString() ?? null,
     };
   }

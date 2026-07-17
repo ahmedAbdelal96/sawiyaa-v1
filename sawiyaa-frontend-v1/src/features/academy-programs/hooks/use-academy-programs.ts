@@ -222,8 +222,9 @@ export function useArchiveAdminAcademyProgram() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (programId: string) => archiveAdminAcademyProgram(programId),
-    onSuccess: (_data, programId) => {
+    mutationFn: ({ programId, reason }: { programId: string; reason: string }) =>
+      archiveAdminAcademyProgram(programId, { reason }),
+    onSuccess: (_data, { programId }) => {
       queryClient.invalidateQueries({
         queryKey: academyProgramsQueryKeys.adminProgram(programId),
       });
@@ -382,7 +383,8 @@ export function useCancelAdminAcademyProgramEnrollment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (enrollmentId: string) => cancelAdminAcademyProgramEnrollment(enrollmentId),
+    mutationFn: ({ enrollmentId, reason }: { enrollmentId: string; reason: string }) =>
+      cancelAdminAcademyProgramEnrollment(enrollmentId, { reason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: academyProgramsQueryKeys.all });
     },

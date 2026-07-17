@@ -1,4 +1,5 @@
 import { ReviewPresenter } from './review.presenter';
+import { SessionReviewModerationDecision } from '@prisma/client';
 
 describe('ReviewPresenter public contract', () => {
   const presenter = new ReviewPresenter();
@@ -6,8 +7,9 @@ describe('ReviewPresenter public contract', () => {
   it('returns public-safe review item shape without moderation internals', () => {
     const item = presenter.presentPublicReviewItem({
       id: 'review_1',
-      ratingValue: 5,
+      publicRatingValue: 5,
       reviewText: 'Great session.',
+      moderationDecision: SessionReviewModerationDecision.APPROVED_AS_IS,
       submittedAt: new Date('2026-03-01T10:00:00.000Z'),
       publishedAt: new Date('2026-03-02T10:00:00.000Z'),
     });
@@ -15,15 +17,56 @@ describe('ReviewPresenter public contract', () => {
     expect(item).toEqual({
       id: 'review_1',
       overallRating: 5,
-      textReview: 'Great session.',
+      textReview: null,
       submittedAt: '2026-03-01T10:00:00.000Z',
       publishedAt: '2026-03-02T10:00:00.000Z',
     });
 
     expect(item).not.toHaveProperty('status');
-    expect(item).not.toHaveProperty('moderationNote');
-    expect(item).not.toHaveProperty('internalReason');
+    expect(item).not.toHaveProperty('moderationReason');
+    expect(item).not.toHaveProperty('moderationDecision');
     expect(item).not.toHaveProperty('patientProfileId');
+  });
+
+  it('hides public text for auto-approved positive reviews', () => {
+    const item = presenter.presentPublicReviewItem({
+      id: 'review_1',
+      publicRatingValue: 5,
+      reviewText: 'Great session.',
+      moderationDecision:
+        SessionReviewModerationDecision.AUTO_APPROVED_POSITIVE,
+      submittedAt: new Date('2026-03-01T10:00:00.000Z'),
+      publishedAt: new Date('2026-03-02T10:00:00.000Z'),
+    });
+
+    expect(item.textReview).toBeNull();
+    expect(item.overallRating).toBe(5);
+  });
+
+  it('formats pending review reminder sessions safely', () => {
+    const item = presenter.presentPendingReviewItem({
+      id: 'session_1',
+      completedAt: new Date('2026-03-01T10:00:00.000Z'),
+      scheduledStartAt: new Date('2026-03-01T09:00:00.000Z'),
+      practitioner: {
+        id: 'practitioner_1',
+        publicSlug: 'dr-one',
+        user: {
+          displayName: 'Dr One',
+        },
+      },
+    });
+
+    expect(item).toEqual({
+      sessionId: 'session_1',
+      completedAt: '2026-03-01T10:00:00.000Z',
+      scheduledStartAt: '2026-03-01T09:00:00.000Z',
+      practitioner: {
+        id: 'practitioner_1',
+        slug: 'dr-one',
+        displayName: 'Dr One',
+      },
+    });
   });
 
   it('returns safe empty list contract shape', () => {
@@ -53,9 +96,15 @@ describe('ReviewPresenter public contract', () => {
       practitionerId: 'practitioner_1',
       isAnonymous: true,
       ratingValue: 5,
+      publicRatingValue: 5,
       reviewTitle: 'Great',
       reviewText: 'Great session.',
       reviewStatus: 'PUBLISHED',
+      moderationDecision: SessionReviewModerationDecision.APPROVED_AS_IS,
+      moderatedByUserId: 'admin_1',
+      moderatedAt: new Date('2026-03-02T10:00:00.000Z'),
+      moderationReason: 'Approved as-is',
+      countsInPublicAverage: true,
       submittedAt: new Date('2026-03-01T10:00:00.000Z'),
       publishedAt: new Date('2026-03-02T10:00:00.000Z'),
       updatedAt: new Date('2026-03-02T10:00:00.000Z'),
@@ -80,6 +129,12 @@ describe('ReviewPresenter public contract', () => {
     });
 
     expect(item.patientProfileId).toBe('patient_1');
+    expect(item.originalRatingValue).toBe(5);
+    expect(item.publicRatingValue).toBe(5);
+    expect(item.moderationDecision).toBe(
+      SessionReviewModerationDecision.APPROVED_AS_IS,
+    );
+    expect(item.countsInPublicAverage).toBe(true);
     expect(item.patient).toEqual({
       id: 'patient_1',
       displayName: 'Patient One',

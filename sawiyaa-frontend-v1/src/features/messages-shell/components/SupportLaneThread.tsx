@@ -205,37 +205,37 @@ export default function SupportLaneThread({
 
   return (
     <div className="flex h-full min-h-0 flex-col rounded-2xl border border-border-light/80 bg-gradient-to-b from-white to-primary-light/60 p-2 shadow-[0_16px_32px_-24px_rgba(68,161,148,0.36)] dark:border-white/10 dark:from-white/5 dark:to-white/3">
-      <div className="mb-2 flex items-center justify-end gap-1 border-b border-border-light/70 pb-2 dark:border-white/10">
+      <div className="mb-2 flex items-center justify-end gap-1.5 border-b border-border-light/70 pb-2 dark:border-white/10">
         {ticketId ? (
           <button
             type="button"
             onClick={() => setIsReportOpen((current) => !current)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-white/12 dark:bg-white/5 dark:text-white/75 dark:hover:bg-rose-500/10 dark:hover:text-rose-200"
-            aria-label="Report"
-            title="Report"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border-light bg-white text-text-secondary transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-white/12 dark:bg-white/5 dark:text-white/75 dark:hover:bg-rose-500/10 dark:hover:text-rose-200"
+            aria-label={locale.startsWith("ar") ? "إبلاغ" : "Report"}
+            title={locale.startsWith("ar") ? "إبلاغ" : "Report"}
           >
-            <AlertTriangle className="h-3.5 w-3.5" />
+            <AlertTriangle className="h-4.5 w-4.5" />
           </button>
         ) : null}
         {canCreate ? (
           <button
             type="button"
             onClick={() => setShowCreateForm((current) => !current)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-light bg-white text-primary transition hover:border-primary/35 hover:bg-primary/5 dark:border-white/12 dark:bg-white/5 dark:text-white/90"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border-light bg-white text-primary transition hover:border-primary/35 hover:bg-primary/5 dark:border-white/12 dark:bg-white/5 dark:text-white/90"
             aria-label={copy.createAction}
             title={copy.createAction}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
           </button>
         ) : null}
         <Link
           href={fullViewHref as never}
           onClick={onOpenFull}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary dark:border-white/12 dark:bg-white/5 dark:text-white/75"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary dark:border-white/12 dark:bg-white/5 dark:text-white/75"
           aria-label={copy.openFull}
           title={copy.openFull}
         >
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ExternalLink className="h-4.5 w-4.5" />
         </Link>
       </div>
 
@@ -323,27 +323,27 @@ export default function SupportLaneThread({
             return (
               <div key={entry.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[92%] rounded-[14px] border px-2.5 py-1.5 ${
+                  className={`max-w-[86%] rounded-[14px] border px-3 py-2 ${
                     mine
                       ? "border-primary/45 bg-gradient-to-br from-primary to-primary-active text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.7)]"
                       : "border-border-light/80 bg-white text-text-primary shadow-[0_8px_18px_-16px_rgba(34,52,56,0.2)] dark:border-white/10 dark:bg-white/10 dark:text-white/90"
                   }`}
                 >
-                  <p className="break-words text-xs leading-4.5">{entry.message}</p>
+                  <p dir="auto" className="break-words text-xs leading-5 text-start">{entry.message}</p>
                   <p
-                    className={`mt-1 inline-flex rounded-full px-1.5 py-0.5 text-[10px] ${mine ? "bg-white/14 text-white/80" : "bg-primary-light text-text-muted dark:bg-white/10 dark:text-white/55"}`}
+                    className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] ${mine ? "bg-white/14 text-white/75" : "bg-primary-light/60 text-text-muted dark:bg-white/8 dark:text-white/45"}`}
                   >
                     {mine && entry.localStatus === "SENDING" ? (
-                      <Loader2 className="me-1 h-3 w-3 animate-spin" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : null}
                     {mine && entry.localStatus === "SENT" ? (
-                      <Check className="me-1 h-3 w-3" />
+                      <Check className="h-3 w-3" />
                     ) : null}
                     {mine && entry.localStatus === "DELIVERED" ? (
-                      <CheckCheck className="me-1 h-3 w-3" />
+                      <CheckCheck className="h-3 w-3" />
                     ) : null}
                     {mine && entry.localStatus === "READ" ? (
-                      <CheckCheck className="me-1 h-3 w-3 text-primary-light" />
+                      <CheckCheck className="h-3 w-3 text-primary-light" />
                     ) : null}
                     {formatTime(entry.createdAt, locale)}
                   </p>
@@ -378,7 +378,7 @@ export default function SupportLaneThread({
           placeholder={copy.composerPlaceholder}
           rows={1}
           maxLength={2000}
-          className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/8"
+          className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-white/15 dark:bg-white/8 disabled:bg-gray-50 dark:disabled:bg-white/5 disabled:text-text-muted/60 disabled:cursor-not-allowed"
           disabled={!canReply || isSending || sendMutation.isPending}
         />
         <button

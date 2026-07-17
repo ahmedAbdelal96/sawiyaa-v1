@@ -1,17 +1,17 @@
 export type AdminSessionStatus =
   | "DRAFT"
   | "PENDING_PAYMENT"
-  | "PENDING_PRACTITIONER_RESPONSE"
-  | "CONFIRMED"
+  | "PENDING_PRACTITIONER_CONFIRMATION"
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
+  | "AWAITING_COMPLETION_CONFIRMATION"
   | "COMPLETED"
   | "CANCELLED"
-  | "NO_SHOW"
-  | "EXPIRED"
-  | "REFUND_PENDING"
-  | "REFUNDED";
+  | "PATIENT_NO_SHOW"
+  | "PRACTITIONER_NO_SHOW"
+  | "BOTH_NO_SHOW"
+  | "EXPIRED";
 
 export type AdminSessionMode = "VIDEO" | "AUDIO" | "CHAT";
 
@@ -28,11 +28,15 @@ export type AdminSessionRuntimeInspectionItem = {
   sessionCode: string;
   status: AdminSessionStatus;
   sessionMode: AdminSessionMode;
+  paymentCoverageType: "DIRECT_PAYMENT" | "PACKAGE";
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   provider: AdminSessionProvider;
   providerRoomId: string | null;
   providerSessionRef: string | null;
+  packageSessionIndex: number | null;
+  packageSessionCount: number | null;
+  packagePurchaseId: string | null;
   canPrepareRuntime: boolean;
   canJoin: boolean;
   blockedReason: AdminSessionJoinBlockedReason | null;
@@ -44,10 +48,11 @@ export type AdminSessionRuntimeInspectionItem = {
   videoRoomClose: AdminSessionVideoRoomCloseEvidence;
   relatedSupportTickets: AdminSessionRelatedSupportTicket[];
   /**
-   * Phase 3 — Lifecycle presentation status. Computed by the existing
-   * presentation-status resolver.
+   * Deprecated compatibility alias. It mirrors the canonical status.
    */
   presentationStatus?: AdminSessionPresentationStatus | null;
+  packagePurchase?: AdminSessionPackagePurchaseSummary | null;
+  packageEntitlementDecision?: AdminSessionPackageEntitlementDecision | null;
 };
 
 export type AdminSessionRuntimeInspectionResponseData = {
@@ -257,6 +262,69 @@ export type AdminSessionPresentationStatus =
   | "CANCELLED"
   | "ENDED"
   | "UNAVAILABLE";
+
+export type AdminSessionPackagePurchaseStatus =
+  | "PENDING_PAYMENT"
+  | "ACTIVE"
+  | "COMPLETED"
+  | "EXPIRED"
+  | "CANCELLED"
+  | "REFUND_PENDING"
+  | "REFUNDED";
+
+export type AdminSessionPackageEntitlementDecisionType =
+  | "RESTORE_TO_PACKAGE"
+  | "COUNT_AS_USED";
+
+export type AdminSessionPackageEntitlementReasonCode =
+  | "PATIENT_FAULT"
+  | "PATIENT_NO_SHOW"
+  | "NO_SHOW"
+  | "PRACTITIONER_FAULT"
+  | "ADMIN_EXCEPTION";
+
+export type AdminSessionPackagePlanSummary = {
+  id: string;
+  code: string;
+  title: string;
+  sessionCount: number;
+  discountPercent: string | null;
+};
+
+export type AdminSessionPackagePurchaseSummary = {
+  id: string;
+  status: AdminSessionPackagePurchaseStatus;
+  selectedCurrencyCode: string | null;
+  sessionCountSnapshot: number | null;
+  patientPayableTotalSnapshot: string | null;
+  packagePlan: AdminSessionPackagePlanSummary;
+};
+
+export type AdminSessionPackageEntitlementDecisionActor = {
+  userId: string;
+  displayName: string | null;
+};
+
+export type AdminSessionPackageEntitlementDecision = {
+  id: string;
+  sessionId: string;
+  packagePurchaseId: string;
+  sessionStatusSnapshot: AdminSessionStatus;
+  decisionType: AdminSessionPackageEntitlementDecisionType;
+  reasonCode: AdminSessionPackageEntitlementReasonCode;
+  adminNote: string | null;
+  resultingSessionEarningReviewId: string | null;
+  decidedBy: AdminSessionPackageEntitlementDecisionActor;
+  decidedAt: string;
+  idempotencyKey: string;
+};
+
+export type CreateAdminSessionPackageEntitlementDecisionRequest = {
+  decisionType: AdminSessionPackageEntitlementDecisionType;
+  reasonCode: AdminSessionPackageEntitlementReasonCode;
+  adminNote?: string | null;
+  idempotencyKey: string;
+};
 
 export type AdminSessionEvidenceActorRole =
   | "PATIENT"

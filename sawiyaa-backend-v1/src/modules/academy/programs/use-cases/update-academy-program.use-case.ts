@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { Prisma, SecurityAuditOutcome } from '@prisma/client';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { UpdateAcademyProgramDto } from '../dto/update-academy-program.dto';
 import { AcademyProgramPresenter } from '../presenters/academy-program.presenter';
 import { AcademyProgramRepository } from '../repositories/academy-program.repository';
@@ -15,11 +19,15 @@ export class UpdateAcademyProgramUseCase {
   constructor(
     private readonly academyProgramRepository: AcademyProgramRepository,
     private readonly academyProgramPresenter: AcademyProgramPresenter,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
     programId: string;
     payload: UpdateAcademyProgramDto;
+    actorUserId?: string;
+    actorRoles?: string[];
   }) {
     const existing = await this.academyProgramRepository.findProgramById(
       input.programId,
@@ -108,9 +116,7 @@ export class UpdateAcademyProgramUseCase {
         ? normalizeAcademyProgramPriceValue(input.payload.priceUsd)
         : existing.priceUsd?.toString() ?? null;
 
-    const updated = await this.academyProgramRepository.updateProgram(
-      input.programId,
-      {
+    const data: Prisma.AcademyProgramUncheckedUpdateInput = {
         titleAr: titleAr.trim(),
         titleEn: titleEn.trim(),
         descriptionAr: descriptionAr?.trim() || null,
@@ -128,8 +134,29 @@ export class UpdateAcademyProgramUseCase {
           input.payload.maxSeats !== undefined ? input.payload.maxSeats : undefined,
         startAt,
         endAt,
-      },
-    );
+    };
+    const updated = this.prisma && this.securityAuditService && input.actorUserId
+      ? await this.prisma.$transaction(async (tx) => {
+          const record = await this.academyProgramRepository.updateProgram(input.programId, data, tx);
+          await this.securityAuditService!.recordRequired(tx, {
+            action: 'academy.program.update',
+            outcome: SecurityAuditOutcome.SUCCESS,
+            actorType: SecurityAuditActorType.USER,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            actorUserId: input.actorUserId,
+            actorRoles: input.actorRoles,
+            resourceType: 'AcademyProgram',
+            resourceId: record.id,
+            metadata: {
+              slug: record.slug,
+              changedFields: Object.keys(data).filter((key) => data[key as keyof typeof data] !== undefined),
+              status: record.status,
+              registrationOpen: record.registrationOpen,
+            },
+          });
+          return record;
+        })
+      : await this.academyProgramRepository.updateProgram(input.programId, data);
 
     return {
       item: this.academyProgramPresenter.presentAdminProgramDetails(updated),

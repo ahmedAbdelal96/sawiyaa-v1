@@ -15,10 +15,9 @@ import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { useAppDirection } from "../../../../i18n/direction";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
-import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { formatViewerDate } from "../../../../lib/time-formatting";
-import { usePublicAcademyCourse } from "../hooks";
-import { formatAcademyLectureDateRange, formatAcademyMoney, isAcademyCourseFree } from "../display";
+import { usePublicAcademyProgram } from "../hooks";
+import { formatAcademySessionDateRange, formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
 
 export default function AcademyDetailScreen({
   slug,
@@ -41,26 +40,21 @@ export default function AcademyDetailScreen({
     }
     return `auth:${user.id}:${role ?? "unknown"}`;
   }, [isAuthLoading, role, user]);
-  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
+  const courseQuery = usePublicAcademyProgram(slug, { cacheScopeKey: authScopeKey });
   const course = courseQuery.data ?? null;
-  const coverUri = resolveMediaUrl(course?.coverImageUrl ?? course?.thumbnailUrl);
-  const startLabel = course?.startsAt ? formatViewerDate(course.startsAt, { locale }) : null;
-  const displayCurrency = resolveSupportedCurrencyCode({
-    currencyCode: course?.currencyCode,
-    regionalPricingMode: course?.regionalPricingMode,
-    resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
-  });
-  const hasPrice = course?.priceAmount !== null && course?.priceAmount !== undefined;
-  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const coverUri = resolveMediaUrl(course?.coverImageUrl);
+  const startLabel = course?.startAt ? formatViewerDate(course.startAt, { locale }) : null;
+  const hasPrice = course?.priceEgp !== null || course?.priceUsd !== null;
+  const isFreeCourse = hasPrice && isAcademyProgramFree(course?.priceEgp, course?.priceUsd);
   const priceLabel = hasPrice
     ? (isFreeCourse
       ? t("academy.detail.free")
-      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language))
+      : formatAcademyProgramPrice(course?.priceEgp, course?.priceUsd, i18n.language))
     : null;
-  const lectures = course?.lectures ?? [];
+  const lectures = course?.sessions ?? [];
   const contentBlocks = useMemo(
-    () => (course?.fullDescription ? splitCourseContent(course.fullDescription) : []),
-    [course?.fullDescription],
+    () => (course?.description ? splitCourseContent(course.description) : []),
+    [course?.description],
   );
 
   const isNotFound = courseQuery.isSuccess && !course;
@@ -118,13 +112,13 @@ export default function AcademyDetailScreen({
                   {course.title}
                 </Text>
 
-                {course.shortDescription ? (
+                {course.description ? (
                   <Text
                     color={theme.colors.textSecondary}
                     style={[styles.description, { textAlign }]}
                     numberOfLines={3}
                   >
-                    {course.shortDescription}
+                    {course.description}
                   </Text>
                 ) : null}
 
@@ -137,22 +131,12 @@ export default function AcademyDetailScreen({
                       </Text>
                     </View>
                   ) : null}
-                  {course.plannedLectureCount ? (
+                  {course.sessions?.length ? (
                     <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
                       <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
                       <Text color={theme.colors.textSecondary} style={styles.metaText}>
                         {t("academy.detail.lectures", {
-                          count: course.plannedLectureCount,
-                        })}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {course.plannedDurationDays ? (
-                    <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
-                      <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
-                      <Text color={theme.colors.textSecondary} style={styles.metaText}>
-                        {t("academy.detail.durationDays", {
-                          count: course.plannedDurationDays,
+                          count: course.sessions.length,
                         })}
                       </Text>
                     </View>
@@ -219,7 +203,7 @@ export default function AcademyDetailScreen({
                           ]}
                         >
                           <Text weight="600" style={[styles.lessonIndex, { color: theme.colors.primary }]}>
-                            {lecture.lectureOrder}
+                            {index + 1}
                           </Text>
                         </View>
                         {!isLast && (
@@ -233,14 +217,14 @@ export default function AcademyDetailScreen({
                       </View>
                       <View style={styles.lessonMeta}>
                         <Text weight="600" style={[styles.lessonTitle, { textAlign }]} numberOfLines={1}>
-                          {lecture.lectureTitle ?? t("academy.detail.unnamedLesson")}
+                          {lecture.title || t("academy.detail.unnamedLesson")}
                         </Text>
                         <Text
                           color={theme.colors.textSecondary}
                           style={[styles.lessonSchedule, { textAlign }]}
                           numberOfLines={1}
                         >
-                          {formatAcademyLectureDateRange(
+                          {formatAcademySessionDateRange(
                             lecture.startsAt,
                             lecture.endsAt,
                             locale,

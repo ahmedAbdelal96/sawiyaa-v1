@@ -18,7 +18,7 @@ describe('session-chat-policy util', () => {
   it('allows chat during joinable and in-progress states', () => {
     const joinable = resolveSessionChatAvailability({
       ...baseInput,
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.READY_TO_JOIN,
       now: new Date('2026-08-02T11:58:30.000Z'),
     });
     const inProgress = resolveSessionChatAvailability({
@@ -73,7 +73,7 @@ describe('session-chat-policy util', () => {
   it('blocks unreadable sessions before start', () => {
     const result = resolveSessionChatAvailability({
       ...baseInput,
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       now: new Date('2026-08-02T11:55:00.000Z'),
     });
 

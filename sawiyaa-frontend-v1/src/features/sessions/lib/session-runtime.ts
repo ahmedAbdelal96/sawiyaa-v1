@@ -9,7 +9,6 @@ import type {
 } from "../types/sessions.types";
 
 export const SESSION_RUNTIME_STATUSES: SessionStatus[] = [
-  "CONFIRMED",
   "UPCOMING",
   "READY_TO_JOIN",
   "IN_PROGRESS",
@@ -75,20 +74,6 @@ function getBackendWindowTimes(joinResult: SessionJoinItem | null) {
  * permissive than the backend — they are display hints only, NOT
  * used for any security decisions.
  */
-function getFallbackWindowTimes(session: SessionItem) {
-  const start = session.scheduledStartAt ? new Date(session.scheduledStartAt) : null;
-  const end = session.scheduledEndAt ? new Date(session.scheduledEndAt) : null;
-
-  if (!start || !end) {
-    return null;
-  }
-
-  return {
-    joinOpensAt: new Date(start.getTime() - 15 * 60_000),
-    joinClosesAt: new Date(end.getTime() + 120 * 60_000),
-  };
-}
-
 type RuntimeSource =
   | SessionJoinItem
   | SessionRuntimeItem
@@ -191,10 +176,9 @@ export function canPrepareSessionRuntime(
     return false;
   }
 
-  const windows = getBackendWindowTimes(joinResult) ?? getFallbackWindowTimes(session);
-  if (!windows) {
-    return false;
-  }
+  if (!joinResult) return Boolean(session.actions?.canPrepareRoom);
+  const windows = getBackendWindowTimes(joinResult);
+  if (!windows) return false;
 
   // prepareOpensAt is derived from availableAt minus the lead buffer.
   // Use 2-minute lead (backend's authoritative value) when available.
@@ -207,13 +191,7 @@ export function canPrepareSessionRuntime(
     return now >= prepareOpensAt && now <= windows.joinClosesAt;
   }
 
-  // Fallback for pre-contract state: use a generous display lead.
-  const displayLeadMinutes = 24 * 60;
-  const fallbackPrepareOpensAt = session.scheduledStartAt
-    ? new Date(new Date(session.scheduledStartAt).getTime() - displayLeadMinutes * 60_000)
-    : null;
-
-  return fallbackPrepareOpensAt ? now >= fallbackPrepareOpensAt && now <= windows.joinClosesAt : false;
+  return now >= new Date(windows.joinOpensAt.getTime() - 2 * 60_000) && now <= windows.joinClosesAt;
 }
 
 /**
@@ -228,10 +206,9 @@ export function isJoinWindowOpen(
   joinResult: SessionJoinItem | null = null,
   now: Date = new Date(),
 ): boolean {
-  const windows = getBackendWindowTimes(joinResult) ?? getFallbackWindowTimes(session);
-  if (!windows || !hasSessionRuntimeAccess(session.status)) {
-    return false;
-  }
+  if (!joinResult) return Boolean(session.actions?.canJoin);
+  const windows = getBackendWindowTimes(joinResult);
+  if (!windows || !hasSessionRuntimeAccess(session.status)) return false;
 
   return now >= windows.joinOpensAt && now <= windows.joinClosesAt;
 }

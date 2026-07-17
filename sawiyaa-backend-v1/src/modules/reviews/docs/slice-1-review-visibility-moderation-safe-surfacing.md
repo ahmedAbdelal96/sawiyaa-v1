@@ -10,7 +10,8 @@ Public review list inclusion now requires all of:
 - `publishedAt != null`
 - `hiddenAt = null`
 - `archivedAt = null`
-- `reviewText` present and non-empty
+- `countsInPublicAverage = true`
+- `publicRatingValue != null`
 
 These rules are centralized in `public-review-visibility.policy.ts` and reused by repository public reads.
 

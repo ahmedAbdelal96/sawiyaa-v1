@@ -1,15 +1,16 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class MarkSessionNoShowByPractitionerUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
@@ -55,35 +56,21 @@ export class MarkSessionNoShowByPractitionerUseCase {
       });
     }
 
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.NO_SHOW,
-    );
+    if (session.status === SessionStatus.PATIENT_NO_SHOW) {
+      throw new ConflictException({
+        messageKey: 'sessions.errors.sessionAlreadyNoShow',
+        error: 'SESSION_ALREADY_NO_SHOW',
+      });
+    }
 
     const updatedSession = await this.prisma.$transaction(async (tx) => {
-      const noShowSession = await this.sessionRepository.updateStatus(
-        session.id,
-        {
-          status: SessionStatus.NO_SHOW,
-        },
+      return this.sessionLifecycleService.transition({
+        session,
+        to: SessionStatus.PATIENT_NO_SHOW,
+        actorUserId: input.userId,
+        metadata: { markedBy: 'PRACTITIONER', locale: input.locale },
         tx,
-      );
-
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: session.id,
-          eventType: SessionEventType.NO_SHOW_PATIENT,
-          actorUserId: input.userId,
-          metadataJson: {
-            markedBy: 'PRACTITIONER',
-            previousStatus: session.status,
-            locale: input.locale,
-          },
-        },
-        tx,
-      );
-
-      return noShowSession;
+      });
     });
 
     await this.operationalNotificationService.cancelSessionReminders({

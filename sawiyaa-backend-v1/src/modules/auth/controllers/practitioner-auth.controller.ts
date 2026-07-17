@@ -146,7 +146,7 @@ export class PractitionerAuthController {
 
     return {
       message: this.i18nService.t(
-        'tokens' in result
+        result.nextStep === 'AUTHENTICATED'
           ? 'auth.success.practitionerOtpVerified'
           : 'auth.success.practitionerOtpSent',
         locale,

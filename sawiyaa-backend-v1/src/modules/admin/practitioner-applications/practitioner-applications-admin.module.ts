@@ -41,13 +41,15 @@ import { UploadAdminPractitionerCredentialFileUseCase } from './use-cases/upload
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
+import { AuthModule } from '@modules/auth/auth.module';
+import { ClearPractitionerAuthLockoutUseCase } from './use-cases/clear-practitioner-auth-lockout.use-case';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
  * It intentionally does not expose practitioner self-service profile/update flows.
  */
 @Module({
-  imports: [ReviewsModule],
+  imports: [ReviewsModule, AuthModule],
   controllers: [
     PractitionerApplicationsAdminController,
     AdminPractitionersController,
@@ -81,6 +83,7 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
     ListAdminPractitionersDirectoryUseCase,
     UpdateAdminPractitionerAvatarUseCase,
     RemoveAdminPractitionerAvatarUseCase,
+    ClearPractitionerAuthLockoutUseCase,
     GetPractitionerApplicationDetailsUseCase,
     GetPractitionerApplicationAvatarFileUseCase,
     GetPractitionerApplicationCredentialFileUseCase,

@@ -11,9 +11,9 @@ import { Button, Input, Text } from "../../../src/components/ui";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
-import { extractApiErrorMessage } from "../../../src/lib/api";
+import { getAuthLockoutErrorMessage } from "../../../src/features/auth/auth-lockout-messages";
 import type {
-  OtpChallengeResponse,
+  PractitionerOtpChallengeResponse,
   PractitionerLoginResponse,
 } from "../../../src/features/auth/contracts";
 
@@ -57,7 +57,8 @@ export default function PractitionerSignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otpCode, setOtpCode] = useState("");
-  const [challenge, setChallenge] = useState<OtpChallengeResponse | null>(null);
+  const [challenge, setChallenge] =
+    useState<PractitionerOtpChallengeResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [infoText, setInfoText] = useState<string | null>(null);
@@ -87,15 +88,19 @@ export default function PractitionerSignInScreen() {
         email: email.trim(),
         password,
       });
-      if (isOtpChallengeResponse(response)) {
+      if (response.nextStep === "OTP_REQUIRED" && isOtpChallengeResponse(response)) {
         setChallenge(response);
-      } else {
-        // Dev compatibility: backend may return direct authenticated session.
+        setOtpCode("");
+        setErrorText(null);
+        setInfoText(null);
+      } else if (response.nextStep === "AUTHENTICATED") {
         setChallenge(null);
+      } else {
+        throw new Error("PRACTITIONER_LOGIN_UNKNOWN_NEXT_STEP");
       }
       setInfoText(response.message);
     } catch (error) {
-      setErrorText(extractApiErrorMessage(error));
+      setErrorText(getAuthLockoutErrorMessage(error, "practitioner-password", t));
     } finally {
       setIsSubmitting(false);
     }
@@ -115,7 +120,7 @@ export default function PractitionerSignInScreen() {
         code: otpCode.trim(),
       });
     } catch (error) {
-      setErrorText(extractApiErrorMessage(error));
+      setErrorText(getAuthLockoutErrorMessage(error, "practitioner-otp", t));
     } finally {
       setIsSubmitting(false);
     }
@@ -322,12 +327,20 @@ export default function PractitionerSignInScreen() {
 }
 
 function isOtpChallengeResponse(
-  response: PractitionerLoginResponse,
-): response is OtpChallengeResponse {
+  response: unknown,
+): response is PractitionerOtpChallengeResponse {
+  if (typeof response !== "object" || response === null) {
+    return false;
+  }
+
+  const value = response as Record<string, unknown>;
   return (
-    typeof response === "object" &&
-    response !== null &&
-    "challengeId" in response
+    value.nextStep === "OTP_REQUIRED" &&
+    typeof value.challengeId === "string" &&
+    typeof value.maskedTarget === "string" &&
+    typeof value.expiresAt === "string" &&
+    typeof value.channel === "string" &&
+    value.requiresOtpVerification === true
   );
 }
 

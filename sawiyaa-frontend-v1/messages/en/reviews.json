@@ -1,9 +1,9 @@
 {
   "admin": {
     "list": {
-      "heading": "Reviews",
+      "heading": "Session rating reviews",
       "count": "{value, number} {value, plural, one {review} other {reviews}}",
-      "needsModeration": "Needs moderation",
+      "needsModeration": "Reviews needing moderation",
       "unknownPractitioner": "Unknown practitioner",
       "pagination": {
         "previous": "Previous",
@@ -31,29 +31,91 @@
     "detail": {
       "back": "Back to reviews",
       "heading": "Review detail",
+      "subtitle": "Review the original patient rating, the public rating, and the moderation decision before publishing.",
       "noText": "No review text provided.",
       "practitioner": "Practitioner",
       "patient": "Patient",
       "anonymousPatient": "Anonymous patient",
       "patientFallback": "Patient",
-      "patientProfileId": "Patient profile ID",
       "sessionDate": "Session date",
       "submittedAt": "Submitted",
       "publishedAt": "Published",
       "moderatedAt": "Last moderated",
-      "technicalDetails": "System Tracking & Technical Details"
+      "originalRating": "Original patient rating",
+      "publicRating": "Public rating",
+      "averageContribution": "Counts in practitioner average",
+      "countsInAverage": "Counts in practitioner average",
+      "excludedFromAverage": "Does not count in practitioner average",
+      "moderationState": "Moderation state",
+      "moderationReason": "Moderation reason",
+      "moderatedBy": "Moderated by",
+      "moderatedByFallback": "Reviewed by a team admin",
+      "internalModerator": "Internal moderator",
+      "sessionSection": "Session details",
+      "patientNote": "Patient note",
+      "internalOnlyNote": "This is internal only and is not shown to the patient or public users.",
+      "visibility": "Visibility",
+      "visibilityNote": "The public rating is what counts toward the practitioner average.",
+      "publicRatingHint": "This is the rating that will be shown publicly if the review is approved with edits.",
+      "selectPublicRating": "Select public rating {value}",
+      "none": "None",
+      "unknown": "Unknown"
     },
     "moderation": {
-      "heading": "Moderation",
-      "currentStatus": "Current status",
-      "actionLabel": "Action",
-      "selectAction": "Select an action",
-      "noteLabel": "Moderator note (optional)",
-      "notePlaceholder": "Optional: add an internal note for the audit trail",
-      "submit": "Apply action",
-      "submitting": "Applying...",
-      "success": "Moderation action applied successfully.",
-      "error": "Could not apply action. Please try again."
+      "heading": "Moderation decision",
+      "note": "Choose the decision that matches the review outcome. The original patient rating is always preserved.",
+      "selectedDecision": "Selected decision",
+      "reasonLabel": "Reason for decision",
+      "reasonPlaceholder": "Write the internal reason or note here",
+      "reasonRequiredHint": "This reason is required for this decision.",
+      "reasonOptionalHint": "Optional for this decision.",
+      "submit": "Save decision",
+      "submitting": "Saving...",
+      "success": "Moderation decision updated successfully.",
+      "error": "Could not update the moderation decision. Please try again.",
+      "decisions": {
+        "APPROVE_AS_IS": {
+          "title": "Approve as-is",
+          "description": "Publish the original patient rating without changing it."
+        },
+        "EDIT_AND_APPROVE": {
+          "title": "Edit and approve",
+          "description": "Keep the original patient rating internally, then publish the public rating you choose."
+        },
+        "REJECT_PUBLISHING": {
+          "title": "Reject publishing",
+          "description": "Keep the review internal and do not include it in the public average."
+        },
+        "INTERNAL_NOTE_ONLY": {
+          "title": "Internal note only",
+          "description": "Keep this decision internal only and do not show it publicly."
+        },
+        "EXCLUDE_FROM_PUBLIC_AVERAGE": {
+          "title": "Exclude from public average",
+          "description": "Keep the review internal but do not count it in the practitioner average."
+        }
+      }
+    },
+    "labels": {
+      "originalRating": "Original patient rating: {value}",
+      "publicRating": "Public rating: {value}",
+      "countsInAverage": "Counts in practitioner average",
+      "excludedFromAverage": "Does not count in practitioner average"
+    },
+    "decisions": {
+      "pending": "Pending moderation",
+      "AUTO_APPROVED_POSITIVE": "Auto-published",
+      "APPROVE_AS_IS": "Approved as-is",
+      "EDIT_AND_APPROVE": "Edited and approved",
+      "REJECT_PUBLISHING": "Rejected publishing",
+      "INTERNAL_NOTE_ONLY": "Internal note only",
+      "EXCLUDE_FROM_PUBLIC_AVERAGE": "Excluded from practitioner average"
+    },
+    "validation": {
+      "decisionRequired": "Choose a moderation decision.",
+      "publicRatingRequired": "Choose the public rating shown to everyone.",
+      "publicRatingRange": "The public rating must be between 1 and 5.",
+      "moderationReasonRequired": "Write the reason for this decision."
     },
     "states": {
       "empty": {
@@ -95,6 +157,31 @@
     }
   },
   "patient": {
+    "ratingModal": {
+      "title": "Rate your session",
+      "subtitle": "Choose a star rating. You can add a note if you want.",
+      "starHelperMin": "1 star",
+      "starHelperMax": "5 stars",
+      "noteLabel": "Optional note",
+      "notePlaceholder": "Write a note if you want...",
+      "submit": "Submit rating",
+      "later": "Later",
+      "validationRatingRequired": "Please choose a star rating first",
+      "success": "Thanks for your feedback",
+      "sessionContext": "With {name} · {date}",
+      "sessionFallback": "Your recent session"
+    },
+    "reminder": {
+      "eyebrow": "Feedback reminder",
+      "modalTitle": "You can leave feedback for your completed session",
+      "modalDescription": "Your session is finished and your feedback helps us improve care quality.",
+      "sessionLabel": "Completed session",
+      "sessionNote": "Please share feedback for your recent session with {practitioner}.",
+      "practitionerLabel": "Practitioner",
+      "completedAtLabel": "Completed at",
+      "completedAtFallback": "Not available",
+      "later": "Later"
+    },
     "meta": {
       "list": {
         "title": "My feedback — Patient",

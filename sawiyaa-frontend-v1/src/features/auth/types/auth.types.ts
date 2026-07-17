@@ -56,6 +56,7 @@ export interface AuthSuccessResponse {
   message: string;
   tokens: AuthTokens;
   user: AuthenticatedUser;
+  nextStep?: 'AUTHENTICATED';
 }
 
 export interface MessageResponse {
@@ -69,7 +70,19 @@ export interface OtpChallengeResponse {
   maskedTarget: string;
   expiresAt: string;
   requiresOtpVerification: boolean;
+  nextStep?: 'OTP_REQUIRED';
 }
+
+export type PractitionerAuthenticatedResponse = AuthSuccessResponse & {
+  nextStep: 'AUTHENTICATED';
+};
+
+export type PractitionerOtpChallengeResponse = Omit<
+  OtpChallengeResponse,
+  'nextStep'
+> & {
+  nextStep: 'OTP_REQUIRED';
+};
 
 export interface PractitionerRegistrationResponse {
   message: string;
@@ -153,8 +166,8 @@ export interface PractitionerLoginRequest {
 }
 
 export type PractitionerLoginResponse =
-  | OtpChallengeResponse
-  | AuthSuccessResponse;
+  | PractitionerOtpChallengeResponse
+  | PractitionerAuthenticatedResponse;
 
 export interface PractitionerVerifyOtpRequest {
   challengeId: string;

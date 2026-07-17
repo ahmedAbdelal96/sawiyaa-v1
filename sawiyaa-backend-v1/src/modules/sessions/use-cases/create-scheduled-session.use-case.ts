@@ -18,6 +18,10 @@ import { ValidateSessionConflictsService } from '../services/validate-session-co
 import { ValidateSessionDurationService } from '../services/validate-session-duration.service';
 import { ValidateSessionScheduleCompatibilityService } from '../services/validate-session-schedule-compatibility.service';
 import { toSessionOverlapConflictException } from '../utils/session-overlap-conflict.util';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 /**
  * Scheduled session creation is the Phase 2 booking baseline.
@@ -168,7 +172,10 @@ export class CreateScheduledSessionUseCase {
           {
             sessionId: createdSession.id,
             eventType: SessionEventType.SESSION_CREATED,
+            actorType: SecurityAuditActorType.USER,
             actorUserId: input.userId,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            occurredAt: new Date(),
             metadataJson: {
               source: 'patientScheduledBooking',
               locale: input.locale,
@@ -181,7 +188,10 @@ export class CreateScheduledSessionUseCase {
           {
             sessionId: createdSession.id,
             eventType: SessionEventType.PAYMENT_PENDING,
+            actorType: SecurityAuditActorType.USER,
             actorUserId: input.userId,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            occurredAt: new Date(),
             metadataJson: {
               expiresAt: expiresAt.toISOString(),
             },

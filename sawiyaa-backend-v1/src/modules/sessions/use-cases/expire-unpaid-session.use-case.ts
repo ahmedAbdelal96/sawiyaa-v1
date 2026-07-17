@@ -3,10 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
@@ -26,59 +26,34 @@ export class ExpireUnpaidSessionUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly paymentRepository: PaymentRepository,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
   async execute(input: { sessionId: string }) {
-    const session = await this.sessionRepository.findById(input.sessionId);
-
-    if (!session) {
-      throw new NotFoundException({
-        messageKey: 'sessions.errors.sessionNotFound',
-        error: 'SESSION_NOT_FOUND',
-      });
-    }
-
-    if (session.status !== SessionStatus.PENDING_PAYMENT) {
-      throw new ConflictException({
-        messageKey: 'sessions.errors.sessionNotPendingPayment',
-        error: 'SESSION_NOT_PENDING_PAYMENT',
-      });
-    }
-
-    const sessionId = session.id;
-
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.EXPIRED,
-    );
+    const sessionId = input.sessionId;
 
     const expiredAt = new Date();
 
     const expiredSession = await this.prisma.$transaction(async (tx) => {
-      // 1. Expire the session
-      const expiredSession = await this.sessionRepository.updateStatus(
+      // Lock and re-read before any lifecycle or payment mutation.
+      const transition = await this.sessionLifecycleService.transitionIfCurrentStatus({
         sessionId,
-        {
-          status: SessionStatus.EXPIRED,
-          expiredAt,
-        },
+        expectedStatuses: [SessionStatus.PENDING_PAYMENT],
+        to: SessionStatus.EXPIRED,
+        at: expiredAt,
+        metadata: { expiredAt: expiredAt.toISOString() },
         tx,
-      );
+      });
 
-      await this.sessionRepository.createEvent(
-        {
-          sessionId,
-          eventType: SessionEventType.EXPIRED_UNPAID,
-          metadataJson: {
-            expiredAt: expiredAt.toISOString(),
-          },
-        },
-        tx,
-      );
+      if (transition.outcome === 'skipped' || !transition.session) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.sessionNotPendingPayment',
+          error: 'SESSION_NOT_PENDING_PAYMENT',
+        });
+      }
 
       // 2. Finalize all open payment attempts for this session
       // Only touch payments that are still actionable (not yet finalized)
@@ -107,7 +82,7 @@ export class ExpireUnpaidSessionUseCase {
         await this.paymentRepository.updateStatus(payment.id, {
           status: targetStatus,
           expiredAt: targetStatus === 'EXPIRED' ? expiredAt : null,
-        });
+        }, tx);
 
         await this.paymentRepository.createEvent(
           {
@@ -115,7 +90,7 @@ export class ExpireUnpaidSessionUseCase {
             eventType: 'PAYMENT_EXPIRED' as const,
             payloadJson: {
               reason: 'SESSION_EXPIRED',
-              sessionId: session.id,
+              sessionId,
               expiredAt: expiredAt.toISOString(),
             },
           },
@@ -136,7 +111,7 @@ export class ExpireUnpaidSessionUseCase {
         }
       }
 
-      return expiredSession;
+      return this.sessionRepository.findById(sessionId, tx);
     });
 
     await this.operationalNotificationService.cancelSessionReminders({

@@ -4,6 +4,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { MessagingModule } from '@modules/messaging/messaging.module';
 import { AdminCareChatController } from './controllers/admin-care-chat.controller';
 import { PatientCareChatController } from './controllers/patient-care-chat.controller';
 import { PractitionerCareChatController } from './controllers/practitioner-care-chat.controller';
@@ -33,7 +34,7 @@ import { CareChatAccessPolicy } from './policies/care-chat-access.policy';
     PractitionerCareChatController,
     AdminCareChatController,
   ],
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, MessagingModule],
   providers: [
     CareChatAccessPolicy,
     JwtAccessAuthGuard,

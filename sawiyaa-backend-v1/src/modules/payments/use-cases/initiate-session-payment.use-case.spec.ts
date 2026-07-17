@@ -247,7 +247,11 @@ describe('InitiateSessionPaymentUseCase', () => {
       couponPlatformSharePercent: '0.00',
       couponPractitionerSharePercent: '0.00',
       breakdown: {
+        grossAmount: '120.00',
+        discountAmount: '0.00',
+        netPaidAmount: '120.00',
         platformCommissionAmount: '24.00',
+        practitionerShareAmount: '96.00',
       },
     });
     (paymentRepository.createPayment as jest.Mock).mockResolvedValue({
@@ -293,6 +297,21 @@ describe('InitiateSessionPaymentUseCase', () => {
       expect.anything(),
     );
     expect(paymentRepository.createPayment).toHaveBeenCalledTimes(1);
+    expect(paymentRepository.createPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        commissionPlatformRatePercent: '20.00',
+        metadataJson: expect.objectContaining({
+          financialBreakdown: expect.objectContaining({
+            grossAmount: '120.00',
+            discountAmount: '0.00',
+            netPaidAmount: '120.00',
+            platformCommissionAmount: '24.00',
+            practitionerShareAmount: '96.00',
+          }),
+        }),
+      }),
+      expect.anything(),
+    );
     expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledTimes(1);
     expect(result.item.status).toBe(PaymentStatus.PENDING);
     expect(result.item.sessionId).toBe('session-1');

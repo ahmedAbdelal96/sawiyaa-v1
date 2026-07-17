@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { SessionReviewModerationDecision } from '@prisma/client';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
 import { BuildPractitionerCredibilitySummaryService } from '../services/build-practitioner-credibility-summary.service';
@@ -62,15 +63,19 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
       [
         {
           id: 'review_older',
-          ratingValue: 4,
+          publicRatingValue: 4,
           reviewText: 'Older',
+          moderationDecision:
+            SessionReviewModerationDecision.APPROVED_AS_IS,
           submittedAt: new Date('2026-03-01T00:00:00.000Z'),
           publishedAt: new Date('2026-03-05T00:00:00.000Z'),
         },
         {
           id: 'review_newer',
-          ratingValue: 5,
+          publicRatingValue: 5,
           reviewText: 'Newer',
+          moderationDecision:
+            SessionReviewModerationDecision.APPROVED_AS_IS,
           submittedAt: new Date('2026-03-02T00:00:00.000Z'),
           publishedAt: new Date('2026-03-06T00:00:00.000Z'),
         },
@@ -116,14 +121,14 @@ describe('ListPublicPractitionerReviewsUseCase', () => {
         {
           id: 'review_older',
           overallRating: 4,
-          textReview: 'Older',
+          textReview: null,
           submittedAt: '2026-03-01T00:00:00.000Z',
           publishedAt: '2026-03-05T00:00:00.000Z',
         },
         {
           id: 'review_newer',
           overallRating: 5,
-          textReview: 'Newer',
+          textReview: null,
           submittedAt: '2026-03-02T00:00:00.000Z',
           publishedAt: '2026-03-06T00:00:00.000Z',
         },

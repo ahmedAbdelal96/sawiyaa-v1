@@ -1544,7 +1544,6 @@ export class OperationalNotificationService {
 
   private isDispatchableSessionStatus(status: SessionStatus): boolean {
     return (
-      status === SessionStatus.CONFIRMED ||
       status === SessionStatus.UPCOMING ||
       status === SessionStatus.READY_TO_JOIN
     );

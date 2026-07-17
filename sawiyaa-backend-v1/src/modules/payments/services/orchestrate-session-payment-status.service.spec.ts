@@ -19,10 +19,16 @@ describe('OrchestrateSessionPaymentStatusService', () => {
         id: 'session_1',
         status: SessionStatus.PENDING_PAYMENT,
         scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+        patient: { id: 'patient_1' },
+        practitioner: { id: 'pr_1' },
       }),
     };
-    const validateSessionStatusTransitionService = {
-      assertCanTransition: jest.fn(),
+    const sessionLifecycleService = {
+      transition: jest.fn().mockResolvedValue({
+        id: 'session_1',
+        status: SessionStatus.UPCOMING,
+        scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+      }),
     };
     const expireUnpaidSessionUseCase = {
       execute: jest.fn().mockResolvedValue({}),
@@ -34,12 +40,17 @@ describe('OrchestrateSessionPaymentStatusService', () => {
     const service = new OrchestrateSessionPaymentStatusService(
       prisma as never,
       sessionRepository as never,
-      validateSessionStatusTransitionService as never,
+      sessionLifecycleService as never,
       expireUnpaidSessionUseCase as never,
       operationalNotificationService as never,
     );
 
-    return { service, operationalNotificationService, sessionRepository };
+    return {
+      service,
+      operationalNotificationService,
+      sessionRepository,
+      sessionLifecycleService,
+    };
   }
 
   it('sends session-confirmed notification after status confirmation', async () => {
@@ -56,13 +67,12 @@ describe('OrchestrateSessionPaymentStatusService', () => {
     expect(
       setup.operationalNotificationService.notifySessionConfirmed,
     ).toHaveBeenCalledTimes(1);
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledWith(
-      'session_1',
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: SessionStatus.CONFIRMED,
-        joinOpenAt: new Date('2026-04-02T09:58:00.000Z'),
+        to: SessionStatus.UPCOMING,
+        data: { joinOpenAt: new Date('2026-04-02T09:58:00.000Z') },
+        tx: expect.anything(),
       }),
-      expect.anything(),
     );
   });
 });

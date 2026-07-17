@@ -11,6 +11,10 @@ import { AppLoggerService } from '@common/logging/app-logger.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-attendance-webhook.service';
 import { DailyAttendanceWebhookParseResult } from '../types/session-attendance.types';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 type AttendanceWebhookHandledReason =
   | 'ATTENDANCE_EVENT_STORED'
@@ -224,7 +228,10 @@ export class HandleDailyAttendanceWebhookUseCase {
     await this.sessionRepository.createEvent({
       sessionId: session.id,
       eventType,
+      actorType: SecurityAuditActorType.SYSTEM,
       actorUserId: null,
+      source: SecurityAuditSource.SYSTEM,
+      occurredAt: parsed.occurredAt,
       metadataJson: this.toPrismaJson({
         providerEventType: parsed.providerEventType,
         providerEventRef: parsed.providerEventRef,

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -37,6 +37,9 @@ export class WalletItemDto {
 
   @ApiProperty()
   lifetimePaidOut!: string;
+
+  @ApiProperty()
+  manualRecoveryAmount!: string;
 
   @ApiProperty({ nullable: true })
   lastLedgerEntryAt!: string | null;
@@ -669,6 +672,9 @@ export class PractitionerStatementWalletDto {
   @ApiProperty()
   lifetimePaidOut!: string;
 
+  @ApiProperty()
+  manualRecoveryAmount!: string;
+
   @ApiProperty({ nullable: true })
   lastLedgerEntryAt!: string | null;
 
@@ -964,6 +970,9 @@ export class PractitionerManualPayoutBalanceDto {
   @ApiProperty()
   totalPayableAmount!: string;
 
+  @ApiProperty()
+  manualRecoveryAmount!: string;
+
   @ApiProperty({ nullable: true })
   lastPayoutAt!: string | null;
 }
@@ -1235,3 +1244,4 @@ export class PractitionerManualPayoutSummaryListSuccessResponseDto {
   @ApiProperty({ type: PractitionerManualPayoutSummaryListDataResponseDto })
   data!: PractitionerManualPayoutSummaryListDataResponseDto;
 }
+

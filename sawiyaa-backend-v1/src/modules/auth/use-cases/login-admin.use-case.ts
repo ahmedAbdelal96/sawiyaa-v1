@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserRoleType, UserStatus } from '@prisma/client';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
@@ -12,6 +8,12 @@ import { AuthIdentityRepository } from '../repositories/auth-identity.repository
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { ADMIN_AUTH_ROLE_TYPES } from '../utils/auth-role.util';
+import { AuthLockoutService } from '../services/auth-lockout.service';
+import { AUTH_LOCKOUT_CONTEXTS } from '../types/auth-lockout.types';
+import {
+  createInvalidLoginException,
+  createLockedLoginException,
+} from '../utils/auth-lockout-response.util';
 
 /**
  * Admin auth is baseline-only: existing admin accounts can login, refresh, and logout.
@@ -24,6 +26,7 @@ export class LoginAdminUseCase {
     private readonly authIdentityRepository: AuthIdentityRepository,
     private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
+    private readonly authLockoutService: AuthLockoutService,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -37,20 +40,41 @@ export class LoginAdminUseCase {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
+    const lockoutSubject = userEmail ? `user:${userEmail.user.id}` : `email:${normalizedEmail}`;
 
     if (!userEmail) {
-      this.securityAuditService.logAsync({
-        action: 'auth.admin.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
         reason: 'USER_NOT_FOUND',
         metadata: { emailDomain: normalizedEmail.split('@')[1] ?? null },
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
+    }
+
+    const currentLockoutState = await this.authLockoutService.getState(
+      AUTH_LOCKOUT_CONTEXTS.ADMIN_PASSWORD_LOGIN,
+      lockoutSubject,
+    );
+    if (currentLockoutState.isLocked) {
+      this.securityAuditService.logAsync({
+        action: 'auth.admin.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'LOGIN_TEMPORARILY_LOCKED',
+        metadata: {
+          attemptCount: currentLockoutState.attemptCount,
+          remainingAttempts: currentLockoutState.remainingAttempts,
+          maxAttempts: currentLockoutState.maxAttempts,
+          lockedUntil: currentLockoutState.lockedUntil?.toISOString() ?? null,
+          retryAfterSeconds: currentLockoutState.retryAfterSeconds,
+          isLocked: currentLockoutState.isLocked,
+        },
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
       });
+      throw createLockedLoginException(currentLockoutState);
     }
 
     const adminRole =
@@ -59,34 +83,24 @@ export class LoginAdminUseCase {
       )?.role ?? null;
 
     if (!adminRole) {
-      this.securityAuditService.logAsync({
-        action: 'auth.admin.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'ADMIN_ROLE_REQUIRED',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'ADMIN_ROLE_REQUIRED',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new ForbiddenException({
-        messageKey: 'auth.errors.adminRoleRequired',
-        error: 'ADMIN_ROLE_REQUIRED',
       });
     }
 
     if (userEmail.user.status !== UserStatus.ACTIVE) {
-      this.securityAuditService.logAsync({
-        action: 'auth.admin.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'ACCOUNT_NOT_ACTIVE',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'ACCOUNT_NOT_ACTIVE',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new ForbiddenException({
-        messageKey: 'auth.errors.accountNotActive',
-        error: 'ACCOUNT_NOT_ACTIVE',
       });
     }
 
@@ -96,18 +110,13 @@ export class LoginAdminUseCase {
       );
 
     if (!passwordIdentity?.passwordHash) {
-      this.securityAuditService.logAsync({
-        action: 'auth.admin.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'NO_PASSWORD_IDENTITY',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'NO_PASSWORD_IDENTITY',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -117,22 +126,21 @@ export class LoginAdminUseCase {
     );
 
     if (!isValidPassword) {
-      this.securityAuditService.logAsync({
-        action: 'auth.admin.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'INVALID_PASSWORD',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'INVALID_PASSWORD',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
       });
     }
 
     await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
+    await this.authLockoutService.clear(
+      AUTH_LOCKOUT_CONTEXTS.ADMIN_PASSWORD_LOGIN,
+      lockoutSubject,
+    );
 
     const result = await this.issueAuthTokensUseCase.execute({
       userId: userEmail.user.id,
@@ -150,5 +158,43 @@ export class LoginAdminUseCase {
     });
 
     return result;
+  }
+
+  private async throwFailedLogin(input: {
+    subject: string;
+    reason: string;
+    actorUserId?: string;
+    actorRoles?: UserRoleType[];
+    metadata?: Record<string, unknown>;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  }): Promise<never> {
+    const state = await this.authLockoutService.recordFailure(
+      AUTH_LOCKOUT_CONTEXTS.ADMIN_PASSWORD_LOGIN,
+      input.subject,
+    );
+
+    this.securityAuditService.logAsync({
+      action: 'auth.admin.login.failure',
+      outcome: SecurityAuditOutcome.FAILURE,
+      actorUserId: input.actorUserId ?? null,
+      actorRoles: input.actorRoles,
+      reason: state.isLocked ? 'LOGIN_TEMPORARILY_LOCKED' : input.reason,
+      metadata: {
+        attemptCount: state.attemptCount,
+        remainingAttempts: state.remainingAttempts,
+        maxAttempts: state.maxAttempts,
+        lockedUntil: state.lockedUntil?.toISOString() ?? null,
+        retryAfterSeconds: state.retryAfterSeconds,
+        isLocked: state.isLocked,
+        ...(input.metadata ?? {}),
+      },
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    throw state.isLocked
+      ? createLockedLoginException(state)
+      : createInvalidLoginException(state);
   }
 }

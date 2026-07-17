@@ -11,10 +11,6 @@ import {
   type GeneralChatAvailabilityViewModel,
 } from '../types/general-chat.types';
 import { GeneralChatModerationStateService } from './general-chat-moderation-state.service';
-import {
-  DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-  resolveSessionPresentationStatus,
-} from '@modules/sessions/utils/session-join-policy.util';
 
 type ModerationSnapshot = {
   status: ConversationStatus;
@@ -85,19 +81,12 @@ export class GeneralChatAvailabilityService {
     }
 
     if (input.linkedSession) {
-      const presentationStatus = resolveSessionPresentationStatus({
-        status: input.linkedSession.status,
-        sessionMode: input.linkedSession.sessionMode,
-        scheduledStartAt: input.linkedSession.scheduledStartAt,
-        scheduledEndAt: input.linkedSession.scheduledEndAt,
-        provider: input.linkedSession.provider,
-        providerRoomId: input.linkedSession.providerRoomId,
-        providerSessionRef: input.linkedSession.providerSessionRef,
-        now,
-        runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-      });
+      const status = input.linkedSession.status;
 
-      if (presentationStatus === 'JOINABLE' || presentationStatus === 'IN_PROGRESS') {
+      if (
+        status === SessionStatus.READY_TO_JOIN ||
+        status === SessionStatus.IN_PROGRESS
+      ) {
         return {
           canRead: true,
           canSend: true,
@@ -106,7 +95,10 @@ export class GeneralChatAvailabilityService {
         };
       }
 
-      if (presentationStatus === 'COMPLETED' || presentationStatus === 'ENDED') {
+      if (
+        status === SessionStatus.COMPLETED ||
+        status === SessionStatus.AWAITING_COMPLETION_CONFIRMATION
+      ) {
         return {
           canRead: true,
           canSend: false,
@@ -115,7 +107,7 @@ export class GeneralChatAvailabilityService {
         };
       }
 
-      if (presentationStatus === 'CANCELLED') {
+      if (status === SessionStatus.CANCELLED) {
         return {
           canRead: true,
           canSend: false,

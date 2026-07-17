@@ -34,10 +34,27 @@
       "IN_PROGRESS": "This session is live now.",
       "COMPLETED": "This session has ended.",
       "CANCELLED": "This session was cancelled.",
-      "ENDED": "This session has finished.",
+      "ENDED": "The scheduled time has ended.",
       "UNAVAILABLE": "Live access is not available right now.",
       "NO_SHOW": "This session was marked as no-show."
-    }
+    },
+    "tabs": {
+      "all": "All",
+      "upcoming": "Active & Upcoming",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "needsRating": "Needs rating"
+    },
+    "reviewStatus": {
+      "label": "Review status",
+      "rated": "Rated",
+      "needsRating": "Needs rating",
+      "notAvailable": "Not available",
+      "rateSession": "Rate session",
+      "yourRating": "Your rating: {rating}/5"
+    },
+    "needsRatingEmptyHeading": "No sessions need a rating right now",
+    "needsRatingEmptyNote": "Completed sessions that are still waiting for your feedback will appear here."
   },
   "card": {
     "with": "with",
@@ -48,17 +65,22 @@
   "status": {
     "DRAFT": "Draft",
     "PENDING_PAYMENT": "Awaiting payment",
+    "PENDING_PRACTITIONER_CONFIRMATION": "Awaiting practitioner confirmation",
     "PENDING_PRACTITIONER_RESPONSE": "Awaiting practitioner",
     "CONFIRMED": "Confirmed",
     "UPCOMING": "Upcoming",
     "READY_TO_JOIN": "Ready to join",
     "JOINABLE": "Ready to join",
     "IN_PROGRESS": "In progress",
+    "AWAITING_COMPLETION_CONFIRMATION": "Waiting for session confirmation",
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled",
     "NO_SHOW": "No show",
+    "PATIENT_NO_SHOW": "Patient did not attend",
+    "PRACTITIONER_NO_SHOW": "Practitioner did not attend",
+    "BOTH_NO_SHOW": "Neither participant attended",
     "EXPIRED": "Expired",
-    "ENDED": "Ended",
+    "ENDED": "Time ended",
     "UNAVAILABLE": "Unavailable",
     "REFUND_PENDING": "Refund pending",
     "REFUNDED": "Refunded"
@@ -77,6 +99,12 @@
   "detail": {
     "backToSessions": "Back to sessions",
     "heading": "Session Details",
+    "reviewAction": {
+      "heading": "Rate your session",
+      "note": "Share your experience by rating this session.",
+      "cta": "Rate session",
+      "rated": "Rated"
+    },
     "summary": {
       "eyebrow": "Session overview",
       "heading": "Session summary",
@@ -758,10 +786,10 @@
           "SESSION_NOT_JOINABLE_STATUS": "This session cannot be joined in its current status.",
           "SESSION_NOT_VIDEO_MODE": "Live session access is only available for video sessions.",
           "SESSION_TIME_WINDOW_NOT_OPEN": "Session access is not open yet. Try again closer to the scheduled time.",
-        "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment.",
-        "SESSION_JOIN_WINDOW_CLOSED": "The join window has closed for this session.",
-        "SESSION_ROOM_CLOSED": "This video room is already closed."
-      },
+          "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared. Please try again in a moment.",
+          "SESSION_JOIN_WINDOW_CLOSED": "The join window has closed for this session.",
+          "SESSION_ROOM_CLOSED": "This video room is already closed."
+        },
         "status": {
           "DRAFT": "This session is still being prepared.",
           "PENDING_PAYMENT": "The patient still needs to complete payment before session access becomes available.",

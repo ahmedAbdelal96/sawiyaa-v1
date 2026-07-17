@@ -3,12 +3,14 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
   PractitionerPayoutMethodType,
   PractitionerType,
   Prisma,
+  SecurityAuditOutcome,
 } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -19,6 +21,8 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
 import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-applications-admin.mapper';
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class UpdatePractitionerApplicationDraftUseCase {
@@ -31,6 +35,7 @@ export class UpdatePractitionerApplicationDraftUseCase {
     private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -402,6 +407,21 @@ export class UpdatePractitionerApplicationDraftUseCase {
             submissionSnapshot,
             tx,
           );
+
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'security.practitioner.application.draft-update',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId,
+          resourceType: 'PractitionerApplication',
+          resourceId: updatedApplication.id,
+          targetUserId: updatedApplication.practitioner.userId,
+          metadata: {
+            changedFields: Object.keys(input.data),
+            applicationStatus: updatedApplication.status,
+          },
+        });
 
         return updatedApplication;
       },

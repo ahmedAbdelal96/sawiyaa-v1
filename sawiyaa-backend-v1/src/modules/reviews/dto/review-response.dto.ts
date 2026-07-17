@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ReviewModerationAction, SessionReviewStatus } from '@prisma/client';
+import {
+  SessionReviewModerationDecision,
+  SessionReviewStatus,
+} from '@prisma/client';
 import { PublicArticleListItemDto } from '@modules/articles/dto/article-response.dto';
 
 export class ReviewPractitionerSummaryDto {
@@ -74,6 +77,24 @@ export class AdminReviewItemDto extends PatientReviewItemDto {
   @ApiProperty()
   practitionerProfileId!: string;
 
+  @ApiProperty()
+  originalRatingValue!: number;
+
+  @ApiProperty({ nullable: true })
+  publicRatingValue!: number | null;
+
+  @ApiProperty({ enum: SessionReviewModerationDecision, nullable: true })
+  moderationDecision!: SessionReviewModerationDecision | null;
+
+  @ApiProperty({ nullable: true })
+  moderatedByUserId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  moderationReason!: string | null;
+
+  @ApiProperty()
+  countsInPublicAverage!: boolean;
+
   @ApiProperty({ type: ReviewPatientSummaryDto })
   patient!: ReviewPatientSummaryDto;
 
@@ -96,6 +117,31 @@ export class PublicReviewItemDto {
 
   @ApiProperty({ nullable: true })
   publishedAt!: string | null;
+}
+
+export class PendingReviewPractitionerSummaryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  slug!: string;
+
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+}
+
+export class PendingPatientReviewItemDto {
+  @ApiProperty()
+  sessionId!: string;
+
+  @ApiProperty({ nullable: true })
+  completedAt!: string | null;
+
+  @ApiProperty({ nullable: true })
+  scheduledStartAt!: string | null;
+
+  @ApiProperty({ type: PendingReviewPractitionerSummaryDto })
+  practitioner!: PendingReviewPractitionerSummaryDto;
 }
 
 export class PractitionerRatingSummaryDto {
@@ -168,6 +214,14 @@ export class PatientReviewsListDataDto {
   pagination!: ReviewPaginationDto;
 }
 
+export class PendingPatientReviewsListDataDto {
+  @ApiProperty({ type: PendingPatientReviewItemDto, isArray: true })
+  items!: PendingPatientReviewItemDto[];
+
+  @ApiProperty({ type: ReviewPaginationDto })
+  pagination!: ReviewPaginationDto;
+}
+
 export class AdminReviewsListDataDto {
   @ApiProperty({ type: AdminReviewItemDto, isArray: true })
   items!: AdminReviewItemDto[];
@@ -191,8 +245,11 @@ export class ReviewModerationDataDto {
   @ApiProperty({ type: AdminReviewItemDto })
   item!: AdminReviewItemDto;
 
-  @ApiProperty({ enum: ReviewModerationAction })
-  action!: ReviewModerationAction;
+  @ApiProperty({ enum: SessionReviewModerationDecision })
+  decision!: SessionReviewModerationDecision;
+
+  @ApiProperty({ enum: SessionReviewModerationDecision })
+  action!: SessionReviewModerationDecision;
 }
 
 export class PatientReviewItemSuccessResponseDto {
@@ -209,6 +266,14 @@ export class PatientReviewListSuccessResponseDto {
 
   @ApiProperty({ type: PatientReviewsListDataDto })
   data!: PatientReviewsListDataDto;
+}
+
+export class PendingPatientReviewListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PendingPatientReviewsListDataDto })
+  data!: PendingPatientReviewsListDataDto;
 }
 
 export class AdminReviewItemSuccessResponseDto {

@@ -12,6 +12,8 @@ import { OtpPolicyResolverService } from '../services/otp-policy-resolver.servic
 import { maskTarget } from '../utils/mask-target.util';
 import { OtpResendCooldownException } from '../exceptions/otp-cooldown.exception';
 
+const OTP_SUPERSEDE_REASON = 'SUPERSEDED_BY_NEW_OTP';
+
 /**
  * Creates an OTP challenge according to policy and persists it with hashed code.
  */
@@ -70,19 +72,39 @@ export class CreateOtpChallengeUseCase {
     const code = this.otpCodeGeneratorService.generate(policy.codeLength);
     const expiresAt = new Date(Date.now() + policy.ttlMinutes * 60 * 1000);
 
-    const challenge = await this.otpChallengeRepository.create({
-      user: input.userId ? { connect: { id: input.userId } } : undefined,
-      sessionId: input.sessionId ?? undefined,
-      purpose: input.purpose,
-      channel: input.channel,
-      target: input.target,
-      codeHash: this.otpHashService.hash(code),
-      expiresAt,
-      maxAttempts: policy.maxAttempts,
-      metadata: input.metadata
-        ? (input.metadata as Prisma.InputJsonValue)
-        : undefined,
-    });
+    const challenge = await this.otpChallengeRepository.withTransaction(
+      async (tx) => {
+        if (input.userId && input.purpose === OtpPurpose.PRACTITIONER_LOGIN) {
+          const scopeKey = `otp-challenge:${input.purpose}:user:${input.userId}`;
+          await this.otpChallengeRepository.lockScope(tx, scopeKey);
+          await this.otpChallengeRepository.invalidateActiveChallengesByScope(
+            {
+              userId: input.userId,
+              purpose: input.purpose,
+              reason: OTP_SUPERSEDE_REASON,
+            },
+            tx,
+          );
+        }
+
+        return this.otpChallengeRepository.create(
+          {
+            user: input.userId ? { connect: { id: input.userId } } : undefined,
+            sessionId: input.sessionId ?? undefined,
+            purpose: input.purpose,
+            channel: input.channel,
+            target: input.target,
+            codeHash: this.otpHashService.hash(code),
+            expiresAt,
+            maxAttempts: policy.maxAttempts,
+            metadata: input.metadata
+              ? (input.metadata as Prisma.InputJsonValue)
+              : undefined,
+          },
+          tx,
+        );
+      },
+    );
 
     this.logger.log(
       `OTP challenge created (${input.purpose}) for ${maskTarget(input.target)}`,

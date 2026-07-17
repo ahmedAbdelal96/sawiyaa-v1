@@ -51,7 +51,10 @@ export class CreateSupportTicketUseCase {
       patientProfileId: actor.patientProfileId,
       practitionerProfileId: actor.practitionerProfileId,
       category: input.payload.category,
-      subject: input.payload.subject.trim(),
+      subject: this.buildSubject(
+        input.payload.subject,
+        input.payload.description,
+      ),
       description: input.payload.description.trim(),
       priority: input.payload.priority ?? SupportTicketPriority.NORMAL,
       relatedSessionId: input.payload.relatedSessionId,
@@ -100,5 +103,12 @@ export class CreateSupportTicketUseCase {
     return {
       practitionerProfileId: practitioner.id,
     };
+  }
+
+  private buildSubject(subject: string | undefined, description: string) {
+    const normalized = (subject ?? description)
+      .replace(/\s+/g, ' ')
+      .trim();
+    return normalized.slice(0, 70);
   }
 }

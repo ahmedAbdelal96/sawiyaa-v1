@@ -14,6 +14,22 @@ describe('ValidateSessionStatusTransitionService', () => {
     ).not.toThrow();
   });
 
+  it('requires a confirmation state before an upcoming session can complete', () => {
+    expect(() =>
+      service.assertCanTransition(
+        SessionStatus.UPCOMING,
+        SessionStatus.COMPLETED,
+      ),
+    ).toThrow(BadRequestException);
+
+    expect(() =>
+      service.assertCanTransition(
+        SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        SessionStatus.COMPLETED,
+      ),
+    ).not.toThrow();
+  });
+
   it('rejects invalid transitions', () => {
     expect(() =>
       service.assertCanTransition(

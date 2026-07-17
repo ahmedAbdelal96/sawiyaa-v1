@@ -27,6 +27,27 @@ describe('env.schema payment validation', () => {
     expect(() => validate(buildValidEnv())).not.toThrow();
   });
 
+  it('accepts the secure default when practitioner OTP configuration is missing', () => {
+    expect(() => validate(buildValidEnv())).not.toThrow();
+  });
+
+  it.each(['true', 'false'])(
+    'accepts PRACTITIONER_LOGIN_OTP_REQUIRED=%s',
+    (value) => {
+      expect(() =>
+        validate(buildValidEnv({ PRACTITIONER_LOGIN_OTP_REQUIRED: value })),
+      ).not.toThrow();
+    },
+  );
+
+  it('rejects a non-boolean practitioner OTP configuration value', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({ PRACTITIONER_LOGIN_OTP_REQUIRED: 'maybe' }),
+      ),
+    ).toThrow(/PRACTITIONER_LOGIN_OTP_REQUIRED/);
+  });
+
   it('rejects live stripe mode in non-production environments', () => {
     expect(() =>
       validate(

@@ -1,6 +1,7 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { UserRoleType, UserStatus } from '@prisma/client';
 import { LoginAdminUseCase } from './login-admin.use-case';
+import { AUTH_LOCKOUT_CONTEXTS } from '../types/auth-lockout.types';
 
 describe('LoginAdminUseCase', () => {
   const userEmailRepository = {
@@ -16,16 +17,43 @@ describe('LoginAdminUseCase', () => {
   const issueAuthTokensUseCase = {
     execute: jest.fn(),
   };
+  const authLockoutService = {
+    getState: jest.fn(),
+    recordFailure: jest.fn(),
+    clear: jest.fn(),
+  };
+  const securityAuditService = {
+    logAsync: jest.fn(),
+  };
 
   const useCase = new LoginAdminUseCase(
     userEmailRepository as any,
     authIdentityRepository as any,
     verifyPasswordUseCase as any,
     issueAuthTokensUseCase as any,
+    authLockoutService as any,
+    securityAuditService as any,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    authLockoutService.getState.mockResolvedValue({
+      attemptCount: 0,
+      maxAttempts: 4,
+      remainingAttempts: 4,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.recordFailure.mockResolvedValue({
+      attemptCount: 1,
+      maxAttempts: 4,
+      remainingAttempts: 3,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.clear.mockResolvedValue(undefined);
   });
 
   it.each([
@@ -79,6 +107,10 @@ describe('LoginAdminUseCase', () => {
       }),
     );
     expect(authIdentityRepository.touchLastUsed).toHaveBeenCalledWith('identity-1');
+    expect(authLockoutService.clear).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.ADMIN_PASSWORD_LOGIN,
+      'user:user-1',
+    );
   });
 
   it('rejects users without an admin-class role', async () => {
@@ -100,7 +132,11 @@ describe('LoginAdminUseCase', () => {
           userAgent: 'jest',
         },
       }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(authLockoutService.recordFailure).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.ADMIN_PASSWORD_LOGIN,
+      'user:user-1',
+    );
   });
 
   it('rejects invalid credentials', async () => {
@@ -128,5 +164,37 @@ describe('LoginAdminUseCase', () => {
         },
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('returns a lockout response when the admin password flow is already locked', async () => {
+    userEmailRepository.findByEmailForAuth.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        status: UserStatus.ACTIVE,
+        roles: [{ role: UserRoleType.ADMIN }],
+      },
+    });
+    authLockoutService.getState.mockResolvedValue({
+      attemptCount: 4,
+      maxAttempts: 4,
+      remainingAttempts: 0,
+      lockedUntil: new Date('2026-07-10T10:00:00.000Z'),
+      retryAfterSeconds: 60,
+      isLocked: true,
+    });
+
+    await expect(
+      useCase.execute({
+        email: 'admin@hesba.local',
+        password: 'Password123!',
+        deviceContext: {
+          deviceId: 'device-1',
+          ipAddress: '127.0.0.1',
+          userAgent: 'jest',
+        },
+      }),
+    ).rejects.toMatchObject({
+      status: HttpStatus.TOO_MANY_REQUESTS,
+    });
   });
 });

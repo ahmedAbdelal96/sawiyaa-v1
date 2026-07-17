@@ -23,6 +23,13 @@ export class CustomerWalletAccountingService {
     private readonly customerWalletReservationRepository: CustomerWalletReservationRepository,
   ) {}
 
+  private async lockRefundCreditScope(
+    db: PrismaService | Prisma.TransactionClient,
+    refundId: string,
+  ) {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${refundId})::bigint)`;
+  }
+
   async ensureWallet(input: {
     patientId: string;
     currencyCode: string;
@@ -306,6 +313,8 @@ export class CustomerWalletAccountingService {
     }
 
     const run = async (tx: Prisma.TransactionClient) => {
+      await this.lockRefundCreditScope(tx, input.refundId);
+
       const existing =
         await this.customerWalletEntryRepository.findRefundCreditEntry(
           input.refundId,

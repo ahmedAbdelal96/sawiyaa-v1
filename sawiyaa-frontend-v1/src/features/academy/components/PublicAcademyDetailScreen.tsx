@@ -607,6 +607,14 @@ function PublicAcademyProgramDetailScreen({
                 <BadgeCheck className="h-3.5 w-3.5 text-primary" />
                 {resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t)}
               </span>
+              {program.targetLearnerCount ?? program.maxSeats ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  {t("public.detail.summary.targetLearners", {
+                    count: program.targetLearnerCount ?? program.maxSeats ?? 0,
+                  })}
+                </span>
+              ) : null}
             </div>
           </div>
 

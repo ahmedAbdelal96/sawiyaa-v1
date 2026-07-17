@@ -144,6 +144,7 @@ export default function PractitionerWalletSummaryScreen() {
       reserved: formatMoney(wallet.reservedBalance, wallet.currency, locale),
       totalEarned: formatMoney(wallet.totalEarned, wallet.currency, locale),
       lifetimePaidOut: formatMoney(wallet.lifetimePaidOut, wallet.currency, locale),
+      manualRecoveryAmount: formatMoney(wallet.manualRecoveryAmount, wallet.currency, locale),
       lastLedgerEntryAt: formatDateTime(wallet.lastLedgerEntryAt, locale),
       updatedAt: formatDateTime(wallet.updatedAt, locale),
     };
@@ -276,7 +277,7 @@ export default function PractitionerWalletSummaryScreen() {
         }
       />
 
-      <PractitionerStatsGrid cols={5}>
+      <PractitionerStatsGrid cols={6}>
         <PractitionerStatCard
           label={t("summary.cards.available")}
           value={summary.available}
@@ -294,6 +295,13 @@ export default function PractitionerWalletSummaryScreen() {
           value={summary.reserved}
           tone="neutral"
           metricKey="wallet.reserved"
+        />
+        <PractitionerStatCard
+          label={t("summary.manualRecoveryLabel")}
+          value={summary.manualRecoveryAmount}
+          tone="warning"
+          metricKey="wallet.manualRecoveryAmount"
+          hint={t("summary.manualRecoveryNote")}
         />
         <PractitionerStatCard
           label={t("summary.cards.totalEarned")}

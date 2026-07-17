@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   ConversationType,
@@ -14,6 +14,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppRole } from '@common/enums/app-role.enum';
 import { SupportActorKind } from '../types/support.types';
+import { MessagingRepository } from '@modules/messaging/repositories/messaging.repository';
 
 @Injectable()
 export class SupportTicketRepository {
@@ -38,6 +39,10 @@ export class SupportTicketRepository {
   }) {
     return this.prisma.$transaction(async (tx) => {
       const seedInitialMessage = input.seedInitialMessage ?? true;
+      const subject = (input.subject || input.description)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 191);
       const conversation = await tx.conversation.create({
         data: {
           conversationType: ConversationType.SUPPORT,
@@ -64,7 +69,7 @@ export class SupportTicketRepository {
           ticketType: input.category,
           status: SupportTicketStatus.OPEN,
           priority: input.priority,
-          subject: input.subject,
+          subject,
           description: input.description,
           lastMessageAt: seedInitialMessage ? new Date() : null,
           relatedSessionId: input.relatedSessionId ?? null,
@@ -85,15 +90,10 @@ export class SupportTicketRepository {
       });
 
       if (seedInitialMessage) {
-        await tx.message.create({
-          data: {
-            conversationId: conversation.id,
-            senderUserId: input.openedByUserId,
-            messageType: MessageType.TEXT,
-            status: MessageStatus.SENT,
-            visibility: MessageVisibility.NORMAL,
-            contentText: input.description,
-          },
+        await MessagingRepository.createInitialMessage(tx, {
+          conversationId: conversation.id,
+          senderUserId: input.openedByUserId,
+          contentText: input.description,
         });
       }
 
@@ -203,185 +203,6 @@ export class SupportTicketRepository {
     });
   }
 
-  async addMessage(input: {
-    ticketId: string;
-    senderUserId: string;
-    senderRole: ConversationParticipantRole;
-    message: string;
-  }) {
-    return this.prisma.$transaction(async (tx) => {
-      const ticket = await tx.supportTicket.findUniqueOrThrow({
-        where: { id: input.ticketId },
-      });
-
-      await tx.conversationParticipant.upsert({
-        where: {
-          conversationId_userId: {
-            conversationId: ticket.conversationId,
-            userId: input.senderUserId,
-          },
-        },
-        create: {
-          conversationId: ticket.conversationId,
-          userId: input.senderUserId,
-          participantRole: input.senderRole,
-        },
-        update: {
-          participantRole: input.senderRole,
-          isActive: true,
-          leftAt: null,
-        },
-      });
-
-      await tx.message.create({
-        data: {
-          conversationId: ticket.conversationId,
-          senderUserId: input.senderUserId,
-          messageType: MessageType.TEXT,
-          status: MessageStatus.SENT,
-          visibility: MessageVisibility.NORMAL,
-          contentText: input.message,
-        },
-      });
-
-      await tx.supportTicket.update({
-        where: { id: input.ticketId },
-        data: {
-          lastMessageAt: new Date(),
-        },
-      });
-
-      await tx.supportTicketEvent.create({
-        data: {
-          supportTicketId: input.ticketId,
-          eventType: SupportTicketEventType.MESSAGE_ADDED,
-          actorUserId: input.senderUserId,
-          actorRole: input.senderRole,
-        },
-      });
-
-      return tx.supportTicket.findUniqueOrThrow({
-        where: { id: input.ticketId },
-        include: this.detailsInclude(),
-      });
-      });
-  }
-
-  async addPublicSupportMessage(input: {
-    ticketId: string;
-    senderUserId: string;
-    senderRole: ConversationParticipantRole;
-    message: string;
-  }) {
-    return this.prisma.$transaction(async (tx) => {
-      const ticket = await tx.supportTicket.findUniqueOrThrow({
-        where: { id: input.ticketId },
-        select: {
-          id: true,
-          conversationId: true,
-          assignedToUserId: true,
-        },
-      });
-
-      if (ticket.assignedToUserId === null) {
-        const claimResult = await tx.supportTicket.updateMany({
-          where: {
-            id: input.ticketId,
-            assignedToUserId: null,
-          },
-          data: {
-            assignedToUserId: input.senderUserId,
-          },
-        });
-
-        if (claimResult.count > 0) {
-          await tx.supportTicketEvent.create({
-            data: {
-              supportTicketId: input.ticketId,
-              eventType: SupportTicketEventType.ASSIGNED,
-              actorUserId: input.senderUserId,
-              actorRole: input.senderRole,
-              payloadJson: {
-                assignedToUserId: input.senderUserId,
-                claimedOnFirstPublicReply: true,
-              },
-            },
-          });
-        } else {
-          const latestTicket = await tx.supportTicket.findUniqueOrThrow({
-            where: { id: input.ticketId },
-            select: {
-              assignedToUserId: true,
-            },
-          });
-
-          if (latestTicket.assignedToUserId !== input.senderUserId) {
-            throw new ForbiddenException({
-              messageKey: 'support.errors.ticketAssignedToAnotherAgent',
-              error: 'SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT',
-            });
-          }
-        }
-      } else if (ticket.assignedToUserId !== input.senderUserId) {
-        throw new ForbiddenException({
-          messageKey: 'support.errors.ticketAssignedToAnotherAgent',
-          error: 'SUPPORT_TICKET_ASSIGNED_TO_ANOTHER_AGENT',
-        });
-      }
-
-      await tx.conversationParticipant.upsert({
-        where: {
-          conversationId_userId: {
-            conversationId: ticket.conversationId,
-            userId: input.senderUserId,
-          },
-        },
-        create: {
-          conversationId: ticket.conversationId,
-          userId: input.senderUserId,
-          participantRole: input.senderRole,
-        },
-        update: {
-          participantRole: input.senderRole,
-          isActive: true,
-          leftAt: null,
-        },
-      });
-
-      await tx.message.create({
-        data: {
-          conversationId: ticket.conversationId,
-          senderUserId: input.senderUserId,
-          messageType: MessageType.TEXT,
-          status: MessageStatus.SENT,
-          visibility: MessageVisibility.NORMAL,
-          contentText: input.message,
-        },
-      });
-
-      await tx.supportTicket.update({
-        where: { id: input.ticketId },
-        data: {
-          lastMessageAt: new Date(),
-        },
-      });
-
-      await tx.supportTicketEvent.create({
-        data: {
-          supportTicketId: input.ticketId,
-          eventType: SupportTicketEventType.MESSAGE_ADDED,
-          actorUserId: input.senderUserId,
-          actorRole: input.senderRole,
-        },
-      });
-
-      return tx.supportTicket.findUniqueOrThrow({
-        where: { id: input.ticketId },
-        include: this.detailsInclude(),
-      });
-    });
-  }
-
   findByIdWithConversationMeta(ticketId: string) {
     return this.prisma.supportTicket.findUnique({
       where: { id: ticketId },
@@ -446,154 +267,6 @@ export class SupportTicketRepository {
         id: true,
         senderUserId: true,
         sentAt: true,
-      },
-    });
-  }
-
-  async markSupportMessageDelivered(input: {
-    conversationId: string;
-    messageId: string;
-    deliveredAt: Date;
-  }) {
-    const message = await this.prisma.message.findFirst({
-      where: {
-        id: input.messageId,
-        conversationId: input.conversationId,
-      },
-      select: {
-        id: true,
-        status: true,
-      },
-    });
-
-    if (!message || message.status !== MessageStatus.SENT) {
-      return null;
-    }
-
-    return this.prisma.message.update({
-      where: { id: input.messageId },
-      data: {
-        status: MessageStatus.DELIVERED,
-        deliveredAt: input.deliveredAt,
-      },
-      select: {
-        id: true,
-        conversationId: true,
-        deliveredAt: true,
-      },
-    });
-  }
-
-  async markSupportMessagesDeliveredForRecipient(input: {
-    conversationId: string;
-    recipientUserId: string;
-    deliveredAt: Date;
-  }) {
-    const pending = await this.prisma.message.findMany({
-      where: {
-        conversationId: input.conversationId,
-        senderUserId: {
-          not: input.recipientUserId,
-        },
-        status: MessageStatus.SENT,
-        deletedAt: null,
-        visibility: MessageVisibility.NORMAL,
-      },
-      select: {
-        id: true,
-      },
-      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
-    });
-
-    if (pending.length === 0) {
-      return [];
-    }
-
-    await this.prisma.message.updateMany({
-      where: {
-        id: {
-          in: pending.map((item) => item.id),
-        },
-      },
-      data: {
-        status: MessageStatus.DELIVERED,
-        deliveredAt: input.deliveredAt,
-      },
-    });
-
-    return pending.map((item) => ({
-      messageId: item.id,
-      conversationId: input.conversationId,
-      deliveredAt: input.deliveredAt,
-    }));
-  }
-
-  async markSupportMessagesReadForRecipient(input: {
-    conversationId: string;
-    recipientUserId: string;
-    lastReadMessageSentAt: Date;
-    readAt: Date;
-  }) {
-    const pending = await this.prisma.message.findMany({
-      where: {
-        conversationId: input.conversationId,
-        senderUserId: {
-          not: input.recipientUserId,
-        },
-        status: {
-          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
-        },
-        deletedAt: null,
-        visibility: MessageVisibility.NORMAL,
-        sentAt: {
-          lte: input.lastReadMessageSentAt,
-        },
-      },
-      select: {
-        id: true,
-      },
-      orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
-    });
-
-    if (pending.length === 0) {
-      return [];
-    }
-
-    await this.prisma.message.updateMany({
-      where: {
-        id: {
-          in: pending.map((item) => item.id),
-        },
-      },
-      data: {
-        status: MessageStatus.READ,
-        deliveredAt: input.readAt,
-        readAt: input.readAt,
-      },
-    });
-
-    return pending.map((item) => ({
-      messageId: item.id,
-      conversationId: input.conversationId,
-      readAt: input.readAt,
-    }));
-  }
-
-  markSupportConversationReadCursor(input: {
-    conversationId: string;
-    userId: string;
-    lastReadMessageId: string;
-    lastReadAt: Date;
-  }) {
-    return this.prisma.conversationParticipant.updateMany({
-      where: {
-        conversationId: input.conversationId,
-        userId: input.userId,
-        isActive: true,
-      },
-      data: {
-        lastReadMessageId: input.lastReadMessageId,
-        lastReadAt: input.lastReadAt,
       },
     });
   }

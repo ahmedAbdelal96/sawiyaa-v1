@@ -149,12 +149,17 @@
     }
   },
   "statusModal": {
+    "reason": "Reason",
+    "reasonPlaceholder": "Explain why this status change is needed",
     "title": "Update status",
     "description": "Change whether this internal user is active, suspended, or inactive.",
     "submit": "Save status",
     "cancel": "Cancel",
     "fields": {
       "status": "Status"
+    },
+    "validation": {
+      "reason": "A reason is required for disabling this account."
     }
   },
   "rolesModal": {
@@ -163,7 +168,12 @@
     "submit": "Save roles",
     "cancel": "Cancel",
     "selfWarning": "Review this carefully. Self-demotion and last-super-admin protection are enforced by the backend.",
+    "fields": {
+      "reason": "Reason",
+      "reasonPlaceholder": "Explain why this role change is needed"
+    },
     "validation": {
+      "reason": "A reason is required when removing an internal role.",
       "roles": "Select at least one role.",
       "superAdmin": "You cannot assign the Super admin role from this account."
     }

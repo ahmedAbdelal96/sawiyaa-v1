@@ -1,9 +1,7 @@
 import { AppRole } from '@common/enums/app-role.enum';
 import { SupportPresenter } from '../presenters/support.presenter';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
-import { ResolveSupportAdminActorRoleService } from '../services/resolve-support-admin-actor-role.service';
 import { AddAdminSupportMessageUseCase } from './add-admin-support-message.use-case';
-import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 describe('AddAdminSupportMessageUseCase', () => {
   const supportTicketRepository = {
@@ -11,43 +9,35 @@ describe('AddAdminSupportMessageUseCase', () => {
     addPublicSupportMessage: jest.fn(),
   } as unknown as SupportTicketRepository;
 
-  const resolveSupportAdminActorRoleService = {
-    resolve: jest.fn().mockReturnValue('PRACTITIONER'),
-  } as unknown as ResolveSupportAdminActorRoleService;
-
   const supportPresenter = {
     presentAdminTicketDetails: jest.fn(),
   } as unknown as SupportPresenter;
 
-  const notifyConversationMessageMock = jest.fn();
-  const operationalNotificationService = {
-    notifyConversationMessage: notifyConversationMessageMock,
-  } as unknown as OperationalNotificationService;
+  const messagingUseCase = {
+    sendMessage: jest.fn(),
+  } as any;
 
   const useCase = new AddAdminSupportMessageUseCase(
     supportTicketRepository,
-    resolveSupportAdminActorRoleService,
     supportPresenter,
-    operationalNotificationService,
+    messagingUseCase,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    messagingUseCase.sendMessage.mockReset();
   });
 
-  it('notifies the ticket participant after an admin/support reply', async () => {
-    (supportTicketRepository.findByIdForAdmin as jest.Mock).mockResolvedValue({
+  it('delegates an admin/support reply to the canonical messaging use case', async () => {
+    (supportTicketRepository.findByIdForAdmin as jest.Mock)
+      .mockResolvedValueOnce({ id: 'ticket-1', conversationId: 'conv-1' })
+      .mockResolvedValueOnce({
       id: 'ticket-1',
-    });
-    (supportTicketRepository.addPublicSupportMessage as jest.Mock).mockResolvedValue({
       conversation: {
-        messages: [{ id: 'msg-1' }],
-        participants: [
-          { userId: 'admin-1', participantRole: 'PRACTITIONER' },
-          { userId: 'patient-1', participantRole: 'PATIENT' },
-        ],
+        messages: [],
       },
     });
+    messagingUseCase.sendMessage.mockResolvedValue({ item: { id: 'msg-1' } });
     (supportPresenter.presentAdminTicketDetails as jest.Mock).mockReturnValue({
       id: 'ticket-1',
     });
@@ -59,15 +49,11 @@ describe('AddAdminSupportMessageUseCase', () => {
       payload: { message: 'reply' },
     });
 
-    expect(notifyConversationMessageMock).toHaveBeenCalledWith({
-      lane: 'SUPPORT',
-      threadId: 'ticket-1',
-      messageId: 'msg-1',
-      senderUserId: 'admin-1',
-      participants: [
-        { userId: 'admin-1', participantRole: 'PRACTITIONER' },
-        { userId: 'patient-1', participantRole: 'PATIENT' },
-      ],
-    });
+    expect(messagingUseCase.sendMessage).toHaveBeenCalledWith(
+      { id: 'admin-1', roles: [AppRole.ADMIN] },
+      'conv-1',
+      'reply',
+    );
+    expect(supportTicketRepository.addPublicSupportMessage).not.toHaveBeenCalled();
   });
 });

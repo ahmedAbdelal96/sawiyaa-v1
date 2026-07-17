@@ -8,8 +8,8 @@ import { SessionMapper } from '../mappers/session.mapper';
 import { SessionRepository } from '../repositories/session.repository';
 
 const DELAYED_STATUSES = new Set<SessionStatus>([
-  SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-  SessionStatus.CONFIRMED,
+  SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+  SessionStatus.UPCOMING,
   SessionStatus.UPCOMING,
   SessionStatus.READY_TO_JOIN,
 ]);

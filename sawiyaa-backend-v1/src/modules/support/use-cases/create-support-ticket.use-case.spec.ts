@@ -74,4 +74,56 @@ describe('CreateSupportTicketUseCase', () => {
     expect(result.item.id).toBe('ticket-1');
     expect(result.item.messages).toHaveLength(1);
   });
+
+  it('creates practitioner tickets through the same canonical creation contract', async () => {
+    const actorRepository = {
+      findPatientProfileByUserId: jest.fn(),
+      findPractitionerProfileByUserId: jest
+        .fn()
+        .mockResolvedValue({ id: 'practitioner-1' }),
+    } as unknown as SupportActorRepository;
+    const ticketRepository = {
+      createTicket: jest.fn().mockResolvedValue({
+        id: 'ticket-2',
+        ticketType: 'TECHNICAL',
+        subject: 'Cannot join',
+        status: 'OPEN',
+        priority: SupportTicketPriority.NORMAL,
+        assignedToUserId: null,
+        description: 'Cannot join',
+        relatedSessionId: null,
+        relatedPaymentId: null,
+        relatedInstantBookingRequestId: null,
+        relatedMatchingSessionId: null,
+        relatedAssessmentSubmissionId: null,
+        lastMessageAt: new Date(),
+        resolvedAt: null,
+        closedAt: null,
+        createdAt: new Date(),
+        conversation: { participants: [], messages: [], internalNotes: [] },
+      }),
+    } as unknown as SupportTicketRepository;
+    const linkedValidation = { validate: jest.fn() } as unknown as ValidateSupportLinkedEntitiesService;
+    const useCase = new CreateSupportTicketUseCase(
+      actorRepository,
+      ticketRepository,
+      linkedValidation,
+      new SupportPresenter(),
+    );
+
+    await useCase.execute({
+      actorKind: 'PRACTITIONER',
+      userId: 'practitioner-user-1',
+      payload: { category: 'TECHNICAL', description: 'Cannot join' } as never,
+    });
+
+    expect(ticketRepository.createTicket).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openedByUserId: 'practitioner-user-1',
+        practitionerProfileId: 'practitioner-1',
+        createdByRole: 'PRACTITIONER',
+        subject: 'Cannot join',
+      }),
+    );
+  });
 });

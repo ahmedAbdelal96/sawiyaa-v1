@@ -12,6 +12,10 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { PermissionOverrideOperationDto } from '../dto/update-admin-user-permission-overrides.dto';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
@@ -136,23 +140,25 @@ export class UpdateAdminUserPermissionOverridesUseCase {
           );
         }
       }
-    });
 
-    this.securityAuditService.logAsync({
-      action: 'security.adminUsers.permissionOverrides.update.success',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: input.actor.id,
-      actorRoles: input.actor.roles,
-      resourceType: 'User',
-      resourceId: input.userId,
-      targetUserId: input.userId,
-      metadata: {
-        operations: operations.map((op) => ({
-          permissionKey: op.permissionKey,
-          effect: op.effect ?? null,
-        })),
-        operationsCount: operations.length,
-      },
+      await this.securityAuditService.recordRequired(tx, {
+        action: 'security.adminUsers.permissionOverrides.update.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.actor.id,
+        actorRoles: input.actor.roles,
+        resourceType: 'User',
+        resourceId: input.userId,
+        targetUserId: input.userId,
+        metadata: {
+          operations: operations.map((op) => ({
+            permissionKey: op.permissionKey,
+            effect: op.effect ?? null,
+          })),
+          operationsCount: operations.length,
+        },
+      });
     });
 
     return {

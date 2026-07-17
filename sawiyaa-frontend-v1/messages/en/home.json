@@ -3,7 +3,7 @@
     "home": "Home",
     "specialties": "Specialties",
     "practitioners": "Practitioners",
-    "academy": "Academy",
+    "academy": "Training",
     "articles": "Articles",
     "policies": "Policies",
     "courses": "Courses",
@@ -194,10 +194,10 @@
     "emptyNote": "You can continue through specialties and specialist discovery."
   },
   "academy": {
-    "eyebrow": "Academy",
-    "title": "Interested in Academy content?",
-    "subtitle": "Explore Academy and educational content aimed at specialists and those interested in care fields.",
-    "cta": "Explore the academy"
+    "eyebrow": "Training",
+    "title": "Interested in training courses?",
+    "subtitle": "Explore training courses and educational content aimed at specialists and those interested in care fields.",
+    "cta": "Explore training courses"
   },
   "practitionerCTA": {
     "eyebrow": "For specialists",
@@ -247,7 +247,7 @@
     "linkSpecialties": "Specialties",
     "linkPractitioners": "Practitioners",
     "linkArticles": "Articles",
-    "linkAcademy": "Academy",
+    "linkAcademy": "Training",
     "linkAbout": "About Sawiyaa",
     "linkHelp": "Help center",
     "linkRefund": "Refund policy",
@@ -276,5 +276,6 @@
       "publishedContent": "Published public articles with clear context, not decorative snippets.",
       "secureJourney": "A clear path from exploration to booking and secure session flow."
     }
-  }
+  },
+  "linkAcademy": "Training"
 }

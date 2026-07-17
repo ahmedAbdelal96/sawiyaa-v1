@@ -1,9 +1,9 @@
 {
   "admin": {
     "list": {
-      "heading": "التقييمات",
+      "heading": "مراجعة تقييمات الجلسات",
       "count": "{value, number} {value, plural, one {تقييم} other {تقييمات}}",
-      "needsModeration": "تحتاج إشرافًا",
+      "needsModeration": "تقييمات تحتاج مراجعة",
       "unknownPractitioner": "ممارس غير معروف",
       "pagination": {
         "previous": "السابق",
@@ -15,50 +15,112 @@
       "all": "الكل",
       "DRAFT": "مسودة",
       "SUBMITTED": "مُرسلة",
-      "PENDING_MODERATION": "بانتظار الإشراف",
+      "PENDING_MODERATION": "في انتظار المراجعة",
       "PUBLISHED": "منشورة",
       "REJECTED": "مرفوضة",
       "HIDDEN": "مخفية",
       "ARCHIVED": "مؤرشفة"
     },
     "actions": {
-      "APPROVED": "قبول (نشر)",
+      "APPROVED": "اعتماد (نشر)",
       "REJECTED": "رفض",
       "HIDDEN": "إخفاء",
-      "RESTORED": "استعادة (إعادة نشر)",
+      "RESTORED": "استعادة",
       "ARCHIVED": "أرشفة"
     },
     "detail": {
       "back": "العودة إلى التقييمات",
       "heading": "تفاصيل التقييم",
+      "subtitle": "راجع التقييم الأصلي والتقييم الظاهر وقرار المراجعة قبل النشر.",
       "noText": "لا يوجد نص مكتوب لهذا التقييم.",
       "practitioner": "الممارس",
       "patient": "المريض",
       "anonymousPatient": "مريض مجهول",
       "patientFallback": "مريض",
-      "patientProfileId": "معرّف ملف المريض",
       "sessionDate": "تاريخ الجلسة",
       "submittedAt": "تاريخ الإرسال",
       "publishedAt": "تاريخ النشر",
-      "moderatedAt": "آخر تحديث إشرافي",
-      "technicalDetails": "معلومات تتبع النظام (للمطورين)"
+      "moderatedAt": "تاريخ المراجعة",
+      "originalRating": "التقييم الأصلي من المريض",
+      "publicRating": "التقييم الظاهر للعامة",
+      "averageContribution": "يدخل في متوسط المختص",
+      "countsInAverage": "يدخل في متوسط المختص",
+      "excludedFromAverage": "لا يدخل في متوسط المختص",
+      "moderationState": "حالة التقييم",
+      "moderationReason": "سبب القرار",
+      "moderatedBy": "تمت المراجعة بواسطة",
+      "moderatedByFallback": "مسؤول من الفريق",
+      "internalModerator": "مستخدم إداري",
+      "sessionSection": "بيانات الجلسة",
+      "patientNote": "ملاحظة المريض",
+      "internalOnlyNote": "هذا القرار داخلي ولا يظهر للمريض أو للزوار.",
+      "visibility": "الظهور",
+      "visibilityNote": "التقييم الظاهر هو الذي يدخل في متوسط تقييم المختص.",
+      "publicRatingHint": "هذا هو التقييم الذي سيظهر للعامة إذا تم اعتماد التقييم مع التعديل.",
+      "selectPublicRating": "اختر التقييم الظاهر {value}",
+      "none": "لا يوجد",
+      "unknown": "غير معروف"
     },
     "moderation": {
-      "heading": "مراجعة التقييمات",
-      "currentStatus": "الحالة الحالية",
-      "actionLabel": "الإجراء",
-      "selectAction": "اختر إجراءً",
-      "noteLabel": "ملاحظة المشرف (اختياري)",
-      "notePlaceholder": "اختياري: أضف ملاحظة داخلية لسجل التقييم",
-      "submit": "تطبيق الإجراء",
-      "submitting": "جارٍ التطبيق...",
-      "success": "تم تطبيق إجراء الإشراف بنجاح.",
-      "error": "تعذر تطبيق الإجراء، يرجى المحاولة مرة أخرى."
+      "heading": "قرار المراجعة",
+      "note": "اختر القرار الذي يطابق نتيجة التقييم. التقييم الأصلي من المريض يظل محفوظًا دائمًا.",
+      "selectedDecision": "القرار المختار",
+      "reasonLabel": "سبب القرار",
+      "reasonPlaceholder": "اكتب السبب أو الملاحظة الداخلية هنا",
+      "reasonRequiredHint": "هذا السبب مطلوب لهذا القرار.",
+      "reasonOptionalHint": "اختياري لهذا القرار.",
+      "submit": "حفظ القرار",
+      "submitting": "جارٍ الحفظ...",
+      "success": "تم تحديث قرار المراجعة بنجاح.",
+      "error": "تعذر تحديث قرار المراجعة. حاول مرة أخرى.",
+      "decisions": {
+        "APPROVE_AS_IS": {
+          "title": "اعتماد التقييم كما هو",
+          "description": "نشر التقييم الأصلي من المريض بدون تغيير."
+        },
+        "EDIT_AND_APPROVE": {
+          "title": "تعديل واعتماد التقييم",
+          "description": "سيظل تقييم المريض الأصلي محفوظًا داخليًا، ثم يتم نشر التقييم الظاهر الذي تختاره."
+        },
+        "REJECT_PUBLISHING": {
+          "title": "رفض نشر التقييم",
+          "description": "يبقى التقييم داخليًا ولا يدخل في المتوسط العام."
+        },
+        "INTERNAL_NOTE_ONLY": {
+          "title": "تحويله لملاحظة داخلية فقط",
+          "description": "يظل القرار داخليًا فقط ولا يظهر للعامة."
+        },
+        "EXCLUDE_FROM_PUBLIC_AVERAGE": {
+          "title": "استبعاده من متوسط تقييم المختص",
+          "description": "يبقى التقييم داخليًا لكن لا يدخل في متوسط المختص."
+        }
+      }
+    },
+    "labels": {
+      "originalRating": "التقييم الأصلي من المريض: {value}",
+      "publicRating": "التقييم الظاهر للعامة: {value}",
+      "countsInAverage": "يدخل في متوسط المختص",
+      "excludedFromAverage": "لا يدخل في متوسط المختص"
+    },
+    "decisions": {
+      "pending": "في انتظار المراجعة",
+      "AUTO_APPROVED_POSITIVE": "تم النشر تلقائيًا",
+      "APPROVE_AS_IS": "اعتماد كما هو",
+      "EDIT_AND_APPROVE": "تم التعديل والاعتماد",
+      "REJECT_PUBLISHING": "مرفوض النشر",
+      "INTERNAL_NOTE_ONLY": "داخلي فقط",
+      "EXCLUDE_FROM_PUBLIC_AVERAGE": "مستبعد من المتوسط"
+    },
+    "validation": {
+      "decisionRequired": "اختر قرار المراجعة.",
+      "publicRatingRequired": "اختر التقييم الظاهر للعامة.",
+      "publicRatingRange": "يجب أن يكون التقييم من 1 إلى 5.",
+      "moderationReasonRequired": "اكتب سبب هذا القرار."
     },
     "states": {
       "empty": {
         "heading": "لا توجد تقييمات مطابقة لهذه الفلاتر",
-        "note": "جرّب حالة مختلفة أو ألغِ خيار التقييمات التي تحتاج إشرافًا."
+        "note": "جرّب حالة مختلفة أو ألغِ خيار التقييمات التي تحتاج مراجعة."
       },
       "listError": {
         "heading": "التقييمات غير متاحة الآن",
@@ -95,6 +157,31 @@
     }
   },
   "patient": {
+    "ratingModal": {
+      "title": "قيّم جلستك",
+      "subtitle": "اختار عدد النجوم. ولو حابب تضيف ملاحظة، اكتبها تحت.",
+      "starHelperMin": "نجمة واحدة",
+      "starHelperMax": "٥ نجوم",
+      "noteLabel": "ملاحظة اختيارية",
+      "notePlaceholder": "اكتب ملاحظتك لو حابب...",
+      "submit": "إرسال التقييم",
+      "later": "لاحقًا",
+      "validationRatingRequired": "اختار عدد النجوم أولًا",
+      "success": "شكرًا لتقييمك",
+      "sessionContext": "مع {name} · {date}",
+      "sessionFallback": "جلستك الأخيرة"
+    },
+    "reminder": {
+      "eyebrow": "تذكير بالملاحظات",
+      "modalTitle": "يمكنك ترك ملاحظات عن الجلسة المكتملة",
+      "modalDescription": "انتهت الجلسة، وملاحظاتك تساعدنا على تحسين جودة الرعاية.",
+      "sessionLabel": "الجلسة المكتملة",
+      "sessionNote": "يرجى مشاركة ملاحظاتك عن جلستك الأخيرة مع {practitioner}.",
+      "practitionerLabel": "المعالج",
+      "completedAtLabel": "اكتملت في",
+      "completedAtFallback": "غير متاح",
+      "later": "لاحقًا"
+    },
     "meta": {
       "list": {
         "title": "ملاحظاتي بعد الجلسات - المريض",
@@ -137,12 +224,12 @@
     },
     "boundaries": {
       "heading": "ما الذي تغطيه هذه الصفحة",
-      "note": "تعرض الصفحة ملاحظاتك الحالية فقط. إرسال ملاحظة جديدة يتم من الجلسة المؤهلة."
+      "note": "تعرض الصفحة ملاحظاتك الحالية فقط. إرسال ملاحظة جديدة يتم من تفاصيل الجلسة المؤهلة."
     },
     "detail": {
       "back": "العودة إلى ملاحظاتي",
       "eyebrow": "تفاصيل الملاحظة",
-      "note": "هذا هو السجل الفعلي للملاحظة كما تم حفظها على الجلسة.",
+      "note": "هذا هو السجل الفعلي للملاحظة كما تم حفظه للجلسة.",
       "sections": {
         "summary": "ملخص",
         "reviewText": "النص الذي كتبته"

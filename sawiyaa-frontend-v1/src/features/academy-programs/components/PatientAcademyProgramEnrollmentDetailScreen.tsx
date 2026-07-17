@@ -64,7 +64,7 @@ function formatDurationMinutes(startAt: string, endAt: string, locale: string) {
 
 function resolveEnrollmentTone(status: AcademyProgramEnrollmentItem["status"]) {
   switch (status) {
-    case "CONFIRMED":
+    case "UPCOMING":
       return "success";
     case "PENDING_PAYMENT":
       return "warning";
@@ -213,7 +213,7 @@ export default function PatientAcademyProgramEnrollmentDetailScreen({
         })
       : null;
   const programStateLabel = enrollment
-    ? enrollment.status === "CONFIRMED"
+    ? enrollment.status === "UPCOMING"
       ? t("patient.detail.state.confirmed")
       : enrollment.status === "PENDING_PAYMENT"
         ? t("patient.detail.state.pendingPayment")

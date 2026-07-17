@@ -72,6 +72,7 @@ describe('RequestPaymentRefundUseCase', () => {
         }),
       ),
       createEvent: jest.fn().mockResolvedValue({}),
+      createRefundEvent: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({}),
       updateRefund: jest.fn().mockResolvedValue({
         id: 'refund_1',
@@ -125,6 +126,9 @@ describe('RequestPaymentRefundUseCase', () => {
     const postRefundLedgerEntriesUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
+    const sessionEarningReviewService = {
+      invalidatePendingReviewsForPayment: jest.fn().mockResolvedValue({}),
+    };
     const orchestrateSessionPaymentStatusService = {
       markSessionRefundPending: jest.fn().mockResolvedValue({}),
       markSessionRefunded: jest.fn().mockResolvedValue({}),
@@ -144,7 +148,9 @@ describe('RequestPaymentRefundUseCase', () => {
       info: jest.fn(),
     };
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn) =>
+        fn({ $executeRaw: jest.fn().mockResolvedValue(undefined) }),
+      ),
     };
 
     const useCase = new RequestPaymentRefundUseCase(
@@ -154,6 +160,7 @@ describe('RequestPaymentRefundUseCase', () => {
       validatePaymentStatusTransitionService as never,
       validateRefundEligibilityService as never,
       postRefundLedgerEntriesUseCase as never,
+      sessionEarningReviewService as never,
       customerWalletAccountingService as never,
       orchestrateSessionPaymentStatusService as never,
       operationalNotificationService as never,
@@ -166,7 +173,9 @@ describe('RequestPaymentRefundUseCase', () => {
       paymentRepository,
       paymentProviderRegistryService,
       postRefundLedgerEntriesUseCase,
+      sessionEarningReviewService,
       orchestrateSessionPaymentStatusService,
+      customerWalletAccountingService,
       operationalNotificationService,
       paymentMapper,
     };
@@ -190,6 +199,13 @@ describe('RequestPaymentRefundUseCase', () => {
       1,
     );
     expect(
+      setup.sessionEarningReviewService.invalidatePendingReviewsForPayment,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'payment_1',
+      }),
+    );
+    expect(
       setup.operationalNotificationService.notifyRefundRequested,
     ).toHaveBeenCalledTimes(1);
     expect(
@@ -198,6 +214,18 @@ describe('RequestPaymentRefundUseCase', () => {
     expect(
       setup.orchestrateSessionPaymentStatusService.markSessionRefundPending,
     ).toHaveBeenCalled();
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(1);
+    expect(setup.paymentRepository.createRefundEvent.mock.calls[0][0]).toMatchObject({
+      refundId: 'refund_1',
+      paymentId: 'payment_1',
+      eventType: 'REQUESTED',
+      previousStatus: null,
+      newStatus: 'REQUESTED',
+      actorType: 'USER',
+      actorUserId: 'admin_1',
+      source: 'HTTP_REQUEST',
+      reason: 'reason',
+    });
   });
 
   it('handles provider failure and avoids ledger reversal posting', async () => {
@@ -217,6 +245,50 @@ describe('RequestPaymentRefundUseCase', () => {
     expect(
       setup.operationalNotificationService.notifyRefundFailed,
     ).toHaveBeenCalledTimes(1);
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it('finalizes customer wallet refunds inside the refund transaction', async () => {
+    const setup = buildUseCase({
+      succeededRefundTotal: '0.00',
+      providerOutcome: 'SUCCEEDED',
+    });
+
+    await setup.useCase.execute({
+      paymentId: 'payment_1',
+      actorUserId: 'admin_1',
+      amount: '100.00',
+      reason: 'reason',
+      destination: RefundDestination.CUSTOMER_WALLET,
+    });
+
+    expect(setup.customerWalletAccountingService.creditRefundToWallet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        refundId: 'refund_1',
+        tx: expect.any(Object),
+      }),
+    );
+    expect(setup.postRefundLedgerEntriesUseCase.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        refundId: 'refund_1',
+        tx: expect.any(Object),
+      }),
+    );
+    expect(
+      setup.sessionEarningReviewService.invalidatePendingReviewsForPayment,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'payment_1',
+        tx: expect.any(Object),
+      }),
+    );
+    expect(
+      setup.orchestrateSessionPaymentStatusService.markSessionRefundPending,
+    ).toHaveBeenCalledWith('session_1', expect.any(Object));
+    expect(
+      setup.operationalNotificationService.notifyRefundSucceeded,
+    ).toHaveBeenCalledTimes(1);
+    expect(setup.paymentRepository.createRefundEvent).toHaveBeenCalledTimes(1);
   });
 
   it('rejects duplicate refund attempt while another one is active', async () => {

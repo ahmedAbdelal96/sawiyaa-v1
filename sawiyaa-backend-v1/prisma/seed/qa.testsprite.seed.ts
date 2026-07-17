@@ -3,8 +3,6 @@ import {
   ConversationParticipantRole,
   ConversationStatus,
   ConversationType,
-  CourseStatus,
-  CourseVisibility,
   PaymentProvider,
   PaymentPurpose,
   PaymentStatus,
@@ -29,7 +27,6 @@ import {
   UserRoleType,
   UserStatus,
   ChatApprovalStatus,
-  AcademyEnrollmentStatus,
   PackageSchedulePolicy,
   PatientPackagePurchaseStatus,
 } from '@prisma/client';
@@ -1322,113 +1319,6 @@ async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean
   return true;
 }
 
-async function ensureAcademyData(prisma: PrismaClient): Promise<boolean> {
-  const courseId = toStableUuid('qa-academy-course-001');
-  const learnerId = toStableUuid('qa-academy-learner-001');
-  const enrollmentId = toStableUuid('qa-academy-enrollment-001');
-  const existingCourse = await prisma.academyCourse.findUnique({
-    where: { slug: 'qa-test-course-001' },
-    select: { id: true },
-  });
-  const resolvedCourseId = existingCourse?.id ?? courseId;
-  const existingLearner = await prisma.academyLearner.findUnique({
-    where: { phoneNumber: '+201555000100' },
-    select: { id: true },
-  });
-  const resolvedLearnerId = existingLearner?.id ?? learnerId;
-
-  await prisma.academyCourse.upsert({
-    where: { id: resolvedCourseId },
-    create: {
-      id: resolvedCourseId,
-      slug: 'qa-test-course-001',
-      title: 'QA Test Course',
-      shortDescription: 'Sandbox academy course for TestSprite.',
-      fullDescription: 'Safe local QA course with no real payment or email side effects.',
-      status: CourseStatus.PUBLISHED,
-      visibility: CourseVisibility.PUBLIC,
-      priceAmountEgp: 250,
-      priceAmountUsd: 15,
-      priceAmount: 250,
-      currencyCode: 'EGP',
-      startsAt: daysFromNow(5),
-      endsAt: daysFromNow(35),
-      plannedDurationDays: 30,
-      plannedLectureCount: 4,
-      meetingUrl: 'https://example.invalid/qa-academy-meeting',
-      whatsappGroupUrl: 'https://example.invalid/qa-academy-whatsapp',
-      publishedAt: new Date(),
-    },
-    update: {
-      title: 'QA Test Course',
-      shortDescription: 'Sandbox academy course for TestSprite.',
-      fullDescription: 'Safe local QA course with no real payment or email side effects.',
-      status: CourseStatus.PUBLISHED,
-      visibility: CourseVisibility.PUBLIC,
-      priceAmountEgp: 250,
-      priceAmountUsd: 15,
-      priceAmount: 250,
-      currencyCode: 'EGP',
-      startsAt: daysFromNow(5),
-      endsAt: daysFromNow(35),
-      plannedDurationDays: 30,
-      plannedLectureCount: 4,
-      meetingUrl: 'https://example.invalid/qa-academy-meeting',
-      whatsappGroupUrl: 'https://example.invalid/qa-academy-whatsapp',
-      publishedAt: new Date(),
-    },
-  });
-
-  await prisma.academyLearner.upsert({
-    where: { id: resolvedLearnerId },
-    create: {
-      id: resolvedLearnerId,
-      fullName: 'QA Test Patient',
-      phoneNumber: '+201555000100',
-      whatsappNumber: '+201555000101',
-      email: 'qa.test.patient@hesba.local',
-      countryCode: 'EG',
-      countryCodeDeclared: 'EG',
-      countryCodeSource: 'qa-seed',
-      countryCodeMismatch: false,
-      sourceLabel: 'testsprite-seed',
-    },
-    update: {
-      fullName: 'QA Test Patient',
-      email: 'qa.test.patient@hesba.local',
-      sourceLabel: 'testsprite-seed',
-    },
-  });
-
-  await prisma.academyEnrollment.upsert({
-    where: {
-      academyCourseId_academyLearnerId: {
-        academyCourseId: resolvedCourseId,
-        academyLearnerId: resolvedLearnerId,
-      },
-    },
-    create: {
-      id: enrollmentId,
-      academyCourseId: resolvedCourseId,
-      academyLearnerId: resolvedLearnerId,
-      publicAccessToken: 'qa-academy-token-001',
-      enrollmentStatus: AcademyEnrollmentStatus.PENDING_PAYMENT,
-      paymentStatus: 'PENDING',
-      paymentId: null,
-      registeredAt: new Date(),
-      notesInternal: 'QA academy enrollment for TestSprite.',
-    },
-    update: {
-      publicAccessToken: 'qa-academy-token-001',
-      enrollmentStatus: AcademyEnrollmentStatus.PENDING_PAYMENT,
-      paymentStatus: 'PENDING',
-      notesInternal: 'QA academy enrollment for TestSprite.',
-    },
-  });
-
-  return true;
-}
-
 async function main(): Promise<void> {
   assertSafeDatabaseUrl();
 
@@ -1475,15 +1365,6 @@ async function main(): Promise<void> {
     } else {
       summary.skippedItems.push(
         'Review acceptance QA data skipped because patient or practitioner profile prerequisites were missing.',
-      );
-    }
-
-    const academyReady = await ensureAcademyData(prisma);
-    if (academyReady) {
-      summary.domainRecordsEnsured += 3;
-    } else {
-      summary.skippedItems.push(
-        'Academy QA data skipped because the required course/learner relations were missing.',
       );
     }
 

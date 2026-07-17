@@ -20,7 +20,7 @@ describe('ValidateSupportTicketStatusTransitionService', () => {
     expect(() =>
       service.assertValid({
         currentStatus: SupportTicketStatus.RESOLVED,
-        nextStatus: SupportTicketStatus.CLOSED,
+        nextStatus: SupportTicketStatus.RESOLVED,
       }),
     ).not.toThrow();
   });
@@ -29,6 +29,13 @@ describe('ValidateSupportTicketStatusTransitionService', () => {
     expect(() =>
       service.assertValid({
         currentStatus: SupportTicketStatus.CLOSED,
+        nextStatus: SupportTicketStatus.IN_PROGRESS,
+      }),
+    ).toThrow(ConflictException);
+
+    expect(() =>
+      service.assertValid({
+        currentStatus: SupportTicketStatus.RESOLVED,
         nextStatus: SupportTicketStatus.IN_PROGRESS,
       }),
     ).toThrow(ConflictException);

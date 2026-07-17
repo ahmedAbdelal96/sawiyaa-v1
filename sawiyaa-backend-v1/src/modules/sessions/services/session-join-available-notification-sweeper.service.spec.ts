@@ -82,7 +82,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
   function buildService(options?: { candidates?: JoinCandidate[] }) {
     let currentSession: JoinCandidate = options?.candidates?.[0] ?? {
       id: 'session_1',
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
       scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
@@ -186,9 +186,13 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
     } as unknown as SessionVideoProviderRegistryService;
 
     const assertCanTransition = jest.fn();
-    const validateSessionStatusTransitionService = {
-      assertCanTransition,
-    } as unknown as ValidateSessionStatusTransitionService;
+    const sessionLifecycleService = {
+      transition: jest.fn().mockImplementation(async ({ session, to }: any) => {
+        assertCanTransition(session.status, to);
+        await createEvent({ eventType: 'SESSION_READY_TO_JOIN' }, {});
+        return { ...session, status: to };
+      }),
+    } as never;
 
     const seenIdempotencyKeys = new Set<string>();
     const seenEmailIdempotencyKeys = new Set<string>();
@@ -287,10 +291,11 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       resolveSessionJoinReadinessService,
       sessionVideoProviderRegistryService,
       sessionVideoProviderResolverService,
-      validateSessionStatusTransitionService,
+      sessionLifecycleService,
       notificationIntentWriterService,
       i18nService,
       logger,
+      { url: 'http://localhost:3000' } as never,
     );
 
     return {
@@ -341,7 +346,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       endsAt: new Date('2026-05-01T10:45:00.000Z'),
     });
     expect(setup.assertCanTransition).toHaveBeenCalledWith(
-      SessionStatus.CONFIRMED,
+      SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
     );
 
@@ -514,7 +519,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       candidates: [
         {
           id: 'session_1',
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.VIDEO,
           joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
@@ -612,7 +617,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
         },
         {
           id: 'session_audio',
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.AUDIO,
           joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
@@ -656,7 +661,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       candidates: [
         {
           id: 'session_1',
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.VIDEO,
           joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),
@@ -729,7 +734,7 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       candidates: [
         {
           id: 'session_missing_email',
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.VIDEO,
           joinOpenAt: new Date('2026-05-01T10:13:00.000Z'),
           scheduledStartAt: new Date('2026-05-01T10:15:00.000Z'),

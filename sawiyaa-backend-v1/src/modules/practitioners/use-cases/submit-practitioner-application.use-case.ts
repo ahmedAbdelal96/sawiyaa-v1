@@ -2,11 +2,13 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
   PractitionerPayoutMethodType,
   Prisma,
+  SecurityAuditOutcome,
 } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -26,6 +28,8 @@ import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profi
 import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
 import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-application.dto';
 import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 /**
  * Practitioner self-submission is review-gated and snapshot-based.
@@ -48,6 +52,7 @@ export class SubmitPractitionerApplicationUseCase {
     private readonly practitionerApplicationEligibilityPolicy: PractitionerApplicationEligibilityPolicy,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -337,19 +342,43 @@ export class SubmitPractitionerApplicationUseCase {
         latestApplication &&
         resubmittableStatuses.includes(latestApplication.status)
       ) {
-        await this.practitionerApplicationRepository.resubmit(
+        const decision = await this.practitionerApplicationRepository.resubmit(
           latestApplication.id,
           submissionSnapshot,
           tx,
         );
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'security.practitioner.application.resubmit',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.userId,
+          actorRoles: input.currentUser.roles,
+          resourceType: 'PractitionerApplication',
+          resourceId: decision.id,
+          targetUserId: input.userId,
+          metadata: { previousStatus: latestApplication.status, status: decision.status },
+        });
         return;
       }
 
-      await this.practitionerApplicationRepository.createSubmitted(
+      const decision = await this.practitionerApplicationRepository.createSubmitted(
         profile.id,
         submissionSnapshot,
         tx,
       );
+      await this.securityAuditService?.recordRequired(tx, {
+        action: 'security.practitioner.application.submit',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.userId,
+        actorRoles: input.currentUser.roles,
+        resourceType: 'PractitionerApplication',
+        resourceId: decision.id,
+        targetUserId: input.userId,
+        metadata: { previousStatus: null, status: decision.status },
+      });
     });
 
     const status = await this.getPractitionerApplicationStatusUseCase.execute({

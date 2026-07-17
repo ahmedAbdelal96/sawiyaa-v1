@@ -4,6 +4,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AvailabilityModule } from '@modules/availability/availability.module';
+import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
@@ -56,7 +57,11 @@ import { ResolveSessionJoinContractUseCase } from './use-cases/resolve-session-j
 import { GetSessionCancellationPoliciesUseCase } from './use-cases/get-session-cancellation-policies.use-case';
 import { UpdateSessionCancellationPolicyUseCase } from './use-cases/update-session-cancellation-policy.use-case';
 import { CreateAdminSessionManualDecisionUseCase } from './use-cases/create-admin-session-manual-decision.use-case';
+import { CreateAdminSessionPackageEntitlementDecisionUseCase } from './use-cases/create-admin-session-package-entitlement-decision.use-case';
 import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-session-manual-decisions.use-case';
+import { ResolvePatientSessionActionsService } from './services/resolve-patient-session-actions.service';
+import { SessionLifecycleService } from './services/session-lifecycle.service';
+import { SessionCompletionConfirmationSweeperService } from './services/session-completion-confirmation-sweeper.service';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -65,6 +70,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
 @Module({
   imports: [
     AvailabilityModule,
+    ReviewsModule,
     NotificationsModule,
     CustomerWalletsModule,
     FinancialOperationsModule,
@@ -91,8 +97,11 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
     ValidateSessionDurationService,
     ValidateSessionBookingRequestService,
     ValidateSessionStatusTransitionService,
+    SessionLifecycleService,
+    SessionCompletionConfirmationSweeperService,
     ValidateSessionCancellationPolicyRulesService,
     EvaluateSessionCancellationPolicyService,
+    ResolvePatientSessionActionsService,
     ApplySessionCancellationFinancialEffectsService,
     ExpireUnpaidSessionSweeperService,
     ResolveSessionJoinReadinessService,
@@ -121,6 +130,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
     GetSessionCancellationPoliciesUseCase,
     UpdateSessionCancellationPolicyUseCase,
     CreateAdminSessionManualDecisionUseCase,
+    CreateAdminSessionPackageEntitlementDecisionUseCase,
     ListAdminSessionManualDecisionsUseCase,
     CancelSessionUseCase,
     ExpireUnpaidSessionUseCase,
@@ -134,6 +144,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
     ValidateSessionScheduleCompatibilityService,
     ValidateSessionConflictsService,
     ValidateSessionStatusTransitionService,
+    SessionLifecycleService,
     ExpireUnpaidSessionUseCase,
   ],
 })

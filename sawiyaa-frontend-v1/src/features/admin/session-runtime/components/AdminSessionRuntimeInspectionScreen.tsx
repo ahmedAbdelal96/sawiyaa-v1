@@ -10,6 +10,7 @@ import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIco
 import { getAdminSessionRuntimeErrorKey } from "../lib/admin-session-runtime-errors";
 import { useAdminSessionRuntimeInspection } from "../hooks/use-admin-session-runtime";
 import AdminSessionAttendanceSection from "./AdminSessionAttendanceSection";
+import AdminSessionPackageEntitlementPanel from "./AdminSessionPackageEntitlementPanel";
 import type {
   AdminSessionJoinBlockedReason,
   AdminSessionRuntimeInspectionItem,
@@ -18,14 +19,16 @@ import type {
 
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
-  CONFIRMED: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   UPCOMING: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   READY_TO_JOIN: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   IN_PROGRESS: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   COMPLETED: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
   CANCELLED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  REFUNDED: "bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-white/70",
+  PATIENT_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  PRACTITIONER_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  BOTH_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  AWAITING_COMPLETION_CONFIRMATION:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
 };
 
 function formatDateTime(value: string | null, locale: string) {
@@ -314,6 +317,8 @@ export default function AdminSessionRuntimeInspectionScreen({
           </div>
 
           <ProviderSummary item={item} />
+
+          <AdminSessionPackageEntitlementPanel item={item} />
         </div>
       ) : (
         <StateCard

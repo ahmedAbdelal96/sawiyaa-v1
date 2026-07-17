@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,7 @@ import {
 import { SessionCancellationBookingType } from '@prisma/client';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import type { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -45,10 +47,15 @@ import {
   AdminSessionManualDecisionListSuccessResponseDto,
 } from '../dto/admin-session-manual-decision-list-response.dto';
 import { CreateAdminSessionManualDecisionDto } from '../dto/create-admin-session-manual-decision.dto';
+import { CreateAdminSessionPackageEntitlementDecisionDto } from '../dto/create-admin-session-package-entitlement-decision.dto';
+import {
+  AdminSessionPackageEntitlementDecisionSuccessResponseDto,
+} from '../dto/admin-session-package-entitlement-decision-response.dto';
 import { GetAdminSessionAttendanceUseCase } from '../use-cases/get-admin-session-attendance.use-case';
 import { GetAdminSessionsUseCase } from '../use-cases/get-admin-sessions.use-case';
 import { InspectAdminSessionRuntimeUseCase } from '../use-cases/inspect-admin-session-runtime.use-case';
 import { CreateAdminSessionManualDecisionUseCase } from '../use-cases/create-admin-session-manual-decision.use-case';
+import { CreateAdminSessionPackageEntitlementDecisionUseCase } from '../use-cases/create-admin-session-package-entitlement-decision.use-case';
 import { ListAdminSessionManualDecisionsUseCase } from '../use-cases/list-admin-session-manual-decisions.use-case';
 import {
   SessionCancellationPolicySuccessResponseDto,
@@ -79,6 +86,7 @@ export class AdminSessionsOperationsController {
     private readonly getSessionCancellationPoliciesUseCase: GetSessionCancellationPoliciesUseCase,
     private readonly updateSessionCancellationPolicyUseCase: UpdateSessionCancellationPolicyUseCase,
     private readonly createAdminSessionManualDecisionUseCase: CreateAdminSessionManualDecisionUseCase,
+    private readonly createAdminSessionPackageEntitlementDecisionUseCase: CreateAdminSessionPackageEntitlementDecisionUseCase,
     private readonly listAdminSessionManualDecisionsUseCase: ListAdminSessionManualDecisionsUseCase,
   ) {}
 
@@ -180,6 +188,7 @@ export class AdminSessionsOperationsController {
     @Param('id') sessionId: string,
     @Body() body: CreateAdminSessionManualDecisionDto,
     @CurrentUser() user: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
   ) {
     return this.createAdminSessionManualDecisionUseCase.execute({
       sessionId,
@@ -191,6 +200,46 @@ export class AdminSessionsOperationsController {
       confirmNoAutomaticRefund: body.confirmNoAutomaticRefund,
       confirmNoAutomaticPayout: body.confirmNoAutomaticPayout,
       supersedePrevious: body.supersedePrevious,
+      actorRoles: user.roles,
+      requestId: request.requestId ?? null,
+      correlationId: request.requestId ?? null,
+    });
+  }
+
+  @Post(':id/package-entitlement-decision')
+  @Roles(AppRole.ADMIN)
+  @Permissions(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE)
+  @ApiOperation({
+    summary: 'Record a package entitlement decision',
+    description:
+      'Records whether a cancelled or no-show package-covered session should be restored to the package or counted as used. ' +
+      'This decision is audit-only and does not create an automatic payout or refund.',
+  })
+  @ApiBody({ type: CreateAdminSessionPackageEntitlementDecisionDto })
+  @ApiCreatedResponse({
+    type: AdminSessionPackageEntitlementDecisionSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only admin active accounts with write permission can access this route',
+  })
+  @ApiNotFoundResponse({ description: 'Session was not found' })
+  createPackageEntitlementDecision(
+    @Param('id') sessionId: string,
+    @Body() body: CreateAdminSessionPackageEntitlementDecisionDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.createAdminSessionPackageEntitlementDecisionUseCase.execute({
+      sessionId,
+      decidedByUserId: user.id,
+      decisionType: body.decisionType,
+      reasonCode: body.reasonCode,
+      adminNote: body.adminNote,
+      idempotencyKey: body.idempotencyKey,
+      actorRoles: user.roles,
+      requestId: request.requestId ?? null,
+      correlationId: request.requestId ?? null,
     });
   }
 

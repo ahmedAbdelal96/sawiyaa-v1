@@ -2,15 +2,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAdminReview,
   getAdminReviews,
+  getPendingPatientReviews,
   getPatientReview,
   getPatientReviews,
   moderateReview,
   submitPatientSessionReview,
 } from "../api/reviews.api";
 import { adminReviewsQueryKeys, patientReviewsQueryKeys } from "../constants/query-keys";
+import {
+  patientSessionQueryKeys,
+  patientSessionSummaryQueryKeys,
+} from "@/features/sessions/hooks/use-sessions";
 import type {
   CreateSessionReviewInput,
   ListAdminReviewsParams,
+  ListPendingPatientReviewsParams,
   ListPatientReviewsParams,
   ModerateReviewRequest,
   PatientReviewItemData,
@@ -69,6 +75,18 @@ export function usePatientReview(reviewId: string | null, enabled = true) {
   });
 }
 
+export function usePendingPatientReviews(
+  params: ListPendingPatientReviewsParams = {},
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: patientReviewsQueryKeys.pendingReviews(params),
+    queryFn: () => getPendingPatientReviews(params),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function useSubmitPatientSessionReview(sessionId: string) {
   const queryClient = useQueryClient();
 
@@ -79,6 +97,12 @@ export function useSubmitPatientSessionReview(sessionId: string) {
       queryClient.setQueryData(patientReviewsQueryKeys.review(data.item.id), data);
       queryClient.invalidateQueries({
         queryKey: patientReviewsQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientSessionQueryKeys.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientSessionSummaryQueryKeys.all,
       });
     },
   });

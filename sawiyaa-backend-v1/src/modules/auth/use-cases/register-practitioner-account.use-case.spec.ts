@@ -24,8 +24,8 @@ describe('RegisterPractitionerAccountUseCase', () => {
 
   const userEmailRepository = {
     findByEmail: jest.fn(),
-    upsertPrimaryEmail: jest.fn(),
-    upsertSecondaryEmail: jest.fn(),
+    createPrimaryEmail: jest.fn(),
+    createSecondaryEmail: jest.fn(),
   } as unknown as UserEmailRepository;
 
   const authIdentityRepository = {
@@ -90,7 +90,7 @@ describe('RegisterPractitionerAccountUseCase', () => {
     (userRepository.createPractitionerProfileIfMissing as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (userEmailRepository.upsertPrimaryEmail as jest.Mock).mockResolvedValue(
+    (userEmailRepository.createPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
     (authIdentityRepository.createPasswordIdentity as jest.Mock).mockResolvedValue(
@@ -144,7 +144,7 @@ describe('RegisterPractitionerAccountUseCase', () => {
     });
   });
 
-  it('maps a password identity unique violation to a friendly conflict', async () => {
+  it('does not mislabel a password identity unique violation as duplicate email', async () => {
     (userEmailRepository.findByEmail as jest.Mock).mockResolvedValue(null);
     (hashPasswordUseCase.execute as jest.Mock).mockResolvedValue('hashed');
     const tx = {
@@ -181,7 +181,7 @@ describe('RegisterPractitionerAccountUseCase', () => {
     (userRepository.createPractitionerProfileIfMissing as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (userEmailRepository.upsertPrimaryEmail as jest.Mock).mockResolvedValue(
+    (userEmailRepository.createPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
     (authIdentityRepository.createPasswordIdentity as jest.Mock).mockRejectedValue(
@@ -191,20 +191,14 @@ describe('RegisterPractitionerAccountUseCase', () => {
       }),
     );
 
-    const error = await useCase
-      .execute({
+    await expect(
+      useCase.execute({
         email: 'practitioner.dup@example.com',
         password: 'Password123!',
         primarySpecialtyCategoryId: 'category-1',
         specialtyIds: [],
-      })
-      .catch((caught: unknown) => caught as ConflictException);
-
-    expect(error).toBeInstanceOf(ConflictException);
-    expect(JSON.stringify(error.getResponse())).not.toContain('P2002');
-    expect(JSON.stringify(error.getResponse())).not.toContain(
-      'AuthIdentity_user_password_unique_idx',
-    );
+      }),
+    ).rejects.toBeInstanceOf(PrismaClientKnownRequestError);
   });
 
   it('throws bad request for invalid specialty category before any uniqueness checks', async () => {

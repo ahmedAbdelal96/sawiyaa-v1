@@ -45,6 +45,7 @@ function CurrencyBalanceSection({
     packageReleasedPayableAmount: string;
     packageHeldAmount: string;
     totalPayableAmount: string;
+    manualRecoveryAmount: string;
     lastPayoutAt: string | null;
   } | null;
   locale: string;
@@ -124,6 +125,16 @@ function CurrencyBalanceSection({
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+        <p className="font-semibold">{t("manualRecoveryLabel")}</p>
+        <p className="mt-1 font-semibold">
+          {balance ? formatSettlementMoney(locale, balance.manualRecoveryAmount, currency) : "-"}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-amber-900/80 dark:text-amber-50/80">
+          {t("manualRecoveryNote")}
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

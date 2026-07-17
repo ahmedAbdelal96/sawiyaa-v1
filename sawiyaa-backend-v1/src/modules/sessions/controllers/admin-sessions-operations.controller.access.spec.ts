@@ -50,16 +50,18 @@ describe('AdminSessionsOperationsController access contract', () => {
     expect(classGuards).toContain(RolesGuard);
   });
 
-  it('exposes admin list, runtime inspection and attendance read handlers', () => {
+  it('exposes admin list, runtime inspection, attendance and package entitlement handlers', () => {
     const proto = AdminSessionsOperationsController.prototype as unknown as {
       list: unknown;
       inspectRuntime: unknown;
       getAttendance: unknown;
+      createPackageEntitlementDecision: unknown;
     };
 
     expect(typeof proto.list).toBe('function');
     expect(typeof proto.inspectRuntime).toBe('function');
     expect(typeof proto.getAttendance).toBe('function');
+    expect(typeof proto.createPackageEntitlementDecision).toBe('function');
   });
 
   // ─── POST /admin/sessions/:id/manual-decision authorization contract ─────────
@@ -127,6 +129,40 @@ describe('AdminSessionsOperationsController access contract', () => {
         (b: { role: string }) => b.role === 'SUPPORT',
       );
       expect(supportBundle?.permissions).not.toContain('sessions.manualDecisions.write');
+    });
+  });
+
+  // â”€â”€â”€ POST /admin/sessions/:id/package-entitlement-decision authorization contract â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+  describe('createPackageEntitlementDecision authorization', () => {
+    it('is decorated with @Roles(AppRole.ADMIN) â€” SUPPORT_AGENT explicitly excluded', () => {
+      const methodRoles = (Reflect as any).getMetadata(
+        ROLES_KEY,
+        AdminSessionsOperationsController.prototype,
+        'createPackageEntitlementDecision',
+      ) as AppRole[] | undefined;
+
+      if (methodRoles === undefined) {
+        expect(methodRoles ?? []).not.toContain(AppRole.SUPPORT_AGENT);
+      } else {
+        expect(methodRoles).toEqual([AppRole.ADMIN]);
+      }
+    });
+
+    it('is decorated with @Permissions(SESSIONS_MANUAL_DECISIONS_WRITE)', () => {
+      const methodPermissions = (Reflect as any).getMetadata(
+        PERMISSIONS_KEY,
+        AdminSessionsOperationsController.prototype,
+        'createPackageEntitlementDecision',
+      ) as PermissionKey[] | undefined;
+
+      if (methodPermissions !== undefined) {
+        expect(methodPermissions).toContain(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE);
+      } else {
+        expect(Object.values(PermissionKey)).toContain(
+          PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE,
+        );
+      }
     });
   });
 });

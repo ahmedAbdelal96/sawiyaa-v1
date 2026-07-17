@@ -21,6 +21,9 @@ describe('SendGeneralChatMessageUseCase', () => {
   const operationalNotificationService = {
     notifyConversationMessage: notifyConversationMessageMock,
   } as unknown as OperationalNotificationService;
+  const messagingUseCase = {
+    sendMessage: jest.fn(),
+  } as any;
 
   const useCase = new SendGeneralChatMessageUseCase(
     generalChatRepository,
@@ -28,10 +31,12 @@ describe('SendGeneralChatMessageUseCase', () => {
     new ValidateGeneralChatMessagePayloadService(),
     new ConversationAccessPolicy(),
     operationalNotificationService,
+    messagingUseCase,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    messagingUseCase.sendMessage.mockReset();
   });
 
   it('rejects send when admin lock makes the conversation not sendable', async () => {
@@ -107,6 +112,21 @@ describe('SendGeneralChatMessageUseCase', () => {
       attachments: [],
       conversationLatestActivityAt: new Date('2026-05-21T10:06:00.000Z'),
     });
+    messagingUseCase.sendMessage.mockResolvedValue({
+      item: {
+        id: 'msg_1',
+        conversationId: 'conv_1',
+        sender: { userId: 'user_1' },
+        messageType: 'TEXT',
+        status: 'SENT',
+        body: 'Hello',
+        sentAt: '2026-05-21T10:06:00.000Z',
+        deliveredAt: null,
+        readAt: null,
+        attachments: [],
+        conversationLatestActivityAt: '2026-05-21T10:06:00.000Z',
+      },
+    });
 
     await expect(
       useCase.execute({
@@ -121,13 +141,15 @@ describe('SendGeneralChatMessageUseCase', () => {
         contentText: 'Hello',
       },
     });
-    expect(notifyConversationMessageMock).toHaveBeenCalledWith({
-      lane: 'SESSION_CHAT',
-      threadId: 'conv_1',
-      messageId: 'msg_1',
-      senderUserId: 'user_1',
-      participants: [{ userId: 'user_1', participantRole: 'PRACTITIONER' }],
-    });
+    expect(messagingUseCase.sendMessage).toHaveBeenCalledWith(
+      { id: 'user_1', roles: [] },
+      'conv_1',
+      'Hello',
+      [],
+    );
+    expect(
+      generalChatRepository.appendMessageInGeneralConversation,
+    ).not.toHaveBeenCalled();
   });
 
   it('rejects send when the linked session is already ended', async () => {

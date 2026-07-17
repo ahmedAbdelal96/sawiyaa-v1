@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { ReviewModerationAction, SessionReviewStatus } from '@prisma/client';
+import {
+  SessionReviewModerationDecision,
+  SessionReviewStatus,
+} from '@prisma/client';
+import { PendingPatientReviewItemView } from '../types/reviews.types';
 
 @Injectable()
 export class ReviewPresenter {
@@ -12,6 +16,7 @@ export class ReviewPresenter {
     reviewStatus: SessionReviewStatus;
     submittedAt: Date | null;
     publishedAt: Date | null;
+    moderatedAt?: Date | null;
     updatedAt: Date;
     practitioner: {
       id: string;
@@ -46,9 +51,15 @@ export class ReviewPresenter {
     practitionerId: string;
     isAnonymous: boolean;
     ratingValue: number;
+    publicRatingValue: number | null;
     reviewTitle: string | null;
     reviewText: string | null;
     reviewStatus: SessionReviewStatus;
+    moderationDecision: SessionReviewModerationDecision | null;
+    moderatedByUserId: string | null;
+    moderatedAt: Date | null;
+    moderationReason: string | null;
+    countsInPublicAverage: boolean;
     submittedAt: Date | null;
     publishedAt: Date | null;
     updatedAt: Date;
@@ -79,6 +90,13 @@ export class ReviewPresenter {
 
     return {
       ...this.presentPatientReviewItem(item),
+      originalRatingValue: item.ratingValue,
+      publicRatingValue: item.publicRatingValue,
+      moderationDecision: item.moderationDecision,
+      moderatedByUserId: item.moderatedByUserId,
+      moderatedAt: item.moderatedAt?.toISOString() ?? null,
+      moderationReason: item.moderationReason,
+      countsInPublicAverage: item.countsInPublicAverage,
       patientProfileId: item.patientId,
       practitionerProfileId: item.practitionerId,
       patient: {
@@ -113,17 +131,46 @@ export class ReviewPresenter {
 
   presentPublicReviewItem(item: {
     id: string;
-    ratingValue: number;
+    publicRatingValue: number | null;
     reviewText: string | null;
+    moderationDecision: SessionReviewModerationDecision | null;
     submittedAt: Date | null;
     publishedAt: Date | null;
   }) {
     return {
       id: item.id,
-      overallRating: item.ratingValue,
-      textReview: item.reviewText,
+      overallRating: item.publicRatingValue as number,
+      textReview: null,
       submittedAt: item.submittedAt?.toISOString() ?? null,
       publishedAt: item.publishedAt?.toISOString() ?? null,
+    };
+  }
+
+  presentPendingReviewItem(item: {
+    id: string;
+    completedAt: Date | null;
+    scheduledStartAt: Date | null;
+    decisions?: Array<{ createdAt: Date }>;
+    practitioner: {
+      id: string;
+      publicSlug: string;
+      user: {
+        displayName: string | null;
+      };
+    };
+  }): PendingPatientReviewItemView {
+    return {
+      sessionId: item.id,
+      completedAt:
+        item.completedAt?.toISOString() ??
+        item.decisions?.[0]?.createdAt.toISOString() ??
+        null,
+      scheduledStartAt: item.scheduledStartAt?.toISOString() ?? null,
+      practitioner: {
+        id: item.practitioner.id,
+        slug: item.practitioner.publicSlug,
+        displayName: item.practitioner.user.displayName ?? null,
+      },
     };
   }
 
@@ -170,11 +217,12 @@ export class ReviewPresenter {
   }
 
   presentModerationResult(input: {
-    action: ReviewModerationAction;
+    decision: SessionReviewModerationDecision;
     item: unknown;
   }) {
     return {
-      action: input.action,
+      decision: input.decision,
+      action: input.decision,
       item: input.item,
     };
   }
@@ -183,7 +231,12 @@ export class ReviewPresenter {
     reviewStatus: SessionReviewStatus;
     updatedAt: Date;
     publishedAt: Date | null;
+    moderatedAt?: Date | null;
   }) {
+    if (item.moderatedAt) {
+      return item.moderatedAt.toISOString();
+    }
+
     if (
       item.reviewStatus === SessionReviewStatus.PENDING_MODERATION ||
       item.reviewStatus === SessionReviewStatus.DRAFT ||

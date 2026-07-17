@@ -4,6 +4,7 @@ import {
   IsArray,
   IsIn,
   IsString,
+  IsOptional,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -30,6 +31,11 @@ export class SaveAdminAcademyProgramAttendanceDto {
   @IsString()
   @MaxLength(80)
   sessionId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 
   @IsArray()
   @ArrayMinSize(1)

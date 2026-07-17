@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ComponentType } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, ShieldCheck, Terminal } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
+import AuthPasswordField from "./AuthPasswordField";
+import AuthOtpInput from "./AuthOtpInput";
+import AuthOtpTimer from "./AuthOtpTimer";
 import Label from "@/components/form/Label";
 import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import {
@@ -18,13 +21,15 @@ import {
   usePractitionerLogin,
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
+import { getAuthLockoutErrorMessage } from "@/features/auth/lib/auth-lockout-errors";
 import type {
   AuthenticatedUser,
-  AuthSuccessResponse,
-  OtpChallengeResponse,
+  PractitionerOtpChallengeResponse,
+  PractitionerAuthenticatedResponse,
 } from "@/features/auth/types/auth.types";
 import { getDefaultRouteByRole, resolveRole } from "@/config/route-access";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
+import AuthSplitCard from "./AuthSplitCard";
 
 export const SIGN_IN_MODES = ["patient", "practitioner", "admin"] as const;
 export type SignInMode = (typeof SIGN_IN_MODES)[number];
@@ -50,7 +55,9 @@ type PractitionerChallengeState = {
   expiresAt: string;
 };
 
-type PractitionerLoginResponse = OtpChallengeResponse | AuthSuccessResponse;
+type PractitionerLoginResponse =
+  | PractitionerOtpChallengeResponse
+  | PractitionerAuthenticatedResponse;
 
 type ModeConfig = {
   icon: ComponentType<{ className?: string }>;
@@ -95,10 +102,10 @@ const TEST_CREDENTIALS_BY_MODE: Record<SignInMode, CredentialPreset> = {
     note: "AHMED / القاهرة",
   },
   practitioner: {
-    label: "الافتراضي: معالج QA مصري",
-    email: "ahmed.m.abdelal57@gmail.com",
-    password: "Practitioner@12345",
-    note: "DR. AHMED / القاهرة",
+    label: "الافتراضي: معالج QA معتمد",
+    email: "amohamef206@gmail.com",
+    password: "Practitioner2@12345",
+    note: "DR. MOHAMED / القاهرة",
   },
   admin: {
     label: "الافتراضي: مدير النظام",
@@ -219,6 +226,24 @@ const ADMIN_TEST_CREDENTIALS: CredentialPreset[] = [
   },
 ];
 
+function isOtpChallengeResponse(
+  response: unknown,
+): response is PractitionerOtpChallengeResponse {
+  if (typeof response !== "object" || response === null) {
+    return false;
+  }
+
+  const value = response as Record<string, unknown>;
+  return (
+    value.nextStep === "OTP_REQUIRED" &&
+    typeof value.challengeId === "string" &&
+    typeof value.maskedTarget === "string" &&
+    typeof value.expiresAt === "string" &&
+    typeof value.channel === "string" &&
+    value.requiresOtpVerification === true
+  );
+}
+
 export default function SignInForm({ mode }: SignInFormProps) {
   const t = useTranslations("auth");
   const locale = useLocale();
@@ -229,6 +254,8 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<PractitionerChallengeState | null>(null);
   const [showDevPanel, setShowDevPanel] = useState(false);
+  const credentialsSubmitLockRef = useRef(false);
+  const otpSubmitLockRef = useRef(false);
 
   const patientLogin = usePatientLogin();
   const practitionerLogin = usePractitionerLogin();
@@ -287,10 +314,21 @@ export default function SignInForm({ mode }: SignInFormProps) {
     otpForm.reset({ code: "" });
   };
 
-  const getSafeCredentialsErrorMessage = () => t("loginError");
-  const getSafeOtpErrorMessage = () => t("otpError");
+  const getSafeCredentialsErrorMessage = (cause: unknown) =>
+    getAuthLockoutErrorMessage(
+      cause,
+      mode === "practitioner" ? "practitioner-password" : mode,
+      t,
+    );
+  const getSafeOtpErrorMessage = (cause: unknown) =>
+    getAuthLockoutErrorMessage(cause, "practitioner-otp", t);
 
   const onSubmitCredentials = async (data: CredentialsFormData) => {
+    if (credentialsSubmitLockRef.current) {
+      return;
+    }
+
+    credentialsSubmitLockRef.current = true;
     setError(null);
 
     try {
@@ -310,24 +348,35 @@ export default function SignInForm({ mode }: SignInFormProps) {
         data,
       )) as PractitionerLoginResponse;
 
-      if ("tokens" in loginResponse) {
+      if (loginResponse.nextStep === "AUTHENTICATED") {
+        resetPractitionerOtpState();
         redirectAfterAuth(loginResponse.user);
         return;
       }
 
-      setChallenge({
-        challengeId: loginResponse.challengeId,
-        maskedTarget: loginResponse.maskedTarget,
-        expiresAt: loginResponse.expiresAt,
-      });
-    } catch {
-      setError(getSafeCredentialsErrorMessage());
+      if (isOtpChallengeResponse(loginResponse)) {
+        setChallenge({
+          challengeId: loginResponse.challengeId,
+          maskedTarget: loginResponse.maskedTarget,
+          expiresAt: loginResponse.expiresAt,
+        });
+        otpForm.reset({ code: "" });
+        setError(null);
+        return;
+      }
+
+      throw new Error("PRACTITIONER_LOGIN_UNKNOWN_NEXT_STEP");
+    } catch (cause) {
+      setError(getSafeCredentialsErrorMessage(cause));
+    } finally {
+      credentialsSubmitLockRef.current = false;
     }
   };
 
   const onSubmitOtp = async (data: OtpFormData) => {
-    if (!challenge) return;
+    if (!challenge || otpSubmitLockRef.current) return;
 
+    otpSubmitLockRef.current = true;
     setError(null);
 
     try {
@@ -336,17 +385,13 @@ export default function SignInForm({ mode }: SignInFormProps) {
         code: data.code,
       });
       redirectAfterAuth(result.user);
-    } catch {
-      setError(getSafeOtpErrorMessage());
+    } catch (cause) {
+      setError(getSafeOtpErrorMessage(cause));
+    } finally {
+      otpSubmitLockRef.current = false;
     }
   };
 
-  const descriptionKey =
-    mode === "admin"
-      ? "signInDescriptionAdmin"
-      : mode === "practitioner"
-        ? "signInDescriptionPractitioner"
-        : "signInDescriptionPatient";
   const signUpHref =
     mode === "patient"
       ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "patient" })
@@ -362,12 +407,6 @@ export default function SignInForm({ mode }: SignInFormProps) {
         : null;
   const shouldShowTestCredentials =
     process.env.NEXT_PUBLIC_SHOW_TEST_CREDENTIALS === "true";
-  // UI hint only. Backend is the source of truth for whether OTP is required.
-  // When false, hide the "we will send an OTP" copy on the credentials form.
-  // If the backend still requires OTP, the form transitions to the OTP step
-  // regardless of this flag.
-  const practitionerOtpHintEnabled =
-    process.env.NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED !== "false";
   const modeConfig = MODE_CONFIG[mode];
   const ModeIcon = modeConfig.icon;
   const testCredentials = TEST_CREDENTIALS_BY_MODE[mode];
@@ -399,220 +438,220 @@ export default function SignInForm({ mode }: SignInFormProps) {
     admin: isRtl ? "بوابة الإدارة" : "Admin Portal",
   };
 
+  const getDynamicTitle = () => {
+    if (challenge) {
+      return isRtl ? "التحقق من تسجيل الدخول" : "Verify your sign in";
+    }
+    if (mode === "admin") {
+      return isRtl ? "تسجيل دخول الإدارة" : "Admin Sign In";
+    }
+    if (mode === "practitioner") {
+      return isRtl ? "تسجيل دخول الممارس" : "Practitioner sign in";
+    }
+    return isRtl ? "تسجيل دخول المراجع" : "Patient sign in";
+  };
+
+  const getDynamicSubtitle = () => {
+    if (challenge) {
+      return isRtl ? "أدخل الرمز المرسل إلى بريدك الإلكتروني." : "Enter the code sent to your email.";
+    }
+    if (mode === "admin") {
+      return isRtl ? "ادخل لإدارة المنصة ومتابعة العمليات." : "Sign in to manage the platform and its operations.";
+    }
+    if (mode === "practitioner") {
+      return isRtl ? "ادخل لإدارة جلساتك ومواعيدك." : "Sign in to manage your sessions and availability.";
+    }
+    return isRtl ? "ادخل لحجز جلساتك ومتابعة مواعيدك." : "Sign in to book sessions and manage your appointments.";
+  };
+
   return (
     <>
-      <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center py-6 px-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
-        
-        {/* Back Link */}
-        <div className="mb-6 flex w-full">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border-light bg-surface-secondary/40 hover:bg-surface-secondary/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-semibold text-text-secondary transition-all hover:text-text-primary shadow-theme-xs active:scale-[0.98]"
-          >
-            <ChevronLeft className={`h-3.5 w-3.5 shrink-0 transition-transform ${isRtl ? "rotate-180" : ""}`} />
-            <span>{t("backToHome")}</span>
-          </Link>
+      <AuthSplitCard
+        title={getDynamicTitle()}
+        subtitle={getDynamicSubtitle()}
+        mode={mode}
+        activeTab={challenge ? "otp" : "signin"}
+      >
+        {/* Portal Indicator Badge */}
+        <div className="mb-6 flex select-none">
+          <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide ${
+            mode === "patient" ? "border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light" :
+            mode === "practitioner" ? "border border-sky-500/15 bg-sky-500/10 text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400" :
+            "border border-indigo-500/15 bg-indigo-500/10 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400"
+          }`}>
+            <ModeIcon className="h-4 w-4" />
+            <span>{modeLabels[mode]}</span>
+          </div>
         </div>
 
-        {/* Premium Unified Card */}
-        <div className="w-full rounded-[32px] border border-border-light bg-surface-secondary/85 p-8 shadow-[0_24px_70px_rgba(36,86,79,0.05)] backdrop-blur-md dark:border-white/5 sm:p-10">
-          
-          {/* Portal Indicator Badge */}
-          <div className="mb-6 flex">
-            <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide ${
-              mode === "patient" ? "border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light" :
-              mode === "practitioner" ? "border border-sky-500/15 bg-sky-500/10 text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400" :
-              "border border-indigo-500/15 bg-indigo-500/10 text-indigo-600 dark:border-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-400"
-            }`}>
-              <ModeIcon className="h-4 w-4" />
-              <span>{modeLabels[mode]}</span>
-            </div>
-          </div>
+        {!challenge ? (
+          <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
+            <div className="space-y-5">
+              
+              {/* Email Input */}
+              <div>
+                <Label>
+                  {t("email")} <span className="text-error-500">*</span>
+                </Label>
+                <Input
+                  placeholder={t("emailPlaceholder")}
+                  type="email"
+                  {...credentialsForm.register("email")}
+                  error={!!credentialsForm.formState.errors.email}
+                  dir="ltr"
+                />
+                {credentialsForm.formState.errors.email && (
+                  <p className="mt-1.5 text-xs text-error-500">
+                    {credentialsForm.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
 
-          {/* Form Header */}
-          <div className="mb-8 space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
-              {challenge ? t("verifyOtpTitle") : t("welcomeBack")}
-            </h1>
-            <p className="text-sm leading-6 text-text-secondary dark:text-text-secondary">
-              {challenge ? t("verifyOtpDescription", { target: challenge.maskedTarget }) : t(descriptionKey)}
-            </p>
-          </div>
-
-          {!challenge ? (
-            <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
-              <div className="space-y-6">
-                
-                {/* Email Input */}
-                <div>
-                  <Label>
-                    {t("email")} <span className="text-error-500">*</span>
+              {/* Password Input */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <Label className="mb-0">
+                    {t("password")} <span className="text-error-500">*</span>
                   </Label>
-                  <Input
-                    placeholder={t("emailPlaceholder")}
-                    type="email"
-                    {...credentialsForm.register("email")}
-                    error={!!credentialsForm.formState.errors.email}
-                    dir="ltr"
-                  />
-                  {credentialsForm.formState.errors.email && (
-                    <p className="mt-1.5 text-xs text-error-500">
-                      {credentialsForm.formState.errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password Input with Inline Forgot Password Link */}
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <Label className="mb-0">
-                      {t("password")} <span className="text-error-500">*</span>
-                    </Label>
-                    {forgotPasswordHref && (
-                      <Link
-                        href={forgotPasswordHref}
-                        className="text-xs font-semibold text-primary hover:text-primary-hover dark:text-text-brand dark:hover:text-primary transition-colors"
-                      >
-                        {t("forgotPasswordLink")}
-                      </Link>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder={t("passwordPlaceholder")}
-                      {...credentialsForm.register("password")}
-                      error={!!credentialsForm.formState.errors.password}
-                      dir="ltr"
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary"
+                  {forgotPasswordHref && (
+                    <Link
+                      href={forgotPasswordHref}
+                      className="text-xs font-semibold text-primary hover:text-primary-hover dark:text-text-brand dark:hover:text-primary transition-colors"
                     >
-                      {showPassword ? (
-                        <Eye className="h-4.5 w-4.5" />
-                      ) : (
-                        <EyeOff className="h-4.5 w-4.5" />
-                      )}
-                    </button>
-                  </div>
-                  {credentialsForm.formState.errors.password && (
-                    <p className="mt-1.5 text-xs text-error-500">
-                      {credentialsForm.formState.errors.password.message}
-                    </p>
+                      {t("forgotPasswordLink")}
+                    </Link>
                   )}
                 </div>
-
-                {/* Practitioner OTP Hint (if forgot password is not available) */}
-                {!forgotPasswordHref && mode === "practitioner" && practitionerOtpHintEnabled && (
-                  <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-surface-tertiary/70">
-                    {t("practitionerOtpHint")}
-                  </div>
+                <AuthPasswordField
+                  placeholder={t("passwordPlaceholder")}
+                  {...credentialsForm.register("password")}
+                  error={!!credentialsForm.formState.errors.password}
+                />
+                {credentialsForm.formState.errors.password && (
+                  <p className="mt-1.5 text-xs text-error-500">
+                    {credentialsForm.formState.errors.password.message}
+                  </p>
                 )}
+              </div>
 
-                {/* Server Error Message */}
-                {error && (
-                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
-                    {error}
+              {/* Practitioner OTP Hint */}
+              {!forgotPasswordHref && mode === "practitioner" && (
+                <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-surface-tertiary/70">
+                  {t("practitionerOtpHint")}
+                </div>
+              )}
+
+              {/* Server Error Message */}
+              {error && (
+                <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
+                  {error}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? t("signingIn") : t("signInButton")}
+              </button>
+
+              {/* Google Auth Option */}
+              {mode === "patient" && (
+                <div className="space-y-4">
+                  <div className="relative flex items-center justify-center my-3">
+                    <div className="absolute w-full border-t border-border-light dark:border-white/5" />
+                    <span className="relative bg-white px-3 text-xs text-text-muted dark:bg-surface-secondary dark:text-text-muted uppercase tracking-wider">
+                      {t("orContinueWith")}
+                    </span>
                   </div>
-                )}
+                  <PatientGoogleAuthButton
+                    callbackUrl={callbackUrl}
+                    defaultRedirect={getDefaultRouteByRole("PATIENT")}
+                  />
+                </div>
+              )}
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
+            <div className="space-y-6">
+              <div>
+                <Label className="mb-3 block text-center">
+                  {t("otpCode")} <span className="text-error-500">*</span>
+                </Label>
+                <div className="flex flex-col items-center justify-center">
+                  <Controller
+                    control={otpForm.control}
+                    name="code"
+                    render={({ field }) => (
+                      <AuthOtpInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        length={6}
+                        disabled={isSubmitting}
+                        error={
+                          otpForm.formState.errors.code
+                            ? String(otpForm.formState.errors.code.message)
+                            : undefined
+                        }
+                      />
+                    )}
+                  />
+                </div>
+                <p className="mt-2.5 text-xs text-text-secondary text-center leading-normal">
+                  {isRtl ? "أدخل الرمز المكون من 6 أرقام." : "Enter the 6-digit code."}
+                </p>
+              </div>
 
-                {/* Submit Button */}
+              <AuthOtpTimer expiresAt={challenge.expiresAt} />
+
+              {error && (
+                <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-3">
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isSubmitting ? t("signingIn") : t("signInButton")}
+                  {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
                 </button>
 
-                {/* Google Auth Option */}
-                {mode === "patient" && (
-                  <div className="space-y-4">
-                    <PatientGoogleAuthButton
-                      callbackUrl={callbackUrl}
-                      defaultRedirect={getDefaultRouteByRole("PATIENT")}
-                    />
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={resetPractitionerOtpState}
+                  className="w-full rounded-2xl border border-border-light bg-white/70 px-4 py-3 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary dark:border-white/5 dark:bg-surface-secondary dark:text-text-secondary"
+                >
+                  {t("backToCredentials")}
+                </button>
               </div>
-            </form>
+            </div>
+          </form>
+        )}
+
+        {/* Card Footer Switch Links */}
+        <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
+          {signUpHref ? (
+            <p className="text-sm text-text-secondary dark:text-white/70">
+              {mode === "practitioner"
+                ? t("practitionerJoinPrompt")
+                : t("dontHaveAccount")}{" "}
+              <Link href={signUpHref} className="font-semibold text-primary hover:text-primary-hover transition-colors">
+                {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
+              </Link>
+            </p>
           ) : (
-            <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
-              <div className="space-y-6">
-                <div>
-                  <Label>
-                    {t("otpCode")} <span className="text-error-500">*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    placeholder={t("otpPlaceholder")}
-                    {...otpForm.register("code")}
-                    error={!!otpForm.formState.errors.code}
-                    dir="ltr"
-                  />
-                  {otpForm.formState.errors.code && (
-                    <p className="mt-1.5 text-xs text-error-500">
-                      {otpForm.formState.errors.code.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="rounded-2xl border border-border-light bg-surface/75 px-4 py-3 text-xs leading-5 text-text-secondary dark:border-white/5 dark:bg-surface-tertiary/70">
-                  {t("otpExpiresAt", {
-                    date: new Date(challenge.expiresAt).toLocaleString(),
-                  })}
-                </div>
-
-                {error && (
-                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
-                    {error}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={resetPractitionerOtpState}
-                    className="w-full rounded-2xl border border-border-light bg-white/70 px-4 py-3 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary dark:border-white/5 dark:bg-surface-secondary dark:text-text-secondary"
-                  >
-                    {t("backToCredentials")}
-                  </button>
-                </div>
-              </div>
-            </form>
+            <p className="text-xs leading-5 text-text-muted dark:text-white/40">
+              {t("entryCards.admin.supportNote")}
+            </p>
           )}
-
-          {/* Form Card Footer */}
-          <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
-            {signUpHref ? (
-              <p className="text-sm text-text-secondary dark:text-white/70">
-                {mode === "practitioner"
-                  ? t("practitionerJoinPrompt")
-                  : t("dontHaveAccount")}{" "}
-                <Link href={signUpHref} className="font-semibold text-text-brand hover:text-primary-hover">
-                  {mode === "practitioner" ? t("joinAsPractitioner") : t("createAccount")}
-                </Link>
-              </p>
-            ) : (
-              <p className="text-xs leading-5 text-text-muted dark:text-white/40">
-                {t("entryCards.admin.supportNote")}
-              </p>
-            )}
-          </div>
-
         </div>
-      </div>
+      </AuthSplitCard>
 
       {/* Floating Developer Test Credentials Drawer (visible only in Local Development) */}
       {shouldShowTestCredentials && (
@@ -628,12 +667,10 @@ export default function SignInForm({ mode }: SignInFormProps) {
 
       {shouldShowTestCredentials && showDevPanel && (
         <>
-          {/* Backdrop overlay */}
           <div 
             className="fixed inset-0 z-40 bg-black/10 backdrop-blur-xs transition-opacity duration-200" 
             onClick={() => setShowDevPanel(false)} 
           />
-          {/* Dev accounts sheet */}
           <div className={`fixed bottom-24 z-50 w-full max-w-[360px] rounded-3xl border border-border-light bg-surface/96 p-5 shadow-2xl backdrop-blur-md dark:border-white/10 dark:bg-surface-secondary/96 animate-in slide-in-from-bottom duration-200 ${isRtl ? "left-6" : "right-6"}`}>
             <div className="mb-4 flex items-center justify-between border-b border-border-light pb-2 dark:border-white/5">
               <div>
@@ -643,7 +680,6 @@ export default function SignInForm({ mode }: SignInFormProps) {
               <button onClick={() => setShowDevPanel(false)} className="text-text-muted hover:text-text-primary text-xs font-semibold px-2 py-1">✕</button>
             </div>
 
-            {/* Primary QA Preset Account */}
             <button
               type="button"
               onClick={() => {
@@ -661,7 +697,6 @@ export default function SignInForm({ mode }: SignInFormProps) {
               <p className="text-[10px] text-text-muted mt-2 border-t border-primary/10 pt-1.5 dark:border-white/5">{testCredentials.label}</p>
             </button>
 
-            {/* List of other quick QA accounts */}
             {quickAccounts.length > 0 && (
               <div className="space-y-2 mt-2">
                 <p className="text-[9px] font-bold uppercase tracking-wider text-text-muted mb-1.5 px-0.5">{isRtl ? "الحسابات المتاحة" : "Available Accounts"}</p>

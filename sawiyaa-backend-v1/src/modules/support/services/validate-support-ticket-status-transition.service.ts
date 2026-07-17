@@ -32,10 +32,7 @@ export class ValidateSupportTicketStatusTransitionService {
       SupportTicketStatus.RESOLVED,
       SupportTicketStatus.CLOSED,
     ],
-    [SupportTicketStatus.RESOLVED]: [
-      SupportTicketStatus.IN_PROGRESS,
-      SupportTicketStatus.CLOSED,
-    ],
+    [SupportTicketStatus.RESOLVED]: [],
     [SupportTicketStatus.CLOSED]: [],
   };
 

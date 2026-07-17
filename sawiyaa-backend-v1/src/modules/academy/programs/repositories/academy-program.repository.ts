@@ -1,38 +1,51 @@
 import { Injectable } from '@nestjs/common';
-import { AcademyProgramStatus, Prisma } from '@prisma/client';
+import { AcademyProgramEnrollmentStatus, AcademyProgramStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+
+type AcademyProgramCapacitySummary = {
+  targetLearnerCount: number | null;
+  activeLearnerCount: number;
+  remainingTargetSlots: number | null;
+  isOverTargetLearners: boolean;
+};
 
 @Injectable()
 export class AcademyProgramRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  createProgram(
+  async createProgram(
     data: Prisma.AcademyProgramUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
   ) {
-    return (tx ?? this.prisma).academyProgram.create({
+    const program = await (tx ?? this.prisma).academyProgram.create({
       data,
       include: this.adminProgramInclude(true),
     });
+
+    return this.attachCapacitySummary(program, tx);
   }
 
-  updateProgram(
+  async updateProgram(
     programId: string,
     data: Prisma.AcademyProgramUncheckedUpdateInput,
     tx?: Prisma.TransactionClient,
   ) {
-    return (tx ?? this.prisma).academyProgram.update({
+    const program = await (tx ?? this.prisma).academyProgram.update({
       where: { id: programId },
       data,
       include: this.adminProgramInclude(true),
     });
+
+    return this.attachCapacitySummary(program, tx);
   }
 
-  findProgramById(programId: string) {
-    return this.prisma.academyProgram.findUnique({
+  async findProgramById(programId: string) {
+    const program = await this.prisma.academyProgram.findUnique({
       where: { id: programId },
       include: this.adminProgramInclude(true),
     });
+
+    return this.attachCapacitySummary(program);
   }
 
   findProgramBySlug(slug: string) {
@@ -53,10 +66,10 @@ export class AcademyProgramRepository {
     });
   }
 
-  findPublicProgramBySlug(slug: string) {
+  async findPublicProgramBySlug(slug: string) {
     const now = new Date();
 
-    return this.prisma.academyProgram.findFirst({
+    const program = await this.prisma.academyProgram.findFirst({
       where: {
         slug: slug.trim().toLowerCase(),
         status: AcademyProgramStatus.PUBLISHED,
@@ -65,9 +78,11 @@ export class AcademyProgramRepository {
       },
       include: this.publicProgramInclude(true),
     });
+
+    return this.attachCapacitySummary(program);
   }
 
-  listPublicPrograms(input: { page: number; limit: number; q?: string }) {
+  async listPublicPrograms(input: { page: number; limit: number; q?: string }) {
     const skip = (input.page - 1) * input.limit;
     const now = new Date();
     const trimmed = input.q?.trim() ?? '';
@@ -107,7 +122,7 @@ export class AcademyProgramRepository {
         : {}),
     };
 
-    return Promise.all([
+    const [items, totalItems] = await Promise.all([
       this.prisma.academyProgram.findMany({
         where,
         skip,
@@ -117,9 +132,14 @@ export class AcademyProgramRepository {
       }),
       this.prisma.academyProgram.count({ where }),
     ]);
+
+    return [
+      await this.attachCapacitySummaryList(items, now),
+      totalItems,
+    ] as const;
   }
 
-  listAdminPrograms(input: {
+  async listAdminPrograms(input: {
     page: number;
     limit: number;
     status?: AcademyProgramStatus;
@@ -151,7 +171,7 @@ export class AcademyProgramRepository {
         : {}),
     };
 
-    return Promise.all([
+    const [items, totalItems] = await Promise.all([
       this.prisma.academyProgram.findMany({
         where,
         skip,
@@ -161,6 +181,11 @@ export class AcademyProgramRepository {
       }),
       this.prisma.academyProgram.count({ where }),
     ]);
+
+    return [
+      await this.attachCapacitySummaryList(items, new Date()),
+      totalItems,
+    ] as const;
   }
 
   createSession(
@@ -217,6 +242,110 @@ export class AcademyProgramRepository {
     return this.prisma.academyProgramSession.count({
       where: { academyProgramId: programId },
     });
+  }
+
+  countActiveLearnersByProgramId(
+    programId: string,
+    now: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.countActiveLearnersByProgramIds([programId], now, tx).then(
+      (counts) => counts.get(programId) ?? 0,
+    );
+  }
+
+  async countActiveLearnersByProgramIds(
+    programIds: string[],
+    now: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (programIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const rows = await (tx ?? this.prisma).academyProgramEnrollment.groupBy({
+      by: ['academyProgramId'],
+      where: {
+        academyProgramId: { in: programIds },
+        OR: [
+          {
+            status: AcademyProgramEnrollmentStatus.CONFIRMED,
+          },
+          {
+            status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+            seatReservationExpiresAt: {
+              gt: now,
+            },
+          },
+        ],
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return new Map(rows.map((row) => [row.academyProgramId, row._count._all]));
+  }
+
+  private async attachCapacitySummaryList<T extends { id: string; maxSeats: number | null }>(
+    programs: T[],
+    now: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const activeCounts = await this.countActiveLearnersByProgramIds(
+      programs.map((program) => program.id),
+      now,
+      tx,
+    );
+
+    return Promise.all(
+      programs.map((program) =>
+        this.attachCapacitySummary(
+          program,
+          tx,
+          activeCounts.get(program.id) ?? 0,
+        ),
+      ),
+    );
+  }
+
+  private async attachCapacitySummary<T extends { id: string; maxSeats: number | null }>(
+    program: T,
+    tx?: Prisma.TransactionClient,
+    activeLearnerCount?: number,
+  ): Promise<T & AcademyProgramCapacitySummary>;
+  private async attachCapacitySummary<T extends { id: string; maxSeats: number | null }>(
+    program: T | null,
+    tx?: Prisma.TransactionClient,
+    activeLearnerCount?: number,
+  ): Promise<(T & AcademyProgramCapacitySummary) | null>;
+  private async attachCapacitySummary<T extends { id: string; maxSeats: number | null }>(
+    program: T | null,
+    tx?: Prisma.TransactionClient,
+    activeLearnerCount?: number,
+  ) {
+    if (!program) {
+      return null;
+    }
+
+    const targetLearnerCount = program.maxSeats ?? null;
+    const resolvedActiveLearnerCount =
+      activeLearnerCount ??
+      (await this.countActiveLearnersByProgramId(program.id, new Date(), tx));
+    const remainingTargetSlots =
+      targetLearnerCount === null
+        ? null
+        : Math.max(targetLearnerCount - resolvedActiveLearnerCount, 0);
+
+    return {
+      ...program,
+      targetLearnerCount,
+      activeLearnerCount: resolvedActiveLearnerCount,
+      remainingTargetSlots,
+      isOverTargetLearners:
+        targetLearnerCount !== null &&
+        resolvedActiveLearnerCount > targetLearnerCount,
+    } satisfies T & AcademyProgramCapacitySummary;
   }
 
   private adminProgramInclude(includeSessions = false): Prisma.AcademyProgramInclude {

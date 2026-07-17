@@ -26,14 +26,17 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { CreateSessionReviewDto } from '../dto/create-session-review.dto';
+import { ListPendingPatientReviewsDto } from '../dto/list-pending-patient-reviews.dto';
 import { ListPatientReviewsDto } from '../dto/list-patient-reviews.dto';
 import {
+  PendingPatientReviewListSuccessResponseDto,
   PatientReviewItemSuccessResponseDto,
   PatientReviewListSuccessResponseDto,
 } from '../dto/review-response.dto';
 import { CreateSessionReviewUseCase } from '../use-cases/create-session-review.use-case';
 import { GetMyReviewUseCase } from '../use-cases/get-my-review.use-case';
 import { ListMyReviewsUseCase } from '../use-cases/list-my-reviews.use-case';
+import { ListPendingPatientReviewsUseCase } from '../use-cases/list-pending-patient-reviews.use-case';
 
 @ApiTags('Reviews')
 @ApiBearerAuth()
@@ -46,6 +49,7 @@ export class PatientReviewsController {
     private readonly createSessionReviewUseCase: CreateSessionReviewUseCase,
     private readonly listMyReviewsUseCase: ListMyReviewsUseCase,
     private readonly getMyReviewUseCase: GetMyReviewUseCase,
+    private readonly listPendingPatientReviewsUseCase: ListPendingPatientReviewsUseCase,
   ) {}
 
   @Post('sessions/:id/review')
@@ -88,6 +92,29 @@ export class PatientReviewsController {
     @Query() query: ListPatientReviewsDto,
   ) {
     return this.listMyReviewsUseCase
+      .execute({
+        userId: currentUser.id,
+        query,
+      })
+      .then((data) => ({
+        success: true as const,
+        data,
+      }));
+  }
+
+  @Get('reviews/pending')
+  @ApiOperation({
+    summary: 'List eligible patient sessions pending a review submission',
+  })
+  @ApiResponse({
+    status: 200,
+    type: PendingPatientReviewListSuccessResponseDto,
+  })
+  listPending(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Query() query: ListPendingPatientReviewsDto,
+  ) {
+    return this.listPendingPatientReviewsUseCase
       .execute({
         userId: currentUser.id,
         query,

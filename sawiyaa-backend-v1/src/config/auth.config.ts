@@ -20,6 +20,29 @@ export default registerAs('auth', () => ({
   password: {
     saltRounds: parseInt(process.env.AUTH_PASSWORD_SALT_ROUNDS ?? '12', 10),
   },
+  lockout: {
+    maxAttempts: parseInt(process.env.AUTH_LOCKOUT_MAX_ATTEMPTS ?? '5', 10),
+    durationMinutes: parseInt(
+      process.env.AUTH_LOCKOUT_DURATION_MINUTES ?? '15',
+      10,
+    ),
+    password: {
+      maxAttempts: process.env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS
+        ? parseInt(process.env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS, 10)
+        : undefined,
+      durationMinutes: process.env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES
+        ? parseInt(process.env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES, 10)
+        : undefined,
+    },
+    otp: {
+      maxAttempts: process.env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS
+        ? parseInt(process.env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS, 10)
+        : undefined,
+      durationMinutes: process.env.AUTH_OTP_LOCKOUT_DURATION_MINUTES
+        ? parseInt(process.env.AUTH_OTP_LOCKOUT_DURATION_MINUTES, 10)
+        : undefined,
+    },
+  },
   otp: {
     codeLength: parseInt(process.env.AUTH_OTP_CODE_LENGTH ?? '6', 10),
     loginTtlMinutes: parseInt(
@@ -36,21 +59,16 @@ export default registerAs('auth', () => ({
       10,
     ),
   },
+  practitionerOtpQaCaptureEnabled:
+    process.env.PRACTITIONER_OTP_QA_CAPTURE_ENABLED === 'true',
   // Primary feature toggle for practitioner login OTP.
   // Exposed as a tri-state string so the use-case can distinguish
   // "unset" (legacy fallback) from "explicitly true/false":
   //   'true'   → OTP required, never overridden by legacy flag
   //   'false'  → emergency bypass, works in any environment
   //   'unset'  → fallback to legacy dev-only bypass flag
-  practitionerLoginOtpEnabledState:
-    process.env.AUTH_PRACTITIONER_LOGIN_OTP_ENABLED === 'true'
-      ? 'true'
-      : process.env.AUTH_PRACTITIONER_LOGIN_OTP_ENABLED === 'false'
-        ? 'false'
-        : 'unset',
-  // Legacy dev-only bypass. Used only when the new flag is unset.
-  practitionerLoginOtpBypassInDev:
-    process.env.AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV === 'true',
+  practitionerLoginOtpRequired:
+    process.env.PRACTITIONER_LOGIN_OTP_REQUIRED !== 'false',
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,

@@ -72,25 +72,22 @@ export default function PatientSessionsScreen() {
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((session) => {
-      const pStatus = session.presentationStatus;
       const status = session.status;
       if (activeTab === "upcoming") {
         return (
-          pStatus === "JOINABLE" ||
-          pStatus === "IN_PROGRESS" ||
-          pStatus === "UPCOMING" ||
-          pStatus === "UNAVAILABLE" ||
+          status === "READY_TO_JOIN" ||
+          status === "IN_PROGRESS" ||
+          status === "UPCOMING" ||
           status === "PENDING_PAYMENT"
         );
       } else if (activeTab === "previous") {
         return (
-          (pStatus === "COMPLETED" ||
-          pStatus === "ENDED" ||
-          pStatus === "UNDER_REVIEW") &&
-          status !== "PENDING_PAYMENT"
+          (status === "COMPLETED" ||
+          status === "AWAITING_COMPLETION_CONFIRMATION" ||
+          status === "EXPIRED")
         );
       } else {
-        return pStatus === "CANCELLED" || pStatus === "NO_SHOW";
+        return status === "CANCELLED" || status === "PATIENT_NO_SHOW";
       }
     });
   }, [sessions, activeTab]);
@@ -99,14 +96,13 @@ export default function PatientSessionsScreen() {
     if (activeTab === "upcoming") {
       const active = filteredSessions.filter(
         (s) =>
-          s.presentationStatus === "JOINABLE" ||
-          s.presentationStatus === "IN_PROGRESS" ||
+          s.status === "READY_TO_JOIN" ||
+          s.status === "IN_PROGRESS" ||
           s.status === "PENDING_PAYMENT"
       );
       const upcoming = filteredSessions.filter(
         (s) =>
-          s.presentationStatus === "UPCOMING" ||
-          s.presentationStatus === "UNAVAILABLE"
+          s.status === "UPCOMING"
       );
 
       return [
@@ -709,7 +705,7 @@ function SessionTimelineItem({
     t("patientSessionsFlow.common.practitionerFallback");
 
   const isCompleted = session.presentationStatus === "COMPLETED";
-  const isCancelled = session.presentationStatus === "CANCELLED" || session.presentationStatus === "NO_SHOW";
+  const isCancelled = session.presentationStatus === "CANCELLED" || session.presentationStatus === "PATIENT_NO_SHOW";
   
   let dotBg = theme.colors.surfaceContainer;
   let iconName: keyof typeof Ionicons.glyphMap = "help-circle-outline";
@@ -794,12 +790,12 @@ function SessionTimelineItem({
 
 function buildOverview(sessions: SessionListItem[]) {
   const actionRequired = sessions.filter(
-    (session) => session.presentationStatus === "JOINABLE",
+    (session) => session.status === "READY_TO_JOIN",
   ).length;
   const active = sessions.filter(
     (session) =>
-      session.presentationStatus === "JOINABLE" ||
-      session.presentationStatus === "IN_PROGRESS",
+      session.status === "READY_TO_JOIN" ||
+      session.status === "IN_PROGRESS",
   ).length;
 
   return {
@@ -843,23 +839,24 @@ function getSessionTimestamp(session: SessionListItem) {
 }
 
 function isSessionJoinableNow(session: SessionListItem) {
-  return session.joinAvailability?.canJoin === true;
+  return session.actions?.canJoin === true;
 }
 
 function mapSessionPresentationTone(status: SessionPresentationStatus) {
   switch (status) {
-    case "JOINABLE":
+    case "READY_TO_JOIN":
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "UNAVAILABLE":
-    case "UNDER_REVIEW":
+    case "AWAITING_COMPLETION_CONFIRMATION":
+    case "PENDING_PAYMENT":
+    case "PENDING_PRACTITIONER_CONFIRMATION":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
     case "CANCELLED":
-    case "ENDED":
-    case "NO_SHOW":
+    case "EXPIRED":
+    case "PATIENT_NO_SHOW":
       return "error" as const;
     default:
       return "default" as const;

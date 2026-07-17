@@ -4,6 +4,7 @@ import {
   PaymentProvider,
   PaymentPurpose,
   PaymentStatus,
+  Prisma,
   RefundStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -23,6 +24,60 @@ export class FinancialOperationsPaymentRepository {
     );
   }
 
+  listRefundsByPaymentId(paymentId: string) {
+    return this.prisma.refund.findMany({
+      where: { paymentId },
+      orderBy: [{ requestedAt: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        paymentId: true,
+        status: true,
+        destination: true,
+        refundReason: true,
+        amount: true,
+        currencyCode: true,
+        providerRefundRef: true,
+        requestedAt: true,
+        processedAt: true,
+        failedAt: true,
+      },
+    });
+  }
+
+  sumSucceededRefundAmountByPaymentId(paymentId: string) {
+    return this.prisma.refund.aggregate({
+      where: {
+        paymentId,
+        status: RefundStatus.SUCCEEDED,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+  }
+
+  sumSucceededRefundAmountsByPaymentIds(paymentIds: string[]) {
+    if (paymentIds.length === 0) {
+      return Promise.resolve([] as Array<{
+        paymentId: string;
+        _sum: { amount: Prisma.Decimal | null };
+      }>);
+    }
+
+    return this.prisma.refund.groupBy({
+      by: ['paymentId'],
+      where: {
+        paymentId: {
+          in: paymentIds,
+        },
+        status: RefundStatus.SUCCEEDED,
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+  }
+
   findCapturedPaymentById(paymentId: string) {
     return this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -37,8 +92,8 @@ export class FinancialOperationsPaymentRepository {
     });
   }
 
-  findRefundForPosting(refundId: string) {
-    return this.prisma.refund.findUnique({
+  findRefundForPosting(refundId: string, tx?: Prisma.TransactionClient) {
+    return (tx ?? this.prisma).refund.findUnique({
       where: { id: refundId },
       include: {
         payment: true,

@@ -4,6 +4,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { CareChatConversationRepository } from '@modules/care-chat/repositories/care-chat-conversation.repository';
 import { SupportTicketRepository } from '@modules/support/repositories/support-ticket.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 @Injectable()
 export class GetMyUnifiedMessagingUnreadSummaryUseCase {
@@ -11,6 +12,7 @@ export class GetMyUnifiedMessagingUnreadSummaryUseCase {
     private readonly generalChatRepository: GeneralChatRepository,
     private readonly supportTicketRepository: SupportTicketRepository,
     private readonly careChatConversationRepository: CareChatConversationRepository,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   async execute(input: { authenticatedUser: AuthenticatedUser }) {
@@ -25,10 +27,15 @@ export class GetMyUnifiedMessagingUnreadSummaryUseCase {
         : this.generalChatRepository.countSessionUnreadForUser({
             userId: input.authenticatedUser.id,
           }),
-      this.supportTicketRepository.countUnreadForUser({
-        userId: input.authenticatedUser.id,
-        adminLike: isAdminLike,
-      }),
+      isAdminLike
+        ? this.messagingUseCase.getUnreadSummary(input.authenticatedUser).then((result) => ({
+            unreadMessages: result.item.needsSupportReplyCount,
+            unreadConversations: result.item.needsSupportReplyCount,
+          }))
+        : this.supportTicketRepository.countUnreadForUser({
+            userId: input.authenticatedUser.id,
+            adminLike: false,
+          }),
       isAdminLike
         ? Promise.resolve({ unreadMessages: 0, unreadConversations: 0 })
         : this.careChatConversationRepository.countUnreadForUser({

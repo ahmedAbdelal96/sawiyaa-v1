@@ -34,6 +34,7 @@ describe('UpdateAdminUserRolesUseCase', () => {
 
     const audit = {
       logAsync: jest.fn(),
+      recordRequired: jest.fn(),
     } as unknown as SecurityAuditService;
 
     const sut = new UpdateAdminUserRolesUseCase(
@@ -55,6 +56,7 @@ describe('UpdateAdminUserRolesUseCase', () => {
         actor: { id: 'a1', roles: ['ADMIN'] } as any,
         userId: 'u2',
         roles: [UserRoleType.ADMIN],
+        reason: 'Security review',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -84,6 +86,7 @@ describe('UpdateAdminUserRolesUseCase', () => {
         actor: { id: 'a1', roles: ['SUPER_ADMIN'] } as any,
         userId: 'u2',
         roles: [UserRoleType.ADMIN],
+        reason: 'Security review',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });

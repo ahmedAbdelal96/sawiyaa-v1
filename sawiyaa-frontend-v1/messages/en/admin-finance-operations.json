@@ -7,6 +7,16 @@
     "detail": {
       "title": "Finance operation event - Admin",
       "description": "Inspect one finance operation event with operational context and linked references."
+    },
+    "sessionEarningReviews": {
+      "list": {
+        "title": "Session earning reviews - Admin",
+        "description": "Review how session earnings are split between practitioners and the platform."
+      },
+      "detail": {
+        "title": "Session earning review - Admin",
+        "description": "Inspect one session earning review with session, payment, and moderation context."
+      }
     }
   },
   "list": {
@@ -66,7 +76,8 @@
     "SESSION_BOOKING": "Session booking",
     "SESSION_INSTANT_BOOKING": "Instant session booking",
     "SESSION_EXTENSION": "Session extension",
-    "COURSE_ENROLLMENT": "Course enrollment",
+    "SESSION_PACKAGE_PURCHASE": "Session package purchase",
+    "ACADEMY_PROGRAM_ENROLLMENT": "Training enrollment",
     "MANUAL_INVOICE": "Manual invoice"
   },
   "paymentStatuses": {
@@ -88,6 +99,498 @@
     "SUCCEEDED": "Succeeded",
     "FAILED": "Failed",
     "CANCELLED": "Cancelled"
+  },
+  "sessionStatuses": {
+    "DRAFT": "Draft",
+    "SCHEDULED": "Scheduled",
+    "UPCOMING": "Upcoming",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "NO_SHOW": "No show"
+  },
+  "sessionPaymentCoverage": {
+    "DIRECT_PAYMENT": "Direct payment",
+    "PACKAGE": "Package"
+  },
+  "packagePurchaseStatuses": {
+    "PENDING_PAYMENT": "Pending payment",
+    "PAID": "Paid",
+    "ACTIVE": "Active",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled",
+    "REFUNDED": "Refunded",
+    "EXPIRED": "Expired"
+  },
+  "packageSettlementStatuses": {
+    "HELD": "Held",
+    "READY_TO_RELEASE": "Ready to release",
+    "PARTIALLY_RELEASED": "Partially released",
+    "RELEASED": "Released",
+    "NEEDS_REVIEW": "Needs review",
+    "REFUNDED_OR_ADJUSTED": "Refunded or adjusted"
+  },
+  "ledgerEntryTypes": {
+    "practitionerEarning": "Practitioner earning",
+    "platformCommission": "Platform commission",
+    "other": "Other"
+  },
+  "ledgerDirections": {
+    "credit": "Credit",
+    "debit": "Debit",
+    "other": "Other"
+  },
+  "walletBalanceBuckets": {
+    "available": "Available",
+    "held": "Held",
+    "other": "Other"
+  },
+  "sessionEarningReviews": {
+    "sourceTypes": {
+      "directSession": "Direct session",
+      "packageSession": "Package session"
+    },
+    "statuses": {
+      "pendingReview": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "excludedFromPayout": "Excluded from payout"
+    },
+    "decisions": {
+      "autoCreated": "Auto-created",
+      "approveAsIs": "Approve as is",
+      "editAndApprove": "Edit and approve",
+      "rejectPayout": "Reject payout",
+      "excludeFromPayout": "Exclude from payout"
+    },
+    "list": {
+      "eyebrow": "Finance review queue",
+      "title": "Session earning reviews",
+      "note": "Review how session earnings are distributed between practitioners and the platform. Use the filters to focus on pending or finalized items.",
+      "table": {
+        "title": "Review queue"
+      },
+      "queue": {
+        "pending": "Pending",
+        "finalized": "Finalized"
+      },
+      "searchLabel": "Search",
+      "searchPlaceholder": "Search by review ID, session code, practitioner, or patient",
+      "currencyLabel": "Currency",
+      "currencyPlaceholder": "EGP or USD",
+      "sourceTypeLabel": "Source type",
+      "decisionLabel": "Decision",
+      "sourceTypes": {
+        "all": "All sources"
+      },
+      "decisions": {
+        "all": "All decisions"
+      },
+      "columns": {
+        "review": "Review",
+        "people": "People",
+        "practitioner": "Practitioner",
+        "patient": "Patient",
+        "amounts": "Amounts",
+        "suggestedSplit": "Suggested split",
+        "finalSplit": "Final split",
+        "unset": "Not set yet",
+        "state": "State",
+        "audit": "Audit",
+        "sessionCode": "Session code",
+        "reviewedBy": "Reviewed by",
+        "approvedBy": "Approved by",
+        "notYet": "Not yet",
+        "actions": "Actions"
+      },
+      "filters": {
+        "search": "Search",
+        "sourceType": "Source type",
+        "decision": "Decision",
+        "currency": "Currency"
+      },
+      "badges": {
+        "actionRequired": "Action required",
+        "finalized": "Finalized"
+      },
+      "actions": {
+        "viewDetails": "View details"
+      },
+      "emptyTitle": "No session earning reviews found",
+      "emptyDescription": "Try adjusting your filters or switch between pending and finalized reviews.",
+      "errorTitle": "Session earning reviews are not available right now",
+      "errorDescription": "Could not load session earning review data right now.",
+      "errorRetry": "Try again"
+    },
+    "detail": {
+      "back": "Back to reviews",
+      "eyebrow": "Session earning review",
+      "title": "Review detail",
+      "note": "Inspect one earning review, the linked session, payment context, and moderation history.",
+      "overview": {
+        "eyebrow": "Review summary",
+        "title": "Current review state",
+        "description": "A quick snapshot of the review status and decision.",
+        "reviewId": "Review ID",
+        "sourceType": "Source type",
+        "status": "Status",
+        "decision": "Decision",
+        "actionRequired": "Action required",
+        "noActionRequired": "No action required",
+        "finalized": "Finalized",
+        "pending": "Pending review",
+        "reviewedAt": "Reviewed at",
+        "approvedAt": "Approved at"
+      },
+      "session": {
+        "title": "Session context",
+        "description": "The linked session and how it was covered.",
+        "code": "Session code",
+        "status": "Session status",
+        "paymentCoverage": "Coverage",
+        "schedule": "Schedule",
+        "completedAt": "Completed at",
+        "packagePurchaseId": "Package purchase ID"
+      },
+      "people": {
+        "practitioner": "Practitioner",
+        "patient": "Patient"
+      },
+      "payment": {
+        "title": "Payment context",
+        "description": "The payment record that feeds the earning review.",
+        "none": "No payment record is linked to this review.",
+        "id": "Payment ID",
+        "status": "Payment status",
+        "amount": "Payment amount",
+        "currency": "Currency",
+        "provider": "Provider",
+        "purpose": "Payment purpose",
+        "providerPaymentRef": "Provider payment ref",
+        "providerOrderRef": "Provider order ref",
+        "remainingEffectiveAmount": "Remaining effective amount",
+        "initiatedAt": "Initiated at",
+        "capturedAt": "Captured at",
+        "failedAt": "Failed at",
+        "expiredAt": "Expired at",
+        "refunds": {
+          "title": "Refunds",
+          "count": "{count, number} refund(s)",
+          "empty": "No refunds recorded"
+        }
+      },
+      "packagePurchase": {
+        "title": "Package purchase snapshot",
+        "description": "Snapshot data captured when the package was purchased.",
+        "id": "Package purchase ID",
+        "status": "Purchase status",
+        "currency": "Currency",
+        "sessions": "Session count",
+        "payableTotal": "Patient payable total",
+        "practitionerShare": "Practitioner share",
+        "platformShare": "Platform share",
+        "paymentId": "Payment ID"
+      },
+      "packageSettlement": {
+        "title": "Package settlement snapshot",
+        "description": "Snapshot data from the package settlement record.",
+        "id": "Package settlement ID",
+        "status": "Settlement status",
+        "currency": "Currency",
+        "sessions": "Session count",
+        "completedSessions": "Completed sessions",
+        "heldPractitionerAmount": "Held practitioner amount",
+        "releasablePractitionerAmount": "Releasable practitioner amount",
+        "releasedPractitionerAmount": "Released practitioner amount"
+      },
+      "ledger": {
+        "title": "Ledger entries",
+        "description": "Ledger rows created for this review, if any.",
+        "empty": "No ledger entries were created for this review.",
+        "columns": {
+          "type": "Type",
+          "direction": "Direction",
+          "amount": "Amount",
+          "bucket": "Bucket",
+          "createdAt": "Created at"
+        }
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Choose the final review action. The original patient rating is preserved in the backend.",
+        "readOnly": "This review is already finalized and can no longer be changed.",
+        "readOnlyBadge": "Read only",
+        "loadingPermissions": "Checking moderation permissions...",
+        "viewOnly": "You can view this review, but only accounting admins can change its moderation decision.",
+        "stepUpHint": "Step-up protected",
+        "stepUpNote": "Sensitive moderation actions may require step-up.",
+        "submit": "Save moderation decision",
+        "submitting": "Saving...",
+        "reviewedBy": "Reviewed by",
+        "reviewedAt": "Reviewed at",
+        "approvedBy": "Approved by",
+        "approvedAt": "Approved at",
+        "internalReason": "Reason",
+        "internalReasonPlaceholder": "Add the internal reason or note for this decision.",
+        "practitionerFacingNote": "Practitioner-facing note",
+        "practitionerFacingNotePlaceholder": "Optional note visible to the practitioner if the backend exposes it.",
+        "finalPractitionerAmount": "Final practitioner amount",
+        "finalPlatformAmount": "Final platform amount",
+        "finalCurrencyCode": "Final currency",
+        "validation": {
+          "finalAmounts": "Please provide the final practitioner amount, platform amount, and currency.",
+          "reasonRequired": "Please add a reason for this decision."
+        },
+        "feedback": {
+          "success": "Review moderation saved.",
+          "error": "Could not save the moderation decision."
+        },
+        "actions": {
+          "approveAsIs": "Approve as is",
+          "editAndApprove": "Edit and approve",
+          "rejectPayout": "Reject payout",
+          "excludeFromPayout": "Exclude from payout"
+        },
+        "actionDescriptions": {
+          "approveAsIs": "Keep the suggested settlement split and publish the current review result.",
+          "editAndApprove": "Adjust the settlement split before approving the review.",
+          "rejectPayout": "Mark the review as rejected for payout.",
+          "excludeFromPayout": "Exclude this review from payout calculations."
+        }
+      },
+      "fallbacks": {
+        "teamAdmin": "Team admin"
+      },
+      "states": {
+        "errorTitle": "This review is not available right now",
+        "back": "Back to reviews"
+      }
+    }
+  },
+  "practitionerRecoveries": {
+    "meta": {
+      "list": {
+        "title": "Practitioner recoveries - Admin",
+        "description": "Review practitioner recovery debts, linked sessions, payments, and payout-related context."
+      },
+      "detail": {
+        "title": "Practitioner recovery detail - Admin",
+        "description": "Inspect one recovery debt with linked session, payment, refund, review, settlement, and action history context."
+      }
+    },
+    "statuses": {
+      "open": "Open",
+      "partiallyRecovered": "Partially recovered",
+      "recovered": "Recovered",
+      "waived": "Waived"
+    },
+    "reasonCodes": {
+      "refundAfterPayout": "Refund after payout",
+      "refundAfterApproval": "Refund after approval",
+      "manualFinanceCorrection": "Manual finance correction",
+      "adminException": "Admin exception"
+    },
+    "reviewSourceTypes": {
+      "directSession": "Direct session",
+      "packageSession": "Package session"
+    },
+    "reviewStatuses": {
+      "pendingReview": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "excludedFromPayout": "Excluded from payout"
+    },
+    "reviewDecisions": {
+      "autoCreated": "Auto-created",
+      "approveAsIs": "Approve as is",
+      "editAndApprove": "Edit and approve",
+      "rejectPayout": "Reject payout",
+      "excludeFromPayout": "Exclude from payout"
+    },
+    "actions": {
+      "appliedToPayout": "Applied to payout",
+      "manuallyCollected": "Manually collected",
+      "waived": "Waived",
+      "unknown": "Unknown action"
+    },
+    "list": {
+      "eyebrow": "Finance recovery queue",
+      "title": "Practitioner recoveries",
+      "note": "Review recovery debts that need manual collection or waiver. The list shows current amount, collected amount, remaining amount, and linked context.",
+      "table": {
+        "title": "Recovery queue",
+        "subtitle": "Use the filters to find one practitioner recovery quickly."
+      },
+      "filters": {
+        "title": "Filters",
+        "practitionerId": "Practitioner ID",
+        "practitionerIdPlaceholder": "Filter by practitioner UUID",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "reasonCode": "Reason",
+        "allReasons": "All reasons",
+        "currencyCode": "Currency",
+        "createdFrom": "Created from",
+        "createdTo": "Created to",
+        "clear": "Clear filters"
+      },
+      "columns": {
+        "recovery": "Recovery",
+        "amount": "Amount",
+        "recovered": "Collected",
+        "remaining": "Remaining",
+        "context": "Context",
+        "session": "Session",
+        "payment": "Payment",
+        "review": "Review",
+        "payout": "Payout",
+        "noSession": "No linked session",
+        "noPayment": "No linked payment",
+        "noReview": "No linked review",
+        "noPayout": "No linked payout",
+        "createdAt": "Created at",
+        "actions": "Actions"
+      },
+      "actions": {
+        "viewDetails": "View details",
+        "exportCsv": "Export CSV",
+        "exportingCsv": "Preparing CSV...",
+        "exportSuccess": "CSV export is ready.",
+        "exportError": "Could not prepare the export file.",
+        "noDataToExport": "No data is available to export.",
+        "bulkWaive": "Waive selected",
+        "selectedCount": "{count} selected"
+      },
+      "bulkWaiveModal": {
+        "eyebrow": "Bulk finance action",
+        "title": "Waive selected recoveries",
+        "description": "Apply one shared waiver reason to the selected recoveries. Already resolved items will be skipped safely.",
+        "selectedCount": "{count} recoveries are eligible for waiver.",
+        "reason": "Reason",
+        "reasonPlaceholder": "Explain why these recoveries are waived",
+        "note": "Note",
+        "notePlaceholder": "Optional internal note",
+        "submit": "Waive recoveries",
+        "submitting": "Waiving...",
+        "cancel": "Cancel",
+        "success": "{count} recoveries were waived.",
+        "alreadyRecordedSuccess": "{count} recoveries were already waived.",
+        "partialSuccess": "{success} recoveries were processed, {failed} failed.",
+        "reasonRequired": "Please add a reason before waiving these recoveries.",
+        "noEligibleSelection": "No selected recoveries can be waived.",
+        "itemFailed": "One selected recovery could not be waived.",
+        "error": "Could not waive the selected recoveries right now."
+      },
+      "states": {
+        "emptyTitle": "No practitioner recoveries found",
+        "emptyDescription": "No recovery debts have been recorded yet.",
+        "filteredEmptyTitle": "No recoveries match these filters",
+        "filteredEmptyDescription": "Adjust the filters or clear them to see all practitioner recoveries.",
+        "error": "Could not load practitioner recoveries right now.",
+        "errorDescription": "Try again in a moment.",
+        "retry": "Try again"
+      }
+    },
+    "detail": {
+      "back": "Back to recoveries",
+      "eyebrow": "Practitioner recovery",
+      "title": "Recovery detail",
+      "note": "Inspect the recovery debt, linked finance context, and action history. Manual collection and waiver stay with accounting admins.",
+      "summary": {
+        "amount": "Original amount",
+        "recovered": "Collected amount",
+        "remaining": "Remaining amount",
+        "reasonCode": "Reason",
+        "statusHint": "Current status: {status}"
+      },
+      "context": {
+        "title": "Linked context",
+        "description": "Practitioner, session, payment, refund, review, settlement, and payout context linked to this recovery.",
+        "practitioner": "Practitioner",
+        "professionalTitle": "Professional title",
+        "publicSlug": "Public slug",
+        "recoveryId": "Recovery ID",
+        "session": "Session",
+        "payment": "Payment",
+        "refund": "Refund",
+        "review": "Review",
+        "settlement": "Settlement",
+        "payout": "Payout",
+        "notLinked": "Not linked",
+        "createdBy": "Created by",
+        "createdAt": "Created at",
+        "resolvedBy": "Resolved by",
+        "resolvedAt": "Resolved at",
+        "notes": {
+          "internalReason": "Internal reason",
+          "practitionerFacing": "Practitioner-facing note"
+        }
+      },
+      "history": {
+        "title": "Action history",
+        "description": "Manual collection and waiver actions recorded against this recovery.",
+        "empty": "No manual actions have been recorded yet.",
+        "performedBy": "Performed by",
+        "payout": "Payout",
+        "reason": "Reason",
+        "actionId": "Action ID"
+      },
+      "review": {
+        "title": "Linked earning review",
+        "description": "The earning review that led to this recovery debt, when available.",
+        "reviewId": "Review ID",
+        "decision": "Decision",
+        "status": "Review status"
+      },
+      "actions": {
+        "title": "Manual collection and waiver",
+        "description": "Record a manual collection or waive the remaining debt. Step-up may be required.",
+        "loadingPermissions": "Checking accounting permissions...",
+        "readOnlyBadge": "Read only",
+        "viewOnly": "You can view this recovery, but only accounting admins can collect or waive it.",
+        "stepUpHint": "Step-up protected",
+        "readOnly": "This recovery has already been resolved and can no longer be changed.",
+        "validation": {
+          "amountInvalid": "Enter a valid amount greater than zero.",
+          "amountExceedsRemaining": "The amount cannot be greater than the remaining amount.",
+          "reasonRequired": "Please add a reason before waiving this recovery."
+        },
+        "collect": {
+          "title": "Record manual collection",
+          "description": "Record the amount collected outside Sawiyaa. Partial collection is allowed.",
+          "amount": "Collected amount",
+          "note": "Note",
+          "notePlaceholder": "Optional collection note",
+          "submit": "Record collection",
+          "submitting": "Recording...",
+          "hint": "Remaining amount: {amount}"
+        },
+        "waive": {
+          "title": "Waive recovery",
+          "description": "Waive the remaining amount with a required finance reason.",
+          "reason": "Reason",
+          "reasonPlaceholder": "Explain why this recovery is waived",
+          "note": "Note",
+          "notePlaceholder": "Optional internal note",
+          "submit": "Waive recovery",
+          "submitting": "Waiving...",
+          "hint": "This decision is internal and does not change payout history."
+        },
+        "feedback": {
+          "collectSuccess": "Manual collection was recorded.",
+          "collectAlreadyRecorded": "This collection was already recorded.",
+          "waiveSuccess": "Recovery waived successfully.",
+          "waiveAlreadyRecorded": "This waiver was already recorded."
+        }
+      },
+      "fallbacks": {
+        "teamAdmin": "Team admin"
+      },
+      "states": {
+        "errorTitle": "This recovery is not available right now",
+        "back": "Back to recoveries"
+      }
+    }
   },
   "detail": {
     "back": "Back to events",
@@ -144,6 +647,10 @@
       "linkedPractitionerId": "Linked practitioner ID",
       "occurredAt": "Occurred at",
       "createdAt": "Created at"
+    },
+    "states": {
+      "errorTitle": "Could not load this review",
+      "back": "Back to session earning reviews"
     }
   },
   "states": {
@@ -163,6 +670,9 @@
   },
   "errors": {
     "invalidFilter": "One or more filters are invalid.",
+    "finalAmountsRequired": "Please provide the final amounts before approving this review.",
+    "reasonRequired": "Please add a reason for this moderation action.",
+    "stepUpRequired": "Additional verification is required to continue.",
     "forbidden": "You do not have access to this finance operations scope.",
     "notFound": "The requested operation event was not found.",
     "generic": "Could not load finance operation data right now."

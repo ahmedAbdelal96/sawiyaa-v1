@@ -18,6 +18,7 @@ import { BuildPractitionerCredibilitySummaryService } from './services/build-pra
 import { ReviewSessionRepository } from './repositories/review-session.repository';
 import { ValidateReviewModerationTransitionService } from './services/validate-review-moderation-transition.service';
 import { ValidateSessionReviewEligibilityService } from './services/validate-session-review-eligibility.service';
+import { ResolveSessionReviewEligibilityService } from './services/resolve-session-review-eligibility.service';
 import { SessionReviewRatingAggregationService } from './services/session-review-rating-aggregation.service';
 import { CreateSessionReviewUseCase } from './use-cases/create-session-review.use-case';
 import { GetAdminReviewUseCase } from './use-cases/get-admin-review.use-case';
@@ -26,6 +27,7 @@ import { GetPublicPractitionerTrustBlockUseCase } from './use-cases/get-public-p
 import { GetPublicPractitionerTrustSummaryUseCase } from './use-cases/get-public-practitioner-trust-summary.use-case';
 import { ListAdminReviewsUseCase } from './use-cases/list-admin-reviews.use-case';
 import { ListMyReviewsUseCase } from './use-cases/list-my-reviews.use-case';
+import { ListPendingPatientReviewsUseCase } from './use-cases/list-pending-patient-reviews.use-case';
 import { ListPublicPractitionerReviewsUseCase } from './use-cases/list-public-practitioner-reviews.use-case';
 import { ModerateReviewUseCase } from './use-cases/moderate-review.use-case';
 
@@ -52,9 +54,11 @@ import { ModerateReviewUseCase } from './use-cases/moderate-review.use-case';
     BuildPractitionerCredibilitySummaryService,
     SessionReviewRatingAggregationService,
     ValidateSessionReviewEligibilityService,
+    ResolveSessionReviewEligibilityService,
     ValidateReviewModerationTransitionService,
     CreateSessionReviewUseCase,
     ListMyReviewsUseCase,
+    ListPendingPatientReviewsUseCase,
     GetMyReviewUseCase,
     GetPublicPractitionerTrustBlockUseCase,
     GetPublicPractitionerTrustSummaryUseCase,
@@ -63,6 +67,6 @@ import { ModerateReviewUseCase } from './use-cases/moderate-review.use-case';
     ModerateReviewUseCase,
     ListPublicPractitionerReviewsUseCase,
   ],
-  exports: [SessionReviewRatingAggregationService],
+  exports: [SessionReviewRatingAggregationService, ResolveSessionReviewEligibilityService],
 })
 export class ReviewsModule {}

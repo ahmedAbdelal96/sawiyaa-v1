@@ -58,7 +58,7 @@ export class BuildPatientJourneyNextStepsService {
     }
 
     const joinEligibleStatuses: SessionStatus[] = [
-      SessionStatus.CONFIRMED,
+      SessionStatus.UPCOMING,
       SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
     ];

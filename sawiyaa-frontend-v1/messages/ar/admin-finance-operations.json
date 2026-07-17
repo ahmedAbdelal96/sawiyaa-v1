@@ -7,6 +7,16 @@
     "detail": {
       "title": "تفاصيل حدث مالي - الإدارة",
       "description": "افحص حدثًا ماليًا واحدًا مع السياق التشغيلي والمراجع المرتبطة."
+    },
+    "sessionEarningReviews": {
+      "list": {
+        "title": "مراجعات أرباح الجلسات - الإدارة",
+        "description": "راجِع أرباح الجلسات مع السياق التشغيلي والمراجع المرتبطة."
+      },
+      "detail": {
+        "title": "تفاصيل مراجعة ربح الجلسة - الإدارة",
+        "description": "راجع تفاصيل ربح الجلسة والمبالغ المقترحة والنهائية."
+      }
     }
   },
   "list": {
@@ -66,7 +76,8 @@
     "SESSION_BOOKING": "حجز جلسة",
     "SESSION_INSTANT_BOOKING": "حجز فوري لجلسة",
     "SESSION_EXTENSION": "تمديد جلسة",
-    "COURSE_ENROLLMENT": "الالتحاق بدورة",
+    "SESSION_PACKAGE_PURCHASE": "شراء باقة جلسات",
+    "ACADEMY_PROGRAM_ENROLLMENT": "تسجيل متدرب",
     "MANUAL_INVOICE": "فاتورة يدوية"
   },
   "paymentStatuses": {
@@ -88,6 +99,498 @@
     "SUCCEEDED": "تم بنجاح",
     "FAILED": "فشل",
     "CANCELLED": "ملغي"
+  },
+  "sessionStatuses": {
+    "DRAFT": "مسودة",
+    "SCHEDULED": "مجدولة",
+    "UPCOMING": "قادمة",
+    "IN_PROGRESS": "قيد التنفيذ",
+    "COMPLETED": "مكتملة",
+    "CANCELLED": "ملغاة",
+    "NO_SHOW": "لم يحضر"
+  },
+  "sessionPaymentCoverage": {
+    "DIRECT_PAYMENT": "دفع مباشر",
+    "PACKAGE": "باقة"
+  },
+  "packagePurchaseStatuses": {
+    "PENDING_PAYMENT": "بانتظار الدفع",
+    "PAID": "مدفوعة",
+    "ACTIVE": "نشطة",
+    "COMPLETED": "مكتملة",
+    "CANCELLED": "ملغاة",
+    "REFUNDED": "مستردة",
+    "EXPIRED": "منتهية"
+  },
+  "packageSettlementStatuses": {
+    "HELD": "محتجزة",
+    "READY_TO_RELEASE": "جاهزة للإفراج",
+    "PARTIALLY_RELEASED": "مفرج عنها جزئيًا",
+    "RELEASED": "مفرج عنها",
+    "NEEDS_REVIEW": "تحتاج مراجعة",
+    "REFUNDED_OR_ADJUSTED": "مستردة أو معدلة"
+  },
+  "ledgerEntryTypes": {
+    "practitionerEarning": "ربح الممارس",
+    "platformCommission": "عمولة المنصة",
+    "other": "أخرى"
+  },
+  "ledgerDirections": {
+    "credit": "دائن",
+    "debit": "مدين",
+    "other": "أخرى"
+  },
+  "walletBalanceBuckets": {
+    "available": "متاح",
+    "held": "محتجز",
+    "other": "أخرى"
+  },
+  "sessionEarningReviews": {
+    "sourceTypes": {
+      "directSession": "جلسة مباشرة",
+      "packageSession": "جلسة ضمن باقة"
+    },
+    "statuses": {
+      "pendingReview": "قيد المراجعة",
+      "approved": "معتمدة",
+      "rejected": "مرفوضة",
+      "excludedFromPayout": "مستبعدة من الصرف"
+    },
+    "decisions": {
+      "autoCreated": "مُنشأة تلقائيًا",
+      "approveAsIs": "اعتماد كما هو",
+      "editAndApprove": "تعديل واعتماد",
+      "rejectPayout": "رفض الصرف",
+      "excludeFromPayout": "استبعاد من الصرف"
+    },
+    "list": {
+      "eyebrow": "طابور مراجعة الأرباح المالية",
+      "title": "مراجعات أرباح الجلسات",
+      "note": "راجع توزيع أرباح الجلسات بين الممارس والمنصة. استخدم المرشحات للتركيز على العناصر قيد المراجعة أو المعتمدة.",
+      "table": {
+        "title": "طابور المراجعة"
+      },
+      "queue": {
+        "pending": "قيد المراجعة",
+        "finalized": "منجزة"
+      },
+      "searchLabel": "بحث",
+      "searchPlaceholder": "ابحث برقم المراجعة أو رمز الجلسة أو اسم الممارس أو المريض",
+      "currencyLabel": "العملة",
+      "currencyPlaceholder": "EGP أو USD",
+      "sourceTypeLabel": "نوع المصدر",
+      "decisionLabel": "القرار",
+      "sourceTypes": {
+        "all": "كل المصادر"
+      },
+      "decisions": {
+        "all": "كل القرارات"
+      },
+      "columns": {
+        "review": "المراجعة",
+        "people": "الأشخاص",
+        "practitioner": "الممارس",
+        "patient": "المريض",
+        "amounts": "المبالغ",
+        "suggestedSplit": "التوزيع المقترح",
+        "finalSplit": "التوزيع النهائي",
+        "unset": "لم يتم تحديده بعد",
+        "state": "الحالة",
+        "audit": "التدقيق",
+        "sessionCode": "رمز الجلسة",
+        "reviewedBy": "راجعها",
+        "approvedBy": "اعتمدها",
+        "notYet": "ليس بعد",
+        "actions": "الإجراءات"
+      },
+      "filters": {
+        "search": "بحث",
+        "sourceType": "نوع المصدر",
+        "decision": "القرار",
+        "currency": "العملة"
+      },
+      "badges": {
+        "actionRequired": "يتطلب إجراء",
+        "finalized": "منجز"
+      },
+      "actions": {
+        "viewDetails": "عرض التفاصيل"
+      },
+      "emptyTitle": "لا توجد مراجعات أرباح جلسات",
+      "emptyDescription": "حاول تعديل المرشحات أو التبديل بين المراجعات قيد المراجعة والمنجزة.",
+      "errorTitle": "مراجعات أرباح الجلسات غير متاحة الآن",
+      "errorDescription": "تعذر تحميل بيانات مراجعات الأرباح الآن.",
+      "errorRetry": "إعادة المحاولة"
+    },
+    "detail": {
+      "back": "العودة إلى المراجعات",
+      "eyebrow": "مراجعة أرباح الجلسات",
+      "title": "تفاصيل المراجعة",
+      "note": "افحص مراجعة الأرباح، والجلسة المرتبطة، وسياق الدفع، وسجل المراجعة.",
+      "overview": {
+        "eyebrow": "ملخص المراجعة",
+        "title": "حالة المراجعة الحالية",
+        "description": "لمحة سريعة عن حالة المراجعة وقرارها.",
+        "reviewId": "معرّف المراجعة",
+        "sourceType": "نوع المصدر",
+        "status": "الحالة",
+        "decision": "القرار",
+        "actionRequired": "يتطلب إجراء",
+        "noActionRequired": "لا يتطلب إجراء",
+        "finalized": "منجز",
+        "pending": "قيد المراجعة",
+        "reviewedAt": "وقت المراجعة",
+        "approvedAt": "وقت الاعتماد"
+      },
+      "session": {
+        "title": "سياق الجلسة",
+        "description": "الجلسة المرتبطة وكيف تم احتسابها.",
+        "code": "رمز الجلسة",
+        "status": "حالة الجلسة",
+        "paymentCoverage": "التغطية",
+        "schedule": "الجدول",
+        "completedAt": "وقت الإكمال",
+        "packagePurchaseId": "معرّف شراء الباقة"
+      },
+      "people": {
+        "practitioner": "الممارس",
+        "patient": "المريض"
+      },
+      "payment": {
+        "title": "سياق الدفع",
+        "description": "سجل الدفع الذي تعتمد عليه المراجعة.",
+        "none": "لا يوجد سجل دفع مرتبط بهذه المراجعة.",
+        "id": "معرّف الدفع",
+        "status": "حالة الدفع",
+        "amount": "مبلغ الدفع",
+        "currency": "العملة",
+        "provider": "مزوّد الدفع",
+        "purpose": "غرض الدفع",
+        "providerPaymentRef": "مرجع الدفع من المزوّد",
+        "providerOrderRef": "مرجع الطلب من المزوّد",
+        "remainingEffectiveAmount": "المبلغ الفعّال المتبقي",
+        "initiatedAt": "تم البدء فيه",
+        "capturedAt": "تم تسجيله",
+        "failedAt": "فشل",
+        "expiredAt": "انتهت صلاحيته",
+        "refunds": {
+          "title": "الاستردادات",
+          "count": "{count, number} استرداد",
+          "empty": "لا توجد استردادات مسجلة"
+        }
+      },
+      "packagePurchase": {
+        "title": "لقطة شراء الباقة",
+        "description": "بيانات اللقطة المسجلة عند شراء الباقة.",
+        "id": "معرّف شراء الباقة",
+        "status": "حالة الشراء",
+        "currency": "العملة",
+        "sessions": "عدد الجلسات",
+        "payableTotal": "إجمالي ما يدفعه المريض",
+        "practitionerShare": "نصيب الممارس",
+        "platformShare": "نصيب المنصة",
+        "paymentId": "معرّف الدفع"
+      },
+      "packageSettlement": {
+        "title": "لقطة تسوية الباقة",
+        "description": "بيانات اللقطة من سجل تسوية الباقة.",
+        "id": "معرّف تسوية الباقة",
+        "status": "حالة التسوية",
+        "currency": "العملة",
+        "sessions": "عدد الجلسات",
+        "completedSessions": "الجلسات المكتملة",
+        "heldPractitionerAmount": "مبلغ الممارس المحتجز",
+        "releasablePractitionerAmount": "مبلغ الممارس القابل للإفراج",
+        "releasedPractitionerAmount": "مبلغ الممارس المفرج عنه"
+      },
+      "ledger": {
+        "title": "قيود دفتر الأستاذ",
+        "description": "قيود دفتر الأستاذ المنشأة لهذه المراجعة إن وجدت.",
+        "empty": "لم تُنشأ أي قيود دفتر أستاذ لهذه المراجعة.",
+        "columns": {
+          "type": "النوع",
+          "direction": "الاتجاه",
+          "amount": "المبلغ",
+          "bucket": "الحافظة",
+          "createdAt": "تاريخ الإنشاء"
+        }
+      },
+      "moderation": {
+        "title": "المراجعة",
+        "description": "اختر الإجراء النهائي للمراجعة. يتم الاحتفاظ بالتقييم الأصلي من المريض في الخلفية.",
+        "readOnly": "هذه المراجعة منجزة بالفعل ولا يمكن تعديلها الآن.",
+        "readOnlyBadge": "للعرض فقط",
+        "stepUpHint": "محمي بخطوة تحقق",
+        "stepUpNote": "قد تتطلب إجراءات المراجعة الحساسة خطوة تحقق إضافية.",
+        "submit": "حفظ قرار المراجعة",
+        "submitting": "جارٍ الحفظ...",
+        "reviewedBy": "راجعها",
+        "reviewedAt": "وقت المراجعة",
+        "approvedBy": "اعتمدها",
+        "approvedAt": "وقت الاعتماد",
+        "internalReason": "السبب",
+        "internalReasonPlaceholder": "أضف السبب الداخلي أو الملاحظة الخاصة بهذا القرار.",
+        "practitionerFacingNote": "ملاحظة تظهر للممارس",
+        "practitionerFacingNotePlaceholder": "ملاحظة اختيارية قد تظهر للممارس إذا أتاحتها الخلفية.",
+        "finalPractitionerAmount": "مبلغ الممارس النهائي",
+        "finalPlatformAmount": "مبلغ المنصة النهائي",
+        "finalCurrencyCode": "العملة النهائية",
+        "validation": {
+          "finalAmounts": "يرجى إدخال مبلغ الممارس النهائي ومبلغ المنصة والعملة.",
+          "reasonRequired": "يرجى إضافة سبب لهذا القرار."
+        },
+        "feedback": {
+          "success": "تم حفظ قرار المراجعة.",
+          "error": "تعذر حفظ قرار المراجعة."
+        },
+        "actions": {
+          "approveAsIs": "اعتماد كما هو",
+          "editAndApprove": "تعديل واعتماد",
+          "rejectPayout": "رفض الصرف",
+          "excludeFromPayout": "استبعاد من الصرف"
+        },
+        "actionDescriptions": {
+          "approveAsIs": "احتفظ بتوزيع التسوية المقترح وانشر نتيجة المراجعة الحالية.",
+          "editAndApprove": "عدّل توزيع التسوية قبل اعتماد المراجعة.",
+          "rejectPayout": "اعتبر المراجعة مرفوضة من الصرف.",
+          "excludeFromPayout": "استبعد هذه المراجعة من حسابات الصرف."
+        },
+        "viewOnly": "يمكنك عرض هذه المراجعة، لكن تعديل قرار المراجعة متاح فقط لمسؤولي الحسابات.",
+        "loadingPermissions": "جارٍ التحقق من صلاحيات المراجعة..."
+      },
+      "fallbacks": {
+        "teamAdmin": "مسؤول من الفريق"
+      },
+      "states": {
+        "errorTitle": "هذه المراجعة غير متاحة الآن",
+        "back": "العودة إلى المراجعات"
+      }
+    }
+  },
+  "practitionerRecoveries": {
+    "meta": {
+      "list": {
+        "title": "تسويات مستحقات المختصين - الإدارة",
+        "description": "راجع تسويات مستحقات المختصين مع سياق الجلسات والمدفوعات والصرف المرتبط."
+      },
+      "detail": {
+        "title": "تفاصيل تسوية مستحق مختص - الإدارة",
+        "description": "افحص تسوية المستحق المرتبطة مع سياق الجلسة والدفع والاسترجاع والمراجعة والتسوية وسجل الإجراءات."
+      }
+    },
+    "statuses": {
+      "open": "مفتوحة",
+      "partiallyRecovered": "محصلة جزئيًا",
+      "recovered": "محصلة",
+      "waived": "مسقطة"
+    },
+    "reasonCodes": {
+      "refundAfterPayout": "استرجاع بعد الصرف",
+      "refundAfterApproval": "استرجاع بعد الاعتماد",
+      "manualFinanceCorrection": "تصحيح مالي يدوي",
+      "adminException": "استثناء إداري"
+    },
+    "reviewSourceTypes": {
+      "directSession": "جلسة مباشرة",
+      "packageSession": "جلسة ضمن باقة"
+    },
+    "reviewStatuses": {
+      "pendingReview": "قيد المراجعة",
+      "approved": "معتمدة",
+      "rejected": "مرفوضة",
+      "excludedFromPayout": "مستبعدة من الصرف"
+    },
+    "reviewDecisions": {
+      "autoCreated": "منشأة تلقائيًا",
+      "approveAsIs": "اعتماد كما هو",
+      "editAndApprove": "تعديل واعتماد",
+      "rejectPayout": "رفض الصرف",
+      "excludeFromPayout": "استبعاد من الصرف"
+    },
+    "actions": {
+      "appliedToPayout": "طُبّقت على الصرف",
+      "manuallyCollected": "متحصَّل عليها يدويًا",
+      "waived": "مسقطة",
+      "unknown": "إجراء غير معروف"
+    },
+    "list": {
+      "eyebrow": "طابور تسويات المستحقات",
+      "title": "تسويات مستحقات المختصين",
+      "note": "راجع التسويات التي تحتاج إلى تحصيل يدوي أو إسقاط. تعرض القائمة المبلغ الحالي والمبلغ المحصّل والمتبقي والسياق المرتبط.",
+      "table": {
+        "title": "طابور التسوية",
+        "subtitle": "استخدم المرشحات للوصول إلى تسوية مختص بسرعة."
+      },
+      "filters": {
+        "title": "المرشحات",
+        "practitionerId": "معرّف المختص",
+        "practitionerIdPlaceholder": "رشّح بواسطة UUID المختص",
+        "status": "الحالة",
+        "allStatuses": "كل الحالات",
+        "reasonCode": "السبب",
+        "allReasons": "كل الأسباب",
+        "currencyCode": "العملة",
+        "createdFrom": "أُنشئت من",
+        "createdTo": "أُنشئت حتى",
+        "clear": "مسح المرشحات"
+      },
+      "columns": {
+        "recovery": "التسوية",
+        "amount": "المبلغ",
+        "recovered": "المحصَّل",
+        "remaining": "المتبقي",
+        "context": "السياق",
+        "session": "الجلسة",
+        "payment": "الدفع",
+        "review": "المراجعة",
+        "payout": "الصرف",
+        "noSession": "لا توجد جلسة مرتبطة",
+        "noPayment": "لا يوجد دفع مرتبط",
+        "noReview": "لا توجد مراجعة مرتبطة",
+        "noPayout": "لا يوجد صرف مرتبط",
+        "createdAt": "تاريخ الإنشاء",
+        "actions": "الإجراءات"
+      },
+      "actions": {
+        "viewDetails": "عرض التفاصيل",
+        "exportCsv": "تصدير CSV",
+        "exportingCsv": "جارٍ تجهيز ملف CSV...",
+        "exportSuccess": "تم تجهيز ملف التصدير.",
+        "exportError": "تعذر تجهيز ملف التصدير.",
+        "noDataToExport": "لا توجد بيانات للتصدير.",
+        "bulkWaive": "إسقاط المحدد",
+        "selectedCount": "تم تحديد {count} عنصرًا"
+      },
+      "states": {
+        "emptyTitle": "لا توجد تسويات مستحقات للمختصين",
+        "emptyDescription": "لم يتم تسجيل أي تسوية بعد.",
+        "filteredEmptyTitle": "لا توجد تسويات تطابق هذه المرشحات",
+        "filteredEmptyDescription": "عدّل المرشحات أو امسحها لعرض كل التسويات.",
+        "error": "تعذر تحميل تسويات المستحقات الآن.",
+        "errorDescription": "حاول مرة أخرى بعد قليل.",
+        "retry": "أعد المحاولة"
+      },
+      "bulkWaiveModal": {
+        "eyebrow": "تسويات مستحقة على المختصين",
+        "title": "إسقاط التسويات المحددة",
+        "description": "أسقط المبالغ المتبقية للتسويات المحددة مع سبب مالي إلزامي.",
+        "selectedCount": "{count} من التسويات مؤهل للإسقاط.",
+        "reason": "سبب الإسقاط",
+        "reasonPlaceholder": "اشرح سبب إسقاط هذه التسويات",
+        "note": "ملاحظة",
+        "notePlaceholder": "ملاحظة داخلية اختيارية",
+        "submit": "إسقاط التسويات",
+        "submitting": "جارّ الإسقاط...",
+        "cancel": "إلغاء",
+        "success": "تم إسقاط {count} من التسويات بنجاح.",
+        "alreadyRecordedSuccess": "تم تسجيل إسقاط {count} من التسويات مسبقًا.",
+        "partialSuccess": "تم إسقاط {success} من التسويات، وتعذر إسقاط {failed}.",
+        "reasonRequired": "أدخل سبب الإسقاط أولًا.",
+        "noEligibleSelection": "لا توجد تسويات مؤهلة للإسقاط.",
+        "itemFailed": "تعذر إسقاط هذه التسوية.",
+        "error": "تعذر إتمام العملية. حاول مرة أخرى."
+      }
+    },
+    "detail": {
+      "back": "العودة إلى التسويات",
+      "eyebrow": "تسوية مستحق مختص",
+      "title": "تفاصيل التسوية",
+      "note": "راجع التسوية المرتبطة، وسياقها المالي، وسجل الإجراءات. التحصيل اليدوي والإسقاط يظلان لدى مسؤولي الحسابات.",
+      "summary": {
+        "amount": "المبلغ الأصلي",
+        "recovered": "المبلغ المحصّل",
+        "remaining": "المبلغ المتبقي",
+        "reasonCode": "السبب",
+        "statusHint": "الحالة الحالية: {status}"
+      },
+      "context": {
+        "title": "السياق المرتبط",
+        "description": "سياق المختص والجلسة والدفع والاسترجاع والمراجعة والتسوية والصرف المرتبط بهذه التسوية.",
+        "practitioner": "المختص",
+        "professionalTitle": "المسمى المهني",
+        "publicSlug": "المعرّف العام",
+        "recoveryId": "معرّف التسوية",
+        "session": "الجلسة",
+        "payment": "الدفع",
+        "refund": "الاسترجاع",
+        "review": "المراجعة",
+        "settlement": "التسوية",
+        "payout": "الصرف",
+        "notLinked": "غير مرتبط",
+        "createdBy": "أنشأه",
+        "createdAt": "تاريخ الإنشاء",
+        "resolvedBy": "أغلقه",
+        "resolvedAt": "تاريخ الإغلاق",
+        "notes": {
+          "internalReason": "السبب الداخلي",
+          "practitionerFacing": "ملاحظة للمختص"
+        }
+      },
+      "history": {
+        "title": "سجل الإجراءات",
+        "description": "إجراءات التحصيل اليدوي أو الإسقاط المسجلة على هذه التسوية.",
+        "empty": "لم تُسجل أي إجراءات يدوية بعد.",
+        "performedBy": "نفذه",
+        "payout": "الصرف",
+        "reason": "السبب",
+        "actionId": "معرّف الإجراء"
+      },
+      "review": {
+        "title": "المراجعة المرتبطة بالأرباح",
+        "description": "مراجعة الأرباح التي أدت إلى إنشاء هذه التسوية، عند توفرها.",
+        "reviewId": "معرّف المراجعة",
+        "decision": "القرار",
+        "status": "حالة المراجعة"
+      },
+      "actions": {
+        "title": "التحصيل اليدوي والإسقاط",
+        "description": "سجّل تحصيلاً يدويًا أو اسقط الرصيد المتبقي. قد يتطلب الإجراء تحققًا إضافيًا.",
+        "loadingPermissions": "جارٍ التحقق من صلاحيات الحسابات...",
+        "readOnlyBadge": "للعرض فقط",
+        "viewOnly": "يمكنك عرض هذه التسوية، لكن التحصيل أو الإسقاط يظل لمسؤولي الحسابات فقط.",
+        "stepUpHint": "محمي بتحقق إضافي",
+        "readOnly": "تمت تسوية هذه المستحقات بالفعل ولم يعد يمكن تغييرها.",
+        "validation": {
+          "amountInvalid": "أدخل مبلغًا صالحًا أكبر من صفر.",
+          "amountExceedsRemaining": "لا يمكن أن يكون المبلغ أكبر من المتبقي.",
+          "reasonRequired": "أضف سببًا قبل إسقاط هذه التسوية."
+        },
+        "collect": {
+          "title": "تسجيل تحصيل يدوي",
+          "description": "سجّل المبلغ الذي تم تحصيله خارج سويّة. التحصيل الجزئي مسموح.",
+          "amount": "المبلغ المحصّل",
+          "note": "ملاحظة",
+          "notePlaceholder": "ملاحظة اختيارية عن التحصيل",
+          "submit": "تسجيل التحصيل",
+          "submitting": "جارٍ التسجيل...",
+          "hint": "المبلغ المتبقي: {amount}"
+        },
+        "waive": {
+          "title": "إسقاط التسوية",
+          "description": "أسقط المبلغ المتبقي مع سبب مالي إلزامي.",
+          "reason": "السبب",
+          "reasonPlaceholder": "اشرح سبب إسقاط هذه التسوية",
+          "note": "ملاحظة",
+          "notePlaceholder": "ملاحظة داخلية اختيارية",
+          "submit": "إسقاط التسوية",
+          "submitting": "جارٍ الإسقاط...",
+          "hint": "هذا القرار داخلي ولا يغير سجل الصرف."
+        },
+        "feedback": {
+          "collectSuccess": "تم تسجيل التحصيل اليدوي.",
+          "collectAlreadyRecorded": "تم تسجيل هذا التحصيل من قبل.",
+          "waiveSuccess": "تم إسقاط التسوية بنجاح.",
+          "waiveAlreadyRecorded": "تم تسجيل هذا الإسقاط من قبل."
+        }
+      },
+      "fallbacks": {
+        "teamAdmin": "مسؤول من الفريق"
+      },
+      "states": {
+        "errorTitle": "هذه التسوية غير متاحة الآن",
+        "back": "العودة إلى التسويات"
+      }
+    }
   },
   "detail": {
     "back": "العودة إلى الأحداث",
@@ -144,6 +647,10 @@
       "linkedPractitionerId": "معرّف المعالج المرتبط",
       "occurredAt": "وقت الحدث",
       "createdAt": "وقت الإنشاء"
+    },
+    "states": {
+      "errorTitle": "تعذر تحميل هذه المراجعة",
+      "back": "العودة إلى مراجعات أرباح الجلسات"
     }
   },
   "states": {
@@ -165,6 +672,9 @@
     "invalidFilter": "أحد الفلاتر غير صالح.",
     "forbidden": "ليس لديك صلاحية الوصول إلى نطاق العمليات المالية هذا.",
     "notFound": "لم يتم العثور على الحدث المطلوب.",
-    "generic": "تعذّر تحميل بيانات العمليات المالية الآن."
+    "generic": "تعذّر تحميل بيانات العمليات المالية الآن.",
+    "finalAmountsRequired": "يرجى إدخال مبلغ الممارس النهائي ومبلغ المنصة والعملة قبل اعتماد هذه المراجعة.",
+    "reasonRequired": "يرجى إضافة سبب لهذا الإجراء.",
+    "stepUpRequired": "يلزم تحقق إضافي للمتابعة."
   }
 }

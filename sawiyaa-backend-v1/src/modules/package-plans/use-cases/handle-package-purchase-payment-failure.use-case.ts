@@ -12,7 +12,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
-import { ValidateSessionStatusTransitionService } from '@modules/sessions/services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class HandlePackagePurchasePaymentFailureUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly sessionRepository: SessionRepository,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
   ) {}
 
   async execute(input: {
@@ -117,36 +117,21 @@ export class HandlePackagePurchasePaymentFailureUseCase {
       );
 
       for (const [index, session] of sessionsToExpire.entries()) {
-        this.validateSessionStatusTransitionService.assertCanTransition(
-          session.status,
-          SessionStatus.EXPIRED,
-        );
-
-        await this.sessionRepository.updateStatus(
-          session.id,
-          {
-            status: SessionStatus.EXPIRED,
-            expiredAt: now,
+        await this.sessionLifecycleService.transition({
+          session,
+          to: SessionStatus.EXPIRED,
+          at: now,
+          metadata: {
+            source: 'package-purchase-payment-failure',
+            packagePurchaseId: purchase.id,
+            packagePlanId: purchase.packagePlanId,
+            packageSessionIndex: session.packageSessionIndex ?? index + 1,
+            providerEventRef: input.providerEventRef,
+            terminalOutcome: input.terminalOutcome,
+            purchaseFinalStatus: finalStatus,
           },
           tx,
-        );
-
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: session.id,
-            eventType: SessionEventType.EXPIRED_UNPAID,
-            metadataJson: {
-              source: 'package-purchase-payment-failure',
-              packagePurchaseId: purchase.id,
-              packagePlanId: purchase.packagePlanId,
-              packageSessionIndex: session.packageSessionIndex ?? index + 1,
-              providerEventRef: input.providerEventRef,
-              terminalOutcome: input.terminalOutcome,
-              purchaseFinalStatus: finalStatus,
-            },
-          },
-          tx,
-        );
+        });
       }
 
       return updatedPurchase;

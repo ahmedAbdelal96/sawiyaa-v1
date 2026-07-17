@@ -53,7 +53,7 @@ import {
 WebBrowser.maybeCompleteAuthSession();
 
 const CONFIRMED_SESSION_STATUSES = new Set([
-  "CONFIRMED",
+  "UPCOMING",
   "UPCOMING",
   "READY_TO_JOIN",
   "IN_PROGRESS",

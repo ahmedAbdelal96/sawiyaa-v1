@@ -27,6 +27,16 @@ export class RecordPractitionerSettlementPayoutDto {
   externalPayoutRef?: string;
 
   @ApiPropertyOptional({
+    example: 'settlement-payout-2026-04-14-0001',
+    description:
+      'Optional idempotency key for retry-safe settlement payout recording.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(191)
+  idempotencyKey?: string;
+
+  @ApiPropertyOptional({
     example: 'Manual exception payout for urgent closeout.',
   })
   @IsOptional()

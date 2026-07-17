@@ -73,7 +73,7 @@ export async function getPatientSessionSummary(): Promise<SessionSummary> {
 
 /**
  * Cancels a patient-owned session. Reason is optional.
- * Only valid for CONFIRMED and UPCOMING sessions.
+ * Only valid for the backend-approved cancellable lifecycle states.
  *
  * POST /patients/me/sessions/:sessionId/cancel
  */

@@ -13,6 +13,7 @@ import { SendOtpChallengeUseCase } from './use-cases/send-otp-challenge.use-case
 import { VerifyOtpChallengeUseCase } from './use-cases/verify-otp-challenge.use-case';
 import { InvalidateOtpChallengeUseCase } from './use-cases/invalidate-otp-challenge.use-case';
 import { ResendOtpChallengeUseCase } from './use-cases/resend-otp-challenge.use-case';
+import { PractitionerOtpQaCaptureService } from './services/practitioner-otp-qa-capture.service';
 
 /**
  * Verification module provides reusable OTP challenge lifecycle and delivery.
@@ -27,6 +28,7 @@ import { ResendOtpChallengeUseCase } from './use-cases/resend-otp-challenge.use-
     OtpHashService,
     OtpPolicyResolverService,
     OtpDeliveryDispatcherService,
+    PractitionerOtpQaCaptureService,
     PasswordResetRateLimitService,
     CreateOtpChallengeUseCase,
     SendOtpChallengeUseCase,

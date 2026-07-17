@@ -26,7 +26,7 @@ type ReturnState =
 
 function isFinalEnrollmentState(enrollment: AcademyProgramEnrollmentItem) {
   return (
-    enrollment.status === "CONFIRMED" ||
+    enrollment.status === "UPCOMING" ||
     enrollment.paymentStatus === "CAPTURED" ||
     enrollment.status === "CANCELLED" ||
     enrollment.status === "EXPIRED" ||
@@ -37,7 +37,7 @@ function isFinalEnrollmentState(enrollment: AcademyProgramEnrollmentItem) {
 }
 
 function getReturnState(enrollment: AcademyProgramEnrollmentItem, redirectStatus: string | null) {
-  if (enrollment.status === "CONFIRMED" || enrollment.paymentStatus === "CAPTURED") {
+  if (enrollment.status === "UPCOMING" || enrollment.paymentStatus === "CAPTURED") {
     return "confirmed";
   }
 

@@ -14,7 +14,7 @@ describe('GetMyPatientSessionSummaryUseCase', () => {
     const sessionRepository = {
       listPatientSessionSummaryCandidates: jest.fn().mockResolvedValue([
         {
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.VIDEO,
           scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
           scheduledEndAt: new Date('2026-08-02T12:30:00.000Z'),
@@ -23,7 +23,7 @@ describe('GetMyPatientSessionSummaryUseCase', () => {
           providerSessionRef: 'room-ref-1',
         },
         {
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           sessionMode: SessionMode.VIDEO,
           scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
           scheduledEndAt: new Date('2026-08-02T12:30:00.000Z'),

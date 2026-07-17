@@ -13,8 +13,14 @@ type ErrorShape = {
   message?: string | string[];
   error?: string;
   errorCode?: string;
+  messageKey?: string;
   statusCode?: number;
   details?: Record<string, unknown>;
+  errors?: string[];
+  remainingAttempts?: number;
+  maxAttempts?: number;
+  lockedUntil?: string | null;
+  retryAfterSeconds?: number | null;
 };
 
 type AppErrorContext = {
@@ -33,6 +39,113 @@ function normalizeMessage(message: string | string[] | undefined, fallback: stri
   }
 
   return message?.trim() || fallback;
+}
+
+type AuthLockoutMetadata = {
+  messageKey?: string;
+  remainingAttempts?: number | null;
+  maxAttempts?: number | null;
+  lockedUntil?: string | null;
+  retryAfterSeconds?: number | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function readFirstStringField(payload: unknown, key: string): string | null {
+  const visited = new Set<object>();
+  const stack: unknown[] = [payload];
+
+  while (stack.length > 0) {
+    const current = stack.shift();
+    if (!isRecord(current) || visited.has(current)) {
+      continue;
+    }
+
+    visited.add(current);
+
+    const currentValue = current[key];
+    if (typeof currentValue === "string" && currentValue.trim()) {
+      return currentValue.trim();
+    }
+
+    for (const value of Object.values(current)) {
+      if (isRecord(value) && !visited.has(value)) {
+        stack.push(value);
+      }
+    }
+  }
+
+  return null;
+}
+
+function readAuthLockoutMetadata(payload: unknown): AuthLockoutMetadata {
+  const visited = new Set<object>();
+  const stack: unknown[] = [payload];
+
+  while (stack.length > 0) {
+    const current = stack.shift();
+    if (!isRecord(current) || visited.has(current)) {
+      continue;
+    }
+
+    visited.add(current);
+
+    const remainingAttempts = toFiniteNumber(current.remainingAttempts);
+    const maxAttempts = toFiniteNumber(current.maxAttempts);
+    const retryAfterSeconds = toFiniteNumber(current.retryAfterSeconds);
+    const lockedUntil =
+      typeof current.lockedUntil === "string"
+        ? current.lockedUntil
+        : current.lockedUntil === null
+          ? null
+          : undefined;
+    const messageKey =
+      typeof current.messageKey === "string" && current.messageKey.trim()
+        ? current.messageKey.trim()
+        : undefined;
+
+    if (
+      messageKey ||
+      remainingAttempts !== null ||
+      maxAttempts !== null ||
+      retryAfterSeconds !== null ||
+      lockedUntil !== undefined
+    ) {
+      return {
+        messageKey,
+        remainingAttempts,
+        maxAttempts,
+        lockedUntil,
+        retryAfterSeconds,
+      };
+    }
+
+    const values = Object.values(current);
+    for (const value of values) {
+      if (isRecord(value) && !visited.has(value)) {
+        stack.push(value);
+      }
+    }
+  }
+
+  return {};
 }
 
 function resolveErrorType(params: {
@@ -79,8 +192,14 @@ export class AppError extends Error {
   statusCode: number;
   status: number;
   code?: string;
+  messageKey?: string;
   details?: Record<string, unknown>;
+  errors?: string[];
   diagnostics?: Record<string, unknown>;
+  remainingAttempts?: number | null;
+  maxAttempts?: number | null;
+  lockedUntil?: string | null;
+  retryAfterSeconds?: number | null;
   errorType: AppErrorType;
   requestPath?: string;
   referenceId: string;
@@ -90,8 +209,14 @@ export class AppError extends Error {
     message: string;
     statusCode?: number;
     code?: string;
+    messageKey?: string;
     details?: Record<string, unknown>;
+    errors?: string[];
     diagnostics?: Record<string, unknown>;
+    remainingAttempts?: number | null;
+    maxAttempts?: number | null;
+    lockedUntil?: string | null;
+    retryAfterSeconds?: number | null;
     errorType?: AppErrorType;
     requestPath?: string;
     referenceId?: string;
@@ -102,8 +227,14 @@ export class AppError extends Error {
     this.statusCode = params.statusCode ?? 500;
     this.status = this.statusCode;
     this.code = params.code;
+    this.messageKey = params.messageKey;
     this.details = params.details;
+    this.errors = params.errors;
     this.diagnostics = params.diagnostics;
+    this.remainingAttempts = params.remainingAttempts;
+    this.maxAttempts = params.maxAttempts;
+    this.lockedUntil = params.lockedUntil;
+    this.retryAfterSeconds = params.retryAfterSeconds;
     this.errorType =
       params.errorType ??
       resolveErrorType({
@@ -145,6 +276,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
   if (error instanceof AxiosError) {
     const responseData = error.response?.data as ErrorShape | undefined;
     const statusCode = responseData?.statusCode ?? error.response?.status ?? 500;
+    const lockoutMetadata = readAuthLockoutMetadata(responseData);
     const message = normalizeMessage(
       responseData?.message,
       error.message || "Unexpected API error",
@@ -153,8 +285,20 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
     return new AppError({
       message,
       statusCode,
-      code: responseData?.errorCode ?? responseData?.error ?? error.code,
+      code:
+        readFirstStringField(responseData, "errorCode") ??
+        readFirstStringField(responseData, "error") ??
+        error.code,
+      messageKey:
+        lockoutMetadata.messageKey ??
+        readFirstStringField(responseData, "messageKey") ??
+        undefined,
       details: responseData?.details,
+      errors: responseData?.errors,
+      remainingAttempts: lockoutMetadata.remainingAttempts,
+      maxAttempts: lockoutMetadata.maxAttempts,
+      lockedUntil: lockoutMetadata.lockedUntil,
+      retryAfterSeconds: lockoutMetadata.retryAfterSeconds,
       diagnostics: {
         axiosCode: error.code,
         hasResponse: Boolean(error.response),

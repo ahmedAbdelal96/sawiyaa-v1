@@ -22,8 +22,8 @@ export class PatientJourneyReadRepository {
         status: {
           in: [
             SessionStatus.PENDING_PAYMENT,
-            SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-            SessionStatus.CONFIRMED,
+            SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+            SessionStatus.UPCOMING,
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
           ],
@@ -61,7 +61,9 @@ export class PatientJourneyReadRepository {
         status: {
           in: [
             SessionStatus.COMPLETED,
-            SessionStatus.NO_SHOW,
+            SessionStatus.PATIENT_NO_SHOW,
+            SessionStatus.PRACTITIONER_NO_SHOW,
+            SessionStatus.BOTH_NO_SHOW,
             SessionStatus.CANCELLED,
             SessionStatus.EXPIRED,
           ],

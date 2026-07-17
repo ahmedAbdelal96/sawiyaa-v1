@@ -115,10 +115,12 @@ export interface AdminUserUpdateProfileInput {
 
 export interface AdminUserUpdateStatusInput {
   status: UserStatus;
+  reason?: string;
 }
 
 export interface AdminUserUpdateRolesInput {
   roles: AdminUserRole[];
+  reason?: string;
 }
 
 export interface AdminUserPermissionOverrideOperation {

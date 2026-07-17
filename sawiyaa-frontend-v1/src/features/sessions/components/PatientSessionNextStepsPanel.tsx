@@ -72,8 +72,9 @@ function ActionTile({
 
 export default function PatientSessionNextStepsPanel({ session }: Props) {
   const t = useTranslations("sessions");
-  const isCompleted =
-    session.presentationStatus === "COMPLETED" || session.presentationStatus === "ENDED";
+  // A time-ended session is not completed until the backend confirms it.
+  // Keep review/next-step content gated by the canonical presentation status.
+  const isCompleted = session.presentationStatus === "COMPLETED";
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
     session.presentationStatus,
   );
@@ -145,8 +146,9 @@ export default function PatientSessionNextStepsPanel({ session }: Props) {
             <div className="mt-4">
               <PatientSessionReviewCard
                 sessionId={session.id}
-                practitionerName={session.practitioner.displayName ?? session.practitioner.slug}
+                practitionerName={session.practitioner.displayName}
                 completedAt={session.completedAt}
+                hideHeader={true}
               />
             </div>
           </div>

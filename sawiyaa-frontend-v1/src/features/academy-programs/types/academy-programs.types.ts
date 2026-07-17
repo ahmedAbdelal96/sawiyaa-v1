@@ -61,6 +61,10 @@ export type AcademyProgramItem = {
   priceUsd: string | null;
   registrationOpen: boolean;
   maxSeats: number | null;
+  targetLearnerCount?: number | null;
+  activeLearnerCount?: number;
+  remainingTargetSlots?: number | null;
+  isOverTargetLearners?: boolean;
   startAt: string | null;
   endAt: string | null;
   status: AcademyProgramStatus;
@@ -74,7 +78,7 @@ export type AcademyProgramItem = {
 
 export type AcademyProgramEnrollmentStatus =
   | "PENDING_PAYMENT"
-  | "CONFIRMED"
+  | "UPCOMING"
   | "CANCELLED"
   | "EXPIRED"
   | string;
@@ -351,6 +355,7 @@ export type AcademyProgramEnrollmentBulkAction =
 export type BulkAcademyProgramEnrollmentActionInput = {
   action: AcademyProgramEnrollmentBulkAction;
   enrollmentIds: string[];
+  reason?: string;
 };
 
 export type ListAdminAcademyProgramAttendanceParams = {
@@ -370,4 +375,5 @@ export type SaveAdminAcademyProgramAttendanceItemInput = {
 export type SaveAdminAcademyProgramAttendanceInput = {
   sessionId: string;
   items: SaveAdminAcademyProgramAttendanceItemInput[];
+  reason?: string;
 };

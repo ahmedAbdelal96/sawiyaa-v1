@@ -72,11 +72,15 @@ export class SessionReviewRatingAggregationService {
       },
       hiddenAt: null,
       archivedAt: null,
+      countsInPublicAverage: true,
+      publicRatingValue: {
+        not: null,
+      },
     };
 
     const [ratingsByValue, publishedCounts, writtenCounts] = await Promise.all([
       db.sessionReview.groupBy({
-        by: ['practitionerId', 'ratingValue'],
+        by: ['practitionerId', 'publicRatingValue'],
         where: visibilityWhere,
         _count: {
           id: true,
@@ -122,7 +126,7 @@ export class SessionReviewRatingAggregationService {
           ratingTotal: 0,
         };
       const count = row._count.id;
-      const ratingValue = row.ratingValue;
+      const ratingValue = row.publicRatingValue as number;
 
       existing.ratingsCount += count;
       existing.publishedRatingsCount += count;

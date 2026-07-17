@@ -37,7 +37,24 @@
       "ENDED": "انتهت الجلسة.",
       "UNAVAILABLE": "الجلسة غير متاحة للانضمام الآن.",
       "NO_SHOW": "تم تسجيل هذه الجلسة كغياب."
-    }
+    },
+    "tabs": {
+      "all": "الكل",
+      "upcoming": "النشطة والقادمة",
+      "completed": "المكتملة",
+      "cancelled": "الملغاة",
+      "needsRating": "تحتاج تقييم"
+    },
+    "reviewStatus": {
+      "label": "حالة التقييم",
+      "rated": "تم التقييم",
+      "needsRating": "تحتاج تقييم",
+      "notAvailable": "غير متاح",
+      "rateSession": "قيّم الجلسة",
+      "yourRating": "تقييمك: {rating} من 5"
+    },
+    "needsRatingEmptyHeading": "لا توجد جلسات تحتاج تقييم الآن",
+    "needsRatingEmptyNote": "ستظهر هنا الجلسات المكتملة التي ما زالت تنتظر تقييمك."
   },
   "card": {
     "with": "مع",
@@ -46,6 +63,11 @@
     "viewDetails": "عرض التفاصيل"
   },
   "status": {
+    "PENDING_PRACTITIONER_CONFIRMATION": "\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0645\u062e\u062a\u0635",
+    "AWAITING_COMPLETION_CONFIRMATION": "\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062c\u0644\u0633\u0629",
+    "PATIENT_NO_SHOW": "\u0644\u0645 \u062a\u062d\u0636\u0631 \u0627\u0644\u062c\u0644\u0633\u0629",
+    "PRACTITIONER_NO_SHOW": "\u0644\u0645 \u064a\u062d\u0636\u0631 \u0627\u0644\u0645\u062e\u062a\u0635",
+    "BOTH_NO_SHOW": "\u0644\u0645 \u064a\u062d\u0636\u0631 \u0623\u064a \u0645\u0646 \u0627\u0644\u0637\u0631\u0641\u064a\u0646",
     "DRAFT": "مسودة",
     "PENDING_PAYMENT": "بانتظار الدفع",
     "PENDING_PRACTITIONER_RESPONSE": "بانتظار رد المختص",
@@ -77,6 +99,12 @@
   "detail": {
     "backToSessions": "العودة إلى الجلسات",
     "heading": "تفاصيل الجلسة",
+    "reviewAction": {
+      "heading": "\u0634\u0627\u0631\u0643\u0646\u0627 \u062a\u0642\u064a\u064a\u0645\u0643",
+      "note": "\u0633\u0627\u0639\u062f\u0646\u0627 \u0639\u0644\u0649 \u062a\u062d\u0633\u064a\u0646 \u062a\u062c\u0631\u0628\u062a\u0643 \u0645\u0646 \u062e\u0644\u0627\u0644 \u062a\u0642\u064a\u064a\u0645 \u0647\u0630\u0647 \u0627\u0644\u062c\u0644\u0633\u0629.",
+      "cta": "\u0642\u064a\u0651\u0645 \u0627\u0644\u062c\u0644\u0633\u0629",
+      "rated": "\u062a\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645"
+    },
     "summary": {
       "eyebrow": "نظرة سريعة",
       "heading": "ملخص الجلسة",
@@ -755,10 +783,10 @@
           "SESSION_NOT_JOINABLE_STATUS": "لا يمكن الانضمام إلى هذه الجلسة في حالتها الحالية.",
           "SESSION_NOT_VIDEO_MODE": "الانضمام المباشر متاح فقط في جلسات الفيديو.",
           "SESSION_TIME_WINDOW_NOT_OPEN": "لم يُفتح الانضمام بعد. حاول مرة أخرى أقرب لوقت الموعد.",
-        "SESSION_RUNTIME_NOT_PREPARED": "غرفة الجلسة لا تزال قيد التجهيز. يرجى المحاولة بعد قليل.",
-        "SESSION_JOIN_WINDOW_CLOSED": "انتهت نافذة الانضمام لهذه الجلسة.",
-        "SESSION_ROOM_CLOSED": "غرفة الفيديو تم إغلاقها بالفعل."
-      },
+          "SESSION_RUNTIME_NOT_PREPARED": "غرفة الجلسة لا تزال قيد التجهيز. يرجى المحاولة بعد قليل.",
+          "SESSION_JOIN_WINDOW_CLOSED": "انتهت نافذة الانضمام لهذه الجلسة.",
+          "SESSION_ROOM_CLOSED": "غرفة الفيديو تم إغلاقها بالفعل."
+        },
         "status": {
           "DRAFT": "هذه الجلسة ما زالت قيد التجهيز.",
           "PENDING_PAYMENT": "ما زال المريض بحاجة إلى إتمام الدفع قبل إتاحة الدخول إلى الجلسة.",

@@ -52,6 +52,7 @@ import {
   useAdminSessionRuntimeInspection,
 } from "@/features/admin/session-runtime/hooks/use-admin-session-runtime";
 import AdminSessionRoomCloseEvidencePanel from "@/features/admin/session-runtime/components/AdminSessionRoomCloseEvidencePanel";
+import AdminSessionPackageEntitlementPanel from "@/features/admin/session-runtime/components/AdminSessionPackageEntitlementPanel";
 
 const STATUS_FILTERS: Array<SessionStatus | "ALL"> = [
   "ALL",
@@ -60,9 +61,7 @@ const STATUS_FILTERS: Array<SessionStatus | "ALL"> = [
   "IN_PROGRESS",
   "COMPLETED",
   "CANCELLED",
-  "NO_SHOW",
-  "REFUND_PENDING",
-  "REFUNDED",
+  "PATIENT_NO_SHOW",
 ];
 
 type SessionTabValue =
@@ -72,8 +71,7 @@ type SessionTabValue =
   | "UPCOMING"
   | "COMPLETED"
   | "CANCELLED"
-  | "REFUNDED"
-  | "NO_SHOW";
+  | "PATIENT_NO_SHOW";
 
 function formatDateTime(value: string | null, locale: string, fallback = "-") {
   if (!value) return fallback;
@@ -106,10 +104,10 @@ function getModeLabel(mode: AdminSessionListItem["sessionMode"]) {
 }
 
 function getStatusLabel(status: SessionStatus, locale: string) {
-  const labels: Record<SessionStatus, string> = {
+  const labels: Record<string, string> = {
     DRAFT: locale === "ar" ? "مسودة" : "Draft",
     PENDING_PAYMENT: locale === "ar" ? "بانتظار الدفع" : "Pending Payment",
-    PENDING_PRACTITIONER_RESPONSE:
+    PENDING_PRACTITIONER_CONFIRMATION:
       locale === "ar" ? "بانتظار رد المعالج" : "Pending Practitioner Response",
     CONFIRMED: locale === "ar" ? "مؤكدة" : "Confirmed",
     UPCOMING: locale === "ar" ? "قادمة" : "Upcoming",
@@ -123,14 +121,18 @@ function getStatusLabel(status: SessionStatus, locale: string) {
     REFUNDED: locale === "ar" ? "مستردة" : "Refunded",
   };
 
-  return labels[status];
+  labels.PATIENT_NO_SHOW = locale === "ar" ? "Patient did not attend" : "Patient did not attend";
+  labels.PRACTITIONER_NO_SHOW = locale === "ar" ? "Practitioner did not attend" : "Practitioner did not attend";
+  labels.BOTH_NO_SHOW = locale === "ar" ? "Neither participant attended" : "Neither participant attended";
+  labels.AWAITING_COMPLETION_CONFIRMATION = locale === "ar" ? "Waiting for session confirmation" : "Waiting for session confirmation";
+  return labels[status] ?? status;
 }
 
 function getRowClass(status: AdminSessionListItem["status"]) {
   if (status === "IN_PROGRESS" || status === "READY_TO_JOIN") {
     return "bg-error/5 shadow-[inset_4px_0_0_0_rgba(220,38,38,0.95)]";
   }
-  if (status === "CANCELLED" || status === "NO_SHOW" || status === "EXPIRED") {
+  if (status === "CANCELLED" || status === "PATIENT_NO_SHOW" || status === "EXPIRED") {
     return "opacity-70";
   }
   return "";
@@ -251,8 +253,7 @@ export default function AdminSessionsListScreen() {
     status === "UPCOMING" ||
     status === "COMPLETED" ||
     status === "CANCELLED" ||
-    status === "REFUNDED" ||
-    status === "NO_SHOW"
+    status === "PATIENT_NO_SHOW"
       ? status
       : "ALL";
 
@@ -263,8 +264,7 @@ export default function AdminSessionsListScreen() {
     { value: "UPCOMING", label: locale === "ar" ? "قادمة" : "Upcoming" },
     { value: "COMPLETED", label: locale === "ar" ? "مكتملة" : "Completed" },
     { value: "CANCELLED", label: locale === "ar" ? "ملغاة" : "Cancelled" },
-    { value: "REFUNDED", label: locale === "ar" ? "مستردة" : "Refunded" },
-    { value: "NO_SHOW", label: locale === "ar" ? "فاتت" : "Missed" },
+    { value: "PATIENT_NO_SHOW", label: locale === "ar" ? "فاتت" : "Missed" },
   ];
 
   const metrics = [
@@ -1032,6 +1032,10 @@ export default function AdminSessionsListScreen() {
                   videoRoomClose={attendanceData.videoRoomClose}
                   relatedSupportTickets={attendanceData.relatedSupportTickets}
                 />
+              ) : null}
+
+              {runtimeItem ? (
+                <AdminSessionPackageEntitlementPanel item={runtimeItem} />
               ) : null}
             </>
           ) : (

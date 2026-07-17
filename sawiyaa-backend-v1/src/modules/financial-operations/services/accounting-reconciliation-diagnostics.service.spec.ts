@@ -39,6 +39,9 @@ function buildService() {
     refund: {
       findUnique: jest.fn(),
     },
+    practitionerRecovery: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     customerWallet: {
       findUnique: jest.fn(),
     },
@@ -82,6 +85,7 @@ function buildService() {
       settlementBatch: { findUnique: jest.Mock };
       practitionerSettlement: { findUnique: jest.Mock };
       refund: { findUnique: jest.Mock };
+      practitionerRecovery: { findMany: jest.Mock };
       customerWallet: { findUnique: jest.Mock };
       customerWalletEntry: { findFirst: jest.Mock; findMany: jest.Mock };
       customerWalletReservation: { findMany: jest.Mock };
@@ -466,6 +470,99 @@ describe('AccountingReconciliationDiagnosticsService', () => {
     });
 
     const result = await setup.service.reconcileRefund('refund_1');
+
+    expect(result.ok).toBe(true);
+    expect(result.issues).toHaveLength(0);
+  });
+
+  it('reconciles a refund that is partly reversed in ledger and partly recovered separately', async () => {
+    const setup = buildService();
+
+    setup.prisma.refund.findUnique.mockResolvedValue({
+      id: 'refund_2',
+      paymentId: 'payment_2',
+      sessionId: 'session_2',
+      currencyCode: 'EGP',
+      amount: new Prisma.Decimal('100.00'),
+      status: RefundStatus.SUCCEEDED,
+      destination: RefundDestination.ORIGINAL_METHOD,
+      processedAt: new Date('2026-05-15T00:00:00.000Z'),
+      metadataJson: null,
+      payment: {
+        id: 'payment_2',
+        status: PaymentStatus.REFUNDED,
+        practitionerId: 'pract_1',
+        amountTotal: new Prisma.Decimal('200.00'),
+        amountSubtotal: new Prisma.Decimal('200.00'),
+        amountDiscount: new Prisma.Decimal('0.00'),
+        currencyCode: 'EGP',
+        commissionPlatformRatePercent: new Prisma.Decimal('30.00'),
+        metadataJson: null,
+      },
+    });
+    setup.prisma.journalEntry.findUnique.mockResolvedValue({
+      id: 'journal_2',
+      occurredAt: new Date('2026-05-15T00:00:00.000Z'),
+      currencyCode: 'EGP',
+      metadataJson: {
+        refundAmount: '100.00',
+        practitionerRefundAmount: '60.00',
+        platformRefundAmount: '40.00',
+      },
+      lines: [
+        {
+          direction: LedgerDirection.DEBIT,
+          amount: new Prisma.Decimal('60.00'),
+          ledgerAccountId: 'practitioner',
+          referenceType: 'refund',
+          referenceId: 'refund_2',
+        },
+        {
+          direction: LedgerDirection.DEBIT,
+          amount: new Prisma.Decimal('40.00'),
+          ledgerAccountId: 'platform',
+          referenceType: 'refund',
+          referenceId: 'refund_2',
+        },
+        {
+          direction: LedgerDirection.CREDIT,
+          amount: new Prisma.Decimal('100.00'),
+          ledgerAccountId: 'gateway',
+          referenceType: 'refund',
+          referenceId: 'refund_2',
+        },
+      ],
+    });
+    setup.ledgerRepository.findByRefundId.mockResolvedValue([
+      {
+        id: 'ledger_3',
+        entryType: LedgerEntryType.REFUND_PRACTITIONER_REVERSAL,
+        direction: LedgerDirection.DEBIT,
+        amount: new Prisma.Decimal('50.00'),
+        currencyCode: 'EGP',
+      },
+      {
+        id: 'ledger_4',
+        entryType: LedgerEntryType.REFUND_PLATFORM_REVERSAL,
+        direction: LedgerDirection.DEBIT,
+        amount: new Prisma.Decimal('40.00'),
+        currencyCode: 'EGP',
+      },
+    ]);
+    setup.prisma.practitionerRecovery.findMany.mockResolvedValue([
+      {
+        amount: new Prisma.Decimal('10.00'),
+        recoveredAmount: new Prisma.Decimal('0.00'),
+        status: 'OPEN',
+      },
+    ]);
+    setup.extractPaymentLedgerBreakdownService.extract.mockReturnValue({
+      practitionerShareAmount: '120.00',
+      platformCommissionAmount: '80.00',
+      currencyCode: 'EGP',
+    });
+
+    const result = await setup.service.reconcileRefund('refund_2');
 
     expect(result.ok).toBe(true);
     expect(result.issues).toHaveLength(0);

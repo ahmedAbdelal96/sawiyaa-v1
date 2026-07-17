@@ -77,7 +77,7 @@ function resolveProgramDescription(enrollment: AcademyProgramEnrollmentItem, loc
 
 function resolveEnrollmentTone(status: AcademyProgramEnrollmentItem["status"]) {
   switch (status) {
-    case "CONFIRMED":
+    case "UPCOMING":
       return "success";
     case "PENDING_PAYMENT":
       return "warning";
@@ -211,7 +211,7 @@ export default function PatientAcademyProgramEnrollmentsScreen() {
     () => ({
       total: data?.pagination.totalItems ?? 0,
       pending: enrollments.filter((item) => item.status === "PENDING_PAYMENT").length,
-      active: enrollments.filter((item) => item.status === "CONFIRMED").length,
+      active: enrollments.filter((item) => item.status === "UPCOMING").length,
       finished: enrollments.filter(
         (item) => item.status === "CANCELLED" || item.status === "EXPIRED",
       ).length,

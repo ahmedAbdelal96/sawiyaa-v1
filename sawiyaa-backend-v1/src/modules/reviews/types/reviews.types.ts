@@ -13,6 +13,8 @@ export const REVIEW_PUBLIC_STATUS: SessionReviewStatus =
 export const REVIEW_SUBMIT_INITIAL_STATUS: SessionReviewStatus =
   SessionReviewStatus.PENDING_MODERATION;
 
+export const REVIEW_AUTO_PUBLISH_MIN_RATING = 4;
+
 export const REVIEW_MAX_RATING = 5;
 
 export const REVIEW_MIN_RATING = 1;
@@ -44,4 +46,15 @@ export type PublicReviewItemView = {
   textReview: string | null;
   submittedAt: string | null;
   publishedAt: string | null;
+};
+
+export type PendingPatientReviewItemView = {
+  sessionId: string;
+  completedAt: string | null;
+  scheduledStartAt: string | null;
+  practitioner: {
+    id: string;
+    slug: string;
+    displayName: string | null;
+  };
 };

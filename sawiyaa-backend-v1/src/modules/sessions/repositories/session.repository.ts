@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import {
+  PaymentStatus,
   Prisma,
+  SessionAdminDecisionType,
   SessionEventType,
   SessionMode,
   SessionProvider,
@@ -217,7 +219,6 @@ export class SessionRepository {
         sessionMode: SessionMode.VIDEO,
         status: {
           in: [
-            SessionStatus.CONFIRMED,
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
           ],
@@ -253,7 +254,7 @@ export class SessionRepository {
       where: {
         status: {
           in: [
-            SessionStatus.CONFIRMED,
+            SessionStatus.UPCOMING,
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
           ],
@@ -428,24 +429,28 @@ export class SessionRepository {
       totalItems,
       pendingPayment: counts[SessionStatus.PENDING_PAYMENT] ?? 0,
       pendingPractitionerResponse:
-        counts[SessionStatus.PENDING_PRACTITIONER_RESPONSE] ?? 0,
-      confirmed: counts[SessionStatus.CONFIRMED] ?? 0,
+        counts[SessionStatus.PENDING_PRACTITIONER_CONFIRMATION] ?? 0,
+      confirmed: counts[SessionStatus.UPCOMING] ?? 0,
       upcoming: counts[SessionStatus.UPCOMING] ?? 0,
       readyToJoin: counts[SessionStatus.READY_TO_JOIN] ?? 0,
       inProgress: counts[SessionStatus.IN_PROGRESS] ?? 0,
       completed: counts[SessionStatus.COMPLETED] ?? 0,
       cancelled: counts[SessionStatus.CANCELLED] ?? 0,
-      noShow: counts[SessionStatus.NO_SHOW] ?? 0,
+      noShow: getCount(
+        SessionStatus.PATIENT_NO_SHOW,
+        SessionStatus.PRACTITIONER_NO_SHOW,
+        SessionStatus.BOTH_NO_SHOW,
+      ),
       expired: counts[SessionStatus.EXPIRED] ?? 0,
-      refundPending: counts[SessionStatus.REFUND_PENDING] ?? 0,
-      refunded: counts[SessionStatus.REFUNDED] ?? 0,
+      refundPending: 0,
+      refunded: 0,
       actionRequired: getCount(
         SessionStatus.PENDING_PAYMENT,
-        SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+        SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
         SessionStatus.READY_TO_JOIN,
       ),
       active: getCount(
-        SessionStatus.CONFIRMED,
+        SessionStatus.UPCOMING,
         SessionStatus.UPCOMING,
         SessionStatus.READY_TO_JOIN,
         SessionStatus.IN_PROGRESS,
@@ -453,10 +458,10 @@ export class SessionRepository {
       history: getCount(
         SessionStatus.COMPLETED,
         SessionStatus.CANCELLED,
-        SessionStatus.NO_SHOW,
+        SessionStatus.PATIENT_NO_SHOW,
+        SessionStatus.PRACTITIONER_NO_SHOW,
+        SessionStatus.BOTH_NO_SHOW,
         SessionStatus.EXPIRED,
-        SessionStatus.REFUND_PENDING,
-        SessionStatus.REFUNDED,
       ),
       paymentExpired: counts[SessionStatus.EXPIRED] ?? 0,
     };
@@ -643,7 +648,7 @@ export class SessionRepository {
 
   updateRuntimeIfMissing(
     sessionId: string,
-    data: Prisma.SessionUncheckedUpdateInput,
+    data: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>,
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).session.updateMany({
@@ -770,14 +775,14 @@ export class SessionRepository {
       );
   }
 
-  expirePendingPaymentSessionsInRangeForPractitioner(input: {
+  listExpiredPendingPaymentSessionsInRangeForPractitioner(input: {
     practitionerId: string;
     startsBefore: Date;
     endsAfter: Date;
     now: Date;
     tx?: Prisma.TransactionClient;
   }) {
-    return this.getDb(input.tx).session.updateMany({
+    return this.getDb(input.tx).session.findMany({
       where: {
         practitionerId: input.practitionerId,
         scheduledStartAt: {
@@ -791,10 +796,7 @@ export class SessionRepository {
           lte: input.now,
         },
       },
-      data: {
-        status: SessionStatus.EXPIRED,
-        expiredAt: input.now,
-      },
+      include: this.sessionInclude,
     });
   }
 
@@ -817,14 +819,14 @@ export class SessionRepository {
     });
   }
 
-  expirePendingPaymentSessionsInRangeForPatient(input: {
+  listExpiredPendingPaymentSessionsInRangeForPatient(input: {
     patientId: string;
     startsBefore: Date;
     endsAfter: Date;
     now: Date;
     tx?: Prisma.TransactionClient;
   }) {
-    return this.getDb(input.tx).session.updateMany({
+    return this.getDb(input.tx).session.findMany({
       where: {
         patientId: input.patientId,
         scheduledStartAt: {
@@ -838,10 +840,7 @@ export class SessionRepository {
           lte: input.now,
         },
       },
-      data: {
-        status: SessionStatus.EXPIRED,
-        expiredAt: input.now,
-      },
+      include: this.sessionInclude,
     });
   }
 
@@ -934,6 +933,137 @@ export class SessionRepository {
     });
   }
 
+  /** Updates runtime metadata without exposing the lifecycle status writer. */
+  updateRuntimeFields(
+    sessionId: string,
+    data: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).session.update({
+      where: { id: sessionId },
+      data,
+      include: this.sessionInclude,
+    });
+  }
+
+  async findByIdForUpdate(
+    sessionId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    await tx.$queryRaw`
+      SELECT "id" FROM "Session" WHERE "id" = ${sessionId}::uuid FOR UPDATE
+    `;
+    return this.findById(sessionId, tx);
+  }
+
+  listSessionsDueForCompletionConfirmation(input: {
+    now: Date;
+    take: number;
+    excludeIds?: string[];
+    cursor?: { scheduledEndAt: Date; id: string };
+  }) {
+    return this.prisma.session.findMany({
+      where: {
+        status: {
+          in: [
+            SessionStatus.UPCOMING,
+            SessionStatus.READY_TO_JOIN,
+          ],
+        },
+        scheduledEndAt: { not: null, lte: input.now },
+        ...(input.cursor
+          ? {
+              OR: [
+                { scheduledEndAt: { gt: input.cursor.scheduledEndAt } },
+                {
+                  scheduledEndAt: input.cursor.scheduledEndAt,
+                  id: { gt: input.cursor.id },
+                },
+              ],
+            }
+          : {}),
+        ...(input.excludeIds?.length
+          ? { id: { notIn: input.excludeIds } }
+          : {}),
+      },
+      orderBy: [{ scheduledEndAt: 'asc' }, { id: 'asc' }],
+      take: input.take,
+      select: { id: true, status: true, scheduledEndAt: true },
+    });
+  }
+
+  async tryLockDueSessionForCompletionConfirmation(
+    input: { sessionId: string; now: Date },
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string; status: SessionStatus } | null> {
+    const eligibleStatuses = [
+      SessionStatus.UPCOMING,
+      SessionStatus.READY_TO_JOIN,
+    ];
+    const rows = await tx.$queryRaw<Array<{ id: string; status: SessionStatus }>>(
+      Prisma.sql`
+        SELECT "id", "status"
+        FROM "Session"
+        WHERE "id" = ${input.sessionId}::uuid
+          AND "scheduledEndAt" IS NOT NULL
+          AND "scheduledEndAt" <= ${input.now}
+          AND "status" IN (${Prisma.join(
+            eligibleStatuses.map((status) => Prisma.sql`${status}::"SessionStatus"`),
+          )})
+        FOR UPDATE SKIP LOCKED
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  async findPatientSessionActionFacts(sessionIds: string[]) {
+    const uniqueSessionIds = Array.from(new Set(sessionIds)).filter(Boolean);
+    if (uniqueSessionIds.length === 0) {
+      return {
+        capturedPaymentSessionIds: new Set<string>(),
+        reviewedSessionIds: new Set<string>(),
+      };
+    }
+
+    const [capturedPayments, packageCoveredSessions, reviews] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: {
+          sessionId: { in: uniqueSessionIds },
+          status: PaymentStatus.CAPTURED,
+        },
+        select: { sessionId: true },
+        distinct: ['sessionId'],
+      }),
+      this.prisma.session.findMany({
+        where: {
+          id: { in: uniqueSessionIds },
+          paymentCoverageType: 'PACKAGE',
+          packagePurchaseId: { not: null },
+        },
+        select: { id: true },
+      }),
+      this.prisma.sessionReview.findMany({
+        where: { sessionId: { in: uniqueSessionIds } },
+        select: { sessionId: true },
+      }),
+    ]);
+
+    return {
+      capturedPaymentSessionIds: new Set(
+        capturedPayments
+          .map((payment) => payment.sessionId)
+          .filter((sessionId): sessionId is string => Boolean(sessionId)),
+      ),
+      reviewEligibleSessionIds: new Set([
+        ...capturedPayments
+          .map((payment) => payment.sessionId)
+          .filter((sessionId): sessionId is string => Boolean(sessionId)),
+        ...packageCoveredSessions.map((session) => session.id),
+      ]),
+      reviewedSessionIds: new Set(reviews.map((review) => review.sessionId)),
+    };
+  }
+
   async hasJoinAllowanceOrAttendanceBefore(input: {
     sessionId: string;
     userId: string;
@@ -1011,8 +1141,11 @@ export class SessionRepository {
     });
   }
 
-  findLatestActiveSessionAdminDecision(sessionId: string) {
-    return this.prisma.sessionAdminDecision.findFirst({
+  findLatestActiveSessionAdminDecision(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAdminDecision.findFirst({
       where: { sessionId, isFinal: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -1022,7 +1155,9 @@ export class SessionRepository {
    * Batch fetch latest final decisions for multiple sessions.
    * Returns a map of sessionId -> decisionType (or null if no final decision).
    */
-  findLatestActiveSessionAdminDecisionsForSessions(sessionIds: string[]) {
+  findLatestActiveSessionAdminDecisionsForSessions(
+    sessionIds: string[],
+  ): Promise<Map<string, SessionAdminDecisionType>> {
     if (sessionIds.length === 0) return Promise.resolve(new Map());
     return this.prisma.sessionAdminDecision.groupBy({
       by: ['sessionId'],
@@ -1032,7 +1167,7 @@ export class SessionRepository {
       },
       _max: { createdAt: true },
     }).then(async (groups) => {
-      if (groups.length === 0) return new Map();
+      if (groups.length === 0) return new Map<string, SessionAdminDecisionType>();
       const decisions = await this.prisma.sessionAdminDecision.findMany({
         where: {
           isFinal: true,
@@ -1047,7 +1182,7 @@ export class SessionRepository {
         seen.add(d.sessionId);
         return true;
       });
-      const map = new Map<string, string>();
+      const map = new Map<string, SessionAdminDecisionType>();
       for (const d of filtered) {
         map.set(d.sessionId, d.decisionType);
       }
@@ -1069,10 +1204,30 @@ export class SessionRepository {
     });
   }
 
+  createSessionPackageEntitlementDecision(
+    data: Prisma.SessionPackageEntitlementDecisionUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionPackageEntitlementDecision.create({
+      data,
+      include: this.packageEntitlementDecisionInclude,
+    });
+  }
+
+  findSessionPackageEntitlementDecisionBySessionId(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionPackageEntitlementDecision.findUnique({
+      where: { sessionId },
+      include: this.packageEntitlementDecisionInclude,
+    });
+  }
+
   private readonly blockingStatuses: SessionStatus[] = [
     SessionStatus.PENDING_PAYMENT,
-    SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-    SessionStatus.CONFIRMED,
+    SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+    SessionStatus.UPCOMING,
     SessionStatus.UPCOMING,
     SessionStatus.READY_TO_JOIN,
     SessionStatus.IN_PROGRESS,
@@ -1113,8 +1268,8 @@ export class SessionRepository {
   }
 
   private readonly lateCandidateStatuses: SessionStatus[] = [
-    SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-    SessionStatus.CONFIRMED,
+    SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+    SessionStatus.UPCOMING,
     SessionStatus.UPCOMING,
     SessionStatus.READY_TO_JOIN,
   ];
@@ -1169,6 +1324,7 @@ export class SessionRepository {
     sessionCode: true,
     status: true,
     sessionMode: true,
+    paymentCoverageType: true,
     scheduledStartAt: true,
     scheduledEndAt: true,
     durationMinutes: true,
@@ -1180,8 +1336,11 @@ export class SessionRepository {
     videoRoomClosedByUserId: true,
     videoRoomCloseReason: true,
     videoRoomCloseNote: true,
+    packageSessionIndex: true,
+    packageSessionCount: true,
     patientId: true,
     practitionerId: true,
+    packagePurchaseId: true,
     practitioner: {
       select: {
         id: true,
@@ -1221,7 +1380,82 @@ export class SessionRepository {
         },
       },
     },
+    packagePurchase: {
+      select: {
+        id: true,
+        status: true,
+        selectedCurrencyCode: true,
+        sessionCountSnapshot: true,
+        patientPayableTotalSnapshot: true,
+        packagePlan: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            sessionCount: true,
+            discountPercent: true,
+          },
+        },
+      },
+    },
+    packageEntitlementDecision: {
+      select: {
+        id: true,
+        sessionId: true,
+        packagePurchaseId: true,
+        sessionStatusSnapshot: true,
+        decisionType: true,
+        reasonCode: true,
+        adminNote: true,
+        resultingSessionEarningReviewId: true,
+        decidedAt: true,
+        idempotencyKey: true,
+        decidedByUser: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+        resultingSessionEarningReview: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    },
   } satisfies Prisma.SessionSelect;
+
+  private readonly packageEntitlementDecisionInclude = {
+    decidedByUser: {
+      select: {
+        id: true,
+        displayName: true,
+      },
+    },
+    resultingSessionEarningReview: {
+      select: {
+        id: true,
+      },
+    },
+    packagePurchase: {
+      select: {
+        id: true,
+        status: true,
+        selectedCurrencyCode: true,
+        sessionCountSnapshot: true,
+        patientPayableTotalSnapshot: true,
+        packagePlan: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            sessionCount: true,
+            discountPercent: true,
+          },
+        },
+      },
+    },
+  } satisfies Prisma.SessionPackageEntitlementDecisionInclude;
 
   private normalizeRoomUrl(roomUrl: string): string {
     const trimmed = roomUrl.trim();

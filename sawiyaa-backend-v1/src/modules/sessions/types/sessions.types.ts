@@ -4,6 +4,7 @@ import {
   SessionJoinBlockedReason,
   SessionPresentationStatus,
 } from './session-video.types';
+import type { PatientSessionActionsViewModel } from '../services/resolve-patient-session-actions.service';
 
 /**
  * Session view-model types keep API contracts stable while the persistence model remains richer for later integrations.
@@ -28,6 +29,7 @@ export interface SessionListItemViewModel {
     displayName: string | null;
   } | null;
   joinAvailability: SessionJoinAvailabilityViewModel;
+  actions: PatientSessionActionsViewModel;
   chatAvailability: GeneralChatAvailabilityViewModel;
   unreadCount?: number;
   hasUnread?: boolean;

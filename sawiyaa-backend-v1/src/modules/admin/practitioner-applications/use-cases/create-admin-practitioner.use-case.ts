@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import {
   AuthProvider,
@@ -16,6 +17,7 @@ import {
   Prisma,
   UserRoleType,
   UserStatus,
+  SecurityAuditOutcome,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -28,6 +30,8 @@ import { PractitionerApplicationSnapshotService } from '@modules/practitioners/s
 import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerPayoutDestinationValidationService } from '@modules/practitioners/services/practitioner-payout-destination-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 /**
  * Creates a practitioner directly from admin scope without practitioner self-submission.
@@ -44,6 +48,7 @@ export class CreateAdminPractitionerUseCase {
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
     private readonly practitionerApplicationCompletionService: PractitionerApplicationCompletionService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -501,6 +506,23 @@ export class CreateAdminPractitionerUseCase {
                 })),
                 payoutDestination,
               }),
+          },
+        });
+
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'security.practitioner.application.direct-create',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId,
+          resourceType: 'PractitionerApplication',
+          resourceId: application.id,
+          targetUserId: user.id,
+          reason: auditNote,
+          metadata: {
+            practitionerProfileId: practitionerProfile.id,
+            status: application.status,
+            credentialCount: credentials.length,
           },
         });
 

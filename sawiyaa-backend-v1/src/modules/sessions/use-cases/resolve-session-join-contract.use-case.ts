@@ -10,7 +10,7 @@ import {
   SessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
@@ -22,6 +22,10 @@ import {
   resolveSessionJoinPolicy,
 } from '../utils/session-join-policy.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class ResolveSessionJoinContractUseCase {
@@ -33,7 +37,7 @@ export class ResolveSessionJoinContractUseCase {
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
   ) {}
 
@@ -57,6 +61,11 @@ export class ResolveSessionJoinContractUseCase {
       actorType: input.actorType,
       session,
     });
+    const latestDecision =
+      await this.sessionRepository.findLatestActiveSessionAdminDecision(
+        session.id,
+      );
+    const finalManualDecision = latestDecision?.decisionType ?? null;
 
     // JOIN_ATTEMPTED — always emitted at the start of a join attempt
     await this.emitEvent({
@@ -82,6 +91,7 @@ export class ResolveSessionJoinContractUseCase {
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
       videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      finalManualDecision,
       now,
     });
 
@@ -107,11 +117,13 @@ export class ResolveSessionJoinContractUseCase {
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
         videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        finalManualDecision,
         now,
       });
     }
 
     if (
+      !finalManualDecision &&
       !readiness.canJoin &&
       readiness.blockedReason === 'SESSION_JOIN_WINDOW_CLOSED'
     ) {
@@ -143,6 +155,7 @@ export class ResolveSessionJoinContractUseCase {
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
         videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        finalManualDecision,
         now,
       });
 
@@ -245,32 +258,15 @@ export class ResolveSessionJoinContractUseCase {
       },
     });
 
-    const promotableToReadyStatuses: SessionStatus[] = [
-      SessionStatus.CONFIRMED,
-      SessionStatus.UPCOMING,
-    ];
+    const promotableToReadyStatuses: SessionStatus[] = [SessionStatus.UPCOMING];
     if (promotableToReadyStatuses.includes(effectiveSession.status)) {
-      this.validateSessionStatusTransitionService.assertCanTransition(
-        effectiveSession.status,
-        SessionStatus.READY_TO_JOIN,
-      );
-
       await this.prisma.$transaction(async (tx) => {
-        await this.sessionRepository.updateStatus(
-          effectiveSession.id,
-          {
-            status: SessionStatus.READY_TO_JOIN,
-          },
+        await this.sessionLifecycleService.transition({
+          session: effectiveSession,
+          to: SessionStatus.READY_TO_JOIN,
+          actorUserId: input.userId,
           tx,
-        );
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: effectiveSession.id,
-            eventType: SessionEventType.SESSION_READY_TO_JOIN,
-            actorUserId: input.userId,
-          },
-          tx,
-        );
+        });
       });
 
       effectiveSession = (await this.sessionRepository.findById(
@@ -287,6 +283,7 @@ export class ResolveSessionJoinContractUseCase {
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
       videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      finalManualDecision,
       now,
     });
     const reconnectGraceClosesAt = usedPostEndReconnectGrace
@@ -377,7 +374,10 @@ export class ResolveSessionJoinContractUseCase {
     await this.sessionRepository.createEvent({
       sessionId: input.sessionId,
       eventType: input.eventType,
+      actorType: SecurityAuditActorType.USER,
       actorUserId: input.actorUserId,
+      source: SecurityAuditSource.HTTP_REQUEST,
+      occurredAt: new Date(),
       metadataJson: this.toPrismaJson(input.metadata ?? {}),
     });
   }

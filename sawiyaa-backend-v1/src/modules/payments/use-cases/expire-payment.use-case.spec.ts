@@ -5,9 +5,6 @@ describe('ExpirePaymentUseCase', () => {
   function buildUseCase(input?: { paymentPurpose?: PaymentPurpose }) {
     const prisma = {
       $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
-      academyEnrollment: {
-        updateMany: jest.fn().mockResolvedValue({}),
-      },
     };
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue({

@@ -23,19 +23,20 @@ const PACKAGE_PURCHASE_STATUS_TO_TONE: Record<
   REFUNDED: "default",
 };
 
-const PACKAGE_PURCHASE_SESSION_PRESENTATION_STATUS_TO_TONE: Record<
+const PACKAGE_PURCHASE_SESSION_PRESENTATION_STATUS_TO_TONE: Partial<Record<
   PatientPackagePurchaseItem["linkedSessions"]["items"][number]["presentationStatus"],
   "success" | "warning" | "info" | "default"
-> = {
+>> = {
   UPCOMING: "warning",
-  JOINABLE: "success",
+  READY_TO_JOIN: "success",
   IN_PROGRESS: "info",
   COMPLETED: "success",
   CANCELLED: "default",
-  ENDED: "default",
-  UNAVAILABLE: "default",
-  NO_SHOW: "default",
-  UNDER_REVIEW: "warning",
+  AWAITING_COMPLETION_CONFIRMATION: "warning",
+  EXPIRED: "default",
+  PATIENT_NO_SHOW: "default",
+  PRACTITIONER_NO_SHOW: "default",
+  BOTH_NO_SHOW: "default",
 };
 
 const warnedPackagePurchaseContractMismatches = new Set<string>();
@@ -203,18 +204,24 @@ export function getPackagePurchaseSessionPresentationStatusTranslationKey(
   switch (presentationStatus) {
     case "UPCOMING":
       return "packagePurchases.presentationStatuses.UPCOMING";
-    case "JOINABLE":
-      return "packagePurchases.presentationStatuses.JOINABLE";
+    case "READY_TO_JOIN":
+      return "packagePurchases.presentationStatuses.READY_TO_JOIN";
     case "IN_PROGRESS":
       return "packagePurchases.presentationStatuses.IN_PROGRESS";
     case "COMPLETED":
       return "packagePurchases.presentationStatuses.COMPLETED";
     case "CANCELLED":
       return "packagePurchases.presentationStatuses.CANCELLED";
-    case "ENDED":
-      return "packagePurchases.presentationStatuses.ENDED";
-    case "UNAVAILABLE":
-      return "packagePurchases.presentationStatuses.UNAVAILABLE";
+    case "AWAITING_COMPLETION_CONFIRMATION":
+      return "packagePurchases.presentationStatuses.AWAITING_COMPLETION_CONFIRMATION";
+    case "EXPIRED":
+      return "packagePurchases.presentationStatuses.EXPIRED";
+    case "PATIENT_NO_SHOW":
+      return "packagePurchases.presentationStatuses.PATIENT_NO_SHOW";
+    case "PRACTITIONER_NO_SHOW":
+      return "packagePurchases.presentationStatuses.PRACTITIONER_NO_SHOW";
+    case "BOTH_NO_SHOW":
+      return "packagePurchases.presentationStatuses.BOTH_NO_SHOW";
     default:
       return "packagePurchases.presentationStatuses.UNKNOWN";
   }
@@ -297,7 +304,7 @@ export function getPackagePurchasePendingCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["UPCOMING", "UNAVAILABLE"].includes(session.presentationStatus),
+    ["UPCOMING", "PENDING_PRACTITIONER_CONFIRMATION"].includes(session.status),
   ).length;
 }
 
@@ -305,7 +312,7 @@ export function getPackagePurchaseLiveCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["JOINABLE", "IN_PROGRESS"].includes(session.presentationStatus),
+    ["READY_TO_JOIN", "IN_PROGRESS"].includes(session.status),
   ).length;
 }
 
@@ -313,7 +320,7 @@ export function getPackagePurchaseTerminalCount(
   purchase: PatientPackagePurchaseItem,
 ) {
   return purchase.linkedSessions.items.filter((session) =>
-    ["CANCELLED", "ENDED"].includes(session.presentationStatus),
+    ["CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
   ).length;
 }
 
@@ -321,7 +328,7 @@ export function getNextUpcomingPackageSession(
   purchase: PatientPackagePurchaseItem,
 ) {
   return sortPackagePurchaseSessions(purchase.linkedSessions.items).find((session) =>
-    ["UPCOMING", "JOINABLE", "IN_PROGRESS"].includes(session.presentationStatus),
+    ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(session.status),
   );
 }
 
@@ -333,13 +340,13 @@ export function groupPackagePurchaseSessions(
     booked: sessions,
     unbooked: getPackagePurchaseUnbookedSessionIndexes(purchase),
     upcoming: sessions.filter((session) =>
-      ["UPCOMING", "JOINABLE", "IN_PROGRESS", "UNAVAILABLE"].includes(
-        session.presentationStatus,
+      ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS", "PENDING_PRACTITIONER_CONFIRMATION"].includes(
+        session.status,
       ),
     ),
     completed: sessions.filter((session) => session.presentationStatus === "COMPLETED"),
     terminal: sessions.filter((session) =>
-      ["CANCELLED", "ENDED"].includes(session.presentationStatus),
+      ["CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
     ),
   };
 }

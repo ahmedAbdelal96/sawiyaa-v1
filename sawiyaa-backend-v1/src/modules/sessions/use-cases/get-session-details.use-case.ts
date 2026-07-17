@@ -5,6 +5,7 @@ import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
+import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
 
 /**
  * Session details stay ownership-aware so patient and practitioner reads remain separated
@@ -18,6 +19,7 @@ export class GetSessionDetailsUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionMapper: SessionMapper,
     private readonly sessionAccessPolicy: SessionAccessPolicy,
+    private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
   ) {}
 
   async execute(input: {
@@ -76,13 +78,23 @@ export class GetSessionDetailsUseCase {
     const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
       input.sessionId,
     );
+    const now = new Date();
+    const actions =
+      input.actorType === 'PATIENT'
+        ? await this.resolvePatientSessionActionsService.resolveOne({
+            session,
+            finalManualDecision: latestDecision?.decisionType ?? null,
+            now,
+          })
+        : undefined;
 
     return {
       item: this.sessionMapper.toDetails(
         session,
-        new Date(),
+        now,
         0,
         latestDecision?.decisionType ?? null,
+        actions,
       ),
     };
   }

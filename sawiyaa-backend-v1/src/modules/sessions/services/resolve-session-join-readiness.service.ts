@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  SessionAdminDecisionType,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { SessionJoinBlockedReason } from '../types/session-video.types';
 import { resolveSessionJoinPolicy } from '../utils/session-join-policy.util';
 
@@ -23,6 +28,7 @@ export class ResolveSessionJoinReadinessService {
       providerRoomId: string | null;
       providerSessionRef: string | null;
       videoRoomClosedAt?: Date | null;
+      finalManualDecision?: SessionAdminDecisionType | null;
       now: Date;
     }): {
     canPrepareRuntime: boolean;

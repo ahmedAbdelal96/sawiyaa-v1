@@ -14,11 +14,11 @@ export class CreateSupportTicketDto {
   @IsEnum(SupportTicketType)
   category!: SupportTicketType;
 
-  @ApiProperty({ example: 'Problem joining my session' })
+  @ApiPropertyOptional({ example: 'Problem joining my session' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(191)
-  subject!: string;
+  subject?: string;
 
   @ApiProperty({ example: 'I see an error when trying to join the room.' })
   @IsString()

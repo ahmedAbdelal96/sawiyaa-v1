@@ -5,6 +5,7 @@ import { ListSessionsDto } from '../dto/list-sessions.dto';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPatientRepository } from '../repositories/session-patient.repository';
 import { SessionRepository } from '../repositories/session.repository';
+import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
 
 /**
  * Patient session listing is intentionally ownership-scoped.
@@ -16,6 +17,7 @@ export class GetMyPatientSessionsUseCase {
     private readonly sessionPatientRepository: SessionPatientRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
+    private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
   ) {}
 
   async execute(input: {
@@ -58,6 +60,11 @@ export class GetMyPatientSessionsUseCase {
     const decisionMap = await this.sessionRepository.findLatestActiveSessionAdminDecisionsForSessions(
       sessions.map((s) => s.id),
     );
+    const actionMap = await this.resolvePatientSessionActionsService.resolveMany({
+      sessions,
+      finalDecisionBySessionId: decisionMap,
+      now,
+    });
 
     return {
       items: sessions.map((session) =>
@@ -66,6 +73,7 @@ export class GetMyPatientSessionsUseCase {
           now,
           unreadMap.get(session.id) ?? 0,
           decisionMap.get(session.id) ?? null,
+          actionMap.get(session.id),
         ),
       ),
       pagination: {

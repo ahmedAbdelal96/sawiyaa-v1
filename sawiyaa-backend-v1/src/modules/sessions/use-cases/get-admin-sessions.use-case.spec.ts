@@ -94,7 +94,7 @@ describe('GetAdminSessionsUseCase', () => {
         }),
         createSession({
           id: 's-2',
-          status: SessionStatus.CONFIRMED,
+          status: SessionStatus.UPCOMING,
           scheduledStartAt: upcoming,
         }),
         createSession({

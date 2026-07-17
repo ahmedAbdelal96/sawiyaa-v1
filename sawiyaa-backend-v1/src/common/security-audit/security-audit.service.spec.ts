@@ -3,21 +3,17 @@ import { SecurityAuditOutcome } from '@prisma/client';
 
 describe('SecurityAuditService', () => {
   const createMock = jest.fn().mockResolvedValue({});
-  const prisma = {
-    securityAuditLog: {
-      create: createMock,
-    },
-  };
+  const repository = { create: createMock };
 
   let service: SecurityAuditService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new SecurityAuditService(prisma as never);
+    service = new SecurityAuditService(repository as never);
   });
 
   describe('logAsync', () => {
-    it('calls prisma.securityAuditLog.create without blocking', async () => {
+    it('calls the append-only repository without blocking', async () => {
       service.logAsync({
         action: 'test.action',
         outcome: SecurityAuditOutcome.SUCCESS,
@@ -29,12 +25,10 @@ describe('SecurityAuditService', () => {
 
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
             action: 'test.action',
             outcome: SecurityAuditOutcome.SUCCESS,
             actorUserId: 'user-1',
           }),
-        }),
       );
     });
 
@@ -62,9 +56,58 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
-      expect(call.data.userAgent).toHaveLength(500);
-      expect(call.data.reason).toHaveLength(500);
+      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      expect(call.userAgent).toHaveLength(500);
+      expect(call.reason).toHaveLength(500);
+    });
+  });
+
+  describe('recordRequired', () => {
+    it('writes through the supplied transaction client', async () => {
+      const tx = { securityAuditLog: { create: jest.fn() } };
+
+      await service.recordRequired(tx as never, {
+        action: 'test.required',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorUserId: 'user-1',
+      });
+
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'test.required' }),
+        tx,
+      );
+    });
+
+    it('propagates required-write failures to the transaction caller', async () => {
+      createMock.mockRejectedValueOnce(new Error('DB down'));
+
+      await expect(
+        service.recordRequired({} as never, {
+          action: 'test.required.fail',
+          outcome: SecurityAuditOutcome.SUCCESS,
+        }),
+      ).rejects.toThrow('DB down');
+    });
+
+    it('rejects a USER actor without an actor id', async () => {
+      await expect(
+        service.recordRequired({} as never, {
+          action: 'test.invalid-actor',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: 'USER' as never,
+        }),
+      ).rejects.toThrow('USER actor requires actorUserId');
+      expect(createMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects oversized sanitized metadata', async () => {
+      await expect(
+        service.recordRequired({} as never, {
+          action: 'test.large-metadata',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          metadata: { details: 'x'.repeat(33 * 1024) },
+        }),
+      ).rejects.toThrow('metadata exceeds');
     });
   });
 
@@ -95,9 +138,9 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
-      expect(call.data.metadataJson).not.toHaveProperty(key);
-      expect(call.data.metadataJson).toHaveProperty('safeKey', 'safe-value');
+      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      expect(call.metadataJson).not.toHaveProperty(key);
+      expect(call.metadataJson).toHaveProperty('safeKey', 'safe-value');
     });
 
     it('keeps non-sensitive keys in metadata', async () => {
@@ -109,8 +152,8 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
-      expect(call.data.metadataJson).toEqual({
+      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      expect(call.metadataJson).toEqual({
         userId: 'u1',
         action: 'click',
         count: 3,
@@ -137,8 +180,8 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
-      expect(call.data.metadataJson).toEqual({
+      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      expect(call.metadataJson).toEqual({
         actor: {
           userId: 'u1',
         },
@@ -158,8 +201,8 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as { data: Record<string, any> };
-      expect(call.data.metadataJson).toBeUndefined();
+      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      expect(call.metadataJson).toBeUndefined();
     });
   });
 });

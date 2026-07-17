@@ -52,6 +52,8 @@ export const enAdminCatalog = {
       invalidCountryCode: 'Country code is invalid or not active',
       invalidCredentialExpiry:
         'Credential expiry must be a future date when provided',
+      credentialRejectionReasonRequired:
+        'A reason is required when rejecting a credential',
       invalidYearsOfExperience: 'Years of experience must be zero or greater',
       invalidSpecialtyIds: 'One or more specialty ids are invalid or inactive',
       invalidSpecialtyCategoryId:

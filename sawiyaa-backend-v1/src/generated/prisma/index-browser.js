@@ -437,6 +437,7 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   isOnlineToggleEnabled: 'isOnlineToggleEnabled',
   isInstantBookingEnabled: 'isInstantBookingEnabled',
   acceptsPackages: 'acceptsPackages',
+  preferredPayoutCurrencyCode: 'preferredPayoutCurrencyCode',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -554,6 +555,36 @@ exports.Prisma.PackageSettlementScalarFieldEnum = {
   decision: 'decision',
   notes: 'notes',
   metadataJson: 'metadataJson',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SessionEarningReviewScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  paymentId: 'paymentId',
+  packagePurchaseId: 'packagePurchaseId',
+  packageSettlementId: 'packageSettlementId',
+  practitionerId: 'practitionerId',
+  patientId: 'patientId',
+  sourceType: 'sourceType',
+  reviewStatus: 'reviewStatus',
+  reviewDecision: 'reviewDecision',
+  paymentAmount: 'paymentAmount',
+  paymentCurrencyCode: 'paymentCurrencyCode',
+  suggestedPractitionerAmount: 'suggestedPractitionerAmount',
+  suggestedPlatformAmount: 'suggestedPlatformAmount',
+  suggestedCurrencyCode: 'suggestedCurrencyCode',
+  finalPractitionerAmount: 'finalPractitionerAmount',
+  finalPlatformAmount: 'finalPlatformAmount',
+  finalCurrencyCode: 'finalCurrencyCode',
+  reviewedByUserId: 'reviewedByUserId',
+  reviewedAt: 'reviewedAt',
+  approvedByUserId: 'approvedByUserId',
+  approvedAt: 'approvedAt',
+  internalReason: 'internalReason',
+  practitionerFacingNote: 'practitionerFacingNote',
+  idempotencyKey: 'idempotencyKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -817,6 +848,24 @@ exports.Prisma.SessionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SessionPackageEntitlementDecisionScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  packagePurchaseId: 'packagePurchaseId',
+  patientId: 'patientId',
+  practitionerId: 'practitionerId',
+  sessionStatusSnapshot: 'sessionStatusSnapshot',
+  decisionType: 'decisionType',
+  reasonCode: 'reasonCode',
+  adminNote: 'adminNote',
+  decidedByUserId: 'decidedByUserId',
+  resultingSessionEarningReviewId: 'resultingSessionEarningReviewId',
+  decidedAt: 'decidedAt',
+  idempotencyKey: 'idempotencyKey',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SessionReminderQueueScalarFieldEnum = {
   id: 'id',
   sessionId: 'sessionId',
@@ -902,8 +951,43 @@ exports.Prisma.SessionEventScalarFieldEnum = {
   id: 'id',
   sessionId: 'sessionId',
   eventType: 'eventType',
+  actorType: 'actorType',
   actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  reason: 'reason',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  occurredAt: 'occurredAt',
   metadataJson: 'metadataJson',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.RefundEventScalarFieldEnum = {
+  id: 'id',
+  refundId: 'refundId',
+  paymentId: 'paymentId',
+  sessionId: 'sessionId',
+  eventType: 'eventType',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  destination: 'destination',
+  amount: 'amount',
+  currencyCode: 'currencyCode',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  reason: 'reason',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  idempotencyKey: 'idempotencyKey',
+  commandReference: 'commandReference',
+  externalReference: 'externalReference',
+  metadataJson: 'metadataJson',
+  occurredAt: 'occurredAt',
   createdAt: 'createdAt'
 };
 
@@ -988,6 +1072,18 @@ exports.Prisma.PaymentEventScalarFieldEnum = {
   paymentId: 'paymentId',
   eventType: 'eventType',
   providerEventRef: 'providerEventRef',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  reason: 'reason',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  commandReference: 'commandReference',
+  idempotencyKey: 'idempotencyKey',
+  occurredAt: 'occurredAt',
   payloadJson: 'payloadJson',
   createdAt: 'createdAt'
 };
@@ -1003,6 +1099,16 @@ exports.Prisma.RefundScalarFieldEnum = {
   amount: 'amount',
   currencyCode: 'currencyCode',
   providerRefundRef: 'providerRefundRef',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  idempotencyKey: 'idempotencyKey',
+  occurredAt: 'occurredAt',
   requestedAt: 'requestedAt',
   processedAt: 'processedAt',
   failedAt: 'failedAt',
@@ -1040,6 +1146,16 @@ exports.Prisma.CustomerWalletEntryScalarFieldEnum = {
   referenceType: 'referenceType',
   referenceId: 'referenceId',
   metadataJson: 'metadataJson',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  reason: 'reason',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  externalReference: 'externalReference',
+  idempotencyKey: 'idempotencyKey',
+  occurredAt: 'occurredAt',
   effectiveAt: 'effectiveAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1066,6 +1182,7 @@ exports.Prisma.LedgerEntryScalarFieldEnum = {
   sessionId: 'sessionId',
   paymentId: 'paymentId',
   settlementId: 'settlementId',
+  sessionEarningReviewId: 'sessionEarningReviewId',
   entryType: 'entryType',
   direction: 'direction',
   amount: 'amount',
@@ -1247,10 +1364,60 @@ exports.Prisma.PractitionerSettlementPayoutScalarFieldEnum = {
   transferFeeTreatment: 'transferFeeTreatment',
   externalPayoutRef: 'externalPayoutRef',
   notes: 'notes',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  reason: 'reason',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  idempotencyKey: 'idempotencyKey',
+  occurredAt: 'occurredAt',
   effectiveAt: 'effectiveAt',
   processedByUserId: 'processedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FinanceReconciliationActionScalarFieldEnum = {
+  id: 'id',
+  issueId: 'issueId',
+  runId: 'runId',
+  reviewId: 'reviewId',
+  actionType: 'actionType',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  reason: 'reason',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  metadataJson: 'metadataJson',
+  occurredAt: 'occurredAt'
+};
+
+exports.Prisma.LedgerClassificationEventScalarFieldEnum = {
+  id: 'id',
+  ledgerEntryId: 'ledgerEntryId',
+  previousSettlementId: 'previousSettlementId',
+  newSettlementId: 'newSettlementId',
+  previousBalanceBucket: 'previousBalanceBucket',
+  newBalanceBucket: 'newBalanceBucket',
+  actionType: 'actionType',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  reason: 'reason',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  idempotencyKey: 'idempotencyKey',
+  commandReference: 'commandReference',
+  occurredAt: 'occurredAt'
 };
 
 exports.Prisma.PractitionerManualPayoutScalarFieldEnum = {
@@ -1267,6 +1434,54 @@ exports.Prisma.PractitionerManualPayoutScalarFieldEnum = {
   paidAt: 'paidAt',
   notes: 'notes',
   recordedByUserId: 'recordedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerRecoveryScalarFieldEnum = {
+  id: 'id',
+  practitionerId: 'practitionerId',
+  sessionId: 'sessionId',
+  paymentId: 'paymentId',
+  refundId: 'refundId',
+  sessionEarningReviewId: 'sessionEarningReviewId',
+  settlementId: 'settlementId',
+  payoutId: 'payoutId',
+  amount: 'amount',
+  recoveredAmount: 'recoveredAmount',
+  currencyCode: 'currencyCode',
+  status: 'status',
+  reasonCode: 'reasonCode',
+  internalReason: 'internalReason',
+  practitionerFacingNote: 'practitionerFacingNote',
+  createdByUserId: 'createdByUserId',
+  resolvedByUserId: 'resolvedByUserId',
+  resolvedAt: 'resolvedAt',
+  idempotencyKey: 'idempotencyKey',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerRecoveryActionScalarFieldEnum = {
+  id: 'id',
+  recoveryId: 'recoveryId',
+  actionType: 'actionType',
+  amount: 'amount',
+  payoutId: 'payoutId',
+  reason: 'reason',
+  performedByUserId: 'performedByUserId',
+  actorType: 'actorType',
+  actorUserId: 'actorUserId',
+  actorRolesJson: 'actorRolesJson',
+  source: 'source',
+  requestId: 'requestId',
+  correlationId: 'correlationId',
+  previousStatus: 'previousStatus',
+  newStatus: 'newStatus',
+  previousRemainingAmount: 'previousRemainingAmount',
+  newRemainingAmount: 'newRemainingAmount',
+  occurredAt: 'occurredAt',
+  idempotencyKey: 'idempotencyKey',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1936,9 +2151,15 @@ exports.Prisma.SessionReviewScalarFieldEnum = {
   patientId: 'patientId',
   practitionerId: 'practitionerId',
   ratingValue: 'ratingValue',
+  publicRatingValue: 'publicRatingValue',
   reviewTitle: 'reviewTitle',
   reviewText: 'reviewText',
   reviewStatus: 'reviewStatus',
+  moderationDecision: 'moderationDecision',
+  moderatedByUserId: 'moderatedByUserId',
+  moderatedAt: 'moderatedAt',
+  moderationReason: 'moderationReason',
+  countsInPublicAverage: 'countsInPublicAverage',
   isAnonymous: 'isAnonymous',
   isFeatured: 'isFeatured',
   submittedAt: 'submittedAt',
@@ -1981,163 +2202,6 @@ exports.Prisma.CourseCategoryTranslationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.CourseScalarFieldEnum = {
-  id: 'id',
-  primaryCategoryId: 'primaryCategoryId',
-  createdByUserId: 'createdByUserId',
-  publishedByUserId: 'publishedByUserId',
-  slugRoot: 'slugRoot',
-  courseType: 'courseType',
-  deliveryMode: 'deliveryMode',
-  status: 'status',
-  visibility: 'visibility',
-  coverImageUrl: 'coverImageUrl',
-  thumbnailUrl: 'thumbnailUrl',
-  priceAmount: 'priceAmount',
-  currencyCode: 'currencyCode',
-  capacityMode: 'capacityMode',
-  maxEnrollments: 'maxEnrollments',
-  isFeatured: 'isFeatured',
-  publishedAt: 'publishedAt',
-  archivedAt: 'archivedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CourseTranslationScalarFieldEnum = {
-  id: 'id',
-  courseId: 'courseId',
-  locale: 'locale',
-  title: 'title',
-  shortDescription: 'shortDescription',
-  fullDescription: 'fullDescription',
-  slug: 'slug',
-  metaTitle: 'metaTitle',
-  metaDescription: 'metaDescription',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CourseScheduleScalarFieldEnum = {
-  id: 'id',
-  courseId: 'courseId',
-  scheduleCode: 'scheduleCode',
-  status: 'status',
-  createdByUserId: 'createdByUserId',
-  enrollmentOpenAt: 'enrollmentOpenAt',
-  enrollmentCloseAt: 'enrollmentCloseAt',
-  startsAt: 'startsAt',
-  endsAt: 'endsAt',
-  timezone: 'timezone',
-  plannedDurationDays: 'plannedDurationDays',
-  plannedLectureCount: 'plannedLectureCount',
-  maxEnrollmentsOverride: 'maxEnrollmentsOverride',
-  priceOverrideAmount: 'priceOverrideAmount',
-  currencyCodeOverride: 'currencyCodeOverride',
-  externalRoomProvider: 'externalRoomProvider',
-  externalRoomJoinUrl: 'externalRoomJoinUrl',
-  externalRoomHostUrl: 'externalRoomHostUrl',
-  waitlistEnabled: 'waitlistEnabled',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CourseSessionScalarFieldEnum = {
-  id: 'id',
-  courseScheduleId: 'courseScheduleId',
-  createdByUserId: 'createdByUserId',
-  sessionTitle: 'sessionTitle',
-  sessionOrder: 'sessionOrder',
-  startsAt: 'startsAt',
-  endsAt: 'endsAt',
-  externalRoomProvider: 'externalRoomProvider',
-  externalRoomJoinUrl: 'externalRoomJoinUrl',
-  externalRoomHostUrl: 'externalRoomHostUrl',
-  attendanceTrackingEnabled: 'attendanceTrackingEnabled',
-  isMandatory: 'isMandatory',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.EnrollmentScalarFieldEnum = {
-  id: 'id',
-  courseId: 'courseId',
-  courseScheduleId: 'courseScheduleId',
-  userId: 'userId',
-  paymentId: 'paymentId',
-  enrollmentStatus: 'enrollmentStatus',
-  paymentStatus: 'paymentStatus',
-  attendanceStatus: 'attendanceStatus',
-  enrolledAt: 'enrolledAt',
-  cancelledAt: 'cancelledAt',
-  refundedAt: 'refundedAt',
-  completedAt: 'completedAt',
-  notesInternal: 'notesInternal',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.EnrollmentAttendanceScalarFieldEnum = {
-  id: 'id',
-  enrollmentId: 'enrollmentId',
-  courseSessionId: 'courseSessionId',
-  attendanceStatus: 'attendanceStatus',
-  attendanceSource: 'attendanceSource',
-  checkInAt: 'checkInAt',
-  checkOutAt: 'checkOutAt',
-  attendedMinutes: 'attendedMinutes',
-  markedByUserId: 'markedByUserId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.CourseApprovalScalarFieldEnum = {
-  id: 'id',
-  courseId: 'courseId',
-  reviewedByUserId: 'reviewedByUserId',
-  decision: 'decision',
-  reviewNote: 'reviewNote',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.AcademyCourseScalarFieldEnum = {
-  id: 'id',
-  slug: 'slug',
-  title: 'title',
-  shortDescription: 'shortDescription',
-  fullDescription: 'fullDescription',
-  status: 'status',
-  visibility: 'visibility',
-  coverImageUrl: 'coverImageUrl',
-  thumbnailUrl: 'thumbnailUrl',
-  priceAmountEgp: 'priceAmountEgp',
-  priceAmountUsd: 'priceAmountUsd',
-  priceAmount: 'priceAmount',
-  currencyCode: 'currencyCode',
-  startsAt: 'startsAt',
-  endsAt: 'endsAt',
-  plannedDurationDays: 'plannedDurationDays',
-  plannedLectureCount: 'plannedLectureCount',
-  meetingUrl: 'meetingUrl',
-  whatsappGroupUrl: 'whatsappGroupUrl',
-  publishedAt: 'publishedAt',
-  archivedAt: 'archivedAt',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.AcademyCourseLectureScalarFieldEnum = {
-  id: 'id',
-  academyCourseId: 'academyCourseId',
-  lectureOrder: 'lectureOrder',
-  lectureTitle: 'lectureTitle',
-  startsAt: 'startsAt',
-  endsAt: 'endsAt',
-  createdByUserId: 'createdByUserId',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.AcademyLearnerScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2157,53 +2221,6 @@ exports.Prisma.AcademyLearnerScalarFieldEnum = {
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
-};
-
-exports.Prisma.AcademyEnrollmentScalarFieldEnum = {
-  id: 'id',
-  academyCourseId: 'academyCourseId',
-  academyLearnerId: 'academyLearnerId',
-  publicAccessToken: 'publicAccessToken',
-  enrollmentStatus: 'enrollmentStatus',
-  paymentStatus: 'paymentStatus',
-  paymentId: 'paymentId',
-  registeredAt: 'registeredAt',
-  confirmedAt: 'confirmedAt',
-  cancelledAt: 'cancelledAt',
-  failedAt: 'failedAt',
-  failedReason: 'failedReason',
-  notesInternal: 'notesInternal'
-};
-
-exports.Prisma.AcademyPaymentAttemptScalarFieldEnum = {
-  id: 'id',
-  academyCourseId: 'academyCourseId',
-  academyEnrollmentId: 'academyEnrollmentId',
-  paymentId: 'paymentId',
-  provider: 'provider',
-  status: 'status',
-  amountSubtotal: 'amountSubtotal',
-  amountDiscount: 'amountDiscount',
-  amountTotal: 'amountTotal',
-  currencyCode: 'currencyCode',
-  providerPaymentRef: 'providerPaymentRef',
-  providerOrderRef: 'providerOrderRef',
-  providerCustomerRef: 'providerCustomerRef',
-  checkoutUrl: 'checkoutUrl',
-  clientSecret: 'clientSecret',
-  failureReason: 'failureReason',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.AcademyEnrollmentActivityLogScalarFieldEnum = {
-  id: 'id',
-  academyCourseId: 'academyCourseId',
-  academyEnrollmentId: 'academyEnrollmentId',
-  action: 'action',
-  note: 'note',
-  createdByUserId: 'createdByUserId',
-  createdAt: 'createdAt'
 };
 
 exports.Prisma.AcademyProgramScalarFieldEnum = {
@@ -2326,13 +2343,16 @@ exports.Prisma.SecurityAuditLogScalarFieldEnum = {
   id: 'id',
   action: 'action',
   outcome: 'outcome',
+  actorType: 'actorType',
   actorUserId: 'actorUserId',
   actorRolesJson: 'actorRolesJson',
+  source: 'source',
   resourceType: 'resourceType',
   resourceId: 'resourceId',
   targetUserId: 'targetUserId',
   ipAddress: 'ipAddress',
   userAgent: 'userAgent',
+  requestId: 'requestId',
   correlationId: 'correlationId',
   reason: 'reason',
   metadataJson: 'metadataJson',
@@ -2659,6 +2679,26 @@ exports.PackageSettlementStatus = exports.$Enums.PackageSettlementStatus = {
   REFUNDED_OR_ADJUSTED: 'REFUNDED_OR_ADJUSTED'
 };
 
+exports.SessionEarningReviewSourceType = exports.$Enums.SessionEarningReviewSourceType = {
+  DIRECT_SESSION: 'DIRECT_SESSION',
+  PACKAGE_SESSION: 'PACKAGE_SESSION'
+};
+
+exports.SessionEarningReviewStatus = exports.$Enums.SessionEarningReviewStatus = {
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  EXCLUDED_FROM_PAYOUT: 'EXCLUDED_FROM_PAYOUT'
+};
+
+exports.SessionEarningReviewDecision = exports.$Enums.SessionEarningReviewDecision = {
+  AUTO_CREATED: 'AUTO_CREATED',
+  APPROVED_AS_IS: 'APPROVED_AS_IS',
+  EDITED_AND_APPROVED: 'EDITED_AND_APPROVED',
+  REJECTED_PAYOUT: 'REJECTED_PAYOUT',
+  EXCLUDED_FROM_PAYOUT: 'EXCLUDED_FROM_PAYOUT'
+};
+
 exports.MatchingSessionStatus = exports.$Enums.MatchingSessionStatus = {
   IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED',
@@ -2781,17 +2821,17 @@ exports.SessionFlowType = exports.$Enums.SessionFlowType = {
 exports.SessionStatus = exports.$Enums.SessionStatus = {
   DRAFT: 'DRAFT',
   PENDING_PAYMENT: 'PENDING_PAYMENT',
-  PENDING_PRACTITIONER_RESPONSE: 'PENDING_PRACTITIONER_RESPONSE',
-  CONFIRMED: 'CONFIRMED',
+  PENDING_PRACTITIONER_CONFIRMATION: 'PENDING_PRACTITIONER_CONFIRMATION',
   UPCOMING: 'UPCOMING',
   READY_TO_JOIN: 'READY_TO_JOIN',
   IN_PROGRESS: 'IN_PROGRESS',
+  AWAITING_COMPLETION_CONFIRMATION: 'AWAITING_COMPLETION_CONFIRMATION',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
-  NO_SHOW: 'NO_SHOW',
-  EXPIRED: 'EXPIRED',
-  REFUND_PENDING: 'REFUND_PENDING',
-  REFUNDED: 'REFUNDED'
+  PATIENT_NO_SHOW: 'PATIENT_NO_SHOW',
+  PRACTITIONER_NO_SHOW: 'PRACTITIONER_NO_SHOW',
+  BOTH_NO_SHOW: 'BOTH_NO_SHOW',
+  EXPIRED: 'EXPIRED'
 };
 
 exports.SessionProvider = exports.$Enums.SessionProvider = {
@@ -2847,6 +2887,7 @@ exports.SessionEventType = exports.$Enums.SessionEventType = {
   PATIENT_JOINED: 'PATIENT_JOINED',
   PRACTITIONER_JOINED: 'PRACTITIONER_JOINED',
   SESSION_STARTED: 'SESSION_STARTED',
+  SESSION_AWAITING_COMPLETION_CONFIRMATION: 'SESSION_AWAITING_COMPLETION_CONFIRMATION',
   SESSION_COMPLETED: 'SESSION_COMPLETED',
   CANCELLED_BY_PATIENT: 'CANCELLED_BY_PATIENT',
   CANCELLED_BY_PRACTITIONER: 'CANCELLED_BY_PRACTITIONER',
@@ -2864,6 +2905,33 @@ exports.SessionEventType = exports.$Enums.SessionEventType = {
   MEETING_ENDED: 'MEETING_ENDED',
   ADMIN_MANUAL_DECISION_CREATED: 'ADMIN_MANUAL_DECISION_CREATED',
   ADMIN_MANUAL_DECISION_SUPERSEDED: 'ADMIN_MANUAL_DECISION_SUPERSEDED'
+};
+
+exports.SecurityAuditActorType = exports.$Enums.SecurityAuditActorType = {
+  USER: 'USER',
+  SYSTEM: 'SYSTEM',
+  SCHEDULED_JOB: 'SCHEDULED_JOB',
+  PAYMENT_WEBHOOK: 'PAYMENT_WEBHOOK',
+  MIGRATION: 'MIGRATION',
+  SEED_QA: 'SEED_QA'
+};
+
+exports.RefundEventType = exports.$Enums.RefundEventType = {
+  REQUESTED: 'REQUESTED',
+  PROCESSING: 'PROCESSING',
+  WALLET_POSTED: 'WALLET_POSTED',
+  PROVIDER_PENDING: 'PROVIDER_PENDING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  RETRIED: 'RETRIED'
+};
+
+exports.RefundStatus = exports.$Enums.RefundStatus = {
+  REQUESTED: 'REQUESTED',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED'
 };
 
 exports.SessionAdminDecisionType = exports.$Enums.SessionAdminDecisionType = {
@@ -2889,7 +2957,6 @@ exports.PaymentPurpose = exports.$Enums.PaymentPurpose = {
   SESSION_INSTANT_BOOKING: 'SESSION_INSTANT_BOOKING',
   SESSION_EXTENSION: 'SESSION_EXTENSION',
   SESSION_PACKAGE_PURCHASE: 'SESSION_PACKAGE_PURCHASE',
-  COURSE_ENROLLMENT: 'COURSE_ENROLLMENT',
   ACADEMY_PROGRAM_ENROLLMENT: 'ACADEMY_PROGRAM_ENROLLMENT',
   MANUAL_INVOICE: 'MANUAL_INVOICE'
 };
@@ -2930,14 +2997,6 @@ exports.PaymentEventType = exports.$Enums.PaymentEventType = {
 exports.RefundType = exports.$Enums.RefundType = {
   FULL: 'FULL',
   PARTIAL: 'PARTIAL'
-};
-
-exports.RefundStatus = exports.$Enums.RefundStatus = {
-  REQUESTED: 'REQUESTED',
-  PROCESSING: 'PROCESSING',
-  SUCCEEDED: 'SUCCEEDED',
-  FAILED: 'FAILED',
-  CANCELLED: 'CANCELLED'
 };
 
 exports.CustomerWalletEntryType = exports.$Enums.CustomerWalletEntryType = {
@@ -3091,6 +3150,41 @@ exports.SettlementPayoutSource = exports.$Enums.SettlementPayoutSource = {
 exports.PayoutTransferFeeTreatment = exports.$Enums.PayoutTransferFeeTreatment = {
   PLATFORM_EXPENSE: 'PLATFORM_EXPENSE',
   DEDUCT_FROM_PRACTITIONER: 'DEDUCT_FROM_PRACTITIONER'
+};
+
+exports.FinanceReconciliationActionType = exports.$Enums.FinanceReconciliationActionType = {
+  ISSUE_CREATED: 'ISSUE_CREATED',
+  ACKNOWLEDGED: 'ACKNOWLEDGED',
+  RESOLVED: 'RESOLVED',
+  IGNORED: 'IGNORED',
+  RUN_COMPLETED: 'RUN_COMPLETED',
+  RUN_FAILED: 'RUN_FAILED'
+};
+
+exports.LedgerClassificationActionType = exports.$Enums.LedgerClassificationActionType = {
+  ASSIGNED_TO_SETTLEMENT: 'ASSIGNED_TO_SETTLEMENT',
+  RELEASED_FROM_SETTLEMENT: 'RELEASED_FROM_SETTLEMENT',
+  BALANCE_BUCKET_CHANGED: 'BALANCE_BUCKET_CHANGED'
+};
+
+exports.PractitionerRecoveryStatus = exports.$Enums.PractitionerRecoveryStatus = {
+  OPEN: 'OPEN',
+  PARTIALLY_RECOVERED: 'PARTIALLY_RECOVERED',
+  RECOVERED: 'RECOVERED',
+  WAIVED: 'WAIVED'
+};
+
+exports.PractitionerRecoveryReasonCode = exports.$Enums.PractitionerRecoveryReasonCode = {
+  REFUND_AFTER_PAYOUT: 'REFUND_AFTER_PAYOUT',
+  REFUND_AFTER_APPROVAL: 'REFUND_AFTER_APPROVAL',
+  MANUAL_FINANCE_CORRECTION: 'MANUAL_FINANCE_CORRECTION',
+  ADMIN_EXCEPTION: 'ADMIN_EXCEPTION'
+};
+
+exports.PractitionerRecoveryActionType = exports.$Enums.PractitionerRecoveryActionType = {
+  APPLIED_TO_PAYOUT: 'APPLIED_TO_PAYOUT',
+  MANUALLY_COLLECTED: 'MANUALLY_COLLECTED',
+  WAIVED: 'WAIVED'
 };
 
 exports.CommissionRuleScope = exports.$Enums.CommissionRuleScope = {
@@ -3467,89 +3561,21 @@ exports.SessionReviewStatus = exports.$Enums.SessionReviewStatus = {
   ARCHIVED: 'ARCHIVED'
 };
 
+exports.SessionReviewModerationDecision = exports.$Enums.SessionReviewModerationDecision = {
+  AUTO_APPROVED_POSITIVE: 'AUTO_APPROVED_POSITIVE',
+  APPROVED_AS_IS: 'APPROVED_AS_IS',
+  EDITED_AND_APPROVED: 'EDITED_AND_APPROVED',
+  REJECTED_PUBLISHING: 'REJECTED_PUBLISHING',
+  INTERNAL_NOTE_ONLY: 'INTERNAL_NOTE_ONLY',
+  EXCLUDED_FROM_PUBLIC_AVERAGE: 'EXCLUDED_FROM_PUBLIC_AVERAGE'
+};
+
 exports.ReviewModerationAction = exports.$Enums.ReviewModerationAction = {
   APPROVED: 'APPROVED',
   HIDDEN: 'HIDDEN',
   REJECTED: 'REJECTED',
   RESTORED: 'RESTORED',
   ARCHIVED: 'ARCHIVED'
-};
-
-exports.CourseType = exports.$Enums.CourseType = {
-  LIVE_COURSE: 'LIVE_COURSE',
-  LIVE_WORKSHOP: 'LIVE_WORKSHOP',
-  LIVE_SERIES: 'LIVE_SERIES'
-};
-
-exports.CourseDeliveryMode = exports.$Enums.CourseDeliveryMode = {
-  EXTERNAL_LIVE_ROOM: 'EXTERNAL_LIVE_ROOM'
-};
-
-exports.CourseStatus = exports.$Enums.CourseStatus = {
-  DRAFT: 'DRAFT',
-  PUBLISHED: 'PUBLISHED',
-  ARCHIVED: 'ARCHIVED',
-  DISABLED: 'DISABLED'
-};
-
-exports.CourseVisibility = exports.$Enums.CourseVisibility = {
-  PUBLIC: 'PUBLIC',
-  UNLISTED: 'UNLISTED',
-  PRIVATE: 'PRIVATE'
-};
-
-exports.CourseScheduleStatus = exports.$Enums.CourseScheduleStatus = {
-  DRAFT: 'DRAFT',
-  OPEN_FOR_ENROLLMENT: 'OPEN_FOR_ENROLLMENT',
-  FULL: 'FULL',
-  STARTED: 'STARTED',
-  COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED',
-  ARCHIVED: 'ARCHIVED'
-};
-
-exports.EnrollmentStatus = exports.$Enums.EnrollmentStatus = {
-  PENDING_PAYMENT: 'PENDING_PAYMENT',
-  ACTIVE: 'ACTIVE',
-  CANCELLED: 'CANCELLED',
-  REFUNDED: 'REFUNDED',
-  COMPLETED: 'COMPLETED',
-  NO_SHOW: 'NO_SHOW'
-};
-
-exports.EnrollmentAttendanceStatus = exports.$Enums.EnrollmentAttendanceStatus = {
-  NOT_STARTED: 'NOT_STARTED',
-  PARTIALLY_ATTENDED: 'PARTIALLY_ATTENDED',
-  ATTENDED: 'ATTENDED',
-  MISSED: 'MISSED'
-};
-
-exports.AttendanceStatus = exports.$Enums.AttendanceStatus = {
-  PRESENT: 'PRESENT',
-  ABSENT: 'ABSENT',
-  LATE: 'LATE',
-  LEFT_EARLY: 'LEFT_EARLY'
-};
-
-exports.AttendanceSource = exports.$Enums.AttendanceSource = {
-  MANUAL: 'MANUAL',
-  PROVIDER_IMPORT: 'PROVIDER_IMPORT',
-  AUTO_ESTIMATED: 'AUTO_ESTIMATED'
-};
-
-exports.CourseReviewDecision = exports.$Enums.CourseReviewDecision = {
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  CHANGES_REQUESTED: 'CHANGES_REQUESTED'
-};
-
-exports.AcademyEnrollmentStatus = exports.$Enums.AcademyEnrollmentStatus = {
-  PENDING_PAYMENT: 'PENDING_PAYMENT',
-  PAID: 'PAID',
-  CONFIRMED: 'CONFIRMED',
-  PAYMENT_FAILED: 'PAYMENT_FAILED',
-  CANCELLED: 'CANCELLED',
-  REFUNDED: 'REFUNDED'
 };
 
 exports.AcademyProgramStatus = exports.$Enums.AcademyProgramStatus = {
@@ -3686,6 +3712,7 @@ exports.Prisma.ModelName = {
   PractitionerMarketingPlacementHistory: 'PractitionerMarketingPlacementHistory',
   PatientPackagePurchase: 'PatientPackagePurchase',
   PackageSettlement: 'PackageSettlement',
+  SessionEarningReview: 'SessionEarningReview',
   MatchingSession: 'MatchingSession',
   MatchingAnswer: 'MatchingAnswer',
   MatchingRecommendation: 'MatchingRecommendation',
@@ -3705,12 +3732,14 @@ exports.Prisma.ModelName = {
   PractitionerAvailabilityWeekSlot: 'PractitionerAvailabilityWeekSlot',
   PractitionerPresence: 'PractitionerPresence',
   Session: 'Session',
+  SessionPackageEntitlementDecision: 'SessionPackageEntitlementDecision',
   SessionReminderQueue: 'SessionReminderQueue',
   SessionCancellationPolicy: 'SessionCancellationPolicy',
   SessionCancellationPolicyRule: 'SessionCancellationPolicyRule',
   SessionCancellationRecord: 'SessionCancellationRecord',
   SessionAttendanceEvent: 'SessionAttendanceEvent',
   SessionEvent: 'SessionEvent',
+  RefundEvent: 'RefundEvent',
   SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
   Payment: 'Payment',
@@ -3730,7 +3759,11 @@ exports.Prisma.ModelName = {
   SettlementBatch: 'SettlementBatch',
   PractitionerSettlement: 'PractitionerSettlement',
   PractitionerSettlementPayout: 'PractitionerSettlementPayout',
+  FinanceReconciliationAction: 'FinanceReconciliationAction',
+  LedgerClassificationEvent: 'LedgerClassificationEvent',
   PractitionerManualPayout: 'PractitionerManualPayout',
+  PractitionerRecovery: 'PractitionerRecovery',
+  PractitionerRecoveryAction: 'PractitionerRecoveryAction',
   PractitionerSettlementPayoutProof: 'PractitionerSettlementPayoutProof',
   CommissionRule: 'CommissionRule',
   Coupon: 'Coupon',
@@ -3780,19 +3813,7 @@ exports.Prisma.ModelName = {
   ReviewModerationEntry: 'ReviewModerationEntry',
   CourseCategory: 'CourseCategory',
   CourseCategoryTranslation: 'CourseCategoryTranslation',
-  Course: 'Course',
-  CourseTranslation: 'CourseTranslation',
-  CourseSchedule: 'CourseSchedule',
-  CourseSession: 'CourseSession',
-  Enrollment: 'Enrollment',
-  EnrollmentAttendance: 'EnrollmentAttendance',
-  CourseApproval: 'CourseApproval',
-  AcademyCourse: 'AcademyCourse',
-  AcademyCourseLecture: 'AcademyCourseLecture',
   AcademyLearner: 'AcademyLearner',
-  AcademyEnrollment: 'AcademyEnrollment',
-  AcademyPaymentAttempt: 'AcademyPaymentAttempt',
-  AcademyEnrollmentActivityLog: 'AcademyEnrollmentActivityLog',
   AcademyProgram: 'AcademyProgram',
   AcademyProgramSession: 'AcademyProgramSession',
   AcademyProgramEnrollment: 'AcademyProgramEnrollment',

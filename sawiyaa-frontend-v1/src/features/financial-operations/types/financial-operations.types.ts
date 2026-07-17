@@ -5,6 +5,7 @@ export type PractitionerWallet = {
   reservedBalance: string;
   totalEarned: string;
   lifetimePaidOut: string;
+  manualRecoveryAmount: string;
   lastLedgerEntryAt: string | null;
   updatedAt: string | null;
 };

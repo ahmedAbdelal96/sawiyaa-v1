@@ -101,6 +101,22 @@ export class UserEmailRepository {
     });
   }
 
+  createPrimaryEmail(
+    userId: string,
+    email: string,
+    isVerified: boolean,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).userEmail.create({
+      data: {
+        userId,
+        email,
+        isPrimary: true,
+        isVerified,
+      },
+    });
+  }
+
   upsertSecondaryEmail(
     userId: string,
     email: string,
@@ -117,6 +133,22 @@ export class UserEmailRepository {
       },
       update: {
         userId,
+        isPrimary: false,
+        isVerified,
+      },
+    });
+  }
+
+  createSecondaryEmail(
+    userId: string,
+    email: string,
+    isVerified: boolean,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).userEmail.create({
+      data: {
+        userId,
+        email,
         isPrimary: false,
         isVerified,
       },

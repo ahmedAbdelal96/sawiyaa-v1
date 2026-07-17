@@ -16,7 +16,7 @@ import { PatientGoogleSignInButton } from "../../../src/components/auth/PatientG
 import { Button, Card, Input, Screen, Text } from "../../../src/components/ui";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { extractApiErrorMessage } from "../../../src/lib/api";
+import { getAuthLockoutErrorMessage } from "../../../src/features/auth/auth-lockout-messages";
 
 function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
@@ -59,7 +59,7 @@ export default function PatientSignInScreen() {
     try {
       await signInPatient({ email: email.trim(), password });
     } catch (error) {
-      setErrorText(extractApiErrorMessage(error));
+      setErrorText(getAuthLockoutErrorMessage(error, "patient", t));
     } finally {
       setIsSubmitting(false);
     }

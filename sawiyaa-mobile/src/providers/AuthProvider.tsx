@@ -37,7 +37,7 @@ import type {
   AuthSuccessResponse,
   AuthenticatedUser,
   MobileSupportedRole,
-  OtpChallengeResponse,
+  PractitionerAuthenticatedResponse,
   PractitionerLoginResponse,
   PatientLoginRequest,
   PatientRegisterRequest,
@@ -155,13 +155,23 @@ function isSupportedMobileRole(
 }
 
 function isAuthSuccessResponse(
-  payload: PractitionerLoginResponse,
-): payload is AuthSuccessResponse {
+  payload: unknown,
+): payload is PractitionerAuthenticatedResponse {
+  if (typeof payload !== "object" || payload === null) {
+    return false;
+  }
+
+  const value = payload as Record<string, unknown>;
+  const tokens = value.tokens;
+  const user = value.user;
   return (
-    typeof payload === "object" &&
-    payload !== null &&
-    "tokens" in payload &&
-    "user" in payload
+    value.nextStep === "AUTHENTICATED" &&
+    typeof tokens === "object" &&
+    tokens !== null &&
+    typeof (tokens as Record<string, unknown>).accessToken === "string" &&
+    typeof (tokens as Record<string, unknown>).refreshToken === "string" &&
+    typeof user === "object" &&
+    user !== null
   );
 }
 

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
-import { ArrowUpRight, BarChart3, BookOpenText, CircleDollarSign, LayoutDashboard, Lock, ReceiptText, Scale, Settings2, TrendingUp, Users } from "lucide-react";
+import { ArrowUpRight, BarChart3, BookOpenText, CircleDollarSign, LayoutDashboard, Lock, ReceiptText, Scale, Settings2, ShieldAlert, TrendingUp, Users } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
+import AdminFinanceSummarySection from "./AdminFinanceSummarySection";
 
 type Props = {
   locale: string;
@@ -70,6 +71,12 @@ export default async function AdminFinanceHubScreen({ locale }: Props) {
       icon: <BookOpenText className="h-5 w-5" />,
     },
     {
+      title: t("hub.advanced.recoveries.title"),
+      description: t("hub.advanced.recoveries.description"),
+      href: "/admin/finance/practitioner-recoveries",
+      icon: <ShieldAlert className="h-5 w-5" />,
+    },
+    {
       title: t("hub.advanced.reconciliation.title"),
       description: t("hub.advanced.reconciliation.description"),
       href: "/admin/finance/accounting/reconciliation",
@@ -124,6 +131,8 @@ export default async function AdminFinanceHubScreen({ locale }: Props) {
         title={t("hub.title")}
         description={t("hub.description")}
       />
+
+      <AdminFinanceSummarySection />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-text-primary">

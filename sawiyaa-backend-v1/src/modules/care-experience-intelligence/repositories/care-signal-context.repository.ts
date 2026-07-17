@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   AssessmentSubmissionStatus,
-  EnrollmentStatus,
+  AcademyProgramEnrollmentStatus,
   PaymentStatus,
   SessionStatus,
   SupportTicketStatus,
@@ -11,7 +11,41 @@ import { RawCareSignalSnapshot } from '../types/care-signal-context.types';
 
 @Injectable()
 export class CareSignalContextRepository {
+  private readonly logger = new Logger(CareSignalContextRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  private async hasActiveAcademyEnrollment(userId: string): Promise<boolean> {
+    try {
+      const enrollment = await this.prisma.academyProgramEnrollment.findFirst({
+        where: {
+          status: AcademyProgramEnrollmentStatus.CONFIRMED,
+          completedAt: null,
+          AND: [
+            { OR: [{ userId }, { academyLearner: { userId } }] },
+            {
+              OR: [
+                { paymentStatus: PaymentStatus.CAPTURED },
+                {
+                  paymentId: null,
+                  academyLearner: { sourceLabel: 'admin-manual' },
+                },
+              ],
+            },
+          ],
+        },
+        select: { id: true },
+      });
+
+      return Boolean(enrollment);
+    } catch (error) {
+      this.logger.warn(
+        'Academy enrollment context lookup failed; continuing without Academy continuity signal',
+        error instanceof Error ? error.name : 'unknown-error',
+      );
+      return false;
+    }
+  }
 
   async readSnapshot(input: {
     patientProfileId: string;
@@ -65,8 +99,8 @@ export class CareSignalContextRepository {
           status: {
             in: [
               SessionStatus.PENDING_PAYMENT,
-              SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-              SessionStatus.CONFIRMED,
+              SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+              SessionStatus.UPCOMING,
               SessionStatus.UPCOMING,
               SessionStatus.READY_TO_JOIN,
             ],
@@ -84,7 +118,9 @@ export class CareSignalContextRepository {
           status: {
             in: [
               SessionStatus.COMPLETED,
-              SessionStatus.NO_SHOW,
+              SessionStatus.PATIENT_NO_SHOW,
+              SessionStatus.PRACTITIONER_NO_SHOW,
+              SessionStatus.BOTH_NO_SHOW,
               SessionStatus.CANCELLED,
               SessionStatus.EXPIRED,
             ],
@@ -142,15 +178,7 @@ export class CareSignalContextRepository {
           status: true,
         },
       }),
-      this.prisma.enrollment.findFirst({
-        where: {
-          userId: input.userId,
-          enrollmentStatus: EnrollmentStatus.ACTIVE,
-        },
-        select: {
-          id: true,
-        },
-      }),
+      this.hasActiveAcademyEnrollment(input.userId),
     ]);
 
     return {
@@ -166,7 +194,7 @@ export class CareSignalContextRepository {
       hasRecentMatchingSession: Boolean(recentMatchingSession),
       hasOpenSupportTicket: Boolean(latestOpenSupportTicket),
       latestSupportTicketStatus: latestOpenSupportTicket?.status ?? null,
-      hasActiveAcademyEnrollment: Boolean(activeAcademyEnrollment),
+      hasActiveAcademyEnrollment: activeAcademyEnrollment,
     };
   }
 }

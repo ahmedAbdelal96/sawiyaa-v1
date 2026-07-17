@@ -75,6 +75,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "errors",
     "help",
     "admin-help",
+    "messages-shell",
   ] as const;
 
   const loadedMessages = await Promise.all(namespaces.map((namespace) => loadNamespace(namespace)));

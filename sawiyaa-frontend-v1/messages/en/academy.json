@@ -1,34 +1,34 @@
 {
   "meta": {
-    "publicTitle": "Academy",
-    "publicDescription": "Browse the platform's Academy programs and enroll in a program that fits your goals.",
-    "publicDetailTitle": "Academy program details",
-    "publicDetailDescription": "Review the program details, then register your seat in a few quick steps.",
-    "publicPaymentReturnTitle": "Academy payment return",
+    "publicTitle": "Training",
+    "publicDescription": "Browse the platform's training courses and enroll in a course that fits your goals.",
+    "publicDetailTitle": "Training course details",
+    "publicDetailDescription": "Review the course details, then complete your registration in a few quick steps.",
+    "publicPaymentReturnTitle": "Training payment return",
     "publicPaymentReturnDescription": "We will confirm your enrollment with the backend before showing the final result.",
-    "adminTitle": "Academy management",
+    "adminTitle": "Training management",
     "adminDescription": "Create and manage public courses, enrollments, and payment follow-up.",
-    "adminDetailTitle": "Academy course management",
-    "adminDetailDescription": "Review the course configuration, track enrollments, and update Academy content.",
-    "adminProgramsTitle": "Academy programs",
-    "adminProgramsDescription": "Create and manage Academy v2 programs, schedules, and session content.",
-    "adminProgramDetailTitle": "Academy program details",
+    "adminDetailTitle": "Training course management",
+    "adminDetailDescription": "Review the course configuration, track enrollments, and update Training content.",
+    "adminProgramsTitle": "Training courses",
+    "adminProgramsDescription": "Create and manage Training v2 courses, schedules, and lecture content.",
+    "adminProgramDetailTitle": "Training course details",
     "adminProgramDetailDescription": "Review the course configuration and manage lectures.",
-    "adminProgramLearnersTitle": "Academy program learners",
-    "adminProgramLearnersDescription": "Review enrollments, update learner details, and manage completion actions.",
-    "adminProgramAttendanceTitle": "Academy program attendance",
-    "adminProgramAttendanceDescription": "Choose a session and record learner attendance with a simple admin flow.",
-    "patientTitle": "My Academy enrollments",
-    "patientDescription": "View your Academy program enrollments and their current status.",
-    "patientDetailTitle": "Academy enrollment details",
+    "adminProgramLearnersTitle": "Training course trainees",
+    "adminProgramLearnersDescription": "Review enrollments, update trainee details, and manage completion actions.",
+    "adminProgramAttendanceTitle": "Training course attendance",
+    "adminProgramAttendanceDescription": "Choose a lecture and record trainee attendance with a simple admin flow.",
+    "patientTitle": "My training enrollments",
+    "patientDescription": "View your Training course enrollments and their current status.",
+    "patientDetailTitle": "Training enrollment details",
     "patientDetailDescription": "Review your enrollment, schedule, attendance, and certificate status.",
-    "patientPayTitle": "Continue Academy payment",
-    "patientPayDescription": "Continue a pending Academy program payment securely."
+    "patientPayTitle": "Continue Training payment",
+    "patientPayDescription": "Continue a pending Training course payment securely."
   },
   "errors": {
     "generic": "Something went wrong while processing your request.",
-    "notFound": "The academy program could not be found.",
-    "loadFailed": "We could not load the academy content right now.",
+    "notFound": "The training course could not be found.",
+    "loadFailed": "We could not load the training content right now.",
     "retry": "Retry",
     "certificateFileRequired": "Please choose a certificate PDF before uploading",
     "certificateInvalidType": "Only PDF certificate files are allowed",
@@ -71,19 +71,20 @@
     }
   },
   "public": {
-    "badge": "Public programs",
+    "badge": "Public courses",
     "errors": {
-      "generic": "Something went wrong while loading this program.",
-      "notFound": "The selected program could not be found.",
-      "registrationClosed": "Registration is currently closed for this program.",
-      "capacityReached": "This program has reached its available seats.",
-      "missingPricing": "This program is missing pricing information right now.",
-      "unsupportedCurrency": "This program is not available in the selected currency.",
-      "alreadyEnrolled": "This learner is already enrolled in the program."
+      "generic": "Something went wrong while loading this course.",
+      "notFound": "The selected course could not be found.",
+      "registrationClosed": "Registration is currently closed for this course.",
+      "capacityReached": "This course has reached its target trainee count.",
+      "missingPricing": "This course is missing pricing information right now.",
+      "unsupportedCurrency": "This course is not available in the selected currency.",
+      "alreadyEnrolled": "This trainee is already enrolled in the course.",
+      "paymentUnavailable": "Payment provider is temporarily unavailable. Please try again later."
     },
     "hero": {
-      "title": "Learn with the Academy",
-      "subtitle": "Browse the platform's open Academy programs, review the schedule, and register your seat with a simple flow."
+      "title": "Training courses",
+      "subtitle": "Browse the available training courses and register for the one that fits you."
     },
     "stats": {
       "courses": "Courses",
@@ -94,16 +95,18 @@
       "featured": "Featured"
     },
     "search": {
-      "title": "Find a program",
+      "title": "Find a course",
       "subtitle": "Search by title or description.",
-      "placeholder": "Search for a program...",
+      "placeholder": "Search for a course...",
       "action": "Search",
-      "loading": "Searching..."
+      "loading": "Searching...",
+      "clear": "Clear",
+      "showAll": "Show all"
     },
     "list": {
-      "title": "Available programs",
-      "subtitle": "Academy programs available right now.",
-      "count": "{count} program(s)"
+      "title": "Available courses",
+      "subtitle": "Training courses available right now.",
+      "count": "{count} course(s)"
     },
     "card": {
       "enrollments": "{count} enrollment(s)",
@@ -112,39 +115,44 @@
       "free": "Free",
       "noDescription": "No short description available.",
       "noDate": "Date not set",
-      "open": "Open program",
-      "priceEgp": "EGP {value}",
-      "priceUsd": "USD {value}",
+      "open": "Open course",
       "startsAt": "Starts at",
       "endsAt": "Ends at",
-      "maxSeats": "{count} seats",
-      "noSeatsLimit": "No seat limit",
+      "lectures": "{count} lectures",
+      "seats": "{count} target trainees",
+      "noSeatsLimit": "No target set",
+      "targetLearners": "{count} target trainees",
+      "noTargetSet": "No target set",
       "noEnrollments": "No enrollments yet"
     },
     "empty": {
-      "filtered": "No programs match your search.",
-      "default": "No Academy programs are published yet."
+      "filtered": "No courses match your search.",
+      "default": "No training courses are published yet."
+    },
+    "emptySearch": {
+      "title": "No matching training courses",
+      "note": "Try a different search term or clear the search to view all courses."
     },
     "detail": {
-      "badge": "Academy program",
+      "badge": "Training course",
       "noShortDescription": "No short description available.",
       "noFullDescription": "No detailed description available.",
       "noDate": "Date not set",
       "free": "Free",
       "notFound": {
-        "title": "Program not found",
-        "note": "This program may have been archived or the link is no longer available.",
-        "back": "Back to academy"
+        "title": "Training course not found",
+        "note": "This course may have been archived or the link is no longer available.",
+        "back": "Back to training courses"
       },
       "summary": {
-        "title": "Program summary",
+        "title": "Training course summary",
         "price": "Price",
         "status": "Status",
         "published": "Published",
         "draft": "Draft",
         "visibility": "Visibility",
         "type": "Access",
-        "publicAccess": "Public program",
+        "publicAccess": "Public course",
         "duration": "Duration in days",
         "daysUnit": "days",
         "lectures": "Lecture count",
@@ -154,27 +162,29 @@
         "deliveryMethod": "Delivery method",
         "startDate": "Start date",
         "endDate": "End date",
+        "targetLearners": "Target trainees",
         "notSet": "Not set"
       },
       "schedule": {
-        "title": "Session schedule",
-        "subtitle": "Review the saved session timings before you register.",
-        "count": "{count} session(s)",
+        "title": "Lecture schedule",
+        "subtitle": "Review the saved lecture timings before you register.",
+        "count": "{count} lecture(s)",
         "columns": {
           "order": "#",
-          "title": "Session",
+          "title": "Lecture",
           "deliveryMethod": "Delivery method",
           "date": "Date",
           "time": "Time",
           "duration": "Duration"
         },
         "empty": {
-          "heading": "No session schedule yet",
-          "note": "The program is still being prepared. Check back once the full schedule is ready."
+          "heading": "No lecture schedule yet",
+          "note": "The course is still being prepared. Check back once the full schedule is ready."
         },
+        "targetLearners": "Target trainees: {count}",
         "item": {
-          "order": "Session {order}",
-          "noTitle": "Untitled session",
+          "order": "Lecture {order}",
+          "noTitle": "Untitled lecture",
           "startsAt": "Starts at",
           "endsAt": "Ends at"
         }
@@ -185,15 +195,15 @@
       "howItWorks": {
         "title": "How it works",
         "step1": "Fill in the registration form with the basic contact details.",
-        "step2": "Complete the payment step if the program is paid.",
-        "step3": "Use the enrollment reference to follow up with the academy team."
+        "step2": "Complete the payment step if the course is paid.",
+        "step3": "Use the enrollment reference to follow up with the training team."
       }
     },
     "form": {
-      "title": "Register your seat",
+      "title": "Complete registration",
       "subtitle": "Keep the form short and simple so registration stays fast.",
       "identityNote": "If you are signed in, we will reuse your saved account details where available.",
-      "restricted": "Admin accounts cannot enroll as learners. Please use a patient, practitioner, or learner account.",
+      "restricted": "Admin accounts cannot enroll as trainees. Please use a patient or practitioner account.",
       "fullName": "Full name",
       "phoneNumber": "Phone number",
       "whatsappNumber": "WhatsApp number",
@@ -203,9 +213,9 @@
       "priceLabel": "Subscription price",
       "priceEgp": "Price in EGP",
       "priceUsd": "Price in USD",
-      "closed": "Registration is closed for this program.",
+      "closed": "Registration is closed for this course.",
       "closedTitle": "Registration closed",
-      "closedNote": "This program is not currently accepting new enrollments.",
+      "closedNote": "This course is not currently accepting new enrollments.",
       "noteTitle": "Automatic pricing",
       "noteBody": "The platform resolves one final price for your account on the server. You do not need to choose a country here.",
       "validation": {
@@ -221,7 +231,7 @@
       "payNow": "Pay now",
       "waiting": "Your registration is being prepared.",
       "paymentStatus": "Payment status",
-      "program": "Program",
+      "program": "Training course",
       "continuePayment": "Continue to payment",
       "preSubmitTitle": "Registration will be created after submission",
       "preSubmitNote": "You will receive a secure payment step after the backend creates your enrollment.",
@@ -237,7 +247,7 @@
   "return": {
     "error": {
       "heading": "We could not verify this payment",
-      "note": "Please return to the program page and try again.",
+      "note": "Please return to the course page and try again.",
       "missing": "The enrollment details are missing."
     },
     "verifying": {
@@ -247,7 +257,7 @@
     },
     "pending": {
       "heading": "Your payment is still being reviewed",
-      "note": "If the payment was just completed, please refresh the page or try again from the program page."
+      "note": "If the payment was just completed, please refresh the page or try again from the course page."
     },
     "confirmed": {
       "heading": "Enrollment confirmed",
@@ -256,14 +266,14 @@
     },
     "failed": {
       "heading": "Payment could not be confirmed",
-      "note": "You can try the payment again or return to the program details."
+      "note": "You can try the payment again or return to the course details."
     },
     "canceled": {
       "heading": "Payment was canceled",
-      "note": "You can return to the program page and continue when you're ready."
+      "note": "You can return to the course page and continue when you're ready."
     },
     "expired": {
-      "heading": "The payment session expired",
+      "heading": "The payment lecture expired",
       "note": "Please start the payment again to continue your enrollment."
     },
     "unavailable": {
@@ -271,42 +281,42 @@
       "note": "We could not load a valid payment link for this enrollment."
     },
     "details": {
-      "program": "Program",
+      "program": "Training course",
       "reference": "Reference",
       "enrollmentStatus": "Enrollment status",
       "paymentStatus": "Payment status",
       "providerReference": "Provider reference",
       "unknown": "Unknown"
     },
-    "backToAcademy": "Back to academy",
-    "backToProgram": "Back to program",
+    "backToAcademy": "Back to training courses",
+    "backToProgram": "Back to course",
     "retryPayment": "Retry payment",
     "refresh": "Refresh status"
   },
   "programs": {
-    "badge": "Academy programs",
-    "title": "Manage Academy programs",
-    "note": "Create, publish, and organize the Academy v2 learning tracks.",
+    "badge": "Training courses",
+    "title": "Manage training courses",
+    "note": "Create, publish, and organize the training v2 learning tracks.",
     "actions": {
-      "create": "Create program",
+      "create": "Create course",
       "manage": "Manage",
-      "edit": "Edit program",
+      "edit": "Edit course",
       "publish": "Publish",
       "publishing": "Publishing...",
       "archive": "Archive",
       "archiving": "Archiving...",
-      "archiveSuccess": "Program archived successfully.",
-      "publishSuccess": "Program published successfully.",
+      "archiveSuccess": "Course archived successfully.",
+      "publishSuccess": "Course published successfully.",
       "failure": "Unable to complete the action right now.",
       "archiveConfirm": {
-        "title": "Archive program",
-        "description": "Archiving hides the program from the public catalog.",
+        "title": "Archive course",
+        "description": "Archiving hides the course from the public catalog.",
         "cancel": "Cancel"
       }
     },
     "tabs": {
       "overview": "Overview",
-      "learners": "Learners",
+      "learners": "Trainees",
       "attendance": "Attendance"
     },
     "registration": {
@@ -326,7 +336,7 @@
       "OTHER": "Other"
     },
     "stats": {
-      "total": "Total programs",
+      "total": "Total courses",
       "published": "Published",
       "drafts": "Drafts",
       "archived": "Archived"
@@ -338,11 +348,11 @@
       "searchPlaceholder": "Search by title, description, or slug..."
     },
     "list": {
-      "title": "Program list",
-      "count": "{count} program(s) found",
+      "title": "Course list",
+      "count": "{count} course(s) found",
       "actionsHeader": "Actions",
       "columns": {
-        "title": "Program",
+        "title": "Course",
         "category": "Category",
         "status": "Status",
         "registration": "Registration",
@@ -355,38 +365,42 @@
       "noCategorySlug": "No category slug",
       "free": "Free",
       "priceMarkets": "EGP {egp} · USD {usd}",
-      "seats": "Seats: {maxSeats}",
-      "noSeats": "Unlimited"
+      "seats": "Target trainees: {maxSeats}",
+      "noSeats": "No target set",
+      "targetLearners": "Target trainees: {count}",
+      "noTargetLearners": "No target set",
+      "targetExceededBadge": "Target exceeded"
     },
     "states": {
       "error": {
-        "heading": "Unable to load programs",
-        "note": "The program list could not be loaded right now.",
+        "heading": "Unable to load courses",
+        "note": "The course list could not be loaded right now.",
         "retry": "Retry"
       },
       "empty": {
-        "heading": "No programs found",
-        "note": "Try clearing filters or create the first Academy program draft."
+        "heading": "No courses found",
+        "note": "Try clearing filters or create the first Training course draft."
       }
     },
     "errors": {
-      "generic": "Something went wrong while saving the program.",
+      "generic": "Something went wrong while saving the course.",
       "genericSave": "Unable to save. Please review the fields and try again.",
-      "notFound": "Academy program not found.",
+      "notFound": "Training course not found.",
       "categoryNotFound": "The selected category could not be found.",
       "basicDetailsRequired": "Complete the basic course details before publishing.",
-      "archivedProgramCannotBePublished": "Archived programs cannot be published.",
-      "archivedReadOnly": "Archived programs cannot be edited or enrolled manually.",
-      "invalidWindow": "The program start time must be before the end time.",
+      "archivedProgramCannotBePublished": "Archived courses cannot be published.",
+      "archivedReadOnly": "Archived courses cannot be edited or enrolled manually.",
+      "invalidWindow": "The course start time must be before the end time.",
       "invalidDate": "Enter a valid date and time.",
       "invalidPrice": "Enter a valid price.",
       "missingSlugSource": "Provide a slug or a title before saving.",
-      "sessionNotFound": "Program session not found.",
+      "sessionNotFound": "Lecture not found.",
       "attendanceInvalidStatus": "Attendance status is invalid.",
       "forbidden": "You do not have permission to perform this action.",
       "duplicateSlug": "This slug is already in use.",
-      "enrollmentAlreadyExists": "This learner is already enrolled in the program.",
-      "learnerContactAlreadyExists": "This learner contact is already linked to another learner.",
+      "archiveReasonRequired": "Please enter a reason before archiving the course.",
+      "enrollmentAlreadyExists": "This trainee is already enrolled in the course.",
+      "learnerContactAlreadyExists": "This trainee contact is already linked to another trainee.",
       "coverFileRequired": "Please choose a cover image before uploading.",
       "coverInvalidType": "Only JPG, PNG, or WebP cover images are allowed.",
       "coverFileTooLarge": "The cover image file is too large. Maximum size is 10 MB.",
@@ -402,8 +416,8 @@
       "save": "Save changes",
       "creating": "Creating...",
       "saving": "Saving...",
-      "createSuccess": "Program created successfully.",
-      "updateSuccess": "Program updated successfully.",
+      "createSuccess": "Course created successfully.",
+      "updateSuccess": "Course updated successfully.",
       "sections": {
         "pricing": "Pricing",
         "schedule": "Course schedule",
@@ -421,9 +435,10 @@
         "priceUsd": "Price in USD",
         "startAt": "Starts at",
         "endAt": "Ends at",
-        "maxSeats": "Max learners",
+        "maxSeats": "Target trainees",
+        "targetLearners": "Target trainees",
         "registrationOpen": "Registration open",
-        "registrationOpenHint": "Allow learners to register for this course"
+        "registrationOpenHint": "Allow trainees to register for this course"
       },
       "coverUpload": {
         "choose": "Choose cover image",
@@ -438,7 +453,8 @@
         "descriptionEn": "Short course description",
         "priceEgp": "0",
         "priceUsd": "0",
-        "maxSeats": "Unlimited"
+        "maxSeats": "No target set",
+        "targetLearners": "No target set"
       },
       "validation": {
         "reviewRequired": "Please review the highlighted fields.",
@@ -454,39 +470,43 @@
         "invalidDate": "Enter a valid date and time.",
         "invalidPrice": "Enter a valid price.",
         "negativePrice": "Price cannot be less than zero.",
-        "invalidMaxSeats": "Enter a valid number of learners.",
-        "maxSeatsPositive": "Max learners must be greater than zero."
+        "invalidMaxSeats": "Enter a valid target trainee count.",
+        "invalidTargetLearners": "Enter a valid target trainee count.",
+        "maxSeatsPositive": "Target trainees must be greater than zero.",
+        "targetLearnersPositive": "Target trainees must be greater than zero."
       }
     },
     "detail": {
       "notFound": {
-        "title": "Program not found",
-        "note": "This program may have been archived or the link is no longer available.",
-        "back": "Back to programs"
+        "title": "Training course not found",
+        "note": "This course may have been archived or the link is no longer available.",
+        "back": "Back to courses"
       },
       "noDescription": "No description available.",
       "noCategory": "No category assigned",
       "notSet": "Not set",
       "overviewNote": "Review the publish state and lecture schedule information.",
       "sections": {
-        "overview": "Program overview",
+        "overview": "Course overview",
         "sessions": "Lecture schedule",
         "summary": "Quick summary",
         "raw": "Core details"
       },
       "actions": {
-        "edit": "Edit program",
+        "edit": "Edit course",
         "publish": "Publish",
         "publishing": "Publishing...",
-        "publishSuccess": "Program published successfully.",
+        "publishSuccess": "Course published successfully.",
         "archive": "Archive",
         "archiving": "Archiving...",
-        "archiveSuccess": "Program archived successfully.",
+        "archiveSuccess": "Course archived successfully.",
         "failure": "Unable to complete the action right now.",
         "archiveConfirm": {
-          "title": "Archive program",
-          "description": "This will hide the program from the public catalog.",
-          "cancel": "Cancel"
+          "title": "Archive course",
+          "description": "This will hide the course from the public catalog.",
+          "cancel": "Cancel",
+          "reasonLabel": "Reason for this action",
+          "reasonRequired": "Please enter a reason before archiving the course."
         },
         "openRegistration": "Open registration",
         "closeRegistration": "Close registration",
@@ -498,15 +518,25 @@
       "stats": {
         "sessions": "Lectures",
         "publishedSessions": "Published lectures",
-        "seats": "Max seats",
-        "registration": "Registration"
+        "targetLearners": "Target trainees",
+        "remainingTargetSlots": "Remaining target slots",
+        "targetLearnersHint": "Active trainees: {count}",
+        "remainingTargetSlotsHint": "Remaining target slots available",
+        "targetExceededHint": "Target exceeded by {count}",
+        "noTargetLearners": "No target set"
+      },
+      "targetBanner": {
+        "title": "Target trainee count in view",
+        "overTitle": "Target trainee count exceeded",
+        "note": "Active trainees: {activeLearnerCount}. Target: {targetLearnerCount}. Remaining target slots: {remainingTargetSlots}."
       },
       "summary": {
         "priceEgp": "Price in EGP",
         "priceUsd": "Price in USD",
         "category": "Category",
         "updatedAt": "Updated",
-        "schedule": "Lecture schedule"
+        "schedule": "Lecture schedule",
+        "targetLearners": "Target trainees"
       },
       "raw": {
         "slug": "Slug",
@@ -563,7 +593,7 @@
         "internalDeliveryNote": "Team note",
         "internalDeliveryLink": "Lecture link",
         "sortOrder": "Lecture order",
-        "isPublished": "Show lecture to learners",
+        "isPublished": "Show lecture to trainees",
         "isPublishedHint": "The lecture will appear in the schedule when enabled."
       },
       "placeholders": {
@@ -588,11 +618,11 @@
       }
     },
     "learners": {
-      "title": "Academy program learners",
-      "note": "Review learners enrolled in this program, update their details, and manage completion records.",
-      "back": "Back to program",
+      "title": "Training course trainees",
+      "note": "Review trainees enrolled in this course, update their details, and manage completion records.",
+      "back": "Back to course",
       "export": "Export",
-      "addLearner": "Add learner",
+      "addLearner": "Add trainee",
       "summary": {
         "total": "Total enrollments",
         "page": "Current page",
@@ -608,7 +638,7 @@
         "country": "Country"
       },
       "columns": {
-        "fullName": "Learner",
+        "fullName": "Trainee",
         "email": "Email",
         "mobileNumber": "Mobile",
         "whatsappNumber": "WhatsApp",
@@ -652,9 +682,9 @@
         "noAccess": "You do not have permission to upload certificates."
       },
       "sourceLabels": {
-        "publicProgram": "Public Academy enrollment",
-        "patientPortal": "Patient Academy enrollment",
-        "mobileApp": "Mobile Academy enrollment",
+        "publicProgram": "Public Training enrollment",
+        "patientPortal": "Patient Training enrollment",
+        "mobileApp": "Mobile Training enrollment",
         "adminManual": "Manual admin enrollment",
         "unknown": "Unknown source"
       },
@@ -677,23 +707,23 @@
         "education": "Education",
         "notes": "Notes",
         "source": "Source",
-        "program": "Program",
+        "program": "Training course",
         "registrationDate": "Registration date",
         "enrollmentStatus": "Enrollment status",
         "paymentStatus": "Payment status"
       },
       "actions": {
-        "edit": "Edit learner",
+        "edit": "Edit trainee",
         "complete": "Mark completed",
         "certify": "Issue certificate",
         "cancel": "Cancel enrollment"
       },
       "drawer": {
-        "eyebrow": "Learner details",
-        "editTitle": "Edit learner",
-        "editNote": "Update the learner details attached to this enrollment.",
-        "createTitle": "Add learner manually",
-        "createNote": "Create an enrollment for a learner without online payment.",
+        "eyebrow": "Trainee details",
+        "editTitle": "Edit trainee",
+        "editNote": "Update the trainee details attached to this enrollment.",
+        "createTitle": "Add trainee manually",
+        "createNote": "Create an enrollment for a trainee without online payment.",
         "create": "Create enrollment",
         "creating": "Creating...",
         "cancel": "Cancel",
@@ -702,11 +732,11 @@
       },
       "detail": {
         "eyebrow": "Enrollment profile",
-        "title": "Learner details",
-        "note": "Select an enrollment to review the learner profile and program history."
+        "title": "Trainee details",
+        "note": "Select an enrollment to review the trainee profile and course history."
       },
       "feedback": {
-        "updateSuccess": "Learner details updated successfully.",
+        "updateSuccess": "Trainee details updated successfully.",
         "cancelSuccess": "Enrollment cancelled successfully.",
         "completeSuccess": "Enrollment marked as completed.",
         "certifySuccess": "Certificate issued successfully.",
@@ -725,23 +755,29 @@
       },
       "cancelConfirm": {
         "title": "Cancel enrollment",
-        "description": "This will cancel the selected learner enrollment.",
+        "description": "This will cancel the selected trainee enrollment.",
         "confirm": "Cancel enrollment",
         "close": "Close",
-        "saving": "Cancelling..."
+        "saving": "Cancelling...",
+        "reasonLabel": "Reason for cancellation",
+        "reasonPlaceholder": "Briefly explain why this enrollment is being cancelled.",
+        "reasonRequired": "Please enter a reason before cancelling this enrollment."
       },
       "bulkCancelConfirm": {
         "title": "Cancel selected enrollments",
-        "description": "This will cancel all selected enrollments in this program.",
+        "description": "This will cancel all selected enrollments in this course.",
         "summary": "{count} enrollment(s) will be cancelled.",
         "confirm": "Cancel selected",
         "close": "Close",
-        "saving": "Cancelling..."
+        "saving": "Cancelling...",
+        "reasonLabel": "Reason for cancellation",
+        "reasonPlaceholder": "Briefly explain why these enrollments are being cancelled.",
+        "reasonRequired": "Please enter a reason before cancelling these enrollments."
       },
       "states": {
         "error": "Unable to load enrollments right now.",
         "empty": "No enrollments found",
-        "emptyNote": "Registrations will appear here once learners start enrolling."
+        "emptyNote": "Registrations will appear here once trainees start enrolling."
       },
       "payment": {
         "noOnlinePayment": "No online payment is linked to this enrollment.",
@@ -752,9 +788,9 @@
       "retry": "Retry"
     },
     "attendance": {
-      "totalSessions": "Total sessions",
-      "attendedSessions": "Attended sessions",
-      "absentSessions": "Absent sessions",
+      "totalSessions": "Total lectures",
+      "attendedSessions": "Attended lectures",
+      "absentSessions": "Absent lectures",
       "percentage": "Attendance percentage"
     },
     "certificate": {
@@ -766,17 +802,17 @@
     }
   },
   "admin": {
-    "badge": "Academy management",
+    "badge": "Training management",
     "title": "Manage public courses",
-    "note": "Create academy courses, monitor enrollments, and follow up on payment activity from one place.",
+    "note": "Create training courses, monitor enrollments, and follow up on payment activity from one place.",
     "errors": {
-      "generic": "Something went wrong while saving academy changes.",
-      "notFound": "Academy course not found.",
-      "archivedReadOnly": "This academy course is archived and read-only.",
-      "missingPricing": "A final price is required before publishing this academy course.",
-      "unsupportedCurrency": "The selected currency is not supported for this academy course.",
-      "invalidPublishTransition": "This academy course cannot be published from its current status.",
-      "invalidArchiveTransition": "This academy course cannot be archived from its current status.",
+      "generic": "Something went wrong while saving training changes.",
+      "notFound": "Training course not found.",
+      "archivedReadOnly": "This training course is archived and read-only.",
+      "missingPricing": "A final price is required before publishing this training course.",
+      "unsupportedCurrency": "The selected currency is not supported for this training course.",
+      "invalidPublishTransition": "This training course cannot be published from its current status.",
+      "invalidArchiveTransition": "This training course cannot be archived from its current status.",
       "missingPlan": "Set the course duration, lecture count, and timing before publishing.",
       "invalidPlanWindow": "The course start time must be before the end time.",
       "invalidDuration": "Enter a valid course duration in days.",
@@ -799,7 +835,7 @@
       "badge": "Draft builder",
       "title": "Create a new course",
       "note": "Start with a draft, then publish once the course content and scheduling are ready.",
-      "adminOnlyNote": "Only administrators can create academy courses.",
+      "adminOnlyNote": "Only administrators can create training courses.",
       "open": "Create course",
       "cancel": "Cancel",
       "submit": "Create course",
@@ -890,28 +926,28 @@
       }
     },
     "detail": {
-      "badge": "Academy course management",
+      "badge": "Training course management",
       "notFound": {
         "title": "Course not found",
         "note": "This course may have been deleted or the link is no longer valid.",
-        "back": "Back to academy"
+        "back": "Back to training"
       },
       "attendance": {
         "eyebrow": "Attendance",
-        "title": "Program attendance",
-        "note": "Choose a session, then mark each enrolled learner as present or absent.",
+        "title": "Course attendance",
+        "note": "Choose a lecture, then mark each enrolled trainee as present or absent.",
         "meta": {
-          "sessionCount": "{count} session(s)"
+          "sessionCount": "{count} lecture(s)"
         },
-        "sessionLabel": "Session",
-        "sessionPlaceholder": "Select a session",
-        "sessionNote": "Choose a session to record learner attendance.",
+        "sessionLabel": "Lecture",
+        "sessionPlaceholder": "Select a lecture",
+        "sessionNote": "Choose a lecture to record trainee attendance.",
         "sessionStates": {
           "published": "Published",
           "draft": "Draft"
         },
         "summary": {
-          "totalLearners": "Total learners",
+          "totalLearners": "Total trainees",
           "markedPresent": "Marked present",
           "markedAbsent": "Marked absent",
           "unmarked": "Unmarked",
@@ -920,8 +956,8 @@
         },
         "table": {
           "title": "Attendance list",
-          "note": "Set each learner's attendance state, then save the changes.",
-          "learner": "Learner",
+          "note": "Set each trainee's attendance state, then save the changes.",
+          "learner": "Trainee",
           "status": "Status",
           "actions": "Actions"
         },
@@ -949,7 +985,9 @@
           "saved": "Attendance saved successfully.",
           "saveFailed": "We could not save attendance right now.",
           "pending": "{count} pending change(s)",
-          "noChanges": "No changes to save"
+          "noChanges": "No changes to save",
+          "correctionReasonRequired": "Please enter a reason for correcting attendance.",
+          "correctionReasonPlaceholder": "Reason for this correction"
         },
         "states": {
           "loading": "Loading attendance...",
@@ -958,12 +996,12 @@
             "note": "We could not reach the attendance service right now."
           },
           "emptyLearners": {
-            "title": "No learners enrolled yet",
-            "note": "Attendance will appear here once learners are confirmed in this program."
+            "title": "No trainees enrolled yet",
+            "note": "Attendance will appear here once trainees are confirmed in this course."
           },
           "noSessions": {
-            "title": "No sessions yet",
-            "note": "Add program sessions first before recording attendance."
+            "title": "No lectures yet",
+            "note": "Add course lectures first before recording attendance."
           }
         }
       },
@@ -1125,7 +1163,7 @@
           "note": "Registrations will appear here once learners start enrolling."
         },
         "columns": {
-          "learner": "Learner",
+          "learner": "Trainee",
           "status": "Status",
           "paymentStatus": "Payment",
           "registeredAt": "Registered at",
@@ -1133,7 +1171,7 @@
           "actions": "Actions"
         },
         "actions": {
-          "view": "View learner"
+          "view": "View trainee"
         }
       },
       "join": {
@@ -1143,11 +1181,11 @@
         "none": "Not set"
       },
       "learners": {
-        "title": "Academy program learners",
-        "note": "Review learners enrolled in this program, update their details, and manage completion records.",
-        "back": "Back to program",
+        "title": "Training course trainees",
+        "note": "Review trainees enrolled in this course, update their details, and manage completion records.",
+        "back": "Back to course",
         "export": "Export",
-        "addLearner": "Add learner",
+        "addLearner": "Add trainee",
         "summary": {
           "total": "Total enrollments",
           "page": "Current page",
@@ -1163,7 +1201,7 @@
           "country": "Country"
         },
         "columns": {
-          "fullName": "Learner",
+          "fullName": "Trainee",
           "email": "Email",
           "mobileNumber": "Mobile",
           "whatsappNumber": "WhatsApp",
@@ -1191,9 +1229,9 @@
           "attendance": "Attendance"
         },
         "attendance": {
-          "totalSessions": "Total sessions",
-          "attendedSessions": "Attended sessions",
-          "absentSessions": "Absent sessions",
+          "totalSessions": "Total lectures",
+          "attendedSessions": "Attended lectures",
+          "absentSessions": "Absent lectures",
           "percentage": "Attendance percentage"
         },
         "certificate": {
@@ -1201,9 +1239,9 @@
           "issuedAt": "Issued at"
         },
         "sourceLabels": {
-          "publicProgram": "Public Academy enrollment",
-          "patientPortal": "Patient Academy enrollment",
-          "mobileApp": "Mobile Academy enrollment",
+          "publicProgram": "Public Training enrollment",
+          "patientPortal": "Patient Training enrollment",
+          "mobileApp": "Mobile Training enrollment",
           "adminManual": "Manual admin enrollment",
           "unknown": "Unknown source"
         },
@@ -1226,23 +1264,23 @@
           "education": "Education",
           "notes": "Notes",
           "source": "Source",
-          "program": "Program",
+          "program": "Training course",
           "registrationDate": "Registration date",
           "enrollmentStatus": "Enrollment status",
           "paymentStatus": "Payment status"
         },
         "actions": {
-          "edit": "Edit learner",
+          "edit": "Edit trainee",
           "complete": "Mark completed",
           "certify": "Issue certificate",
           "cancel": "Cancel enrollment"
         },
         "drawer": {
-          "eyebrow": "Learner details",
-          "editTitle": "Edit learner",
-          "editNote": "Update the learner details attached to this enrollment.",
-          "createTitle": "Add learner manually",
-          "createNote": "Create an enrollment for a learner without online payment.",
+          "eyebrow": "Trainee details",
+          "editTitle": "Edit trainee",
+          "editNote": "Update the trainee details attached to this enrollment.",
+          "createTitle": "Add trainee manually",
+          "createNote": "Create an enrollment for a trainee without online payment.",
           "create": "Create enrollment",
           "creating": "Creating...",
           "cancel": "Cancel",
@@ -1251,11 +1289,11 @@
         },
         "detail": {
           "eyebrow": "Enrollment profile",
-          "title": "Learner details",
-          "note": "Select an enrollment to review the learner profile and program history."
+          "title": "Trainee details",
+          "note": "Select an enrollment to review the trainee profile and course history."
         },
         "feedback": {
-          "updateSuccess": "Learner details updated successfully.",
+          "updateSuccess": "Trainee details updated successfully.",
           "cancelSuccess": "Enrollment cancelled successfully.",
           "completeSuccess": "Enrollment marked as completed.",
           "certifySuccess": "Certificate issued successfully.",
@@ -1274,14 +1312,14 @@
         },
         "cancelConfirm": {
           "title": "Cancel enrollment",
-          "description": "This will cancel the selected learner enrollment.",
+          "description": "This will cancel the selected trainee enrollment.",
           "confirm": "Cancel enrollment",
           "close": "Close",
           "saving": "Cancelling..."
         },
         "bulkCancelConfirm": {
           "title": "Cancel selected enrollments",
-          "description": "This will cancel all selected enrollments in this program.",
+          "description": "This will cancel all selected enrollments in this course.",
           "summary": "{count} enrollment(s) will be cancelled.",
           "confirm": "Cancel selected",
           "close": "Close",
@@ -1290,7 +1328,7 @@
         "states": {
           "error": "Unable to load enrollments right now.",
           "empty": "No enrollments found",
-          "emptyNote": "Registrations will appear here once learners start enrolling."
+          "emptyNote": "Registrations will appear here once trainees start enrolling."
         },
         "payment": {
           "noOnlinePayment": "No online payment is linked to this enrollment.",
@@ -1304,11 +1342,11 @@
   },
   "patient": {
     "home": {
-      "badge": "Learner portal",
-      "title": "My Academy enrollments",
-      "note": "Review every Academy program you enrolled in, track payment status, and open the enrollment details when needed.",
+      "badge": "Trainee portal",
+      "title": "My training enrollments",
+      "note": "Review every training course you enrolled in, track payment status, and open the enrollment details when needed.",
       "card": {
-        "program": "Program",
+        "program": "Training course",
         "view": "View details",
         "pay": "Continue payment",
         "noDescription": "No description available.",
@@ -1325,17 +1363,17 @@
       },
       "list": {
         "title": "Your enrollments",
-        "subtitle": "Active and historical Academy program enrollments.",
+        "subtitle": "Active and historical Training course enrollments.",
         "count": "{count} enrollment(s)"
       },
       "empty": {
-        "title": "No Academy enrollments yet",
-        "note": "Once you enroll in an Academy program, it will appear here with its current payment and enrollment state.",
-        "action": "Browse Academy programs"
+        "title": "No Training enrollments yet",
+        "note": "Once you enroll in an Training course, it will appear here with its current payment and enrollment state.",
+        "action": "Browse Training courses"
       },
       "error": {
         "title": "Could not load your enrollments",
-        "note": "We could not reach the Academy enrollment service right now."
+        "note": "We could not reach the Training enrollment service right now."
       }
     },
     "detail": {
@@ -1359,12 +1397,12 @@
       "state": {
         "title": "Enrollment state",
         "default": "Your enrollment is active.",
-        "confirmed": "Your enrollment is confirmed and ready for the program schedule.",
+        "confirmed": "Your enrollment is confirmed and ready for the course schedule.",
         "pendingPayment": "Your enrollment is waiting for payment.",
         "cancelled": "This enrollment has been cancelled.",
         "expired": "This enrollment has expired."
       },
-      "pendingPaymentNote": "Complete payment to keep your seat reserved and continue with the program.",
+      "pendingPaymentNote": "Complete payment to keep your registration reserved and continue with the course.",
       "schedule": {
         "title": "Lecture schedule",
         "subtitle": "Review the lectures associated with this enrollment.",
@@ -1376,15 +1414,15 @@
       },
       "attendance": {
         "title": "Attendance summary",
-        "note": "Attendance will appear here after the Academy team records it.",
+        "note": "Attendance will appear here after the training team records it.",
         "recordedNote": "Recorded attendance appears below.",
-        "total": "Total sessions",
+        "total": "Total lectures",
         "attended": "Attended",
         "absent": "Absent",
         "unmarked": "Unmarked",
         "rate": "Attendance rate",
         "empty": "Attendance data is not available for this enrollment yet.",
-        "sessionRecordsUnavailable": "Session-level attendance is not available yet."
+        "sessionRecordsUnavailable": "Lecture-level attendance is not available yet."
       },
       "certificate": {
         "title": "Certificate",
@@ -1406,9 +1444,9 @@
     },
     "pay": {
       "badge": "Payment",
-      "title": "Continue your enrollment payment",
+      "title": "Continue your training payment",
       "note": "We will confirm the latest backend state before opening the hosted checkout.",
-      "program": "Program",
+      "program": "Training course",
       "status": "Enrollment status",
       "paymentStatus": "Payment status",
       "amount": "Amount",
@@ -1426,8 +1464,8 @@
       },
       "summary": {
         "title": "Payment summary",
-        "description": "Review the program, amount, and payment state before you continue.",
-        "program": "Program",
+        "description": "Review the course, amount, and payment state before you continue.",
+        "program": "Training course",
         "enrollmentStatus": "Enrollment status",
         "paymentStatus": "Payment status",
         "amount": "Amount"
@@ -1435,7 +1473,7 @@
       "state": {
         "payable": {
           "title": "Payment is ready",
-          "note": "Your seat is still waiting. Continue to the secure checkout to complete payment.",
+          "note": "Your registration is still waiting. Continue to secure checkout to complete payment.",
           "cta": "Continue to checkout"
         },
         "confirmed": {
@@ -1454,7 +1492,7 @@
           "cta": "Try again"
         },
         "expired": {
-          "title": "Payment session expired",
+          "title": "Payment lecture expired",
           "note": "The payment link is no longer valid. Refresh the page to get a new checkout link.",
           "cta": "Refresh status"
         },

@@ -106,13 +106,13 @@ function buildSupportRootHref(role: UnifiedMessagingRole) {
 
 function getSessionPriority(status: SessionPresentationStatus) {
   if (status === "IN_PROGRESS") return 3;
-  if (status === "JOINABLE") return 2;
-  if (status === "COMPLETED" || status === "ENDED" || status === "CANCELLED") return 1;
+  if (status === "READY_TO_JOIN") return 2;
+  if (status === "COMPLETED" || status === "CANCELLED") return 1;
   return 0;
 }
 
 function mapSessionChatStatus(status: SessionPresentationStatus): UnifiedSessionChatStatus {
-  if (status === "JOINABLE") return "READY_TO_JOIN";
+  if (status === "READY_TO_JOIN") return "READY_TO_JOIN";
   if (status === "IN_PROGRESS") return "IN_PROGRESS";
   return "COMPLETED";
 }
@@ -311,7 +311,7 @@ export function useUnifiedMessagingShell(
       status: item.presentationStatus.replaceAll("_", " "),
       sessionStatus: mapSessionChatStatus(item.presentationStatus),
       isSessionPriority:
-        item.presentationStatus === "JOINABLE" ||
+        item.status === "READY_TO_JOIN" ||
         item.presentationStatus === "IN_PROGRESS",
       at: item.scheduledStartAt,
     }));
@@ -360,8 +360,8 @@ export function useUnifiedMessagingShell(
     const rows = (sessionQuery.data?.items ?? []) as SessionListItem[];
     return rows.filter(
       (item) =>
-        item.presentationStatus === "JOINABLE" ||
-        item.presentationStatus === "IN_PROGRESS",
+        item.status === "READY_TO_JOIN" ||
+        item.status === "IN_PROGRESS",
     ).length;
   }, [sessionQuery.data?.items]);
 

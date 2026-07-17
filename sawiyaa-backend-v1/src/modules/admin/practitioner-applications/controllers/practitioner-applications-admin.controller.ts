@@ -251,22 +251,6 @@ export class PractitionerApplicationsAdminController {
         payoutDestination: body.payoutDestination,
         credentials: body.credentials,
         note: body.note,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.direct-create',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          resourceId: result.application.applicationId,
-          targetUserId: result.practitioner.userId,
-          metadata: {
-            applicationId: result.application.applicationId,
-            practitionerProfileId: result.practitioner.practitionerProfileId,
-          },
-        });
-        return result;
       });
   }
 
@@ -564,30 +548,13 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.approvePractitionerApplicationUseCase
-      .execute({
+    return this.approvePractitionerApplicationUseCase.execute({
         id,
         locale,
         adminUserId: currentUser.id,
         operatorRoles: currentUser.roles,
         reason: body.reason,
         note: body.note,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.approve',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          resourceId: id,
-          metadata: {
-            applicationId:
-              (result as { application?: { id?: string } }).application?.id ??
-              null,
-          },
-        });
-        return result;
       });
   }
 
@@ -626,30 +593,13 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.rejectPractitionerApplicationUseCase
-      .execute({
+    return this.rejectPractitionerApplicationUseCase.execute({
         id,
         locale,
         adminUserId: currentUser.id,
         operatorRoles: currentUser.roles,
         reason: body.reason,
         note: body.note,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.reject',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          resourceId: id,
-          metadata: {
-            applicationId:
-              (result as { application?: { id?: string } }).application?.id ??
-              null,
-          },
-        });
-        return result;
       });
   }
 
@@ -688,29 +638,12 @@ export class PractitionerApplicationsAdminController {
     @CurrentLocale() locale: SupportedLocale,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.requestPractitionerApplicationChangesUseCase
-      .execute({
-        id,
-        locale,
-        adminUserId: currentUser.id,
-        reason: body.reason,
-        note: body.note,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.request-changes',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          resourceId: id,
-          metadata: {
-            applicationId:
-              (result as { application?: { id?: string } }).application?.id ??
-              null,
-          },
-        });
-        return result;
-      });
+    return this.requestPractitionerApplicationChangesUseCase.execute({
+      id,
+      locale,
+      adminUserId: currentUser.id,
+      reason: body.reason,
+      note: body.note,
+    });
   }
 }

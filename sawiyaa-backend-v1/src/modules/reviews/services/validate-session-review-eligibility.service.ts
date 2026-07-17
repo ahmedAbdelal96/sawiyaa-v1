@@ -5,11 +5,13 @@ import {
 } from '@nestjs/common';
 import { SessionStatus } from '@prisma/client';
 import { ReviewSessionRepository } from '../repositories/review-session.repository';
+import { ResolveSessionReviewEligibilityService } from './resolve-session-review-eligibility.service';
 
 @Injectable()
 export class ValidateSessionReviewEligibilityService {
   constructor(
     private readonly reviewSessionRepository: ReviewSessionRepository,
+    private readonly resolveSessionReviewEligibility: ResolveSessionReviewEligibilityService,
   ) {}
 
   async assertEligible(input: { sessionId: string; patientId: string }) {
@@ -26,7 +28,11 @@ export class ValidateSessionReviewEligibilityService {
       });
     }
 
-    if (!this.reviewSessionRepository.isSessionCompleted(session.status)) {
+    const eligibility = await this.resolveSessionReviewEligibility.resolveMany([
+      input.sessionId,
+    ]);
+    const decision = eligibility.get(input.sessionId);
+    if (!decision?.isEffectivelyCompleted) {
       throw new BadRequestException({
         messageKey: 'reviews.errors.sessionNotCompleted',
         error: 'REVIEW_SESSION_NOT_COMPLETED',
@@ -37,12 +43,7 @@ export class ValidateSessionReviewEligibilityService {
       });
     }
 
-    const capturedCount =
-      await this.reviewSessionRepository.hasCapturedPaymentForSession(
-        input.sessionId,
-        input.patientId,
-      );
-    if (capturedCount < 1) {
+    if (!decision.hasValidSource) {
       throw new BadRequestException({
         messageKey: 'reviews.errors.sessionNotPaid',
         error: 'REVIEW_SESSION_NOT_PAID',

@@ -1,4 +1,9 @@
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  SessionAdminDecisionType,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { ResolveSessionJoinContractUseCase } from './resolve-session-join-contract.use-case';
 
 describe('ResolveSessionJoinContractUseCase', () => {
@@ -41,6 +46,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
     patientId?: string;
     provider?: SessionProvider;
     hasPriorJoinEvidence?: boolean;
+    finalManualDecision?: SessionAdminDecisionType | null;
   }) {
     const createdEvents: Array<{ eventType: string; actorUserId: string }> = [];
     const prisma = {
@@ -62,6 +68,11 @@ describe('ResolveSessionJoinContractUseCase', () => {
       hasJoinAllowanceOrAttendanceBefore: jest
         .fn()
         .mockResolvedValue(overrides?.hasPriorJoinEvidence ?? false),
+      findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(
+        overrides?.finalManualDecision
+          ? { decisionType: overrides.finalManualDecision }
+          : null,
+      ),
     };
     const sessionPatientRepository = {
       findByUserId: jest
@@ -95,7 +106,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
         .mockReturnValue(overrides?.provider ?? SessionProvider.DAILY),
     };
     const validateSessionStatusTransitionService = {
-      assertCanTransition: jest.fn(),
+      transition: jest.fn().mockImplementation(async ({ session, to }: any) => ({ ...session, status: to })),
     };
     const prepareSessionRuntimeUseCase = {
       execute: jest.fn().mockResolvedValue({}),
@@ -344,5 +355,24 @@ describe('ResolveSessionJoinContractUseCase', () => {
 
     expect(result.item.canJoin).toBe(false);
     expect(result.item.blockedReason).toBe('SESSION_ROOM_CLOSED');
+  });
+
+  it('does not issue a join token after a final completed decision', async () => {
+    const setup = buildUseCase({
+      canJoin: false,
+      blockedReason: 'SESSION_NOT_JOINABLE_STATUS',
+      finalManualDecision: SessionAdminDecisionType.MARK_COMPLETED,
+    });
+
+    const result = await setup.useCase.execute({
+      userId: 'user_1',
+      actorType: 'PATIENT',
+      sessionId: 'session_1',
+    });
+
+    expect(result.item.canJoin).toBe(false);
+    expect(result.item.joinToken).toBeNull();
+    expect(result.item.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
+    expect(setup.sessionVideoProviderRegistryService.get).not.toHaveBeenCalled();
   });
 });

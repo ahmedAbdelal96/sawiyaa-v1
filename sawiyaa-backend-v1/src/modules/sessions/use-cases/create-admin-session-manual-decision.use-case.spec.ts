@@ -1,9 +1,11 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SessionAdminDecisionType, SessionEventType, SessionStatus } from '@prisma/client';
 import { CreateAdminSessionManualDecisionUseCase } from './create-admin-session-manual-decision.use-case';
 import { SessionRepository } from '../repositories/session.repository';
 import { GetAdminSessionAttendanceUseCase } from './get-admin-session-attendance.use-case';
+import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { sanitizeSafeMetadata } from '../utils/safe-metadata.util';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 
 jest.mock('../utils/safe-metadata.util');
 
@@ -13,6 +15,8 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
   let useCase: CreateAdminSessionManualDecisionUseCase;
   let mockRepo: jest.Mocked<SessionRepository>;
   let mockAttendanceUseCase: jest.Mocked<GetAdminSessionAttendanceUseCase>;
+  let mockSessionEarningReviewService: jest.Mocked<SessionEarningReviewService>;
+  let mockSessionLifecycleService: jest.Mocked<SessionLifecycleService>;
   let mockPrisma: { $transaction: jest.Mock };
 
   // A past session in COMPLETED status — eligible for decisions (non-blocking)
@@ -29,6 +33,11 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     sessionCode: 'SES-2026-000001',
     status: SessionStatus.IN_PROGRESS,
     scheduledEndAt: new Date('2026-06-15T10:00:00Z'),
+  };
+
+  const pastAwaitingSession = {
+    ...pastInProgressSession,
+    status: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
   };
 
   const mockAttendanceData = {
@@ -66,6 +75,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
   beforeEach(() => {
     mockRepo = {
       findById: jest.fn(),
+      findByIdForUpdate: jest.fn(),
       findLatestActiveSessionAdminDecision: jest.fn(),
       findSessionAdminDecisionById: jest.fn(),
     } as unknown as jest.Mocked<SessionRepository>;
@@ -73,15 +83,33 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     mockAttendanceUseCase = {
       execute: jest.fn(),
     } as unknown as jest.Mocked<GetAdminSessionAttendanceUseCase>;
+    mockSessionEarningReviewService = {
+      syncForSessionCompletion: jest.fn().mockResolvedValue(null),
+    } as unknown as jest.Mocked<SessionEarningReviewService>;
+    mockSessionLifecycleService = {
+      transition: jest.fn().mockImplementation(async ({ session, to }: any) => ({ ...session, status: to })),
+    } as unknown as jest.Mocked<SessionLifecycleService>;
+    mockRepo.findSessionAdminDecisionById.mockResolvedValue(mockDecision as any);
+    mockRepo.findByIdForUpdate.mockImplementation((id: string) => mockRepo.findById(id) as any);
+    mockAttendanceUseCase.execute.mockResolvedValue(mockAttendanceData as any);
 
     mockPrisma = {
       $transaction: jest.fn(),
     };
+    mockPrisma.$transaction.mockImplementation(async (cb) =>
+      cb({
+        sessionAdminDecision: { create: jest.fn().mockResolvedValue(mockDecision), update: jest.fn() },
+        session: { update: jest.fn() },
+        sessionEvent: { create: jest.fn() },
+      }),
+    );
 
     useCase = new CreateAdminSessionManualDecisionUseCase(
       mockPrisma as any,
       mockRepo,
       mockAttendanceUseCase,
+      mockSessionEarningReviewService,
+      mockSessionLifecycleService,
     );
   });
 
@@ -119,7 +147,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
   });
 
   it('throws SESSION_DECISION_REQUIRES_PAST_END when scheduledEndAt is missing', async () => {
-    mockRepo.findById.mockResolvedValue({ ...pastCompletedSession, scheduledEndAt: null } as any);
+    mockRepo.findById.mockResolvedValue({ ...pastAwaitingSession, scheduledEndAt: null } as any);
     await expect(
       useCase.execute({
         sessionId: 'session_1',
@@ -134,7 +162,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
   });
 
   it('throws SESSION_DECISION_REQUIRES_PAST_END when session is in the future', async () => {
-    const futureSession = { ...pastCompletedSession, scheduledEndAt: new Date('2099-01-01T00:00:00Z') };
+    const futureSession = { ...pastAwaitingSession, scheduledEndAt: new Date('2099-01-01T00:00:00Z') };
     mockRepo.findById.mockResolvedValue(futureSession as any);
     await expect(
       useCase.execute({
@@ -149,8 +177,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('throws SESSION_DECISION_NOT_ALLOWED_STATUS when session status is IN_PROGRESS', async () => {
-    // IN_PROGRESS is in BLOCKING_STATUSES
+  it('allows a final decision for an elapsed IN_PROGRESS session', async () => {
     mockRepo.findById.mockResolvedValue(pastInProgressSession as any);
     await expect(
       useCase.execute({
@@ -162,7 +189,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticRefund: true,
         confirmNoAutomaticPayout: true,
       }),
-    ).rejects.toThrow(NotFoundException);
+    ).resolves.toBeDefined();
   });
 
   it('throws SESSION_DECISION_ALREADY_FINAL when a final decision exists and supersedePrevious is not true', async () => {
@@ -179,14 +206,14 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
         supersedePrevious: false,
       }),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   // ─── Status mapping ───────────────────────────────────────────────────────────
 
   describe('status mapping', () => {
     beforeEach(() => {
-      mockRepo.findById.mockResolvedValue(pastCompletedSession as any);
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
       mockRepo.findLatestActiveSessionAdminDecision.mockResolvedValue(null);
       mockAttendanceUseCase.execute.mockResolvedValue(mockAttendanceData as any);
       mockSanitize.mockReturnValue({});
@@ -204,10 +231,16 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
       });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(
+        mockSessionEarningReviewService.syncForSessionCompletion,
+      ).toHaveBeenCalledWith({
+        sessionId: 'session_1',
+        tx: expect.any(Object),
+      });
     });
 
-    it('MARK_PATIENT_NO_SHOW sets nextSessionStatus to NO_SHOW', async () => {
-      setupTransactionMock({ decisionType: SessionAdminDecisionType.MARK_PATIENT_NO_SHOW, nextSessionStatus: SessionStatus.NO_SHOW });
+    it('MARK_PATIENT_NO_SHOW sets nextSessionStatus to PATIENT_NO_SHOW', async () => {
+      setupTransactionMock({ decisionType: SessionAdminDecisionType.MARK_PATIENT_NO_SHOW, nextSessionStatus: SessionStatus.PATIENT_NO_SHOW });
       await useCase.execute({
         sessionId: 'session_1',
         decisionType: SessionAdminDecisionType.MARK_PATIENT_NO_SHOW,
@@ -275,13 +308,69 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
       });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
+
+    it('rejects repeated patient no-show decisions without creating earning review or duplicate event', async () => {
+      mockRepo.findById.mockResolvedValue({
+        ...pastCompletedSession,
+        status: SessionStatus.PATIENT_NO_SHOW,
+      } as any);
+
+      await expect(
+        useCase.execute({
+          sessionId: 'session_1',
+          decisionType: SessionAdminDecisionType.MARK_PATIENT_NO_SHOW,
+          decidedByUserId: 'admin_1',
+          reasonCode: 'PATIENT_NO_SHOW',
+          confirmEvidenceReviewed: true,
+          confirmNoAutomaticRefund: true,
+          confirmNoAutomaticPayout: true,
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          error: 'SESSION_FINAL_OUTCOME_CORRECTION_NOT_SUPPORTED',
+          messageKey: 'sessions.errors.finalOutcomeCorrectionNotSupported',
+        }),
+      });
+
+      expect(mockRepo.findLatestActiveSessionAdminDecision).not.toHaveBeenCalled();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockSessionEarningReviewService.syncForSessionCompletion).not.toHaveBeenCalled();
+    });
+
+    it('rejects repeated practitioner no-show decisions without creating earning review or duplicate event', async () => {
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
+      mockRepo.findLatestActiveSessionAdminDecision.mockResolvedValue({
+        id: 'prior_no_show',
+        decisionType: SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW,
+      } as any);
+
+      await expect(
+        useCase.execute({
+          sessionId: 'session_1',
+          decisionType: SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW,
+          decidedByUserId: 'admin_1',
+          reasonCode: 'PRACTITIONER_NO_SHOW',
+          confirmEvidenceReviewed: true,
+          confirmNoAutomaticRefund: true,
+          confirmNoAutomaticPayout: true,
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          error: 'SESSION_ALREADY_NO_SHOW',
+          messageKey: 'sessions.errors.sessionAlreadyNoShow',
+        }),
+      });
+
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
+      expect(mockSessionEarningReviewService.syncForSessionCompletion).not.toHaveBeenCalled();
+    });
   });
 
   // ─── Supersession ────────────────────────────────────────────────────────────
 
   describe('supersession', () => {
     beforeEach(() => {
-      mockRepo.findById.mockResolvedValue(pastCompletedSession as any);
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
       mockAttendanceUseCase.execute.mockResolvedValue(mockAttendanceData as any);
       mockSanitize.mockReturnValue({});
     });
@@ -323,7 +412,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
 
   describe('evidence snapshot', () => {
     beforeEach(() => {
-      mockRepo.findById.mockResolvedValue(pastCompletedSession as any);
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
       mockRepo.findLatestActiveSessionAdminDecision.mockResolvedValue(null);
       mockSanitize.mockReturnValue({ '[REDACTED]': '[REDACTED]' });
       setupTransactionMock();
@@ -372,7 +461,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
 
   describe('audit events', () => {
     beforeEach(() => {
-      mockRepo.findById.mockResolvedValue(pastCompletedSession as any);
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
       mockRepo.findLatestActiveSessionAdminDecision.mockResolvedValue(null);
       mockAttendanceUseCase.execute.mockResolvedValue(mockAttendanceData as any);
       mockSanitize.mockReturnValue({});
@@ -430,7 +519,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
 
   describe('transaction', () => {
     beforeEach(() => {
-      mockRepo.findById.mockResolvedValue(pastCompletedSession as any);
+      mockRepo.findById.mockResolvedValue(pastAwaitingSession as any);
       mockRepo.findLatestActiveSessionAdminDecision.mockResolvedValue(null);
       mockAttendanceUseCase.execute.mockResolvedValue(mockAttendanceData as any);
       mockSanitize.mockReturnValue({});

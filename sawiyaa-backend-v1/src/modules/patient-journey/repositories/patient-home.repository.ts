@@ -259,7 +259,7 @@ export class PatientHomeRepository {
         },
         status: {
           in: [
-            SessionStatus.CONFIRMED,
+            SessionStatus.UPCOMING,
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
             SessionStatus.IN_PROGRESS,

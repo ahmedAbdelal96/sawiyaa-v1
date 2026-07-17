@@ -4,8 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
+import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 
 const EXPIREABLE_STATUSES = new Set(['PENDING_PAYMENT']);
@@ -16,6 +17,7 @@ export class ExpirePackagePurchaseUseCase {
     private readonly prisma: PrismaService,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly sessionRepository: SessionRepository,
+    private readonly sessionLifecycleService: SessionLifecycleService,
   ) {}
 
   async execute(input: { purchaseId: string; now?: Date }) {
@@ -61,27 +63,17 @@ export class ExpirePackagePurchaseUseCase {
       );
 
       for (const session of linkedSessions) {
-        await this.sessionRepository.updateStatus(
-          session.id,
-          {
-            status: SessionStatus.EXPIRED,
-            expiredAt: now,
+        await this.sessionLifecycleService.transition({
+          session,
+          to: SessionStatus.EXPIRED,
+          at: now,
+          metadata: {
+            expiredAt: now.toISOString(),
+            source: 'package-purchase-expiry',
+            packagePurchaseId: expiredPurchase.id,
           },
           tx,
-        );
-
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: session.id,
-            eventType: SessionEventType.EXPIRED_UNPAID,
-            metadataJson: {
-              expiredAt: now.toISOString(),
-              source: 'package-purchase-expiry',
-              packagePurchaseId: expiredPurchase.id,
-            },
-          },
-          tx,
-        );
+        });
       }
 
       return expiredPurchase;

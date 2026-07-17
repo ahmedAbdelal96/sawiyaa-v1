@@ -383,7 +383,92 @@
         "lastUpdated": "Updated {date}"
       }
     },
-    "emptyExtended": {
+  
+    "packageEntitlement": {
+      "title": "Package entitlement decision",
+      "subtitle": "Decide whether this package-covered cancelled or no-show session returns to the package or counts as used.",
+      "safetyNotice": "This decision is audit-only and does not create an automatic refund or payout.",
+      "summary": {
+        "tag": "Audit only"
+      },
+      "current": {
+        "plan": "Package plan",
+        "purchaseStatus": "Purchase status",
+        "currency": "Currency",
+        "payableSnapshot": "Patient payable snapshot",
+        "sessionProgress": "Package session progress"
+      },
+      "decisionType": {
+        "label": "Decision type",
+        "placeholder": "Select a decision",
+        "RESTORE_TO_PACKAGE": "Restore to package",
+        "COUNT_AS_USED": "Count as used"
+      },
+      "reasonCode": {
+        "label": "Reason code",
+        "placeholder": "Select a reason code",
+        "PATIENT_FAULT": "Patient fault",
+        "PATIENT_NO_SHOW": "Patient no-show",
+        "PRACTITIONER_FAULT": "Practitioner fault",
+        "ADMIN_EXCEPTION": "Admin exception"
+      },
+      "adminNote": {
+        "label": "Admin note",
+        "remaining": "characters remaining",
+        "placeholder": "Add a short internal note for audit context.",
+        "noSensitiveData": "Do not include sensitive patient details."
+      },
+      "decisionPreview": {
+        "label": "Decision preview",
+        "RESTORE_TO_PACKAGE": "This session will return to the package.",
+        "COUNT_AS_USED": "This session will count as used."
+      },
+      "recorded": {
+        "title": "Decision recorded",
+        "note": "This decision is stored for audit only. It does not create an automatic payout or refund.",
+        "decisionType": "Decision type",
+        "reasonCode": "Reason code",
+        "adminNote": "Admin note",
+        "decidedBy": "Reviewed by",
+        "teamAdmin": "Team admin",
+        "decidedAt": "Recorded at",
+        "resultingReview": "Accounting review reference"
+      },
+      "noPermission": {
+        "title": "Read-only package snapshot",
+        "note": "You can review the package snapshot, but you do not have permission to record package decisions."
+      },
+      "actions": {
+        "submit": "Record package decision",
+        "submitting": "Recording..."
+      },
+      "success": {
+        "title": "Package decision recorded",
+        "note": "The package entitlement decision has been recorded successfully.",
+        "countAsUsedNote": "The session was counted as used and sent for accounting review.",
+        "restoreToPackageNote": "The session was restored to the package."
+      },
+      "errors": {
+        "notPackageSession": "This session is not package-covered.",
+        "notAllowedStatus": "This session status does not allow a package decision.",
+        "invalidCombination": "This package decision combination is not allowed.",
+        "alreadyExists": "A package decision already exists for this session.",
+        "reviewUnavailable": "Could not create the accounting review for this session.",
+        "forbidden": "You do not have permission to record package decisions.",
+        "unauthorized": "Access token is required.",
+        "generic": "Could not record the package decision right now."
+      },
+      "purchaseStatuses": {
+        "PENDING_PAYMENT": "Pending payment",
+        "ACTIVE": "Active",
+        "COMPLETED": "Completed",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled",
+        "REFUND_PENDING": "Refund pending",
+        "REFUNDED": "Refunded"
+      }
+    },
+  "emptyExtended": {
       "title": "No computed evidence available",
       "note": "The extended attendance summary has not been emitted for this session yet."
     },

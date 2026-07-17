@@ -81,6 +81,7 @@ const renderHtml = (safeCode: string, ttlMinutes: number): string => `<!DOCTYPE 
               <td style="padding:16px 32px 0 32px;text-align:center;">
                 <p style="margin:0;font-size:15px;line-height:22px;color:#374151;">Hello Doctor,</p>
                 <p style="margin:8px 0 0 0;font-size:15px;line-height:22px;color:#374151;">Use this verification code to complete signing in to your Sawiyaa account:</p>
+                <p style="margin:8px 0 0 0;font-size:13px;line-height:20px;color:#6B7280;">Requesting a new code invalidates any earlier code.</p>
               </td>
             </tr>
             <tr>

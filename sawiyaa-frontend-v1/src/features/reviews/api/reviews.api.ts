@@ -6,9 +6,11 @@ import type {
   AdminReviewsListData,
   CreateSessionReviewInput,
   ListAdminReviewsParams,
+  ListPendingPatientReviewsParams,
   ListPatientReviewsParams,
   ModerationResultData,
   ModerateReviewRequest,
+  PendingPatientReviewsListData,
   PatientReviewItemData,
   PatientReviewsListData,
 } from "../types/reviews.types";
@@ -63,6 +65,21 @@ export async function getPatientReviews(
 export async function getPatientReview(reviewId: string): Promise<PatientReviewItemData> {
   const response = await httpClient.get<ApiPayload<PatientReviewItemData>>(
     `/patients/me/reviews/${reviewId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function getPendingPatientReviews(
+  params: ListPendingPatientReviewsParams = {},
+): Promise<PendingPatientReviewsListData> {
+  const response = await httpClient.get<ApiPayload<PendingPatientReviewsListData>>(
+    "/patients/me/reviews/pending",
+    {
+      params: {
+        page: params.page,
+        limit: params.limit,
+      },
+    },
   );
   return extractData(response.data);
 }

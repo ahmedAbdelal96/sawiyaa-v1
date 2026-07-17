@@ -24,6 +24,8 @@ export const enAuthCatalog = {
     adminTokensRefreshed: 'Admin session refreshed successfully',
     adminLoggedOut: 'Admin session logged out successfully',
     adminStepUpVerified: 'Step-up verification completed successfully',
+    practitionerAuthLockoutCleared:
+      'Practitioner auth lockout cleared successfully',
   },
   notifications: {
     practitionerLoginOtpTitle: 'Practitioner login OTP',
@@ -46,6 +48,9 @@ export const enAuthCatalog = {
     verifiedOtpChannelRequired:
       'A verified OTP channel is required for practitioner authentication',
     otpChallengeInvalid: 'OTP challenge is invalid or expired',
+    otpChallengeSuperseded:
+      'A newer code was sent. Use the most recent code you received.',
+    otpChallengeAlreadyUsed: 'OTP code has already been used',
     otpCodeInvalid: 'OTP code is invalid',
     otpDeliveryFailed: 'OTP delivery failed. Please try again shortly',
     otpResendTooSoon: 'Please wait before requesting another OTP',
@@ -82,5 +87,7 @@ export const enAuthCatalog = {
     csrfTokenRequired:
       'A CSRF token is required for this cookie-authenticated request',
     stepUpRequired: 'Step-up verification is required for this action',
+    loginTemporarilyLocked:
+      'Login is temporarily locked. Please try again later.',
   },
 };

@@ -39,6 +39,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let errorCode = 'INTERNAL_SERVER_ERROR';
     let message = this.i18nService.t(messageKey, request.locale);
     let errors: unknown[] = [];
+    let safeExceptionFields: Record<string, unknown> = {};
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -89,6 +90,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           errorCode = this.resolveHttpErrorCode(status);
         }
         errors = Array.isArray(res.message) ? (res.message as unknown[]) : [];
+        safeExceptionFields = this.pickSafeExceptionFields(res);
       }
     } else if (exception instanceof Error) {
       messageKey = this.resolveHttpMessageKey(status);
@@ -138,6 +140,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       messageKey,
       message,
       errors,
+      ...safeExceptionFields,
       timestamp: new Date().toISOString(),
       path,
       locale: request.locale,
@@ -189,5 +192,22 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private resolveUserRole(role?: AppRole): string | null {
     return role ?? null;
+  }
+
+  private pickSafeExceptionFields(
+    response: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const allowedKeys = new Set([
+      'remainingAttempts',
+      'maxAttempts',
+      'lockedUntil',
+      'retryAfterSeconds',
+      'resendAvailableAt',
+      'cooldownSeconds',
+    ]);
+
+    return Object.fromEntries(
+      Object.entries(response).filter(([key]) => allowedKeys.has(key)),
+    );
   }
 }

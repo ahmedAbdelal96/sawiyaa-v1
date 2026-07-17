@@ -124,7 +124,7 @@ describe('ResolveSessionJoinReadinessService', () => {
 
   it('allows join exactly inside the two-minute join window before start', () => {
     const result = service.resolve({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: new Date('2026-04-02T10:02:00.000Z'),
       scheduledEndAt: new Date('2026-04-02T10:32:00.000Z'),
@@ -140,7 +140,7 @@ describe('ResolveSessionJoinReadinessService', () => {
 
   it('marks sessions as not joinable before the join window opens', () => {
     const result = service.resolve({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: new Date('2026-04-02T10:10:00.000Z'),
       scheduledEndAt: new Date('2026-04-02T10:40:00.000Z'),
@@ -186,9 +186,9 @@ describe('ResolveSessionJoinReadinessService', () => {
     expect(result.blockedReason).toBe('SESSION_JOIN_WINDOW_CLOSED');
   });
 
-  it('blocks refunded sessions from runtime prepare and join', () => {
+  it('blocks cancelled sessions from runtime prepare and join', () => {
     const result = service.resolve({
-      status: SessionStatus.REFUNDED,
+      status: SessionStatus.CANCELLED,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: start,
       scheduledEndAt: end,

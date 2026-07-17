@@ -9,7 +9,7 @@
     "refundPolicies": "Refund policies",
     "practitionerApplications": "Practitioner applications",
     "articles": "Articles",
-    "academy": "Academy",
+    "academy": "Training",
     "sessions": "Sessions",
     "wallet": "Wallet",
     "ledger": "Ledger",
@@ -23,6 +23,7 @@
     "financeDashboard": "Overview",
     "financeLedger": "Ledger",
     "financeReconciliation": "Reconciliation",
+    "sessionEarningReviews": "Session earning reviews",
     "reports": "Reports",
     "reportsHome": "Reports home",
     "reportsSessions": "Sessions report",
@@ -126,8 +127,8 @@
     "chat": "Chat",
     "reviews": "Reviews",
     "moderationReports": "Moderation reports",
-    "academy": "Academy",
-    "academyPrograms": "Programs",
+    "academy": "Training",
+    "academyPrograms": "Training courses",
     "academyLegacyCourses": "Legacy courses"
   },
   "settings": {
@@ -143,5 +144,8 @@
   "patientShell": {
     "areaTitle": "Patient area",
     "areaSubtitle": "Browse, book, and manage your care journey"
-  }
+  },
+  "academy": "Training",
+  "academyPrograms": "Training courses",
+  "academyLegacyCourses": "Legacy courses"
 }

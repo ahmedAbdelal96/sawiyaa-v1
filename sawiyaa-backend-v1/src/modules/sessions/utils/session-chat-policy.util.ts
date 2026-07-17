@@ -4,10 +4,6 @@ import {
   type GeneralChatAvailabilityReason,
   type GeneralChatAvailabilityViewModel,
 } from '@modules/chat/types/general-chat.types';
-import {
-  DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-  resolveSessionPresentationStatus,
-} from './session-join-policy.util';
 
 export interface SessionChatPolicyInput {
   status: SessionStatus;
@@ -22,31 +18,20 @@ export interface SessionChatPolicyInput {
   runtimePrepareLeadMinutes?: number;
 }
 
-function resolveSessionChatReason(
-  presentationStatus:
-    | 'UPCOMING'
-    | 'JOINABLE'
-    | 'IN_PROGRESS'
-    | 'COMPLETED'
-    | 'CANCELLED'
-    | 'ENDED'
-    | 'UNAVAILABLE'
-    | 'NO_SHOW'
-    | 'UNDER_REVIEW',
-): GeneralChatAvailabilityReason {
-  switch (presentationStatus) {
-    case 'JOINABLE':
-    case 'IN_PROGRESS':
+function resolveSessionChatReason(status: SessionStatus): GeneralChatAvailabilityReason {
+  switch (status) {
+    case SessionStatus.READY_TO_JOIN:
+    case SessionStatus.IN_PROGRESS:
       return GENERAL_CHAT_AVAILABILITY_REASONS.allowed;
-    case 'COMPLETED':
-    case 'ENDED':
-    case 'NO_SHOW':
-    case 'UNDER_REVIEW':
+    case SessionStatus.COMPLETED:
+    case SessionStatus.AWAITING_COMPLETION_CONFIRMATION:
+    case SessionStatus.PATIENT_NO_SHOW:
+    case SessionStatus.PRACTITIONER_NO_SHOW:
+    case SessionStatus.BOTH_NO_SHOW:
+    case SessionStatus.EXPIRED:
       return GENERAL_CHAT_AVAILABILITY_REASONS.sessionEnded;
-    case 'CANCELLED':
+    case SessionStatus.CANCELLED:
       return GENERAL_CHAT_AVAILABILITY_REASONS.sessionCancelled;
-    case 'UPCOMING':
-    case 'UNAVAILABLE':
     default:
       return GENERAL_CHAT_AVAILABILITY_REASONS.sessionNotStarted;
   }
@@ -55,33 +40,21 @@ function resolveSessionChatReason(
 export function resolveSessionChatAvailability(
   input: SessionChatPolicyInput,
 ): GeneralChatAvailabilityViewModel {
-  const presentationStatus = resolveSessionPresentationStatus({
-    status: input.status,
-    sessionMode: input.sessionMode,
-    scheduledStartAt: input.scheduledStartAt,
-    scheduledEndAt: input.scheduledEndAt,
-    provider: input.provider,
-    providerRoomId: input.providerRoomId,
-    providerSessionRef: input.providerSessionRef,
-    videoRoomClosedAt: input.videoRoomClosedAt,
-    now: input.now,
-    runtimePrepareLeadMinutes:
-      input.runtimePrepareLeadMinutes ?? DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-  });
-
   const canSend =
-    presentationStatus === 'JOINABLE' || presentationStatus === 'IN_PROGRESS';
+    input.status === SessionStatus.READY_TO_JOIN || input.status === SessionStatus.IN_PROGRESS;
   const canRead =
-    presentationStatus === 'JOINABLE' ||
-    presentationStatus === 'IN_PROGRESS' ||
-    presentationStatus === 'COMPLETED' ||
-    presentationStatus === 'ENDED' ||
-    presentationStatus === 'CANCELLED';
+    ([
+      SessionStatus.READY_TO_JOIN,
+      SessionStatus.IN_PROGRESS,
+      SessionStatus.COMPLETED,
+      SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+      SessionStatus.CANCELLED,
+    ] as SessionStatus[]).includes(input.status);
 
   return {
     canRead,
     canSend,
     readOnly: !canSend,
-    reason: resolveSessionChatReason(presentationStatus),
+    reason: resolveSessionChatReason(input.status),
   };
 }

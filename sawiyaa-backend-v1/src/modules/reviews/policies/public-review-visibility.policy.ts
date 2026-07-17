@@ -14,16 +14,8 @@ export const buildPublicVisibleReviewWhere = (
   },
   hiddenAt: null,
   archivedAt: null,
-  AND: [
-    {
-      reviewText: {
-        not: null,
-      },
-    },
-    {
-      reviewText: {
-        not: '',
-      },
-    },
-  ],
+  countsInPublicAverage: true,
+  publicRatingValue: {
+    not: null,
+  },
 });

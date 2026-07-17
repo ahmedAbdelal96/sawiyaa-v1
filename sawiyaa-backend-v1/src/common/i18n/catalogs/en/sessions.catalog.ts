@@ -61,6 +61,7 @@ export const enSessionsCatalog = {
     invalidStatusTransition:
       'Session status transition from {{from}} to {{to}} is invalid',
     sessionAlreadyCancelled: 'Session is already cancelled',
+    sessionAlreadyNoShow: 'Session is already marked as no-show',
     sessionNotPendingPayment:
       'Only pending-payment sessions can be expired as unpaid',
     cancellationPolicyMissing:
@@ -87,6 +88,16 @@ export const enSessionsCatalog = {
       'Cancellation policy contains overlapping rules: {{firstRuleCode}} and {{secondRuleCode}}',
     cancellationOriginalMethodRefundNotSupported:
       'Original-method cancellation refunds are not supported in this phase',
+    packageEntitlementDecisionNotPackageSession:
+      'Package entitlement decisions can only be recorded for package-covered sessions',
+    packageEntitlementDecisionNotAllowedStatus:
+      'Package entitlement decisions can only be recorded for cancelled or no-show sessions',
+    packageEntitlementDecisionInvalidCombination:
+      'This package entitlement decision combination is not allowed',
+    packageEntitlementDecisionAlreadyExists:
+      'A package entitlement decision already exists for this session',
+    packageEntitlementDecisionReviewUnavailable:
+      'A package entitlement review could not be created for this session',
   },
   // Phase 4A — Manual session decision types
   decisionTypes: {

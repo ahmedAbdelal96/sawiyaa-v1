@@ -1,4 +1,4 @@
-import { IsArray, ArrayMinSize, IsEnum, IsString, MaxLength } from 'class-validator';
+import { IsArray, ArrayMinSize, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export enum AcademyProgramEnrollmentBulkAction {
   MARK_COMPLETED = 'MARK_COMPLETED',
@@ -15,4 +15,9 @@ export class BulkAcademyProgramEnrollmentActionDto {
   @IsString({ each: true })
   @MaxLength(64, { each: true })
   enrollmentIds!: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
 }

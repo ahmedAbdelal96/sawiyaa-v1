@@ -17,7 +17,7 @@ describe('ReviewRepository', () => {
     jest.clearAllMocks();
   });
 
-  it('filters public list to published reviews with non-empty text only', async () => {
+  it('filters public list to published and countable reviews only', async () => {
     await repository.listPublicPublishedReviews({
       practitionerId: 'practitioner-1',
       page: 1,
@@ -34,18 +34,10 @@ describe('ReviewRepository', () => {
           },
           hiddenAt: null,
           archivedAt: null,
-          AND: [
-            {
-              reviewText: {
-                not: null,
-              },
-            },
-            {
-              reviewText: {
-                not: '',
-              },
-            },
-          ],
+          countsInPublicAverage: true,
+          publicRatingValue: {
+            not: null,
+          },
         }),
       }),
     );
@@ -57,6 +49,10 @@ describe('ReviewRepository', () => {
           { submittedAt: 'desc' },
           { id: 'asc' },
         ],
+        select: expect.objectContaining({
+          publicRatingValue: true,
+          moderationDecision: true,
+        }),
       }),
     );
   });

@@ -30,6 +30,7 @@ import { CreateAcademyProgramEnrollmentDto } from '../dto/create-academy-program
 import { AcademyProgramEnrollmentPresenter } from '../presenters/academy-program-enrollment.presenter';
 import { AcademyProgramRepository } from '../repositories/academy-program.repository';
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
+import { AcademyProgramTargetLearnerAlertService } from '../services/academy-program-target-learner-alert.service';
 import { resolveAcademyCheckoutPricing } from '../../utils/academy-pricing.util';
 
 @Injectable()
@@ -49,6 +50,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly academyLearnerResolverService: AcademyLearnerResolverService,
     private readonly academyProgramEnrollmentPresenter: AcademyProgramEnrollmentPresenter,
+    private readonly academyProgramTargetLearnerAlertService: AcademyProgramTargetLearnerAlertService,
   ) {
     this.paymentReservationMinutes = this.configService.get<number>(
       'session.paymentReservationMinutes',
@@ -103,17 +105,12 @@ export class CreateAcademyProgramEnrollmentUseCase {
       };
     }
 
-    const seatsTaken =
-      await this.academyProgramEnrollmentRepository.countActiveSeatsByProgramId(
-        program.id,
-        new Date(),
-      );
-    if (!existing && program.maxSeats !== null && seatsTaken >= program.maxSeats) {
-      throw new BadRequestException({
-        messageKey: 'academyProgram.errors.seatCapacityReached',
-        error: 'ACADEMY_PROGRAM_SEAT_CAPACITY_REACHED',
-      });
-    }
+    const previousActiveLearnerCount = !existing
+      ? await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
+          program.id,
+          new Date(),
+        )
+      : null;
 
     const pricing = resolveAcademyCheckoutPricing({
       priceAmountEgp: program.priceEgp,
@@ -131,7 +128,9 @@ export class CreateAcademyProgramEnrollmentUseCase {
     }
 
     const publicAccessToken = randomUUID();
-    const isFree = !program.priceEgp && !program.priceUsd;
+    const isFree =
+      program.priceEgp?.toString() === '0' &&
+      program.priceUsd?.toString() === '0';
     const now = new Date();
     const seatReservationExpiresAt = new Date(
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
@@ -183,6 +182,19 @@ export class CreateAcademyProgramEnrollmentUseCase {
       }));
 
     if (isFree) {
+      if (previousActiveLearnerCount !== null) {
+        const currentActiveLearnerCount =
+          await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
+            program.id,
+            new Date(),
+          );
+        await this.academyProgramTargetLearnerAlertService.notifyIfTargetExceeded({
+          program,
+          previousActiveLearnerCount,
+          currentActiveLearnerCount,
+        });
+      }
+
       return {
         item: this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
           enrollment,
@@ -423,6 +435,19 @@ export class CreateAcademyProgramEnrollmentUseCase {
           tx,
         );
       });
+
+      if (previousActiveLearnerCount !== null) {
+        const currentActiveLearnerCount =
+          await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
+            program.id,
+            new Date(),
+          );
+        await this.academyProgramTargetLearnerAlertService.notifyIfTargetExceeded({
+          program,
+          previousActiveLearnerCount,
+          currentActiveLearnerCount,
+        });
+      }
 
       throw error;
     }

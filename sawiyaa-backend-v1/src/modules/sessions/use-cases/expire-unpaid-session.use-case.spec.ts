@@ -3,7 +3,7 @@ import { CustomerWalletAccountingService } from '@modules/customer-wallets/servi
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { ExpireUnpaidSessionUseCase } from './expire-unpaid-session.use-case';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
@@ -12,7 +12,7 @@ describe('ExpireUnpaidSessionUseCase', () => {
     const sessionRepository = {
       findById: jest.fn().mockResolvedValue({
         id: 'session-1',
-        status: SessionStatus.PENDING_PAYMENT,
+        status: SessionStatus.EXPIRED,
       }),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'session-1',
@@ -21,9 +21,12 @@ describe('ExpireUnpaidSessionUseCase', () => {
       createEvent: jest.fn().mockResolvedValue(undefined),
     } as unknown as SessionRepository;
 
-    const validateSessionStatusTransitionService = {
-      assertCanTransition: jest.fn(),
-    } as unknown as ValidateSessionStatusTransitionService;
+    const sessionLifecycleService = {
+      transitionIfCurrentStatus: jest.fn().mockResolvedValue({
+        outcome: 'transitioned',
+        session: { id: 'session-1', status: SessionStatus.EXPIRED },
+      }),
+    } as unknown as SessionLifecycleService;
 
     const paymentRepository = {
       updateStatus: jest.fn().mockResolvedValue(undefined),
@@ -45,7 +48,7 @@ describe('ExpireUnpaidSessionUseCase', () => {
     const useCase = new ExpireUnpaidSessionUseCase(
       prisma,
       sessionRepository,
-      validateSessionStatusTransitionService,
+      sessionLifecycleService,
       paymentRepository,
       customerWalletAccountingService,
       operationalNotificationService,

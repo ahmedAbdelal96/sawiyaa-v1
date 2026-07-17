@@ -63,7 +63,7 @@ const SORTABLE_COLUMNS: EnrollmentSortColumn[] = ["registeredAt", "fullName"];
 const ENROLLMENT_STATUS_OPTIONS: Array<AcademyProgramEnrollmentStatus | "ALL"> = [
   "ALL",
   "PENDING_PAYMENT",
-  "CONFIRMED",
+  "UPCOMING",
   "CANCELLED",
   "EXPIRED",
 ];
@@ -143,7 +143,7 @@ function resolveEnrollmentSourceLabel(sourceLabel: string | null | undefined, t:
 }
 
 function badgeTone(status: string) {
-  if (status === "CONFIRMED" || status === "CAPTURED" || status === "ISSUED") {
+  if (status === "UPCOMING" || status === "CAPTURED" || status === "ISSUED") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   if (status === "CANCELLED" || status === "FAILED" || status === "EXPIRED") {
@@ -559,7 +559,7 @@ function LearnerDetailDrawer({
                 </div>
               )}
 
-              {canManageCertificate && item.status === "CONFIRMED" ? (
+              {canManageCertificate && item.status === "UPCOMING" ? (
                 <div className="space-y-3 rounded-2xl border border-border-light bg-surface-secondary p-4">
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
@@ -698,6 +698,8 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [bulkCancelOpen, setBulkCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [bulkCancelReason, setBulkCancelReason] = useState("");
   const [toastMessage, setToastMessage] = useState<{ tone: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
@@ -904,9 +906,15 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
 
   const handleSingleCancel = async () => {
     if (!selectedItem) return;
-    await cancelMutation.mutateAsync(selectedItem.id);
+    const reason = cancelReason.trim();
+    if (!reason) {
+      setToastMessage({ tone: "error", message: t("programs.learners.cancelConfirm.reasonRequired") });
+      return;
+    }
+    await cancelMutation.mutateAsync({ enrollmentId: selectedItem.id, reason });
     setToastMessage({ tone: "success", message: t("programs.learners.feedback.cancelSuccess") });
     setIsCancelConfirmOpen(false);
+    setCancelReason("");
     await refreshList();
   };
 
@@ -1024,15 +1032,22 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const handleBulkAction = async (action: "CANCEL_ENROLLMENT" | "MARK_COMPLETED" | "MARK_CERTIFIED") => {
     const enrollmentIds = selectedRows.slice();
     if (enrollmentIds.length === 0) return;
+    const reason = action === "CANCEL_ENROLLMENT" ? bulkCancelReason.trim() : undefined;
+    if (action === "CANCEL_ENROLLMENT" && !reason) {
+      setToastMessage({ tone: "error", message: t("programs.learners.bulkCancelConfirm.reasonRequired") });
+      return;
+    }
 
     await bulkMutation.mutateAsync({
       programId,
       input: {
         action: action as "CANCEL_ENROLLMENT" | "MARK_COMPLETED" | "MARK_CERTIFIED",
         enrollmentIds,
+        ...(reason ? { reason } : {}),
       },
     });
     setSelectedRows([]);
+    if (action === "CANCEL_ENROLLMENT") setBulkCancelReason("");
     setToastMessage({
       tone: "success",
       message:
@@ -1314,7 +1329,10 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
 
       <DestructiveConfirmModal
         isOpen={isCancelConfirmOpen}
-        onClose={() => setIsCancelConfirmOpen(false)}
+        onClose={() => {
+          setIsCancelConfirmOpen(false);
+          setCancelReason("");
+        }}
         title={t("programs.learners.cancelConfirm.title")}
         description={t("programs.learners.cancelConfirm.description")}
         confirmLabel={cancelMutation.isPending ? t("programs.learners.cancelConfirm.saving") : t("programs.learners.cancelConfirm.confirm")}
@@ -1326,18 +1344,37 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
             <p className="font-medium">{selectedItem.learner.fullName}</p>
             <p className="mt-1 text-xs text-rose-600">{selectedItem.learner.phoneNumber}</p>
+            <label className="mt-4 block text-xs font-semibold text-text-primary" htmlFor="academy-cancel-reason">
+              {t("programs.learners.cancelConfirm.reasonLabel")}
+            </label>
+            <textarea
+              id="academy-cancel-reason"
+              value={cancelReason}
+              onChange={(event) => setCancelReason(event.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder={t("programs.learners.cancelConfirm.reasonPlaceholder")}
+              className="mt-2 w-full rounded-xl border border-border-light bg-white px-3 py-2 text-sm text-text-primary outline-none focus:border-primary"
+            />
           </div>
         ) : null}
       </DestructiveConfirmModal>
 
       <DestructiveConfirmModal
         isOpen={bulkCancelOpen}
-        onClose={() => setBulkCancelOpen(false)}
+        onClose={() => {
+          setBulkCancelOpen(false);
+          setBulkCancelReason("");
+        }}
         title={t("programs.learners.bulkCancelConfirm.title")}
         description={t("programs.learners.bulkCancelConfirm.description")}
         confirmLabel={bulkMutation.isPending ? t("programs.learners.bulkCancelConfirm.saving") : t("programs.learners.bulkCancelConfirm.confirm")}
         cancelLabel={t("programs.learners.bulkCancelConfirm.close")}
         onConfirm={async () => {
+          if (!bulkCancelReason.trim()) {
+            setToastMessage({ tone: "error", message: t("programs.learners.bulkCancelConfirm.reasonRequired") });
+            return;
+          }
           await handleBulkAction("CANCEL_ENROLLMENT");
           setBulkCancelOpen(false);
         }}
@@ -1348,8 +1385,20 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
           <ul className="list-disc space-y-1 ps-4 text-xs text-rose-600">
             {selectedItems.slice(0, 5).map((item) => (
               <li key={item.id}>{item.learner.fullName}</li>
-          ))}
+            ))}
           </ul>
+          <label className="mt-4 block text-xs font-semibold text-text-primary" htmlFor="academy-bulk-cancel-reason">
+            {t("programs.learners.bulkCancelConfirm.reasonLabel")}
+          </label>
+          <textarea
+            id="academy-bulk-cancel-reason"
+            value={bulkCancelReason}
+            onChange={(event) => setBulkCancelReason(event.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder={t("programs.learners.bulkCancelConfirm.reasonPlaceholder")}
+            className="mt-2 w-full rounded-xl border border-border-light bg-white px-3 py-2 text-sm text-text-primary outline-none focus:border-primary"
+          />
         </div>
       </DestructiveConfirmModal>
 

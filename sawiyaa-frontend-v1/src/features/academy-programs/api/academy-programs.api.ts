@@ -163,9 +163,11 @@ export async function publishAdminAcademyProgram(
 
 export async function archiveAdminAcademyProgram(
   programId: string,
+  input: { reason: string },
 ): Promise<AcademyProgramItem> {
   const response = await httpClient.patch<ApiPayload<AcademyProgramResponse>>(
     `/admin/academy/programs/${programId}/archive`,
+    input,
   );
   return extractData(response.data).item;
 }
@@ -264,9 +266,11 @@ export async function uploadAdminAcademyProgramEnrollmentCertificate(
 
 export async function cancelAdminAcademyProgramEnrollment(
   enrollmentId: string,
+  input: { reason: string },
 ): Promise<AcademyProgramEnrollmentItem> {
   const response = await httpClient.patch<ApiPayload<AcademyProgramEnrollmentResponse>>(
     `/admin/academy/program-enrollments/${enrollmentId}/cancel`,
+    input,
   );
   return extractData(response.data).item;
 }

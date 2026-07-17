@@ -19,7 +19,6 @@ import {
   type EvidenceTimelineItem,
   type PlatformInputItem,
 } from '../utils/evidence-timeline.util';
-import { resolveSessionPresentationStatus } from '../utils/session-join-policy.util';
 import type {
   AttendanceEvent,
   AttendanceSummaryInput,
@@ -194,23 +193,7 @@ export class GetAdminSessionAttendanceUseCase {
       },
     });
 
-    // Fetch final manual decision if one exists to override presentationStatus
-    const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
-      input.sessionId,
-    );
-
-    const presentationStatus = resolveSessionPresentationStatus({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
-      videoRoomClosedAt: session.videoRoomClosedAt,
-      now: new Date(),
-      finalManualDecision: latestDecision?.decisionType ?? null,
-    });
+    const presentationStatus = session.status;
 
     return {
       sessionId: input.sessionId,

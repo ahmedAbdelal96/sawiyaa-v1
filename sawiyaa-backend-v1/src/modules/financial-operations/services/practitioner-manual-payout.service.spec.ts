@@ -4,6 +4,7 @@ import { AccountingJournalPostingService } from './accounting-journal-posting.se
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { PractitionerManualPayoutRepository } from '../repositories/practitioner-manual-payout.repository';
 import { PractitionerManualPayoutBalanceService } from './practitioner-manual-payout-balance.service';
+import { PractitionerRecoveryService } from './practitioner-recovery.service';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { PractitionerManualPayoutService } from './practitioner-manual-payout.service';
 
@@ -56,6 +57,13 @@ describe('PractitionerManualPayoutService', () => {
     const ledgerRepository = {
       createLedgerEntry: jest.fn().mockResolvedValue({}),
     } as unknown as LedgerRepository;
+    const practitionerRecoveryService = {
+      applyOpenRecoveriesToPayout: jest.fn().mockResolvedValue({
+        appliedAmount: new Prisma.Decimal('0.00'),
+        appliedCount: 0,
+        wasAlreadyApplied: false,
+      }),
+    } as unknown as PractitionerRecoveryService;
 
     const refreshPractitionerWalletService = {
       refresh: jest.fn().mockResolvedValue(undefined),
@@ -74,6 +82,7 @@ describe('PractitionerManualPayoutService', () => {
       manualPayoutRepository,
       balanceService,
       ledgerRepository,
+      practitionerRecoveryService,
       refreshPractitionerWalletService,
       accountingJournalPostingService,
     );
@@ -83,6 +92,7 @@ describe('PractitionerManualPayoutService', () => {
       manualPayoutRepository,
       balanceService,
       ledgerRepository,
+      practitionerRecoveryService,
       refreshPractitionerWalletService,
       accountingJournalPostingService,
       prisma,
@@ -119,6 +129,16 @@ describe('PractitionerManualPayoutService', () => {
         referenceType: 'practitioner-manual-payout',
       }),
       undefined,
+    );
+    expect(
+      setup.practitionerRecoveryService.applyOpenRecoveriesToPayout,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payoutId: 'manual-payout-1',
+        payoutAmount: new Prisma.Decimal('120.00'),
+        practitionerId: 'practitioner-1',
+        currencyCode: 'EGP',
+      }),
     );
     expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
       'practitioner-1',

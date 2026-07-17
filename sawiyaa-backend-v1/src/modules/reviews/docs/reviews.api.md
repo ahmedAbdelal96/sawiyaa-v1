@@ -14,13 +14,16 @@
 - One review per session enforced by business rule + unique session constraint.
 
 ## Moderation Policy (V1)
-- Submitted review status starts at `PENDING_MODERATION`.
-- Rating contributes to practitioner summary while review is in countable states:
-  - `PENDING_MODERATION`
-  - `PUBLISHED`
-  - `REJECTED`
-  - `HIDDEN`
-- Text review is publicly visible only when review status is `PUBLISHED`.
+- Submitted review status starts at `PENDING_MODERATION` for ratings `1` to `3`.
+- Ratings `4` and `5` auto-publish immediately and count in the public practitioner average.
+- Rating contributes to practitioner summary only when:
+  - `reviewStatus = PUBLISHED`
+  - `publishedAt != null`
+  - `hiddenAt = null`
+  - `archivedAt = null`
+  - `countsInPublicAverage = true`
+  - `publicRatingValue != null`
+- Public review snippets may omit text for auto-published positive reviews.
 
 ## Endpoints
 
@@ -42,7 +45,7 @@
 ## Public Safety Rules
 - No patient identity in public review payloads.
 - No moderation note exposure in public/patient payloads.
-- Public list only includes published text snippets.
+- Public list only includes countable published reviews and may return `textReview = null`.
 - Trust summary uses moderation-safe public review signals only (`PUBLISHED`, not hidden/archived, and visible on public surface).
 - Trust block composition reuses existing moderation-safe reads (trust summary + published review snippets + public-safe content suggestions).
 

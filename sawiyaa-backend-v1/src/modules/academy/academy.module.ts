@@ -3,10 +3,7 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PatientsModule } from '@modules/patients/patients.module';
-import { AdminAcademyController } from './controllers/admin-academy.controller';
-import { PublicAcademyController } from './controllers/public-academy.controller';
-import { AcademyPresenter } from './presenters/academy.presenter';
-import { AcademyRepository } from './repositories/academy.repository';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { AcademyLearnerResolverService } from './services/academy-learner-resolver.service';
 import { AdminAcademyProgramsController } from './programs/controllers/admin-academy-programs.controller';
 import { PatientAcademyProgramsController } from './programs/controllers/patient-academy-programs.controller';
@@ -43,25 +40,11 @@ import { AcademyProgramEnrollmentRepository } from './programs/repositories/acad
 import { AcademyProgramSessionAttendanceRepository } from './programs/repositories/academy-program-session-attendance.repository';
 import { AcademyProgramCertificateStorageService } from './programs/services/academy-program-certificate-storage.service';
 import { AcademyProgramCoverStorageService } from './programs/services/academy-program-cover-storage.service';
-import { ArchiveAcademyCourseUseCase } from './use-cases/archive-academy-course.use-case';
-import { CreateAcademyCourseUseCase } from './use-cases/create-academy-course.use-case';
-import { CreateAcademyCourseLectureUseCase } from './use-cases/create-academy-course-lecture.use-case';
-import { CreateAcademyEnrollmentUseCase } from './use-cases/create-academy-enrollment.use-case';
-import { GetAdminAcademyCourseUseCase } from './use-cases/get-admin-academy-course.use-case';
-import { GetPublicAcademyCourseBySlugUseCase } from './use-cases/get-public-academy-course-by-slug.use-case';
-import { GetPublicAcademyEnrollmentPaymentRedirectUseCase } from './use-cases/get-public-academy-enrollment-payment-redirect.use-case';
-import { GetPublicAcademyEnrollmentUseCase } from './use-cases/get-public-academy-enrollment.use-case';
-import { ListAdminAcademyCoursesUseCase } from './use-cases/list-admin-academy-courses.use-case';
-import { ListAdminAcademyEnrollmentsUseCase } from './use-cases/list-admin-academy-enrollments.use-case';
-import { ListPublicAcademyCoursesUseCase } from './use-cases/list-public-academy-courses.use-case';
-import { PublishAcademyCourseUseCase } from './use-cases/publish-academy-course.use-case';
-import { UpdateAcademyCourseUseCase } from './use-cases/update-academy-course.use-case';
+import { AcademyProgramTargetLearnerAlertService } from './programs/services/academy-program-target-learner-alert.service';
 
 @Module({
-  imports: [PaymentsModule, PatientsModule],
+  imports: [PaymentsModule, PatientsModule, NotificationsModule],
   controllers: [
-    PublicAcademyController,
-    AdminAcademyController,
     PublicAcademyProgramsController,
     AdminAcademyProgramsController,
     PatientAcademyProgramsController,
@@ -69,8 +52,6 @@ import { UpdateAcademyCourseUseCase } from './use-cases/update-academy-course.us
   providers: [
     JwtAccessAuthGuard,
     RolesGuard,
-    AcademyPresenter,
-    AcademyRepository,
     AcademyLearnerResolverService,
     AcademyProgramPresenter,
     AcademyProgramRepository,
@@ -79,19 +60,7 @@ import { UpdateAcademyCourseUseCase } from './use-cases/update-academy-course.us
     AcademyProgramSessionAttendanceRepository,
     AcademyProgramCertificateStorageService,
     AcademyProgramCoverStorageService,
-    ListPublicAcademyCoursesUseCase,
-    GetPublicAcademyCourseBySlugUseCase,
-    GetPublicAcademyEnrollmentUseCase,
-    GetPublicAcademyEnrollmentPaymentRedirectUseCase,
-    CreateAcademyEnrollmentUseCase,
-    ListAdminAcademyCoursesUseCase,
-    GetAdminAcademyCourseUseCase,
-    ListAdminAcademyEnrollmentsUseCase,
-    CreateAcademyCourseUseCase,
-    CreateAcademyCourseLectureUseCase,
-    UpdateAcademyCourseUseCase,
-    PublishAcademyCourseUseCase,
-    ArchiveAcademyCourseUseCase,
+    AcademyProgramTargetLearnerAlertService,
     ListPublicAcademyProgramsUseCase,
     GetPublicAcademyProgramBySlugUseCase,
     CreateAcademyProgramEnrollmentUseCase,

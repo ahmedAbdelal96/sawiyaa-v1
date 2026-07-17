@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   Prisma,
   SettlementBatchStatus,
@@ -82,6 +82,7 @@ export class RecordPractitionerSettlementPayoutUseCase {
             payoutMethod: input.body.payoutMethod,
             payoutSource: SettlementPayoutSource.MANUAL_EXCEPTION,
             externalPayoutRef: input.body.externalPayoutRef ?? null,
+            idempotencyKey: input.body.idempotencyKey ?? null,
             transferFeeAmount: input.body.transferFeeAmount ?? null,
             transferFeeTreatment: input.body.transferFeeTreatment,
             notes: input.body.notes ?? null,

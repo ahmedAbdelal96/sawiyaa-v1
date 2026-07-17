@@ -31,7 +31,7 @@ export default async function PractitionersPage({ params, searchParams }: Props)
 
   const user = await getUserData();
   if (user?.role === "PATIENT") {
-    redirect(`/${locale}/patient/practitioners`);
+    redirect(`/${locale}/patient`);
   }
 
   const listingData = await getPractitionersListingData(locale, await searchParams);

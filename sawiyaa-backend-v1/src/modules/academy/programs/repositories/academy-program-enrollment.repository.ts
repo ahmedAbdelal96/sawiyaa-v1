@@ -266,6 +266,47 @@ export class AcademyProgramEnrollmentRepository {
     });
   }
 
+  countActiveLearnersByProgramId(
+    academyProgramId: string,
+    now: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.countActiveSeatsByProgramId(academyProgramId, now, tx);
+  }
+
+  async countActiveLearnersByProgramIds(
+    academyProgramIds: string[],
+    now: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (academyProgramIds.length === 0) {
+      return new Map<string, number>();
+    }
+
+    const rows = await this.getDb(tx).academyProgramEnrollment.groupBy({
+      by: ['academyProgramId'],
+      where: {
+        academyProgramId: { in: academyProgramIds },
+        OR: [
+          {
+            status: AcademyProgramEnrollmentStatus.CONFIRMED,
+          },
+          {
+            status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+            seatReservationExpiresAt: {
+              gt: now,
+            },
+          },
+        ],
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    return new Map(rows.map((row) => [row.academyProgramId, row._count._all]));
+  }
+
   findLatestActivePaymentAttemptByEnrollmentId(
     enrollmentId: string,
     tx?: Prisma.TransactionClient,

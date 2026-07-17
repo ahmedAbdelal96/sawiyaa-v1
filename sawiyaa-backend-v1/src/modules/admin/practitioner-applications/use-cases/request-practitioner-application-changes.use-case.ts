@@ -2,8 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
-import { PractitionerApplicationStatus, Prisma } from '@prisma/client';
+import { PractitionerApplicationStatus, Prisma, SecurityAuditOutcome } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -11,6 +12,8 @@ import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-app
 import { PractitionerApplicationTransitionPolicy } from '../policies/practitioner-application-transition.policy';
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
 import { AdminPractitionerApplicationNotificationService } from '../services/admin-practitioner-application-notification.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 /**
  * Requests changes for a practitioner application.
@@ -25,6 +28,7 @@ export class RequestPractitionerApplicationChangesUseCase {
     private readonly transitionPolicy: PractitionerApplicationTransitionPolicy,
     private readonly applicationRepository: AdminPractitionerApplicationRepository,
     private readonly notificationService: AdminPractitionerApplicationNotificationService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -72,7 +76,7 @@ export class RequestPractitionerApplicationChangesUseCase {
 
         this.transitionPolicy.assertCanRequestChanges(latest.status);
 
-        return this.applicationRepository.updateDecision(
+        const decision = await this.applicationRepository.updateDecision(
           input.id,
           {
             status: PractitionerApplicationStatus.CHANGES_REQUESTED,
@@ -83,6 +87,22 @@ export class RequestPractitionerApplicationChangesUseCase {
           },
           tx,
         );
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'security.practitioner.application.request-changes',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId,
+          resourceType: 'PractitionerApplication',
+          resourceId: decision.id,
+          targetUserId: decision.practitioner.userId,
+          reason,
+          metadata: {
+            previousStatus: latest.status,
+            status: decision.status,
+          },
+        });
+        return decision;
       },
     );
 

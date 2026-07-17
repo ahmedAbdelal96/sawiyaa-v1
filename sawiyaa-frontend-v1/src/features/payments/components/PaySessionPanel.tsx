@@ -966,7 +966,6 @@ export default function PaySessionPanel({ sessionId }: Props) {
 
   if (isSessionExpired(session.expiresAt, now) || session.status !== "PENDING_PAYMENT") {
     const isAlreadyPaid =
-      session.status === "CONFIRMED" ||
       session.status === "UPCOMING" ||
       session.status === "READY_TO_JOIN" ||
       session.status === "IN_PROGRESS" ||
@@ -984,25 +983,6 @@ export default function PaySessionPanel({ sessionId }: Props) {
           <Link
             href="/patient/sessions"
             className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
-          >
-            {t("page.viewSessions")}
-          </Link>
-        </div>
-      );
-    }
-
-    if (session.status === "REFUND_PENDING" || session.status === "REFUNDED") {
-      return (
-        <div className="rounded-2xl border border-border-light bg-white p-5 text-center dark:border-border-light dark:bg-surface-secondary">
-          <p className="mb-1 text-sm font-semibold text-warning-700 dark:text-warning-300">
-            {t(`page.${session.status}.heading` as Parameters<typeof t>[0])}
-          </p>
-          <p className="mb-3 text-xs text-warning-700/80 dark:text-warning-300/80">
-            {t(`page.${session.status}.note` as Parameters<typeof t>[0])}
-          </p>
-          <Link
-            href="/patient/sessions"
-            className="text-sm font-medium text-primary hover:underline"
           >
             {t("page.viewSessions")}
           </Link>

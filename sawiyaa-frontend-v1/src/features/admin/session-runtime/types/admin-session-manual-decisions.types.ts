@@ -15,14 +15,14 @@ export type SessionAdminDecisionType =
 export type SessionStatus =
   | "DRAFT"
   | "PENDING_PAYMENT"
-  | "PENDING_PRACTITIONER_RESPONSE"
-  | "CONFIRMED"
+  | "PENDING_PRACTITIONER_CONFIRMATION"
+  | "UPCOMING"
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED"
-  | "NO_SHOW"
+  | "PATIENT_NO_SHOW"
   | "EXPIRED"
   | "REFUND_PENDING"
   | "REFUNDED";

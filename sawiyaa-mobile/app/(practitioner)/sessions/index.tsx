@@ -840,12 +840,12 @@ function PrioritySessionCard({
 function buildSessionSummary(sessions: PractitionerSessionListItem[]): SessionSummary {
   return {
     upcoming: sessions.filter((session) =>
-      ["UPCOMING", "UNAVAILABLE"].includes(session.presentationStatus),
+      ["UPCOMING"].includes(session.status),
     ).length,
-    ready: sessions.filter((session) => session.presentationStatus === "JOINABLE").length,
+    ready: sessions.filter((session) => session.status === "READY_TO_JOIN").length,
     live: sessions.filter((session) => session.presentationStatus === "IN_PROGRESS").length,
     closed: sessions.filter((session) =>
-      ["COMPLETED", "CANCELLED", "ENDED", "NO_SHOW", "UNDER_REVIEW"].includes(session.presentationStatus),
+      ["COMPLETED", "CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
     ).length,
   };
 }
@@ -855,7 +855,7 @@ function pickPrioritySession(sessions: PractitionerSessionListItem[]) {
     sessions.find((session) => isSessionJoinableNow(session)) ??
     sessions.find((session) => session.presentationStatus === "IN_PROGRESS") ??
     sessions.find((session) =>
-      ["UPCOMING", "UNAVAILABLE"].includes(session.presentationStatus),
+      ["UPCOMING"].includes(session.status),
     ) ??
     null
   );
@@ -904,24 +904,24 @@ function isSessionJoinableNow(session: PractitionerSessionListItem) {
 function canAttemptPrepare(session: PractitionerSessionListItem) {
   return (
     session.sessionMode === "VIDEO" &&
-    ["CONFIRMED", "UPCOMING", "READY_TO_JOIN"].includes(session.status)
+    ["UPCOMING", "UPCOMING", "READY_TO_JOIN"].includes(session.status)
   );
 }
 
 function mapSessionPresentationTone(status: SessionPresentationStatus) {
   switch (status) {
-    case "JOINABLE":
+    case "READY_TO_JOIN":
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "UNAVAILABLE":
-    case "UNDER_REVIEW":
+    case "AWAITING_COMPLETION_CONFIRMATION":
+    case "PENDING_PRACTITIONER_CONFIRMATION":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
-    case "ENDED":
+    case "EXPIRED":
     case "CANCELLED":
-    case "NO_SHOW":
+    case "PATIENT_NO_SHOW":
       return "error" as const;
     default:
       return "default" as const;

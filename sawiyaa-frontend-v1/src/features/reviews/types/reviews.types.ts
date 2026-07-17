@@ -8,13 +8,23 @@ export type SessionReviewStatus =
   | "HIDDEN"
   | "ARCHIVED";
 
-// Aligned with backend ReviewModerationAction enum
-export type ReviewModerationAction =
-  | "APPROVED"
-  | "REJECTED"
-  | "HIDDEN"
-  | "RESTORED"
-  | "ARCHIVED";
+// Aligned with backend SessionReviewModerationDecision enum
+export type ReviewModerationDecision =
+  | "APPROVE_AS_IS"
+  | "EDIT_AND_APPROVE"
+  | "REJECT_PUBLISHING"
+  | "INTERNAL_NOTE_ONLY"
+  | "EXCLUDE_FROM_PUBLIC_AVERAGE"
+  | "AUTO_APPROVED_POSITIVE";
+
+// Admin moderation requests use the explicit decision contract.
+export type ReviewModerationRequestDecision = Exclude<
+  ReviewModerationDecision,
+  "AUTO_APPROVED_POSITIVE"
+>;
+
+// Backward-compatible alias for existing imports while the UI migrates.
+export type ReviewModerationAction = ReviewModerationRequestDecision;
 
 export interface ReviewPagination {
   page: number;
@@ -41,6 +51,16 @@ export interface AdminReviewSession {
   scheduledStartAt: string | null;
 }
 
+export interface AdminReviewModerationSummary {
+  originalRatingValue: number;
+  publicRatingValue: number | null;
+  moderationDecision: ReviewModerationDecision | null;
+  moderatedByUserId: string | null;
+  moderatedAt: string | null;
+  moderationReason: string | null;
+  countsInPublicAverage: boolean;
+}
+
 export interface PatientReviewPractitioner {
   id: string;
   slug: string;
@@ -60,16 +80,35 @@ export interface PatientReviewItem {
   practitioner: PatientReviewPractitioner;
 }
 
+export interface PendingPatientReviewPractitioner {
+  id: string;
+  slug: string;
+  displayName: string | null;
+}
+
+export interface PendingPatientReviewItem {
+  sessionId: string;
+  completedAt: string | null;
+  scheduledStartAt: string | null;
+  practitioner: PendingPatientReviewPractitioner;
+}
+
 export interface AdminReviewItem {
   id: string;
   sessionId: string;
   overallRating: number;
+  originalRatingValue: number;
+  publicRatingValue: number | null;
   title: string | null;
   textReview: string | null;
   status: SessionReviewStatus;
+  moderationDecision: ReviewModerationDecision | null;
+  moderatedByUserId: string | null;
   submittedAt: string | null;
   publishedAt: string | null;
   moderatedAt: string | null;
+  moderationReason: string | null;
+  countsInPublicAverage: boolean;
   practitioner: AdminReviewPractitioner;
   patient: AdminReviewPatient;
   patientProfileId: string;
@@ -91,19 +130,30 @@ export interface PatientReviewsListData {
   pagination: ReviewPagination;
 }
 
+export interface PendingPatientReviewsListData {
+  items: PendingPatientReviewItem[];
+  pagination: ReviewPagination;
+}
+
 export interface PatientReviewItemData {
   item: PatientReviewItem;
 }
 
 export interface ModerationResultData {
   item: AdminReviewItem;
-  action: ReviewModerationAction;
+  decision: ReviewModerationDecision;
+  action: ReviewModerationDecision;
 }
 
 export interface ListPatientReviewsParams {
   page?: number;
   limit?: number;
   status?: SessionReviewStatus;
+}
+
+export interface ListPendingPatientReviewsParams {
+  page?: number;
+  limit?: number;
 }
 
 export interface ListAdminReviewsParams {
@@ -116,8 +166,9 @@ export interface ListAdminReviewsParams {
 }
 
 export interface ModerateReviewRequest {
-  action: ReviewModerationAction;
-  moderatorNote?: string;
+  decision: ReviewModerationRequestDecision;
+  publicRatingValue?: number;
+  moderationReason?: string;
 }
 
 export interface CreateSessionReviewInput {
@@ -126,13 +177,52 @@ export interface CreateSessionReviewInput {
   textReview?: string;
 }
 
-// Allowed moderation actions per current status — derived from backend ValidateReviewModerationTransitionService
-export const ALLOWED_MODERATION_ACTIONS: Record<SessionReviewStatus, ReviewModerationAction[]> = {
-  DRAFT: ["APPROVED", "REJECTED", "HIDDEN", "ARCHIVED"],
-  SUBMITTED: ["APPROVED", "REJECTED", "HIDDEN", "ARCHIVED"],
-  PENDING_MODERATION: ["APPROVED", "REJECTED", "HIDDEN", "ARCHIVED"],
-  PUBLISHED: ["HIDDEN", "REJECTED", "ARCHIVED"],
-  HIDDEN: ["RESTORED", "REJECTED", "ARCHIVED"],
-  REJECTED: ["RESTORED", "HIDDEN", "ARCHIVED"],
-  ARCHIVED: ["RESTORED"],
+// Allowed moderation decisions per current status — derived from backend ValidateReviewModerationTransitionService
+export const ALLOWED_MODERATION_DECISIONS: Record<
+  SessionReviewStatus,
+  ReviewModerationRequestDecision[]
+> = {
+  DRAFT: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "REJECT_PUBLISHING",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  SUBMITTED: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "REJECT_PUBLISHING",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  PENDING_MODERATION: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "REJECT_PUBLISHING",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  PUBLISHED: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "REJECT_PUBLISHING",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  HIDDEN: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  REJECTED: [
+    "APPROVE_AS_IS",
+    "EDIT_AND_APPROVE",
+    "INTERNAL_NOTE_ONLY",
+    "EXCLUDE_FROM_PUBLIC_AVERAGE",
+  ],
+  ARCHIVED: [],
 };
+
+export const ALLOWED_MODERATION_ACTIONS = ALLOWED_MODERATION_DECISIONS;

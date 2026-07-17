@@ -7,7 +7,6 @@ import type {
 } from "../types/package-purchases.types";
 
 const LIVE_SESSION_STATUSES = new Set<SessionStatus>([
-  "CONFIRMED",
   "UPCOMING",
   "READY_TO_JOIN",
   "IN_PROGRESS",
@@ -16,13 +15,15 @@ const LIVE_SESSION_STATUSES = new Set<SessionStatus>([
 const COMPLETED_SESSION_STATUSES = new Set<SessionStatus>(["COMPLETED"]);
 const PENDING_SESSION_STATUSES = new Set<SessionStatus>([
   "PENDING_PAYMENT",
-  "PENDING_PRACTITIONER_RESPONSE",
+  "PENDING_PRACTITIONER_CONFIRMATION",
 ]);
 const TERMINAL_SESSION_STATUSES = new Set<SessionStatus>([
   "CANCELLED",
   "EXPIRED",
-  "NO_SHOW",
-  "REFUNDED",
+  "PATIENT_NO_SHOW",
+  "PRACTITIONER_NO_SHOW",
+  "BOTH_NO_SHOW",
+  "AWAITING_COMPLETION_CONFIRMATION",
 ]);
 
 const SESSION_STATUS_ORDER = {

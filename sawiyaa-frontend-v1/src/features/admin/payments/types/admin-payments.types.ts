@@ -4,7 +4,8 @@ export type AdminPaymentPurpose =
   | "SESSION_BOOKING"
   | "SESSION_INSTANT_BOOKING"
   | "SESSION_EXTENSION"
-  | "COURSE_ENROLLMENT"
+  | "SESSION_PACKAGE_PURCHASE"
+  | "ACADEMY_PROGRAM_ENROLLMENT"
   | "MANUAL_INVOICE";
 
 export type AdminRefundType = "FULL" | "PARTIAL";
@@ -21,14 +22,14 @@ export type AdminPaymentSessionProvider = "NONE" | "DAILY" | "ZOOM";
 export type AdminPaymentSessionStatus =
   | "DRAFT"
   | "PENDING_PAYMENT"
-  | "PENDING_PRACTITIONER_RESPONSE"
-  | "CONFIRMED"
+  | "PENDING_PRACTITIONER_CONFIRMATION"
+  | "UPCOMING"
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED"
-  | "NO_SHOW"
+  | "PATIENT_NO_SHOW"
   | "EXPIRED"
   | "REFUND_PENDING"
   | "REFUNDED";

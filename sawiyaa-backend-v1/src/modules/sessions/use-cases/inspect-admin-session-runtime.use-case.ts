@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 import { buildParticipantsSummary, type SessionWithParticipants } from '../utils/session-participant-identity.util';
-import { resolveSessionPresentationStatus } from '../utils/session-join-policy.util';
 
 @Injectable()
 export class InspectAdminSessionRuntimeUseCase {
@@ -43,23 +42,44 @@ export class InspectAdminSessionRuntimeUseCase {
     const participants = buildParticipantsSummary(
       session as unknown as SessionWithParticipants,
     );
-    // Fetch final manual decision if one exists to override presentationStatus
-    const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
-      input.sessionId,
-    );
+    const packagePurchase = session.packagePurchase
+      ? {
+          id: session.packagePurchase.id,
+          status: session.packagePurchase.status,
+          selectedCurrencyCode: session.packagePurchase.selectedCurrencyCode ?? null,
+          sessionCountSnapshot: session.packagePurchase.sessionCountSnapshot ?? null,
+          patientPayableTotalSnapshot:
+            session.packagePurchase.patientPayableTotalSnapshot?.toString() ?? null,
+          packagePlan: {
+            id: session.packagePurchase.packagePlan!.id,
+            code: session.packagePurchase.packagePlan!.code,
+            title: session.packagePurchase.packagePlan!.title,
+            sessionCount: session.packagePurchase.packagePlan!.sessionCount,
+            discountPercent:
+              session.packagePurchase.packagePlan!.discountPercent?.toString() ?? null,
+          },
+        }
+      : null;
 
-    const presentationStatus = resolveSessionPresentationStatus({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
-      videoRoomClosedAt: session.videoRoomClosedAt,
-      now,
-      finalManualDecision: latestDecision?.decisionType ?? null,
-    });
+    const packageEntitlementDecision = (session as any).packageEntitlementDecision
+      ? {
+          id: (session as any).packageEntitlementDecision.id,
+          sessionId: (session as any).packageEntitlementDecision.sessionId,
+          packagePurchaseId: (session as any).packageEntitlementDecision.packagePurchaseId,
+          sessionStatusSnapshot: (session as any).packageEntitlementDecision.sessionStatusSnapshot,
+          decisionType: (session as any).packageEntitlementDecision.decisionType,
+          reasonCode: (session as any).packageEntitlementDecision.reasonCode,
+          adminNote: (session as any).packageEntitlementDecision.adminNote,
+          resultingSessionEarningReviewId:
+            (session as any).packageEntitlementDecision.resultingSessionEarningReviewId,
+          decidedBy: {
+            userId: (session as any).packageEntitlementDecision.decidedByUser.id,
+            displayName: (session as any).packageEntitlementDecision.decidedByUser.displayName,
+          },
+          decidedAt: (session as any).packageEntitlementDecision.decidedAt.toISOString(),
+          idempotencyKey: (session as any).packageEntitlementDecision.idempotencyKey,
+        }
+      : null;
 
     return {
       item: {
@@ -76,7 +96,13 @@ export class InspectAdminSessionRuntimeUseCase {
         canJoin: readiness.canJoin,
         blockedReason: readiness.blockedReason,
         participants,
-        presentationStatus,
+        // Deprecated compatibility alias. It is never used to derive actions.
+        presentationStatus: session.status,
+        packagePurchase,
+        packageEntitlementDecision,
+        paymentCoverageType: session.paymentCoverageType,
+        packageSessionIndex: session.packageSessionIndex ?? null,
+        packageSessionCount: session.packageSessionCount ?? null,
       },
     };
   }

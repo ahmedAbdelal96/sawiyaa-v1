@@ -18,7 +18,7 @@ import { normalizePaymentRedirectStatus } from "../../../../src/features/patient
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 
 const CONFIRMED_SESSION_STATUSES = new Set([
-  "CONFIRMED",
+  "UPCOMING",
   "UPCOMING",
   "READY_TO_JOIN",
   "IN_PROGRESS",

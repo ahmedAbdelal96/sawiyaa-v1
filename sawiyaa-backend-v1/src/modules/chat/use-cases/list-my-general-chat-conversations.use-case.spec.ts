@@ -130,7 +130,7 @@ describe('ListMyGeneralChatConversationsUseCase', () => {
           ],
           session: {
             id: 'session_1',
-            status: 'IN_PROGRESS',
+            status: 'COMPLETED',
             sessionMode: 'VIDEO',
             scheduledStartAt: new Date('2026-04-01T09:45:00.000Z'),
             scheduledEndAt: new Date('2026-04-01T10:15:00.000Z'),

@@ -236,6 +236,7 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
     Record<string, SaveAdminAcademyProgramAttendanceStatus>
   >({});
   const [feedback, setFeedback] = useState<AttendanceFeedback | null>(null);
+  const [correctionReason, setCorrectionReason] = useState("");
   const lastHydratedSessionId = useRef<string | null>(null);
 
   const attendanceQuery = useAdminAcademyProgramAttendance(
@@ -289,6 +290,10 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
 
   const program = attendance?.program ?? null;
   const summary = attendance?.summary ?? null;
+  const isCorrection = useMemo(
+    () => changedItems.some((item) => Boolean(items.find((row) => row.id === item.enrollmentId)?.attendanceRecordId)),
+    [changedItems, items],
+  );
   const isSessionSwitching =
     attendanceQuery.isFetching &&
     Boolean(attendance?.selectedSessionId) &&
@@ -303,6 +308,13 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
     if (!sessionId || changedItems.length === 0) {
       return;
     }
+    if (isCorrection && !correctionReason.trim()) {
+      setFeedback({
+        tone: "error",
+        message: t("admin.detail.attendance.feedback.correctionReasonRequired"),
+      });
+      return;
+    }
 
     try {
       await saveMutation.mutateAsync({
@@ -310,6 +322,7 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
         input: {
           sessionId,
           items: changedItems,
+          reason: isCorrection ? correctionReason.trim() : undefined,
         },
       });
       setFeedback({
@@ -477,6 +490,16 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
                 ? t("admin.detail.attendance.feedback.pending", { count: dirtyCount })
                 : t("admin.detail.attendance.feedback.noChanges")}
             </p>
+            {isCorrection ? (
+              <textarea
+                value={correctionReason}
+                onChange={(event) => setCorrectionReason(event.target.value)}
+                maxLength={500}
+                rows={2}
+                placeholder={t("admin.detail.attendance.feedback.correctionReasonPlaceholder")}
+                className="mt-2 w-full rounded-xl border border-border-light bg-white px-3 py-2 text-xs text-text-primary outline-none focus:border-primary"
+              />
+            ) : null}
           </div>
         }
         actions={

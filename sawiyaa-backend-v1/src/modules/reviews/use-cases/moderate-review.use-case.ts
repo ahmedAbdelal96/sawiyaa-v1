@@ -1,5 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConversationParticipantRole } from '@prisma/client';
+import {
+  ConversationParticipantRole,
+  ReviewModerationAction,
+  SessionReviewModerationDecision,
+} from '@prisma/client';
 import { ModerateReviewDto } from '../dto/moderate-review.dto';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewRepository } from '../repositories/review.repository';
@@ -32,7 +36,9 @@ export class ModerateReviewUseCase {
     const next =
       this.validateReviewModerationTransitionService.resolveNextState({
         currentStatus: review.reviewStatus,
-        action: input.payload.action,
+        decision: input.payload.decision,
+        originalRatingValue: review.ratingValue,
+        publicRatingValue: input.payload.publicRatingValue ?? null,
         now,
       });
 
@@ -44,6 +50,12 @@ export class ModerateReviewUseCase {
           publishedAt: next.publishedAt,
           hiddenAt: next.hiddenAt,
           archivedAt: next.archivedAt,
+          publicRatingValue: next.publicRatingValue,
+          countsInPublicAverage: next.countsInPublicAverage,
+          moderationDecision: next.moderationDecision,
+          moderatedByUserId: input.userId,
+          moderatedAt: now,
+          moderationReason: input.payload.moderationReason?.trim() || null,
         },
         tx,
       );
@@ -52,8 +64,9 @@ export class ModerateReviewUseCase {
         {
           sessionReviewId: review.id,
           reviewerUserId: input.userId,
-          moderationAction: input.payload.action,
-          moderationNote: input.payload.moderatorNote?.trim() || null,
+          moderationAction: this.resolveModerationAction(input.payload.decision),
+          moderationNote: input.payload.moderationReason?.trim() || null,
+          internalReason: input.payload.moderationReason?.trim() || null,
         },
         tx,
       );
@@ -62,12 +75,31 @@ export class ModerateReviewUseCase {
     });
 
     this.logger.log(
-      `Review moderated (review=${review.id}, action=${input.payload.action}, moderator=${input.userId}, role=${ConversationParticipantRole.ADMIN})`,
+      `Review moderated (review=${review.id}, decision=${input.payload.decision}, moderator=${input.userId}, role=${ConversationParticipantRole.ADMIN})`,
     );
 
     return this.reviewPresenter.presentModerationResult({
-      action: input.payload.action,
+      decision: input.payload.decision,
       item: this.reviewPresenter.presentAdminReviewItem(updated),
     });
+  }
+
+  private resolveModerationAction(
+    decision: SessionReviewModerationDecision,
+  ): ReviewModerationAction {
+    switch (decision) {
+      case SessionReviewModerationDecision.APPROVED_AS_IS:
+      case SessionReviewModerationDecision.EDITED_AND_APPROVED:
+        return ReviewModerationAction.APPROVED;
+      case SessionReviewModerationDecision.REJECTED_PUBLISHING:
+        return ReviewModerationAction.REJECTED;
+      case SessionReviewModerationDecision.INTERNAL_NOTE_ONLY:
+      case SessionReviewModerationDecision.EXCLUDED_FROM_PUBLIC_AVERAGE:
+        return ReviewModerationAction.HIDDEN;
+      case SessionReviewModerationDecision.AUTO_APPROVED_POSITIVE:
+        return ReviewModerationAction.APPROVED;
+      default:
+        return ReviewModerationAction.APPROVED;
+    }
   }
 }

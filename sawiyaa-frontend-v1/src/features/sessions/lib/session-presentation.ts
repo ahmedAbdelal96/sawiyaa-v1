@@ -1,25 +1,25 @@
-import type { SessionPresentationStatus } from "../types/sessions.types";
+import type { SessionStatus } from "../types/sessions.types";
 
-const SESSION_CHAT_OPEN_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
-  "JOINABLE",
+const SESSION_CHAT_OPEN_STATUSES: SessionStatus[] = [
+  "READY_TO_JOIN",
   "IN_PROGRESS",
   "COMPLETED",
-  "ENDED",
-  "NO_SHOW",
-  "UNDER_REVIEW",
+  "PATIENT_NO_SHOW",
+  "PRACTITIONER_NO_SHOW",
+  "BOTH_NO_SHOW",
 ];
 
 export function getSessionPresentationKey(
-  presentationStatus: SessionPresentationStatus | null | undefined,
-): SessionPresentationStatus {
-  return presentationStatus ?? "UNAVAILABLE";
+  status: SessionStatus | null | undefined,
+): SessionStatus {
+  return status ?? "EXPIRED";
 }
 
 export function canOpenSessionChatFromPresentationStatus(
-  presentationStatus: SessionPresentationStatus | null | undefined,
+  status: SessionStatus | null | undefined,
 ): boolean {
-  return SESSION_CHAT_OPEN_PRESENTATION_STATUSES.includes(
-    getSessionPresentationKey(presentationStatus),
+  return SESSION_CHAT_OPEN_STATUSES.includes(
+    getSessionPresentationKey(status),
   );
 }
 

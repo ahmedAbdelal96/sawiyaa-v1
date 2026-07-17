@@ -4,7 +4,6 @@ import {
   PaymentPurpose,
   PaymentStatus,
   Prisma,
-  AcademyEnrollmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
@@ -15,6 +14,7 @@ import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
 import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class ExpirePaymentUseCase {
@@ -55,6 +55,7 @@ export class ExpirePaymentUseCase {
           paymentId: payment.id,
           eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
           providerEventRef: input.providerEventRef,
+          previousStatus: payment.status,
           payloadJson: input.payload as Prisma.InputJsonValue,
         },
         tx,
@@ -74,6 +75,10 @@ export class ExpirePaymentUseCase {
           paymentId: payment.id,
           eventType: PaymentEventType.PAYMENT_EXPIRED,
           providerEventRef: input.providerEventRef,
+          actorType: AuditActorType.PAYMENT_WEBHOOK,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
+          previousStatus: payment.status,
+          newStatus: PaymentStatus.EXPIRED,
         },
         tx,
       );
@@ -85,7 +90,6 @@ export class ExpirePaymentUseCase {
       string,
       unknown
     >;
-    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
     const isAcademyProgramEnrollment =
       payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
       paymentMetadata.source === 'academy-program-enrollment';
@@ -130,25 +134,7 @@ export class ExpirePaymentUseCase {
       );
     }
 
-    if (isAcademyEnrollment) {
-      await this.prisma.academyEnrollment.updateMany({
-        where: {
-          paymentId: payment.id,
-          enrollmentStatus: {
-            in: [
-              AcademyEnrollmentStatus.PENDING_PAYMENT,
-              AcademyEnrollmentStatus.PAID,
-            ],
-          },
-        },
-        data: {
-          enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
-          paymentStatus: PaymentStatus.EXPIRED,
-          failedAt: new Date(),
-          failedReason: 'Payment expired',
-        },
-      });
-    } else if (isAcademyProgramEnrollment) {
+    if (isAcademyProgramEnrollment) {
       await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentPaymentExpired(
         payment.id,
       );

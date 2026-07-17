@@ -85,28 +85,6 @@ describe('GeneralChatRepository', () => {
     );
   });
 
-  it('updates participant read cursor for mark-read behavior', async () => {
-    const now = new Date('2026-04-01T12:00:00.000Z');
-    await repository.markConversationReadCursor({
-      conversationId: 'conversation_1',
-      userId: 'user_1',
-      lastReadMessageId: 'message_9',
-      lastReadAt: now,
-    });
-
-    expect(prisma.conversationParticipant.updateMany).toHaveBeenCalledWith({
-      where: {
-        conversationId: 'conversation_1',
-        userId: 'user_1',
-        isActive: true,
-      },
-      data: {
-        lastReadMessageId: 'message_9',
-        lastReadAt: now,
-      },
-    });
-  });
-
   it('counts unread messages for participant deterministically', async () => {
     await repository.countUnreadMessagesForParticipant({
       conversationId: 'conversation_1',

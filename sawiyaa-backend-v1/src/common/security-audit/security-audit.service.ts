@@ -1,115 +1,136 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@common/prisma/prisma.service';
-import { SecurityAuditOutcome } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { SecurityAuditRepository } from './security-audit.repository';
+import {
+  SecurityAuditActorType,
+  SecurityAuditEntry,
+  SecurityAuditSource,
+} from './security-audit.types';
 
-export interface SecurityAuditEntry {
-  /** Dot-notation action slug, e.g. 'security.permission.denied' */
-  action: string;
-  outcome: SecurityAuditOutcome;
-  actorUserId?: string | null;
-  actorRoles?: string[];
-  resourceType?: string | null;
-  resourceId?: string | null;
-  targetUserId?: string | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  correlationId?: string | null;
-  reason?: string | null;
-  /** Additional context. MUST NOT contain tokens, passwords, OTPs, or secrets. */
-  metadata?: Record<string, unknown> | null;
-}
+const MAX_METADATA_BYTES = 32 * 1024;
 
 /**
- * Platform security audit log service.
- * Writes are fire-and-forget — this service NEVER throws.
- * Sensitive fields (tokens, passwords, OTPs) must be stripped before passing metadata.
+ * Security audit facade with explicit reliability semantics.
+ * `recordRequired` participates in the caller transaction and throws on failure.
+ * `logAsync` remains best-effort for observational/non-critical events.
  */
 @Injectable()
 export class SecurityAuditService {
   private readonly logger = new Logger(SecurityAuditService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly repository: SecurityAuditRepository) {}
 
-  /**
-   * Records a security-relevant event asynchronously.
-   * Call sites do NOT need to await this.
-   */
+  async recordRequired(
+    tx: Prisma.TransactionClient,
+    entry: SecurityAuditEntry,
+  ): Promise<void> {
+    await this.repository.create(this.toCreateInput(entry), tx);
+  }
+
   logAsync(entry: SecurityAuditEntry): void {
-    this.writeEntry(entry).catch((err: unknown) => {
+    void this.recordBestEffort(entry);
+  }
+
+  private async recordBestEffort(entry: SecurityAuditEntry): Promise<void> {
+    try {
+      await this.repository.create(this.toCreateInput(entry));
+    } catch (error: unknown) {
       this.logger.error(
-        'SecurityAuditService write failed (non-blocking)',
-        err,
+        'SecurityAuditService best-effort write failed',
+        error instanceof Error ? error.stack : String(error),
       );
-    });
+    }
   }
 
-  private async writeEntry(entry: SecurityAuditEntry): Promise<void> {
-    await this.prisma.securityAuditLog.create({
-      data: {
-        action: entry.action,
-        outcome: entry.outcome,
-        actorUserId: entry.actorUserId ?? null,
-        actorRolesJson: entry.actorRoles,
-        resourceType: entry.resourceType ?? null,
-        resourceId: entry.resourceId ?? null,
-        targetUserId: entry.targetUserId ?? null,
-        ipAddress: entry.ipAddress ?? null,
-        userAgent: entry.userAgent ? entry.userAgent.substring(0, 500) : null,
-        correlationId: entry.correlationId ?? null,
-        reason: entry.reason ? entry.reason.substring(0, 500) : null,
-        metadataJson: entry.metadata
-          ? (this.sanitizeMetadata(entry.metadata) as object)
-          : undefined,
-      },
-    });
+  private toCreateInput(
+    entry: SecurityAuditEntry,
+  ): Prisma.SecurityAuditLogUncheckedCreateInput {
+    const actorType = this.resolveActorType(entry);
+    if (actorType === SecurityAuditActorType.USER && !entry.actorUserId) {
+      throw new Error('Security audit USER actor requires actorUserId');
+    }
+
+    const metadata = entry.metadata
+      ? this.sanitizeMetadata(entry.metadata)
+      : undefined;
+
+    if (metadata !== undefined) {
+      const size = Buffer.byteLength(JSON.stringify(metadata), 'utf8');
+      if (size > MAX_METADATA_BYTES) {
+        throw new Error(
+          `Security audit metadata exceeds ${MAX_METADATA_BYTES} bytes`,
+        );
+      }
+    }
+
+    return {
+      action: entry.action,
+      outcome: entry.outcome,
+      actorType,
+      actorUserId: entry.actorUserId ?? null,
+      actorRolesJson: entry.actorRoles ?? undefined,
+      source:
+        entry.source ??
+        (entry.actorUserId
+          ? SecurityAuditSource.HTTP_REQUEST
+          : SecurityAuditSource.SYSTEM),
+      resourceType: entry.resourceType ?? null,
+      resourceId: entry.resourceId ?? null,
+      targetUserId: entry.targetUserId ?? null,
+      ipAddress: entry.ipAddress ?? null,
+      userAgent: entry.userAgent ? entry.userAgent.substring(0, 500) : null,
+      requestId: entry.requestId ?? null,
+      correlationId: entry.correlationId ?? null,
+      reason: entry.reason ? entry.reason.substring(0, 500) : null,
+      metadataJson: metadata as Prisma.InputJsonValue | undefined,
+    };
   }
 
-  /**
-   * Strips known sensitive keys from metadata before persisting.
-   * This is a last-resort safety net; callers are responsible for pre-sanitization.
-   */
+  private resolveActorType(entry: SecurityAuditEntry): SecurityAuditActorType {
+    if (entry.actorType) return entry.actorType;
+    return entry.actorUserId
+      ? SecurityAuditActorType.USER
+      : SecurityAuditActorType.SYSTEM;
+  }
+
   private sanitizeMetadata(
     raw: Record<string, unknown>,
   ): Record<string, unknown> {
-    const BANNED_KEYS = new Set([
+    const bannedKeys = new Set([
       'password',
-      'passwordHash',
+      'passwordhash',
       'token',
-      'accessToken',
-      'refreshToken',
-      'idToken',
+      'accesstoken',
+      'refreshtoken',
+      'idtoken',
       'otp',
-      'otpCode',
+      'otpcode',
       'code',
       'secret',
-      'apiKey',
-      'apiSecret',
+      'apikey',
+      'apisecret',
       'authorization',
       'cookie',
       'set-cookie',
       'credentials',
-      'secretKey',
-      'clientSecret',
-      'providerSecret',
-      'checkoutUrl',
-      'rawBody',
+      'secretkey',
+      'clientsecret',
+      'providersecret',
+      'checkouturl',
+      'rawbody',
       'payload',
       'body',
     ]);
 
     const sanitizeValue = (value: unknown): unknown => {
-      if (Array.isArray(value)) {
-        return value.map((item) => sanitizeValue(item));
-      }
-
+      if (Array.isArray(value)) return value.map((item) => sanitizeValue(item));
       if (value && typeof value === 'object') {
         return Object.fromEntries(
           Object.entries(value as Record<string, unknown>)
-            .filter(([key]) => !BANNED_KEYS.has(key))
+            .filter(([key]) => !bannedKeys.has(key.toLowerCase()))
             .map(([key, nested]) => [key, sanitizeValue(nested)]),
         );
       }
-
       return value;
     };
 
