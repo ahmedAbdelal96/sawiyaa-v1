@@ -116,6 +116,35 @@
     }
   },
   "sessions": "Sessions",
+  "reviews": {
+    "patient": {
+      "reminder": {
+        "eyebrow": "Feedback reminder",
+        "modalTitle": "You can leave feedback for your completed session",
+        "modalDescription": "Your session is finished and your feedback helps us improve care quality.",
+        "sessionLabel": "Completed session",
+        "sessionNote": "Please share feedback for your recent session with {{practitioner}}.",
+        "practitionerLabel": "Practitioner",
+        "completedAtLabel": "Completed at",
+        "completedAtFallback": "Not available",
+        "ratingLabel": "Your rating",
+        "ratingHelp": "Tap one star to five stars to rate your session.",
+        "ratingPicked": "{{value}} out of 5 selected",
+        "titleLabel": "Short title",
+        "titlePlaceholder": "Optional short summary",
+        "noteLabel": "Written feedback",
+        "notePlaceholder": "Share anything you want the care team to know",
+        "noteHint": "This note stays private and follows the normal moderation flow.",
+        "submit": "Submit feedback",
+        "submitting": "Submitting...",
+        "later": "Later",
+        "errors": {
+          "ratingRequired": "Please choose a rating before submitting.",
+          "generic": "Could not submit your feedback. Please try again."
+        }
+      }
+    }
+  },
   "profile": "Profile",
   "profileScreen": {
     "fallbackName": "Patient",
@@ -129,13 +158,13 @@
       "contentSupport": "Content and support",
       "contentSupportSubtitle": "Articles, messages, notifications, and support",
       "learningPurchases": "Learning and purchases",
-      "learningPurchasesSubtitle": "Academy and session packages",
+      "learningPurchasesSubtitle": "Training and session packages",
       "accountLogoutSubtitle": "Sign out of your account"
     },
     "more": {
       "rows": {
         "academy": {
-          "title": "Academy",
+          "title": "Training",
           "subtitle": "Browse health content and guidance"
         },
         "packages": {
@@ -477,6 +506,21 @@
     "validation": {
       "email": "Enter a valid email address.",
       "passwordHint": "Use the same credential rules enforced by the backend."
+    },
+    "loginError": "The email or password is incorrect.",
+    "otpError": "The verification code is invalid or has expired.",
+    "lockout": {
+      "invalidCredentials": "The login details are incorrect. You have {count} attempts left.",
+      "invalidCredentialsOne": "The login details are incorrect. You have 1 attempt left.",
+      "loginTemporarilyLocked": "Login attempts are temporarily locked. Try again in {minutes} minutes.",
+      "loginTemporarilyLockedFallback": "Login attempts are temporarily locked. Please try again later.",
+      "practitionerLoginTemporarilyLockedWithSupport": "Login attempts are temporarily locked. Try again in {minutes} minutes or contact support.",
+      "practitionerLoginTemporarilyLockedFallback": "Login attempts are temporarily locked. Please try again later or contact support.",
+      "practitionerOtpInvalidCredentials": "The verification code is incorrect. You have {count} attempts left.",
+      "practitionerOtpInvalidCredentialsOne": "The verification code is incorrect. You have 1 attempt left.",
+      "practitionerOtpSuperseded": "A newer code was sent. Use the most recent code you received.",
+      "practitionerOtpTemporarilyLocked": "Verification attempts are temporarily locked. Try again in {minutes} minutes.",
+      "practitionerOtpTemporarilyLockedFallback": "Verification attempts are temporarily locked. Please try again later."
     },
     "entry": {
       "eyebrow": "Mobile access",
@@ -3554,7 +3598,7 @@
       "back": "Back",
       "course": "Program enrollment",
       "registeredAt": "Registered",
-      "learner": "Learner",
+        "learner": "Trainee",
       "phone": "Phone",
       "reference": "Enrollment code",
       "paymentTitle": "Payment",
@@ -3636,7 +3680,7 @@
       "back": "Back",
       "course": "Learning program",
       "registeredAt": "Registered",
-      "learner": "Learner",
+        "learner": "Trainee",
       "phone": "Phone",
       "reference": "Enrollment code",
       "paymentTitle": "Payment",

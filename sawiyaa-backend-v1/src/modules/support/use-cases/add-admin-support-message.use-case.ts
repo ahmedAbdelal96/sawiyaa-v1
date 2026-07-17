@@ -3,8 +3,7 @@ import { AppRole } from '@common/enums/app-role.enum';
 import { AddSupportMessageDto } from '../dto/add-support-message.dto';
 import { SupportPresenter } from '../presenters/support.presenter';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
-import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
-import { ResolveSupportAdminActorRoleService } from '../services/resolve-support-admin-actor-role.service';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 @Injectable()
 export class AddAdminSupportMessageUseCase {
@@ -12,9 +11,8 @@ export class AddAdminSupportMessageUseCase {
 
   constructor(
     private readonly supportTicketRepository: SupportTicketRepository,
-    private readonly resolveSupportAdminActorRoleService: ResolveSupportAdminActorRoleService,
     private readonly supportPresenter: SupportPresenter,
-    private readonly operationalNotificationService: OperationalNotificationService,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   async execute(input: {
@@ -33,27 +31,16 @@ export class AddAdminSupportMessageUseCase {
       });
     }
 
-    const actorRole = this.resolveSupportAdminActorRoleService.resolve(
-      input.roles,
-    );
-    const updated = await this.supportTicketRepository.addPublicSupportMessage({
-      ticketId: input.ticketId,
-      senderUserId: input.userId,
-      senderRole: actorRole,
-      message: input.payload.message.trim(),
-    });
+    const updated = await this.messagingUseCase
+      .sendMessage(
+        { id: input.userId, roles: input.roles },
+        ticket.conversationId,
+        input.payload.message,
+      )
+      .then(() => this.supportTicketRepository.findByIdForAdmin(input.ticketId));
 
-    const messageId =
-      updated.conversation.messages[updated.conversation.messages.length - 1]
-        ?.id;
-    if (messageId) {
-      await this.operationalNotificationService.notifyConversationMessage({
-        lane: 'SUPPORT',
-        threadId: input.ticketId,
-        messageId,
-        senderUserId: input.userId,
-        participants: updated.conversation.participants,
-      });
+    if (!updated) {
+      throw new NotFoundException({ messageKey: 'support.errors.ticketNotFound', error: 'SUPPORT_TICKET_NOT_FOUND' });
     }
 
     this.logger.log(

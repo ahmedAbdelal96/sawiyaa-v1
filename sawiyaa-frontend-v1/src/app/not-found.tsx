@@ -5,28 +5,59 @@ import React from "react";
 
 export default function NotFound() {
   return (
-    <div className="relative z-1 flex min-h-screen flex-col items-center justify-center overflow-hidden p-6">
+    <div className="relative z-1 flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#FDFAF7] p-6 dark:bg-gray-900">
       <GridShape />
-      <div className="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-        <h1 className="mb-8 text-title-md font-bold text-gray-800 dark:text-white/90 xl:text-title-2xl">
-          404
+      
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-[#F4EBE1] bg-white p-8 text-center shadow-theme-sm dark:border-white/5 dark:bg-gray-800/50">
+        {/* Logo */}
+        <div className="mb-6 flex justify-center">
+          <Link href="/">
+            <Image
+              src="/images/logo/icon.png"
+              alt="Sawiyaa"
+              width={48}
+              height={48}
+              className="h-12 w-auto object-contain"
+            />
+          </Link>
+        </div>
+
+        {/* Small 404 badge */}
+        <div className="mb-6 inline-flex rounded-full bg-[#EAF2F1] px-3.5 py-1 text-xs font-semibold text-[#24564F] dark:bg-[#24564F]/20 dark:text-[#52B788]">
+          404 Error / خطأ ٤٠٤
+        </div>
+
+        {/* Title */}
+        <h1 className="mb-3 text-xl font-bold text-[#1F2937] dark:text-white/95">
+          Page Not Found / الصفحة غير موجودة
         </h1>
 
-        <Image src="/images/error/404.svg" alt="404" className="dark:hidden" width={472} height={152} />
-        <Image src="/images/error/404-dark.svg" alt="404" className="hidden dark:block" width={472} height={152} />
-
-        <p className="mb-6 mt-10 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-          The page you requested is not available right now.
+        {/* Subtitle */}
+        <p className="mb-2 text-sm leading-relaxed text-[#4B5563] dark:text-gray-300">
+          The link may be incorrect, or this page is no longer available.<br />
+          يبدو أن الرابط غير صحيح أو أن الصفحة لم تعد متاحة.
         </p>
 
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-        >
-          Return home
-        </Link>
+        {/* Buttons */}
+        <div className="mt-8 flex flex-col gap-3">
+          <Link
+            href="/ar"
+            className="flex w-full items-center justify-center rounded-xl bg-[#24564F] px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-colors hover:bg-[#1A3E39] active:scale-[0.98]"
+          >
+            العربية (الرئيسية)
+          </Link>
+
+          <Link
+            href="/en"
+            className="flex w-full items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-semibold text-[#374151] transition-colors hover:bg-gray-50 active:scale-[0.98] dark:border-white/10 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/50"
+          >
+            English (Home)
+          </Link>
+        </div>
       </div>
-      <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-sm text-gray-500 dark:text-gray-400">
+
+      {/* Footer copyright */}
+      <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-xs text-[#9CA3AF] dark:text-gray-500">
         &copy; {new Date().getFullYear()} Sawiyaa
       </p>
     </div>

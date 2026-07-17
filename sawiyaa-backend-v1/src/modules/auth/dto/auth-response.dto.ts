@@ -92,6 +92,9 @@ export class AuthSuccessResponseDto {
 
   @ApiProperty({ type: AuthenticatedUserResponseDto })
   user!: AuthenticatedUserResponseDto;
+
+  @ApiProperty({ required: false, enum: ['AUTHENTICATED'] })
+  nextStep?: 'AUTHENTICATED';
 }
 
 export class OtpChallengeResponseDto {
@@ -112,6 +115,9 @@ export class OtpChallengeResponseDto {
 
   @ApiProperty()
   requiresOtpVerification!: boolean;
+
+  @ApiProperty({ required: false, enum: ['OTP_REQUIRED'] })
+  nextStep?: 'OTP_REQUIRED';
 }
 
 export class PractitionerRegistrationResponseDto {

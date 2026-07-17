@@ -15,6 +15,7 @@ import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import UnifiedMessagesLauncher from "@/features/messages-shell/components/UnifiedMessagesLauncher";
 import MessagesHeaderButton from "@/features/messages-shell/components/MessagesHeaderButton";
+import PatientReviewReminderModal from "@/features/reviews/components/PatientReviewReminderModal";
 import {
   BookOpen,
   Calendar,
@@ -323,6 +324,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
       </Drawer>
 
       <UnifiedMessagesLauncher role="patient" showFloatingTrigger={false} />
+      <PatientReviewReminderModal />
     </div>
   );
 }

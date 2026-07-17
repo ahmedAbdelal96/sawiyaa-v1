@@ -1,5 +1,10 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  SessionAdminDecisionType,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 
@@ -35,6 +40,7 @@ describe('PrepareSessionRuntimeUseCase', () => {
     adapterError?: boolean;
     patientId?: string;
     updateCount?: number;
+    finalManualDecision?: SessionAdminDecisionType | null;
   }) {
     let currentSession: SessionFixture = overrides?.session ?? baseSession;
     const transaction = <T>(fn: (tx: never) => Promise<T>): Promise<T> =>
@@ -60,6 +66,11 @@ describe('PrepareSessionRuntimeUseCase', () => {
         });
       }),
       createEvent: jest.fn().mockResolvedValue({}),
+      findLatestActiveSessionAdminDecision: jest.fn().mockResolvedValue(
+        overrides?.finalManualDecision
+          ? { decisionType: overrides.finalManualDecision }
+          : null,
+      ),
     };
     const sessionPatientRepository = {
       findByUserId: jest.fn(() =>
@@ -85,11 +96,19 @@ describe('PrepareSessionRuntimeUseCase', () => {
         .mockReturnValue(SessionProvider.DAILY),
     };
     const resolveSessionJoinReadinessService = {
-      resolve: jest.fn().mockReturnValue({
-        canPrepareRuntime: true,
-        canJoin: false,
-        blockedReason: 'SESSION_RUNTIME_NOT_PREPARED',
-      }),
+      resolve: jest.fn().mockImplementation((input) =>
+        input.finalManualDecision
+          ? {
+              canPrepareRuntime: false,
+              canJoin: false,
+              blockedReason: 'SESSION_NOT_JOINABLE_STATUS',
+            }
+          : {
+              canPrepareRuntime: true,
+              canJoin: false,
+              blockedReason: 'SESSION_RUNTIME_NOT_PREPARED',
+            },
+      ),
     };
 
     const useCase = new PrepareSessionRuntimeUseCase(
@@ -212,5 +231,23 @@ describe('PrepareSessionRuntimeUseCase', () => {
     ).rejects.toMatchObject({
       response: { error: 'SESSION_ACCESS_DENIED' },
     });
+  });
+
+  it('does not prepare runtime after a final completed decision', async () => {
+    const setup = buildUseCase({
+      finalManualDecision: SessionAdminDecisionType.MARK_COMPLETED,
+    });
+
+    await expect(
+      setup.useCase.execute({
+        userId: 'user_1',
+        sessionId: 'session_1',
+        actorType: 'PATIENT',
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED' },
+    });
+
+    expect(setup.sessionRepository.updateRuntimeIfMissing).not.toHaveBeenCalled();
   });
 });

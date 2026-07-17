@@ -53,8 +53,8 @@ export default function SessionDetailScreen() {
   const [isOpeningMessages, setIsOpeningMessages] = useState(false);
 
   const canAttemptJoin = useMemo(
-    () => sessionQuery.data?.joinAvailability?.canJoin === true,
-    [sessionQuery.data?.joinAvailability?.canJoin],
+    () => sessionQuery.data?.actions?.canJoin === true,
+    [sessionQuery.data?.actions?.canJoin],
   );
 
   if (sessionQuery.isLoading) {
@@ -76,20 +76,19 @@ export default function SessionDetailScreen() {
   }
 
   const session = sessionQuery.data;
-  const presentationStatus = session.presentationStatus;
+  const presentationStatus = session.status;
   const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus);
-  const needsPayment = session.status === "PENDING_PAYMENT";
-  const cancellationEligible =
-    session.status === "CONFIRMED" ||
-    session.status === "UPCOMING" ||
-    session.status === "PENDING_PRACTITIONER_RESPONSE";
+  // Older persisted query data may predate the backend-owned action contract.
+  // Missing flags deny actions instead of recreating lifecycle rules on mobile.
+  const needsPayment = session.actions?.canPay === true;
+  const cancellationEligible = session.actions?.canCancel === true;
   const canOpenMessages = Boolean(
     session.practitioner?.slug && session.chatAvailability?.canRead === true,
   );
   const showJoinBlockedReason =
     Boolean(
       !canAttemptJoin &&
-        (presentationStatus === "JOINABLE" ||
+        (presentationStatus === "READY_TO_JOIN" ||
           presentationStatus === "IN_PROGRESS") &&
         session.joinAvailability.blockedReason,
     );
@@ -504,16 +503,17 @@ function formatPresentationStatusLabel(
   t: ReturnType<typeof useTranslation>["t"],
   status: SessionPresentationStatus,
 ) {
-  const map: Record<SessionPresentationStatus, string> = {
+  const map: Partial<Record<SessionPresentationStatus, string>> = {
     UPCOMING: t("patientSessionsFlow.presentationStatus.UPCOMING"),
-    JOINABLE: t("patientSessionsFlow.presentationStatus.JOINABLE"),
+    READY_TO_JOIN: t("patientSessionsFlow.presentationStatus.READY_TO_JOIN"),
     IN_PROGRESS: t("patientSessionsFlow.presentationStatus.IN_PROGRESS"),
     COMPLETED: t("patientSessionsFlow.presentationStatus.COMPLETED"),
     CANCELLED: t("patientSessionsFlow.presentationStatus.CANCELLED"),
-    ENDED: t("patientSessionsFlow.presentationStatus.ENDED"),
-    UNAVAILABLE: t("patientSessionsFlow.presentationStatus.UNAVAILABLE"),
-    NO_SHOW: t("patientSessionsFlow.presentationStatus.NO_SHOW"),
-    UNDER_REVIEW: t("patientSessionsFlow.presentationStatus.UNDER_REVIEW"),
+    AWAITING_COMPLETION_CONFIRMATION: t("patientSessionsFlow.presentationStatus.AWAITING_COMPLETION_CONFIRMATION"),
+    EXPIRED: t("patientSessionsFlow.presentationStatus.EXPIRED"),
+    PATIENT_NO_SHOW: t("patientSessionsFlow.presentationStatus.PATIENT_NO_SHOW"),
+    PRACTITIONER_NO_SHOW: t("patientSessionsFlow.presentationStatus.PRACTITIONER_NO_SHOW"),
+    BOTH_NO_SHOW: t("patientSessionsFlow.presentationStatus.BOTH_NO_SHOW"),
   };
 
   return map[status] ?? status;
@@ -559,7 +559,7 @@ function getActionStateText(
   joinBlockedReasonText: string | null,
 ) {
   switch (presentationStatus) {
-    case "JOINABLE":
+    case "READY_TO_JOIN":
       return canAttemptJoin
         ? t("patientSessionsFlow.detail.stateNote.READY_TO_JOIN_NOW")
         : joinBlockedReasonText ??
@@ -572,15 +572,16 @@ function getActionStateText(
             joinAvailableAtText ??
             t("patientSessionsFlow.detail.noImmediateAction");
     case "COMPLETED":
-    case "ENDED":
-    case "NO_SHOW":
-    case "UNDER_REVIEW":
+    case "PATIENT_NO_SHOW":
+    case "PRACTITIONER_NO_SHOW":
+    case "BOTH_NO_SHOW":
+    case "AWAITING_COMPLETION_CONFIRMATION":
       return t("patientSessionsFlow.detail.noImmediateAction");
     case "CANCELLED":
       return t("patientSessionsFlow.detail.stateNote.CANCELLED");
     case "UPCOMING":
       return joinAvailableAtText ?? t("patientSessionsFlow.detail.stateNote.UPCOMING");
-    case "UNAVAILABLE":
+    case "EXPIRED":
     default:
       return t("patientSessionsFlow.detail.stateNote.UNAVAILABLE");
   }

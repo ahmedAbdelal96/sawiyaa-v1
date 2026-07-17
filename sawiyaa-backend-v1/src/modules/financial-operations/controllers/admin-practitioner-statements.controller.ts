@@ -87,7 +87,7 @@ export class AdminPractitionerStatementsController {
   async exportStatementCsv(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
     @Query() query: ListPractitionerStatementDto,
-    @Res({ passthrough: true }) response: Response,
+    @Res() response: Response,
   ) {
     const exported =
       await this.exportPractitionerStatementPackageCsvUseCase.execute({

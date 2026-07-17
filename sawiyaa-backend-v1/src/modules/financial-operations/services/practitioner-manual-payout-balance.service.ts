@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { LedgerDirection, LedgerEntryType, Prisma } from '@prisma/client';
+﻿import { Injectable } from '@nestjs/common';
+import { LedgerDirection, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { PractitionerManualPayoutRepository } from '../repositories/practitioner-manual-payout.repository';
+import { PractitionerRecoveryService } from './practitioner-recovery.service';
 import { PractitionerPayoutBalanceViewModel } from '../types/financial-operations.types';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -13,6 +14,7 @@ export class PractitionerManualPayoutBalanceService {
     private readonly prisma: PrismaService,
     private readonly practitionerRepository: FinancialOperationsPractitionerRepository,
     private readonly manualPayoutRepository: PractitionerManualPayoutRepository,
+    private readonly practitionerRecoveryService: PractitionerRecoveryService,
   ) {}
 
   private getDb(tx?: Prisma.TransactionClient): DbClient {
@@ -22,9 +24,9 @@ export class PractitionerManualPayoutBalanceService {
   private maskIdentifier(value: string | null | undefined) {
     const trimmed = value?.trim() ?? '';
     if (!trimmed) return null;
-    if (trimmed.length <= 4) return '••••';
-    if (trimmed.length <= 8) return `••••${trimmed.slice(-4)}`;
-    return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`;
+    if (trimmed.length <= 4) return 'â€¢â€¢â€¢â€¢';
+    if (trimmed.length <= 8) return `â€¢â€¢â€¢â€¢${trimmed.slice(-4)}`;
+    return `${trimmed.slice(0, 4)}â€¢â€¢â€¢â€¢${trimmed.slice(-4)}`;
   }
 
   private buildPayoutDestinationSummary(
@@ -42,7 +44,11 @@ export class PractitionerManualPayoutBalanceService {
       | null
       | undefined,
   ) {
-    if (!destination) return { payoutDestinationType: null, payoutDestinationSummaryMasked: null };
+    if (!destination)
+      return {
+        payoutDestinationType: null,
+        payoutDestinationSummaryMasked: null,
+      };
 
     const methodType = destination.methodType ?? null;
     const summaryParts: string[] = [];
@@ -67,7 +73,7 @@ export class PractitionerManualPayoutBalanceService {
 
     return {
       payoutDestinationType: methodType,
-      payoutDestinationSummaryMasked: summaryParts.join(' • ') || null,
+      payoutDestinationSummaryMasked: summaryParts.join(' â€¢ ') || null,
     };
   }
 
@@ -79,50 +85,90 @@ export class PractitionerManualPayoutBalanceService {
     const currencyCode = input.currencyCode.trim().toUpperCase();
     const db = this.getDb(input.tx);
 
-    const [practitioner, ledgerCredits, manualPayouts, packageSettlements] =
-      await Promise.all([
-        this.practitionerRepository.findById(input.practitionerId),
-        db.ledgerEntry.findMany({
-          where: {
-            practitionerId: input.practitionerId,
-            currencyCode,
-            entryType: LedgerEntryType.PRACTITIONER_EARNING,
-            direction: LedgerDirection.CREDIT,
-            balanceBucket: 'AVAILABLE',
-          },
-          select: {
-            amount: true,
-            referenceType: true,
-            referenceId: true,
-          },
-          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-        }),
-        this.manualPayoutRepository.listForBalance(
-          input.practitionerId,
+    const [
+      practitioner,
+      ledgerEntries,
+      manualPayouts,
+      packageSettlements,
+      settlementPayouts,
+      outstandingRecoveryAmount,
+    ] = await Promise.all([
+      this.practitionerRepository.findById(input.practitionerId),
+      db.ledgerEntry.findMany({
+        where: {
+          practitionerId: input.practitionerId,
           currencyCode,
-          input.tx,
-        ),
-        db.packageSettlement.findMany({
-          where: {
-            practitionerId: input.practitionerId,
-            currencyCode,
-          },
-          select: {
-            heldPractitionerAmount: true,
-            releasedPractitionerAmount: true,
-          },
-        }),
-      ]);
+          balanceBucket: 'AVAILABLE',
+        },
+        select: {
+          amount: true,
+          direction: true,
+          referenceType: true,
+          referenceId: true,
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      }),
+      this.manualPayoutRepository.listForBalance(
+        input.practitionerId,
+        currencyCode,
+        input.tx,
+      ),
+      db.packageSettlement.findMany({
+        where: {
+          practitionerId: input.practitionerId,
+          currencyCode,
+        },
+        select: {
+          heldPractitionerAmount: true,
+          releasedPractitionerAmount: true,
+        },
+      }),
+      db.practitionerSettlementPayout.findMany({
+        where: {
+          practitionerId: input.practitionerId,
+          currencyCode,
+        },
+        select: {
+          effectiveAt: true,
+        },
+        orderBy: [{ effectiveAt: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      }),
+      this.practitionerRecoveryService.getOutstandingAmount({
+        practitionerId: input.practitionerId,
+        currencyCode,
+        tx: input.tx,
+      }),
+    ]);
 
     const zero = new Prisma.Decimal(0);
 
-    const normalCredits = ledgerCredits
-      .filter((entry) => entry.referenceType !== 'package-settlement-release')
-      .reduce((sum, entry) => sum.add(entry.amount), zero);
+    const normalLedgerEntries = ledgerEntries.filter(
+      (entry) =>
+        entry.referenceType !== 'package-settlement-release' &&
+        entry.referenceType !== 'practitioner-manual-payout',
+    );
+    const packageReleaseLedgerEntries = ledgerEntries.filter(
+      (entry) => entry.referenceType === 'package-settlement-release',
+    );
 
-    const packageReleasedCredits = ledgerCredits
-      .filter((entry) => entry.referenceType === 'package-settlement-release')
-      .reduce((sum, entry) => sum.add(entry.amount), zero);
+    const normalCredits = normalLedgerEntries.reduce((sum, entry) => {
+      const signed =
+        entry.direction === LedgerDirection.CREDIT
+          ? entry.amount
+          : entry.amount.negated();
+      return sum.add(signed);
+    }, zero);
+
+    const packageReleasedCredits = packageReleaseLedgerEntries.reduce(
+      (sum, entry) => {
+        const signed =
+          entry.direction === LedgerDirection.CREDIT
+            ? entry.amount
+            : entry.amount.negated();
+        return sum.add(signed);
+      },
+      zero,
+    );
 
     const normalPaid = manualPayouts.reduce(
       (sum, payout) => sum.add(payout.normalSessionAppliedAmount),
@@ -144,19 +190,42 @@ export class PractitionerManualPayoutBalanceService {
     const normalSessionPayableAmountRaw = normalCredits.sub(normalPaid);
     const packageReleasedPayableAmountRaw =
       packageReleasedCredits.sub(packageReleasedPaid);
-    const normalSessionPayableAmount = normalSessionPayableAmountRaw.gt(0)
+    const grossNormalSessionPayableAmount = normalSessionPayableAmountRaw.gt(0)
       ? normalSessionPayableAmountRaw
       : zero;
-    const packageReleasedPayableAmount = packageReleasedPayableAmountRaw.gt(0)
-      ? packageReleasedPayableAmountRaw
-      : zero;
+    const grossPackageReleasedPayableAmount =
+      packageReleasedPayableAmountRaw.gt(0)
+        ? packageReleasedPayableAmountRaw
+        : zero;
+    const normalRecoveryApplied = outstandingRecoveryAmount.lt(
+      grossNormalSessionPayableAmount,
+    )
+      ? outstandingRecoveryAmount
+      : grossNormalSessionPayableAmount;
+    const remainingRecoveryAfterNormal =
+      outstandingRecoveryAmount.sub(normalRecoveryApplied);
+    const packageRecoveryApplied = remainingRecoveryAfterNormal.gt(
+      grossPackageReleasedPayableAmount,
+    )
+      ? grossPackageReleasedPayableAmount
+      : remainingRecoveryAfterNormal.gt(0)
+        ? remainingRecoveryAfterNormal
+        : zero;
+    const normalSessionPayableAmount = grossNormalSessionPayableAmount.sub(
+      normalRecoveryApplied,
+    );
+    const packageReleasedPayableAmount = grossPackageReleasedPayableAmount.sub(
+      packageRecoveryApplied,
+    );
     const totalPayableAmount = normalSessionPayableAmount.add(
       packageReleasedPayableAmount,
     );
     const lastPayoutAt =
       manualPayouts.length > 0
         ? manualPayouts[manualPayouts.length - 1].paidAt
-        : null;
+        : settlementPayouts.length > 0
+          ? settlementPayouts[settlementPayouts.length - 1].effectiveAt
+          : null;
 
     const practitionerName =
       practitioner?.user.displayName ?? practitioner?.publicSlug ?? null;
@@ -177,7 +246,8 @@ export class PractitionerManualPayoutBalanceService {
             bankAccountNumber:
               practitioner.payoutDestination.bankAccountNumber ?? null,
             iban: practitioner.payoutDestination.iban ?? null,
-            walletProvider: practitioner.payoutDestination.walletProvider ?? null,
+            walletProvider:
+              practitioner.payoutDestination.walletProvider ?? null,
             walletIdentifier:
               practitioner.payoutDestination.walletIdentifier ?? null,
             otherDetails: practitioner.payoutDestination.otherDetails ?? null,
@@ -187,6 +257,7 @@ export class PractitionerManualPayoutBalanceService {
       packageReleasedPayableAmount: packageReleasedPayableAmount.toFixed(2),
       packageHeldAmount: packageHeldAmount.toFixed(2),
       totalPayableAmount: totalPayableAmount.toFixed(2),
+      manualRecoveryAmount: outstandingRecoveryAmount.toFixed(2),
       lastPayoutAt: lastPayoutAt?.toISOString() ?? null,
       ...payoutDestinationSummary,
     };

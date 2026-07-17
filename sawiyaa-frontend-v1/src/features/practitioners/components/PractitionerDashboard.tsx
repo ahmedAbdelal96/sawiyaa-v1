@@ -326,10 +326,11 @@ function safeText(value: string | null | undefined, fallback: string) {
 const TERMINAL_SESSION_STATUSES = new Set<SessionListItem["status"]>([
   "COMPLETED",
   "CANCELLED",
-  "NO_SHOW",
+  "PATIENT_NO_SHOW",
   "EXPIRED",
-  "REFUND_PENDING",
-  "REFUNDED",
+  "PRACTITIONER_NO_SHOW",
+  "BOTH_NO_SHOW",
+  "AWAITING_COMPLETION_CONFIRMATION",
 ]);
 
 function formatSessionStatus(status: string, locale: string): string {

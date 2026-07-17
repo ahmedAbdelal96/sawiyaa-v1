@@ -6,6 +6,10 @@ import {
 } from '@prisma/client';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -105,6 +109,24 @@ export class RejectPractitionerApplicationUseCase {
           PractitionerStatus.REJECTED,
           tx,
         );
+
+        await this.securityAuditService.recordRequired(tx, {
+          action: 'security.practitioner.application.reject',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId,
+          actorRoles: input.operatorRoles,
+          resourceType: 'PractitionerApplication',
+          resourceId: decision.id,
+          targetUserId: decision.practitioner.userId,
+          reason,
+          metadata: {
+            previousApplicationStatus: latest.status,
+            newApplicationStatus: decision.status,
+            practitionerProfileId: decision.practitioner.id,
+          },
+        });
 
         return decision;
       },

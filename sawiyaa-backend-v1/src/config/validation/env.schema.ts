@@ -53,6 +53,42 @@ const baseEnvSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   JWT_ISSUER: z.string().default('sawiyaa-backend-v1'),
   AUTH_PASSWORD_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(12),
+  AUTH_LOCKOUT_MAX_ATTEMPTS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(5),
+  AUTH_LOCKOUT_DURATION_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1440)
+    .default(15),
+  AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional(),
+  AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1440)
+    .optional(),
+  AUTH_OTP_LOCKOUT_MAX_ATTEMPTS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional(),
+  AUTH_OTP_LOCKOUT_DURATION_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1440)
+    .optional(),
   AUTH_OTP_CODE_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
   AUTH_LOGIN_OTP_TTL_MINUTES: z.coerce
     .number()
@@ -81,11 +117,9 @@ const baseEnvSchema = z.object({
   // true  = require OTP after password login (default secure behavior).
   // false = emergency bypass; password login issues tokens directly.
   // This is the primary control for the practitioner login OTP flow.
-  AUTH_PRACTITIONER_LOGIN_OTP_ENABLED: z.enum(['true', 'false']).optional(),
-  // Legacy development-only bypass.
-  // Prefer AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=false instead.
-  // Kept for backward compatibility with local dev setups.
-  AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV: z
+  PRACTITIONER_LOGIN_OTP_REQUIRED: z.enum(['true', 'false']).optional(),
+  // Explicit local/test-only OTP capture. Disabled by default and rejected in production.
+  PRACTITIONER_OTP_QA_CAPTURE_ENABLED: z
     .enum(['true', 'false'])
     .optional(),
 
@@ -104,6 +138,7 @@ const baseEnvSchema = z.object({
   MAIL_SECURE: z.enum(['true', 'false']).optional(),
   DEV_OTP_EMAIL_REDIRECT: z.string().optional(),
   DEV_OTP_BYPASS_DELIVERY_FAILURES: z.enum(['true', 'false']).optional(),
+  PRACTITIONER_OTP_QA_CAPTURE_PATH: z.string().optional(),
   SMS_PROVIDER: z.string().optional(),
 
   // Brevo (Sendinblue) transactional email

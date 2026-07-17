@@ -87,6 +87,10 @@
         "title": "Reconciliation",
         "description": "Check mismatches and proof."
       },
+      "recoveries": {
+        "title": "Practitioner Recoveries",
+        "description": "View and resolve practitioner recovery debts."
+      },
       "revenueShareRules": {
         "title": "Revenue Share Rules",
         "description": "Review revenue share rules."
@@ -94,6 +98,40 @@
       "paymentGatewayControl": {
         "title": "Payment Gateway Control",
         "description": "Open gateway controls."
+      }
+    },
+    "summary": {
+      "eyebrow": "Quick summary",
+      "title": "Finance snapshot",
+      "description": "A compact read on finance queues and the items that need attention now.",
+      "amountsLabel": "By currency",
+      "amountsEmpty": "No amount data yet",
+      "actions": {
+        "refresh": "Refresh",
+        "refreshing": "Refreshing..."
+      },
+      "states": {
+        "errorTitle": "Could not load the finance summary right now.",
+        "errorDescription": "Try again in a moment to refresh the latest finance queue counts.",
+        "retry": "Retry"
+      },
+      "cards": {
+        "sessionReviews": {
+          "title": "Pending session reviews",
+          "helper": "Waiting for accountant approval."
+        },
+        "recoveries": {
+          "title": "Open practitioner recoveries",
+          "helper": "Debts that can still be collected or waived."
+        },
+        "settlements": {
+          "title": "Payout-ready settlements",
+          "helper": "Settlements ready to process or still moving."
+        },
+        "reconciliation": {
+          "title": "Reconciliation follow-up",
+          "helper": "{reviews} pending reviews, {issues} open issues."
+        }
       }
     }
   },

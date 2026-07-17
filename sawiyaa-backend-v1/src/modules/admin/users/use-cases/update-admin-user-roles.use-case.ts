@@ -4,12 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UserRoleType } from '@prisma/client';
+import { BadRequestException } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
 import { AdminUsersRepository } from '../repositories/admin-users.repository';
 
@@ -28,6 +30,7 @@ export class UpdateAdminUserRolesUseCase {
     actor: AuthenticatedUser;
     userId: string;
     roles: UserRoleType[];
+    reason?: string;
   }) {
     this.policy.assertNotSelf(input.actor.id, input.userId);
 
@@ -47,6 +50,16 @@ export class UpdateAdminUserRolesUseCase {
     }
 
     const existingInternalRoles = existing.roles.map((r) => r.role);
+    const removedRoles = existingInternalRoles.filter(
+      (role) => !desiredRoles.includes(role),
+    );
+    const reason = input.reason?.trim() || null;
+    if (removedRoles.length > 0 && !reason) {
+      throw new BadRequestException({
+        messageKey: 'admin.adminUsers.errors.reasonRequired',
+        error: 'ADMIN_USERS_REASON_REQUIRED',
+      });
+    }
     const existingHasSuperAdmin = existingInternalRoles.includes(
       UserRoleType.SUPER_ADMIN,
     );
@@ -69,20 +82,24 @@ export class UpdateAdminUserRolesUseCase {
         { userId: input.userId, roles: desiredRoles },
         tx,
       );
-    });
 
-    this.securityAuditService.logAsync({
-      action: 'security.adminUsers.roles.update.success',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: input.actor.id,
-      actorRoles: input.actor.roles,
-      resourceType: 'User',
-      resourceId: input.userId,
-      targetUserId: input.userId,
-      metadata: {
-        oldRoles: existingInternalRoles,
-        newRoles: desiredRoles,
-      },
+      await this.securityAuditService.recordRequired(tx, {
+        action: 'security.adminUsers.roles.update.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.actor.id,
+        actorRoles: input.actor.roles,
+        resourceType: 'User',
+        resourceId: input.userId,
+        targetUserId: input.userId,
+        reason,
+        metadata: {
+          oldRoles: existingInternalRoles,
+          newRoles: desiredRoles,
+          removedRoles,
+        },
+      });
     });
 
     return {

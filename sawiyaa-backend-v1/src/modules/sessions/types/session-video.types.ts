@@ -8,16 +8,8 @@ export type SessionJoinBlockedReason =
   | 'SESSION_JOIN_WINDOW_CLOSED'
   | 'SESSION_ROOM_CLOSED';
 
-export type SessionPresentationStatus =
-  | 'UPCOMING'
-  | 'JOINABLE'
-  | 'IN_PROGRESS'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'ENDED'
-  | 'UNAVAILABLE'
-  | 'NO_SHOW'
-  | 'UNDER_REVIEW';
+/** @deprecated Clients should consume canonical Session.status directly. */
+export type SessionPresentationStatus = SessionStatus;
 
 export enum SessionPresentationFilter {
   ALL = 'all',

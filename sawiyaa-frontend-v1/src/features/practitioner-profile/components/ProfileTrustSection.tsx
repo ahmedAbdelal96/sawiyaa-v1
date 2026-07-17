@@ -123,9 +123,11 @@ export default async function ProfileTrustSection({ trustBlock }: Props) {
                         <span className="text-xs text-text-muted">{publishedLabel}</span>
                       ) : null}
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-text-secondary">
-                      {review.textReview ?? t("reviews.noText")}
-                    </p>
+                    {review.textReview ? (
+                      <p className="mt-3 text-sm leading-7 text-text-secondary">
+                        {review.textReview}
+                      </p>
+                    ) : null}
                   </article>
                 );
               })}

@@ -7,7 +7,7 @@ function ensureTrailingSlash(value: string) {
 }
 
 export function buildAcademyEnrollmentPaymentReturnBaseUrl() {
-  const academyEnrollmentsPath = "/academy/enrollments";
+  const academyEnrollmentsPath = "/academy/program-enrollments";
 
   if (Platform.OS === "web") {
     if (typeof window !== "undefined" && window.location?.origin) {
@@ -51,7 +51,7 @@ export function buildAcademyEnrollmentPaymentRedirectUrl(input: {
   }
 
   const redirectUrl = new URL(
-    `academy/enrollments/${input.enrollmentId}/pay/redirect`,
+    `academy/program-enrollments/${input.enrollmentId}/pay/redirect`,
     baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
   );
   redirectUrl.searchParams.set("token", input.token);

@@ -11,6 +11,8 @@
     "eyebrow": "Practitioner wallet",
     "title": "Review your wallet summary without jumping into ledger or settlement detail.",
     "note": "This summary is derived from the financial ledger. It shows balances and totals that are ready for visibility now.",
+    "manualRecoveryLabel": "Manual recovery amount",
+    "manualRecoveryNote": "This amount is separate from the payable total and is not deducted automatically from the next payout.",
     "currency": "Currency: {currency}",
     "timezoneLabel": "Timezone",
     "scopeHeading": "Available now",

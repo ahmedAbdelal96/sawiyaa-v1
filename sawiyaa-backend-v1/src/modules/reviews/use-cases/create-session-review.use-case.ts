@@ -4,14 +4,20 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionReviewStatus } from '@prisma/client';
+import {
+  SessionReviewModerationDecision,
+  SessionReviewStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateSessionReviewDto } from '../dto/create-session-review.dto';
 import { ReviewPresenter } from '../presenters/review.presenter';
 import { ReviewActorRepository } from '../repositories/review-actor.repository';
 import { ReviewRepository } from '../repositories/review.repository';
 import { ValidateSessionReviewEligibilityService } from '../services/validate-session-review-eligibility.service';
-import { REVIEW_SUBMIT_INITIAL_STATUS } from '../types/reviews.types';
+import {
+  REVIEW_AUTO_PUBLISH_MIN_RATING,
+  REVIEW_SUBMIT_INITIAL_STATUS,
+} from '../types/reviews.types';
 
 @Injectable()
 export class CreateSessionReviewUseCase {
@@ -56,6 +62,12 @@ export class CreateSessionReviewUseCase {
       });
 
     const now = new Date();
+    const shouldAutoPublish =
+      input.payload.overallRating >= REVIEW_AUTO_PUBLISH_MIN_RATING;
+    const reviewStatus = shouldAutoPublish
+      ? SessionReviewStatus.PUBLISHED
+      : REVIEW_SUBMIT_INITIAL_STATUS;
+
     try {
       const created = await this.reviewRepository.withTransaction(
         async (tx) => {
@@ -65,9 +77,20 @@ export class CreateSessionReviewUseCase {
               patientId: patient.id,
               practitionerId: session.practitionerId,
               ratingValue: input.payload.overallRating,
+              publicRatingValue: shouldAutoPublish
+                ? input.payload.overallRating
+                : null,
               reviewTitle: input.payload.title?.trim() || null,
               reviewText: input.payload.textReview?.trim() || null,
-              reviewStatus: REVIEW_SUBMIT_INITIAL_STATUS,
+              reviewStatus,
+              moderationDecision: shouldAutoPublish
+                ? SessionReviewModerationDecision.AUTO_APPROVED_POSITIVE
+                : null,
+              moderatedByUserId: null,
+              moderatedAt: shouldAutoPublish ? now : null,
+              moderationReason: null,
+              countsInPublicAverage: shouldAutoPublish,
+              publishedAt: shouldAutoPublish ? now : null,
               submittedAt: now,
             },
             tx,
@@ -78,7 +101,7 @@ export class CreateSessionReviewUseCase {
       );
 
       this.logger.log(
-        `Session review submitted (review=${created.id}, session=${input.sessionId}, status=${SessionReviewStatus.PENDING_MODERATION})`,
+        `Session review submitted (review=${created.id}, session=${input.sessionId}, status=${reviewStatus})`,
       );
 
       return {

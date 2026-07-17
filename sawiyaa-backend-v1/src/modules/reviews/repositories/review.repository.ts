@@ -171,8 +171,9 @@ export class ReviewRepository {
         ],
         select: {
           id: true,
-          ratingValue: true,
+          publicRatingValue: true,
           reviewText: true,
+          moderationDecision: true,
           submittedAt: true,
           publishedAt: true,
         },
@@ -190,7 +191,7 @@ export class ReviewRepository {
         id: true,
       },
       _avg: {
-        ratingValue: true,
+        publicRatingValue: true,
       },
       _max: {
         publishedAt: true,

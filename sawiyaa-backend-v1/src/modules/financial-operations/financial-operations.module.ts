@@ -11,15 +11,23 @@ import { AdminPackageSettlementsController } from './controllers/admin-package-s
 import { AdminPractitionerPayoutsController } from './controllers/admin-practitioner-payouts.controller';
 import { AdminPractitionerStatementsController } from './controllers/admin-practitioner-statements.controller';
 import { AdminAccountingController } from './controllers/admin-accounting.controller';
+import { AdminSessionEarningReviewsController } from './controllers/admin-session-earning-reviews.controller';
+import { AdminPractitionerRecoveriesController } from './controllers/admin-practitioner-recoveries.controller';
 import { PractitionerFinancialOperationsController } from './controllers/practitioner-financial-operations.controller';
 import { FinancialOperationsMapper } from './mappers/financial-operations.mapper';
+import { SessionEarningReviewPresenter } from './presenters/session-earning-review.presenter';
+import { PractitionerRecoveryPresenter } from './presenters/practitioner-recovery.presenter';
 import { AccountingReadRepository } from './repositories/accounting-read.repository';
 import { AccountingReconciliationRepository } from './repositories/accounting-reconciliation.repository';
 import { FinancialOperationsPaymentRepository } from './repositories/financial-operations-payment.repository';
 import { FinancialOperationsPractitionerRepository } from './repositories/financial-operations-practitioner.repository';
 import { LedgerRepository } from './repositories/ledger.repository';
+import { LedgerClassificationEventRepository } from './repositories/ledger-classification-event.repository';
+import { FinanceReconciliationActionRepository } from './repositories/finance-reconciliation-action.repository';
+import { SessionEarningReviewRepository } from './repositories/session-earning-review.repository';
 import { PackageSettlementRepository } from './repositories/package-settlement.repository';
 import { PractitionerManualPayoutRepository } from './repositories/practitioner-manual-payout.repository';
+import { PractitionerRecoveryRepository } from './repositories/practitioner-recovery.repository';
 import { SettlementPayoutRepository } from './repositories/settlement-payout.repository';
 import { SettlementPayoutProofRepository } from './repositories/settlement-payout-proof.repository';
 import { SettlementRepository } from './repositories/settlement.repository';
@@ -37,8 +45,10 @@ import { MoneyAmountService } from './services/money-amount.service';
 import { SettlementPayoutProofStorageService } from './services/settlement-payout-proof-storage.service';
 import { RecordSettlementPayoutService } from './services/record-settlement-payout.service';
 import { PackageSettlementService } from './services/package-settlement.service';
+import { SessionEarningReviewService } from './services/session-earning-review.service';
 import { PractitionerManualPayoutBalanceService } from './services/practitioner-manual-payout-balance.service';
 import { PractitionerManualPayoutService } from './services/practitioner-manual-payout.service';
+import { PractitionerRecoveryService } from './services/practitioner-recovery.service';
 import { RefreshPractitionerWalletService } from './services/refresh-practitioner-wallet.service';
 import { ValidateSettlementStatusTransitionService } from './services/validate-settlement-status-transition.service';
 import { ExportAdminAccountingDashboardCsvUseCase } from './use-cases/export-admin-accounting-dashboard-csv.use-case';
@@ -47,11 +57,14 @@ import { ExportPractitionerStatementPackageCsvUseCase } from './use-cases/export
 import { GetPractitionerWalletUseCase } from './use-cases/get-practitioner-wallet.use-case';
 import { GetFinanceOperationEventUseCase } from './use-cases/get-finance-operation-event.use-case';
 import { GetAdminAccountingDashboardUseCase } from './use-cases/get-admin-accounting-dashboard.use-case';
+import { GetAdminFinanceHubSummaryUseCase } from './use-cases/get-admin-finance-hub-summary.use-case';
 import { GetAdminAccountingReconciliationOverviewUseCase } from './use-cases/get-admin-accounting-reconciliation-overview.use-case';
 import { GetAdminLedgerJournalEntryUseCase } from './use-cases/get-admin-ledger-journal-entry.use-case';
 import { GetAdminPackageSettlementUseCase } from './use-cases/get-admin-package-settlement.use-case';
 import { GetAdminPractitionerPayoutBalanceUseCase } from './use-cases/get-admin-practitioner-payout-balance.use-case';
 import { ListAdminPractitionerPayoutSummariesUseCase } from './use-cases/list-admin-practitioner-payout-summaries.use-case';
+import { GetAdminSessionEarningReviewUseCase } from './use-cases/get-admin-session-earning-review.use-case';
+import { GetAdminPractitionerRecoveryUseCase } from './use-cases/get-admin-practitioner-recovery.use-case';
 import { GetPractitionerPayoutDetailUseCase } from './use-cases/get-practitioner-payout-detail.use-case';
 import { GetPractitionerPayoutProofFileUseCase } from './use-cases/get-practitioner-payout-proof-file.use-case';
 import { GetPractitionerStatementUseCase } from './use-cases/get-practitioner-statement.use-case';
@@ -68,12 +81,17 @@ import { ListPractitionerLedgerEntriesUseCase } from './use-cases/list-practitio
 import { ListPractitionerSettlementPayoutsUseCase } from './use-cases/list-practitioner-settlement-payouts.use-case';
 import { ListPractitionerSettlementsUseCase } from './use-cases/list-practitioner-settlements.use-case';
 import { ListAdminPayoutsUseCase } from './use-cases/list-admin-payouts.use-case';
+import { ListAdminSessionEarningReviewsUseCase } from './use-cases/list-admin-session-earning-reviews.use-case';
+import { ListAdminPractitionerRecoveriesUseCase } from './use-cases/list-admin-practitioner-recoveries.use-case';
+import { ExportAdminPractitionerRecoveriesCsvUseCase } from './use-cases/export-admin-practitioner-recoveries-csv.use-case';
 import { PostPaymentLedgerEntriesUseCase } from './use-cases/post-payment-ledger-entries.use-case';
 import { PostPackageSessionLedgerEntriesUseCase } from './use-cases/post-package-session-ledger-entries.use-case';
 import { PostRefundLedgerEntriesUseCase } from './use-cases/post-refund-ledger-entries.use-case';
 import { RecordPractitionerSettlementPayoutUseCase } from './use-cases/record-practitioner-settlement-payout.use-case';
 import { RecordAdminPractitionerManualPayoutUseCase } from './use-cases/record-admin-practitioner-manual-payout.use-case';
+import { MarkAdminPractitionerRecoveryCollectedUseCase } from './use-cases/mark-admin-practitioner-recovery-collected.use-case';
 import { RecordPractitionerPayoutUseCase } from './use-cases/record-practitioner-payout.use-case';
+import { WaiveAdminPractitionerRecoveryUseCase } from './use-cases/waive-admin-practitioner-recovery.use-case';
 import { UploadPractitionerPayoutProofUseCase } from './use-cases/upload-practitioner-payout-proof.use-case';
 import { ListSettlementDuesDirectoryUseCase } from './use-cases/list-settlement-dues-directory.use-case';
 import { ReleasePackageSettlementUseCase } from './use-cases/release-package-settlement.use-case';
@@ -90,9 +108,11 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     AdminPractitionerManualPayoutsController,
     AdminPractitionerPayoutsController,
     AdminPractitionerStatementsController,
+    AdminPractitionerRecoveriesController,
     AdminPackageSettlementsController,
     AdminFinanceOperationsController,
     AdminPayoutsController,
+    AdminSessionEarningReviewsController,
     AdminAccountingController,
     AdminAccountingReconciliationOperationsController,
   ],
@@ -107,8 +127,12 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     FinancialOperationsPaymentRepository,
     FinancialOperationsPractitionerRepository,
     LedgerRepository,
+    LedgerClassificationEventRepository,
+    FinanceReconciliationActionRepository,
+    SessionEarningReviewRepository,
     PackageSettlementRepository,
     PractitionerManualPayoutRepository,
+    PractitionerRecoveryRepository,
     SettlementPayoutRepository,
     SettlementPayoutProofRepository,
     WalletRepository,
@@ -117,6 +141,8 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     CalculatePackageSessionAllocationService,
     SettlementPayoutProofStorageService,
     ExtractPaymentLedgerBreakdownService,
+    SessionEarningReviewPresenter,
+    PractitionerRecoveryPresenter,
     AccountingLedgerAccountService,
     AccountingReconciliationDiagnosticsService,
     AccountingReconciliationAlertService,
@@ -126,8 +152,10 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     AccountingJournalPostingService,
     RecordSettlementPayoutService,
     PackageSettlementService,
+    SessionEarningReviewService,
     PractitionerManualPayoutBalanceService,
     PractitionerManualPayoutService,
+    PractitionerRecoveryService,
     RefreshPractitionerWalletService,
     ValidateSettlementStatusTransitionService,
     PostPaymentLedgerEntriesUseCase,
@@ -148,6 +176,7 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     ListFinanceOperationEventsUseCase,
     GetFinanceOperationEventUseCase,
     GetAdminAccountingDashboardUseCase,
+    GetAdminFinanceHubSummaryUseCase,
     ExportAdminAccountingDashboardCsvUseCase,
     ExportAdminLedgerExplorerCsvUseCase,
     GetAdminAccountingReconciliationOverviewUseCase,
@@ -158,6 +187,11 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     GetAdminLedgerJournalEntryUseCase,
     GetAdminPackageSettlementUseCase,
     ListAdminPayoutsUseCase,
+    ListAdminSessionEarningReviewsUseCase,
+    ListAdminPractitionerRecoveriesUseCase,
+    ExportAdminPractitionerRecoveriesCsvUseCase,
+    GetAdminSessionEarningReviewUseCase,
+    GetAdminPractitionerRecoveryUseCase,
     GetPractitionerPayoutDetailUseCase,
     GetPractitionerPayoutProofFileUseCase,
     GetPractitionerStatementUseCase,
@@ -167,12 +201,15 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     UploadPractitionerPayoutProofUseCase,
     ListSettlementDuesDirectoryUseCase,
     ReleasePackageSettlementUseCase,
+    MarkAdminPractitionerRecoveryCollectedUseCase,
+    WaiveAdminPractitionerRecoveryUseCase,
   ],
   exports: [
     PostPaymentLedgerEntriesUseCase,
     PostPackageSessionLedgerEntriesUseCase,
     PostRefundLedgerEntriesUseCase,
     PackageSettlementService,
+    SessionEarningReviewService,
   ],
 })
 export class FinancialOperationsModule {}

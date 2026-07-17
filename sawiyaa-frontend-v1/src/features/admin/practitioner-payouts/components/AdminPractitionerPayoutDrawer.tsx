@@ -150,6 +150,8 @@ export default function AdminPractitionerPayoutDrawer({
 
   const heldAmount = balance?.packageHeldAmount ?? "0.00";
   const packageHeldPositive = Number(heldAmount) > 0;
+  const manualRecoveryAmount = balance?.manualRecoveryAmount ?? "0.00";
+  const manualRecoveryPositive = Number(manualRecoveryAmount) > 0;
 
   return (
     <Drawer
@@ -265,6 +267,21 @@ export default function AdminPractitionerPayoutDrawer({
             <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <div>{t("drawer.packageHeldNote")}</div>
+            </div>
+          ) : null}
+
+          {manualRecoveryPositive ? (
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-1">
+                <p className="font-semibold">{t("manualRecoveryLabel")}</p>
+                <p>{t("manualRecoveryNote")}</p>
+                <p className="font-semibold">
+                  {balance
+                    ? formatSettlementMoney(locale, balance.manualRecoveryAmount, balance.currencyCode)
+                    : "-"}
+                </p>
+              </div>
             </div>
           ) : null}
 

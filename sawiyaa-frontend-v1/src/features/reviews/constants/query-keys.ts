@@ -1,4 +1,8 @@
-import type { ListAdminReviewsParams, ListPatientReviewsParams } from "../types/reviews.types";
+import type {
+  ListAdminReviewsParams,
+  ListPendingPatientReviewsParams,
+  ListPatientReviewsParams,
+} from "../types/reviews.types";
 
 export const adminReviewsQueryKeys = {
   all: ["admin-reviews"] as const,
@@ -14,6 +18,8 @@ export const patientReviewsQueryKeys = {
   reviews: () => [...patientReviewsQueryKeys.all, "list"] as const,
   reviewsList: (params: ListPatientReviewsParams = {}) =>
     [...patientReviewsQueryKeys.reviews(), params] as const,
+  pendingReviews: (params: ListPendingPatientReviewsParams = {}) =>
+    [...patientReviewsQueryKeys.reviews(), "pending", params] as const,
   review: (reviewId: string) =>
     [...patientReviewsQueryKeys.all, "detail", reviewId] as const,
 };

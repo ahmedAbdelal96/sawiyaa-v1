@@ -18,6 +18,7 @@ import AdminOperationalListShell, {
 } from "@/components/shared/admin/AdminOperationalListShell";
 import Button from "@/components/ui/button/Button";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
+import Badge from "@/components/ui/badge/Badge";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import Input from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
@@ -224,15 +225,22 @@ export default function AdminAcademyProgramsCatalogScreen() {
       header: t("programs.list.columns.registration"),
       accessor: (row) => (row.registrationOpen ? 1 : 0),
       cell: (row) => (
-        <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-            row.registrationOpen
-              ? "border-status-success-border bg-status-success-soft text-status-success"
-              : "border-border-light bg-surface-tertiary text-text-muted"
-          }`}
-        >
-          {row.registrationOpen ? t("programs.registration.open") : t("programs.registration.closed")}
-        </span>
+        <div className="flex flex-col items-start gap-1.5">
+          <span
+            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+              row.registrationOpen
+                ? "border-status-success-border bg-status-success-soft text-status-success"
+                : "border-border-light bg-surface-tertiary text-text-muted"
+            }`}
+          >
+            {row.registrationOpen ? t("programs.registration.open") : t("programs.registration.closed")}
+          </span>
+          {row.isOverTargetLearners ? (
+            <Badge variant="light" color="warning" size="sm">
+              {t("programs.list.targetExceededBadge")}
+            </Badge>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -264,9 +272,11 @@ export default function AdminAcademyProgramsCatalogScreen() {
         <div className="text-sm text-text-primary">
           <p className="font-semibold">{formatDateRange(row.startAt, row.endAt, locale)}</p>
           <p className="mt-1 text-xs text-text-secondary">
-            {t("programs.list.seats", {
-              maxSeats: row.maxSeats ?? t("programs.list.noSeats"),
-            })}
+            {row.targetLearnerCount ?? row.maxSeats
+              ? t("programs.list.targetLearners", {
+                  count: row.targetLearnerCount ?? row.maxSeats ?? 0,
+                })
+              : t("programs.list.noTargetLearners")}
           </p>
         </div>
       ),

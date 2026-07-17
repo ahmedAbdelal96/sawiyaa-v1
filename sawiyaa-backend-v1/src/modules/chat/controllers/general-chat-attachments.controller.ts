@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Param,
@@ -26,12 +27,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { createReadStream } from 'fs';
 import { Response } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { GeneralChatAttachmentSuccessResponseDto } from '../dto/general-chat-attachment-response.dto';
-import { GeneralChatRepository } from '../repositories/general-chat.repository';
-import { GeneralChatAttachmentStorageService } from '../services/general-chat-attachment-storage.service';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
+
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
 @ApiTags('General Chat')
 @ApiBearerAuth()
@@ -39,8 +40,7 @@ import { GeneralChatAttachmentStorageService } from '../services/general-chat-at
 @Controller('chat/conversations/:conversationId/attachments')
 export class GeneralChatAttachmentsController {
   constructor(
-    private readonly generalChatRepository: GeneralChatRepository,
-    private readonly generalChatAttachmentStorageService: GeneralChatAttachmentStorageService,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   @Post()
@@ -68,7 +68,7 @@ export class GeneralChatAttachmentsController {
   })
   @ApiNotFoundResponse({ description: 'Conversation was not found' })
   @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+    FileInterceptor('file'),
   )
   async upload(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
@@ -83,51 +83,26 @@ export class GeneralChatAttachmentsController {
         }
       | undefined,
   ) {
-    const conversation =
-      await this.generalChatRepository.findConversationByIdInGeneralScope(
-        conversationId,
-      );
-    if (!conversation) {
-      return { success: true, data: { item: null } } as any; // will be converted to 404 by global filter if needed
+    if (!file) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidAttachment',
+        errorCode: 'MESSAGING_ATTACHMENT_INVALID',
+      });
     }
-
-    const isAdmin = authenticatedUser.roles.includes(AppRole.ADMIN);
-    const isParticipant = conversation.participants.some(
-      (p) => p.userId === authenticatedUser.id,
-    );
-    if (!isAdmin && !isParticipant) {
-      return { success: true, data: { item: null } } as any;
-    }
-
-    if (!file?.buffer || file.buffer.length <= 0 || !file.mimetype) {
-      return { success: true, data: { item: null } } as any;
-    }
-
-    const isAllowed =
-      this.generalChatAttachmentStorageService.isAllowedMimeType(file.mimetype);
-    if (!isAllowed) {
-      return { success: true, data: { item: null } } as any;
-    }
-
-    // 20MB max per file.
-    if (file.size > 20_000_000) {
-      return { success: true, data: { item: null } } as any;
-    }
-
-    const stored = await this.generalChatAttachmentStorageService.save({
+    const stored = await this.messagingUseCase.uploadAttachment(
+      authenticatedUser,
       conversationId,
-      fileBuffer: file.buffer,
-      mimeType: file.mimetype,
-      originalFileName: file.originalname ?? null,
-    });
+      file,
+      { allowLegacyAdmin: true },
+    );
 
     return {
       item: {
         fileId: stored.fileId,
         fileUrl: `/api/v1/chat/conversations/${conversationId}/attachments/${stored.fileId}`,
         mimeType: stored.mimeType,
-        fileSize: stored.fileSizeBytes,
-        originalName: stored.originalFileName,
+        fileSize: stored.fileSize,
+        originalName: stored.originalName,
       },
     };
   }
@@ -152,32 +127,12 @@ export class GeneralChatAttachmentsController {
     @Param('fileId') fileId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const conversation =
-      await this.generalChatRepository.findConversationByIdInGeneralScope(
-        conversationId,
-      );
-    if (!conversation) {
-      response.status(404);
-      return null as any;
-    }
-
-    const isAdmin = authenticatedUser.roles.includes(AppRole.ADMIN);
-    const isParticipant = conversation.participants.some(
-      (p) => p.userId === authenticatedUser.id,
-    );
-    if (!isAdmin && !isParticipant) {
-      response.status(403);
-      return null as any;
-    }
-
-    const resolved = await this.generalChatAttachmentStorageService.resolve({
+    const resolved = await this.messagingUseCase.resolveAttachment(
+      authenticatedUser,
       conversationId,
       fileId,
-    });
-    if (!resolved) {
-      response.status(404);
-      return null as any;
-    }
+      { allowLegacyAdmin: true },
+    );
 
     response.setHeader('Content-Type', resolved.mimeType);
     response.setHeader('Cache-Control', 'private, max-age=300');

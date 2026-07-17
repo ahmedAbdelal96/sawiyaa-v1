@@ -17,7 +17,7 @@ import {
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../../i18n/direction";
 import { formatViewerDateTime } from "../../../../lib/time-formatting";
-import { usePublicAcademyEnrollment } from "../hooks";
+import { usePublicAcademyProgramEnrollment } from "../hooks";
 import {
   buildAcademyEnrollmentPaymentRedirectUrl,
   buildAcademyEnrollmentPaymentReturnUrl,
@@ -44,7 +44,7 @@ export default function AcademyEnrollmentDetailScreen({
   const { theme } = useTheme();
   const { t } = useTranslation();
   const { rowDirection, textAlign } = useAppDirection();
-  const enrollmentQuery = usePublicAcademyEnrollment(enrollmentId, token);
+  const enrollmentQuery = usePublicAcademyProgramEnrollment(enrollmentId, token);
   const enrollment = enrollmentQuery.data ?? null;
   const isMissingAccessLink = !enrollmentId || !token;
 
@@ -52,10 +52,9 @@ export default function AcademyEnrollmentDetailScreen({
   const isNotFound =
     isMissingAccessLink || (enrollmentQuery.isSuccess && !enrollment);
   const paymentAmountLabel =
-    payment && formatAcademyMoney(payment.amount, payment.currency, locale);
+    payment && formatAcademyMoney(payment.amountTotal, payment.currencyCode, locale);
   const isPendingPaymentFlow =
-    enrollment?.enrollmentStatus === "PENDING_PAYMENT" ||
-    enrollment?.enrollmentStatus === "PAYMENT_FAILED";
+    enrollment?.status === "PENDING_PAYMENT";
   const joinAccess = enrollment?.joinAccess ?? null;
   const showJoinSection = Boolean(
     joinAccess && (joinAccess.canAccessSession || joinAccess.canAccessGroup),
@@ -116,18 +115,18 @@ export default function AcademyEnrollmentDetailScreen({
         <View style={styles.stack}>
           <Card variant="elevated" padding="sm" style={styles.heroCard}>
             <SectionHeader
-              title={enrollment.courseTitle}
+              title={enrollment.program.title}
               subtitle={t("academy.enrollment.course")}
             />
             <View style={[styles.statusRow, { flexDirection: rowDirection }]}>
               <StatusChip
                 label={t(
                   getAcademyEnrollmentStatusTranslationKey(
-                    enrollment.enrollmentStatus,
+                    enrollment.status,
                   ),
                 )}
                 tone={getAcademyEnrollmentStatusTone(
-                  enrollment.enrollmentStatus,
+                  enrollment.status,
                 )}
                 showDot={false}
               />
@@ -172,7 +171,7 @@ export default function AcademyEnrollmentDetailScreen({
                     label={t("academy.enrollment.amount")}
                     value={
                       paymentAmountLabel ??
-                      `${payment.amount} ${payment.currency}`
+                      `${payment.amountTotal} ${payment.currencyCode}`
                     }
                   />
                 ) : null}

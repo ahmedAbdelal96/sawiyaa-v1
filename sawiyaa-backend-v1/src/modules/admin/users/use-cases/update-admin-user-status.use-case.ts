@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -10,6 +11,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
 import { AdminUsersRepository } from '../repositories/admin-users.repository';
 
@@ -28,6 +30,7 @@ export class UpdateAdminUserStatusUseCase {
     actor: AuthenticatedUser;
     userId: string;
     status: UserStatus;
+    reason?: string;
   }) {
     this.policy.assertNotSelf(input.actor.id, input.userId);
 
@@ -36,6 +39,14 @@ export class UpdateAdminUserStatusUseCase {
       throw new NotFoundException({
         messageKey: 'admin.adminUsers.errors.userNotFound',
         error: 'ADMIN_USER_NOT_FOUND',
+      });
+    }
+
+    const reason = input.reason?.trim() || null;
+    if (this.policy.isDisablingStatus(input.status) && !reason) {
+      throw new BadRequestException({
+        messageKey: 'admin.adminUsers.errors.reasonRequired',
+        error: 'ADMIN_USERS_REASON_REQUIRED',
       });
     }
 
@@ -71,23 +82,26 @@ export class UpdateAdminUserStatusUseCase {
         newTokenVersion = bumped.tokenVersion;
       }
 
-      return { updated, revokedCount, newTokenVersion };
-    });
+      await this.securityAuditService.recordRequired(tx, {
+        action: 'security.adminUsers.status.update.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.actor.id,
+        actorRoles: input.actor.roles,
+        resourceType: 'User',
+        resourceId: input.userId,
+        targetUserId: input.userId,
+        reason,
+        metadata: {
+          oldStatus: existing.status,
+          newStatus: updated.status,
+          revokedSessionsCount: revokedCount,
+          tokenVersion: newTokenVersion,
+        },
+      });
 
-    this.securityAuditService.logAsync({
-      action: 'security.adminUsers.status.update.success',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: input.actor.id,
-      actorRoles: input.actor.roles,
-      resourceType: 'User',
-      resourceId: input.userId,
-      targetUserId: input.userId,
-      metadata: {
-        oldStatus: existing.status,
-        newStatus: result.updated.status,
-        revokedSessionsCount: result.revokedCount,
-        tokenVersion: result.newTokenVersion,
-      },
+      return { updated, revokedCount, newTokenVersion };
     });
 
     return {

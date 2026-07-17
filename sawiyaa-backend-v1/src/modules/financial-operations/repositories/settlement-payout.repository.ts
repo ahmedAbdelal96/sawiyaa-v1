@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import {
   SettlementPayoutMethod,
   SettlementPayoutSource,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -20,8 +21,23 @@ export class SettlementPayoutRepository {
     data: Prisma.PractitionerSettlementPayoutUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
   ) {
+    if (
+      data.payoutSource === SettlementPayoutSource.MANUAL_EXCEPTION &&
+      !data.processedByUserId
+    ) {
+      throw new Error('Manual payout requires an operator user');
+    }
     return this.getDb(tx).practitionerSettlementPayout.create({
-      data,
+      data: {
+        ...data,
+        actorType: data.actorType ?? (data.processedByUserId
+          ? AuditActorType.USER
+          : data.payoutSource === SettlementPayoutSource.BATCH_CLOSEOUT
+            ? AuditActorType.SCHEDULED_JOB
+            : AuditActorType.SYSTEM),
+        actorUserId: data.actorUserId ?? data.processedByUserId ?? null,
+        source: data.source ?? (data.processedByUserId ? SecurityAuditSource.HTTP_REQUEST : SecurityAuditSource.SCHEDULED_JOB),
+      },
       include: this.payoutInclude,
     });
   }
@@ -154,6 +170,44 @@ export class SettlementPayoutRepository {
     return this.getDb(tx).practitionerSettlementPayout.findUnique({
       where: { id: payoutId },
       include: this.payoutInclude,
+    });
+  }
+
+  findSettlementPayoutBySettlementId(
+    settlementId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerSettlementPayout.findFirst({
+      where: { settlementId },
+      include: this.payoutInclude,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+  }
+
+  findSettlementPayoutByExternalPayoutRef(
+    externalPayoutRef: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerSettlementPayout.findFirst({
+      where: { externalPayoutRef },
+      include: this.payoutInclude,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+  }
+
+  findSettlementPayoutByIdempotencyKey(
+    idempotencyKey: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerSettlementPayout.findFirst({
+      where: {
+        payoutMethodSnapshot: {
+          path: ['idempotencyKey'],
+          equals: idempotencyKey,
+        },
+      },
+      include: this.payoutInclude,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
   }
 

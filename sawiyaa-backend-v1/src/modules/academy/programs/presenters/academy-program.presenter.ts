@@ -2,6 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AcademyProgramStatus, AcademyProgramDeliveryMethod } from '@prisma/client';
 
+type AcademyProgramCapacitySummary = {
+  targetLearnerCount?: number | null;
+  activeLearnerCount?: number;
+  remainingTargetSlots?: number | null;
+  isOverTargetLearners?: boolean;
+};
+
 @Injectable()
 export class AcademyProgramPresenter {
   presentPagination(input: {
@@ -43,7 +50,7 @@ export class AcademyProgramPresenter {
     _count?: {
       sessions?: number;
     };
-  },
+  } & AcademyProgramCapacitySummary,
   locale: SupportedLocale) {
     const category = this.presentCategorySummary(program.category, locale);
     const title = this.resolveLocalizedValue({
@@ -57,6 +64,17 @@ export class AcademyProgramPresenter {
       primary: program.descriptionAr,
       secondary: program.descriptionEn,
     });
+
+    const targetLearnerCount = program.targetLearnerCount ?? program.maxSeats ?? null;
+    const activeLearnerCount = program.activeLearnerCount ?? 0;
+    const remainingTargetSlots =
+      program.remainingTargetSlots ??
+      (targetLearnerCount === null
+        ? null
+        : Math.max(targetLearnerCount - activeLearnerCount, 0));
+    const isOverTargetLearners =
+      program.isOverTargetLearners ??
+      (targetLearnerCount !== null && activeLearnerCount > targetLearnerCount);
 
     return {
       id: program.id,
@@ -73,6 +91,10 @@ export class AcademyProgramPresenter {
       priceUsd: program.priceUsd?.toString() ?? null,
       registrationOpen: program.registrationOpen,
       maxSeats: program.maxSeats ?? null,
+      targetLearnerCount,
+      activeLearnerCount,
+      remainingTargetSlots,
+      isOverTargetLearners,
       startAt: program.startAt?.toISOString() ?? null,
       endAt: program.endAt?.toISOString() ?? null,
       publishedAt: program.publishedAt?.toISOString() ?? null,
@@ -117,7 +139,7 @@ export class AcademyProgramPresenter {
         isPublished: boolean;
         publishedAt: Date | null;
       }>;
-    },
+    } & AcademyProgramCapacitySummary,
     locale: SupportedLocale,
   ) {
     return {
@@ -161,7 +183,18 @@ export class AcademyProgramPresenter {
     _count?: {
       sessions?: number;
     };
-  }) {
+  } & AcademyProgramCapacitySummary) {
+    const targetLearnerCount = program.targetLearnerCount ?? program.maxSeats ?? null;
+    const activeLearnerCount = program.activeLearnerCount ?? 0;
+    const remainingTargetSlots =
+      program.remainingTargetSlots ??
+      (targetLearnerCount === null
+        ? null
+        : Math.max(targetLearnerCount - activeLearnerCount, 0));
+    const isOverTargetLearners =
+      program.isOverTargetLearners ??
+      (targetLearnerCount !== null && activeLearnerCount > targetLearnerCount);
+
     return {
       id: program.id,
       slug: program.slug,
@@ -176,6 +209,10 @@ export class AcademyProgramPresenter {
       priceUsd: program.priceUsd?.toString() ?? null,
       registrationOpen: program.registrationOpen,
       maxSeats: program.maxSeats ?? null,
+      targetLearnerCount,
+      activeLearnerCount,
+      remainingTargetSlots,
+      isOverTargetLearners,
       startAt: program.startAt?.toISOString() ?? null,
       endAt: program.endAt?.toISOString() ?? null,
       status: program.status,
@@ -238,7 +275,7 @@ export class AcademyProgramPresenter {
       createdAt: Date;
       updatedAt: Date;
     }>;
-  }) {
+  } & AcademyProgramCapacitySummary) {
     return {
       ...this.presentAdminProgramItem(program),
       sessions:

@@ -99,4 +99,60 @@ describe('AllExceptionsFilter', () => {
       }),
     );
   });
+
+  it('forwards safe retry metadata fields from HttpException responses', () => {
+    const logger = {
+      error: jest.fn(),
+    } as never;
+    const i18nService = {
+      t: jest.fn((key: string) => key),
+    } as never;
+
+    const filter = new AllExceptionsFilter(i18nService, logger, {
+      stackEnabled: true,
+      nodeEnv: 'development',
+    } as never);
+
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as never;
+    const request = {
+      method: 'POST',
+      originalUrl: '/api/v1/auth/admin/login',
+      url: '/api/v1/auth/admin/login',
+      locale: 'en',
+      requestId: 'req_3',
+      user: { id: 'user_3', roles: ['ADMIN'] },
+      headers: {},
+    } as never;
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => response,
+        getRequest: () => request,
+      }),
+    } as never;
+
+    filter.catch(
+      new BadRequestException({
+        messageKey: 'auth.errors.loginTemporarilyLocked',
+        errorCode: 'LOGIN_TEMPORARILY_LOCKED',
+        remainingAttempts: 0,
+        maxAttempts: 5,
+        lockedUntil: '2026-07-10T10:00:00.000Z',
+        retryAfterSeconds: 60,
+      }),
+      host,
+    );
+
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: 'LOGIN_TEMPORARILY_LOCKED',
+        remainingAttempts: 0,
+        maxAttempts: 5,
+        lockedUntil: '2026-07-10T10:00:00.000Z',
+        retryAfterSeconds: 60,
+      }),
+    );
+  });
 });

@@ -206,9 +206,11 @@ export default function PractitionerReviewsScreen() {
                     {t("reviews.publishedAt", { value: formatDate(review.publishedAt, locale) })}
                   </p>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  {review.textReview?.trim() || t("reviews.noText")}
-                </p>
+                {review.textReview ? (
+                  <p className="mt-3 text-sm leading-6 text-text-secondary">
+                    {review.textReview}
+                  </p>
+                ) : null}
               </article>
             ))}
           </div>

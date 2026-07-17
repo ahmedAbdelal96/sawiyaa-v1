@@ -46,7 +46,7 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
       statusBreakdown[row.status] = String(row._count._all);
       if (row.status === SessionStatus.COMPLETED) completed += row._count._all;
       if (row.status === SessionStatus.CANCELLED) cancelled += row._count._all;
-      if (row.status === SessionStatus.NO_SHOW) noShow += row._count._all;
+      if (([SessionStatus.PATIENT_NO_SHOW, SessionStatus.PRACTITIONER_NO_SHOW, SessionStatus.BOTH_NO_SHOW] as SessionStatus[]).includes(row.status)) noShow += row._count._all;
     }
 
     const bucketKeys = buildDailyBuckets(input.from, input.to);
@@ -182,7 +182,7 @@ export class PrismaSessionsReportProvider implements SessionsReportProvider {
         count(*)::int as "total",
         sum(case when "status"::text = ${SessionStatus.COMPLETED} then 1 else 0 end)::int as "completed",
         sum(case when "status"::text = ${SessionStatus.CANCELLED} then 1 else 0 end)::int as "cancelled",
-        sum(case when "status"::text = ${SessionStatus.NO_SHOW} then 1 else 0 end)::int as "noShow"
+        sum(case when "status"::text in (${SessionStatus.PATIENT_NO_SHOW}, ${SessionStatus.PRACTITIONER_NO_SHOW}, ${SessionStatus.BOTH_NO_SHOW}) then 1 else 0 end)::int as "noShow"
       from "Session"
       where "scheduledStartAt" >= ${input.from} and "scheduledStartAt" <= ${input.to}
       group by 1

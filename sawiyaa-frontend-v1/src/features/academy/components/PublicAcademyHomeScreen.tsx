@@ -10,6 +10,7 @@ import {
   GraduationCap,
   Search,
   Sparkles,
+  X,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -82,6 +83,8 @@ export default function PublicAcademyHomeScreen({
   const { user, isInitialized } = useAuthStore();
   const [search, setSearch] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
+  const searchQuery = submittedSearch.trim();
+  const hasSearchValue = Boolean(search.trim() || searchQuery);
   const academyDetailBaseHref = detailBaseHref ?? `/${locale}/academy`;
   const authScopeKey = useMemo(() => {
     if (!isInitialized) {
@@ -95,11 +98,8 @@ export default function PublicAcademyHomeScreen({
     return `auth:${user.id}:${user.role}`;
   }, [isInitialized, user]);
   const query = useMemo(
-    () =>
-      submittedSearch.trim()
-        ? { page: 1, limit: 12, q: submittedSearch.trim() }
-        : { page: 1, limit: 12 },
-    [submittedSearch],
+    () => (searchQuery ? { page: 1, limit: 12, q: searchQuery } : { page: 1, limit: 12 }),
+    [searchQuery],
   );
 
   const { data, isLoading, isFetching, isError, refetch } = usePublicAcademyPrograms(query, {
@@ -110,6 +110,10 @@ export default function PublicAcademyHomeScreen({
   const totalPrograms = data?.pagination.totalItems ?? 0;
   const openRegistrations = items.filter((item) => item.registrationOpen).length;
   const featuredPrograms = items.filter((item) => Boolean(item.publishedAt)).length;
+  const clearSearch = () => {
+    setSearch("");
+    setSubmittedSearch("");
+  };
 
   return (
     <div className="app-max-content mx-auto space-y-8 px-4 py-6 sm:py-8">
@@ -166,7 +170,7 @@ export default function PublicAcademyHomeScreen({
               className="space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
-                setSubmittedSearch(search);
+                setSubmittedSearch(search.trim());
               }}
             >
               <div className="flex items-center gap-3 text-text-primary">
@@ -176,15 +180,29 @@ export default function PublicAcademyHomeScreen({
                   <div className="text-xs text-text-muted">{t("public.search.subtitle")}</div>
                 </div>
               </div>
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={t("public.search.placeholder")}
-                className="w-full"
-              />
-              <Button type="submit" className="w-full rounded-[14px]" disabled={isFetching}>
-                {isFetching ? t("public.search.loading") : t("public.search.action")}
-              </Button>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={t("public.search.placeholder")}
+                  className="w-full"
+                />
+                <Button type="submit" className="w-full rounded-[14px] sm:w-auto" disabled={isFetching}>
+                  {isFetching ? t("public.search.loading") : t("public.search.action")}
+                </Button>
+                {hasSearchValue ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-[14px] sm:w-auto"
+                    onClick={clearSearch}
+                    disabled={isFetching}
+                  >
+                    <X className="h-4 w-4" />
+                    {t("public.search.clear")}
+                  </Button>
+                ) : null}
+              </div>
             </form>
           </div>
         </div>
@@ -230,50 +248,49 @@ export default function PublicAcademyHomeScreen({
                 const description = resolveProgramDescription(item, locale);
                 const egpPrice = formatMoney(item.priceEgp, "EGP", locale);
                 const usdPrice = formatMoney(item.priceUsd, "USD", locale);
+                const sessionCount = item.sessions?.length ?? 0;
 
                 return (
                   <article
                     key={item.id}
-                    className="group flex flex-col justify-between overflow-hidden rounded-[20px] border border-border-light bg-white transition hover:border-primary/25 hover:shadow-[0_8px_24px_rgba(36,86,79,0.06)]"
+                    className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-border-light bg-white transition hover:border-primary/25 hover:shadow-[0_8px_24px_rgba(36,86,79,0.06)]"
                   >
-                    <div className="border-b border-border-light bg-surface-tertiary p-5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full border border-primary/10 bg-white px-2.5 py-1 text-[11px] font-bold text-primary shadow-sm">
+                    <div className="flex flex-1 flex-col p-5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-primary/10 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary">
                           {resolveAcademyProgramRegistrationStateLabel(item.registrationOpen, t)}
                         </span>
-                        <span className="rounded-full border border-border-light/70 bg-white px-2.5 py-1 text-[11px] font-semibold text-text-muted">
+                        <span className="rounded-full border border-border-light/70 bg-surface-tertiary px-2.5 py-1 text-[11px] font-semibold text-text-muted">
                           {item.publishedAt ? t("public.card.published") : t("public.card.draft")}
                         </span>
                       </div>
 
                       <div className="mt-4 space-y-2">
-                        {egpPrice ? (
-                          <div className="text-base font-bold text-primary">
-                            {t("public.card.priceEgp", { value: egpPrice })}
-                          </div>
-                        ) : null}
-                        {usdPrice ? (
-                          <div className="text-sm font-semibold text-text-secondary">
-                            {t("public.card.priceUsd", { value: usdPrice })}
-                          </div>
-                        ) : null}
-                        {!egpPrice && !usdPrice ? (
-                          <div className="text-base font-bold text-primary">{t("public.card.free")}</div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-4 p-5">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-bold text-text-primary transition group-hover:text-primary">
+                        <h3 className="line-clamp-2 text-lg font-bold leading-snug text-text-primary transition group-hover:text-primary">
                           {title}
                         </h3>
-                        <p className="line-clamp-3 text-sm leading-relaxed text-text-secondary">
+                        <p className="line-clamp-2 text-sm leading-relaxed text-text-secondary">
                           {description ?? t("public.card.noDescription")}
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="mt-5 rounded-[18px] border border-border-light bg-surface-tertiary p-4">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                          {t("public.detail.summary.price")}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <div className="text-lg font-bold text-primary">
+                            {egpPrice ?? usdPrice ?? t("public.card.free")}
+                          </div>
+                          {egpPrice && usdPrice ? (
+                            <div className="text-sm font-semibold text-text-secondary">
+                              {usdPrice}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
                         <div className="rounded-xl border border-border-light bg-surface-tertiary px-3 py-2">
                           <div className="font-bold text-text-muted">{t("public.card.startsAt")}</div>
                           <div className="mt-1 font-semibold text-text-primary">
@@ -287,29 +304,49 @@ export default function PublicAcademyHomeScreen({
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between gap-3 border-t border-border-light/40 bg-white px-5 py-4">
-                      <div className="text-xs text-text-muted">
-                        {item.maxSeats
-                          ? t("public.card.maxSeats", { count: item.maxSeats })
-                          : t("public.card.noSeatsLimit")}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {sessionCount > 0 ? (
+                          <span className="rounded-full border border-border-light bg-white px-2.5 py-1 text-[11px] font-semibold text-text-secondary">
+                            {t("public.card.lectures", { count: sessionCount })}
+                          </span>
+                        ) : null}
+                        <span className="rounded-full border border-border-light bg-white px-2.5 py-1 text-[11px] font-semibold text-text-secondary">
+                          {item.targetLearnerCount ?? item.maxSeats
+                            ? t("public.card.targetLearners", {
+                                count: item.targetLearnerCount ?? item.maxSeats ?? 0,
+                              })
+                            : t("public.card.noTargetSet")}
+                        </span>
                       </div>
-                      <Link
-                        href={`${academyDetailBaseHref}/${item.slug}`}
-                        className="inline-flex items-center gap-1.5 rounded-[12px] bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
-                      >
-                        {t("public.card.open")}
-                        <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
-                      </Link>
+
+                      <div className="mt-auto border-t border-border-light/60 pt-4">
+                        <Link
+                          href={`${academyDetailBaseHref}/${item.slug}`}
+                          className="inline-flex w-full items-center justify-center gap-1.5 rounded-[12px] bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+                        >
+                          {t("public.card.open")}
+                          <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+                        </Link>
+                      </div>
                     </div>
                   </article>
                 );
               })}
             </div>
+          ) : searchQuery ? (
+            <StateCard
+              title={t("public.emptySearch.title")}
+              note={t("public.emptySearch.note")}
+              action={{
+                label: t("public.search.showAll"),
+                onClick: clearSearch,
+              }}
+              className="rounded-[20px]"
+            />
           ) : (
             <div className="rounded-[20px] border border-dashed border-border-light bg-white px-6 py-12 text-center text-text-muted">
-              {submittedSearch ? t("public.empty.filtered") : t("public.empty.default")}
+              {t("public.empty.default")}
             </div>
           )}
         </section>

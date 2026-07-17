@@ -366,18 +366,27 @@ function StatusDialog({
 }) {
   const t = useTranslations("admin-users");
   const [status, setStatus] = useState(initialStatus);
+  const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const reasonRequired = status !== "ACTIVE";
 
   const handleClose = () => {
     setStatus(initialStatus);
+    setReason("");
     setError(null);
     stepUp.close();
     onClose();
   };
 
   const runUpdate = async () => {
+    const trimmedReason = reason.trim();
+    if (reasonRequired && !trimmedReason) {
+      setError(t("statusModal.validation.reason"));
+      return false;
+    }
+
     try {
-      await mutation.mutateAsync({ status });
+      await mutation.mutateAsync({ status, reason: trimmedReason || undefined });
       onCompleted();
       handleClose();
       return true;
@@ -423,7 +432,10 @@ function StatusDialog({
           <span className="text-sm font-medium text-text-primary">{t("statusModal.fields.status")}</span>
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value as (typeof ADMIN_USER_STATUS_VALUES)[number])}
+            onChange={(event) => {
+              setStatus(event.target.value as (typeof ADMIN_USER_STATUS_VALUES)[number]);
+              setError(null);
+            }}
             className="app-control h-11 w-full rounded-2xl px-4"
           >
             {ADMIN_USER_STATUS_VALUES.map((value) => (
@@ -433,6 +445,18 @@ function StatusDialog({
             ))}
           </select>
         </label>
+        {reasonRequired ? (
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium text-text-primary">{t("statusModal.reason")}</span>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={t("statusModal.reasonPlaceholder")}
+              className="app-control min-h-24 w-full rounded-2xl px-4 py-3"
+              maxLength={500}
+            />
+          </label>
+        ) : null}
         {error ? <p className="text-sm text-error-600">{error}</p> : null}
       </div>
     </FormModal>
@@ -470,10 +494,13 @@ function RolesDialog({
 }) {
   const t = useTranslations("admin-users");
   const [selectedRoles, setSelectedRoles] = useState<AdminUserRole[]>(initialRoles);
+  const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const removedRoles = initialRoles.filter((role) => !selectedRoles.includes(role));
 
   const handleClose = () => {
     setSelectedRoles(initialRoles);
+    setReason("");
     setError(null);
     stepUp.close();
     onClose();
@@ -498,8 +525,14 @@ function RolesDialog({
       return false;
     }
 
+    const trimmedReason = reason.trim();
+    if (removedRoles.length > 0 && !trimmedReason) {
+      setError(t("rolesModal.validation.reason"));
+      return false;
+    }
+
     try {
-      await mutation.mutateAsync({ roles: uniqueRoles });
+      await mutation.mutateAsync({ roles: uniqueRoles, reason: trimmedReason || undefined });
       onCompleted();
       handleClose();
       return true;
@@ -562,6 +595,18 @@ function RolesDialog({
             </label>
           ))}
         </div>
+        {removedRoles.length > 0 ? (
+          <label className="space-y-1.5">
+            <span className="text-sm font-medium text-text-primary">{t("rolesModal.fields.reason")}</span>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder={t("rolesModal.fields.reasonPlaceholder")}
+              className="app-control min-h-24 w-full rounded-2xl px-4 py-3"
+              maxLength={500}
+            />
+          </label>
+        ) : null}
         {error ? <p className="text-sm text-error-600">{error}</p> : null}
       </div>
     </FormModal>

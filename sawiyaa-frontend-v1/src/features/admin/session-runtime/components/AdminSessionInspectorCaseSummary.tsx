@@ -8,8 +8,6 @@ import { OUTCOME_TONE_CLASS, type OutcomeTone } from "../lib/inspector-utils";
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT:
     "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  CONFIRMED:
-    "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   UPCOMING:
     "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   READY_TO_JOIN:
@@ -19,10 +17,13 @@ const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   COMPLETED:
     "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
   CANCELLED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  REFUND_PENDING:
-    "bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-white/70",
-  REFUNDED: "bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-white/70",
+  PATIENT_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  PRACTITIONER_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  BOTH_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  AWAITING_COMPLETION_CONFIRMATION:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
 const CONFIDENCE_TONE: Record<"HIGH" | "MEDIUM" | "LOW", string> = {

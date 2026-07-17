@@ -64,7 +64,7 @@ describe('PackagePurchasePresenter', () => {
     expect(result).not.toHaveProperty('commissionMode');
     expect(result.linkedSessions.items[0]).toMatchObject({
       packageSessionIndex: 1,
-      presentationStatus: 'JOINABLE',
+      presentationStatus: 'READY_TO_JOIN',
       joinAvailability: {
         canJoin: true,
         blockedReason: null,
@@ -72,7 +72,7 @@ describe('PackagePurchasePresenter', () => {
     });
     expect(result.linkedSessions.items[1]).toMatchObject({
       packageSessionIndex: 2,
-      presentationStatus: 'ENDED',
+      presentationStatus: 'READY_TO_JOIN',
       joinAvailability: {
         canJoin: false,
         blockedReason: 'SESSION_JOIN_WINDOW_CLOSED',

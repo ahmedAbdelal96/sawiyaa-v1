@@ -1,28 +1,19 @@
 export type SessionStatus =
   | "DRAFT"
   | "PENDING_PAYMENT"
-  | "PENDING_PRACTITIONER_RESPONSE"
-  | "CONFIRMED"
+  | "PENDING_PRACTITIONER_CONFIRMATION"
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
+  | "AWAITING_COMPLETION_CONFIRMATION"
   | "COMPLETED"
   | "CANCELLED"
-  | "NO_SHOW"
-  | "EXPIRED"
-  | "REFUND_PENDING"
-  | "REFUNDED";
+  | "PATIENT_NO_SHOW"
+  | "PRACTITIONER_NO_SHOW"
+  | "BOTH_NO_SHOW"
+  | "EXPIRED";
 
-export type SessionPresentationStatus =
-  | "UPCOMING"
-  | "JOINABLE"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "ENDED"
-  | "UNAVAILABLE"
-  | "NO_SHOW"
-  | "UNDER_REVIEW";
+export type SessionPresentationStatus = SessionStatus;
 
 export type SessionPresentationFilter =
   | "all"
@@ -75,6 +66,14 @@ export interface SessionJoinAvailability {
   blockedReason: SessionJoinBlockedReason | null;
   availableAt: string | null;
   expiresAt: string | null;
+}
+
+export interface PatientSessionActions {
+  canCancel: boolean;
+  canPrepareRoom: boolean;
+  canJoin: boolean;
+  canPay: boolean;
+  canReview: boolean;
 }
 
 export interface SessionChatAvailability {
@@ -130,6 +129,7 @@ export interface SessionListItem {
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
   joinAvailability: SessionJoinAvailability;
+  actions: PatientSessionActions;
   chatAvailability: SessionChatAvailability;
 }
 

@@ -3,6 +3,7 @@ import { CareChatPresenter } from '../presenters/care-chat.presenter';
 import { CareChatActorRepository } from '../repositories/care-chat-actor.repository';
 import { CareChatConversationRepository } from '../repositories/care-chat-conversation.repository';
 import { CareChatActorType } from '../types/care-chat.types';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 @Injectable()
 export class GetCareChatConversationUseCase {
@@ -10,6 +11,7 @@ export class GetCareChatConversationUseCase {
     private readonly careChatActorRepository: CareChatActorRepository,
     private readonly careChatConversationRepository: CareChatConversationRepository,
     private readonly careChatPresenter: CareChatPresenter,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   async execute(input: {
@@ -26,16 +28,18 @@ export class GetCareChatConversationUseCase {
     }
 
     if (input.actorType !== 'ADMIN') {
+      // Compatibility behavior for current clients; remove after web/mobile migration.
       const lastMessageId =
         conversation.messages.length > 0
           ? conversation.messages[conversation.messages.length - 1].id
           : undefined;
-      await this.careChatConversationRepository.markRead({
-        conversationId: conversation.id,
-        userId: input.userId,
-        lastReadMessageId: lastMessageId,
-        at: new Date(),
-      });
+      if (lastMessageId) {
+        await this.messagingUseCase.markRead(
+          { id: input.userId, roles: [] },
+          conversation.id,
+          lastMessageId,
+        );
+      }
     }
 
     return {

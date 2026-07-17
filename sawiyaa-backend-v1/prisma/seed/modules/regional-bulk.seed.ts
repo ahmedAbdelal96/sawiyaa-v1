@@ -10,14 +10,6 @@ import {
   ConversationParticipantRole,
   ConversationStatus,
   ConversationType,
-  CourseDeliveryMode,
-  CourseReviewDecision,
-  CourseScheduleStatus,
-  CourseStatus,
-  CourseType,
-  CourseVisibility,
-  EnrollmentAttendanceStatus,
-  EnrollmentStatus,
   LedgerDirection,
   LedgerEntryType,
   MatchingAnswerKey,
@@ -70,7 +62,6 @@ type ScaleConfig = {
   conversations: number;
   messagesPerConversation: number;
   notificationsPerUser: number;
-  courses: number;
 };
 
 const SCALE_CONFIG: Record<SeedScale, ScaleConfig> = {
@@ -82,7 +73,6 @@ const SCALE_CONFIG: Record<SeedScale, ScaleConfig> = {
     conversations: 90,
     messagesPerConversation: 5,
     notificationsPerUser: 8,
-    courses: 10,
   },
   medium: {
     patients: 120,
@@ -92,7 +82,6 @@ const SCALE_CONFIG: Record<SeedScale, ScaleConfig> = {
     conversations: 420,
     messagesPerConversation: 8,
     notificationsPerUser: 14,
-    courses: 28,
   },
   large: {
     patients: 300,
@@ -102,7 +91,6 @@ const SCALE_CONFIG: Record<SeedScale, ScaleConfig> = {
     conversations: 1200,
     messagesPerConversation: 10,
     notificationsPerUser: 20,
-    courses: 80,
   },
 };
 
@@ -1610,183 +1598,5 @@ export const regionalBulkSeedModule: SeedModule = {
       });
     }
 
-    for (let i = 1; i <= cfg.courses; i += 1) {
-      const categoryId = uuid(`bulk-course-category-${(i % 5) + 1}`);
-      await prisma.courseCategory.upsert({
-        where: { slugRoot: `bulk-course-category-${(i % 5) + 1}` },
-        create: {
-          id: categoryId,
-          slugRoot: `bulk-course-category-${(i % 5) + 1}`,
-          isActive: true,
-        },
-        update: { isActive: true },
-      });
-
-      const courseId = uuid(`bulk-course-${i}`);
-      await prisma.course.upsert({
-        where: { slugRoot: `bulk-course-${i}` },
-        create: {
-          id: courseId,
-          primaryCategoryId: categoryId,
-          slugRoot: `bulk-course-${i}`,
-          courseType: CourseType.LIVE_COURSE,
-          deliveryMode: CourseDeliveryMode.EXTERNAL_LIVE_ROOM,
-          status: CourseStatus.PUBLISHED,
-          visibility: CourseVisibility.PUBLIC,
-          priceAmount: money(350, 100, i),
-          currencyCode: 'EGP',
-          publishedAt: daysAgo(i % 90),
-        },
-        update: {
-          status: CourseStatus.PUBLISHED,
-          visibility: CourseVisibility.PUBLIC,
-          priceAmount: money(350, 100, i),
-          currencyCode: 'EGP',
-          publishedAt: daysAgo(i % 90),
-        },
-      });
-
-      const scheduleId = uuid(`bulk-course-schedule-${i}`);
-      const scheduleStartsAt = daysFromNow((i % 30) + 3);
-      const scheduleEndsAt = addDays(scheduleStartsAt, 13);
-      const enrollmentOpenAt = daysAgo((i % 7) + 2);
-      const enrollmentCloseAt = daysFromNow(1);
-      await prisma.courseSchedule.upsert({
-        where: { scheduleCode: `BULK-SCH-${i}` },
-        create: {
-          id: scheduleId,
-          courseId,
-          scheduleCode: `BULK-SCH-${i}`,
-          status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
-          createdByUserId: supportUserId,
-          plannedDurationDays: 14,
-          plannedLectureCount: 4,
-          enrollmentOpenAt,
-          enrollmentCloseAt,
-          startsAt: scheduleStartsAt,
-          endsAt: scheduleEndsAt,
-          timezone: pick(TIMEZONES, i),
-          externalRoomProvider: 'ZOOM',
-          externalRoomJoinUrl: `https://meet.example.com/bulk-course-${i}`,
-          externalRoomHostUrl: `https://host.example.com/bulk-course-${i}`,
-        },
-        update: {
-          status: CourseScheduleStatus.OPEN_FOR_ENROLLMENT,
-          createdByUserId: supportUserId,
-          plannedDurationDays: 14,
-          plannedLectureCount: 4,
-          enrollmentOpenAt,
-          enrollmentCloseAt,
-          startsAt: scheduleStartsAt,
-          endsAt: scheduleEndsAt,
-          timezone: pick(TIMEZONES, i),
-          externalRoomProvider: 'ZOOM',
-          externalRoomJoinUrl: `https://meet.example.com/bulk-course-${i}`,
-          externalRoomHostUrl: `https://host.example.com/bulk-course-${i}`,
-        },
-      });
-
-      const lectureOffsets = [0, 3, 7, 10];
-      for (
-        let lectureIndex = 0;
-        lectureIndex < lectureOffsets.length;
-        lectureIndex += 1
-      ) {
-        const sessionOrder = lectureIndex + 1;
-        const lectureStart = addDays(
-          scheduleStartsAt,
-          lectureOffsets[lectureIndex],
-        );
-        const lectureEnd = addHours(lectureStart, 2);
-
-        await prisma.courseSession.upsert({
-          where: {
-            courseScheduleId_sessionOrder: {
-              courseScheduleId: scheduleId,
-              sessionOrder,
-            },
-          },
-          create: {
-            id: uuid(`bulk-course-session-${i}-${sessionOrder}`),
-            courseScheduleId: scheduleId,
-            createdByUserId: supportUserId,
-            sessionTitle: `Lecture ${sessionOrder}`,
-            sessionOrder,
-            startsAt: lectureStart,
-            endsAt: lectureEnd,
-            attendanceTrackingEnabled: true,
-            isMandatory: true,
-            externalRoomProvider: 'ZOOM',
-            externalRoomJoinUrl: `https://meet.example.com/bulk-course-${i}/lecture-${sessionOrder}`,
-            externalRoomHostUrl: `https://host.example.com/bulk-course-${i}/lecture-${sessionOrder}`,
-          },
-          update: {
-            createdByUserId: supportUserId,
-            sessionTitle: `Lecture ${sessionOrder}`,
-            startsAt: lectureStart,
-            endsAt: lectureEnd,
-            attendanceTrackingEnabled: true,
-            isMandatory: true,
-            externalRoomProvider: 'ZOOM',
-            externalRoomJoinUrl: `https://meet.example.com/bulk-course-${i}/lecture-${sessionOrder}`,
-            externalRoomHostUrl: `https://host.example.com/bulk-course-${i}/lecture-${sessionOrder}`,
-          },
-        });
-      }
-
-      for (let e = 1; e <= 5; e += 1) {
-        const user = pick(patientUsers, i * 7 + e);
-        const enrollmentId = uuid(`bulk-enrollment-${i}-${e}`);
-        const enrollmentStatus = pick(
-          [
-            EnrollmentStatus.ACTIVE,
-            EnrollmentStatus.COMPLETED,
-            EnrollmentStatus.CANCELLED,
-          ],
-          e,
-        );
-        const paymentStatus = e % 4 === 0 ? 'PENDING' : 'CAPTURED';
-
-        await prisma.enrollment.upsert({
-          where: { id: enrollmentId },
-          create: {
-            id: enrollmentId,
-            courseId,
-            courseScheduleId: scheduleId,
-            userId: user.userId,
-            enrollmentStatus,
-            paymentStatus,
-            attendanceStatus: pick(
-              [
-                EnrollmentAttendanceStatus.NOT_STARTED,
-                EnrollmentAttendanceStatus.PARTIALLY_ATTENDED,
-                EnrollmentAttendanceStatus.ATTENDED,
-              ],
-              e,
-            ),
-            enrolledAt: daysAgo(i + e),
-          },
-          update: {
-            courseId,
-            courseScheduleId: scheduleId,
-            userId: user.userId,
-            enrollmentStatus,
-            paymentStatus,
-          },
-        });
-      }
-
-      await prisma.courseApproval.upsert({
-        where: { id: uuid(`bulk-course-approval-${i}`) },
-        create: {
-          id: uuid(`bulk-course-approval-${i}`),
-          courseId,
-          reviewedByUserId: supportUserId,
-          decision: CourseReviewDecision.APPROVED,
-          reviewNote: 'Seed-approved course',
-        },
-        update: {},
-      });
-    }
   },
 };

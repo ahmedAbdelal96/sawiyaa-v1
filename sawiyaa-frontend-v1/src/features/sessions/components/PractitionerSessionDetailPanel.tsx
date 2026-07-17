@@ -54,12 +54,12 @@ import type {
 } from "../types/sessions.types";
 
 const COMPLETE_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
-  "JOINABLE",
+  "READY_TO_JOIN",
   "IN_PROGRESS",
 ];
 const NO_SHOW_ALLOWED_PRESENTATION_STATUSES: SessionPresentationStatus[] = [
   "UPCOMING",
-  "JOINABLE",
+  "READY_TO_JOIN",
   "IN_PROGRESS",
 ];
 
@@ -149,16 +149,20 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  const isActive =
-    session.presentationStatus !== "COMPLETED" &&
-    session.presentationStatus !== "CANCELLED" &&
-    session.presentationStatus !== "ENDED";
+  const isActive = ![
+    "COMPLETED",
+    "CANCELLED",
+    "PATIENT_NO_SHOW",
+    "PRACTITIONER_NO_SHOW",
+    "BOTH_NO_SHOW",
+    "EXPIRED",
+  ].includes(session.status);
   const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
   const canMarkCompleted = COMPLETE_ALLOWED_PRESENTATION_STATUSES.includes(
     session.presentationStatus,
   );
   const canMarkNoShow = NO_SHOW_ALLOWED_PRESENTATION_STATUSES.includes(
-    session.presentationStatus,
+    session.status,
   );
   const isBusy =
     completeMutation.isPending ||
@@ -184,7 +188,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     hasSessionStarted &&
     !isRoomClosed &&
     session.status !== "CANCELLED" &&
-    session.status !== "NO_SHOW" &&
+    session.status !== "PATIENT_NO_SHOW" &&
     session.status !== "COMPLETED";
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
@@ -198,7 +202,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const blockedJoinReason =
     joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
   const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
-    session.presentationStatus,
+    session.status,
   );
   const presentationTitle = t(
     `detail.presentation.${session.presentationStatus}.title` as Parameters<typeof t>[0],
@@ -644,9 +648,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {joinUrl && (
             <p>{t("detail.liveFlow.notes.openInNewTab")}</p>
           )}
-          {(session.presentationStatus === "IN_PROGRESS" ||
-            session.presentationStatus === "COMPLETED" ||
-            session.presentationStatus === "ENDED") && (
+          {["IN_PROGRESS", "COMPLETED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status) && (
             <p>{t("detail.liveFlow.notes.closeoutAfterSession")}</p>
           )}
         </div>

@@ -10,39 +10,28 @@ import {
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAuth } from "../../../../providers/AuthProvider";
-import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
-import { useInfinitePublicAcademyCourses } from "../hooks";
-import type { AcademyCourseItem } from "../types";
-import { formatAcademyMoney, isAcademyCourseFree } from "../display";
+import { useInfinitePublicAcademyPrograms } from "../hooks";
+import type { AcademyProgramItem } from "../types";
+import { formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
 import { useAppDirection } from "../../../../i18n/direction";
 
-function CourseCard({ course }: { course: AcademyCourseItem }) {
+function ProgramCard({ course }: { course: AcademyProgramItem }) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
   const { rowDirection, textAlign, chevronForward } = useAppDirection();
-  const coverUri = resolveMediaUrl(course.coverImageUrl ?? course.thumbnailUrl);
-  const displayCurrency = resolveSupportedCurrencyCode({
-    currencyCode: course.currencyCode,
-    regionalPricingMode: course.regionalPricingMode,
-    resolvedCountryIsoCode: course.resolvedCountryIsoCode,
-  });
-  const hasPrice = course.priceAmount !== null && course.priceAmount !== undefined;
-  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const coverUri = resolveMediaUrl(course.coverImageUrl);
+  const hasPrice = course.priceEgp !== null || course.priceUsd !== null;
+  const isFreeCourse = hasPrice && isAcademyProgramFree(course.priceEgp, course.priceUsd);
   const priceLabel = hasPrice
     ? (isFreeCourse
       ? t("academyMobile.free")
-      : formatAcademyMoney(course.priceAmount, displayCurrency, locale))
+      : formatAcademyProgramPrice(course.priceEgp, course.priceUsd, locale))
     : null;
-  const lectureCount = course.plannedLectureCount;
-  const durationLabel = course.plannedDurationDays
-    ? t("academyMobile.durationDays", {
-        count: course.plannedDurationDays,
-      })
-    : null;
-  const description = course.shortDescription?.trim();
+  const lectureCount = course.sessions?.length ?? 0;
+  const description = course.description?.trim();
   const detailsLabel = t("academyMobile.viewDetails");
 
   return (
@@ -82,14 +71,6 @@ function CourseCard({ course }: { course: AcademyCourseItem }) {
         ) : null}
 
         <View style={[styles.metaRow, { flexDirection: rowDirection }]}>
-          {durationLabel ? (
-            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
-              <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
-              <Text color={theme.colors.textSecondary} style={styles.metaText}>
-                {durationLabel}
-              </Text>
-            </View>
-          ) : null}
           {lectureCount ? (
             <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
               <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
@@ -156,7 +137,7 @@ export default function AcademyBrowseScreen() {
     }
     return `auth:${user.id}:${role}`;
   }, [isAuthLoading, role, user]);
-  const coursesQuery = useInfinitePublicAcademyCourses(
+  const coursesQuery = useInfinitePublicAcademyPrograms(
     { limit: 12 },
     { cacheScopeKey: authScopeKey },
   );
@@ -201,7 +182,7 @@ export default function AcademyBrowseScreen() {
 
       <View style={styles.listStack}>
         {items.map((course) => (
-          <CourseCard key={course.id} course={course} />
+          <ProgramCard key={course.id} course={course} />
         ))}
       </View>
 

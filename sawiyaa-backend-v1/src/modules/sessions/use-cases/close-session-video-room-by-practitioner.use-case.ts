@@ -11,9 +11,13 @@ import { SessionPractitionerRepository } from '../repositories/session-practitio
 import { SessionRepository } from '../repositories/session.repository';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 const CLOSEABLE_SESSION_STATUSES = new Set<SessionStatus>([
-  SessionStatus.CONFIRMED,
+  SessionStatus.UPCOMING,
   SessionStatus.UPCOMING,
   SessionStatus.READY_TO_JOIN,
   SessionStatus.IN_PROGRESS,
@@ -146,7 +150,7 @@ export class CloseSessionVideoRoomByPractitionerUseCase {
     const closedAt = this.normalizeDate(providerResult.closedAt) ?? now;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const persisted = await this.sessionRepository.updateStatus(
+      const persisted = await this.sessionRepository.updateRuntimeFields(
         session.id,
         {
           videoRoomClosedAt: closedAt,
@@ -161,7 +165,11 @@ export class CloseSessionVideoRoomByPractitionerUseCase {
         {
           sessionId: session.id,
           eventType: SessionEventType.PROVIDER_ROOM_ENDED,
+          actorType: SecurityAuditActorType.USER,
           actorUserId: input.userId,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          reason: resolvedCloseReason,
+          occurredAt: closedAt,
           metadataJson: this.toPrismaJson({
             provider: resolvedProvider,
             providerRoomId: session.providerRoomId,

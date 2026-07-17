@@ -285,21 +285,6 @@ export class PractitionerProfileController {
           languageCodes: body.languageCodes,
           payoutDestination: body.payoutDestination,
         },
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.draft-update',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          targetUserId: currentUser.id,
-          metadata: {
-            updatedFields: Object.keys(body).sort(),
-            hasPayoutDestination: body.payoutDestination !== undefined,
-          },
-        });
-        return result;
       });
   }
 
@@ -415,21 +400,6 @@ export class PractitionerProfileController {
             : body.expiresAt === null
               ? null
               : new Date(body.expiresAt),
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.credential-upload',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          targetUserId: currentUser.id,
-          metadata: {
-            credentialType: body.credentialType,
-            hasExpiry: body.expiresAt !== undefined && body.expiresAt !== null,
-          },
-        });
-        return result;
       });
   }
 
@@ -495,22 +465,6 @@ export class PractitionerProfileController {
               ? null
               : new Date(body.expiresAt),
         file,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.credential-upload',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          targetUserId: currentUser.id,
-          metadata: {
-            credentialType: body.credentialType,
-            hasExpiry: body.expiresAt !== undefined && body.expiresAt !== null,
-            hasBinaryUpload: true,
-          },
-        });
-        return result;
       });
   }
 
@@ -573,20 +527,6 @@ export class PractitionerProfileController {
         locale,
         currentUser,
         data: body,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'security.practitioner.application.submit',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerApplication',
-          targetUserId: currentUser.id,
-          metadata: {
-            applicationId: result.application?.applicationId ?? null,
-          },
-        });
-        return result;
       });
   }
 

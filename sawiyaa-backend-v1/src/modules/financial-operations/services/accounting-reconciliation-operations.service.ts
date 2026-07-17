@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   AccountingReconciliationIssueStatus,
   AccountingReconciliationIssue as PrismaAccountingReconciliationIssue,
   AccountingReconciliationRun as PrismaAccountingReconciliationRun,
   AccountingReconciliationRunStatus,
+  FinanceReconciliationActionType,
   PaymentStatus,
   Prisma,
   RefundStatus,
@@ -12,6 +13,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AccountingReconciliationDiagnosticsService } from './accounting-reconciliation-diagnostics.service';
 import { AccountingReconciliationAlertService } from './accounting-reconciliation-alert.service';
+import { FinanceReconciliationActionRepository } from '../repositories/finance-reconciliation-action.repository';
 import {
   ACCOUNTING_RECONCILIATION_ISSUE_CODES,
   ReconciliationResult,
@@ -62,6 +64,8 @@ export class AccountingReconciliationOperationsService {
     private readonly diagnostics: AccountingReconciliationDiagnosticsService,
     private readonly alertService: AccountingReconciliationAlertService,
     private readonly configService: ConfigService,
+    @Optional()
+    private readonly actionRepository?: FinanceReconciliationActionRepository,
   ) {}
 
   async runPayments(
@@ -304,24 +308,27 @@ export class AccountingReconciliationOperationsService {
     issueId: string,
     reviewerUserId: string,
     note?: string | null,
+    actorRoles?: string[],
   ) {
-    return this.reviewIssue(issueId, 'ACKNOWLEDGE', reviewerUserId, note);
+    return this.reviewIssue(issueId, 'ACKNOWLEDGE', reviewerUserId, note, actorRoles);
   }
 
   async resolveIssue(
     issueId: string,
     reviewerUserId: string,
     note?: string | null,
+    actorRoles?: string[],
   ) {
-    return this.reviewIssue(issueId, 'RESOLVE', reviewerUserId, note);
+    return this.reviewIssue(issueId, 'RESOLVE', reviewerUserId, note, actorRoles);
   }
 
   async ignoreIssue(
     issueId: string,
     reviewerUserId: string,
     note?: string | null,
+    actorRoles?: string[],
   ) {
-    return this.reviewIssue(issueId, 'IGNORE', reviewerUserId, note);
+    return this.reviewIssue(issueId, 'IGNORE', reviewerUserId, note, actorRoles);
   }
 
   private async reviewIssue(
@@ -329,27 +336,66 @@ export class AccountingReconciliationOperationsService {
     action: AccountingReconciliationIssueReviewAction,
     reviewerUserId: string,
     note?: string | null,
+    actorRoles?: string[],
   ) {
     const now = new Date();
-    const updated = await this.prisma.accountingReconciliationIssue.update({
-      where: { id: issueId },
-      data: {
-        status:
-          action === 'ACKNOWLEDGE'
-            ? AccountingReconciliationIssueStatus.ACKNOWLEDGED
-            : action === 'RESOLVE'
-              ? AccountingReconciliationIssueStatus.RESOLVED
-              : AccountingReconciliationIssueStatus.IGNORED,
-        acknowledgedAt: action === 'ACKNOWLEDGE' ? now : undefined,
-        acknowledgedByUserId:
-          action === 'ACKNOWLEDGE' ? reviewerUserId : undefined,
-        resolvedAt: action === 'RESOLVE' ? now : undefined,
-        resolvedByUserId: action === 'RESOLVE' ? reviewerUserId : undefined,
-        ignoredAt: action === 'IGNORE' ? now : undefined,
-        ignoredByUserId: action === 'IGNORE' ? reviewerUserId : undefined,
-        resolutionNote: note?.trim() || null,
-      },
-    });
+    const status =
+      action === 'ACKNOWLEDGE'
+        ? AccountingReconciliationIssueStatus.ACKNOWLEDGED
+        : action === 'RESOLVE'
+          ? AccountingReconciliationIssueStatus.RESOLVED
+          : AccountingReconciliationIssueStatus.IGNORED;
+    const data = {
+      status,
+      acknowledgedAt: action === 'ACKNOWLEDGE' ? now : undefined,
+      acknowledgedByUserId: action === 'ACKNOWLEDGE' ? reviewerUserId : undefined,
+      resolvedAt: action === 'RESOLVE' ? now : undefined,
+      resolvedByUserId: action === 'RESOLVE' ? reviewerUserId : undefined,
+      ignoredAt: action === 'IGNORE' ? now : undefined,
+      ignoredByUserId: action === 'IGNORE' ? reviewerUserId : undefined,
+      resolutionNote: note?.trim() || null,
+    };
+
+    const updated = this.actionRepository
+      ? await this.prisma.$transaction(async (tx) => {
+          const current = await tx.accountingReconciliationIssue.findUnique({
+            where: { id: issueId },
+          });
+          if (!current) {
+            throw new BadRequestException('Reconciliation issue not found');
+          }
+          const next = await tx.accountingReconciliationIssue.update({
+            where: { id: issueId },
+            data,
+          });
+          await this.actionRepository!.append(
+            {
+              issueId,
+              runId: current.runId,
+              actionType:
+                action === 'ACKNOWLEDGE'
+                  ? FinanceReconciliationActionType.ACKNOWLEDGED
+                  : action === 'RESOLVE'
+                    ? FinanceReconciliationActionType.RESOLVED
+                    : FinanceReconciliationActionType.IGNORED,
+              previousStatus: current.status,
+              newStatus: next.status,
+              actorType: 'USER',
+              actorUserId: reviewerUserId,
+              actorRolesJson: actorRoles ?? undefined,
+              source: 'HTTP_REQUEST',
+              reason: note?.trim() || null,
+              metadataJson: { action },
+              occurredAt: now,
+            },
+            tx,
+          );
+          return next;
+        })
+      : await this.prisma.accountingReconciliationIssue.update({
+          where: { id: issueId },
+          data,
+        });
 
     return this.toIssueViewModel(updated);
   }
@@ -384,25 +430,60 @@ export class AccountingReconciliationOperationsService {
       const targets = await this.collectTargets(input);
       const execution = await this.executeTargets(run.id, scope, targets);
 
-      const finalRun = await this.prisma.accountingReconciliationRun.update({
-        where: { id: run.id },
-        data: {
-          status:
-            execution.issueCount > 0
-              ? AccountingReconciliationRunStatus.COMPLETED_WITH_ISSUES
-              : AccountingReconciliationRunStatus.COMPLETED,
-          completedAt: new Date(),
-          totalChecked: execution.summary.totalChecked,
-          totalPassed: execution.summary.totalPassed,
-          totalFailed: execution.summary.totalFailed,
-          totalWarnings: execution.summary.totalWarnings,
-          totalCritical: execution.summary.totalCritical,
-          summaryJson: this.toMetadata({
-            ...execution.summary,
-            issueCount: execution.issueCount,
-          }),
-        },
-      });
+      const finalStatus =
+        execution.issueCount > 0
+          ? AccountingReconciliationRunStatus.COMPLETED_WITH_ISSUES
+          : AccountingReconciliationRunStatus.COMPLETED;
+      const finalRun = this.actionRepository
+        ? await this.prisma.$transaction(async (tx) => {
+            const updated = await tx.accountingReconciliationRun.update({
+              where: { id: run.id },
+              data: {
+                status: finalStatus,
+                completedAt: new Date(),
+                totalChecked: execution.summary.totalChecked,
+                totalPassed: execution.summary.totalPassed,
+                totalFailed: execution.summary.totalFailed,
+                totalWarnings: execution.summary.totalWarnings,
+                totalCritical: execution.summary.totalCritical,
+                summaryJson: this.toMetadata({
+                  ...execution.summary,
+                  issueCount: execution.issueCount,
+                }),
+              },
+            });
+            await this.actionRepository!.append(
+              {
+                runId: run.id,
+                actionType: FinanceReconciliationActionType.RUN_COMPLETED,
+                previousStatus: AccountingReconciliationRunStatus.RUNNING,
+                newStatus: finalStatus,
+                actorType: run.triggeredByUserId ? 'USER' : 'SCHEDULED_JOB',
+                actorUserId: run.triggeredByUserId,
+                source: run.triggeredByUserId ? 'HTTP_REQUEST' : 'SCHEDULED_JOB',
+                metadataJson: { issueCount: execution.issueCount },
+                occurredAt: updated.completedAt ?? new Date(),
+              },
+              tx,
+            );
+            return updated;
+          })
+        : await this.prisma.accountingReconciliationRun.update({
+            where: { id: run.id },
+            data: {
+              status: finalStatus,
+              completedAt: new Date(),
+              totalChecked: execution.summary.totalChecked,
+              totalPassed: execution.summary.totalPassed,
+              totalFailed: execution.summary.totalFailed,
+              totalWarnings: execution.summary.totalWarnings,
+              totalCritical: execution.summary.totalCritical,
+              summaryJson: this.toMetadata({
+                ...execution.summary,
+                issueCount: execution.issueCount,
+              }),
+            },
+          });
 
       await this.alertService.handleCriticalRunIssues({
         runId: finalRun.id,
@@ -417,16 +498,45 @@ export class AccountingReconciliationOperationsService {
         issueCount: execution.issueCount,
       } satisfies AccountingReconciliationRunExecutionResult;
     } catch (error) {
-      await this.prisma.accountingReconciliationRun.update({
-        where: { id: run.id },
-        data: {
-          status: AccountingReconciliationRunStatus.FAILED,
-          completedAt: new Date(),
-          summaryJson: this.toMetadata({
-            error: error instanceof Error ? error.message : 'Unknown error',
-          }),
-        },
+      const completedAt = new Date();
+      const errorSummary = this.toMetadata({
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
+      if (this.actionRepository) {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.accountingReconciliationRun.update({
+            where: { id: run.id },
+            data: {
+              status: AccountingReconciliationRunStatus.FAILED,
+              completedAt,
+              summaryJson: errorSummary,
+            },
+          });
+          await this.actionRepository!.append(
+            {
+              runId: run.id,
+              actionType: FinanceReconciliationActionType.RUN_FAILED,
+              previousStatus: AccountingReconciliationRunStatus.RUNNING,
+              newStatus: AccountingReconciliationRunStatus.FAILED,
+              actorType: run.triggeredByUserId ? 'USER' : 'SCHEDULED_JOB',
+              actorUserId: run.triggeredByUserId,
+              source: run.triggeredByUserId ? 'HTTP_REQUEST' : 'SCHEDULED_JOB',
+              metadataJson: errorSummary,
+              occurredAt: completedAt,
+            },
+            tx,
+          );
+        });
+      } else {
+        await this.prisma.accountingReconciliationRun.update({
+          where: { id: run.id },
+          data: {
+            status: AccountingReconciliationRunStatus.FAILED,
+            completedAt,
+            summaryJson: errorSummary,
+          },
+        });
+      }
       throw error;
     }
   }
@@ -863,7 +973,7 @@ export class AccountingReconciliationOperationsService {
           (existing.status === AccountingReconciliationIssueStatus.RESOLVED ||
             existing.status === AccountingReconciliationIssueStatus.IGNORED);
 
-        await tx.accountingReconciliationIssue.upsert({
+        const issue = await tx.accountingReconciliationIssue.upsert({
           where: {
             scope_entityType_entityId_issueCode_currencyCode: {
               scope: seed.scope,
@@ -921,6 +1031,23 @@ export class AccountingReconciliationOperationsService {
               : {}),
           },
         });
+
+        if (this.actionRepository && !existing) {
+          await this.actionRepository.append(
+            {
+              issueId: issue.id,
+              runId,
+              actionType: FinanceReconciliationActionType.ISSUE_CREATED,
+              previousStatus: null,
+              newStatus: issue.status,
+              actorType: 'SYSTEM',
+              source: 'SYSTEM',
+              metadataJson: { issueCode: seed.issueCode },
+              occurredAt: issue.createdAt,
+            },
+            tx,
+          );
+        }
       }
     });
   }

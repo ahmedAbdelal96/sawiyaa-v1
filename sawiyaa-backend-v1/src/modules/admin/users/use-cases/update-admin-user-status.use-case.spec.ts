@@ -38,6 +38,7 @@ describe('UpdateAdminUserStatusUseCase', () => {
 
     const audit = {
       logAsync: jest.fn(),
+      recordRequired: jest.fn(),
     } as unknown as SecurityAuditService;
 
     const sut = new UpdateAdminUserStatusUseCase(
@@ -79,6 +80,7 @@ describe('UpdateAdminUserStatusUseCase', () => {
         actor: { id: 'a1', roles: ['SUPER_ADMIN'] } as any,
         userId: 'u2',
         status: UserStatus.SUSPENDED,
+        reason: 'Security review',
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });

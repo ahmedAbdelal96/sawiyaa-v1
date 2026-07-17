@@ -34,6 +34,22 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
             phones: [],
           },
         },
+        packageEntitlementDecision: {
+          id: 'decision_1',
+          sessionId: 'session_1',
+          packagePurchaseId: 'purchase_1',
+          sessionStatusSnapshot: SessionStatus.CANCELLED,
+          decisionType: 'COUNT_AS_USED',
+          reasonCode: 'PATIENT_NO_SHOW',
+          adminNote: 'Counted as used',
+          resultingSessionEarningReviewId: 'review_1',
+          decidedByUser: {
+            id: 'admin_1',
+            displayName: 'Finance Admin',
+          },
+          decidedAt: new Date('2026-04-01T10:00:00.000Z'),
+          idempotencyKey: 'idem-1',
+        },
       }),
     };
 
@@ -84,5 +100,16 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
     const setup = buildUseCase();
     const result = await setup.useCase.execute({ sessionId: 'session_1' });
     expect(typeof result.item.presentationStatus).toBe('string');
+  });
+
+  it('includes package entitlement decision and resulting review reference in the inspection item', async () => {
+    const setup = buildUseCase();
+    const result = await setup.useCase.execute({ sessionId: 'session_1' });
+    expect(result.item.packageEntitlementDecision).toEqual(
+      expect.objectContaining({
+        decisionType: 'COUNT_AS_USED',
+        resultingSessionEarningReviewId: 'review_1',
+      }),
+    );
   });
 });

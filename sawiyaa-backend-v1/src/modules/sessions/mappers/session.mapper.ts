@@ -3,13 +3,13 @@ import { Session, SessionAdminDecisionType } from '@prisma/client';
 import {
   buildSessionJoinAvailabilityViewModel,
   DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-  resolveSessionPresentationStatus,
 } from '../utils/session-join-policy.util';
 import { resolveSessionChatAvailability } from '../utils/session-chat-policy.util';
 import {
   SessionDetailsViewModel,
   SessionListItemViewModel,
 } from '../types/sessions.types';
+import type { PatientSessionActionsViewModel } from '../services/resolve-patient-session-actions.service';
 
 type SessionWithRelations = Session & {
   practitioner: {
@@ -34,24 +34,28 @@ export class SessionMapper {
     now = new Date(),
     unreadCount = 0,
     finalManualDecision: SessionAdminDecisionType | null = null,
+    actions?: PatientSessionActionsViewModel,
   ): SessionListItemViewModel {
+    const joinAvailability = buildSessionJoinAvailabilityViewModel({
+      status: session.status,
+      sessionMode: session.sessionMode,
+      scheduledStartAt: session.scheduledStartAt,
+      scheduledEndAt: session.scheduledEndAt,
+      provider: session.provider,
+      providerRoomId: session.providerRoomId,
+      providerSessionRef: session.providerSessionRef,
+      videoRoomClosedAt: session.videoRoomClosedAt,
+      now,
+      runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
+      finalManualDecision,
+    });
+
     return {
       id: session.id,
       sessionCode: session.sessionCode,
       status: session.status,
-      presentationStatus: resolveSessionPresentationStatus({
-        status: session.status,
-        sessionMode: session.sessionMode,
-        scheduledStartAt: session.scheduledStartAt,
-        scheduledEndAt: session.scheduledEndAt,
-        provider: session.provider,
-        providerRoomId: session.providerRoomId,
-        providerSessionRef: session.providerSessionRef,
-        videoRoomClosedAt: session.videoRoomClosedAt,
-        now,
-        runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-        finalManualDecision,
-      }),
+      // Compatibility only: this no longer derives a competing display state.
+      presentationStatus: session.status,
       createdAt: session.createdAt.toISOString(),
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
       scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
@@ -66,18 +70,16 @@ export class SessionMapper {
         id: session.patient.id,
         displayName: session.patient.user.displayName ?? null,
       },
-      joinAvailability: buildSessionJoinAvailabilityViewModel({
-        status: session.status,
-        sessionMode: session.sessionMode,
-        scheduledStartAt: session.scheduledStartAt,
-        scheduledEndAt: session.scheduledEndAt,
-        provider: session.provider,
-        providerRoomId: session.providerRoomId,
-        providerSessionRef: session.providerSessionRef,
-        videoRoomClosedAt: session.videoRoomClosedAt,
-        now,
-        runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-      }),
+      joinAvailability,
+      actions: actions ?? {
+        canCancel: false,
+        canPrepareRoom: false,
+        canJoin: joinAvailability.canJoin,
+        canPay:
+          session.status === 'PENDING_PAYMENT' &&
+          Boolean(session.expiresAt && session.expiresAt > now),
+        canReview: false,
+      },
       chatAvailability: resolveSessionChatAvailability({
         status: session.status,
         sessionMode: session.sessionMode,
@@ -100,8 +102,15 @@ export class SessionMapper {
     now = new Date(),
     unreadCount = 0,
     finalManualDecision: SessionAdminDecisionType | null = null,
+    actions?: PatientSessionActionsViewModel,
   ): SessionDetailsViewModel {
-    const base = this.toListItem(session, now, unreadCount, finalManualDecision);
+    const base = this.toListItem(
+      session,
+      now,
+      unreadCount,
+      finalManualDecision,
+      actions,
+    );
 
     return {
       ...base,

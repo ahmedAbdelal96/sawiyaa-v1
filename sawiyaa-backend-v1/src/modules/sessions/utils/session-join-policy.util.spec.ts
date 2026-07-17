@@ -1,4 +1,9 @@
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import {
+  SessionAdminDecisionType,
+  SessionMode,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import {
   buildSessionJoinAvailabilityViewModel,
   buildSessionPresentationFilterWhere,
@@ -15,7 +20,7 @@ describe('session-join-policy util', () => {
 
   it('does not mark sessions joinable more than two minutes before start', () => {
     const result = resolveSessionPresentationStatus({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt,
       scheduledEndAt,
@@ -25,12 +30,12 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T11:57:30.000Z'),
     });
 
-    expect(result).toBe('UPCOMING');
+    expect(result).toBe(SessionStatus.UPCOMING);
   });
 
   it('marks sessions joinable inside the two-minute join window before start', () => {
     const result = resolveSessionPresentationStatus({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt,
       scheduledEndAt,
@@ -40,7 +45,7 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T11:58:30.000Z'),
     });
 
-    expect(result).toBe('JOINABLE');
+    expect(result).toBe(SessionStatus.UPCOMING);
   });
 
   it('keeps sessions joinable during the session window when runtime is prepared', () => {
@@ -58,9 +63,9 @@ describe('session-join-policy util', () => {
     expect(result).toBe('IN_PROGRESS');
   });
 
-  it('marks sessions as ended after the join window closes', () => {
+  it('preserves the canonical status after the join window closes', () => {
     const result = resolveSessionPresentationStatus({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt,
       scheduledEndAt,
@@ -70,7 +75,7 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T12:30:01.000Z'),
     });
 
-    expect(result).toBe('ENDED');
+    expect(result).toBe(SessionStatus.UPCOMING);
   });
 
   it('blocks joining with SESSION_ROOM_CLOSED when the practitioner has closed the room', () => {
@@ -91,7 +96,7 @@ describe('session-join-policy util', () => {
     expect(result.blockedReason).toBe('SESSION_ROOM_CLOSED');
   });
 
-  it('treats room-closed sessions as ended for presentation status', () => {
+  it('does not change lifecycle status when a room is closed', () => {
     const result = resolveSessionPresentationStatus({
       status: SessionStatus.IN_PROGRESS,
       sessionMode: SessionMode.VIDEO,
@@ -104,10 +109,10 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T12:15:00.000Z'),
     });
 
-    expect(result).toBe('ENDED');
+    expect(result).toBe(SessionStatus.IN_PROGRESS);
   });
 
-  it('does not report stale in-progress sessions as in progress after the session ends', () => {
+  it('does not infer completion from elapsed time', () => {
     const result = resolveSessionPresentationStatus({
       status: SessionStatus.IN_PROGRESS,
       sessionMode: SessionMode.VIDEO,
@@ -119,7 +124,7 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T12:30:01.000Z'),
     });
 
-    expect(result).toBe('ENDED');
+    expect(result).toBe(SessionStatus.IN_PROGRESS);
   });
 
   it('does not treat stale READY_TO_JOIN sessions as joinable or in progress after the session ends', () => {
@@ -134,7 +139,7 @@ describe('session-join-policy util', () => {
       now: new Date('2026-08-02T12:30:01.000Z'),
     });
 
-    expect(result).toBe('ENDED');
+    expect(result).toBe(SessionStatus.READY_TO_JOIN);
   });
 
   it('never marks cancelled sessions joinable', () => {
@@ -156,7 +161,7 @@ describe('session-join-policy util', () => {
     const summary = summarizeSessionPresentations(
       [
       {
-        status: SessionStatus.CONFIRMED,
+        status: SessionStatus.UPCOMING,
         sessionMode: SessionMode.VIDEO,
         scheduledStartAt,
         scheduledEndAt,
@@ -165,7 +170,7 @@ describe('session-join-policy util', () => {
         providerSessionRef: 'room-ref-1',
       },
       {
-        status: SessionStatus.CONFIRMED,
+        status: SessionStatus.UPCOMING,
         sessionMode: SessionMode.VIDEO,
         scheduledStartAt,
         scheduledEndAt,
@@ -196,10 +201,9 @@ describe('session-join-policy util', () => {
     );
 
     expect(summary.totalItems).toBe(4);
-    expect(summary.joinable + summary.upcoming + summary.cancelled + summary.ended).toBe(4);
+    expect(summary.joinable + summary.upcoming + summary.cancelled + summary.inProgress).toBe(4);
     expect(summary.joinable).toBeGreaterThanOrEqual(0);
-    expect(summary.inProgress).toBe(0);
-    expect(summary.ended).toBeGreaterThanOrEqual(1);
+    expect(summary.inProgress).toBe(1);
   });
 
   it('builds a joinable filter that stays inside the join window', () => {
@@ -212,7 +216,6 @@ describe('session-join-policy util', () => {
       sessionMode: SessionMode.VIDEO,
       status: {
         in: [
-          SessionStatus.CONFIRMED,
           SessionStatus.UPCOMING,
           SessionStatus.READY_TO_JOIN,
         ],
@@ -266,7 +269,7 @@ describe('session-join-policy util', () => {
             in: [
               SessionStatus.DRAFT,
               SessionStatus.PENDING_PAYMENT,
-              SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+              SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
             ],
           },
         }),
@@ -274,7 +277,6 @@ describe('session-join-policy util', () => {
           sessionMode: SessionMode.VIDEO,
           status: {
             in: [
-              SessionStatus.CONFIRMED,
               SessionStatus.UPCOMING,
               SessionStatus.READY_TO_JOIN,
             ],
@@ -286,43 +288,19 @@ describe('session-join-policy util', () => {
         }),
       ]),
     );
-    expect(finishedWhere).toMatchObject({
-      OR: expect.arrayContaining([
-        expect.objectContaining({
-          status: {
-            in: [
-              SessionStatus.COMPLETED,
-              SessionStatus.CANCELLED,
-              SessionStatus.NO_SHOW,
-              SessionStatus.EXPIRED,
-              SessionStatus.REFUND_PENDING,
-              SessionStatus.REFUNDED,
-            ],
-          },
-        }),
-        expect.objectContaining({
-          scheduledEndAt: {
-            not: null,
-            lt: new Date('2026-08-02T11:58:30.000Z'),
-          },
-        }),
-      ]),
+    expect(finishedWhere).toEqual({
+      status: {
+        in: [
+          SessionStatus.COMPLETED,
+          SessionStatus.CANCELLED,
+          SessionStatus.PATIENT_NO_SHOW,
+          SessionStatus.PRACTITIONER_NO_SHOW,
+          SessionStatus.BOTH_NO_SHOW,
+          SessionStatus.EXPIRED,
+          SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        ],
+      },
     });
-    expect(finishedWhere.OR).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          videoRoomClosedAt: {
-            not: null,
-          },
-        }),
-        expect.objectContaining({
-          scheduledEndAt: {
-            not: null,
-            lt: new Date('2026-08-02T11:58:30.000Z'),
-          },
-        }),
-      ]),
-    );
     expect(unavailableWhere).toMatchObject({
       OR: expect.arrayContaining([
         { scheduledStartAt: null },
@@ -331,22 +309,17 @@ describe('session-join-policy util', () => {
     });
   });
 
-  it('includes stale in-progress sessions in the finished presentation filter after the session ends', () => {
+  it('does not include elapsed in-progress sessions without a canonical transition', () => {
     const now = new Date('2026-08-02T12:30:01.000Z');
     const finishedWhere = buildSessionPresentationFilterWhere({
       presentationFilter: SessionPresentationFilter.FINISHED,
       now,
     });
 
-    expect(finishedWhere).toMatchObject({
-      OR: expect.arrayContaining([
-        expect.objectContaining({
-          scheduledEndAt: {
-            not: null,
-            lt: now,
-          },
-        }),
-      ]),
+    expect(finishedWhere).toEqual({
+      status: {
+        in: expect.arrayContaining([SessionStatus.AWAITING_COMPLETION_CONFIRMATION]),
+      },
     });
   });
 
@@ -373,7 +346,7 @@ describe('session-join-policy util', () => {
 
   it('builds join availability from UTC scheduled times only', () => {
     const joinAvailability = buildSessionJoinAvailabilityViewModel({
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       sessionMode: SessionMode.VIDEO,
       scheduledStartAt: scheduledStartAt,
       scheduledEndAt: scheduledEndAt,
@@ -389,6 +362,24 @@ describe('session-join-policy util', () => {
       availableAt: '2026-08-02T11:58:00.000Z',
       expiresAt: '2026-08-02T12:30:00.000Z',
     });
+  });
+
+  it('blocks runtime preparation and joining after a final completed decision', () => {
+    const result = resolveSessionJoinPolicy({
+      status: SessionStatus.COMPLETED,
+      sessionMode: SessionMode.VIDEO,
+      scheduledStartAt,
+      scheduledEndAt,
+      provider: SessionProvider.NONE,
+      providerRoomId: null,
+      providerSessionRef: null,
+      finalManualDecision: SessionAdminDecisionType.MARK_COMPLETED,
+      now: new Date('2026-08-02T11:58:30.000Z'),
+    });
+
+    expect(result.canPrepareRuntime).toBe(false);
+    expect(result.canJoin).toBe(false);
+    expect(result.blockedReason).toBe('SESSION_NOT_JOINABLE_STATUS');
   });
 
   it('computes reconnect grace close time from scheduled end', () => {

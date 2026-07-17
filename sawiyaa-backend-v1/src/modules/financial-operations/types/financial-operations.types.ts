@@ -1,4 +1,4 @@
-import { AppRole } from '@common/enums/app-role.enum';
+﻿import { AppRole } from '@common/enums/app-role.enum';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -30,6 +30,12 @@ export const FINANCIAL_OPS_ERROR_CODES = {
   payoutProofInvalidType: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_INVALID_TYPE',
   payoutProofFileTooLarge: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_FILE_TOO_LARGE',
   payoutProofNotFound: 'FINANCIAL_OPERATIONS_PAYOUT_PROOF_NOT_FOUND',
+  recoveryNotFound: 'FINANCIAL_OPERATIONS_RECOVERY_NOT_FOUND',
+  recoveryAmountInvalid: 'FINANCIAL_OPERATIONS_RECOVERY_AMOUNT_INVALID',
+  recoveryAmountExceedsRemaining:
+    'FINANCIAL_OPERATIONS_RECOVERY_AMOUNT_EXCEEDS_REMAINING',
+  recoveryAlreadyResolved: 'FINANCIAL_OPERATIONS_RECOVERY_ALREADY_RESOLVED',
+  recoveryReasonRequired: 'FINANCIAL_OPERATIONS_RECOVERY_REASON_REQUIRED',
 } as const;
 
 export const FINANCIAL_OPS_ROUTE_SCOPE = {
@@ -61,6 +67,7 @@ export type WalletViewModel = {
   reservedBalance: string;
   totalEarned: string;
   lifetimePaidOut: string;
+  manualRecoveryAmount: string;
   lastLedgerEntryAt: string | null;
   updatedAt: string | null;
 };
@@ -257,6 +264,7 @@ export type PractitionerStatementWalletViewModel = {
   reservedBalance: string;
   totalEarned: string;
   lifetimePaidOut: string;
+  manualRecoveryAmount: string;
   lastLedgerEntryAt: string | null;
   updatedAt: string | null;
 };
@@ -354,6 +362,7 @@ export type PractitionerPayoutBalanceViewModel = {
   packageReleasedPayableAmount: string;
   packageHeldAmount: string;
   totalPayableAmount: string;
+  manualRecoveryAmount: string;
   lastPayoutAt: string | null;
 };
 
@@ -399,3 +408,4 @@ export type PractitionerManualPayoutViewModel = {
   createdAt: string;
   updatedAt: string;
 };
+

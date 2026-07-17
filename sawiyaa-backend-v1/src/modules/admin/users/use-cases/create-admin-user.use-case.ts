@@ -8,6 +8,10 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { HashPasswordUseCase } from '@modules/auth/use-cases/hash-password.use-case';
 import { CreateAdminUserDto } from '../dto/create-admin-user.dto';
@@ -131,21 +135,20 @@ export class CreateAdminUserUseCase {
           skipDuplicates: true,
         });
 
-        return user;
-      });
+        await this.securityAuditService.recordRequired(tx, {
+          action: 'security.adminUsers.create.success',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.actor.id,
+          actorRoles: input.actor.roles,
+          resourceType: 'User',
+          resourceId: user.id,
+          targetUserId: user.id,
+          metadata: { status: user.status, roles },
+        });
 
-      this.securityAuditService.logAsync({
-        action: 'security.adminUsers.create.success',
-        outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: input.actor.id,
-        actorRoles: input.actor.roles,
-        resourceType: 'User',
-        resourceId: created.id,
-        targetUserId: created.id,
-        metadata: {
-          status: created.status,
-          roles,
-        },
+        return user;
       });
 
       return {

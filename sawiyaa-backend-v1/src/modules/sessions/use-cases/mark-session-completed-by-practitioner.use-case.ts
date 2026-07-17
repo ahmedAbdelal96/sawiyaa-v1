@@ -3,14 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
+import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
@@ -20,8 +21,9 @@ export class MarkSessionCompletedByPractitionerUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly postPackageSessionLedgerEntriesUseCase: PostPackageSessionLedgerEntriesUseCase,
+    private readonly sessionEarningReviewService: SessionEarningReviewService,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
@@ -57,38 +59,24 @@ export class MarkSessionCompletedByPractitionerUseCase {
       });
     }
 
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.COMPLETED,
-    );
-
     const completedAt = new Date();
 
     const updatedSession = await this.prisma.$transaction(async (tx) => {
-      const completedSession = await this.sessionRepository.updateStatus(
-        session.id,
-        {
-          status: SessionStatus.COMPLETED,
-          completedAt,
-        },
+      const completedSession = await this.sessionLifecycleService.transition({
+        session,
+        to: SessionStatus.COMPLETED,
+        actorUserId: input.userId,
+        at: completedAt,
+        metadata: { markedBy: 'PRACTITIONER', locale: input.locale },
         tx,
-      );
-
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: session.id,
-          eventType: SessionEventType.SESSION_COMPLETED,
-          actorUserId: input.userId,
-          metadataJson: {
-            markedBy: 'PRACTITIONER',
-            previousStatus: session.status,
-            locale: input.locale,
-          },
-        },
-        tx,
-      );
+      });
 
       await this.postPackageSessionLedgerEntriesUseCase.execute({
+        sessionId: session.id,
+        tx,
+      });
+
+      await this.sessionEarningReviewService.syncForSessionCompletion({
         sessionId: session.id,
         tx,
       });

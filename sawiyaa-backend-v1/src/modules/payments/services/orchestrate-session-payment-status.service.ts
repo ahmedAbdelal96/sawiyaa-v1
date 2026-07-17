@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   PaymentEventType,
   PaymentStatus,
+  Prisma,
   SessionEventType,
   SessionStatus,
 } from '@prisma/client';
@@ -10,7 +11,7 @@ import { OperationalNotificationService } from '@modules/notifications/services/
 import { ExpireUnpaidSessionUseCase } from '@modules/sessions/use-cases/expire-unpaid-session.use-case';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 import { SESSION_JOIN_LEAD_MINUTES } from '@modules/sessions/utils/session-join-policy.util';
-import { ValidateSessionStatusTransitionService } from '@modules/sessions/services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 
 /**
  * Session-payment orchestration stays explicit here so payment webhooks do not directly mutate session state ad hoc.
@@ -20,7 +21,7 @@ export class OrchestrateSessionPaymentStatusService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly expireUnpaidSessionUseCase: ExpireUnpaidSessionUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
@@ -33,11 +34,6 @@ export class OrchestrateSessionPaymentStatusService {
     };
     actorUserId?: string | null;
   }) {
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      input.session.status,
-      SessionStatus.CONFIRMED,
-    );
-
     const joinOpenAt = input.session.scheduledStartAt
       ? new Date(
           input.session.scheduledStartAt.getTime() -
@@ -46,14 +42,13 @@ export class OrchestrateSessionPaymentStatusService {
       : null;
 
     const updatedSession = await this.prisma.$transaction(async (tx) => {
-      const session = await this.sessionRepository.updateStatus(
-        input.session.id,
-        {
-          status: SessionStatus.CONFIRMED,
-          joinOpenAt,
-        },
+      const session = await this.sessionLifecycleService.transition({
+        session: input.session,
+        to: SessionStatus.UPCOMING,
+        actorUserId: input.actorUserId ?? null,
+        data: { joinOpenAt },
         tx,
-      );
+      });
 
       await this.sessionRepository.createEvent(
         {
@@ -64,26 +59,20 @@ export class OrchestrateSessionPaymentStatusService {
         tx,
       );
 
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: input.session.id,
-          eventType: SessionEventType.SESSION_CONFIRMED,
-          actorUserId: input.actorUserId ?? null,
-        },
-        tx,
-      );
-
       return session;
     });
 
-    await this.operationalNotificationService.notifySessionConfirmed({
-      sessionId: updatedSession.id,
-      patientProfileId: updatedSession.patient.id,
-      practitionerProfileId: updatedSession.practitioner.id,
-      scheduledStartAt: updatedSession.scheduledStartAt,
-    });
+    const hydratedSession = await this.sessionRepository.findById(updatedSession.id);
+    if (hydratedSession) {
+      await this.operationalNotificationService.notifySessionConfirmed({
+        sessionId: hydratedSession.id,
+        patientProfileId: hydratedSession.patient.id,
+        practitionerProfileId: hydratedSession.practitioner.id,
+        scheduledStartAt: hydratedSession.scheduledStartAt,
+      });
+    }
 
-    return updatedSession;
+    return hydratedSession ?? updatedSession;
   }
 
   async expireSessionFromPayment(sessionId: string) {
@@ -110,52 +99,23 @@ export class OrchestrateSessionPaymentStatusService {
     }
   }
 
-  async markSessionRefundPending(sessionId: string) {
-    const session = await this.sessionRepository.findById(sessionId);
+  async markSessionRefundPending(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const session = await this.sessionRepository.findById(sessionId, tx);
 
-    if (
-      !session ||
-      session.status === SessionStatus.REFUND_PENDING ||
-      session.status === SessionStatus.REFUNDED
-    ) {
-      return session;
-    }
-
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.REFUND_PENDING,
-    );
-
-    return this.sessionRepository.updateStatus(sessionId, {
-      status: SessionStatus.REFUND_PENDING,
-    });
+    // Refund progress is a payment/refund concern, not session lifecycle.
+    return session;
   }
 
-  async markSessionRefunded(sessionId: string) {
-    const session = await this.sessionRepository.findById(sessionId);
+  async markSessionRefunded(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const session = await this.sessionRepository.findById(sessionId, tx);
 
-    if (!session || session.status === SessionStatus.REFUNDED) {
-      return session;
-    }
-
-    if (session.status !== SessionStatus.REFUND_PENDING) {
-      this.validateSessionStatusTransitionService.assertCanTransition(
-        session.status,
-        SessionStatus.REFUND_PENDING,
-      );
-
-      await this.sessionRepository.updateStatus(sessionId, {
-        status: SessionStatus.REFUND_PENDING,
-      });
-    }
-
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      SessionStatus.REFUND_PENDING,
-      SessionStatus.REFUNDED,
-    );
-
-    return this.sessionRepository.updateStatus(sessionId, {
-      status: SessionStatus.REFUNDED,
-    });
+    // Refund completion is intentionally orthogonal to Session.status.
+    return session;
   }
 }

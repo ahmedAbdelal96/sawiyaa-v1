@@ -421,7 +421,8 @@
       "SESSION_BOOKING": "Session booking",
       "SESSION_INSTANT_BOOKING": "Instant booking",
       "SESSION_EXTENSION": "Session extension",
-      "COURSE_ENROLLMENT": "Course enrollment",
+      "SESSION_PACKAGE_PURCHASE": "Session package purchase",
+      "ACADEMY_PROGRAM_ENROLLMENT": "Training enrollment",
       "MANUAL_INVOICE": "Manual invoice"
     },
     "providers": {
@@ -1251,6 +1252,7 @@
       "fileUrlPlaceholder": "https://...",
       "expiresAtOptional": "Expires at (optional)",
       "reviewNotes": "Review notes",
+      "reviewNotesRequired": "Add a reason before rejecting this credential.",
       "reviewNotesPlaceholder": "Optional review note",
       "reviewedBy": "Reviewed by",
       "addSubmit": "Add credential",

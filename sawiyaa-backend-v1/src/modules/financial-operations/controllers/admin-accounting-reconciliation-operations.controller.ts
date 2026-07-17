@@ -322,6 +322,7 @@ export class AdminAccountingReconciliationOperationsController {
       issueId,
       currentUser.id,
       body.note,
+      currentUser.roles,
     );
     this.logIssueReview(
       'finance.accounting.reconciliation.issue.acknowledge',
@@ -353,6 +354,7 @@ export class AdminAccountingReconciliationOperationsController {
       issueId,
       currentUser.id,
       body.note,
+      currentUser.roles,
     );
     this.logIssueReview(
       'finance.accounting.reconciliation.issue.resolve',
@@ -384,6 +386,7 @@ export class AdminAccountingReconciliationOperationsController {
       issueId,
       currentUser.id,
       body.note,
+      currentUser.roles,
     );
     this.logIssueReview(
       'finance.accounting.reconciliation.issue.ignore',

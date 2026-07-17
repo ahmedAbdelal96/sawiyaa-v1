@@ -59,7 +59,7 @@ function PackageSessionItem({
   const t = useTranslations("package-purchases");
   const tSessions = useTranslations("sessions");
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-  const canOpen = ["CONFIRMED", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
+  const canOpen = ["UPCOMING", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
     session.status,
   );
 

@@ -17,6 +17,7 @@ import { ConversationAccessPolicy } from '../policies/conversation-access.policy
 import { ValidateGeneralChatMessagePayloadService } from '../services/validate-general-chat-message-payload.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { GENERAL_CHAT_AVAILABILITY_REASONS } from '../types/general-chat.types';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 @Injectable()
 export class SendGeneralChatMessageUseCase {
@@ -26,6 +27,7 @@ export class SendGeneralChatMessageUseCase {
     private readonly validateGeneralChatMessagePayloadService: ValidateGeneralChatMessagePayloadService,
     private readonly conversationAccessPolicy: ConversationAccessPolicy,
     private readonly operationalNotificationService: OperationalNotificationService,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   async execute(input: {
@@ -108,63 +110,28 @@ export class SendGeneralChatMessageUseCase {
       input.dto,
     );
 
-    const now = new Date();
-    const senderIdentityRecord =
-      (await this.generalChatRepository.loadParticipantIdentityRecord?.(
-        input.authenticatedUser.id,
-      )) ?? null;
-    const senderIdentity = senderIdentityRecord
-      ? buildGeneralChatParticipantIdentity(
-          {
-            userId: senderIdentityRecord.id,
-            participantRole:
-              conversation.participants.find(
-                (participant) =>
-                  participant.userId === input.authenticatedUser.id,
-              )?.participantRole ?? ConversationParticipantRole.PATIENT,
-          },
-          buildGeneralChatParticipantDirectoryMap([senderIdentityRecord]),
-        )
-      : null;
-
-    const persisted =
-      await this.generalChatRepository.appendMessageInGeneralConversation({
-        conversationId: input.conversationId,
-        senderUserId: input.authenticatedUser.id,
-        contentText: normalized.contentText,
-        attachments: normalized.attachments,
-        sentAt: now,
-      });
-
-    await this.operationalNotificationService.notifyConversationMessage({
-      lane: 'SESSION_CHAT',
-      threadId: input.conversationId,
-      messageId: persisted.message.id,
-      senderUserId: input.authenticatedUser.id,
-      participants: conversation.participants,
-    });
+    const canonical = await this.messagingUseCase.sendMessage(
+      input.authenticatedUser,
+      input.conversationId,
+      normalized.contentText,
+      normalized.attachments,
+    );
+    const canonicalItem = canonical.item;
 
     return {
       item: {
-        messageId: persisted.message.id,
-        conversationId: persisted.message.conversationId,
-        senderUserId: persisted.message.senderUserId,
-        messageType: persisted.message.messageType,
-        status: persisted.message.status,
-        contentText: persisted.message.contentText,
-        sentAt: persisted.message.sentAt.toISOString(),
-        deliveredAt: persisted.message.deliveredAt?.toISOString() ?? null,
-        readAt: persisted.message.readAt?.toISOString() ?? null,
-        attachments: persisted.attachments.map((attachment) => ({
-          fileId: this.extractFileId(attachment.storageProvider),
-          fileUrl: attachment.fileUrl,
-          mimeType: attachment.mimeType,
-          fileSize: attachment.fileSize ?? null,
-          originalName: attachment.originalName ?? null,
-        })),
-        conversationLatestActivityAt:
-          persisted.conversationLatestActivityAt.toISOString(),
-        senderIdentity,
+        messageId: canonicalItem.id,
+        conversationId: canonicalItem.conversationId,
+        senderUserId: canonicalItem.sender.userId,
+        messageType: canonicalItem.messageType,
+        status: canonicalItem.status,
+        contentText: canonicalItem.body,
+        sentAt: canonicalItem.sentAt,
+        deliveredAt: canonicalItem.deliveredAt,
+        readAt: canonicalItem.readAt,
+        attachments: canonicalItem.attachments ?? normalized.attachments,
+        conversationLatestActivityAt: canonicalItem.conversationLatestActivityAt,
+        senderIdentity: canonicalItem.sender,
       },
     };
   }

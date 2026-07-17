@@ -12,12 +12,15 @@ import {
   Prisma,
   PaymentStatus,
   SessionStatus,
+  SessionEarningReviewSourceType,
+  SessionEarningReviewStatus,
   WalletBalanceBucket,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { PackageSettlementRepository } from '../repositories/package-settlement.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
+import { SessionEarningReviewService } from './session-earning-review.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -60,6 +63,7 @@ export class PackageSettlementService {
     private readonly ledgerRepository: LedgerRepository,
     private readonly packageSettlementRepository: PackageSettlementRepository,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
+    private readonly sessionEarningReviewService: SessionEarningReviewService,
   ) {}
 
   async ensureForPurchase(
@@ -322,79 +326,184 @@ export class PackageSettlementService {
           return repaired;
         }
 
+        const pendingSessionReviews = await tx.sessionEarningReview.findMany({
+          where: {
+            packageSettlementId: currentSettlement.id,
+            sourceType: SessionEarningReviewSourceType.PACKAGE_SESSION,
+            reviewStatus: SessionEarningReviewStatus.PENDING_REVIEW,
+          },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+          },
+        });
+
         const practitionerAmount =
           currentSettlement.releasablePractitionerAmount;
         const platformAmount = currentSettlement.heldPlatformAmount;
+        let packageSessionReviewCount = 0;
 
-        if (practitionerAmount.lte(0) && platformAmount.lte(0)) {
-          throw new BadRequestException({
-            messageKey: 'financialOperations.errors.packageSettlementEmpty',
-            error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_EMPTY',
-          });
+        if (pendingSessionReviews.length > 0) {
+          if (practitionerAmount.lte(0) && platformAmount.lte(0)) {
+            throw new BadRequestException({
+              messageKey: 'financialOperations.errors.packageSettlementEmpty',
+              error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_EMPTY',
+            });
+          }
+
+          if (practitionerAmount.gt(currentSettlement.heldPractitionerAmount)) {
+            throw new ConflictException({
+              messageKey:
+                'financialOperations.errors.packageSettlementInvalidAmount',
+              error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_INVALID_AMOUNT',
+            });
+          }
+
+          for (const pendingReview of pendingSessionReviews) {
+            await this.sessionEarningReviewService.approveReview({
+              reviewId: pendingReview.id,
+              reviewerUserId: input.releasedByAdminId,
+              action: 'APPROVE_AS_IS',
+              tx,
+            });
+          }
+        } else {
+          packageSessionReviewCount = await tx.sessionEarningReview.count(
+            {
+              where: {
+                packageSettlementId: currentSettlement.id,
+                sourceType: SessionEarningReviewSourceType.PACKAGE_SESSION,
+              },
+            },
+          );
+
+          if (packageSessionReviewCount === 0) {
+            if (practitionerAmount.lte(0) && platformAmount.lte(0)) {
+              throw new BadRequestException({
+                messageKey: 'financialOperations.errors.packageSettlementEmpty',
+                error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_EMPTY',
+              });
+            }
+
+            if (practitionerAmount.gt(currentSettlement.heldPractitionerAmount)) {
+              throw new ConflictException({
+                messageKey:
+                  'financialOperations.errors.packageSettlementInvalidAmount',
+                error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_INVALID_AMOUNT',
+              });
+            }
+
+            const releaseEntries = [
+              {
+                practitionerId: currentSettlement.practitionerId,
+                paymentId: currentSettlement.purchase.paymentId ?? null,
+                sessionId: null,
+                entryType: LedgerEntryType.PRACTITIONER_EARNING,
+                direction: LedgerDirection.CREDIT,
+                amount: practitionerAmount,
+                currencyCode: currentSettlement.currencyCode,
+                balanceBucket: WalletBalanceBucket.AVAILABLE,
+                referenceType,
+                referenceId,
+                description: 'Package settlement release practitioner earning.',
+                metadataJson: {
+                  source: 'package-settlement-release',
+                  packageSettlementId: currentSettlement.id,
+                  packagePurchaseId: currentSettlement.purchaseId,
+                  practitionerId: currentSettlement.practitionerId,
+                  patientId: currentSettlement.patientId,
+                  currencyCode: currentSettlement.currencyCode,
+                  sessionCount: currentSettlement.sessionCount,
+                  completedSessionsCount:
+                    currentSettlement.completedSessionsCount,
+                  releaseType: 'FULL_COMPLETION_ADMIN_RELEASE',
+                  releasedByAdminId: input.releasedByAdminId,
+                },
+              },
+              {
+                practitionerId: null,
+                paymentId: currentSettlement.purchase.paymentId ?? null,
+                sessionId: null,
+                entryType: LedgerEntryType.PLATFORM_COMMISSION,
+                direction: LedgerDirection.CREDIT,
+                amount: platformAmount,
+                currencyCode: currentSettlement.currencyCode,
+                balanceBucket: WalletBalanceBucket.AVAILABLE,
+                referenceType,
+                referenceId,
+                description: 'Package settlement release platform commission.',
+                metadataJson: {
+                  source: 'package-settlement-release',
+                  packageSettlementId: currentSettlement.id,
+                  packagePurchaseId: currentSettlement.purchaseId,
+                  practitionerId: currentSettlement.practitionerId,
+                  patientId: currentSettlement.patientId,
+                  currencyCode: currentSettlement.currencyCode,
+                  sessionCount: currentSettlement.sessionCount,
+                  completedSessionsCount:
+                    currentSettlement.completedSessionsCount,
+                  releaseType: 'FULL_COMPLETION_ADMIN_RELEASE',
+                  releasedByAdminId: input.releasedByAdminId,
+                },
+              },
+            ].filter((entry) => entry.amount.gt(0));
+
+            await this.ledgerRepository.createManyLedgerEntries(
+              releaseEntries,
+              tx,
+            );
+          }
         }
 
-        if (practitionerAmount.gt(currentSettlement.heldPractitionerAmount)) {
-          throw new ConflictException({
-            messageKey:
-              'financialOperations.errors.packageSettlementInvalidAmount',
-            error: 'FINANCIAL_OPERATIONS_PACKAGE_SETTLEMENT_INVALID_AMOUNT',
-          });
+        const sessionReviewEarningEntries: Array<{
+          amount: Prisma.Decimal;
+        }> =
+          await this.ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds(
+            {
+              sessionIds:
+                currentSettlement.purchase.sessions?.map(
+                  (session) => session.id,
+                ) ?? [],
+              tx,
+            },
+          );
+
+        let sessionReviewPractitionerAmount = new Prisma.Decimal(0);
+        for (const entry of sessionReviewEarningEntries) {
+          sessionReviewPractitionerAmount = sessionReviewPractitionerAmount.plus(
+            entry.amount,
+          );
         }
 
-        const releaseEntries = [
-          {
-            practitionerId: currentSettlement.practitionerId,
-            paymentId: currentSettlement.purchase.paymentId ?? null,
-            sessionId: null,
-            entryType: LedgerEntryType.PRACTITIONER_EARNING,
-            direction: LedgerDirection.CREDIT,
-            amount: practitionerAmount,
-            currencyCode: currentSettlement.currencyCode,
-            balanceBucket: WalletBalanceBucket.AVAILABLE,
-            referenceType,
-            referenceId,
-            description: 'Package settlement release practitioner earning.',
-            metadataJson: {
-              source: 'package-settlement-release',
-              packageSettlementId: currentSettlement.id,
-              packagePurchaseId: currentSettlement.purchaseId,
-              practitionerId: currentSettlement.practitionerId,
-              patientId: currentSettlement.patientId,
-              currencyCode: currentSettlement.currencyCode,
-              sessionCount: currentSettlement.sessionCount,
-              completedSessionsCount: currentSettlement.completedSessionsCount,
-              releaseType: 'FULL_COMPLETION_ADMIN_RELEASE',
+        if (
+          packageSessionReviewCount > 0 ||
+          sessionReviewEarningEntries.length > 0
+        ) {
+          const updated = await this.packageSettlementRepository.updateById(
+            currentSettlement.id,
+            {
+              status: PackageSettlementStatus.RELEASED,
+              releasablePractitionerAmount: new Prisma.Decimal(0),
+              releasedPractitionerAmount: sessionReviewPractitionerAmount,
+              reviewedAt: releaseAt,
+              reviewedByAdminId: input.releasedByAdminId,
+              releasedAt: releaseAt,
               releasedByAdminId: input.releasedByAdminId,
+              decision:
+                currentSettlement.decision ?? 'FULL_COMPLETION_ADMIN_RELEASE',
             },
-          },
-          {
-            practitionerId: null,
-            paymentId: currentSettlement.purchase.paymentId ?? null,
-            sessionId: null,
-            entryType: LedgerEntryType.PLATFORM_COMMISSION,
-            direction: LedgerDirection.CREDIT,
-            amount: platformAmount,
-            currencyCode: currentSettlement.currencyCode,
-            balanceBucket: WalletBalanceBucket.AVAILABLE,
-            referenceType,
-            referenceId,
-            description: 'Package settlement release platform commission.',
-            metadataJson: {
-              source: 'package-settlement-release',
-              packageSettlementId: currentSettlement.id,
-              packagePurchaseId: currentSettlement.purchaseId,
-              practitionerId: currentSettlement.practitionerId,
-              patientId: currentSettlement.patientId,
-              currencyCode: currentSettlement.currencyCode,
-              sessionCount: currentSettlement.sessionCount,
-              completedSessionsCount: currentSettlement.completedSessionsCount,
-              releaseType: 'FULL_COMPLETION_ADMIN_RELEASE',
-              releasedByAdminId: input.releasedByAdminId,
-            },
-          },
-        ].filter((entry) => entry.amount.gt(0));
+            tx,
+          );
 
-        await this.ledgerRepository.createManyLedgerEntries(releaseEntries, tx);
+          if (currentSettlement.practitionerId) {
+            await this.refreshPractitionerWalletService.refresh(
+              currentSettlement.practitionerId,
+              tx,
+            );
+          }
+
+          return updated;
+        }
 
         const updated = await this.packageSettlementRepository.updateById(
           currentSettlement.id,

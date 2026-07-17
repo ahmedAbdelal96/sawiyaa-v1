@@ -4,7 +4,6 @@ import {
   PaymentPurpose,
   PaymentStatus,
   Prisma,
-  AcademyEnrollmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
@@ -16,6 +15,7 @@ import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-
 import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../services/orchestrate-academy-program-enrollment-payment-status.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class MarkPaymentFailedUseCase {
@@ -57,6 +57,9 @@ export class MarkPaymentFailedUseCase {
           paymentId: payment.id,
           eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
           providerEventRef: input.providerEventRef,
+          actorType: AuditActorType.PAYMENT_WEBHOOK,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
+          previousStatus: payment.status,
           payloadJson: input.payload as Prisma.InputJsonValue,
         },
         tx,
@@ -79,6 +82,8 @@ export class MarkPaymentFailedUseCase {
               'FAILED',
             ),
           providerEventRef: input.providerEventRef,
+          previousStatus: payment.status,
+          newStatus: PaymentStatus.FAILED,
         },
         tx,
       );
@@ -134,40 +139,18 @@ export class MarkPaymentFailedUseCase {
       string,
       unknown
     >;
-    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
     const isAcademyProgramEnrollment =
       payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
       paymentMetadata.source === 'academy-program-enrollment';
 
-    if (!isAcademyEnrollment && !isAcademyProgramEnrollment && updated.patientId) {
+    if (!isAcademyProgramEnrollment && updated.patientId) {
       await this.operationalNotificationService.notifyPaymentFailed({
         patientProfileId: updated.patientId,
         paymentId: updated.id,
       });
     }
 
-    if (isAcademyEnrollment) {
-      await this.prisma.academyEnrollment.updateMany({
-        where: {
-          paymentId: payment.id,
-          enrollmentStatus: {
-            in: [
-              AcademyEnrollmentStatus.PENDING_PAYMENT,
-              AcademyEnrollmentStatus.PAID,
-            ],
-          },
-        },
-        data: {
-          enrollmentStatus: AcademyEnrollmentStatus.PAYMENT_FAILED,
-          paymentStatus: PaymentStatus.FAILED,
-          failedAt: new Date(),
-          failedReason:
-            typeof paymentMetadata.failureReason === 'string'
-              ? paymentMetadata.failureReason.slice(0, 500)
-              : null,
-        },
-      });
-    } else if (isAcademyProgramEnrollment) {
+    if (isAcademyProgramEnrollment) {
       await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentPaymentFailed(
         payment.id,
       );

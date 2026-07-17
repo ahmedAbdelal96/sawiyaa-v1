@@ -3,6 +3,7 @@ import { extractData } from "@/lib/api/response";
 import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   AdminSessionAttendanceResponseData,
+  CreateAdminSessionPackageEntitlementDecisionRequest,
   AdminSessionRuntimeInspectionResponseData,
 } from "../types/admin-session-runtime.types";
 
@@ -21,5 +22,15 @@ export async function getAdminSessionAttendance(
   const response = await httpClient.get<ApiPayload<AdminSessionAttendanceResponseData>>(
     `/admin/sessions/${sessionId}/attendance`,
   );
+  return extractData(response.data);
+}
+
+export async function createAdminSessionPackageEntitlementDecision(
+  sessionId: string,
+  body: CreateAdminSessionPackageEntitlementDecisionRequest,
+): Promise<AdminSessionRuntimeInspectionResponseData> {
+  const response = await httpClient.post<
+    ApiPayload<AdminSessionRuntimeInspectionResponseData>
+  >(`/admin/sessions/${sessionId}/package-entitlement-decision`, body);
   return extractData(response.data);
 }

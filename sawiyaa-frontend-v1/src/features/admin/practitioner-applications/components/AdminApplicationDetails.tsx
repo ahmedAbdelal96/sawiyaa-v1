@@ -751,6 +751,10 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     const reviewNotes = credentialReviewNotes[credentialId]?.trim();
     setCredentialActionMessage(null);
     setCredentialActionError(null);
+    if (reviewStatus === "REJECTED" && !reviewNotes) {
+      setCredentialActionError(t("applicationDetails.credentials.reviewNotesRequired"));
+      return;
+    }
     updateCredential(
       {
         id: applicationId,

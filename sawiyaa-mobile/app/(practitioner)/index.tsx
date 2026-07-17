@@ -70,7 +70,7 @@ export default function PractitionerHomeScreen() {
 
   const upcomingItems = useMemo(() => {
     return (sessionsQuery.data?.items ?? []).filter((item) =>
-      ["CONFIRMED", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
+      ["UPCOMING", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
         item.status,
       ),
     );
@@ -731,10 +731,10 @@ function mapSessionBadge(status: SessionStatus) {
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "CONFIRMED":
-    case "PENDING_PRACTITIONER_RESPONSE":
+    case "UPCOMING":
+    case "PENDING_PRACTITIONER_CONFIRMATION":
       return "warning" as const;
-    case "NO_SHOW":
+    case "PATIENT_NO_SHOW":
     case "CANCELLED":
     case "EXPIRED":
       return "error" as const;

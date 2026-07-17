@@ -45,6 +45,11 @@ export class PreviewSessionCancellationUseCase {
       });
     }
 
+    const finalManualDecision =
+      await this.sessionRepository.findLatestActiveSessionAdminDecision(
+        session.id,
+      );
+
     const evaluation =
       await this.evaluateSessionCancellationPolicyService.evaluate({
         session,
@@ -85,9 +90,14 @@ export class PreviewSessionCancellationUseCase {
       | 'UNSUPPORTED_REFUND_DESTINATION'
       | 'PAYMENT_STATE_NOT_REFUNDABLE' = 'NO_REFUND';
     let blockingReasonCode: string | null = null;
-    let canCancelNow = evaluation.cancellationAllowed;
+    let canCancelNow =
+      evaluation.cancellationAllowed && !finalManualDecision;
 
-    if (!evaluation.cancellationAllowed) {
+    if (finalManualDecision) {
+      outcomeType = 'POLICY_BLOCKED';
+      blockingReasonCode =
+        'SESSION_CANCELLATION_NOT_ALLOWED_FINAL_DECISION';
+    } else if (!evaluation.cancellationAllowed) {
       outcomeType = 'POLICY_BLOCKED';
       blockingReasonCode = 'SESSION_CANCELLATION_NOT_ALLOWED_BY_POLICY';
       canCancelNow = false;

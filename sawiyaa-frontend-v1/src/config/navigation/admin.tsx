@@ -113,6 +113,7 @@ export const adminNavigation: NavigationConfig = [
         groupLabel: true,
         requiredPermissions: [PK.ACCOUNTING_READ, PK.FINANCE_EVENTS_READ, PK.PRACTITIONER_PAYOUTS_READ, PK.REFUNDS_APPROVE, PK.REFUNDS_RETRY],
         subItems: [
+          { key: "sessionEarningReviews", path: "/finance/session-earning-reviews", namespace: "main" },
           { key: "financeLedger", path: "/finance/ledger", namespace: "main" },
           { key: "financeReconciliation", path: "/finance/accounting/reconciliation", namespace: "main" },
         ],

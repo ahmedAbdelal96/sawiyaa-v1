@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Star } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
+import Badge from "@/components/ui/badge/Badge";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import AdminOperationalListShell, {
   AdminSummaryCard,
@@ -15,7 +16,12 @@ import type { ColumnDef, SortConfig } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { useAdminReviews } from "../hooks/use-reviews";
-import type { AdminReviewItem, ListAdminReviewsParams, SessionReviewStatus } from "../types/reviews.types";
+import type {
+  AdminReviewItem,
+  ListAdminReviewsParams,
+  ReviewModerationDecision,
+  SessionReviewStatus,
+} from "../types/reviews.types";
 
 function formatDate(iso: string | null, locale: string): string {
   if (!iso) return "-";
@@ -63,17 +69,17 @@ const STATUS_FILTERS: Array<{ value: SessionReviewStatus | "ALL"; labelKey: stri
   { value: "ARCHIVED", labelKey: "ARCHIVED" },
 ];
 
-const STATUS_BADGE: Partial<Record<SessionReviewStatus, string>> = {
-  PENDING_MODERATION:
-    "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300",
-  PUBLISHED:
-    "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300",
-  REJECTED: "bg-error-50 text-error-700 dark:bg-error-500/10 dark:text-error-300",
-  HIDDEN: "bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-white/60",
-  ARCHIVED: "bg-zinc-100 text-zinc-500 dark:bg-white/8 dark:text-white/40",
-  DRAFT: "bg-primary-light text-text-brand",
-  SUBMITTED: "bg-primary-light text-text-brand",
-};
+function getReviewOriginalRating(item: AdminReviewItem) {
+  return item.originalRatingValue ?? item.overallRating;
+}
+
+function getDecisionLabel(t: ReturnType<typeof useTranslations>, decision: ReviewModerationDecision | null) {
+  if (!decision) {
+    return t("admin.decisions.pending");
+  }
+
+  return t(`admin.decisions.${decision}` as Parameters<typeof t>[0]);
+}
 
 const PAGE_LIMIT = DEFAULT_PAGE_LIMIT;
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -149,17 +155,42 @@ export default function AdminReviewsListScreen() {
       header: t("admin.table.review"),
       accessor: (row) => row.title ?? row.textReview ?? "",
       cell: (row) => (
-        <div className="min-w-[200px] max-w-[320px] space-y-1">
+        <div
+          className={`min-w-[220px] max-w-[340px] space-y-2 rounded-2xl border p-3 ${
+            row.status === "PENDING_MODERATION"
+              ? "border-warning-200 bg-warning-50/60 dark:border-warning-500/20 dark:bg-warning-500/10"
+              : "border-border-light bg-white dark:border-white/10 dark:bg-white/[0.03]"
+          }`}
+        >
           <div className="flex flex-wrap items-center gap-2">
-            <StarRating rating={row.overallRating} />
+            <Badge variant="light" color="primary" size="sm">
+              {t("admin.labels.originalRating", { value: getReviewOriginalRating(row) })}
+            </Badge>
+            {row.publicRatingValue != null ? (
+              <Badge variant="light" color="info" size="sm">
+                {t("admin.labels.publicRating", { value: row.publicRatingValue })}
+              </Badge>
+            ) : null}
+            <Badge
+              variant="light"
+              color={row.countsInPublicAverage ? "success" : "warning"}
+              size="sm"
+            >
+              {row.countsInPublicAverage
+                ? t("admin.labels.countsInAverage")
+                : t("admin.labels.excludedFromAverage")}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <StarRating rating={getReviewOriginalRating(row)} />
             {row.title && (
-              <span className="text-xs font-semibold text-text-primary dark:text-white truncate">
+              <span className="truncate text-xs font-semibold text-text-primary dark:text-white">
                 {row.title}
               </span>
             )}
           </div>
           {row.textReview ? (
-            <p className="line-clamp-2 text-xs leading-relaxed text-text-secondary whitespace-pre-wrap">
+            <p className="line-clamp-2 whitespace-pre-wrap text-xs leading-relaxed text-text-secondary">
               {row.textReview}
             </p>
           ) : (
@@ -217,22 +248,52 @@ export default function AdminReviewsListScreen() {
       accessor: (row) => row.status,
       sortable: true,
       cell: (row) => {
-        const badgeClass =
-          STATUS_BADGE[row.status] ?? "bg-surface-tertiary text-text-muted dark:bg-white/10";
         return (
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeClass}`}>
-            {t(`admin.statuses.${row.status}` as Parameters<typeof t>[0])}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="light" size="sm" color="dark">
+              {t(`admin.statuses.${row.status}` as Parameters<typeof t>[0])}
+            </Badge>
+            {row.moderationDecision ? (
+              <Badge
+                variant="light"
+                size="sm"
+                color={
+                  row.moderationDecision === "REJECT_PUBLISHING"
+                    ? "error"
+                    : row.moderationDecision === "EXCLUDE_FROM_PUBLIC_AVERAGE"
+                      ? "warning"
+                      : row.moderationDecision === "INTERNAL_NOTE_ONLY"
+                        ? "info"
+                        : "success"
+                }
+              >
+                {getDecisionLabel(t, row.moderationDecision)}
+              </Badge>
+            ) : row.status === "PENDING_MODERATION" ? (
+              <Badge variant="light" size="sm" color="warning">
+                {t("admin.decisions.pending")}
+              </Badge>
+            ) : null}
+          </div>
         );
       },
     },
     {
       id: "overallRating",
       header: t("admin.table.rating"),
-      accessor: (row) => row.overallRating,
+      accessor: (row) => getReviewOriginalRating(row),
       sortable: true,
       align: "center",
-      cell: (row) => <span className="text-xs text-text-secondary">{row.overallRating}/5</span>,
+      cell: (row) => (
+        <div className="space-y-1 text-center">
+          <span className="text-xs font-semibold text-text-primary">{getReviewOriginalRating(row)}/5</span>
+          {row.publicRatingValue != null ? (
+            <p className="text-[11px] text-text-muted">
+              {t("admin.labels.publicRating", { value: row.publicRatingValue })}
+            </p>
+          ) : null}
+        </div>
+      ),
     },
     {
       id: "submittedAt",

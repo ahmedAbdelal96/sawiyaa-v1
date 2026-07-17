@@ -16,7 +16,7 @@ import { PackageSettlementService } from '@modules/financial-operations/services
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
 import { SESSION_JOIN_LEAD_MINUTES } from '@modules/sessions/utils/session-join-policy.util';
-import { ValidateSessionStatusTransitionService } from '@modules/sessions/services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 
 @Injectable()
@@ -26,7 +26,7 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     private readonly paymentRepository: PaymentRepository,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly sessionRepository: SessionRepository,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly operationalNotificationService: OperationalNotificationService,
     private readonly packageSettlementService: PackageSettlementService,
   ) {}
@@ -81,7 +81,7 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     const unrepairableSessions = purchase.sessions.filter(
       (session) =>
         session.status !== SessionStatus.PENDING_PAYMENT &&
-        session.status !== SessionStatus.CONFIRMED,
+        session.status !== SessionStatus.UPCOMING,
     );
 
     if (unrepairableSessions.length > 0) {
@@ -122,11 +122,6 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
       );
 
       for (const [index, session] of pendingSessions.entries()) {
-        this.validateSessionStatusTransitionService.assertCanTransition(
-          session.status,
-          SessionStatus.CONFIRMED,
-        );
-
         const joinOpenAt = session.scheduledStartAt
           ? new Date(
               session.scheduledStartAt.getTime() -
@@ -134,14 +129,17 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
             )
           : null;
 
-        await this.sessionRepository.updateStatus(
-          session.id,
-          {
-            status: SessionStatus.CONFIRMED,
-            joinOpenAt,
+        await this.sessionLifecycleService.transition({
+          session,
+          to: SessionStatus.UPCOMING,
+          data: { joinOpenAt },
+          metadata: {
+            source: 'package-purchase-payment-success',
+            packagePurchaseId: purchase.id,
+            providerEventRef: input.providerEventRef,
           },
           tx,
-        );
+        });
 
         await this.sessionRepository.createEvent(
           {
@@ -158,20 +156,6 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
           tx,
         );
 
-        await this.sessionRepository.createEvent(
-          {
-            sessionId: session.id,
-            eventType: SessionEventType.SESSION_CONFIRMED,
-            metadataJson: {
-              source: 'package-purchase-payment-success',
-              packagePurchaseId: purchase.id,
-              packagePlanId: purchase.packagePlanId,
-              packageSessionIndex: session.packageSessionIndex ?? index + 1,
-              providerEventRef: input.providerEventRef,
-            },
-          },
-          tx,
-        );
       }
 
       await this.packageSettlementService.reconcilePurchase(

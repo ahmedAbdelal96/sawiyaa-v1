@@ -22,6 +22,7 @@ import { SendGeneralChatMessageUseCase } from '../use-cases/send-general-chat-me
 import { MarkMyGeneralChatConversationReadUseCase } from '../use-cases/mark-my-general-chat-conversation-read.use-case';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { GeneralChatAttachmentRefDto } from '../dto/send-general-chat-message.dto';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 type GeneralChatSocket = Socket;
 
@@ -121,6 +122,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
     private readonly supportTicketRepository: SupportTicketRepository,
     private readonly addMySupportMessageUseCase: AddMySupportMessageUseCase,
     private readonly addAdminSupportMessageUseCase: AddAdminSupportMessageUseCase,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   afterInit(server: Server) {
@@ -216,7 +218,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       await client.join(this.room(payload.conversationId));
 
       const deliveredOnJoin =
-        await this.generalChatRepository.markConversationMessagesDeliveredForRecipient(
+        await this.messagingUseCase.markMessagesDeliveredForRecipient(
           {
             conversationId: payload.conversationId,
             recipientUserId: actor.id,
@@ -298,7 +300,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       );
 
       if (hasOtherParticipantConnected) {
-        const delivered = await this.generalChatRepository.markMessageDelivered(
+        const delivered = await this.messagingUseCase.markMessageDelivered(
           {
             conversationId: payload.conversationId,
             messageId: result.item.messageId,
@@ -446,7 +448,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       await client.join(this.supportRoom(payload.ticketId));
 
       const deliveredOnJoin =
-        await this.supportTicketRepository.markSupportMessagesDeliveredForRecipient(
+        await this.messagingUseCase.markMessagesDeliveredForRecipient(
           {
             conversationId: ticket.conversationId,
             recipientUserId: actor.id,
@@ -526,7 +528,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
 
       if (hasOtherParticipantConnected) {
         const delivered =
-          await this.supportTicketRepository.markSupportMessageDelivered({
+          await this.messagingUseCase.markMessageDelivered({
             conversationId: ticket.conversationId,
             messageId: message.id,
             deliveredAt: new Date(),
@@ -584,40 +586,18 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         actor,
       );
 
-      const readTarget =
-        await this.supportTicketRepository.findSupportMessageInConversation({
-          conversationId: ticket.conversationId,
-          messageId: payload.lastReadMessageId,
-        });
+      const result = await this.messagingUseCase.markRead(
+        actor,
+        ticket.conversationId,
+        payload.lastReadMessageId,
+      );
 
-      if (!readTarget) {
-        throw new Error('SUPPORT_MESSAGE_NOT_FOUND');
-      }
-
-      if (readTarget.senderUserId !== actor.id) {
-        const now = new Date();
-        await this.supportTicketRepository.markSupportConversationReadCursor({
-          conversationId: ticket.conversationId,
-          userId: actor.id,
-          lastReadMessageId: readTarget.id,
-          lastReadAt: now,
-        });
-        await this.supportTicketRepository.markSupportMessagesReadForRecipient({
-          conversationId: ticket.conversationId,
-          recipientUserId: actor.id,
-          lastReadMessageSentAt: readTarget.sentAt,
-          readAt: now,
-        });
-
-        this.server
-          .to(this.supportRoom(payload.ticketId))
-          .emit('chat:support:read', {
-            ticketId: payload.ticketId,
-            lastReadMessageId: readTarget.id,
-            readAt: now.toISOString(),
-            userId: actor.id,
-          });
-      }
+      this.server.to(this.supportRoom(payload.ticketId)).emit('chat:support:read', {
+        ticketId: payload.ticketId,
+        lastReadMessageId: result.item.lastReadMessageId,
+        readAt: result.item.lastReadAt,
+        userId: actor.id,
+      });
 
       return {
         ok: true,
@@ -690,7 +670,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       await client.join(this.careRoom(payload.conversationId));
 
       const deliveredOnJoin =
-        await this.careChatConversationRepository.markCareMessagesDeliveredForRecipient(
+        await this.messagingUseCase.markMessagesDeliveredForRecipient(
           {
             conversationId: payload.conversationId,
             recipientUserId: actor.id,
@@ -770,7 +750,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
 
       if (hasOtherParticipantConnected) {
         const delivered =
-          await this.careChatConversationRepository.markCareMessageDelivered({
+          await this.messagingUseCase.markMessageDelivered({
             conversationId: payload.conversationId,
             messageId: message.id,
             deliveredAt: new Date(),
@@ -824,47 +804,18 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
     try {
       const actor = this.requireAuthenticatedUser(client);
       await this.assertCareConversationAccess(payload.conversationId, actor.id);
+      const result = await this.messagingUseCase.markRead(
+        actor,
+        payload.conversationId,
+        payload.lastReadMessageId,
+      );
 
-      const readTarget =
-        await this.careChatConversationRepository.findCareMessageInConversation(
-          {
-            conversationId: payload.conversationId,
-            messageId: payload.lastReadMessageId,
-          },
-        );
-
-      if (!readTarget) {
-        throw new Error('CARE_CHAT_MESSAGE_NOT_FOUND');
-      }
-
-      if (readTarget.senderUserId !== actor.id) {
-        const now = new Date();
-        await this.careChatConversationRepository.markCareConversationReadCursor(
-          {
-            conversationId: payload.conversationId,
-            userId: actor.id,
-            lastReadMessageId: readTarget.id,
-            lastReadAt: now,
-          },
-        );
-        await this.careChatConversationRepository.markCareMessagesReadForRecipient(
-          {
-            conversationId: payload.conversationId,
-            recipientUserId: actor.id,
-            lastReadMessageSentAt: readTarget.sentAt,
-            readAt: now,
-          },
-        );
-
-        this.server
-          .to(this.careRoom(payload.conversationId))
-          .emit('chat:care:read', {
-            conversationId: payload.conversationId,
-            lastReadMessageId: readTarget.id,
-            readAt: now.toISOString(),
-            userId: actor.id,
-          });
-      }
+      this.server.to(this.careRoom(payload.conversationId)).emit('chat:care:read', {
+        conversationId: payload.conversationId,
+        lastReadMessageId: result.item.lastReadMessageId,
+        readAt: result.item.lastReadAt,
+        userId: actor.id,
+      });
 
       return {
         ok: true,

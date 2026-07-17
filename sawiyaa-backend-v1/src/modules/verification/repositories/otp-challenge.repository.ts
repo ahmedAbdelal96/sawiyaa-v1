@@ -13,12 +13,31 @@ export class OtpChallengeRepository {
     return tx ?? this.prisma;
   }
 
+  async withTransaction<T>(
+    run: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(run);
+  }
+
+  async lockScope(tx: Prisma.TransactionClient, scopeKey: string) {
+    await tx.$executeRaw`
+      SELECT pg_advisory_xact_lock(hashtext(${scopeKey})::bigint)
+    `;
+  }
+
   create(data: Prisma.OtpChallengeCreateInput, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).otpChallenge.create({ data });
   }
 
-  findActiveById(challengeId: string) {
-    return this.prisma.otpChallenge.findFirst({
+  findById(challengeId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).otpChallenge.findUnique({
+      where: { id: challengeId },
+      include: { user: { include: { roles: true } } },
+    });
+  }
+
+  findActiveById(challengeId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).otpChallenge.findFirst({
       where: {
         id: challengeId,
         consumedAt: null,
@@ -29,8 +48,12 @@ export class OtpChallengeRepository {
     });
   }
 
-  findLatestActiveByTarget(target: string, purpose: OtpPurpose) {
-    return this.prisma.otpChallenge.findFirst({
+  findLatestActiveByTarget(
+    target: string,
+    purpose: OtpPurpose,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).otpChallenge.findFirst({
       where: {
         target,
         purpose,
@@ -42,8 +65,12 @@ export class OtpChallengeRepository {
     });
   }
 
-  findLatestActiveByUserId(userId: string, purpose: OtpPurpose) {
-    return this.prisma.otpChallenge.findFirst({
+  findLatestActiveByUserId(
+    userId: string,
+    purpose: OtpPurpose,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).otpChallenge.findFirst({
       where: {
         userId,
         purpose,
@@ -56,8 +83,8 @@ export class OtpChallengeRepository {
     });
   }
 
-  incrementAttemptCount(challengeId: string) {
-    return this.prisma.otpChallenge.update({
+  incrementAttemptCount(challengeId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).otpChallenge.update({
       where: { id: challengeId },
       data: { attemptCount: { increment: 1 } },
     });
@@ -70,19 +97,73 @@ export class OtpChallengeRepository {
     });
   }
 
-  invalidate(challengeId: string) {
-    return this.prisma.otpChallenge.update({
+  invalidate(challengeId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).otpChallenge.update({
       where: { id: challengeId },
       data: { invalidatedAt: new Date() },
     });
+  }
+
+  async invalidateActiveChallengesByScope(
+    input: {
+      userId?: string | null;
+      target?: string | null;
+      purpose: OtpPurpose;
+      reason?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = this.getDb(tx);
+    const now = new Date();
+    const where = {
+      purpose: input.purpose,
+      consumedAt: null,
+      invalidatedAt: null,
+      expiresAt: { gt: now },
+      ...(input.userId ? { userId: input.userId } : {}),
+      ...(input.target ? { target: input.target } : {}),
+    } as const;
+
+    const activeChallenges = await db.otpChallenge.findMany({
+      where,
+      select: {
+        id: true,
+        metadata: true,
+      },
+    });
+
+    if (activeChallenges.length === 0) {
+      return 0;
+    }
+
+    for (const challenge of activeChallenges) {
+      await db.otpChallenge.update({
+        where: { id: challenge.id },
+        data: {
+          invalidatedAt: now,
+          metadata: {
+            ...(challenge.metadata &&
+            typeof challenge.metadata === 'object' &&
+            !Array.isArray(challenge.metadata)
+              ? (challenge.metadata as Record<string, unknown>)
+              : {}),
+            invalidationReason: input.reason ?? 'SUPERSEDED_BY_NEW_OTP',
+            invalidatedAt: now.toISOString(),
+          },
+        },
+      });
+    }
+
+    return activeChallenges.length;
   }
 
   listRecentChallengesForTarget(
     target: string,
     purpose: OtpPurpose,
     since: Date,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.prisma.otpChallenge.findMany({
+    return this.getDb(tx).otpChallenge.findMany({
       where: {
         target,
         purpose,

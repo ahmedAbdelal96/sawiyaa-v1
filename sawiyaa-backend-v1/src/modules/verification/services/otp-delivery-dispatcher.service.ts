@@ -12,6 +12,7 @@ import { NotificationEmailService } from '@modules/notifications/services/notifi
 import { OtpDeliveryResult } from '../types/otp.types';
 import { renderPractitionerLoginOtpEmail } from './practitioner-login-otp-email.template';
 import { renderPasswordResetOtpEmail } from './password-reset-otp-email.template';
+import { PractitionerOtpQaCaptureService } from './practitioner-otp-qa-capture.service';
 
 /**
  * OTP delivery dispatcher bridges OTP challenges to notification delivery.
@@ -26,6 +27,7 @@ export class OtpDeliveryDispatcherService {
     private readonly notificationRepository: VerificationNotificationRepository,
     private readonly notificationEmailService: NotificationEmailService,
     private readonly configService: ConfigService,
+    private readonly practitionerOtpQaCaptureService: PractitionerOtpQaCaptureService,
   ) {}
 
   async dispatch(input: {
@@ -236,6 +238,14 @@ export class OtpDeliveryDispatcherService {
         channel: input.channel,
         redirectTarget: redirectResolution.redirectTarget,
       };
+    }
+
+    if (input.purposeLabel === OtpPurpose.PRACTITIONER_LOGIN) {
+      await this.practitionerOtpQaCaptureService.capture({
+        code: input.code,
+        expiresAt: input.expiresAt,
+        purpose: input.purposeLabel,
+      });
     }
 
     await this.notificationRepository.updateStatus(notification.id, {

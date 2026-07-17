@@ -12,6 +12,7 @@ export type AdminPractitionerPayoutBalance = {
   packageReleasedPayableAmount: string;
   packageHeldAmount: string;
   totalPayableAmount: string;
+  manualRecoveryAmount: string;
   lastPayoutAt: string | null;
 };
 

@@ -170,7 +170,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
         durationMinutes: session.durationMinutes ?? null,
         statusType:
           session.status === SessionStatus.PENDING_PAYMENT ||
-          session.status === SessionStatus.PENDING_PRACTITIONER_RESPONSE
+          session.status === SessionStatus.PENDING_PRACTITIONER_CONFIRMATION
             ? ('RESERVED' as const)
             : ('BOOKED' as const),
       }))

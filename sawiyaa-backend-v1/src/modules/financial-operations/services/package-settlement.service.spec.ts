@@ -2,6 +2,7 @@ import { Prisma, SessionStatus } from '@prisma/client';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { PackageSettlementRepository } from '../repositories/package-settlement.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
+import { SessionEarningReviewService } from './session-earning-review.service';
 import { PackageSettlementService } from './package-settlement.service';
 
 describe('PackageSettlementService', () => {
@@ -33,6 +34,10 @@ describe('PackageSettlementService', () => {
           .fn()
           .mockResolvedValue(input?.releaseLedgerEntries ?? []),
         createMany: jest.fn().mockResolvedValue({ count: 2 }),
+      },
+      sessionEarningReview: {
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
       },
       $executeRaw: jest.fn().mockResolvedValue(undefined),
     };
@@ -73,16 +78,22 @@ describe('PackageSettlementService', () => {
     ledgerRepository.findLegacyPackageEarningEntriesBySessionIds = jest
       .fn()
       .mockResolvedValue(input?.legacyLedgerEntries ?? []);
+    ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds =
+      jest.fn().mockResolvedValue([]);
 
     const refreshPractitionerWalletService = {
       refresh: jest.fn().mockResolvedValue(undefined),
     } as unknown as RefreshPractitionerWalletService;
+    const sessionEarningReviewService = {
+      approveReview: jest.fn().mockResolvedValue({}),
+    } as unknown as SessionEarningReviewService;
 
     const service = new PackageSettlementService(
       prisma as never,
       ledgerRepository,
       packageSettlementRepository,
       refreshPractitionerWalletService,
+      sessionEarningReviewService,
     );
 
     return {
@@ -92,6 +103,7 @@ describe('PackageSettlementService', () => {
       packageSettlementRepository,
       ledgerRepository,
       refreshPractitionerWalletService,
+      sessionEarningReviewService,
     };
   }
 
@@ -427,6 +439,185 @@ describe('PackageSettlementService', () => {
     );
     expect(released.status).toBe('RELEASED');
     expect(released.decision).toBe('FULL_COMPLETION_ADMIN_RELEASE');
+  });
+
+  it('approves pending package session reviews during release when review rows exist', async () => {
+    const readySettlement = {
+      id: 'settlement-1',
+      purchaseId: 'purchase-1',
+      practitionerId: 'practitioner-1',
+      patientId: 'patient-1',
+      currencyCode: 'EGP',
+      status: 'READY_TO_RELEASE',
+      sessionCount: 4,
+      completedSessionsCount: 4,
+      heldPractitionerAmount: new Prisma.Decimal('260.00'),
+      heldPlatformAmount: new Prisma.Decimal('100.00'),
+      releasablePractitionerAmount: new Prisma.Decimal('260.00'),
+      releasedPractitionerAmount: new Prisma.Decimal(0),
+      normalEquivalentUsedAmount: new Prisma.Decimal('400.00'),
+      discountAppliedAmount: new Prisma.Decimal('40.00'),
+      reviewedAt: null,
+      reviewedByAdminId: null,
+      releasedAt: null,
+      releasedByAdminId: null,
+      decision: null,
+      notes: null,
+      metadataJson: null,
+      createdAt: new Date('2026-05-05T00:00:00.000Z'),
+      updatedAt: new Date('2026-05-05T00:00:00.000Z'),
+      purchase: {
+        paymentId: 'payment-1',
+      },
+    };
+    const setup = buildService({
+      releaseSettlement: readySettlement,
+    });
+    (setup.tx.sessionEarningReview.findMany as jest.Mock).mockResolvedValueOnce([
+      { id: 'review-1' },
+      { id: 'review-2' },
+    ]);
+
+    await setup.service.releaseReadySettlement({
+      settlementId: 'settlement-1',
+      releasedByAdminId: 'admin-1',
+    });
+
+    expect(
+      setup.sessionEarningReviewService.approveReview,
+    ).toHaveBeenCalledTimes(2);
+    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
+      'practitioner-1',
+      expect.anything(),
+    );
+  });
+
+  it('releases package settlements without duplicating ledger entries when session review earnings already exist', async () => {
+    const readySettlement = {
+      id: 'settlement-1',
+      purchaseId: 'purchase-1',
+      practitionerId: 'practitioner-1',
+      patientId: 'patient-1',
+      currencyCode: 'EGP',
+      status: 'READY_TO_RELEASE',
+      sessionCount: 4,
+      completedSessionsCount: 4,
+      heldPractitionerAmount: new Prisma.Decimal('260.00'),
+      heldPlatformAmount: new Prisma.Decimal('100.00'),
+      releasablePractitionerAmount: new Prisma.Decimal('260.00'),
+      releasedPractitionerAmount: new Prisma.Decimal(0),
+      normalEquivalentUsedAmount: new Prisma.Decimal('400.00'),
+      discountAppliedAmount: new Prisma.Decimal('40.00'),
+      reviewedAt: null,
+      reviewedByAdminId: null,
+      releasedAt: null,
+      releasedByAdminId: null,
+      decision: null,
+      notes: null,
+      metadataJson: null,
+      createdAt: new Date('2026-05-05T00:00:00.000Z'),
+      updatedAt: new Date('2026-05-05T00:00:00.000Z'),
+      purchase: {
+        paymentId: 'payment-1',
+        sessions: [
+          { id: 'session-1' },
+          { id: 'session-2' },
+          { id: 'session-3' },
+          { id: 'session-4' },
+        ],
+      },
+    };
+    const setup = buildService({
+      releaseSettlement: readySettlement,
+    });
+    (setup.tx.sessionEarningReview.count as jest.Mock).mockResolvedValueOnce(2);
+    (
+      setup.ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
+    ).mockResolvedValueOnce([
+      {
+        id: 'entry-1',
+        sessionId: 'session-1',
+        sessionEarningReviewId: 'review-1',
+        amount: new Prisma.Decimal('150.00'),
+        currencyCode: 'EGP',
+      },
+      {
+        id: 'entry-2',
+        sessionId: 'session-2',
+        sessionEarningReviewId: 'review-2',
+        amount: new Prisma.Decimal('110.00'),
+        currencyCode: 'EGP',
+      },
+    ]);
+
+    const released = await setup.service.releaseReadySettlement({
+      settlementId: 'settlement-1',
+      releasedByAdminId: 'admin-1',
+    });
+
+    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).toHaveBeenCalledWith('practitioner-1', expect.anything());
+    expect(released.status).toBe('RELEASED');
+    expect(released.releasedPractitionerAmount.toString()).toBe('260');
+  });
+
+  it('does not fall back to direct release entries when package session reviews exist but no practitioner payout is approved', async () => {
+    const readySettlement = {
+      id: 'settlement-1',
+      purchaseId: 'purchase-1',
+      practitionerId: 'practitioner-1',
+      patientId: 'patient-1',
+      currencyCode: 'EGP',
+      status: 'READY_TO_RELEASE',
+      sessionCount: 4,
+      completedSessionsCount: 4,
+      heldPractitionerAmount: new Prisma.Decimal('260.00'),
+      heldPlatformAmount: new Prisma.Decimal('100.00'),
+      releasablePractitionerAmount: new Prisma.Decimal('260.00'),
+      releasedPractitionerAmount: new Prisma.Decimal(0),
+      normalEquivalentUsedAmount: new Prisma.Decimal('400.00'),
+      discountAppliedAmount: new Prisma.Decimal('40.00'),
+      reviewedAt: null,
+      reviewedByAdminId: null,
+      releasedAt: null,
+      releasedByAdminId: null,
+      decision: null,
+      notes: null,
+      metadataJson: null,
+      createdAt: new Date('2026-05-05T00:00:00.000Z'),
+      updatedAt: new Date('2026-05-05T00:00:00.000Z'),
+      purchase: {
+        paymentId: 'payment-1',
+        sessions: [
+          { id: 'session-1' },
+          { id: 'session-2' },
+          { id: 'session-3' },
+          { id: 'session-4' },
+        ],
+      },
+    };
+    const setup = buildService({
+      releaseSettlement: readySettlement,
+    });
+    (setup.tx.sessionEarningReview.count as jest.Mock).mockResolvedValueOnce(1);
+    (
+      setup.ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
+    ).mockResolvedValueOnce([]);
+
+    const released = await setup.service.releaseReadySettlement({
+      settlementId: 'settlement-1',
+      releasedByAdminId: 'admin-1',
+    });
+
+    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).toHaveBeenCalledWith('practitioner-1', expect.anything());
+    expect(released.status).toBe('RELEASED');
+    expect(released.releasedPractitionerAmount.toString()).toBe('0');
   });
 
   it('marks release-required settlements as NEEDS_REVIEW when legacy package earnings already exist', async () => {

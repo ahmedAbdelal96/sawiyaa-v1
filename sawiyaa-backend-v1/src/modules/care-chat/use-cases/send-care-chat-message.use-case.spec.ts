@@ -26,6 +26,9 @@ describe('SendCareChatMessageUseCase', () => {
   const operationalNotificationService = {
     notifyConversationMessage: notifyConversationMessageMock,
   } as unknown as OperationalNotificationService;
+  const messagingUseCase = {
+    sendMessage: jest.fn(),
+  } as any;
 
   const useCase = new SendCareChatMessageUseCase(
     actorRepository,
@@ -35,10 +38,12 @@ describe('SendCareChatMessageUseCase', () => {
     ),
     presenter,
     operationalNotificationService,
+    messagingUseCase,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    messagingUseCase.sendMessage.mockReset();
   });
 
   it('blocks sending when conversation is inactive', async () => {
@@ -98,6 +103,9 @@ describe('SendCareChatMessageUseCase', () => {
     (presenter.presentConversation as jest.Mock).mockReturnValue({
       id: 'conversation-1',
     });
+    messagingUseCase.sendMessage.mockResolvedValue({
+      item: { id: 'msg-1' },
+    });
 
     await useCase.execute({
       actorType: 'PATIENT',
@@ -106,15 +114,12 @@ describe('SendCareChatMessageUseCase', () => {
       payload: { message: 'hello' },
     });
 
-    expect(notifyConversationMessageMock).toHaveBeenCalledWith({
-      lane: 'CARE_CHAT',
-      threadId: 'conversation-1',
-      messageId: 'msg-1',
-      senderUserId: 'user-1',
-      participants: [
-        { userId: 'user-1', participantRole: 'PATIENT' },
-        { userId: 'user-2', participantRole: 'PRACTITIONER' },
-      ],
-    });
+    expect(messagingUseCase.sendMessage).toHaveBeenCalledWith(
+      { id: 'user-1', roles: ['PATIENT'] },
+      'conversation-1',
+      'hello',
+    );
+    expect(conversationRepository.addMessage).not.toHaveBeenCalled();
+    expect(conversationRepository.markRead).not.toHaveBeenCalled();
   });
 });

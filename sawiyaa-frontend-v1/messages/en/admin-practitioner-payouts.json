@@ -4,6 +4,8 @@
     "description": "Review practitioner dues and payouts."
   },
   "unavailable": "Unavailable",
+  "manualRecoveryLabel": "Manual recovery amount",
+  "manualRecoveryNote": "This amount is separate from the payable total and is not deducted automatically from the next payout.",
   "list": {
     "meta": {
       "title": "Practitioner Dues - Admin",

@@ -421,7 +421,8 @@
       "SESSION_BOOKING": "حجز جلسة",
       "SESSION_INSTANT_BOOKING": "حجز فوري",
       "SESSION_EXTENSION": "تمديد جلسة",
-      "COURSE_ENROLLMENT": "الالتحاق بدورة",
+      "SESSION_PACKAGE_PURCHASE": "شراء باقة جلسات",
+      "ACADEMY_PROGRAM_ENROLLMENT": "تسجيل متدرب",
       "MANUAL_INVOICE": "فاتورة يدوية"
     },
     "providers": {
@@ -1251,6 +1252,7 @@
       "fileUrlPlaceholder": "https://...",
       "expiresAtOptional": "تاريخ الانتهاء (اختياري)",
       "reviewNotes": "ملاحظات المراجعة",
+      "reviewNotesRequired": "أضف سببًا قبل رفض مستند الاعتماد.",
       "reviewNotesPlaceholder": "ملاحظة مراجعة اختيارية",
       "reviewedBy": "مراجع بواسطة",
       "addSuccess": "تم إضافة المستند.",

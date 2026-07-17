@@ -3,12 +3,14 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CredentialReviewStatus,
   CredentialType,
   PractitionerApplicationStatus,
   Prisma,
+  SecurityAuditOutcome,
 } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -17,6 +19,8 @@ import { PractitionerApplicationSnapshotService } from '@modules/practitioners/s
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
 import { AdminPractitionerCredentialRepository } from '../repositories/admin-practitioner-credential.repository';
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class UpsertPractitionerApplicationCredentialUseCase {
@@ -27,6 +31,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
     private readonly credentialRepository: AdminPractitionerCredentialRepository,
     private readonly specialtyRepository: AdminSpecialtyRepository,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -70,6 +75,16 @@ export class UpsertPractitionerApplicationCredentialUseCase {
           ? null
           : new Date(input.data.expiresAt);
 
+    if (
+      input.data.reviewStatus === CredentialReviewStatus.REJECTED &&
+      !input.data.reviewNotes?.trim()
+    ) {
+      throw new BadRequestException({
+        messageKey: 'admin.practitionerApplications.errors.credentialRejectionReasonRequired',
+        error: 'ADMIN_CREDENTIAL_REJECTION_REASON_REQUIRED',
+      });
+    }
+
     if (expiresAt instanceof Date && Number.isNaN(expiresAt.getTime())) {
       throw new BadRequestException({
         messageKey: 'validation.invalidDateString',
@@ -78,6 +93,8 @@ export class UpsertPractitionerApplicationCredentialUseCase {
     }
 
     const now = new Date();
+    let previousReviewStatus: CredentialReviewStatus | null = null;
+    let previousExpiresAt: string | null = null;
     const credential = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const normalizedReviewNotes =
@@ -95,6 +112,8 @@ export class UpsertPractitionerApplicationCredentialUseCase {
 
           const createReviewStatus =
             input.data.reviewStatus ?? CredentialReviewStatus.PENDING;
+          previousReviewStatus = null;
+          previousExpiresAt = null;
           const isCreateReviewed = createReviewStatus !== 'PENDING';
 
           await this.credentialRepository.create(
@@ -125,6 +144,9 @@ export class UpsertPractitionerApplicationCredentialUseCase {
               error: 'ADMIN_PRACTITIONER_CREDENTIAL_NOT_FOUND',
             });
           }
+
+          previousReviewStatus = existing.reviewStatus;
+          previousExpiresAt = existing.expiresAt?.toISOString() ?? null;
 
           const hasNoPatch =
             input.data.credentialType === undefined &&
@@ -294,6 +316,32 @@ export class UpsertPractitionerApplicationCredentialUseCase {
             error: 'ADMIN_PRACTITIONER_CREDENTIAL_NOT_FOUND',
           });
         }
+
+        await this.securityAuditService?.recordRequired(tx, {
+          action: input.credentialId
+            ? 'security.practitioner.credential.update'
+            : 'security.practitioner.credential.create',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.adminUserId,
+          resourceType: 'PractitionerCredential',
+          resourceId: refreshedCredential.id,
+          targetUserId: application.practitioner.userId,
+          reason: input.data.reviewNotes?.trim() || null,
+          metadata: {
+            applicationId: application.id,
+            credentialType: refreshedCredential.credentialType,
+            previousReviewStatus,
+            reviewStatus: refreshedCredential.reviewStatus,
+            ...(previousExpiresAt !== (refreshedCredential.expiresAt?.toISOString() ?? null)
+              ? {
+                  previousExpiresAt,
+                  expiresAt: refreshedCredential.expiresAt?.toISOString() ?? null,
+                }
+              : {}),
+          },
+        });
 
         return refreshedCredential;
       },

@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, HttpStatus } from '@nestjs/common';
 import {
   OtpPurpose,
   PractitionerStatus,
@@ -6,6 +6,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { VerifyPractitionerLoginOtpUseCase } from './verify-practitioner-login-otp.use-case';
+import { AUTH_LOCKOUT_CONTEXTS } from '../types/auth-lockout.types';
 
 describe('VerifyPractitionerLoginOtpUseCase', () => {
   type SuccessfulLoginResult = {
@@ -27,6 +28,11 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
   const practitionerPresenceRepository = {
     markOnline: jest.fn(),
   };
+  const authLockoutService = {
+    getState: jest.fn(),
+    recordFailure: jest.fn(),
+    clear: jest.fn(),
+  };
   const securityAuditService = {
     logAsync: jest.fn(),
   };
@@ -36,11 +42,29 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
     issueAuthTokensUseCase as any,
     userRepository as any,
     practitionerPresenceRepository as any,
+    authLockoutService as any,
     securityAuditService as any,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    authLockoutService.getState.mockResolvedValue({
+      attemptCount: 0,
+      maxAttempts: 5,
+      remainingAttempts: 5,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.recordFailure.mockResolvedValue({
+      attemptCount: 1,
+      maxAttempts: 5,
+      remainingAttempts: 4,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.clear.mockResolvedValue(undefined);
   });
 
   it('marks the practitioner online after a successful OTP login', async () => {
@@ -79,6 +103,7 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
 
     expect(result.tokens.accessToken).toBe('access-token');
     expect(result.tokens.refreshToken).toBe('refresh-token');
+    expect(result.nextStep).toBe('AUTHENTICATED');
     expect(issueAuthTokensUseCase.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-1',
@@ -88,10 +113,15 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
     expect(practitionerPresenceRepository.markOnline).toHaveBeenCalledWith(
       'profile-1',
     );
+    expect(authLockoutService.clear).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_OTP_VERIFY,
+      'user:user-1',
+    );
     expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledWith({
       challengeId: 'challenge-1',
       code: '123456',
       purpose: OtpPurpose.PRACTITIONER_LOGIN,
+      onInvalidCodeAttempt: expect.any(Function),
     });
   });
 
@@ -123,5 +153,51 @@ describe('VerifyPractitionerLoginOtpUseCase', () => {
 
     expect(issueAuthTokensUseCase.execute).not.toHaveBeenCalled();
     expect(practitionerPresenceRepository.markOnline).not.toHaveBeenCalled();
+  });
+
+  it('returns a temporary lockout when repeated invalid OTP attempts hit the limit', async () => {
+    verifyOtpChallengeUseCase.execute.mockImplementation(
+      async (input: { onInvalidCodeAttempt?: (challenge: { user: { id: string } }) => Promise<void> | void }) => {
+        if (input.onInvalidCodeAttempt) {
+          await input.onInvalidCodeAttempt({
+            user: {
+              id: 'user-1',
+            },
+          });
+        }
+
+        throw new ForbiddenException({
+          messageKey: 'auth.errors.otpCodeInvalid',
+          error: 'OTP_CODE_INVALID',
+        });
+      },
+    );
+    authLockoutService.recordFailure.mockResolvedValue({
+      attemptCount: 5,
+      maxAttempts: 5,
+      remainingAttempts: 0,
+      lockedUntil: new Date('2026-07-10T10:00:00.000Z'),
+      retryAfterSeconds: 60,
+      isLocked: true,
+    });
+
+    await expect(
+      useCase.execute({
+        challengeId: 'challenge-1',
+        code: '111111',
+        locale: 'en',
+        deviceContext: {
+          deviceId: 'device-1',
+          ipAddress: '127.0.0.1',
+          userAgent: 'jest',
+        },
+      }),
+    ).rejects.toMatchObject({
+      status: HttpStatus.TOO_MANY_REQUESTS,
+    });
+    expect(authLockoutService.recordFailure).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_OTP_VERIFY,
+      'user:user-1',
+    );
   });
 });

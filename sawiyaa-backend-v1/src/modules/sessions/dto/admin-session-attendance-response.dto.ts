@@ -468,12 +468,15 @@ class AdminSessionAttendanceDataResponseDto {
   @ApiProperty({
     enum: [
       'UPCOMING',
-      'JOINABLE',
+      'READY_TO_JOIN',
       'IN_PROGRESS',
+      'AWAITING_COMPLETION_CONFIRMATION',
       'COMPLETED',
       'CANCELLED',
-      'ENDED',
-      'UNAVAILABLE',
+      'PATIENT_NO_SHOW',
+      'PRACTITIONER_NO_SHOW',
+      'BOTH_NO_SHOW',
+      'EXPIRED',
     ],
     nullable: true,
   })

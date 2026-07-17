@@ -22,6 +22,7 @@ import { PaymobPaymentProviderAdapter } from './providers/paymob-payment-provide
 import { StripePaymentProviderAdapter } from './providers/stripe-payment-provider.adapter';
 import { PaymentPatientRepository } from './repositories/payment-patient.repository';
 import { PaymentRepository } from './repositories/payment.repository';
+import { RefundEventRepository } from './repositories/refund-event.repository';
 import { PaymentSessionRepository } from './repositories/payment-session.repository';
 import { OrchestrateSessionPaymentStatusService } from './services/orchestrate-session-payment-status.service';
 import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from './services/orchestrate-academy-program-enrollment-payment-status.service';
@@ -83,6 +84,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     AppLoggerService,
     PaymentMapper,
     PaymentRepository,
+    RefundEventRepository,
     PaymentPatientRepository,
     PaymentSessionRepository,
     ResolveSessionPaymentPricingService,
@@ -116,6 +118,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
   ],
   exports: [
     PaymentRepository,
+    RefundEventRepository,
     PaymentMapper,
     PaymentProviderRegistryService,
     PaymentProviderResolverService,

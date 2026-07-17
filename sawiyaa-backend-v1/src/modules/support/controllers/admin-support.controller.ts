@@ -49,8 +49,8 @@ import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ti
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 // BUSINESS DECISION: ADMIN and SUPPORT_AGENT roles can read support tickets.
-// Public replies are ownership-controlled in the use-case and claim the ticket on first reply
-// when it is unassigned. Assignment changes continue to flow through the existing assign action.
+// Public replies use the shared inbox; assignment remains an optional operational field and
+// is not required for an authorized employee to reply.
 @Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/support/tickets')
 export class AdminSupportController {

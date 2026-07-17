@@ -89,17 +89,17 @@ export type PatientPackagePurchaseSessionSummary = {
   status:
     | "DRAFT"
     | "PENDING_PAYMENT"
-    | "PENDING_PRACTITIONER_RESPONSE"
-    | "CONFIRMED"
+    | "PENDING_PRACTITIONER_CONFIRMATION"
     | "UPCOMING"
     | "READY_TO_JOIN"
     | "IN_PROGRESS"
     | "COMPLETED"
     | "CANCELLED"
-    | "NO_SHOW"
-    | "EXPIRED"
-    | "REFUND_PENDING"
-    | "REFUNDED";
+    | "PATIENT_NO_SHOW"
+    | "PRACTITIONER_NO_SHOW"
+    | "BOTH_NO_SHOW"
+    | "AWAITING_COMPLETION_CONFIRMATION"
+    | "EXPIRED";
   presentationStatus: SessionPresentationStatus;
   joinAvailability: SessionJoinAvailability;
   scheduledStartAt: string | null;

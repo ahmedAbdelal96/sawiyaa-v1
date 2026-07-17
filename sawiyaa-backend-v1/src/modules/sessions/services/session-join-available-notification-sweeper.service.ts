@@ -19,12 +19,16 @@ import { NotificationIntentWriterService } from '@modules/notifications/services
 import { ResolveSessionJoinReadinessService } from './resolve-session-join-readiness.service';
 import { SESSION_JOIN_LAG_MINUTES } from '../utils/session-join-policy.util';
 import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
+import {
   SessionRepository,
   type SessionJoinNotificationCandidate,
 } from '../repositories/session.repository';
 import { SessionVideoProviderRegistryService } from './session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from './session-video-provider-resolver.service';
-import { ValidateSessionStatusTransitionService } from './validate-session-status-transition.service';
+import { SessionLifecycleService } from './session-lifecycle.service';
 
 const SWEEP_INTERVAL_MS = 60_000;
 const SWEEP_BATCH_SIZE = 50;
@@ -42,7 +46,7 @@ export class SessionJoinAvailableNotificationSweeperService
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
     private readonly sessionVideoProviderRegistryService: SessionVideoProviderRegistryService,
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly notificationIntentWriterService: NotificationIntentWriterService,
     private readonly i18nService: I18nService,
     private readonly logger: AppLoggerService,
@@ -149,7 +153,6 @@ export class SessionJoinAvailableNotificationSweeperService
     }
 
     const session =
-      currentSession.status === SessionStatus.CONFIRMED ||
       currentSession.status === SessionStatus.UPCOMING
         ? await this.promoteSessionToReadyToJoin(currentSession)
         : currentSession;
@@ -317,7 +320,10 @@ export class SessionJoinAvailableNotificationSweeperService
           {
             sessionId: candidate.id,
             eventType: SessionEventType.PROVIDER_ROOM_CREATED,
+            actorType: SecurityAuditActorType.SCHEDULED_JOB,
             actorUserId: null,
+            source: SecurityAuditSource.SCHEDULED_JOB,
+            occurredAt: new Date(),
             metadataJson: {
               provider: resolvedProvider,
               providerRoomId: roomId,
@@ -344,30 +350,12 @@ export class SessionJoinAvailableNotificationSweeperService
   private async promoteSessionToReadyToJoin(
     session: SessionJoinNotificationCandidate,
   ): Promise<SessionJoinNotificationCandidate> {
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.READY_TO_JOIN,
-    );
-
     const updated = await this.prisma.$transaction(async (tx) => {
-      const persisted = await this.sessionRepository.updateStatus(
-        session.id,
-        {
-          status: SessionStatus.READY_TO_JOIN,
-        },
+      return this.sessionLifecycleService.transition({
+        session,
+        to: SessionStatus.READY_TO_JOIN,
         tx,
-      );
-
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: session.id,
-          eventType: SessionEventType.SESSION_READY_TO_JOIN,
-          actorUserId: null,
-        },
-        tx,
-      );
-
-      return persisted;
+      });
     });
 
     return {

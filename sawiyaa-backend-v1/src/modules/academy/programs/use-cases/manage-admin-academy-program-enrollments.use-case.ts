@@ -1,6 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AcademyProgramEnrollmentStatus } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { AcademyProgramEnrollmentStatus, SecurityAuditOutcome } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AcademyProgramEnrollmentPresenter } from '../presenters/academy-program-enrollment.presenter';
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
@@ -18,6 +20,7 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
     private readonly prisma: PrismaService,
     private readonly academyProgramEnrollmentRepository: AcademyProgramEnrollmentRepository,
     private readonly academyProgramEnrollmentPresenter: AcademyProgramEnrollmentPresenter,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async exportEnrollments(input: ListAdminAcademyProgramEnrollmentsDto & {
@@ -44,27 +47,36 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
   async cancelEnrollment(input: {
     enrollmentId: string;
     locale: SupportedLocale;
+    actorUserId?: string;
+    actorRoles?: string[];
+    reason?: string;
   }) {
-    return this.updateOne(input.enrollmentId, 'CANCEL_ENROLLMENT', input.locale);
+    return this.updateOne(input.enrollmentId, 'CANCEL_ENROLLMENT', input.locale, input.actorUserId, input.actorRoles, input.reason);
   }
 
   async markCompleted(input: {
     enrollmentId: string;
     locale: SupportedLocale;
+    actorUserId?: string;
+    actorRoles?: string[];
   }) {
-    return this.updateOne(input.enrollmentId, 'MARK_COMPLETED', input.locale);
+    return this.updateOne(input.enrollmentId, 'MARK_COMPLETED', input.locale, input.actorUserId, input.actorRoles);
   }
 
   async markCertified(input: {
     enrollmentId: string;
     locale: SupportedLocale;
+    actorUserId?: string;
+    actorRoles?: string[];
   }) {
-    return this.updateOne(input.enrollmentId, 'MARK_CERTIFIED', input.locale);
+    return this.updateOne(input.enrollmentId, 'MARK_CERTIFIED', input.locale, input.actorUserId, input.actorRoles);
   }
 
   async bulkAction(input: {
     academyProgramId: string;
     locale: SupportedLocale;
+    actorUserId?: string;
+    actorRoles?: string[];
     payload: BulkAcademyProgramEnrollmentActionDto;
   }) {
     const enrollmentIds = [...new Set(input.payload.enrollmentIds.map((id) => id.trim()).filter(Boolean))];
@@ -73,6 +85,13 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
       throw new BadRequestException({
         messageKey: 'academyProgram.errors.bulkEnrollmentIdsRequired',
         error: 'ACADEMY_PROGRAM_ENROLLMENT_IDS_REQUIRED',
+      });
+    }
+
+    if (input.payload.action === 'CANCEL_ENROLLMENT' && !input.payload.reason?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.enrollmentCancellationReasonRequired',
+        error: 'ACADEMY_PROGRAM_ENROLLMENT_CANCELLATION_REASON_REQUIRED',
       });
     }
 
@@ -101,6 +120,24 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
           tx,
         );
         results.push(item);
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'academy.programEnrollment.status.change',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.actorUserId,
+          actorRoles: input.actorRoles,
+          resourceType: 'AcademyProgramEnrollment',
+          resourceId: item.id,
+          targetUserId: item.userId,
+          metadata: {
+            academyProgramId: input.academyProgramId,
+            action: input.payload.action,
+            previousStatus: enrollment.status,
+            status: item.status,
+          },
+          reason: input.payload.reason?.trim() || null,
+        });
       }
       return results;
     });
@@ -116,6 +153,9 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
     enrollmentId: string,
     action: EnrollmentAction,
     locale: SupportedLocale,
+    actorUserId?: string,
+    actorRoles?: string[],
+    reason?: string,
   ) {
     const enrollment =
       await this.academyProgramEnrollmentRepository.findEnrollmentByIdForAdmin(enrollmentId);
@@ -127,12 +167,37 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
       });
     }
 
+    if (action === 'CANCEL_ENROLLMENT' && !reason?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.enrollmentCancellationReasonRequired',
+        error: 'ACADEMY_PROGRAM_ENROLLMENT_CANCELLATION_REASON_REQUIRED',
+      });
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
-      return this.academyProgramEnrollmentRepository.updateEnrollment(
+      const updated = await this.academyProgramEnrollmentRepository.updateEnrollment(
         enrollment.id,
         this.buildUpdate(action, enrollment),
         tx,
       );
+      await this.securityAuditService?.recordRequired(tx, {
+        action: 'academy.programEnrollment.status.change',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId,
+        actorRoles,
+        resourceType: 'AcademyProgramEnrollment',
+        resourceId: updated.id,
+        targetUserId: updated.userId,
+        metadata: {
+          action,
+          previousStatus: enrollment.status,
+          status: updated.status,
+        },
+        reason: reason?.trim() || null,
+      });
+      return updated;
     });
 
     return {

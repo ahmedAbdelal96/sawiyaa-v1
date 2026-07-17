@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
-import { DestructiveConfirmModal } from "@/components/ui/modal";
+import { DestructiveConfirmModal, Modal, ModalBody } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
@@ -46,17 +46,13 @@ import { canOpenSessionChatFromPresentationStatus } from "../lib/session-present
 import SessionStatusBadge from "./SessionStatusBadge";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
-import type {
-  SessionJoinItem,
-  SessionRuntimeItem,
-  SessionStatus,
-} from "../types/sessions.types";
+import type { SessionJoinItem, SessionRuntimeItem } from "../types/sessions.types";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
 import { PatientSectionCard } from "@/components/patient/PatientChrome";
+import PatientSessionReviewCard from "./PatientSessionReviewCard";
 
-const CANCELLABLE_STATUSES: SessionStatus[] = ["CONFIRMED", "UPCOMING"];
 function formatDatetime(isoString: string | null, numLocale: string): string {
   return formatViewerDateTime(isoString, { locale: numLocale });
 }
@@ -267,7 +263,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
   const [now, setNow] = useState<number>(() => Date.now());
 
-  const { data: session, isLoading, isError } = usePatientSession(sessionId);
+  const { data: session, isLoading, isError, refetch } = usePatientSession(sessionId);
 
   useEffect(() => {
     if (!session || session.status !== "PENDING_PAYMENT") {
@@ -301,6 +297,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const [cancelPreviewError, setCancelPreviewError] = useState(false);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   if (isLoading) {
     return <PatientSessionDetailSkeleton />;
@@ -327,22 +324,27 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  const isCancellable = CANCELLABLE_STATUSES.includes(session.status);
-  const hasRuntimeAccess = hasSessionRuntimeAccess(session.status);
+  // Old client caches may not contain the new backend-owned action contract.
+  // Deny every action until a fresh response arrives rather than inferring from status.
+  const actions = session.actions ?? {
+    canCancel: false,
+    canPrepareRoom: false,
+    canJoin: false,
+    canPay: false,
+    canReview: false,
+  };
+  const reviewCompletedAt =
+    session.completedAt ?? (actions.canReview ? session.scheduledEndAt : null);
+  const isCancellable = actions.canCancel;
+  const hasRuntimeAccess =
+    hasSessionRuntimeAccess(session.status) &&
+    (actions.canPrepareRoom || actions.canJoin);
   const paymentStateKey =
     session.status === "PENDING_PAYMENT"
       ? "PENDING_PAYMENT"
-      : session.status === "REFUND_PENDING"
-        ? "REFUND_PENDING"
-      : session.status === "REFUNDED"
-        ? "REFUNDED"
       : session.status === "EXPIRED"
         ? "EXPIRED"
-        : session.presentationStatus === "UPCOMING" ||
-              session.presentationStatus === "JOINABLE" ||
-              session.presentationStatus === "IN_PROGRESS" ||
-              session.presentationStatus === "COMPLETED" ||
-              session.presentationStatus === "ENDED"
+        : ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status)
             ? "SECURED"
           : null;
   const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
@@ -368,7 +370,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       ["CREATED", "PENDING", "REQUIRES_ACTION"].includes(sessionPayment.status) &&
       !isPaymentAttemptExpired
   );
-  const canJoinNow = joinResult?.canJoin ?? session.joinAvailability?.canJoin ?? false;
+  const canJoinNow = joinResult?.canJoin ?? actions.canJoin;
   const blockedJoinReason =
     joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
   const isRoomClosed = blockedJoinReason === "SESSION_ROOM_CLOSED";
@@ -381,7 +383,11 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed =
-    hasRuntimeAccess && !isRoomClosed && !runtimePrepared && canPrepareSessionRuntime(session, joinResult);
+    actions.canPrepareRoom &&
+    hasRuntimeAccess &&
+    !isRoomClosed &&
+    !runtimePrepared &&
+    canPrepareSessionRuntime(session, joinResult);
   const joinWindowOpen = isJoinWindowOpen(session, joinResult);
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
@@ -776,6 +782,28 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             </div>
           </div>
         </PatientSectionCard>
+
+        {actions.canReview ? (
+          <PatientSectionCard className="border-border-soft bg-white p-5 shadow-[0_8px_24px_rgba(36,86,79,0.08)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-text-primary dark:text-white/95">
+                  {t("detail.reviewAction.heading")}
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  {t("detail.reviewAction.note")}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => setReviewOpen(true)}
+                className="rounded-xl px-5 py-2.5 text-sm font-bold"
+              >
+                {t("detail.reviewAction.cta")}
+              </Button>
+            </div>
+          </PatientSectionCard>
+        ) : null}
       </div>
 
       {/* Sidebar Columns */}
@@ -826,7 +854,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
             {/* Actions list */}
             <div className="pt-2 flex flex-col gap-2">
-              {paymentDisplayStateKey === "PENDING_PAYMENT" && !isPaymentWindowExpired && (
+              {actions.canPay && !isPaymentWindowExpired && (
                 <Link
                   href={`/patient/sessions/${session.id}/pay` as never}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-hover transition"
@@ -853,18 +881,17 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         )}
 
         {/* Compact Cancellation Card */}
-        <PatientSectionCard
-          className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-4 sm:p-5"
-        >
+        {isCancellable ? (
+          <PatientSectionCard
+            className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-4 sm:p-5"
+          >
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-1">
               <h4 className="text-sm font-bold text-text-primary">
                 {t("detail.cancelAction")}
               </h4>
               <p className="text-xs text-text-muted leading-tight">
-                {isCancellable
-                  ? t("detail.cancelConfirm.policyNote")
-                  : t("detail.cancelConfirm.cannotProceed")}
+                {t("detail.cancelConfirm.policyNote")}
               </p>
             </div>
             
@@ -893,7 +920,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               {t("detail.cancelResult.failed")}
             </div>
           )}
-        </PatientSectionCard>
+          </PatientSectionCard>
+        ) : null}
       </aside>
 
       <DestructiveConfirmModal
@@ -1148,6 +1176,28 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           </SurfaceCard>
         </div>
       </DestructiveConfirmModal>
+
+      <Modal
+        isOpen={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        size="md"
+        ariaLabel={t("detail.reviewAction.heading")}
+      >
+        <ModalBody className="p-6 sm:p-7">
+          <PatientSessionReviewCard
+            sessionId={session.id}
+            practitionerName={session.practitioner.displayName}
+            completedAt={reviewCompletedAt}
+            onSubmitted={() => {
+              window.setTimeout(() => {
+                setReviewOpen(false);
+                void refetch();
+              }, 1200);
+            }}
+            onCancel={() => setReviewOpen(false)}
+          />
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

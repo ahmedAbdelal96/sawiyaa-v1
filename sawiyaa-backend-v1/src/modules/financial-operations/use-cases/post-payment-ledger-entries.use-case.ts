@@ -60,18 +60,23 @@ export class PostPaymentLedgerEntriesUseCase {
       };
     }
 
-    const existing = await this.ledgerRepository.findByPaymentId(payment.id);
-    if (existing.length > 0) {
-      return {
-        items: existing,
-        wasAlreadyPosted: true,
-      };
-    }
-
     const breakdown =
       this.extractPaymentLedgerBreakdownService.extract(payment);
 
-    await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+
+      const existing = await this.ledgerRepository.findByPaymentId(
+        payment.id,
+        tx,
+      );
+      if (existing.length > 0) {
+        return {
+          items: existing,
+          wasAlreadyPosted: true,
+        };
+      }
+
       await this.ledgerRepository.createManyLedgerEntries(
         [
           {
@@ -118,16 +123,20 @@ export class PostPaymentLedgerEntriesUseCase {
           tx,
         );
       }
+
+      return {
+        items: await this.ledgerRepository.findByPaymentId(payment.id, tx),
+        wasAlreadyPosted: false,
+      };
     });
 
-    await this.accountingJournalPostingService.postPaymentCaptured({
-      payment,
-      breakdown,
-    });
+    if (!result.wasAlreadyPosted) {
+      await this.accountingJournalPostingService.postPaymentCaptured({
+        payment,
+        breakdown,
+      });
+    }
 
-    return {
-      items: await this.ledgerRepository.findByPaymentId(payment.id),
-      wasAlreadyPosted: false,
-    };
+    return result;
   }
 }

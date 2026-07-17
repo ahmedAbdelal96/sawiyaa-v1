@@ -1,7 +1,6 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   ChevronDown,
@@ -42,167 +41,10 @@ type Props = {
   role: UnifiedMessagingRole;
   showFloatingTrigger?: boolean;
 };
-
-type CopyPack = {
-  title: string;
-  subtitle: string;
-  lanes: Record<UnifiedMessagingLane, string>;
-  laneNotes: Record<UnifiedMessagingLane, string>;
-  openAll: string;
-  empty: string;
-  loading: string;
-  error: string;
-  retry: string;
-  minimize: string;
-  restore: string;
-  close: string;
-  notAvailable: string;
-  adminSessionHint: string;
-  sessionProminentBanner: string;
-  sessionLiveBanner: string;
-  sessionReadyBanner: string;
-  threadHeading: string;
-  threadHint: string;
-  sessionReadOnlyHint: string;
-  sessionReadOnlyReview: string;
-  sessionReadOnlySendBlocked: string;
-  composerPlaceholder: string;
-  send: string;
-  activeSessionStripLabel: string;
-  activeSessionStripAction: string;
-  localReadHint: string;
-  supportHeading: string;
-  supportNote: string;
-  supportCreateHeading: string;
-  supportCreateNote: string;
-  supportCreateSubject: string;
-  supportCreateMessage: string;
-  supportCreateAction: string;
-  supportCreating: string;
-  supportOpenFull: string;
-  practitionerHeading: string;
-  practitionerNote: string;
-  practitionerPendingNote: string;
-  practitionerOpenFull: string;
-  sessionOpenFull: string;
-  priorityBadge: string;
-};
-
 type SessionReadState = Record<
   string,
   { readAt: string; sessionStatus: UnifiedSessionChatStatus | null }
 >;
-
-function getCopy(locale: string): CopyPack {
-  if (locale.startsWith("ar")) {
-    return {
-      title: "الرسائل",
-      subtitle: "تواصل سريع وواضح بدون مغادرة الصفحة",
-      lanes: {
-        session: "محادثة الجلسة",
-        practitioner: "رسائل المعالج",
-        support: "الدعم",
-      },
-      laneNotes: {
-        session: "الأولوية للجلسات الجاهزة أو الجارية.",
-        practitioner: "تابع التواصل العلاجي مع المعالج من هنا.",
-        support: "تواصل مع فريق الدعم مباشرة من نفس اللوحة.",
-      },
-      openAll: "عرض كل الرسائل",
-      empty: "لا توجد محادثات في هذا القسم حاليًا.",
-      loading: "جارٍ تحميل المحادثات...",
-      error: "تعذر تحميل هذا القسم الآن.",
-      retry: "إعادة المحاولة",
-      minimize: "تصغير",
-      restore: "استعادة",
-      close: "إغلاق",
-      notAvailable: "غير متاح في هذه المساحة حاليًا.",
-      adminSessionHint: "يمكن متابعة الجلسات من شاشة إدارة الجلسات.",
-      sessionProminentBanner: "محادثة الجلسة لها أولوية الآن",
-      sessionLiveBanner: "هناك جلسة جارية الآن",
-      sessionReadyBanner: "هناك جلسة جاهزة للانضمام",
-      threadHeading: "محادثة الجلسة",
-      threadHint: "هذه المحادثة اليومية الأساسية. العرض الكامل اختياري.",
-      sessionReadOnlyHint: "هذه المحادثة للقراءة فقط الآن.",
-      sessionReadOnlyReview: "يمكنك مراجعة رسائل الجلسة بعد انتهائها.",
-      sessionReadOnlySendBlocked: "لا يمكن إرسال رسائل جديدة بعد انتهاء الجلسة.",
-      composerPlaceholder: "اكتب رسالة واضحة ومختصرة",
-      send: "إرسال",
-      activeSessionStripLabel: "الجلسة الأهم الآن",
-      activeSessionStripAction: "استئناف",
-      localReadHint: "تم تحسين مؤشر القراءة محليًا لهذه الجلسة.",
-      supportHeading: "محادثة الدعم",
-      supportNote: "اقرأ ورد مباشرة من داخل اللوحة.",
-      supportCreateHeading: "ابدأ رسالة جديدة للدعم",
-      supportCreateNote: "اكتب عنوانًا واضحًا ثم تفاصيل رسالتك.",
-      supportCreateSubject: "عنوان الرسالة",
-      supportCreateMessage: "اكتب تفاصيل المشكلة أو الطلب",
-      supportCreateAction: "بدء المحادثة",
-      supportCreating: "جارٍ الإنشاء...",
-      supportOpenFull: "فتح محادثة الدعم الكاملة (اختياري)",
-      practitionerHeading: "رسائل المعالج",
-      practitionerNote: "استكمل التواصل مع المعالج من داخل اللوحة.",
-      practitionerPendingNote: "الطلب قيد المراجعة وسيظهر هنا بعد التفعيل.",
-      practitionerOpenFull: "فتح المحادثة الكاملة (اختياري)",
-      sessionOpenFull: "فتح محادثة الجلسة الكاملة (اختياري)",
-      priorityBadge: "مهم",
-    };
-  }
-
-  return {
-    title: "Messages",
-    subtitle: "Fast and clear messaging without leaving your page",
-    lanes: {
-      session: "Session Chat",
-      practitioner: "Practitioner Messages",
-      support: "Support",
-    },
-    laneNotes: {
-      session: "Live and ready sessions are prioritized here.",
-      practitioner: "Continue care communication with your practitioner.",
-      support: "Contact support directly from this docked panel.",
-    },
-    openAll: "View all messages",
-    empty: "No conversations in this lane right now.",
-    loading: "Loading conversations...",
-    error: "Could not load this lane right now.",
-    retry: "Retry",
-    minimize: "Minimize",
-    restore: "Restore",
-    close: "Close",
-    notAvailable: "Not available in this area right now.",
-    adminSessionHint: "Track sessions from the sessions management page.",
-    sessionProminentBanner: "Session chat is top priority now",
-    sessionLiveBanner: "A session is live now",
-    sessionReadyBanner: "A session is ready to join",
-    threadHeading: "Session conversation",
-    threadHint: "This is your primary daily conversation surface.",
-    sessionReadOnlyHint: "This session chat is read-only now.",
-    sessionReadOnlyReview: "You can review session messages after the session ends.",
-    sessionReadOnlySendBlocked: "New messages cannot be sent after the session ends.",
-    composerPlaceholder: "Write a short, clear message",
-    send: "Send",
-    activeSessionStripLabel: "Most relevant session now",
-    activeSessionStripAction: "Resume",
-    localReadHint: "Read-state was refined locally for this app usage.",
-    supportHeading: "Support conversation",
-    supportNote: "Read and reply directly inside the shell.",
-    supportCreateHeading: "Start a new support message",
-    supportCreateNote: "Write a clear subject and your message.",
-    supportCreateSubject: "Subject",
-    supportCreateMessage: "Describe your issue or request",
-    supportCreateAction: "Start conversation",
-    supportCreating: "Creating...",
-    supportOpenFull: "Open full support view (optional)",
-    practitionerHeading: "Practitioner messages",
-    practitionerNote: "Continue practitioner communication from this panel.",
-    practitionerPendingNote: "Request is pending and appears here after activation.",
-    practitionerOpenFull: "Open full conversation (optional)",
-    sessionOpenFull: "Open full session chat (optional)",
-    priorityBadge: "Priority",
-  };
-}
-
 function formatRelativeAt(value: string | null | undefined, locale: string) {
   if (!value) return null;
   const date = new Date(value);
@@ -297,9 +139,67 @@ export default function UnifiedMessagesLauncher({
   showFloatingTrigger = true,
 }: Props) {
   const locale = useLocale();
+  const t = useTranslations("messages-shell");
   const pathname = usePathname();
   const isRtl = locale.startsWith("ar");
-  const copy = useMemo(() => getCopy(locale), [locale]);
+  const copy = useMemo(() => ({
+    title: t("title"),
+    subtitle: t("subtitle"),
+    lanes: {
+      session: t("lanes.session"),
+      practitioner: role === "practitioner"
+        ? t("lanes.practitioner_practitioner")
+        : t("lanes.practitioner_patient"),
+      support: t("lanes.support"),
+    },
+    laneNotes: {
+      session: t("laneNotes.session"),
+      practitioner: t("laneNotes.practitioner"),
+      support: t("laneNotes.support"),
+    },
+    openAll: t("openAll"),
+    empty: t("empty"),
+    loading: t("loading"),
+    error: t("error"),
+    retry: t("retry"),
+    minimize: t("minimize"),
+    restore: t("restore"),
+    close: t("close"),
+    notAvailable: t("notAvailable"),
+    adminSessionHint: t("adminSessionHint"),
+    sessionProminentBanner: t("sessionProminentBanner"),
+    sessionLiveBanner: t("sessionLiveBanner"),
+    sessionReadyBanner: t("sessionReadyBanner"),
+    threadHeading: t("threadHeading"),
+    threadHint: t("threadHint"),
+    sessionReadOnlyHint: t("sessionReadOnlyHint"),
+    sessionReadOnlyReview: t("sessionReadOnlyReview"),
+    sessionReadOnlySendBlocked: t("sessionReadOnlySendBlocked"),
+    composerPlaceholder: t("composerPlaceholder"),
+    send: t("send"),
+    activeSessionStripLabel: t("activeSessionStripLabel"),
+    activeSessionStripAction: t("activeSessionStripAction"),
+    localReadHint: t("localReadHint"),
+    supportHeading: t("supportHeading"),
+    supportNote: t("supportNote"),
+    supportCreateHeading: t("supportCreateHeading"),
+    supportCreateNote: t("supportCreateNote"),
+    supportCreateSubject: t("supportCreateSubject"),
+    supportCreateMessage: t("supportCreateMessage"),
+    supportCreateAction: t("supportCreateAction"),
+    supportCreating: t("supportCreating"),
+    supportOpenFull: t("supportOpenFull"),
+    practitionerHeading: t("practitionerHeading"),
+    practitionerNote: t("practitionerNote"),
+    practitionerPendingNote: t("practitionerPendingNote"),
+    practitionerOpenFull: t("practitionerOpenFull"),
+    sessionOpenFull: t("sessionOpenFull"),
+    priorityBadge: t("priorityBadge"),
+    viewConversations: t("viewConversations"),
+    conversationsSwitcherSingle: t("conversationsSwitcherSingle"),
+    conversationsSwitcherCount: (count: number) =>
+      t("conversationsSwitcherCount", { count }),
+  }), [t, role]);
   const isSupportDetailPageActive = useMemo(() => {
     const roleSegment =
       role === "admin" ? "admin" : role === "patient" ? "patient" : "practitioner";
@@ -322,7 +222,9 @@ export default function UnifiedMessagesLauncher({
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [continuityReady, setContinuityReady] = useState(false);
-  const [activeLane, setActiveLane] = useState<UnifiedMessagingLane>("session");
+  const [activeLane, setActiveLane] = useState<UnifiedMessagingLane>(
+    role === "admin" ? "support" : "session"
+  );
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSupportTicketId, setSelectedSupportTicketId] = useState<string | null>(null);
   const [selectedPractitionerRequestId, setSelectedPractitionerRequestId] = useState<string | null>(null);
@@ -405,7 +307,11 @@ export default function UnifiedMessagesLauncher({
     const snapshot = loadMessagesShellContinuitySnapshot(continuityStorageKey);
     queueMicrotask(() => {
       if (snapshot) {
-        setActiveLane(snapshot.activeLane);
+        let restoredLane = snapshot.activeLane;
+        if (role === "admin" && restoredLane === "session") {
+          restoredLane = "support";
+        }
+        setActiveLane(restoredLane);
         setSelectedSessionId(snapshot.selectedSessionId);
         setSelectedSupportTicketId(snapshot.selectedSupportTicketId);
         setSelectedPractitionerRequestId(snapshot.selectedPractitionerRequestId);
@@ -413,7 +319,7 @@ export default function UnifiedMessagesLauncher({
       }
       setContinuityReady(true);
     });
-  }, [continuityStorageKey]);
+  }, [continuityStorageKey, role]);
 
   useEffect(() => {
     if (!continuityReady) return;
@@ -695,7 +601,7 @@ export default function UnifiedMessagesLauncher({
       ) : null}
 
       <div
-        className={`absolute w-[min(96vw,460px)] transition-all duration-200 ${
+        className={`absolute w-[min(96vw,480px)] transition-all duration-200 ${
           isPanelVisible
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none translate-y-2 opacity-0"
@@ -705,21 +611,25 @@ export default function UnifiedMessagesLauncher({
             : `top-0 ${isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"}`
         }`}
       >
-        <section className="flex h-[min(84vh,780px)] max-h-[calc(100vh-92px)] flex-col overflow-hidden rounded-[26px] border border-border-strong/70 bg-surface-primary shadow-[0_44px_96px_-42px_rgba(34,52,56,0.36)] dark:border-white/12 dark:bg-surface-secondary">
-          <header className="border-b border-border-light/70 bg-gradient-to-b from-primary-light via-primary-light-hover to-white px-4 py-2.5 dark:border-white/10 dark:from-primary/35 dark:via-primary/15 dark:to-transparent">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold tracking-tight text-text-primary dark:text-white/95">
+        <section className="flex h-[min(84vh,800px)] max-h-[calc(100vh-88px)] flex-col overflow-hidden rounded-[24px] border border-border-strong/60 bg-surface-primary shadow-[0_48px_100px_-44px_rgba(34,52,56,0.38),0_0_0_1px_rgba(68,161,148,0.06)] dark:border-white/10 dark:bg-surface-secondary">
+
+          {/* ── Header ── */}
+          <header className="shrink-0 border-b border-border-light/60 bg-gradient-to-b from-primary-light/80 via-primary-light/40 to-white/0 px-4 pb-3 pt-3.5 dark:border-white/8 dark:from-primary/30 dark:via-primary/10 dark:to-transparent">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-bold tracking-tight text-text-primary dark:text-white/95">
                   {copy.title}
                 </h2>
-                <p className="text-xs text-text-secondary dark:text-white/65">{copy.subtitle}</p>
+                <p className="mt-0.5 truncate text-[11px] leading-tight text-text-secondary/80 dark:text-white/50">
+                  {copy.subtitle}
+                </p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 {showFloatingTrigger ? (
                   <button
                     type="button"
                     onClick={() => setIsMinimized(true)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light/80 text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                     aria-label={copy.minimize}
                     title={copy.minimize}
                   >
@@ -729,7 +639,7 @@ export default function UnifiedMessagesLauncher({
                 <button
                   type="button"
                   onClick={handleClosePanel}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light/80 text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                   aria-label={copy.close}
                   title={copy.close}
                 >
@@ -739,9 +649,9 @@ export default function UnifiedMessagesLauncher({
             </div>
 
             {role !== "admin" && activePrioritySessionItem ? (
-              <div className="mt-2 rounded-xl border border-primary/35 bg-gradient-to-r from-primary-light-hover to-primary-light px-3 py-2 shadow-[0_12px_28px_-24px_rgba(68,161,148,0.42)] dark:border-primary/35 dark:from-primary/25 dark:to-primary/8">
+              <div className="mt-2.5 rounded-xl border border-primary/30 bg-gradient-to-r from-primary-light-hover to-primary-light px-3 py-2 shadow-[0_8px_24px_-20px_rgba(68,161,148,0.38)] dark:border-primary/30 dark:from-primary/22 dark:to-primary/8">
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted dark:text-white/55">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted dark:text-white/50">
                     {copy.activeSessionStripLabel}
                   </p>
                   <button
@@ -750,7 +660,7 @@ export default function UnifiedMessagesLauncher({
                       setActiveLane("session");
                       setSelectedSessionId(activePrioritySessionItem.id);
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline dark:text-primary-light"
                   >
                     <PlayCircle className="h-3.5 w-3.5" />
                     {copy.activeSessionStripAction}
@@ -759,75 +669,93 @@ export default function UnifiedMessagesLauncher({
                 <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
                   {activePrioritySessionItem.title}
                 </p>
-                <p className="mt-1 truncate text-xs text-text-secondary dark:text-white/70">
+                <p className="mt-0.5 truncate text-xs text-text-secondary dark:text-white/65">
                   {activePrioritySessionItem.status ?? activePrioritySessionItem.note}
                 </p>
               </div>
             ) : null}
 
             {activeLane === "session" && sessionLanePriority ? (
-              <div className="mt-2 rounded-xl border border-primary/35 bg-gradient-to-r from-primary/22 to-primary/10 px-3 py-2 text-xs text-primary dark:border-primary/40 dark:from-primary/24 dark:to-primary/10 dark:text-primary-light">
+              <div className="mt-2.5 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/18 to-primary/8 px-3 py-2 text-xs text-primary dark:border-primary/35 dark:from-primary/20 dark:to-primary/8 dark:text-primary-light">
                 <p className="font-semibold">{copy.sessionProminentBanner}</p>
-                {sessionBannerText ? <p className="mt-1">{sessionBannerText}</p> : null}
+                {sessionBannerText ? <p className="mt-0.5 opacity-80">{sessionBannerText}</p> : null}
               </div>
             ) : null}
           </header>
 
-          <div className="border-b border-border-light/70 p-1.5 dark:border-white/10">
-            <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-50 p-1 ring-1 ring-border-light/85 dark:bg-white/5 dark:ring-white/10">
-              {(Object.keys(laneMeta) as UnifiedMessagingLane[]).map((lane) => {
-                const isActive = lane === activeLane;
-                const laneCount =
-                  lane === "session"
-                    ? sessionDisplayAttentionCount
-                    : laneMeta[lane].lane.attentionCount;
-                return (
-                  <button
-                    key={lane}
-                    type="button"
-                    onClick={() => {
-                      setActiveLane(lane);
-                      setIsHistoryOpen(false);
-                    }}
-                    className={`relative inline-flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${
-                      isActive
-                        ? "bg-gradient-to-br from-primary to-primary-active text-white shadow-[0_10px_20px_-12px_rgba(68,161,148,0.62)]"
-                        : "text-text-secondary hover:bg-white hover:text-text-primary dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
-                    }`}
-                  >
-                    {laneMeta[lane].icon}
-                    <span className="truncate">{copy.lanes[lane]}</span>
-                    {laneCount > 0 ? (
-                      <span className="inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
-                        {laneCount > 9 ? "9+" : laneCount}
+          {/* ── Tab bar ── */}
+          <div className="shrink-0 border-b border-border-light/60 bg-gray-50/60 px-2.5 pb-2 pt-2 dark:border-white/8 dark:bg-white/3">
+            <div className={`grid ${role === "admin" ? "grid-cols-2" : "grid-cols-3"} gap-1 rounded-[14px] bg-gray-100/90 p-1 ring-1 ring-border-light/50 dark:bg-white/5 dark:ring-white/8`}>
+              {(Object.keys(laneMeta) as UnifiedMessagingLane[])
+                .filter((lane) => !(role === "admin" && lane === "session"))
+                .map((lane) => {
+                  const isActive = lane === activeLane;
+                  const laneCount =
+                    lane === "session"
+                      ? sessionDisplayAttentionCount
+                      : laneMeta[lane].lane.attentionCount;
+                  return (
+                    <button
+                      key={lane}
+                      type="button"
+                      onClick={() => {
+                        setActiveLane(lane);
+                        setIsHistoryOpen(false);
+                      }}
+                      className={`relative inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2 py-2.5 text-xs font-semibold transition-all duration-150 ${
+                        isActive
+                          ? "bg-white text-primary shadow-sm ring-1 ring-primary/15 dark:bg-white/12 dark:text-primary-light dark:ring-primary/25"
+                          : "text-text-secondary hover:bg-white/70 hover:text-text-primary dark:text-white/55 dark:hover:bg-white/7 dark:hover:text-white/85"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isActive ? "text-primary dark:text-primary-light" : "text-text-muted/70 dark:text-white/40"}`}>
+                        {laneMeta[lane].icon}
                       </span>
-                    ) : null}
-                  </button>
-                );
-              })}
+                      <span className="truncate leading-tight">{copy.lanes[lane]}</span>
+                      {laneCount > 0 ? (
+                        <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                          {laneCount > 9 ? "9+" : laneCount}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
             </div>
           </div>
 
-          <div className="relative border-b border-border-light/70 bg-gradient-to-b from-white to-primary-light/60 p-2 dark:border-white/10 dark:from-transparent dark:to-transparent">
-            <div className="flex items-center justify-between gap-2 rounded-xl border border-border-light/80 bg-white/80 px-3 py-2 dark:border-white/10 dark:bg-white/5">
-              <p className="truncate text-xs text-text-secondary dark:text-white/65">
+          {/* ── Conversation switcher strip ── */}
+          <div className="relative shrink-0 border-b border-border-light/60 bg-white/50 px-3 py-2 dark:border-white/8 dark:bg-transparent">
+            <div className="flex items-center justify-between gap-2">
+              <p className="min-w-0 truncate text-[11px] text-text-secondary/75 dark:text-white/45">
                 {copy.laneNotes[activeLane]}
               </p>
               <button
                 ref={historyButtonRef}
                 type="button"
                 onClick={() => setIsHistoryOpen((previous) => !previous)}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border-light bg-surface-primary px-2.5 py-1.5 text-[11px] font-semibold text-text-primary transition hover:border-primary/35 hover:text-primary dark:border-white/12 dark:bg-surface-secondary dark:text-white/90"
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
+                  isHistoryOpen
+                    ? "border-primary/35 bg-primary/8 text-primary dark:border-primary/30 dark:bg-primary/14 dark:text-primary-light"
+                    : "border-border-light bg-white text-text-primary shadow-sm hover:border-primary/30 hover:text-primary dark:border-white/12 dark:bg-white/5 dark:text-white/80 dark:hover:border-primary/25 dark:hover:text-primary-light"
+                }`}
+                aria-expanded={isHistoryOpen}
+                aria-label={copy.viewConversations}
+                title={copy.viewConversations}
               >
-                <MessageSquare className="h-3.5 w-3.5" />
-                {activeLaneItems.length}
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  {activeLaneItems.length === 1
+                    ? copy.conversationsSwitcherSingle
+                    : copy.conversationsSwitcherCount(activeLaneItems.length)}
+                </span>
+                <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-150 ${isHistoryOpen ? "rotate-180" : ""}`} />
               </button>
             </div>
 
             {isHistoryOpen ? (
               <div
                 ref={historyPopupRef}
-                className={`absolute top-[calc(100%+8px)] z-30 max-h-[40vh] w-[min(94vw,420px)] overflow-hidden rounded-2xl border border-border-strong/70 bg-surface-primary shadow-[0_24px_54px_-26px_rgba(34,52,56,0.34)] dark:border-white/12 dark:bg-surface-secondary ${
+                className={`absolute top-[calc(100%+6px)] z-30 max-h-[40vh] w-[min(94vw,430px)] overflow-hidden rounded-2xl border border-border-strong/60 bg-surface-primary shadow-[0_24px_60px_-28px_rgba(34,52,56,0.36)] dark:border-white/10 dark:bg-surface-secondary ${
                   isRtl ? "left-2" : "right-2"
                 }`}
               >
@@ -888,7 +816,8 @@ export default function UnifiedMessagesLauncher({
             ) : null}
           </div>
 
-          <main className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-white via-primary-light/70 to-primary-light/45 p-2 dark:from-transparent dark:to-transparent">
+          {/* ── Thread area ── */}
+          <main className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-white via-primary-light/55 to-primary-light/30 p-2.5 dark:from-transparent dark:to-transparent">
             {activeLane === "session" && role !== "admin" && selectedSessionItem ? (
               <SessionLaneThread
                 sessionId={selectedSessionItem.id}
@@ -973,15 +902,18 @@ export default function UnifiedMessagesLauncher({
             ) : null}
           </main>
 
-          <div className="border-t border-border-light/70 px-3 py-1.5 dark:border-white/10">
+          {/* ── Footer: View all messages ── */}
+          <div className="shrink-0 border-t border-border-light/60 bg-gray-50/60 px-4 py-2.5 dark:border-white/8 dark:bg-transparent">
             <Link
               href={footerHref as never}
               onClick={() => setIsOpen(false)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline"
+              className="group inline-flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-primary dark:text-white/55 dark:hover:text-primary-light"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              {copy.openAll}
-              <ChevronUp className="h-3.5 w-3.5 rtl:rotate-180" />
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/60 group-hover:text-primary dark:text-primary/50 dark:group-hover:text-primary-light" />
+                <span>{copy.openAll}</span>
+              </span>
+              <ChevronUp className={`h-3.5 w-3.5 shrink-0 text-primary/50 transition-transform group-hover:-translate-y-0.5 group-hover:text-primary dark:text-primary/40 dark:group-hover:text-primary-light rtl:rotate-180`} />
             </Link>
           </div>
         </section>

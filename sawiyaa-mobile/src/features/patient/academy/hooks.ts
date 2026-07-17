@@ -1,102 +1,29 @@
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  createPublicAcademyEnrollment,
-  getPublicAcademyCourseBySlug,
-  getPublicAcademyCourses,
-  getPublicAcademyEnrollment,
-} from "./api";
-import type { CreateAcademyEnrollmentInput, ListAcademyCoursesParams } from "./types";
-
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createPublicAcademyProgramEnrollment, getPublicAcademyProgramBySlug, getPublicAcademyProgramEnrollment, getPublicAcademyPrograms } from "./api";
+import type { CreateAcademyProgramEnrollmentInput, ListAcademyProgramsParams } from "./types";
 export const academyQueryKeys = {
   all: ["academy"] as const,
-  courses: (params?: ListAcademyCoursesParams, scopeKey?: string | null) =>
-    [...academyQueryKeys.all, "courses", scopeKey ?? "guest", params ?? {}] as const,
-  infiniteCourses: (params?: ListAcademyCoursesParams, scopeKey?: string | null) =>
-    [...academyQueryKeys.all, "infinite-courses", scopeKey ?? "guest", params ?? {}] as const,
-  course: (slug: string, scopeKey?: string | null) =>
-    [...academyQueryKeys.all, "course", scopeKey ?? "guest", slug] as const,
-  enrollment: (id: string, token: string) =>
-    [...academyQueryKeys.all, "enrollment", id, token] as const,
+  programs: (params?: ListAcademyProgramsParams, scopeKey?: string | null) => [...academyQueryKeys.all, "programs", scopeKey ?? "guest", params ?? {}] as const,
+  infinitePrograms: (params?: ListAcademyProgramsParams, scopeKey?: string | null) => [...academyQueryKeys.all, "infinite-programs", scopeKey ?? "guest", params ?? {}] as const,
+  program: (slug: string, scopeKey?: string | null) => [...academyQueryKeys.all, "program", scopeKey ?? "guest", slug] as const,
+  enrollment: (id: string, token: string) => [...academyQueryKeys.all, "program-enrollment", id, token] as const,
 };
-
-export function usePublicAcademyCourses(
-  params?: ListAcademyCoursesParams,
-  options?: { cacheScopeKey?: string | null },
-) {
-  return useQuery({
-    queryKey: academyQueryKeys.courses(params, options?.cacheScopeKey),
-    queryFn: () => getPublicAcademyCourses(params),
-    staleTime: 60_000,
-  });
-}
-
-export function useInfinitePublicAcademyCourses(
-  params?: ListAcademyCoursesParams,
-  options?: { cacheScopeKey?: string | null },
-) {
+export function useInfinitePublicAcademyPrograms(params?: ListAcademyProgramsParams, options?: { cacheScopeKey?: string | null }) {
   const resolvedParams = params ?? {};
-
   return useInfiniteQuery({
-    queryKey: academyQueryKeys.infiniteCourses(resolvedParams, options?.cacheScopeKey),
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      getPublicAcademyCourses({
-        ...resolvedParams,
-        page: Number(pageParam) || 1,
-      }),
-    getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.pagination;
-      if (page >= totalPages) {
-        return undefined;
-      }
-
-      return page + 1;
-    },
+    queryKey: academyQueryKeys.infinitePrograms(resolvedParams, options?.cacheScopeKey), initialPageParam: 1,
+    queryFn: ({ pageParam }) => getPublicAcademyPrograms({ ...resolvedParams, page: Number(pageParam) || 1 }),
+    getNextPageParam: (lastPage) => lastPage.pagination.page >= lastPage.pagination.totalPages ? undefined : lastPage.pagination.page + 1,
     staleTime: 60_000,
   });
 }
-
-export function usePublicAcademyCourse(
-  slug: string | null,
-  options?: { cacheScopeKey?: string | null },
-) {
-  return useQuery({
-    queryKey: academyQueryKeys.course(slug ?? "", options?.cacheScopeKey),
-    queryFn: () => getPublicAcademyCourseBySlug(slug!),
-    enabled: Boolean(slug),
-    staleTime: 60_000,
-  });
+export function usePublicAcademyProgram(slug: string | null, options?: { cacheScopeKey?: string | null }) {
+  return useQuery({ queryKey: academyQueryKeys.program(slug ?? "", options?.cacheScopeKey), queryFn: () => getPublicAcademyProgramBySlug(slug!), enabled: Boolean(slug), staleTime: 60_000 });
 }
-
-export function useCreatePublicAcademyEnrollment() {
+export function useCreatePublicAcademyProgramEnrollment() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      slug,
-      input,
-    }: {
-      slug: string;
-      input: CreateAcademyEnrollmentInput;
-    }) => createPublicAcademyEnrollment(slug, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: academyQueryKeys.all });
-    },
-  });
+  return useMutation({ mutationFn: ({ slug, input }: { slug: string; input: CreateAcademyProgramEnrollmentInput }) => createPublicAcademyProgramEnrollment(slug, input), onSuccess: () => queryClient.invalidateQueries({ queryKey: academyQueryKeys.all }) });
 }
-
-export function usePublicAcademyEnrollment(
-  id: string | null,
-  token: string | null,
-) {
-  return useQuery({
-    queryKey: academyQueryKeys.enrollment(id ?? "", token ?? ""),
-    queryFn: () => getPublicAcademyEnrollment(id!, token!),
-    enabled: Boolean(id) && Boolean(token),
-    staleTime: 30_000,
-  });
+export function usePublicAcademyProgramEnrollment(id: string | null, token: string | null) {
+  return useQuery({ queryKey: academyQueryKeys.enrollment(id ?? "", token ?? ""), queryFn: () => getPublicAcademyProgramEnrollment(id!, token!), enabled: Boolean(id) && Boolean(token), staleTime: 30_000 });
 }

@@ -16,7 +16,7 @@ import { AuthIdentityRepository } from '../repositories/auth-identity.repository
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserRepository } from '../repositories/user.repository';
-import { isAuthUniqueConstraintError } from '../utils/is-auth-unique-constraint-error';
+import { isUserEmailUniqueConstraintError } from '../utils/is-user-email-unique-constraint-error';
 
 /**
  * Practitioner registration creates only the auth/account baseline.
@@ -210,14 +210,14 @@ export class RegisterPractitionerAccountUseCase {
           });
         }
 
-        await this.userEmailRepository.upsertPrimaryEmail(
+        await this.userEmailRepository.createPrimaryEmail(
           createdUser.id,
           normalizedEmail,
           true,
           tx,
         );
         if (normalizedOtpEmail && normalizedOtpEmail !== normalizedEmail) {
-          await this.userEmailRepository.upsertSecondaryEmail(
+          await this.userEmailRepository.createSecondaryEmail(
             createdUser.id,
             normalizedOtpEmail,
             true,
@@ -233,7 +233,7 @@ export class RegisterPractitionerAccountUseCase {
         return createdUser;
       })
       .catch((error: unknown) => {
-        if (isAuthUniqueConstraintError(error)) {
+        if (isUserEmailUniqueConstraintError(error)) {
           throw new ConflictException({
             messageKey: 'auth.errors.emailAlreadyRegistered',
             error: 'EMAIL_ALREADY_REGISTERED',

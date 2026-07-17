@@ -20,7 +20,7 @@ import {
   extractHostedCheckoutReturnParams,
   normalizePaymentRedirectStatus,
 } from "../../payments/return-utils";
-import { usePublicAcademyEnrollment } from "../hooks";
+import { usePublicAcademyProgramEnrollment } from "../hooks";
 import {
   buildAcademyEnrollmentPaymentRedirectUrl,
   buildAcademyEnrollmentPaymentReturnUrl,
@@ -32,11 +32,10 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
-const CONFIRMED_ENROLLMENT_STATUSES = new Set(["PAID", "CONFIRMED"]);
+const CONFIRMED_ENROLLMENT_STATUSES = new Set(["CONFIRMED"]);
 const TERMINAL_ENROLLMENT_STATUSES = new Set([
   "CANCELLED",
-  "REFUNDED",
-  "PAYMENT_FAILED",
+  "EXPIRED",
 ]);
 const POLL_INTERVAL_MS = 3_000;
 const MAX_POLL_DURATION_MS = 45_000;
@@ -117,19 +116,17 @@ export default function AcademyEnrollmentPaymentReturnScreen({
   const providerReference = params.providerReference ?? params.order ?? null;
   const browserResult = params.browserResult ?? null;
 
-  const enrollmentQuery = usePublicAcademyEnrollment(
+  const enrollmentQuery = usePublicAcademyProgramEnrollment(
     routeEnrollmentId || null,
     routeToken || null,
   );
   const enrollment = enrollmentQuery.data ?? null;
   const payment = enrollment?.payment ?? null;
-  const isConfirmed = isConfirmedEnrollmentStatus(enrollment?.enrollmentStatus);
-  const isTerminal = isTerminalEnrollmentStatus(enrollment?.enrollmentStatus);
-  const isPendingPayment =
-    enrollment?.enrollmentStatus === "PENDING_PAYMENT" ||
-    enrollment?.enrollmentStatus === "PAYMENT_FAILED";
+  const isConfirmed = isConfirmedEnrollmentStatus(enrollment?.status);
+  const isTerminal = isTerminalEnrollmentStatus(enrollment?.status);
+  const isPendingPayment = enrollment?.status === "PENDING_PAYMENT";
   const paymentAmountLabel =
-    payment && formatAcademyMoney(payment.amount, payment.currency, locale);
+    payment && formatAcademyMoney(payment.amountTotal, payment.currencyCode, locale);
   const showPaymentSection = Boolean(payment) || isPendingPayment || isTerminal;
   const shouldStartPolling = Boolean(
     normalizedRedirectStatus || browserResult || providerReference,
@@ -221,7 +218,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
           : mapBrowserResultToRedirectStatus(result.type);
 
       router.replace({
-        pathname: "/(patient)/academy/enrollments/[id]/payment-return",
+        pathname: "/(patient)/academy/program-enrollments/[id]/payment-return",
         params: {
           id: routeEnrollmentId,
           token: routeToken,
@@ -264,7 +261,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
       };
     }
 
-    if (enrollment?.enrollmentStatus === "PAYMENT_FAILED" || normalizedRedirectStatus === "failed") {
+    if (enrollment?.status === "EXPIRED" || normalizedRedirectStatus === "failed") {
       return {
         icon: <Ionicons name="close-circle" size={48} color={theme.colors.error} />,
         title: t("academy.enrollment.paymentReturnFailedTitle"),
@@ -372,7 +369,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
     pollingActive,
     t,
     theme.colors,
-    enrollment?.enrollmentStatus,
+    enrollment?.status,
   ]);
 
   if (!routeEnrollmentId || !routeToken) {
@@ -477,14 +474,14 @@ export default function AcademyEnrollmentPaymentReturnScreen({
             <View style={styles.summary}>
               <SummaryRow
                 label={t("academy.enrollment.course")}
-                value={enrollment!.courseTitle}
+                value={enrollment!.program.title}
               />
               {payment ? (
                 <SummaryRow
                   label={t("academy.enrollment.amount")}
                   value={
                     paymentAmountLabel ??
-                    `${payment.amount} ${payment.currency}`
+                    `${payment.amountTotal} ${payment.currencyCode}`
                   }
                 />
               ) : null}
@@ -536,7 +533,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
                 title={t("academy.enrollment.paymentReturnViewEnrollment")}
                 onPress={() =>
                   router.replace({
-                    pathname: "/(patient)/academy/enrollments/[id]",
+                    pathname: "/(patient)/academy/program-enrollments/[id]",
                     params: { id: routeEnrollmentId, token: routeToken },
                   } as never)
                 }
@@ -547,7 +544,7 @@ export default function AcademyEnrollmentPaymentReturnScreen({
                 variant="secondary"
                 onPress={() =>
                   router.replace(
-                    `/(patient)/academy/${enrollment!.courseSlug}` as never,
+                    `/(patient)/academy/${enrollment!.program.slug}` as never,
                   )
                 }
                 style={styles.actionButton}

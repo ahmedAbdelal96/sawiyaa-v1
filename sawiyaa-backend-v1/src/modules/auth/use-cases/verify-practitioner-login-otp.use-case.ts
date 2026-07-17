@@ -13,6 +13,15 @@ import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { VerifyOtpChallengeUseCase } from '../../verification/use-cases/verify-otp-challenge.use-case';
 import { UserRepository } from '../repositories/user.repository';
 import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
+import { AuthLockoutService } from '../services/auth-lockout.service';
+import {
+  AUTH_LOCKOUT_CONTEXTS,
+  AuthLockoutState,
+} from '../types/auth-lockout.types';
+import {
+  buildAuthLockoutResponsePayload,
+  createLockedLoginException,
+} from '../utils/auth-lockout-response.util';
 
 /**
  * Tokens are issued only after OTP verification succeeds.
@@ -25,6 +34,7 @@ export class VerifyPractitionerLoginOtpUseCase {
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
     private readonly userRepository: UserRepository,
     private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
+    private readonly authLockoutService: AuthLockoutService,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -36,11 +46,42 @@ export class VerifyPractitionerLoginOtpUseCase {
     ipAddress?: string | null;
     userAgent?: string | null;
   }) {
-    const challenge = await this.verifyOtpChallengeUseCase.execute({
-      challengeId: input.challengeId,
-      code: input.code,
-      purpose: OtpPurpose.PRACTITIONER_LOGIN,
-    });
+    let lockoutStateAfterInvalidOtp: AuthLockoutState | null = null;
+    let challenge: Awaited<
+      ReturnType<VerifyOtpChallengeUseCase['execute']>
+    >;
+
+    try {
+      challenge = await this.verifyOtpChallengeUseCase.execute({
+        challengeId: input.challengeId,
+        code: input.code,
+        purpose: OtpPurpose.PRACTITIONER_LOGIN,
+        onInvalidCodeAttempt: async (attemptChallenge) => {
+          lockoutStateAfterInvalidOtp = await this.authLockoutService.recordFailure(
+            AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_OTP_VERIFY,
+            `user:${attemptChallenge.user.id}`,
+          );
+        },
+      });
+    } catch (error) {
+      const currentLockoutState = lockoutStateAfterInvalidOtp as
+        | AuthLockoutState
+        | null;
+
+      if (currentLockoutState && currentLockoutState.isLocked) {
+        throw createLockedLoginException(currentLockoutState);
+      }
+
+      if (currentLockoutState) {
+        throw new ForbiddenException({
+          ...buildAuthLockoutResponsePayload(currentLockoutState),
+          messageKey: 'auth.errors.otpCodeInvalid',
+          errorCode: 'OTP_CODE_INVALID',
+        });
+      }
+
+      throw error;
+    }
 
     const hasPractitionerRole =
       challenge.user?.roles.some(
@@ -100,8 +141,7 @@ export class VerifyPractitionerLoginOtpUseCase {
     }
 
     if (
-      currentUser.practitionerProfile.status === PractitionerStatus.SUSPENDED ||
-      currentUser.practitionerProfile.status === PractitionerStatus.INACTIVE
+      currentUser.practitionerProfile.status !== PractitionerStatus.APPROVED
     ) {
       this.securityAuditService.logAsync({
         action: 'auth.practitioner.login.failure',
@@ -127,16 +167,21 @@ export class VerifyPractitionerLoginOtpUseCase {
     await this.practitionerPresenceRepository.markOnline(
       currentUser.practitionerProfile.id,
     );
+    await this.authLockoutService.clear(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_OTP_VERIFY,
+      `user:${challenge.user.id}`,
+    );
 
     this.securityAuditService.logAsync({
       action: 'auth.practitioner.login.success',
       outcome: SecurityAuditOutcome.SUCCESS,
       actorUserId: challenge.user.id,
       actorRoles: [UserRoleType.PRACTITIONER],
+      metadata: { authMethod: 'PASSWORD_PLUS_OTP' },
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
     });
 
-    return result;
+    return { ...result, nextStep: 'AUTHENTICATED' as const };
   }
 }

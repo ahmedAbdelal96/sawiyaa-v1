@@ -12,7 +12,10 @@ describe('MarkPaymentSucceededUseCase', () => {
       paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',
       provider: PaymentProvider.STRIPE,
       status: PaymentStatus.PENDING,
-      sessionId: 'session_1',
+      sessionId:
+        input?.paymentPurpose === 'SESSION_PACKAGE_PURCHASE'
+          ? null
+          : 'session_1',
       patientId: 'patient_1',
       practitionerId: 'pr_1',
       couponId: null,
@@ -64,8 +67,8 @@ describe('MarkPaymentSucceededUseCase', () => {
     const operationalNotificationService = {
       notifyPaymentSucceeded: jest.fn().mockResolvedValue(undefined),
     };
-    const postPaymentLedgerEntriesUseCase = {
-      execute: jest.fn().mockResolvedValue({}),
+    const sessionEarningReviewService = {
+      syncForSessionCompletion: jest.fn().mockResolvedValue(null),
     };
     const customerWalletAccountingService = {
       captureReservationForPayment: jest.fn().mockResolvedValue(null),
@@ -99,7 +102,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       orchestrateSessionPaymentStatusService as never,
       orchestrateAcademyProgramEnrollmentPaymentStatusService as never,
       paymentMapper as never,
-      postPaymentLedgerEntriesUseCase as never,
+      sessionEarningReviewService as never,
       customerWalletAccountingService as never,
       redeemCouponUseCase as never,
       operationalNotificationService as never,
@@ -114,7 +117,7 @@ describe('MarkPaymentSucceededUseCase', () => {
       paymentRepository,
       orchestrateSessionPaymentStatusService,
       orchestrateAcademyProgramEnrollmentPaymentStatusService,
-      postPaymentLedgerEntriesUseCase,
+      sessionEarningReviewService,
       operationalNotificationService,
       reconcilePackagePurchasePaymentUseCase,
       corporateSponsorshipConsumeService,
@@ -130,9 +133,9 @@ describe('MarkPaymentSucceededUseCase', () => {
       payload: {},
     });
 
-    expect(setup.postPaymentLedgerEntriesUseCase.execute).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(
+      setup.sessionEarningReviewService.syncForSessionCompletion,
+    ).toHaveBeenCalledTimes(1);
     expect(
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,
@@ -170,7 +173,7 @@ describe('MarkPaymentSucceededUseCase', () => {
     });
 
     expect(
-      setup.postPaymentLedgerEntriesUseCase.execute,
+      setup.sessionEarningReviewService.syncForSessionCompletion,
     ).not.toHaveBeenCalled();
     expect(
       setup.operationalNotificationService.notifyPaymentSucceeded,

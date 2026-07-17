@@ -27,6 +27,8 @@ import type {
   PractitionerRegistrationResponse,
   PractitionerResetPasswordRequest,
   PractitionerLoginResponse,
+  PractitionerAuthenticatedResponse,
+  PractitionerOtpChallengeResponse,
   PractitionerVerifyOtpRequest,
   RefreshTokenRequest,
 } from "../types/auth.types";
@@ -71,6 +73,45 @@ function clearLocalAuthSession() {
   if (!isBrowserRuntime()) return;
   tokenManager.clearAll();
   clearAuthStore();
+}
+
+function isPractitionerOtpChallengeResponse(
+  value: unknown,
+): value is PractitionerOtpChallengeResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const response = value as Record<string, unknown>;
+  return (
+    response.nextStep === "OTP_REQUIRED" &&
+    typeof response.challengeId === "string" &&
+    typeof response.maskedTarget === "string" &&
+    typeof response.expiresAt === "string" &&
+    typeof response.channel === "string" &&
+    response.requiresOtpVerification === true
+  );
+}
+
+function isPractitionerAuthenticatedResponse(
+  value: unknown,
+): value is PractitionerAuthenticatedResponse {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const response = value as Record<string, unknown>;
+  const tokens = response.tokens as Record<string, unknown> | undefined;
+  const user = response.user as Record<string, unknown> | undefined;
+
+  return (
+    (response.nextStep === "AUTHENTICATED" || response.nextStep === undefined) &&
+    !!tokens &&
+    typeof tokens.accessToken === "string" &&
+    typeof tokens.refreshToken === "string" &&
+    !!user &&
+    typeof user.id === "string"
+  );
 }
 
 export async function patientGoogleAuth(data: PatientGoogleAuthRequest) {
@@ -145,11 +186,18 @@ export async function practitionerLogin(data: PractitionerLoginRequest) {
     "/auth/practitioner/login",
     data
   );
-  const normalized = extractData(response.data);
-  if ("tokens" in normalized) {
+  const normalized = extractData(response.data) as unknown;
+
+  if (isPractitionerAuthenticatedResponse(normalized)) {
     storeAuthSession(normalized);
+    return normalized;
   }
-  return normalized;
+
+  if (isPractitionerOtpChallengeResponse(normalized)) {
+    return normalized;
+  }
+
+  throw new Error("PRACTITIONER_LOGIN_INVALID_RESPONSE");
 }
 
 export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) {
@@ -157,7 +205,12 @@ export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) 
     "/auth/practitioner/login/verify-otp",
     data
   );
-  const normalized = extractData(response.data);
+  const normalized = extractData(response.data) as unknown;
+
+  if (!isPractitionerAuthenticatedResponse(normalized)) {
+    throw new Error("PRACTITIONER_LOGIN_INVALID_RESPONSE");
+  }
+
   storeAuthSession(normalized);
   return normalized;
 }

@@ -6,6 +6,7 @@ const ACADEMY_PROGRAM_ERROR_MAP: Record<string, string> = {
   ACADEMY_PROGRAM_ARCHIVED_CANNOT_BE_PUBLISHED:
     "programs.errors.archivedProgramCannotBePublished",
   ACADEMY_PROGRAM_ARCHIVED_READ_ONLY: "programs.errors.archivedReadOnly",
+  ACADEMY_PROGRAM_ARCHIVE_REASON_REQUIRED: "programs.errors.archiveReasonRequired",
   ACADEMY_PROGRAM_INVALID_WINDOW: "programs.errors.invalidWindow",
   ACADEMY_PROGRAM_INVALID_DATE: "programs.errors.invalidDate",
   ACADEMY_PROGRAM_INVALID_PRICE: "programs.errors.invalidPrice",
@@ -20,6 +21,8 @@ const ACADEMY_PROGRAM_ERROR_MAP: Record<string, string> = {
   ACADEMY_PROGRAM_END_AT_REQUIRED: "programs.errors.basicDetailsRequired",
   ACADEMY_PROGRAM_SESSION_NOT_FOUND: "programs.errors.sessionNotFound",
   ACADEMY_PROGRAM_ATTENDANCE_INVALID_STATUS: "programs.errors.attendanceInvalidStatus",
+  ACADEMY_PROGRAM_ATTENDANCE_CORRECTION_REASON_REQUIRED:
+    "admin.detail.attendance.feedback.correctionReasonRequired",
   ACADEMY_PROGRAM_ENROLLMENT_ALREADY_EXISTS: "programs.errors.enrollmentAlreadyExists",
   ACADEMY_PROGRAM_LEARNER_CONTACT_ALREADY_EXISTS: "programs.errors.learnerContactAlreadyExists",
   ACADEMY_PROGRAM_CERTIFICATE_FILE_REQUIRED: "programs.errors.certificateFileRequired",
@@ -54,6 +57,10 @@ const ACADEMY_PROGRAM_PUBLIC_ERROR_MAP: Record<string, string> = {
   ACADEMY_PROGRAM_UNSUPPORTED_CURRENCY: "public.errors.unsupportedCurrency",
   ACADEMY_PROGRAM_ENROLLMENT_ALREADY_EXISTS: "public.errors.alreadyEnrolled",
   ACADEMY_PROGRAM_LEARNER_CONTACT_ALREADY_EXISTS: "public.errors.alreadyEnrolled",
+  PAYMENT_PROVIDER_UNAVAILABLE: "public.errors.paymentUnavailable",
+  PAYMENT_PROVIDER_NOT_CONFIGURED: "public.errors.paymentUnavailable",
+  "payments.errors.providerUnavailable": "public.errors.paymentUnavailable",
+  "payments.errors.providerNotConfigured": "public.errors.paymentUnavailable",
 };
 
 const ACADEMY_PROGRAM_COVER_UPLOAD_ERROR_MAP: Record<string, string> = {

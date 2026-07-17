@@ -2,9 +2,13 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
-import { AcademyProgramEnrollmentStatus } from '@prisma/client';
+import { AcademyProgramEnrollmentStatus, Prisma, SecurityAuditOutcome } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AcademyProgramEnrollmentPresenter } from '../presenters/academy-program-enrollment.presenter';
 import { AcademyProgramCertificateStorageService } from '../services/academy-program-certificate-storage.service';
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
@@ -24,6 +28,8 @@ export class UploadAdminAcademyProgramEnrollmentCertificateUseCase {
     private readonly academyProgramEnrollmentRepository: AcademyProgramEnrollmentRepository,
     private readonly academyProgramEnrollmentPresenter: AcademyProgramEnrollmentPresenter,
     private readonly academyProgramCertificateStorageService: AcademyProgramCertificateStorageService,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -88,16 +94,38 @@ export class UploadAdminAcademyProgramEnrollmentCertificateUseCase {
     );
 
     try {
-      const updated = await this.academyProgramEnrollmentRepository.updateEnrollment(
-        enrollment.id,
-        {
+      const data = {
           certificateFileStoragePath: stored.storagePath,
           certificateFileName: originalFileName,
           certificateUploadedAt: now,
           certificateUploadedByUserId: input.actorUserId,
           certificateIssuedAt: enrollment.certificateIssuedAt ?? now,
-        },
-      );
+        };
+      const updated = this.prisma && this.securityAuditService
+        ? await this.prisma.$transaction(async (tx) => {
+            const record = await this.academyProgramEnrollmentRepository.updateEnrollment(enrollment.id, data, tx);
+            await this.securityAuditService!.recordRequired(tx, {
+              action: enrollment.certificateFileStoragePath
+                ? 'academy.programEnrollment.certificate.replace'
+                : 'academy.programEnrollment.certificate.issue',
+              outcome: SecurityAuditOutcome.SUCCESS,
+              actorType: SecurityAuditActorType.USER,
+              source: SecurityAuditSource.HTTP_REQUEST,
+              actorUserId: input.actorUserId,
+              resourceType: 'AcademyProgramEnrollment',
+              resourceId: record.id,
+              targetUserId: record.userId,
+              metadata: {
+                academyProgramId: enrollment.academyProgramId,
+                certificateStatus: 'ISSUED',
+                fileName: originalFileName,
+                uploadedAt: now,
+                replaced: Boolean(enrollment.certificateFileStoragePath),
+              },
+            });
+            return record;
+          })
+        : await this.academyProgramEnrollmentRepository.updateEnrollment(enrollment.id, data);
 
       if (
         enrollment.certificateFileStoragePath &&

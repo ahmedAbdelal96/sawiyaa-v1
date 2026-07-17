@@ -9,11 +9,10 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
-import { PostPaymentLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-payment-ledger-entries.use-case';
+import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { RedeemCouponUseCase } from '@modules/financial-rules/use-cases/redeem-coupon.use-case';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
-import { AcademyEnrollmentStatus } from '@prisma/client';
 import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
@@ -21,6 +20,7 @@ import { OrchestrateAcademyProgramEnrollmentPaymentStatusService } from '../serv
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ReconcilePackagePurchasePaymentUseCase } from '@modules/package-plans/use-cases/reconcile-package-purchase-payment.use-case';
 import { CorporateSponsorshipConsumeService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-consume.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class MarkPaymentSucceededUseCase {
@@ -31,7 +31,7 @@ export class MarkPaymentSucceededUseCase {
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
     private readonly orchestrateAcademyProgramEnrollmentPaymentStatusService: OrchestrateAcademyProgramEnrollmentPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
-    private readonly postPaymentLedgerEntriesUseCase: PostPaymentLedgerEntriesUseCase,
+    private readonly sessionEarningReviewService: SessionEarningReviewService,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly redeemCouponUseCase: RedeemCouponUseCase,
     private readonly operationalNotificationService: OperationalNotificationService,
@@ -70,6 +70,7 @@ export class MarkPaymentSucceededUseCase {
           paymentId: payment.id,
           eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
           providerEventRef: input.providerEventRef,
+          previousStatus: payment.status,
           payloadJson: input.payload as Prisma.InputJsonValue,
         },
         tx,
@@ -97,6 +98,10 @@ export class MarkPaymentSucceededUseCase {
           paymentId: payment.id,
           eventType: PaymentEventType.PAYMENT_CAPTURED,
           providerEventRef: input.providerEventRef,
+          actorType: AuditActorType.PAYMENT_WEBHOOK,
+          source: SecurityAuditSource.PAYMENT_WEBHOOK,
+          previousStatus: payment.status,
+          newStatus: PaymentStatus.CAPTURED,
         },
         tx,
       );
@@ -126,7 +131,6 @@ export class MarkPaymentSucceededUseCase {
       string,
       unknown
     >;
-    const isAcademyEnrollment = paymentMetadata.source === 'academy-enrollment';
     const isAcademyProgramEnrollment =
       payment.paymentPurpose === PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT ||
       paymentMetadata.source === 'academy-program-enrollment';
@@ -156,7 +160,6 @@ export class MarkPaymentSucceededUseCase {
     }
 
     if (
-      !isAcademyEnrollment &&
       !isAcademyProgramEnrollment &&
       updated.amountFromWallet.gt(0)
     ) {
@@ -166,7 +169,7 @@ export class MarkPaymentSucceededUseCase {
       });
     }
 
-    if (!isAcademyEnrollment && !isAcademyProgramEnrollment) {
+    if (!isAcademyProgramEnrollment) {
       await this.redeemCouponUseCase.execute({
         couponId: updated.couponId,
         couponCode: updated.couponCodeSnapshot?.toString() ?? null,
@@ -181,10 +184,6 @@ export class MarkPaymentSucceededUseCase {
           updated.couponPlatformShareSnapshot?.toString() ?? null,
         couponPractitionerSharePercent:
           updated.couponPractitionerShareSnapshot?.toString() ?? null,
-      });
-
-      await this.postPaymentLedgerEntriesUseCase.execute({
-        paymentId: updated.id,
       });
     }
 
@@ -205,28 +204,13 @@ export class MarkPaymentSucceededUseCase {
           },
         );
       }
+
+      await this.sessionEarningReviewService.syncForSessionCompletion({
+        sessionId: payment.sessionId,
+      });
     }
 
-    if (isAcademyEnrollment) {
-      await this.prisma.academyEnrollment.updateMany({
-        where: {
-          paymentId: payment.id,
-          enrollmentStatus: {
-            in: [
-              AcademyEnrollmentStatus.PENDING_PAYMENT,
-              AcademyEnrollmentStatus.PAYMENT_FAILED,
-            ],
-          },
-        },
-        data: {
-          enrollmentStatus: AcademyEnrollmentStatus.PAID,
-          paymentStatus: PaymentStatus.CAPTURED,
-          confirmedAt: new Date(),
-          failedAt: null,
-          failedReason: null,
-        },
-      });
-    } else if (isAcademyProgramEnrollment) {
+    if (isAcademyProgramEnrollment) {
       await this.orchestrateAcademyProgramEnrollmentPaymentStatusService.markEnrollmentConfirmedFromPayment(
         payment.id,
       );
@@ -243,7 +227,7 @@ export class MarkPaymentSucceededUseCase {
       'Payments',
     );
 
-    if (!isAcademyEnrollment && !isAcademyProgramEnrollment && updated.patientId) {
+    if (!isAcademyProgramEnrollment && updated.patientId) {
       await this.operationalNotificationService.notifyPaymentSucceeded({
         patientProfileId: updated.patientId,
         paymentId: updated.id,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,17 +8,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
+import AuthPasswordField from "./AuthPasswordField";
 import Label from "@/components/form/Label";
 import Select from "@/components/form/Select";
 import MultiSelect from "@/components/form/MultiSelect";
-import {
-  ChevronLeftIcon,
-  EyeCloseIcon,
-  EyeIcon,
-  GroupIcon,
-  UserCircleIcon,
-} from "@/icons";
-import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
+import { GroupIcon, EyeCloseIcon, EyeIcon } from "@/icons";
 import {
   useSpecialties,
   useSpecialtyCategories,
@@ -32,29 +26,7 @@ import {
   getLocalizedSpecialtyCategoryName,
   getLocalizedSpecialtyName,
 } from "@/features/specialties/utils/localized-specialty";
-
-export const SIGN_UP_MODES = ["patient", "practitioner"] as const;
-export type SignUpMode = (typeof SIGN_UP_MODES)[number];
-
-const signUpSchema = z.object({
-  displayName: z.string().min(2, "Display name is required"),
-  email: z.string().email("Invalid email address"),
-  otpEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  primarySpecialtyCategoryId: z.string().optional(),
-  specialtyIds: z.array(z.string()).optional(),
-});
-
-type SignUpFormData = z.infer<typeof signUpSchema>;
-
-type ModeConfig = {
-  icon: typeof UserCircleIcon;
-};
-
-const MODE_CONFIG: Record<SignUpMode, ModeConfig> = {
-  patient: { icon: UserCircleIcon },
-  practitioner: { icon: GroupIcon },
-};
+import AuthSplitCard from "./AuthSplitCard";
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const [pathname, existingQuery = ""] = basePath.split("?");
@@ -65,6 +37,20 @@ function buildAuthHref(basePath: string, params: Record<string, string | null>) 
   const query = search.toString();
   return query ? `${pathname}?${query}` : pathname;
 }
+
+export const SIGN_UP_MODES = ["patient", "practitioner"] as const;
+export type SignUpMode = (typeof SIGN_UP_MODES)[number];
+
+const staticSignUpSchema = z.object({
+  displayName: z.string(),
+  email: z.string(),
+  otpEmail: z.string().optional(),
+  password: z.string(),
+  primarySpecialtyCategoryId: z.string().optional(),
+  specialtyIds: z.array(z.string()).optional(),
+});
+
+type SignUpFormData = z.infer<typeof staticSignUpSchema>;
 
 type SignUpFormProps = {
   mode: SignUpMode;
@@ -79,12 +65,24 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitLockRef = useRef(false);
 
   const patientRegister = usePatientRegister();
   const practitionerRegister = usePractitionerRegister();
   const specialtyCategoriesQuery = useSpecialtyCategories(mode === "practitioner");
   const specialtiesQuery = useSpecialties(undefined, mode === "practitioner");
   const isSubmitting = patientRegister.isPending || practitionerRegister.isPending;
+
+  const signUpSchema = useMemo(() => {
+    return z.object({
+      displayName: z.string().min(1, t("signUpForm.validation.nameRequired")),
+      email: z.string().email(t("signUpForm.validation.emailInvalid")),
+      otpEmail: z.string().email(t("signUpForm.validation.emailInvalid")).optional().or(z.literal("")),
+      password: z.string().min(8, t("signUpForm.validation.passwordTooShort")),
+      primarySpecialtyCategoryId: z.string().optional(),
+      specialtyIds: z.array(z.string()).optional(),
+    });
+  }, [t]);
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -97,8 +95,55 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       specialtyIds: [],
     },
   });
-  const modeConfig = MODE_CONFIG[mode];
-  const ModeIcon = modeConfig.icon;
+
+  const getLocalizedError = (err: any): string => {
+    if (!err) return "";
+
+    if (
+      err.code === "EMAIL_ALREADY_REGISTERED" ||
+      err.messageKey === "auth.errors.emailAlreadyRegistered"
+    ) {
+      return t("errors.emailAlreadyRegistered");
+    }
+
+    if (Array.isArray(err.errors) && err.errors.length > 0) {
+      const rawMsg = err.errors[0];
+      if (typeof rawMsg === "string") {
+        if (rawMsg.includes("email must be an email")) {
+          return t("signUpForm.validation.emailInvalid");
+        }
+        if (rawMsg.includes("password must be longer than or equal to 8")) {
+          return t("signUpForm.validation.passwordTooShort");
+        }
+        if (rawMsg.includes("primarySpecialtyCategoryId must be a UUID") || rawMsg.includes("primarySpecialtyCategoryId")) {
+          return t("signUpForm.validation.categoryRequired");
+        }
+        if (rawMsg.includes("specialtyIds") && (rawMsg.includes("at least 1") || rawMsg.includes("UUID"))) {
+          return t("signUpForm.validation.subSpecialtyRequired");
+        }
+      }
+      return t("signUpForm.validation.genericError");
+    }
+
+    if (err.message) {
+      const msgLower = err.message.toLowerCase();
+      if (msgLower.includes("email must be an email")) {
+        return t("signUpForm.validation.emailInvalid");
+      }
+      if (msgLower.includes("password must be longer")) {
+        return t("signUpForm.validation.passwordTooShort");
+      }
+      if (msgLower.includes("primaryspecialtycategoryid")) {
+        return t("signUpForm.validation.categoryRequired");
+      }
+      if (msgLower.includes("specialtyids")) {
+        return t("signUpForm.validation.subSpecialtyRequired");
+      }
+      return err.message;
+    }
+
+    return t("registrationError");
+  };
 
   const selectedCategoryId = useWatch({
     control: form.control,
@@ -125,6 +170,11 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   }));
 
   const onSubmit = async (data: SignUpFormData) => {
+    if (submitLockRef.current) {
+      return;
+    }
+
+    submitLockRef.current = true;
     setError(null);
 
     try {
@@ -163,316 +213,255 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
         })}`
       );
     } catch (submissionError) {
-      setError(
-        submissionError instanceof Error ? submissionError.message : t("registrationError")
-      );
+      setError(getLocalizedError(submissionError));
+    } finally {
+      submitLockRef.current = false;
     }
   };
 
-  const descriptionKey =
-    mode === "practitioner" ? "signUpDescriptionPractitioner" : "signUpDescriptionPatient";
   const signInHref = buildAuthHref("/signin", {
     callbackUrl: normalizedCallbackUrl,
     mode,
   });
 
-  const premiumGuidancePanel = (
-    <div className="relative hidden lg:flex lg:col-span-5 flex-col justify-between p-10 bg-gradient-to-b from-primary/90 via-primary/80 to-primary-hover/90 text-white overflow-hidden border-r border-white/10 dark:border-white/5 rtl:border-r-0 rtl:border-l rtl:border-white/10 rtl:dark:border-white/5">
-      {/* Premium Visual Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
-      <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl pointer-events-none" />
-      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+  const modeLabels = {
+    patient: isRtl ? "بوابة تسجيل الدخول" : "Client Portal",
+    practitioner: isRtl ? "بوابة المعالجين" : "Specialist Portal",
+  };
 
-      {/* Top Header */}
-      <div className="relative z-10 space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary-light/90">
-          {t("signUpGuidance.eyebrow")}
-        </p>
-        <h2 className="text-3xl font-bold leading-tight tracking-tight text-white">
-          {mode === "practitioner"
-            ? t("signUpGuidance.practitionerTitle")
-            : t("signUpGuidance.patientTitle")}
-        </h2>
-        <p className="text-sm leading-6 text-white/80">
-          {mode === "practitioner"
-            ? t("signUpGuidance.practitionerSubtitle")
-            : t("signUpGuidance.patientSubtitle")}
-        </p>
-      </div>
-
-      {/* Steps List */}
-      <div className="relative z-10 my-8 space-y-4">
-        {(mode === "practitioner"
-          ? (["p1", "p2", "p3"] as const)
-          : (["c1", "c2", "c3"] as const)
-        ).map((key, idx) => (
-          <div
-            key={key}
-            className="flex items-start gap-4 rounded-2xl bg-white/8 border border-white/5 p-4 backdrop-blur-sm transition-all hover:bg-white/12"
-          >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-primary dark:bg-white dark:text-primary">
-              {idx + 1}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white">
-                {t(`signUpGuidance.steps.${key}.title`)}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-white/75">
-                {t(`signUpGuidance.steps.${key}.desc`)}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom Note */}
-      <div className="relative z-10 rounded-2xl bg-white/5 border border-white/10 p-4.5 text-xs leading-5 text-white/80">
-        {mode === "practitioner"
-          ? t("signUpGuidance.practitionerNext")
-          : t("signUpGuidance.patientNext")}
-      </div>
-    </div>
-  );
+  const getDynamicTitle = () => {
+    return isRtl ? "إنشاء حساب كممارس" : "Create Practitioner Account";
+  };
+  const getDynamicSubtitle = () => {
+    return isRtl ? "أنشئ حسابك أولًا، وبعدها نكمل بيانات طلب الانضمام." : "Create your account first, then continue the joining request.";
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center py-6 px-4 animate-in fade-in slide-in-from-bottom-6 duration-500">
-      
-      {/* Premium Unified Split Card */}
-      <div className="w-full overflow-hidden rounded-[32px] border border-border-light bg-white/80 shadow-[0_24px_70px_rgba(36,86,79,0.05)] backdrop-blur-md dark:border-white/5 dark:bg-surface-secondary/75 grid grid-cols-1 lg:grid-cols-12 min-h-[620px]">
-        
-        {/* Left Side: Guidance Panel */}
-        {premiumGuidancePanel}
+    <AuthSplitCard
+      title={getDynamicTitle()}
+      subtitle={getDynamicSubtitle()}
+      mode={mode}
+      activeTab="signup"
+    >
+      {/* Portal Indicator Badge */}
+      <div className="mb-6 flex select-none">
+        <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide ${
+          mode === "patient" ? "border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light" :
+          "border border-sky-500/15 bg-sky-500/10 text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400"
+        }`}>
+          <GroupIcon className="h-4 w-4" />
+          <span>{modeLabels[mode]}</span>
+        </div>
+      </div>
 
-        {/* Right Side: Form Panel */}
-        <div className="col-span-12 lg:col-span-7 flex flex-col justify-between p-8 sm:p-10">
-          
+      {/* Form */}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            {/* Back Home Link */}
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <Link
-                href="/"
-                className="inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-              >
-                <ChevronLeftIcon className={isRtl ? "rotate-180" : ""} />
-                {t("backToHome")}
-              </Link>
-            </div>
+            <Label>
+              {t("displayName")} <span className="text-error-500">*</span>
+            </Label>
+            <Input
+              type="text"
+              placeholder={t("displayNamePlaceholder")}
+              error={!!form.formState.errors.displayName}
+              {...form.register("displayName")}
+              dir={isRtl ? "rtl" : "ltr"}
+            />
+            {form.formState.errors.displayName && (
+              <p className="mt-1.5 text-xs text-error-500">
+                {form.formState.errors.displayName.message}
+              </p>
+            )}
+          </div>
 
-            {/* Header */}
-            <div className="rounded-[24px] bg-primary-light/40 border border-primary/10 p-5 dark:bg-primary/10 sm:p-6 mb-8">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                    {t(`entryCards.${mode}.eyebrow`)}
-                  </p>
-                  <h1 className="text-3xl font-bold tracking-tight text-text-primary dark:text-white">
-                    {t("createAccountTitle")}
-                  </h1>
-                </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-primary dark:bg-surface/75 dark:text-primary-light shadow-sm">
-                  <ModeIcon className="h-5 w-5" />
-                </div>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-text-secondary dark:text-text-secondary">
-                {t(descriptionKey)}
+          <div>
+            <Label>
+              {t("email")} <span className="text-error-500">*</span>
+            </Label>
+            <Input
+              type="email"
+              placeholder={t("emailPlaceholder")}
+              error={!!form.formState.errors.email}
+              {...form.register("email", {
+                onChange: () => setError(null),
+              })}
+              dir="ltr"
+            />
+            {form.formState.errors.email && (
+              <p className="mt-1.5 text-xs text-error-500">
+                {form.formState.errors.email.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label>
+              {t("password")} <span className="text-error-500">*</span>
+            </Label>
+            <AuthPasswordField
+              placeholder={t("passwordPlaceholder")}
+              error={!!form.formState.errors.password}
+              {...form.register("password")}
+            />
+            {form.formState.errors.password && (
+              <p className="mt-1.5 text-xs text-error-500">
+                {form.formState.errors.password.message}
+              </p>
+            )}
+          </div>
+
+          {mode === "practitioner" && (
+            <div>
+              <Label>{t("otpEmail")}</Label>
+              <Input
+                type="email"
+                placeholder={t("emailPlaceholder")}
+                error={!!form.formState.errors.otpEmail}
+                {...form.register("otpEmail")}
+                dir="ltr"
+              />
+              {form.formState.errors.otpEmail && (
+                <p className="mt-1.5 text-xs text-error-500">
+                  {form.formState.errors.otpEmail.message}
+                </p>
+              )}
+              <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
+                {t("otpEmailHint")}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {mode === "practitioner" && (
+          <div className="rounded-2xl border border-border-light bg-surface-tertiary/40 p-4.5 dark:border-white/5">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-text-primary dark:text-text-primary">
+                {t("signUpInitialSpecialty.title")}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-text-secondary dark:text-text-secondary">
+                {t("signUpInitialSpecialty.helper")}
               </p>
             </div>
 
-            {/* Form */}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <div>
-                    <Label>
-                      {t("displayName")} <span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="text"
-                      placeholder={t("displayNamePlaceholder")}
-                      error={!!form.formState.errors.displayName}
-                      {...form.register("displayName")}
-                      dir={isRtl ? "rtl" : "ltr"}
-                    />
-                    {form.formState.errors.displayName && (
-                      <p className="mt-1.5 text-xs text-error-500">
-                        {form.formState.errors.displayName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>
-                      {t("email")} <span className="text-error-500">*</span>
-                    </Label>
-                    <Input
-                      type="email"
-                      placeholder={t("emailPlaceholder")}
-                      error={!!form.formState.errors.email}
-                      {...form.register("email")}
-                      dir="ltr"
-                    />
-                    {form.formState.errors.email && (
-                      <p className="mt-1.5 text-xs text-error-500">
-                        {form.formState.errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label>
-                      {t("password")} <span className="text-error-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder={t("passwordPlaceholder")}
-                        error={!!form.formState.errors.password}
-                        {...form.register("password")}
-                        dir="ltr"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        className={`absolute top-1/2 z-10 -translate-y-1/2 text-text-secondary transition hover:text-text-primary ${isRtl ? "left-4" : "right-4"}`}
-                      >
-                        {showPassword ? (
-                          <EyeIcon className="fill-current" />
-                        ) : (
-                          <EyeCloseIcon className="fill-current" />
-                        )}
-                      </button>
-                    </div>
-                    {form.formState.errors.password && (
-                      <p className="mt-1.5 text-xs text-error-500">
-                        {form.formState.errors.password.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {mode === "practitioner" && (
-                    <div>
-                      <Label>{t("otpEmail")}</Label>
-                      <Input
-                        type="email"
-                        placeholder={t("emailPlaceholder")}
-                        error={!!form.formState.errors.otpEmail}
-                        {...form.register("otpEmail")}
-                        dir="ltr"
-                      />
-                      {form.formState.errors.otpEmail && (
-                        <p className="mt-1.5 text-xs text-error-500">
-                          {form.formState.errors.otpEmail.message}
-                        </p>
-                      )}
-                      <p className="mt-1.5 text-xs leading-5 text-text-muted">
-                        {t("otpEmailHint")}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {mode === "practitioner" && (
-                  <div className="rounded-[24px] border border-border-light bg-surface/40 p-5 dark:border-white/5 dark:bg-surface-tertiary/20">
-                    <div className="mb-4">
-                      <p className="text-sm font-semibold text-text-primary dark:text-text-primary">
-                        {t("signUpInitialSpecialty.title")}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-text-secondary dark:text-text-secondary">
-                        {t("signUpInitialSpecialty.helper")}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                      <div>
-                        <Label>
-                          {t("practitionerSpecialties.categoryLabel")} <span className="text-error-500">*</span>
-                        </Label>
-                        <Select
-                          key={`signup-category-${categoryOptions.length}`}
-                          options={categoryOptions}
-                          placeholder={t("practitionerSpecialties.categoryPlaceholder")}
-                          defaultValue={selectedCategoryId || ""}
-                          onChange={(value) => {
-                            form.setValue("primarySpecialtyCategoryId", value);
-                            form.setValue("specialtyIds", []);
-                            setError(null);
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>
-                          {t("practitionerSpecialties.subSpecialtyLabel")} <span className="text-error-500">*</span>
-                        </Label>
-                        <MultiSelect
-                          key={`signup-specialties-${selectedCategoryId || "none"}`}
-                          label=""
-                          placeholder={t("practitionerSpecialties.subSpecialtyPlaceholder")}
-                          options={specialtyOptions}
-                          defaultSelected={selectedSpecialtyIds}
-                          disabled={!selectedCategoryId || specialtyOptions.length === 0}
-                          hint={
-                            selectedCategoryId && specialtyOptions.length === 0
-                              ? t("practitionerSpecialties.emptyForCategory")
-                              : undefined
-                          }
-                          onChange={(selected) => {
-                            form.setValue("specialtyIds", selected);
-                            setError(null);
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? t("creatingAccount") : t("createAccountButton")}
-                </button>
-
-                {mode === "patient" && (
-                  <div className="space-y-4">
-                    <div className="relative flex items-center justify-center my-4">
-                      <div className="absolute w-full border-t border-border-light dark:border-white/5" />
-                      <span className="relative bg-white px-3 text-xs text-text-muted dark:bg-surface-secondary dark:text-text-muted uppercase tracking-wider">
-                        {t("orContinueWith")}
-                      </span>
-                    </div>
-                    <PatientGoogleAuthButton callbackUrl={callbackUrl} defaultRedirect="/practitioners" />
-                  </div>
-                )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label>
+                  {t("practitionerSpecialties.categoryLabel")} <span className="text-error-500">*</span>
+                </Label>
+                <Select
+                  key={`signup-category-${categoryOptions.length}`}
+                  options={categoryOptions}
+                  placeholder={
+                    specialtyCategoriesQuery.isPending
+                      ? (isRtl ? "جاري تحميل التخصصات..." : "Loading specialties...")
+                      : t("practitionerSpecialties.categoryPlaceholder")
+                  }
+                  defaultValue={selectedCategoryId || ""}
+                  onChange={(value) => {
+                    form.setValue("primarySpecialtyCategoryId", value);
+                    form.setValue("specialtyIds", []);
+                    setError(null);
+                  }}
+                />
               </div>
-            </form>
+
+              <div>
+                <Label>
+                  {t("practitionerSpecialties.subSpecialtyLabel")} <span className="text-error-500">*</span>
+                </Label>
+                <MultiSelect
+                  key={`signup-specialties-${selectedCategoryId || "none"}`}
+                  label=""
+                  placeholder={
+                    selectedCategoryId
+                      ? (isRtl ? "اختر التخصصات المناسبة" : "Select sub-specialties")
+                      : t("practitionerSpecialties.subSpecialtyPlaceholder")
+                  }
+                  options={specialtyOptions}
+                  defaultSelected={selectedSpecialtyIds}
+                  disabled={!selectedCategoryId || specialtyOptions.length === 0}
+                  hint={
+                    selectedCategoryId && specialtyOptions.length === 0
+                      ? t("practitionerSpecialties.emptyForCategory")
+                      : undefined
+                  }
+                  onChange={(selected) => {
+                    form.setValue("specialtyIds", selected);
+                    setError(null);
+                  }}
+                />
+                <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
+                  {isRtl
+                    ? "ستظهر التخصصات الفرعية حسب التخصص الرئيسي الذي اخترته."
+                    : "Sub-specialties are displayed based on your selected primary specialty."}
+                </p>
+              </div>
+            </div>
+
+            {(specialtyCategoriesQuery.isError || specialtiesQuery.isError) && (
+              <p className="text-xs text-error-500 mt-2">
+                {isRtl
+                  ? "لم نتمكن من تحميل التخصصات. حاول مرة أخرى."
+                  : "Failed to load specialties. Please try again."}
+              </p>
+            )}
           </div>
+        )}
 
-          {/* Footer Link */}
-          <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
-            <p className="text-sm text-text-secondary dark:text-text-secondary">
-              {mode === "practitioner"
-                ? t("alreadyStartedPractitionerJourney")
-                : t("alreadyHaveAccount")}{" "}
-              <Link
-                href={signInHref}
-                className="font-semibold text-primary hover:text-primary-hover transition-colors"
-              >
-                {t("signIn")}
-              </Link>
-            </p>
+        {error && (
+          <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
+            {error}
           </div>
+        )}
 
-        </div>
+        {/* Onboarding expectation note */}
+        {mode === "practitioner" && (
+          <div className="flex items-start gap-2.5 rounded-2xl border border-primary/10 bg-primary-light/30 px-4 py-3 text-xs leading-5 text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
+            <svg
+              className="mt-0.5 shrink-0 text-primary"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>
+              {isRtl
+                ? "بعد إنشاء الحساب، ستنتقل لإكمال بيانات طلب الانضمام."
+                : "After creating your account, you will continue the joining request."}
+            </span>
+          </div>
+        )}
 
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting ? t("creatingAccount") : t("createAccountButton")}
+        </button>
+      </form>
+
+      {/* Footer Switch Link */}
+      <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
+        <p className="text-sm text-text-secondary dark:text-text-secondary">
+          {mode === "practitioner"
+            ? t("alreadyStartedPractitionerJourney")
+            : t("alreadyHaveAccount")}{" "}
+          <Link
+            href={signInHref}
+            className="font-semibold text-primary hover:text-primary-hover transition-colors"
+          >
+            {t("signIn")}
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthSplitCard>
   );
 }

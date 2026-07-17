@@ -228,9 +228,9 @@ export default function AdminAcademyProgramFormModal({
     if (maxSeats) {
       const parsedMaxSeats = Number(maxSeats);
       if (!Number.isInteger(parsedMaxSeats)) {
-        nextFieldErrors.maxSeats = t("programs.form.validation.invalidMaxSeats");
+        nextFieldErrors.maxSeats = t("programs.form.validation.invalidTargetLearners");
       } else if (parsedMaxSeats <= 0) {
-        nextFieldErrors.maxSeats = t("programs.form.validation.maxSeatsPositive");
+        nextFieldErrors.maxSeats = t("programs.form.validation.targetLearnersPositive");
       }
     }
 
@@ -481,7 +481,7 @@ export default function AdminAcademyProgramFormModal({
             </div>
             <div className="space-y-1.5">
               <Label className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
-                {t("programs.form.fields.maxSeats")}
+                {t("programs.form.fields.targetLearners")}
               </Label>
               <InputField
                 type="number"
@@ -490,7 +490,7 @@ export default function AdminAcademyProgramFormModal({
                 error={Boolean(fieldErrors.maxSeats)}
                 hint={fieldErrors.maxSeats}
                 onChange={(event) => updateField("maxSeats", event.target.value)}
-                placeholder={t("programs.form.placeholders.maxSeats")}
+                placeholder={t("programs.form.placeholders.targetLearners")}
               />
             </div>
             <div className="space-y-1.5">

@@ -110,7 +110,7 @@ export function resolveAcademyProgramEnrollmentStatusLabel(
   switch (status) {
     case "PENDING_PAYMENT":
       return t("statuses.enrollment.PENDING_PAYMENT");
-    case "CONFIRMED":
+    case "UPCOMING":
       return t("statuses.enrollment.CONFIRMED");
     case "CANCELLED":
       return t("statuses.enrollment.CANCELLED");

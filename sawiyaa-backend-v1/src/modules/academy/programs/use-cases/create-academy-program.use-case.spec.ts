@@ -127,4 +127,65 @@ describe('CreateAcademyProgramUseCase', () => {
       }),
     );
   });
+
+  it('couples program creation to a required audit event when runtime services are present', async () => {
+    const repository = {
+      findCategoryById: jest.fn().mockResolvedValue(null),
+      findProgramBySlug: jest.fn().mockResolvedValue(null),
+      createProgram: jest.fn().mockResolvedValue({
+        id: 'program-1',
+        slug: 'academy-course',
+        titleAr: 'Course Ar',
+        titleEn: 'Course',
+        descriptionAr: 'Description Ar',
+        descriptionEn: 'Description',
+        coverImageUrl: null,
+        categoryId: null,
+        priceEgp: '0.00',
+        priceUsd: '0.00',
+        registrationOpen: true,
+        maxSeats: null,
+        startAt: new Date('2026-07-04T09:00:00.000Z'),
+        endAt: new Date('2026-07-04T10:00:00.000Z'),
+        status: 'DRAFT',
+        publishedAt: null,
+        archivedAt: null,
+        createdByUserId: 'user-1',
+      }),
+    } as any;
+    const presenter = { presentAdminProgramDetails: jest.fn().mockReturnValue({ id: 'program-1' }) } as any;
+    const prisma = {
+      $transaction: jest.fn(async (callback: (tx: object) => unknown) => callback({})),
+    } as any;
+    const securityAuditService = { recordRequired: jest.fn().mockResolvedValue(undefined) } as any;
+
+    const useCase = new CreateAcademyProgramUseCase(
+      repository,
+      presenter,
+      prisma,
+      securityAuditService,
+    );
+
+    await useCase.execute({
+      createdByUserId: 'user-1',
+      actorRoles: ['ADMIN'],
+      payload: {
+        titleAr: 'Course Ar',
+        titleEn: 'Course',
+        descriptionAr: 'Description Ar',
+        descriptionEn: 'Description',
+        priceEgp: '0',
+        priceUsd: '0',
+        startAt: '2026-07-04T09:00:00.000Z',
+        endAt: '2026-07-04T10:00:00.000Z',
+      },
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(repository.createProgram).toHaveBeenCalledWith(expect.any(Object), expect.any(Object));
+    expect(securityAuditService.recordRequired).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ action: 'academy.program.create', resourceId: 'program-1' }),
+    );
+  });
 });

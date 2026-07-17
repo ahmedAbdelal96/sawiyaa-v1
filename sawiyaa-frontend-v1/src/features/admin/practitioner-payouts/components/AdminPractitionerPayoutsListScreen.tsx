@@ -136,6 +136,10 @@ function BalanceBreakdown({
         {t(`list.balanceCards.${currency}.held` as Parameters<typeof t>[0])}{" "}
         {formatSettlementMoney(locale, balance.packageHeldAmount, currency)}
       </p>
+      <p className="text-xs leading-5 text-amber-700 dark:text-amber-300">
+        {t("manualRecoveryLabel")}{" "}
+        {formatSettlementMoney(locale, balance.manualRecoveryAmount, currency)}
+      </p>
     </div>
   );
 }

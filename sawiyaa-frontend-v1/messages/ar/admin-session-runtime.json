@@ -383,6 +383,90 @@
         "lastUpdated": "تم التحديث {date}"
       }
     },
+    "packageEntitlement": {
+      "title": "قرار المستحقات الخاصة بالباقة",
+      "subtitle": "حدّد ما إذا كانت الجلسة الملغاة أو غير الحاضرة تعود إلى الباقة أم تُحتسب مستخدمة.",
+      "safetyNotice": "هذا القرار للتسجيل الداخلي فقط ولا ينشئ استردادًا أو تحويلًا تلقائيًا.",
+      "summary": {
+        "tag": "للتسجيل فقط"
+      },
+      "current": {
+        "plan": "خطة الباقة",
+        "purchaseStatus": "حالة الشراء",
+        "currency": "العملة",
+        "payableSnapshot": "المبلغ المستحق للمريض",
+        "sessionProgress": "تقدّم جلسات الباقة"
+      },
+      "decisionType": {
+        "label": "نوع القرار",
+        "placeholder": "اختر القرار",
+        "RESTORE_TO_PACKAGE": "إرجاعها إلى الباقة",
+        "COUNT_AS_USED": "احتسابها كمستخدمة"
+      },
+      "reasonCode": {
+        "label": "كود السبب",
+        "placeholder": "اختر كود السبب",
+        "PATIENT_FAULT": "خطأ من المريض",
+        "PATIENT_NO_SHOW": "عدم حضور المريض",
+        "PRACTITIONER_FAULT": "خطأ من المعالج",
+        "ADMIN_EXCEPTION": "استثناء إداري"
+      },
+      "adminNote": {
+        "label": "ملاحظة إدارية",
+        "remaining": "حرفًا متبقية",
+        "placeholder": "أضف ملاحظة داخلية قصيرة لسياق التدقيق.",
+        "noSensitiveData": "لا تتضمن تفاصيل حساسة خاصة بالمريض."
+      },
+      "decisionPreview": {
+        "label": "معاينة القرار",
+        "RESTORE_TO_PACKAGE": "ستعود هذه الجلسة إلى الباقة.",
+        "COUNT_AS_USED": "ستُحتسب هذه الجلسة كمستخدمة."
+      },
+      "recorded": {
+        "title": "تم تسجيل القرار",
+        "note": "يُسجّل هذا القرار للتدقيق فقط، ولا ينشئ تحويلًا أو استردادًا تلقائيًا.",
+        "decisionType": "نوع القرار",
+        "reasonCode": "كود السبب",
+        "adminNote": "ملاحظة المشرف",
+        "decidedBy": "تمت المراجعة بواسطة",
+        "teamAdmin": "مسؤول من الفريق",
+        "decidedAt": "وقت التسجيل",
+        "resultingReview": "مرجع مراجعة المحاسبة"
+      },
+      "noPermission": {
+        "title": "ملخص الباقة للقراءة فقط",
+        "note": "يمكنك مراجعة ملخص الباقة، لكن ليست لديك صلاحية تسجيل قرارات الباقة."
+      },
+      "actions": {
+        "submit": "تسجيل قرار الباقة",
+        "submitting": "جارٍ التسجيل..."
+      },
+      "success": {
+        "title": "تم تسجيل قرار الباقة",
+        "note": "تم تسجيل قرار مستحقات الباقة بنجاح.",
+        "countAsUsedNote": "تم احتساب الجلسة كمستخدمة وإرسالها إلى مراجعة المحاسبة.",
+        "restoreToPackageNote": "تمت إعادة الجلسة إلى الباقة."
+      },
+      "errors": {
+        "notPackageSession": "هذه الجلسة ليست مغطاة بباقة.",
+        "notAllowedStatus": "حالة هذه الجلسة لا تسمح بتسجيل قرار باقة.",
+        "invalidCombination": "تركيبة قرار الباقة هذه غير مسموح بها.",
+        "alreadyExists": "يوجد قرار باقة مسجل مسبقًا لهذه الجلسة.",
+        "reviewUnavailable": "تعذر إنشاء مراجعة المحاسبة لهذه الجلسة.",
+        "forbidden": "ليست لديك صلاحية تسجيل قرارات الباقة.",
+        "unauthorized": "مطلوب رمز الوصول.",
+        "generic": "تعذر تسجيل قرار الباقة الآن."
+      },
+      "purchaseStatuses": {
+        "PENDING_PAYMENT": "بانتظار الدفع",
+        "ACTIVE": "نشطة",
+        "COMPLETED": "مكتملة",
+        "EXPIRED": "منتهية",
+        "CANCELLED": "ملغاة",
+        "REFUND_PENDING": "بانتظار الاسترداد",
+        "REFUNDED": "مستردة"
+      }
+    },
     "emptyExtended": {
       "title": "لا تتوفر أدلة محسوبة",
       "note": "لم يتم إصدار ملخص الحضور الموسع لهذه الجلسة بعد."

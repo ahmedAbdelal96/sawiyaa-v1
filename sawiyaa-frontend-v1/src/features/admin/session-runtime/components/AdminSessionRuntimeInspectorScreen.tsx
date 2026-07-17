@@ -31,6 +31,7 @@ import AdminSessionInspectorRoleCard from "./AdminSessionInspectorRoleCard";
 import AdminSessionRoomCloseEvidencePanel from "./AdminSessionRoomCloseEvidencePanel";
 import AdminSessionInspectorTimeline from "./AdminSessionInspectorTimeline";
 import AdminSessionManualDecisionHistory from "./AdminSessionManualDecisionHistory";
+import AdminSessionPackageEntitlementPanel from "./AdminSessionPackageEntitlementPanel";
 import AdminSessionManualDecisionPanel from "./AdminSessionManualDecisionPanel";
 import { OUTCOME_TONE, type OutcomeTone } from "../lib/inspector-utils";
 import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
@@ -38,8 +39,6 @@ import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT:
     "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  CONFIRMED:
-    "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   UPCOMING:
     "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
   READY_TO_JOIN:
@@ -48,10 +47,13 @@ const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
   COMPLETED: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
   CANCELLED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  REFUND_PENDING:
-    "bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-white/70",
-  REFUNDED: "bg-zinc-100 text-zinc-700 dark:bg-white/10 dark:text-white/70",
+  PATIENT_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  PRACTITIONER_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  BOTH_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  AWAITING_COMPLETION_CONFIRMATION:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
 };
 
 function pickRiskCount(evidence: {
@@ -286,6 +288,11 @@ export default function AdminSessionRuntimeInspectorScreen({
           <AdminSessionRoomCloseEvidencePanel
             videoRoomClose={attendance.data!.videoRoomClose}
             relatedSupportTickets={attendance.data!.relatedSupportTickets}
+          />
+
+          <AdminSessionPackageEntitlementPanel
+            item={item}
+            hasWritePermission={hasWritePermission}
           />
 
           <AdminSessionInspectorRecommendationPanel

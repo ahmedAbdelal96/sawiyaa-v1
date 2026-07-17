@@ -42,7 +42,7 @@ describe('ListAdminSessionManualDecisionsUseCase', () => {
       decisionType: SessionAdminDecisionType.MARK_PATIENT_NO_SHOW,
       decidedByUserId: 'admin_1',
       previousSessionStatus: SessionStatus.IN_PROGRESS,
-      nextSessionStatus: SessionStatus.NO_SHOW,
+      nextSessionStatus: SessionStatus.PATIENT_NO_SHOW,
       reasonCode: 'PATIENT_NO_SHOW',
       adminNote: 'Patient did not join.',
       recommendedOutcomeSnapshot: { recommendedOutcome: 'NO_SHOW', riskFlags: [] },
@@ -96,7 +96,7 @@ describe('ListAdminSessionManualDecisionsUseCase', () => {
     expect(result.items[0]).toMatchObject({
       id: 'decision_1',
       previousSessionStatus: SessionStatus.IN_PROGRESS,
-      nextSessionStatus: SessionStatus.NO_SHOW,
+      nextSessionStatus: SessionStatus.PATIENT_NO_SHOW,
       isFinal: false,
       supersedesDecisionId: null,
       reasonCode: 'PATIENT_NO_SHOW',

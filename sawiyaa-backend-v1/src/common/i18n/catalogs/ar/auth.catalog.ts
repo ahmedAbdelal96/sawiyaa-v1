@@ -22,6 +22,8 @@ export const arAuthCatalog = {
     adminTokensRefreshed: 'تم تجديد جلسة الإدارة بنجاح',
     adminLoggedOut: 'تم تسجيل خروج الإدارة بنجاح',
     adminStepUpVerified: 'تم إجراء تحقق إضافي بنجاح',
+    practitionerAuthLockoutCleared:
+      'تم مسح الحظر المؤقت لحساب المعالج بنجاح',
   },
   notifications: {
     practitionerLoginOtpTitle: 'رمز دخول المعالج',
@@ -41,6 +43,8 @@ export const arAuthCatalog = {
     adminRoleRequired: 'يتطلب هذا المسار صلاحية الإدارة',
     verifiedOtpChannelRequired: 'يجب وجود قناة موثقة لاستقبال رمز OTP للمعالج',
     otpChallengeInvalid: 'تحدي OTP غير صالح أو منتهي الصلاحية',
+    otpChallengeSuperseded: 'تم إرسال رمز أحدث. استخدم آخر رمز وصلك.',
+    otpChallengeAlreadyUsed: 'تم استخدام رمز OTP من قبل',
     otpCodeInvalid: 'رمز OTP غير صالح',
     otpDeliveryFailed: 'فشل إرسال رمز OTP. حاول مرة أخرى بعد قليل',
     otpResendTooSoon: 'يرجى الانتظار قبل طلب رمز OTP جديد',
@@ -68,5 +72,7 @@ export const arAuthCatalog = {
     csrfTokenRequired:
       'ÙŠØªØ·Ù„Ø¨ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³Ø§Ø± Ø±Ù…Ø² CSRF Ù„Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø¹Ø¨Ø± Ø§Ù„ÙƒÙˆÙƒÙŠØ²',
     stepUpRequired: 'يتطلب هذا الإجراء تحققاً إضافياً',
+    loginTemporarilyLocked:
+      'تم قفل تسجيل الدخول مؤقتًا. حاول مرة أخرى لاحقًا.',
   },
 };

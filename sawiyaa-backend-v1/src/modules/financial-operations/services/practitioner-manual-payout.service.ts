@@ -14,6 +14,7 @@ import { AccountingJournalPostingService } from './accounting-journal-posting.se
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { PractitionerManualPayoutRepository } from '../repositories/practitioner-manual-payout.repository';
 import { PractitionerManualPayoutBalanceService } from './practitioner-manual-payout-balance.service';
+import { PractitionerRecoveryService } from './practitioner-recovery.service';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
 
@@ -26,6 +27,7 @@ export class PractitionerManualPayoutService {
     private readonly manualPayoutRepository: PractitionerManualPayoutRepository,
     private readonly balanceService: PractitionerManualPayoutBalanceService,
     private readonly ledgerRepository: LedgerRepository,
+    private readonly practitionerRecoveryService: PractitionerRecoveryService,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
     private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
@@ -215,6 +217,15 @@ export class PractitionerManualPayoutService {
       },
       input.tx,
     );
+
+    await this.practitionerRecoveryService.applyOpenRecoveriesToPayout({
+      practitionerId: input.practitionerId,
+      currencyCode,
+      payoutId: payoutRecord.id,
+      payoutAmount: amountPaid,
+      operatorUserId: input.recordedByUserId ?? null,
+      tx: input.tx,
+    });
 
     await this.refreshPractitionerWalletService.refresh(
       input.practitionerId,

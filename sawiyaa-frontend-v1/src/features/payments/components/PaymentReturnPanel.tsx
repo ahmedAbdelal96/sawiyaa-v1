@@ -15,7 +15,6 @@ import PatientMoneyClarityPanel from "./PatientMoneyClarityPanel";
 
 /** These session statuses all mean payment was accepted and booking is real. */
 const CONFIRMED_STATUSES: SessionStatus[] = [
-  "CONFIRMED",
   "UPCOMING",
   "READY_TO_JOIN",
   "IN_PROGRESS",

@@ -1,8 +1,5 @@
 import {
-  ConflictException,
-  ForbiddenException,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { UserRoleType, UserStatus } from '@prisma/client';
 import { SecurityAuditOutcome } from '@prisma/client';
@@ -12,6 +9,15 @@ import { VerifyPasswordUseCase } from './verify-password.use-case';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
+import { AuthLockoutService } from '../services/auth-lockout.service';
+import {
+  AUTH_LOCKOUT_CONTEXTS,
+  AuthLockoutState,
+} from '../types/auth-lockout.types';
+import {
+  createInvalidLoginException,
+  createLockedLoginException,
+} from '../utils/auth-lockout-response.util';
 
 /**
  * Patient email/password login validates the password identity and then uses the shared token/session foundation.
@@ -23,6 +29,7 @@ export class LoginPatientWithEmailPasswordUseCase {
     private readonly authIdentityRepository: AuthIdentityRepository,
     private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
+    private readonly authLockoutService: AuthLockoutService,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -36,20 +43,34 @@ export class LoginPatientWithEmailPasswordUseCase {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
+    const lockoutSubject = userEmail ? `user:${userEmail.user.id}` : `email:${normalizedEmail}`;
 
     if (!userEmail) {
-      this.securityAuditService.logAsync({
-        action: 'auth.patient.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
         reason: 'USER_NOT_FOUND',
         metadata: { emailDomain: normalizedEmail.split('@')[1] ?? null },
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
+    }
+
+    const currentLockoutState = await this.authLockoutService.getState(
+      AUTH_LOCKOUT_CONTEXTS.PATIENT_PASSWORD_LOGIN,
+      lockoutSubject,
+    );
+    if (currentLockoutState.isLocked) {
+      this.securityAuditService.logAsync({
+        action: 'auth.patient.login.failure',
+        outcome: SecurityAuditOutcome.FAILURE,
+        actorUserId: userEmail.user.id,
+        actorRoles: userEmail.user.roles.map((r) => r.role),
+        reason: 'LOGIN_TEMPORARILY_LOCKED',
+        metadata: this.buildLockoutMetadata(currentLockoutState),
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
       });
+      throw createLockedLoginException(currentLockoutState);
     }
 
     const hasPatientRole = userEmail.user.roles.some(
@@ -57,34 +78,24 @@ export class LoginPatientWithEmailPasswordUseCase {
     );
 
     if (!hasPatientRole) {
-      this.securityAuditService.logAsync({
-        action: 'auth.patient.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'PATIENT_ROLE_REQUIRED',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'PATIENT_ROLE_REQUIRED',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new ConflictException({
-        messageKey: 'auth.errors.patientRoleRequired',
-        error: 'PATIENT_ROLE_REQUIRED',
       });
     }
 
     if (userEmail.user.status !== UserStatus.ACTIVE) {
-      this.securityAuditService.logAsync({
-        action: 'auth.patient.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'ACCOUNT_NOT_ACTIVE',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'ACCOUNT_NOT_ACTIVE',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new ForbiddenException({
-        messageKey: 'auth.errors.accountNotActive',
-        error: 'ACCOUNT_NOT_ACTIVE',
       });
     }
 
@@ -94,18 +105,13 @@ export class LoginPatientWithEmailPasswordUseCase {
       );
 
     if (!passwordIdentity?.passwordHash) {
-      this.securityAuditService.logAsync({
-        action: 'auth.patient.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'NO_PASSWORD_IDENTITY',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'NO_PASSWORD_IDENTITY',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
       });
     }
 
@@ -115,22 +121,21 @@ export class LoginPatientWithEmailPasswordUseCase {
     );
 
     if (!isValidPassword) {
-      this.securityAuditService.logAsync({
-        action: 'auth.patient.login.failure',
-        outcome: SecurityAuditOutcome.FAILURE,
+      throw await this.throwFailedLogin({
+        subject: lockoutSubject,
+        reason: 'INVALID_PASSWORD',
         actorUserId: userEmail.user.id,
         actorRoles: userEmail.user.roles.map((r) => r.role),
-        reason: 'INVALID_PASSWORD',
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
-      });
-      throw new UnauthorizedException({
-        messageKey: 'auth.errors.invalidCredentials',
-        error: 'INVALID_CREDENTIALS',
       });
     }
 
     await this.authIdentityRepository.touchLastUsed(passwordIdentity.id);
+    await this.authLockoutService.clear(
+      AUTH_LOCKOUT_CONTEXTS.PATIENT_PASSWORD_LOGIN,
+      lockoutSubject,
+    );
 
     const result = await this.issueAuthTokensUseCase.execute({
       userId: userEmail.user.id,
@@ -148,5 +153,49 @@ export class LoginPatientWithEmailPasswordUseCase {
     });
 
     return result;
+  }
+
+  private async throwFailedLogin(input: {
+    subject: string;
+    reason: string;
+    actorUserId?: string;
+    actorRoles?: UserRoleType[];
+    metadata?: Record<string, unknown>;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  }): Promise<never> {
+    const state = await this.authLockoutService.recordFailure(
+      AUTH_LOCKOUT_CONTEXTS.PATIENT_PASSWORD_LOGIN,
+      input.subject,
+    );
+
+    this.securityAuditService.logAsync({
+      action: 'auth.patient.login.failure',
+      outcome: SecurityAuditOutcome.FAILURE,
+      actorUserId: input.actorUserId ?? null,
+      actorRoles: input.actorRoles,
+      reason: state.isLocked ? 'LOGIN_TEMPORARILY_LOCKED' : input.reason,
+      metadata: {
+        ...this.buildLockoutMetadata(state),
+        ...(input.metadata ?? {}),
+      },
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    throw state.isLocked
+      ? createLockedLoginException(state)
+      : createInvalidLoginException(state);
+  }
+
+  private buildLockoutMetadata(state: AuthLockoutState) {
+    return {
+      attemptCount: state.attemptCount,
+      remainingAttempts: state.remainingAttempts,
+      maxAttempts: state.maxAttempts,
+      lockedUntil: state.lockedUntil?.toISOString() ?? null,
+      retryAfterSeconds: state.retryAfterSeconds,
+      isLocked: state.isLocked,
+    };
   }
 }

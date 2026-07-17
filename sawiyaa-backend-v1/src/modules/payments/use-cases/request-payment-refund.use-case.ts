@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   PaymentEventType,
+  RefundEventType,
   PaymentProvider,
   RefundDestination,
   PaymentStatus,
@@ -15,6 +16,7 @@ import {
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { PostRefundLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-refund-ledger-entries.use-case';
+import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PaymentMapper } from '../mappers/payment.mapper';
@@ -23,6 +25,7 @@ import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ValidateRefundEligibilityService } from '../services/validate-refund-eligibility.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class RequestPaymentRefundUseCase {
@@ -33,6 +36,7 @@ export class RequestPaymentRefundUseCase {
     private readonly validatePaymentStatusTransitionService: ValidatePaymentStatusTransitionService,
     private readonly validateRefundEligibilityService: ValidateRefundEligibilityService,
     private readonly postRefundLedgerEntriesUseCase: PostRefundLedgerEntriesUseCase,
+    private readonly sessionEarningReviewService: SessionEarningReviewService,
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
     private readonly operationalNotificationService: OperationalNotificationService,
@@ -72,29 +76,15 @@ export class RequestPaymentRefundUseCase {
       });
     }
 
-    if (!input.retryRefundId) {
-      const activeRefund =
-        await this.paymentRepository.findActiveRefundByPaymentId(payment.id);
-      this.validateRefundEligibilityService.assertNoActiveRefund(activeRefund);
-    }
-
-    const aggregate =
-      await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
-        payment.id,
-      );
-    const alreadyRefunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
-    const resolvedAmount =
-      this.validateRefundEligibilityService.resolveRefundAmount({
-        paymentAmountTotal: payment.amountTotal,
-        alreadyRefundedAmount: alreadyRefunded,
-        requestedAmount: input.amount ?? null,
-      });
-
     const refund = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${payment.id})::bigint)`;
+
+      let previousRefundStatus: RefundStatus | null = null;
       let created;
       if (input.retryRefundId) {
         const existing = await this.paymentRepository.findRefundById(
           input.retryRefundId,
+          tx,
         );
         if (!existing || existing.paymentId !== payment.id) {
           throw new NotFoundException({
@@ -106,6 +96,7 @@ export class RequestPaymentRefundUseCase {
         this.validateRefundEligibilityService.assertRetryableRefundStatus(
           existing.status,
         );
+        previousRefundStatus = existing.status;
         created = await this.paymentRepository.updateRefund(
           existing.id,
           {
@@ -127,6 +118,28 @@ export class RequestPaymentRefundUseCase {
           tx,
         );
       } else {
+        const activeRefund =
+          await this.paymentRepository.findActiveRefundByPaymentId(
+            payment.id,
+            tx,
+          );
+        this.validateRefundEligibilityService.assertNoActiveRefund(
+          activeRefund,
+        );
+
+        const aggregate =
+          await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
+            payment.id,
+            tx,
+          );
+        const alreadyRefunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
+        const resolvedAmount =
+          this.validateRefundEligibilityService.resolveRefundAmount({
+            paymentAmountTotal: payment.amountTotal,
+            alreadyRefundedAmount: alreadyRefunded,
+            requestedAmount: input.amount ?? null,
+          });
+
         created = await this.paymentRepository.createRefund(
           {
             paymentId: payment.id,
@@ -139,6 +152,9 @@ export class RequestPaymentRefundUseCase {
             refundReason: input.reason ?? null,
             amount: resolvedAmount.amount.toFixed(2),
             currencyCode: payment.currencyCode,
+            actorType: AuditActorType.USER,
+            actorUserId: input.actorUserId,
+            source: SecurityAuditSource.HTTP_REQUEST,
             metadataJson: {
               source: 'manual-refund-request',
               actorUserId: input.actorUserId,
@@ -157,12 +173,38 @@ export class RequestPaymentRefundUseCase {
         {
           paymentId: payment.id,
           eventType: PaymentEventType.REFUND_REQUESTED,
+          actorType: AuditActorType.USER,
+          actorUserId: input.actorUserId,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          reason: input.reason ?? null,
           payloadJson: {
             refundId: created.id,
             amount: created.amount.toString(),
             currency: created.currencyCode,
             actorUserId: input.actorUserId,
           },
+        },
+        tx,
+      );
+
+      await this.paymentRepository.createRefundEvent(
+        {
+          refundId: created.id,
+          paymentId: payment.id,
+          sessionId: created.sessionId,
+          eventType: input.retryRefundId
+            ? RefundEventType.RETRIED
+            : RefundEventType.REQUESTED,
+          previousStatus: previousRefundStatus,
+          newStatus: created.status,
+          destination: created.destination,
+          amount: created.amount,
+          currencyCode: created.currencyCode,
+          actorType: AuditActorType.USER,
+          actorUserId: input.actorUserId,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          reason: input.reason ?? null,
+          idempotencyKey: input.retryRefundId ?? null,
         },
         tx,
       );
@@ -292,97 +334,164 @@ export class RequestPaymentRefundUseCase {
     };
     refundId: string;
   }) {
-    const succeeded = await this.prisma.$transaction(async (tx) => {
-      const updated = await this.paymentRepository.updateRefund(
+    const finalized = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.refundId})::bigint)`;
+
+      const currentRefund = await this.paymentRepository.findRefundById(
         input.refundId,
-        {
-          status: RefundStatus.SUCCEEDED,
-          processedAt: new Date(),
-          providerRefundRef: null,
-        },
         tx,
       );
 
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: input.payment.id,
-          eventType: PaymentEventType.REFUND_PROCESSED,
-          payloadJson: {
-            refundId: input.refundId,
-            outcome: 'SUCCEEDED_CUSTOMER_WALLET',
+      if (!currentRefund) {
+        throw new NotFoundException({
+          messageKey: 'payments.errors.refundNotFound',
+          error: 'PAYMENT_REFUND_NOT_FOUND',
+        });
+      }
+
+      const updated =
+        currentRefund.status === RefundStatus.SUCCEEDED
+          ? await this.paymentRepository.updateRefund(
+              input.refundId,
+              {
+                processedAt: currentRefund.processedAt ?? new Date(),
+                providerRefundRef: null,
+              },
+              tx,
+            )
+          : await this.paymentRepository.updateRefund(
+              input.refundId,
+              {
+                status: RefundStatus.SUCCEEDED,
+                processedAt: new Date(),
+                providerRefundRef: null,
+              },
+              tx,
+            );
+
+      if (currentRefund.status !== RefundStatus.SUCCEEDED) {
+        await this.paymentRepository.createRefundEvent(
+          {
+            refundId: updated.id,
+            paymentId: input.payment.id,
+            sessionId: updated.sessionId,
+            eventType: RefundEventType.WALLET_POSTED,
+            previousStatus: currentRefund.status,
+            newStatus: RefundStatus.SUCCEEDED,
+            destination: updated.destination,
+            amount: updated.amount,
+            currencyCode: updated.currencyCode,
+            actorType: currentRefund.actorType,
+            actorUserId: currentRefund.actorUserId,
+            source: currentRefund.source,
           },
-        },
-        tx,
-      );
-
-      return updated;
-    });
-
-    if (!input.payment.patientId) {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.patientRequiredForWalletRefund',
-        error: 'PAYMENT_PATIENT_REQUIRED_FOR_WALLET_REFUND',
-      });
-    }
-
-    await this.customerWalletAccountingService.creditRefundToWallet({
-      patientId: input.payment.patientId,
-      paymentId: input.payment.id,
-      refundId: succeeded.id,
-      sessionId: input.payment.sessionId,
-      currencyCode: succeeded.currencyCode,
-      amount: succeeded.amount.toString(),
-    });
-
-    await this.paymentRepository.updateRefund(succeeded.id, {
-      customerWalletCreditedAt: new Date(),
-    });
-
-    const aggregate =
-      await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
-        input.payment.id,
-      );
-    const refunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
-    const isFullyRefunded = refunded.gte(input.payment.amountTotal);
-    const targetStatus = isFullyRefunded
-      ? PaymentStatus.REFUNDED
-      : PaymentStatus.PARTIALLY_REFUNDED;
-
-    this.validatePaymentStatusTransitionService.assertCanTransition(
-      PaymentStatus.REFUND_PENDING,
-      targetStatus,
-    );
-
-    await this.paymentRepository.updateStatus(input.payment.id, {
-      status: targetStatus,
-    });
-
-    await this.postRefundLedgerEntriesUseCase.execute({
-      refundId: succeeded.id,
-    });
-
-    if (input.payment.sessionId) {
-      if (isFullyRefunded) {
-        await this.orchestrateSessionPaymentStatusService.markSessionRefunded(
-          input.payment.sessionId,
+          tx,
         );
-      } else {
-        await this.orchestrateSessionPaymentStatusService.markSessionRefundPending(
-          input.payment.sessionId,
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: input.payment.id,
+            eventType: PaymentEventType.REFUND_PROCESSED,
+            actorType: AuditActorType.USER,
+            actorUserId: currentRefund.actorUserId,
+            source: currentRefund.source ?? SecurityAuditSource.HTTP_REQUEST,
+            previousStatus: PaymentStatus.REFUND_PENDING,
+            newStatus: PaymentStatus.REFUND_PENDING,
+            payloadJson: {
+              refundId: input.refundId,
+              outcome: 'SUCCEEDED_CUSTOMER_WALLET',
+            },
+          },
+          tx,
         );
       }
-    }
+
+      if (!input.payment.patientId) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.patientRequiredForWalletRefund',
+          error: 'PAYMENT_PATIENT_REQUIRED_FOR_WALLET_REFUND',
+        });
+      }
+
+      await this.customerWalletAccountingService.creditRefundToWallet({
+        patientId: input.payment.patientId,
+        paymentId: input.payment.id,
+        refundId: updated.id,
+        sessionId: input.payment.sessionId,
+        currencyCode: updated.currencyCode,
+        amount: updated.amount.toString(),
+        tx,
+      });
+
+      await this.paymentRepository.updateRefund(
+        updated.id,
+        {
+          customerWalletCreditedAt: new Date(),
+        },
+        tx,
+      );
+
+      const aggregate =
+        await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
+          input.payment.id,
+          tx,
+        );
+      const refunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
+      const isFullyRefunded = refunded.gte(input.payment.amountTotal);
+      const targetStatus = isFullyRefunded
+        ? PaymentStatus.REFUNDED
+        : PaymentStatus.PARTIALLY_REFUNDED;
+
+      this.validatePaymentStatusTransitionService.assertCanTransition(
+        PaymentStatus.REFUND_PENDING,
+        targetStatus,
+      );
+
+      await this.paymentRepository.updateStatus(input.payment.id, {
+        status: targetStatus,
+      }, tx);
+
+      await this.postRefundLedgerEntriesUseCase.execute({
+        refundId: updated.id,
+        tx,
+      });
+
+      await this.sessionEarningReviewService.invalidatePendingReviewsForPayment({
+        paymentId: input.payment.id,
+        internalReason: 'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL',
+        tx,
+      });
+
+      if (input.payment.sessionId) {
+        if (isFullyRefunded) {
+          await this.orchestrateSessionPaymentStatusService.markSessionRefunded(
+            input.payment.sessionId,
+            tx,
+          );
+        } else {
+          await this.orchestrateSessionPaymentStatusService.markSessionRefundPending(
+            input.payment.sessionId,
+            tx,
+          );
+        }
+
+      }
+
+      return {
+        refund: updated,
+        isFullyRefunded,
+      };
+    });
 
     if (input.payment.patientId) {
       await this.operationalNotificationService.notifyRefundSucceeded({
         patientProfileId: input.payment.patientId,
-        refundId: succeeded.id,
-        amount: succeeded.amount.toString(),
-        currencyCode: succeeded.currencyCode,
+        refundId: finalized.refund.id,
+        amount: finalized.refund.amount.toString(),
+        currencyCode: finalized.refund.currencyCode,
       });
     }
 
-    const latest = await this.paymentRepository.findRefundById(succeeded.id);
+    const latest = await this.paymentRepository.findRefundById(finalized.refund.id);
     if (!latest) {
       throw new NotFoundException({
         messageKey: 'payments.errors.refundNotFound',
@@ -407,35 +516,98 @@ export class RequestPaymentRefundUseCase {
     providerPayload: Record<string, unknown>;
   }) {
     if (input.providerOutcome === 'PROCESSING') {
-      return this.paymentRepository.updateRefund(input.refundId, {
-        status: RefundStatus.PROCESSING,
-        providerRefundRef: input.providerRefundRef,
+      return this.prisma.$transaction(async (tx) => {
+        const current = await this.paymentRepository.findRefundById(input.refundId, tx);
+        if (!current) {
+          throw new NotFoundException({
+            messageKey: 'payments.errors.refundNotFound',
+            error: 'PAYMENT_REFUND_NOT_FOUND',
+          });
+        }
+        const updated = await this.paymentRepository.updateRefund(
+          input.refundId,
+          { status: RefundStatus.PROCESSING, providerRefundRef: input.providerRefundRef },
+          tx,
+        );
+        await this.paymentRepository.createRefundEvent(
+          {
+            refundId: updated.id,
+            paymentId: input.payment.id,
+            sessionId: updated.sessionId,
+            eventType: RefundEventType.PROVIDER_PENDING,
+            previousStatus: current.status,
+            newStatus: updated.status,
+            destination: updated.destination,
+            amount: updated.amount,
+            currencyCode: updated.currencyCode,
+            actorType: current.actorType,
+            actorUserId: current.actorUserId,
+            source: current.source,
+            externalReference: input.providerRefundRef,
+          },
+          tx,
+        );
+        return updated;
       });
     }
 
     if (input.providerOutcome === 'FAILED') {
-      const failed = await this.paymentRepository.updateRefund(input.refundId, {
-        status: RefundStatus.FAILED,
-        providerRefundRef: input.providerRefundRef,
-        failedAt: new Date(),
-      });
+      const failed = await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.refundId})::bigint)`;
 
-      const aggregate =
-        await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
-          input.payment.id,
+        const failedRefund = await this.paymentRepository.updateRefund(
+          input.refundId,
+          {
+            status: RefundStatus.FAILED,
+            providerRefundRef: input.providerRefundRef,
+            failedAt: new Date(),
+          },
+          tx,
         );
-      const refunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
-      const targetStatus = refunded.gt(0)
-        ? PaymentStatus.PARTIALLY_REFUNDED
-        : PaymentStatus.CAPTURED;
 
-      this.validatePaymentStatusTransitionService.assertCanTransition(
-        PaymentStatus.REFUND_PENDING,
-        targetStatus,
-      );
+        await this.paymentRepository.createRefundEvent(
+          {
+            refundId: failedRefund.id,
+            paymentId: input.payment.id,
+            sessionId: failedRefund.sessionId,
+            eventType: RefundEventType.FAILED,
+            previousStatus: RefundStatus.PROCESSING,
+            newStatus: RefundStatus.FAILED,
+            destination: failedRefund.destination,
+            amount: failedRefund.amount,
+            currencyCode: failedRefund.currencyCode,
+            actorType: failedRefund.actorType,
+            actorUserId: failedRefund.actorUserId,
+            source: failedRefund.source,
+            externalReference: input.providerRefundRef,
+          },
+          tx,
+        );
 
-      await this.paymentRepository.updateStatus(input.payment.id, {
-        status: targetStatus,
+        const aggregate =
+          await this.paymentRepository.sumSucceededRefundAmountByPaymentId(
+            input.payment.id,
+            tx,
+          );
+        const refunded = aggregate._sum.amount ?? new Prisma.Decimal(0);
+        const targetStatus = refunded.gt(0)
+          ? PaymentStatus.PARTIALLY_REFUNDED
+          : PaymentStatus.CAPTURED;
+
+        this.validatePaymentStatusTransitionService.assertCanTransition(
+          PaymentStatus.REFUND_PENDING,
+          targetStatus,
+        );
+
+        await this.paymentRepository.updateStatus(
+          input.payment.id,
+          {
+            status: targetStatus,
+          },
+          tx,
+        );
+
+        return failedRefund;
       });
 
       if (input.payment.patientId) {
@@ -449,29 +621,78 @@ export class RequestPaymentRefundUseCase {
     }
 
     const succeeded = await this.prisma.$transaction(async (tx) => {
-      const updated = await this.paymentRepository.updateRefund(
-        input.refundId,
-        {
-          status: RefundStatus.SUCCEEDED,
-          providerRefundRef: input.providerRefundRef,
-          processedAt: new Date(),
-        },
-        tx,
-      );
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.refundId})::bigint)`;
 
-      await this.paymentRepository.createEvent(
-        {
-          paymentId: input.payment.id,
-          eventType: PaymentEventType.REFUND_PROCESSED,
-          providerEventRef: input.providerRefundRef ?? null,
-          payloadJson: {
-            refundId: input.refundId,
-            outcome: input.providerOutcome,
-            ...input.providerPayload,
-          },
-        },
+      const currentRefund = await this.paymentRepository.findRefundById(
+        input.refundId,
         tx,
       );
+      if (!currentRefund) {
+        throw new NotFoundException({
+          messageKey: 'payments.errors.refundNotFound',
+          error: 'PAYMENT_REFUND_NOT_FOUND',
+        });
+      }
+
+      const updated =
+        currentRefund.status === RefundStatus.SUCCEEDED
+          ? await this.paymentRepository.updateRefund(
+              input.refundId,
+              {
+                processedAt: currentRefund.processedAt ?? new Date(),
+                providerRefundRef:
+                  currentRefund.providerRefundRef ?? input.providerRefundRef,
+              },
+              tx,
+            )
+          : await this.paymentRepository.updateRefund(
+              input.refundId,
+              {
+                status: RefundStatus.SUCCEEDED,
+                providerRefundRef: input.providerRefundRef,
+                processedAt: new Date(),
+              },
+              tx,
+            );
+
+      if (currentRefund.status !== RefundStatus.SUCCEEDED) {
+        await this.paymentRepository.createEvent(
+          {
+            paymentId: input.payment.id,
+            eventType: PaymentEventType.REFUND_PROCESSED,
+            providerEventRef: input.providerRefundRef ?? null,
+            actorType: AuditActorType.USER,
+            actorUserId: currentRefund.actorUserId,
+            source: currentRefund.source ?? SecurityAuditSource.HTTP_REQUEST,
+            previousStatus: PaymentStatus.REFUND_PENDING,
+            newStatus: PaymentStatus.REFUND_PENDING,
+            payloadJson: {
+              refundId: input.refundId,
+              outcome: input.providerOutcome,
+              ...input.providerPayload,
+            },
+          },
+          tx,
+        );
+        await this.paymentRepository.createRefundEvent(
+          {
+            refundId: updated.id,
+            paymentId: input.payment.id,
+            sessionId: updated.sessionId,
+            eventType: RefundEventType.SUCCEEDED,
+            previousStatus: currentRefund.status,
+            newStatus: RefundStatus.SUCCEEDED,
+            destination: updated.destination,
+            amount: updated.amount,
+            currencyCode: updated.currencyCode,
+            actorType: currentRefund.actorType,
+            actorUserId: currentRefund.actorUserId,
+            source: currentRefund.source,
+            externalReference: input.providerRefundRef,
+          },
+          tx,
+        );
+      }
 
       return updated;
     });
@@ -497,6 +718,11 @@ export class RequestPaymentRefundUseCase {
 
     await this.postRefundLedgerEntriesUseCase.execute({
       refundId: succeeded.id,
+    });
+
+    await this.sessionEarningReviewService.invalidatePendingReviewsForPayment({
+      paymentId: input.payment.id,
+      internalReason: 'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL',
     });
 
     if (input.payment.sessionId) {

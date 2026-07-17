@@ -56,11 +56,11 @@ export type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "PENDING";
 
 export type BookingStatus =
   | "PENDING"
-  | "CONFIRMED"
+  | "UPCOMING"
   | "IN_PROGRESS"
   | "COMPLETED"
   | "CANCELLED"
-  | "NO_SHOW";
+  | "PATIENT_NO_SHOW";
 
 export type BookingSource =
   | "ONLINE"

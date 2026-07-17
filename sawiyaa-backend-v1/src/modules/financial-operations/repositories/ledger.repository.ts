@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { LedgerEntryType, Prisma, WalletBalanceBucket } from '@prisma/client';
+import {
+  LedgerClassificationActionType,
+  LedgerEntryType,
+  Prisma,
+  SecurityAuditActorType,
+  WalletBalanceBucket,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -15,9 +21,11 @@ export class LedgerRepository {
   createManyLedgerEntries(
     data: Prisma.LedgerEntryUncheckedCreateInput[],
     tx?: Prisma.TransactionClient,
+    skipDuplicates = false,
   ) {
     return this.getDb(tx).ledgerEntry.createMany({
       data,
+      skipDuplicates,
     });
   }
 
@@ -30,15 +38,15 @@ export class LedgerRepository {
     });
   }
 
-  findByPaymentId(paymentId: string) {
-    return this.prisma.ledgerEntry.findMany({
+  findByPaymentId(paymentId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).ledgerEntry.findMany({
       where: { paymentId },
       orderBy: [{ createdAt: 'asc' }],
     });
   }
 
-  findByRefundId(refundId: string) {
-    return this.prisma.ledgerEntry.findMany({
+  findByRefundId(refundId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).ledgerEntry.findMany({
       where: {
         referenceType: 'refund',
         referenceId: refundId,
@@ -81,6 +89,7 @@ export class LedgerRepository {
         entryType: LedgerEntryType.PRACTITIONER_EARNING,
         direction: 'CREDIT',
         balanceBucket: WalletBalanceBucket.AVAILABLE,
+        sessionEarningReviewId: null,
       },
       select: {
         id: true,
@@ -88,6 +97,38 @@ export class LedgerRepository {
         paymentId: true,
         referenceType: true,
         referenceId: true,
+        amount: true,
+        currencyCode: true,
+        createdAt: true,
+      },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+  }
+
+  findSessionReviewPractitionerEarningEntriesBySessionIds(input: {
+    sessionIds: string[];
+    tx?: Prisma.TransactionClient;
+  }) {
+    if (input.sessionIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.getDb(input.tx).ledgerEntry.findMany({
+      where: {
+        sessionId: {
+          in: input.sessionIds,
+        },
+        sessionEarningReviewId: {
+          not: null,
+        },
+        entryType: LedgerEntryType.PRACTITIONER_EARNING,
+        direction: 'CREDIT',
+        balanceBucket: WalletBalanceBucket.AVAILABLE,
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        sessionEarningReviewId: true,
         amount: true,
         currencyCode: true,
         createdAt: true,
@@ -217,33 +258,84 @@ export class LedgerRepository {
     settlementId: string,
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).ledgerEntry.updateMany({
-      where: {
-        id: {
-          in: ledgerEntryIds,
+    const execute = async (db: Prisma.TransactionClient | PrismaService) => {
+      const entries = await db.ledgerEntry.findMany({
+        where: { id: { in: ledgerEntryIds } },
+        select: { id: true, settlementId: true, balanceBucket: true },
+      });
+      const changedEntries = entries.filter(
+        (entry) =>
+          entry.settlementId !== settlementId ||
+          entry.balanceBucket !== WalletBalanceBucket.RESERVED,
+      );
+      const result = await db.ledgerEntry.updateMany({
+        where: { id: { in: changedEntries.map((entry) => entry.id) } },
+        data: {
+          settlementId,
+          balanceBucket: WalletBalanceBucket.RESERVED,
         },
-      },
-      data: {
-        settlementId,
-        balanceBucket: WalletBalanceBucket.RESERVED,
-      },
-    });
+      });
+      if (changedEntries.length > 0) {
+        await db.ledgerClassificationEvent.createMany({
+          data: changedEntries.map((entry) => ({
+            ledgerEntryId: entry.id,
+            previousSettlementId: entry.settlementId,
+            newSettlementId: settlementId,
+            previousBalanceBucket: entry.balanceBucket,
+            newBalanceBucket: WalletBalanceBucket.RESERVED,
+            actionType: LedgerClassificationActionType.ASSIGNED_TO_SETTLEMENT,
+            actorType: SecurityAuditActorType.SYSTEM,
+            source: 'SYSTEM',
+            reason: 'settlement-reservation',
+          })),
+        });
+      }
+      return result;
+    };
+    return tx ? execute(tx) : this.prisma.$transaction(execute);
   }
 
   releaseSettlementEntries(
     settlementId: string,
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).ledgerEntry.updateMany({
-      where: {
-        settlementId,
-        entryType: LedgerEntryType.PRACTITIONER_EARNING,
-        direction: 'CREDIT',
-      },
-      data: {
-        settlementId: null,
-        balanceBucket: WalletBalanceBucket.AVAILABLE,
-      },
-    });
+    const execute = async (db: Prisma.TransactionClient | PrismaService) => {
+      const entries = await db.ledgerEntry.findMany({
+        where: {
+          settlementId,
+          entryType: LedgerEntryType.PRACTITIONER_EARNING,
+          direction: 'CREDIT',
+        },
+        select: { id: true, settlementId: true, balanceBucket: true },
+      });
+      const result = await db.ledgerEntry.updateMany({
+        where: {
+          settlementId,
+          entryType: LedgerEntryType.PRACTITIONER_EARNING,
+          direction: 'CREDIT',
+        },
+        data: {
+          settlementId: null,
+          balanceBucket: WalletBalanceBucket.AVAILABLE,
+        },
+      });
+      if (entries.length > 0) {
+        await db.ledgerClassificationEvent.createMany({
+          data: entries.map((entry) => ({
+            ledgerEntryId: entry.id,
+            previousSettlementId: entry.settlementId,
+            newSettlementId: null,
+            previousBalanceBucket: entry.balanceBucket,
+            newBalanceBucket: WalletBalanceBucket.AVAILABLE,
+            actionType: LedgerClassificationActionType.RELEASED_FROM_SETTLEMENT,
+            actorType: SecurityAuditActorType.SYSTEM,
+            source: 'SYSTEM',
+            reason: 'settlement-release',
+          })),
+        });
+      }
+      return result;
+    };
+    return tx ? execute(tx) : this.prisma.$transaction(execute);
   }
 }

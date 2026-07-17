@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { HttpStatus, UnauthorizedException } from '@nestjs/common';
 import {
   OtpChannel,
   OtpPurpose,
@@ -7,6 +7,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { LoginPractitionerPasswordUseCase } from './login-practitioner-password.use-case';
+import { AUTH_LOCKOUT_CONTEXTS } from '../types/auth-lockout.types';
 
 describe('LoginPractitionerPasswordUseCase', () => {
   const configService = {
@@ -40,6 +41,11 @@ describe('LoginPractitionerPasswordUseCase', () => {
   const sendOtpChallengeUseCase = {
     execute: jest.fn(),
   };
+  const authLockoutService = {
+    getState: jest.fn(),
+    recordFailure: jest.fn(),
+    clear: jest.fn(),
+  };
   const securityAuditService = {
     logAsync: jest.fn(),
   };
@@ -55,6 +61,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     practitionerOtpChannelService as any,
     createOtpChallengeUseCase as any,
     sendOtpChallengeUseCase as any,
+    authLockoutService as any,
     securityAuditService as any,
   );
 
@@ -63,11 +70,27 @@ describe('LoginPractitionerPasswordUseCase', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     configService.get.mockImplementation((key: string) => {
-      if (key === 'app.nodeEnv') return 'development';
-      if (key === 'auth.practitionerLoginOtpEnabledState') return 'true';
-      if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
-      return undefined;
+    if (key === 'app.nodeEnv') return 'development';
+    if (key === 'auth.practitionerLoginOtpRequired') return true;
+    return undefined;
     });
+    authLockoutService.getState.mockResolvedValue({
+      attemptCount: 0,
+      maxAttempts: 4,
+      remainingAttempts: 4,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.recordFailure.mockResolvedValue({
+      attemptCount: 1,
+      maxAttempts: 4,
+      remainingAttempts: 3,
+      lockedUntil: null,
+      retryAfterSeconds: 0,
+      isLocked: false,
+    });
+    authLockoutService.clear.mockResolvedValue(undefined);
   });
 
   it('creates and sends an OTP challenge without returning the code', async () => {
@@ -79,7 +102,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
         roles: [{ role: UserRoleType.PRACTITIONER }],
         practitionerProfile: {
           id: 'profile-1',
-          status: PractitionerStatus.DRAFT,
+          status: PractitionerStatus.APPROVED,
         },
         emails: [],
         phones: [],
@@ -118,6 +141,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
       expect.objectContaining({
         challengeId: 'challenge-1',
         requiresOtpVerification: true,
+        nextStep: 'OTP_REQUIRED',
       }),
     );
     expect(result).not.toHaveProperty('code');
@@ -129,14 +153,17 @@ describe('LoginPractitionerPasswordUseCase', () => {
     expect(practitionerPresenceRepository.markOnline).toHaveBeenCalledWith(
       'profile-1',
     );
+    expect(authLockoutService.clear).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_PASSWORD_LOGIN,
+      'user:user-1',
+    );
     expect(issueAuthTokensUseCase.execute).not.toHaveBeenCalled();
   });
 
-  it('falls back to legacy dev bypass only when AUTH_PRACTITIONER_LOGIN_OTP_ENABLED is unset and NODE_ENV=development', async () => {
+  it('issues direct authentication only when the server config disables OTP', async () => {
     configService.get.mockImplementation((key: string) => {
       if (key === 'app.nodeEnv') return 'development';
-      if (key === 'auth.practitionerLoginOtpEnabledState') return 'unset';
-      if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
+      if (key === 'auth.practitionerLoginOtpRequired') return false;
       return undefined;
     });
     userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
@@ -147,7 +174,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
         roles: [{ role: UserRoleType.PRACTITIONER }],
         practitionerProfile: {
           id: 'profile-1',
-          status: PractitionerStatus.DRAFT,
+          status: PractitionerStatus.APPROVED,
         },
         emails: [],
         phones: [],
@@ -195,10 +222,12 @@ describe('LoginPractitionerPasswordUseCase', () => {
         accessToken: string;
         refreshToken: string;
       };
+      nextStep: 'AUTHENTICATED';
     };
 
     expect(result.tokens.accessToken).toBe('access-token');
     expect(result.tokens.refreshToken).toBe('refresh-token');
+    expect(result.nextStep).toBe('AUTHENTICATED');
     expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     expect(sendOtpChallengeUseCase.execute).not.toHaveBeenCalled();
     expect(issueAuthTokensUseCase.execute).toHaveBeenCalledWith(
@@ -232,7 +261,11 @@ describe('LoginPractitionerPasswordUseCase', () => {
         password: 'password',
         locale: 'en',
       }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(authLockoutService.recordFailure).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_PASSWORD_LOGIN,
+      'user:user-1',
+    );
   });
 
   it('rejects invalid credentials', async () => {
@@ -284,6 +317,43 @@ describe('LoginPractitionerPasswordUseCase', () => {
         locale: 'en',
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(authLockoutService.recordFailure).toHaveBeenCalledWith(
+      AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_PASSWORD_LOGIN,
+      'user:user-1',
+    );
+  });
+
+  it('returns a lockout response when the practitioner password flow is already locked', async () => {
+    userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
+      isPrimary: true,
+      user: {
+        id: 'user-1',
+        status: UserStatus.ACTIVE,
+        roles: [{ role: UserRoleType.PRACTITIONER }],
+        practitionerProfile: {
+          id: 'profile-1',
+          status: PractitionerStatus.APPROVED,
+        },
+      },
+    });
+    authLockoutService.getState.mockResolvedValue({
+      attemptCount: 4,
+      maxAttempts: 4,
+      remainingAttempts: 0,
+      lockedUntil: new Date('2026-07-10T10:00:00.000Z'),
+      retryAfterSeconds: 60,
+      isLocked: true,
+    });
+
+    await expect(
+      useCase.execute({
+        email: 'test@example.com',
+        password: 'password',
+        locale: 'en',
+      }),
+    ).rejects.toMatchObject({
+      status: HttpStatus.TOO_MANY_REQUESTS,
+    });
   });
 
   describe('practitioner login OTP feature toggle', () => {
@@ -347,11 +417,44 @@ describe('LoginPractitionerPasswordUseCase', () => {
       });
     };
 
+    it('keeps rejected practitioners blocked when OTP is disabled', async () => {
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'auth.practitionerLoginOtpRequired') return false;
+        return undefined;
+      });
+      userEmailRepository.findByEmailForPractitionerAuth.mockResolvedValue({
+        isPrimary: true,
+        user: {
+          id: 'user-1',
+          status: UserStatus.ACTIVE,
+          roles: [{ role: UserRoleType.PRACTITIONER }],
+          practitionerProfile: {
+            id: 'profile-1',
+            status: PractitionerStatus.REJECTED,
+          },
+        },
+      });
+      authIdentityRepository.findPasswordIdentityByUserId.mockResolvedValue({
+        id: 'identity-1',
+        passwordHash: 'hash',
+      });
+      verifyPasswordUseCase.execute.mockResolvedValue(true);
+
+      await expect(
+        useCase.execute({
+          email: 'test@example.com',
+          password: 'password',
+          locale: 'en',
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(issueAuthTokensUseCase.execute).not.toHaveBeenCalled();
+      expect(createOtpChallengeUseCase.execute).not.toHaveBeenCalled();
+    });
+
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=true requires OTP in production', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'production';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'true';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
+        if (key === 'auth.practitionerLoginOtpRequired') return true;
         return undefined;
       });
       primeSuccessPath();
@@ -381,8 +484,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=true ignores legacy dev bypass in development (primary source of truth)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'development';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'true';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
+        if (key === 'auth.practitionerLoginOtpRequired') return true;
         return undefined;
       });
       primeSuccessPath();
@@ -408,8 +510,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=false issues tokens directly in production (emergency bypass)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'production';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'false';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
+        if (key === 'auth.practitionerLoginOtpRequired') return false;
         return undefined;
       });
       primeSuccessPath();
@@ -440,8 +541,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED=false issues tokens directly in development (works regardless of legacy flag)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'development';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'false';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
+        if (key === 'auth.practitionerLoginOtpRequired') return false;
         return undefined;
       });
       primeSuccessPath();
@@ -465,8 +565,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED unset + legacy dev bypass=true + NODE_ENV=development → direct tokens (backward compatibility)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'development';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'unset';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
+        if (key === 'auth.practitionerLoginOtpRequired') return false;
         return undefined;
       });
       primeSuccessPath();
@@ -490,8 +589,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED unset + legacy dev bypass=true + NODE_ENV=production → requires OTP (legacy bypass never applies in production)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'production';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'unset';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return true;
+        if (key === 'auth.practitionerLoginOtpRequired') return true;
         return undefined;
       });
       primeSuccessPath();
@@ -516,8 +614,7 @@ describe('LoginPractitionerPasswordUseCase', () => {
     it('AUTH_PRACTITIONER_LOGIN_OTP_ENABLED unset + legacy dev bypass=false → requires OTP (secure default)', async () => {
       configService.get.mockImplementation((key: string) => {
         if (key === 'app.nodeEnv') return 'development';
-        if (key === 'auth.practitionerLoginOtpEnabledState') return 'unset';
-        if (key === 'auth.practitionerLoginOtpBypassInDev') return false;
+        if (key === 'auth.practitionerLoginOtpRequired') return true;
         return undefined;
       });
       primeSuccessPath();

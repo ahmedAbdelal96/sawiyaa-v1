@@ -1,10 +1,8 @@
-import { ConversationParticipantRole } from '@prisma/client';
 import { SupportActorRepository } from '../repositories/support-actor.repository';
 import { SupportTicketRepository } from '../repositories/support-ticket.repository';
 import { SupportTicketAccessPolicy } from '../policies/support-ticket-access.policy';
 import { SupportPresenter } from '../presenters/support.presenter';
 import { AddMySupportMessageUseCase } from './add-my-support-message.use-case';
-import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 describe('AddMySupportMessageUseCase', () => {
   const supportActorRepository = {
@@ -14,6 +12,7 @@ describe('AddMySupportMessageUseCase', () => {
 
   const supportTicketRepository = {
     findByOwner: jest.fn(),
+    findByIdForAdmin: jest.fn(),
     addMessage: jest.fn(),
   } as unknown as SupportTicketRepository;
 
@@ -26,24 +25,24 @@ describe('AddMySupportMessageUseCase', () => {
     presentUserTicketDetails: jest.fn(),
   } as unknown as SupportPresenter;
 
-  const notifyConversationMessageMock = jest.fn();
-  const operationalNotificationService = {
-    notifyConversationMessage: notifyConversationMessageMock,
-  } as unknown as OperationalNotificationService;
+  const messagingUseCase = {
+    sendMessage: jest.fn(),
+  } as any;
 
   const useCase = new AddMySupportMessageUseCase(
     supportActorRepository,
     supportTicketRepository,
     supportTicketAccessPolicy,
     supportPresenter,
-    operationalNotificationService,
+    messagingUseCase,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    messagingUseCase.sendMessage.mockReset();
   });
 
-  it('notifies the other participant for practitioner support replies', async () => {
+  it('delegates practitioner support replies to the canonical messaging use case', async () => {
     (
       supportActorRepository.findPractitionerProfileByUserId as jest.Mock
     ).mockResolvedValue({
@@ -53,21 +52,12 @@ describe('AddMySupportMessageUseCase', () => {
       id: 'ticket-1',
       conversationId: 'conv-1',
     });
-    (supportTicketRepository.addMessage as jest.Mock).mockResolvedValue({
+    (supportTicketRepository.findByIdForAdmin as jest.Mock).mockResolvedValue({
       conversation: {
-        messages: [{ id: 'msg-1' }],
-        participants: [
-          {
-            userId: 'user-pr',
-            participantRole: ConversationParticipantRole.PRACTITIONER,
-          },
-          {
-            userId: 'user-patient',
-            participantRole: ConversationParticipantRole.PATIENT,
-          },
-        ],
+        messages: [],
       },
     });
+    messagingUseCase.sendMessage.mockResolvedValue({ item: { id: 'msg-1' } });
     (supportPresenter.presentUserTicketDetails as jest.Mock).mockReturnValue({
       id: 'ticket-1',
     });
@@ -79,21 +69,11 @@ describe('AddMySupportMessageUseCase', () => {
       payload: { message: 'hello' },
     });
 
-    expect(notifyConversationMessageMock).toHaveBeenCalledWith({
-      lane: 'SUPPORT',
-      threadId: 'ticket-1',
-      messageId: 'msg-1',
-      senderUserId: 'user-pr',
-      participants: [
-        {
-          userId: 'user-pr',
-          participantRole: ConversationParticipantRole.PRACTITIONER,
-        },
-        {
-          userId: 'user-patient',
-          participantRole: ConversationParticipantRole.PATIENT,
-        },
-      ],
-    });
+    expect(messagingUseCase.sendMessage).toHaveBeenCalledWith(
+      { id: 'user-pr', roles: [] },
+      'conv-1',
+      'hello',
+    );
+    expect(supportTicketRepository.addMessage).not.toHaveBeenCalled();
   });
 });

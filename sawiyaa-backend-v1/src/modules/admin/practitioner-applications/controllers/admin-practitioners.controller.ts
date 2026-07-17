@@ -5,7 +5,9 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -25,9 +27,11 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { AdminPractitionerAvatarSuccessResponseDto } from '../dto/admin-practitioner-avatar-response.dto';
 import { ListAdminPractitionersDto } from '../dto/list-admin-practitioners.dto';
 import { UpsertAdminPractitionerAvatarDto } from '../dto/upsert-admin-practitioner-avatar.dto';
+import { ClearPractitionerAuthLockoutUseCase } from '../use-cases/clear-practitioner-auth-lockout.use-case';
 import { RemoveAdminPractitionerAvatarUseCase } from '../use-cases/remove-admin-practitioner-avatar.use-case';
 import { ListAdminPractitionersDirectoryUseCase } from '../use-cases/list-admin-practitioners-directory.use-case';
 import { UpdateAdminPractitionerAvatarUseCase } from '../use-cases/update-admin-practitioner-avatar.use-case';
@@ -46,6 +50,7 @@ export class AdminPractitionersController {
     private readonly listAdminPractitionersDirectoryUseCase: ListAdminPractitionersDirectoryUseCase,
     private readonly updateAdminPractitionerAvatarUseCase: UpdateAdminPractitionerAvatarUseCase,
     private readonly removeAdminPractitionerAvatarUseCase: RemoveAdminPractitionerAvatarUseCase,
+    private readonly clearPractitionerAuthLockoutUseCase: ClearPractitionerAuthLockoutUseCase,
   ) {}
 
   @Get()
@@ -128,6 +133,31 @@ export class AdminPractitionersController {
     return this.removeAdminPractitionerAvatarUseCase.execute({
       practitionerId: id,
       locale,
+    });
+  }
+
+  @Post(':id/auth-lockout/clear')
+  @ApiOperation({
+    summary: 'Clear practitioner auth lockout',
+    description:
+      'Clears temporary lockout state for practitioner password login and OTP verification without changing account status.',
+  })
+  @ApiResponse({ status: 200 })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({ description: 'Route requires active admin account' })
+  @ApiNotFoundResponse({ description: 'Practitioner profile not found' })
+  clearAuthLockout(
+    @Param('id') id: string,
+    @Req() request: AuthenticatedRequest,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.clearPractitionerAuthLockoutUseCase.execute({
+      practitionerId: id,
+      actorUserId: request.user!.id,
+      locale,
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
+      correlationId: request.requestId ?? null,
     });
   }
 }

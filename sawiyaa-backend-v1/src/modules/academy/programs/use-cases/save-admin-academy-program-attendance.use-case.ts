@@ -2,10 +2,13 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
-import { AcademyProgramSessionAttendanceStatus } from '@prisma/client';
+import { AcademyProgramSessionAttendanceStatus, SecurityAuditOutcome } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { SaveAdminAcademyProgramAttendanceDto } from '../dto/save-admin-academy-program-attendance.dto';
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
 import { AcademyProgramRepository } from '../repositories/academy-program.repository';
@@ -20,6 +23,7 @@ export class SaveAdminAcademyProgramAttendanceUseCase {
     private readonly academyProgramEnrollmentRepository: AcademyProgramEnrollmentRepository,
     private readonly academyProgramSessionAttendanceRepository: AcademyProgramSessionAttendanceRepository,
     private readonly getAdminAcademyProgramAttendanceUseCase: GetAdminAcademyProgramAttendanceUseCase,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -57,6 +61,24 @@ export class SaveAdminAcademyProgramAttendanceUseCase {
     const confirmedEnrollmentIds = new Set(
       confirmedEnrollments.map((enrollment) => enrollment.id),
     );
+    const beforeAttendance = await this.academyProgramSessionAttendanceRepository.findAttendancesBySessionId(
+      selectedSession.id,
+    );
+    const beforeByEnrollment = new Map(
+      beforeAttendance.map((row) => [row.academyProgramEnrollmentId, row.attendanceStatus]),
+    );
+    const hasCorrection = input.payload.items.some((item) => {
+      const previous = beforeByEnrollment.get(item.enrollmentId);
+      const next = item.status === 'UNMARKED' ? undefined : item.status;
+      return previous !== undefined && previous !== next;
+    });
+    const correctionReason = input.payload.reason?.trim() || null;
+    if (hasCorrection && !correctionReason) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.attendanceCorrectionReasonRequired',
+        error: 'ACADEMY_PROGRAM_ATTENDANCE_CORRECTION_REASON_REQUIRED',
+      });
+    }
 
     const unknownEnrollmentId = input.payload.items.find(
       (item) => !confirmedEnrollmentIds.has(item.enrollmentId),
@@ -156,6 +178,26 @@ export class SaveAdminAcademyProgramAttendanceUseCase {
           tx,
         );
       }
+
+      await this.securityAuditService?.recordRequired(tx, {
+        action: hasCorrection
+          ? 'academy.programAttendance.correct'
+          : 'academy.programAttendance.update',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.actorUserId,
+        resourceType: 'AcademyProgramSessionAttendance',
+        resourceId: selectedSession.id,
+        metadata: {
+          academyProgramId: input.programId,
+          sessionId: selectedSession.id,
+          markedCount: input.payload.items.filter((item) => item.status !== 'UNMARKED').length,
+          totalItems: input.payload.items.length,
+          correction: hasCorrection,
+        },
+        reason: hasCorrection ? correctionReason : null,
+      });
     });
 
     return this.getAdminAcademyProgramAttendanceUseCase.execute({

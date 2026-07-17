@@ -69,6 +69,7 @@ export function usePatientGoogleAuth() {
   return useMutation({
     mutationFn: patientGoogleAuth,
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -77,6 +78,7 @@ export function usePatientRegister() {
   return useMutation({
     mutationFn: patientRegister,
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -85,6 +87,7 @@ export function usePatientLogin() {
   return useMutation({
     mutationFn: patientLogin,
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -93,6 +96,7 @@ export function usePatientRefresh() {
   return useMutation({
     mutationFn: (data?: RefreshTokenRequest) => patientRefresh(data),
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -101,36 +105,42 @@ export function usePatientLogout() {
   return useMutation({
     mutationFn: patientLogout,
     onSuccess: onLogoutSuccess,
+    retry: false,
   });
 }
 
 export function usePatientForgotPassword() {
   return useMutation({
     mutationFn: patientForgotPassword,
+    retry: false,
   });
 }
 
 export function usePatientResetPassword() {
   return useMutation({
     mutationFn: patientResetPassword,
+    retry: false,
   });
 }
 
 export function usePatientVerifyPasswordResetOtp() {
   return useMutation({
     mutationFn: patientVerifyPasswordResetOtp,
+    retry: false,
   });
 }
 
 export function usePatientConfirmPasswordReset() {
   return useMutation({
     mutationFn: patientConfirmPasswordReset,
+    retry: false,
   });
 }
 
 export function usePractitionerRegister() {
   return useMutation({
     mutationFn: practitionerRegister,
+    retry: false,
   });
 }
 
@@ -139,10 +149,11 @@ export function usePractitionerLogin() {
     useAuthMutationInvalidation();
   return useMutation({
     mutationFn: practitionerLogin,
+    retry: false,
     onSuccess: (data: PractitionerLoginResponse) => {
       onPractitionerPresenceSuccess();
 
-      if ("tokens" in data) {
+      if (data.nextStep === "AUTHENTICATED") {
         onAuthSuccess();
       }
     },
@@ -154,6 +165,7 @@ export function usePractitionerVerifyOtp() {
     useAuthMutationInvalidation();
   return useMutation({
     mutationFn: practitionerVerifyOtp,
+    retry: false,
     onSuccess: () => {
       onPractitionerPresenceSuccess();
       onAuthSuccess();
@@ -166,6 +178,7 @@ export function usePractitionerRefresh() {
   return useMutation({
     mutationFn: (data?: RefreshTokenRequest) => practitionerRefresh(data),
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -174,30 +187,35 @@ export function usePractitionerLogout() {
   return useMutation({
     mutationFn: practitionerLogout,
     onSuccess: onLogoutSuccess,
+    retry: false,
   });
 }
 
 export function usePractitionerForgotPassword() {
   return useMutation({
     mutationFn: practitionerForgotPassword,
+    retry: false,
   });
 }
 
 export function usePractitionerResetPassword() {
   return useMutation({
     mutationFn: practitionerResetPassword,
+    retry: false,
   });
 }
 
 export function usePractitionerVerifyPasswordResetOtp() {
   return useMutation({
     mutationFn: practitionerVerifyPasswordResetOtp,
+    retry: false,
   });
 }
 
 export function usePractitionerConfirmPasswordReset() {
   return useMutation({
     mutationFn: practitionerConfirmPasswordReset,
+    retry: false,
   });
 }
 
@@ -206,6 +224,7 @@ export function useAdminLogin() {
   return useMutation({
     mutationFn: adminLogin,
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -214,6 +233,7 @@ export function useAdminRefresh() {
   return useMutation({
     mutationFn: (data?: RefreshTokenRequest) => adminRefresh(data),
     onSuccess: onAuthSuccess,
+    retry: false,
   });
 }
 
@@ -222,5 +242,6 @@ export function useAdminLogout() {
   return useMutation({
     mutationFn: adminLogout,
     onSuccess: onLogoutSuccess,
+    retry: false,
   });
 }

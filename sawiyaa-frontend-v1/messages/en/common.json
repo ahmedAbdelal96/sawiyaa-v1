@@ -63,5 +63,13 @@
     "filters": "Filters",
     "refineList": "Refine the current list without leaving the page.",
     "actions": "Actions"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "The link may be incorrect, or this page is no longer available.",
+    "supportive": "Don’t worry, you can return home or sign in again.",
+    "goHome": "Return home",
+    "signIn": "Sign in",
+    "goBack": "Go back"
   }
 }

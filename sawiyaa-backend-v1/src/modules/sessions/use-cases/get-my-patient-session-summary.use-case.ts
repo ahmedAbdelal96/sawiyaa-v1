@@ -43,20 +43,24 @@ export class GetMyPatientSessionSummaryUseCase {
       totalItems: presentationSummary.totalItems,
       pendingPayment: counts[SessionStatus.PENDING_PAYMENT] ?? 0,
       pendingPractitionerResponse:
-        counts[SessionStatus.PENDING_PRACTITIONER_RESPONSE] ?? 0,
-      confirmed: counts[SessionStatus.CONFIRMED] ?? 0,
+        counts[SessionStatus.PENDING_PRACTITIONER_CONFIRMATION] ?? 0,
+      confirmed: counts[SessionStatus.UPCOMING] ?? 0,
       upcoming: presentationSummary.upcoming,
       readyToJoin: presentationSummary.joinable,
       inProgress: presentationSummary.inProgress,
       completed: counts[SessionStatus.COMPLETED] ?? 0,
       cancelled: counts[SessionStatus.CANCELLED] ?? 0,
-      noShow: counts[SessionStatus.NO_SHOW] ?? 0,
+      noShow: getCount(
+        SessionStatus.PATIENT_NO_SHOW,
+        SessionStatus.PRACTITIONER_NO_SHOW,
+        SessionStatus.BOTH_NO_SHOW,
+      ),
       expired: counts[SessionStatus.EXPIRED] ?? 0,
-      refundPending: counts[SessionStatus.REFUND_PENDING] ?? 0,
-      refunded: counts[SessionStatus.REFUNDED] ?? 0,
+      refundPending: 0,
+      refunded: 0,
       actionRequired: getCount(
         SessionStatus.PENDING_PAYMENT,
-        SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+        SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
       ) + presentationSummary.joinable,
       active:
         presentationSummary.upcoming +
@@ -66,10 +70,10 @@ export class GetMyPatientSessionSummaryUseCase {
       history: getCount(
         SessionStatus.COMPLETED,
         SessionStatus.CANCELLED,
-        SessionStatus.NO_SHOW,
+        SessionStatus.PATIENT_NO_SHOW,
+        SessionStatus.PRACTITIONER_NO_SHOW,
+        SessionStatus.BOTH_NO_SHOW,
         SessionStatus.EXPIRED,
-        SessionStatus.REFUND_PENDING,
-        SessionStatus.REFUNDED,
       ),
       paymentExpired: counts[SessionStatus.EXPIRED] ?? 0,
     };

@@ -9,7 +9,7 @@
     "refundPolicies": "سياسات الاسترداد",
     "practitionerApplications": "طلبات الانضمام للممارسين",
     "articles": "المقالات",
-    "academy": "الأكاديمية",
+    "academy": "التدريب",
     "sessions": "الجلسات",
     "wallet": "المحفظة",
     "ledger": "دفتر الحسابات",
@@ -23,6 +23,7 @@
     "financeDashboard": "نظرة عامة",
     "financeLedger": "دفتر القيود",
     "financeReconciliation": "المطابقة المالية",
+    "sessionEarningReviews": "مراجعات أرباح الجلسات",
     "reports": "التقارير",
     "reportsHome": "صفحة التقارير",
     "reportsSessions": "تقرير الجلسات",
@@ -125,8 +126,8 @@
     "chat": "الدردشة",
     "reviews": "التقييمات",
     "moderationReports": "بلاغات الإشراف",
-    "academy": "الأكاديمية",
-    "academyPrograms": "البرامج",
+    "academy": "التدريب",
+    "academyPrograms": "الدورات التدريبية",
     "academyLegacyCourses": "الدورات القديمة",
     "adminUsers": "مستخدمو الإدارة"
   },
@@ -143,5 +144,8 @@
   "patientShell": {
     "areaTitle": "مساحة المريض",
     "areaSubtitle": "تصفح، احجز، وأدر رحلة رعايتك بسهولة"
-  }
+  },
+  "academy": "التدريب",
+  "academyPrograms": "الدورات التدريبية",
+  "academyLegacyCourses": "الدورات القديمة"
 }

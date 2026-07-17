@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  PatientPackagePurchaseStatus,
+  SessionMode,
+  SessionPaymentCoverageType,
+  SessionProvider,
+  SessionStatus,
+} from '@prisma/client';
 import {
   SessionJoinBlockedReason,
   SessionPresentationStatus,
@@ -25,6 +31,86 @@ class AdminSessionParticipantsDto {
 
   @ApiProperty({ type: AdminSessionIdentityContactDto })
   practitioner!: AdminSessionIdentityContactDto;
+}
+
+class AdminSessionPackagePlanSummaryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  code!: string;
+
+  @ApiProperty()
+  title!: string;
+
+  @ApiProperty()
+  sessionCount!: number;
+
+  @ApiProperty({ nullable: true })
+  discountPercent!: string | null;
+}
+
+class AdminSessionPackagePurchaseSummaryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: PatientPackagePurchaseStatus })
+  status!: PatientPackagePurchaseStatus;
+
+  @ApiProperty({ nullable: true })
+  selectedCurrencyCode!: string | null;
+
+  @ApiProperty({ nullable: true })
+  sessionCountSnapshot!: number | null;
+
+  @ApiProperty({ nullable: true })
+  patientPayableTotalSnapshot!: string | null;
+
+  @ApiProperty({ type: AdminSessionPackagePlanSummaryDto })
+  packagePlan!: AdminSessionPackagePlanSummaryDto;
+}
+
+class AdminSessionPackageEntitlementDecisionActorDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+}
+
+export class AdminSessionPackageEntitlementDecisionDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  sessionId!: string;
+
+  @ApiProperty()
+  packagePurchaseId!: string;
+
+  @ApiProperty({ enum: SessionStatus })
+  sessionStatusSnapshot!: SessionStatus;
+
+  @ApiProperty()
+  decisionType!: string;
+
+  @ApiProperty()
+  reasonCode!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  adminNote!: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  resultingSessionEarningReviewId!: string | null;
+
+  @ApiProperty({ type: AdminSessionPackageEntitlementDecisionActorDto })
+  decidedBy!: AdminSessionPackageEntitlementDecisionActorDto;
+
+  @ApiProperty()
+  decidedAt!: string;
+
+  @ApiProperty()
+  idempotencyKey!: string;
 }
 
 export class AdminSessionRuntimeInspectionItemDto {
@@ -101,6 +187,21 @@ export class AdminSessionRuntimeInspectionItemDto {
     nullable: true,
   })
   presentationStatus!: SessionPresentationStatus | null;
+
+  @ApiPropertyOptional({ type: AdminSessionPackagePurchaseSummaryDto, nullable: true })
+  packagePurchase!: AdminSessionPackagePurchaseSummaryDto | null;
+
+  @ApiPropertyOptional({ type: AdminSessionPackageEntitlementDecisionDto, nullable: true })
+  packageEntitlementDecision!: AdminSessionPackageEntitlementDecisionDto | null;
+
+  @ApiProperty({ enum: SessionPaymentCoverageType })
+  paymentCoverageType!: SessionPaymentCoverageType;
+
+  @ApiPropertyOptional({ nullable: true })
+  packageSessionIndex!: number | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  packageSessionCount!: number | null;
 }
 
 export class AdminSessionRuntimeInspectionDataResponseDto {

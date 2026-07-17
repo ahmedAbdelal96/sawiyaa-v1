@@ -14,6 +14,7 @@ import {
   ModerationCaseActionType,
   ModerationReportTargetType,
   ReviewModerationAction,
+  SessionReviewModerationDecision,
   SupportTicketStatus,
 } from '@prisma/client';
 import { ArticleRepository } from '@modules/articles/repositories/article.repository';
@@ -191,10 +192,12 @@ export class ExecuteModerationSurfaceEnforcementService {
     }
 
     const now = new Date();
+    const decision = this.resolveReviewModerationDecision(action);
     const next =
       this.validateReviewModerationTransitionService.resolveNextState({
         currentStatus: review.reviewStatus,
-        action,
+        decision,
+        originalRatingValue: review.ratingValue,
         now,
       });
 
@@ -206,6 +209,12 @@ export class ExecuteModerationSurfaceEnforcementService {
           publishedAt: next.publishedAt,
           hiddenAt: next.hiddenAt,
           archivedAt: next.archivedAt,
+          publicRatingValue: next.publicRatingValue,
+          countsInPublicAverage: next.countsInPublicAverage,
+          moderationDecision: next.moderationDecision,
+          moderatedByUserId: input.actorUserId,
+          moderatedAt: now,
+          moderationReason: input.note,
         },
         tx,
       );
@@ -220,6 +229,23 @@ export class ExecuteModerationSurfaceEnforcementService {
         tx,
       );
     });
+  }
+
+  private resolveReviewModerationDecision(
+    action: ReviewModerationAction,
+  ): SessionReviewModerationDecision {
+    switch (action) {
+      case ReviewModerationAction.APPROVED:
+        return SessionReviewModerationDecision.APPROVED_AS_IS;
+      case ReviewModerationAction.HIDDEN:
+        return SessionReviewModerationDecision.INTERNAL_NOTE_ONLY;
+      case ReviewModerationAction.REJECTED:
+        return SessionReviewModerationDecision.REJECTED_PUBLISHING;
+      case ReviewModerationAction.RESTORED:
+        return SessionReviewModerationDecision.APPROVED_AS_IS;
+      default:
+        return SessionReviewModerationDecision.INTERNAL_NOTE_ONLY;
+    }
   }
 
   private async enforceArticleArchive(input: {

@@ -48,6 +48,8 @@ export const arAdminCatalog = {
       invalidSpecialtyCategoryId: 'فئة التخصص الرئيسية غير صالحة أو غير نشطة',
       invalidSpecialtiesForCategory:
         'التخصصات المختارة لا تنتمي إلى فئة التخصص الرئيسية المحددة',
+      credentialRejectionReasonRequired:
+        '\u064a\u062c\u0628 \u0625\u062f\u062e\u0627\u0644 \u0633\u0628\u0628 \u0639\u0646\u062f \u0631\u0641\u0636 \u0627\u0644\u0645\u0633\u062a\u0646\u062f',
       practitionerNotFound: 'تعذر العثور على ملف الممارس',
     },
     notifications: {

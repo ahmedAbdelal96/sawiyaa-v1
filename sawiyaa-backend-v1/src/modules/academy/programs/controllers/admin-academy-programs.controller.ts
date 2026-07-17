@@ -45,6 +45,8 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { CreateAcademyProgramDto } from '../dto/create-academy-program.dto';
+import { ArchiveAcademyProgramDto } from '../dto/archive-academy-program.dto';
+import { CancelAcademyProgramEnrollmentDto } from '../dto/cancel-academy-program-enrollment.dto';
 import { CreateAcademyProgramSessionDto } from '../dto/create-academy-program-session.dto';
 import { CreateAdminAcademyProgramEnrollmentDto } from '../dto/create-admin-academy-program-enrollment.dto';
 import { BulkAcademyProgramEnrollmentActionDto } from '../dto/bulk-academy-program-enrollment-action.dto';
@@ -258,23 +260,6 @@ export class AdminAcademyProgramsController {
         locale,
         actorUserId: currentUser.id,
         payload: body,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.programEnrollment.manualCreate',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgramEnrollment',
-          resourceId: result.item.id,
-          targetUserId: result.item.userId,
-          metadata: {
-            academyProgramId: programId,
-            sourceLabel: 'admin-manual',
-          },
-        });
-
-        return result;
       });
   }
 
@@ -284,10 +269,13 @@ export class AdminAcademyProgramsController {
     @Param('id') enrollmentId: string,
     @Body() body: UpdateAcademyProgramEnrollmentLearnerDto,
     @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.updateAdminAcademyProgramEnrollmentLearnerUseCase.execute({
       enrollmentId,
       locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
       payload: body,
     });
   }
@@ -333,24 +321,6 @@ export class AdminAcademyProgramsController {
         locale,
         actorUserId: currentUser.id,
         file,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.programEnrollment.certificate.upload',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgramEnrollment',
-          resourceId: result.item.id,
-          targetUserId: result.item.userId,
-          metadata: {
-            academyProgramId: result.item.program.id,
-            certificateStatus: result.item.certificate.status,
-            certificateUploadedAt: result.item.certificate.uploadedAt,
-          },
-        });
-
-        return result;
       });
   }
 
@@ -394,25 +364,6 @@ export class AdminAcademyProgramsController {
         locale,
         actorUserId: currentUser.id,
         payload: body,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.programAttendance.update',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgramSessionAttendance',
-          resourceId: result.item.selectedSessionId ?? programId,
-          targetUserId: null,
-          metadata: {
-            academyProgramId: programId,
-            sessionId: body.sessionId,
-            markedCount: body.items.filter((item) => item.status !== 'UNMARKED').length,
-            totalItems: body.items.length,
-          },
-        });
-
-        return result;
       });
   }
 
@@ -420,11 +371,16 @@ export class AdminAcademyProgramsController {
   @ApiOperation({ summary: 'Cancel academy program enrollment' })
   cancelProgramEnrollment(
     @Param('id') enrollmentId: string,
+    @Body() body: CancelAcademyProgramEnrollmentDto,
     @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.manageAdminAcademyProgramEnrollmentsUseCase.cancelEnrollment({
       enrollmentId,
       locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      reason: body.reason,
     });
   }
 
@@ -433,10 +389,13 @@ export class AdminAcademyProgramsController {
   completeProgramEnrollment(
     @Param('id') enrollmentId: string,
     @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.manageAdminAcademyProgramEnrollmentsUseCase.markCompleted({
       enrollmentId,
       locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
     });
   }
 
@@ -445,10 +404,13 @@ export class AdminAcademyProgramsController {
   certifyProgramEnrollment(
     @Param('id') enrollmentId: string,
     @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.manageAdminAcademyProgramEnrollmentsUseCase.markCertified({
       enrollmentId,
       locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
     });
   }
 
@@ -458,10 +420,13 @@ export class AdminAcademyProgramsController {
     @Param('id') academyProgramId: string,
     @Body() body: BulkAcademyProgramEnrollmentActionDto,
     @CurrentLocale() locale: 'ar' | 'en',
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.manageAdminAcademyProgramEnrollmentsUseCase.bulkAction({
       academyProgramId,
       locale,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
       payload: body,
     });
   }
@@ -475,25 +440,8 @@ export class AdminAcademyProgramsController {
     return this.createAcademyProgramUseCase
       .execute({
         createdByUserId: currentUser.id,
+        actorRoles: currentUser.roles,
         payload: body,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.program.create',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgram',
-          resourceId: result.item.id,
-          targetUserId: null,
-          metadata: {
-            slug: result.item.slug,
-            status: result.item.status,
-            registrationOpen: result.item.registrationOpen,
-          },
-        });
-
-        return result;
       });
   }
 
@@ -505,25 +453,7 @@ export class AdminAcademyProgramsController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.updateAcademyProgramUseCase
-      .execute({ programId, payload: body })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.program.update',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgram',
-          resourceId: result.item.id,
-          targetUserId: null,
-          metadata: {
-            slug: result.item.slug,
-            status: result.item.status,
-            registrationOpen: result.item.registrationOpen,
-          },
-        });
-
-        return result;
-      });
+      .execute({ programId, actorUserId: currentUser.id, actorRoles: currentUser.roles, payload: body });
   }
 
   @Patch('programs/:id/publish')
@@ -533,52 +463,22 @@ export class AdminAcademyProgramsController {
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.publishAcademyProgramUseCase
-      .execute({ programId })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.program.publish',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgram',
-          resourceId: result.item.id,
-          targetUserId: null,
-          metadata: {
-            slug: result.item.slug,
-            status: result.item.status,
-            publishedAt: result.item.publishedAt,
-          },
-        });
-
-        return result;
-      });
+      .execute({ programId, actorUserId: currentUser.id, actorRoles: currentUser.roles });
   }
 
   @Patch('programs/:id/archive')
   @ApiOperation({ summary: 'Archive academy program' })
   archiveProgram(
     @Param('id') programId: string,
+    @Body() body: ArchiveAcademyProgramDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.archiveAcademyProgramUseCase
-      .execute({ programId })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'academy.program.archive',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'AcademyProgram',
-          resourceId: result.item.id,
-          targetUserId: null,
-          metadata: {
-            slug: result.item.slug,
-            status: result.item.status,
-            archivedAt: result.item.archivedAt,
-          },
-        });
-
-        return result;
+      .execute({
+        programId,
+        actorUserId: currentUser.id,
+        actorRoles: currentUser.roles,
+        reason: body.reason,
       });
   }
 
@@ -592,6 +492,7 @@ export class AdminAcademyProgramsController {
     return this.createAcademyProgramSessionUseCase.execute({
       programId,
       createdByUserId: currentUser.id,
+      actorRoles: currentUser.roles,
       payload: body,
     });
   }
@@ -602,10 +503,13 @@ export class AdminAcademyProgramsController {
     @Param('id') programId: string,
     @Param('sessionId') sessionId: string,
     @Body() body: UpdateAcademyProgramSessionDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
   ) {
     return this.updateAcademyProgramSessionUseCase.execute({
       programId,
       sessionId,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
       payload: body,
     });
   }

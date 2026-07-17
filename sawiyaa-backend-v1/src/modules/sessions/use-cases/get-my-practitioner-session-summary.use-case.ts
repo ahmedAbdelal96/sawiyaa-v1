@@ -37,7 +37,7 @@ export class GetMyPractitionerSessionSummaryUseCase {
       closed:
         presentationSummary.completed +
         presentationSummary.cancelled +
-        presentationSummary.ended,
+        presentationSummary.awaitingConfirmation,
       actionRequired: presentationSummary.joinable,
       unavailable: presentationSummary.unavailable,
     };

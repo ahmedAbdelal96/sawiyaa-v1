@@ -1,5 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { AcademyProgramStatus } from '@prisma/client';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { AcademyProgramStatus, Prisma, SecurityAuditOutcome } from '@prisma/client';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { CreateAcademyProgramDto } from '../dto/create-academy-program.dto';
 import { AcademyProgramPresenter } from '../presenters/academy-program.presenter';
 import { AcademyProgramRepository } from '../repositories/academy-program.repository';
@@ -16,10 +19,13 @@ export class CreateAcademyProgramUseCase {
   constructor(
     private readonly academyProgramRepository: AcademyProgramRepository,
     private readonly academyProgramPresenter: AcademyProgramPresenter,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
     createdByUserId: string;
+    actorRoles?: string[];
     payload: CreateAcademyProgramDto;
   }) {
     const payload = input.payload;
@@ -60,7 +66,7 @@ export class CreateAcademyProgramUseCase {
     const priceEgp = normalizeAcademyProgramPriceValue(payload.priceEgp);
     const priceUsd = normalizeAcademyProgramPriceValue(payload.priceUsd);
 
-    const created = await this.academyProgramRepository.createProgram({
+    const data: Prisma.AcademyProgramUncheckedCreateInput = {
       slug,
       titleAr: payload.titleAr.trim(),
       titleEn: payload.titleEn.trim(),
@@ -78,7 +84,24 @@ export class CreateAcademyProgramUseCase {
       createdByUserId: input.createdByUserId,
       publishedAt: null,
       archivedAt: null,
-    });
+    };
+    const created = this.prisma && this.securityAuditService
+      ? await this.prisma.$transaction(async (tx) => {
+          const record = await this.academyProgramRepository.createProgram(data, tx);
+          await this.securityAuditService!.recordRequired(tx, {
+            action: 'academy.program.create',
+            outcome: SecurityAuditOutcome.SUCCESS,
+            actorType: SecurityAuditActorType.USER,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            actorUserId: input.createdByUserId,
+            actorRoles: input.actorRoles,
+            resourceType: 'AcademyProgram',
+            resourceId: record.id,
+            metadata: { slug: record.slug, status: record.status, registrationOpen: record.registrationOpen },
+          });
+          return record;
+        })
+      : await this.academyProgramRepository.createProgram(data);
 
     return {
       item: this.academyProgramPresenter.presentAdminProgramDetails(created),

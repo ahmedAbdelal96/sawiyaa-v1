@@ -30,9 +30,10 @@ export class NotificationDomainValidityGuardService {
   private readonly invalidSessionStatuses = new Set<SessionStatus>([
     SessionStatus.CANCELLED,
     SessionStatus.COMPLETED,
-    SessionStatus.NO_SHOW,
+    SessionStatus.PATIENT_NO_SHOW,
+    SessionStatus.PRACTITIONER_NO_SHOW,
+    SessionStatus.BOTH_NO_SHOW,
     SessionStatus.EXPIRED,
-    SessionStatus.REFUNDED,
   ]);
   private readonly paymentSuccessStatuses = new Set<PaymentStatus>([
     PaymentStatus.CAPTURED,

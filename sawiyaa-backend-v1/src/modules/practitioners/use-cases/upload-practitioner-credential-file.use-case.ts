@@ -1,11 +1,14 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { CredentialType } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, Optional } from '@nestjs/common';
+import { CredentialType, SecurityAuditOutcome } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerCredentialMapper } from '../mappers/practitioner-credential.mapper';
 import { PractitionerCredentialRepository } from '../repositories/practitioner-credential.repository';
 import { PractitionerCredentialStorageService } from '../services/practitioner-credential-storage.service';
 import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 type UploadedCredentialFile = {
   buffer: Buffer;
@@ -23,6 +26,8 @@ export class UploadPractitionerCredentialFileUseCase {
     private readonly practitionerCredentialRepository: PractitionerCredentialRepository,
     private readonly practitionerCredentialMapper: PractitionerCredentialMapper,
     private readonly practitionerCredentialStorageService: PractitionerCredentialStorageService,
+    @Optional() private readonly prisma?: PrismaService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -77,26 +82,49 @@ export class UploadPractitionerCredentialFileUseCase {
       });
 
     if (existing) {
+      await this.practitionerCredentialStorageService.deleteCredential(stored.fileUrl);
       throw new ConflictException({
         messageKey: 'practitioners.errors.credentialAlreadyExists',
         error: 'PRACTITIONER_CREDENTIAL_ALREADY_EXISTS',
       });
     }
 
-    const credential = await this.practitionerCredentialRepository.create({
-      practitionerId: profile.id,
-      credentialType: input.credentialType,
-      fileUrl: stored.fileUrl,
-      expiresAt: input.expiresAt,
-    });
+    try {
+      const data = {
+        practitionerId: profile.id,
+        credentialType: input.credentialType,
+        fileUrl: stored.fileUrl,
+        expiresAt: input.expiresAt,
+      };
+      const credential = this.prisma && this.securityAuditService
+        ? await this.prisma.$transaction(async (tx) => {
+            const created = await this.practitionerCredentialRepository.create(data, tx);
+            await this.securityAuditService!.recordRequired(tx, {
+              action: 'security.practitioner.credential.upload',
+              outcome: SecurityAuditOutcome.SUCCESS,
+              actorType: SecurityAuditActorType.USER,
+              source: SecurityAuditSource.HTTP_REQUEST,
+              actorUserId: input.userId,
+              targetUserId: input.userId,
+              resourceType: 'PractitionerCredential',
+              resourceId: created.id,
+              metadata: { credentialType: created.credentialType, source: 'file' },
+            });
+            return created;
+          })
+        : await this.practitionerCredentialRepository.create(data);
 
-    return {
-      message: this.i18nService.t(
-        'practitioners.success.credentialUploaded',
-        input.locale,
-      ),
-      credential: this.practitionerCredentialMapper.toViewModel(credential),
-    };
+      return {
+        message: this.i18nService.t(
+          'practitioners.success.credentialUploaded',
+          input.locale,
+        ),
+        credential: this.practitionerCredentialMapper.toViewModel(credential),
+      };
+    } catch (error) {
+      await this.practitionerCredentialStorageService.deleteCredential(stored.fileUrl);
+      throw error;
+    }
   }
 }
 

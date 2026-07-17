@@ -179,6 +179,7 @@ export class AdminUsersController {
       actor,
       userId: id,
       status: body.status,
+      reason: body.reason,
     });
   }
 
@@ -201,6 +202,7 @@ export class AdminUsersController {
       actor,
       userId: id,
       roles: body.roles,
+      reason: body.reason,
     });
   }
 

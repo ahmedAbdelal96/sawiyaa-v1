@@ -26,6 +26,7 @@ import { AuthTokenService } from './services/auth-token.service';
 import { GoogleIdentityService } from './services/google-identity.service';
 import { PasswordHashService } from './services/password-hash.service';
 import { PasswordResetTokenService } from './services/password-reset-token.service';
+import { AuthLockoutService } from './services/auth-lockout.service';
 import { PractitionerOtpChannelService } from './services/practitioner-otp-channel.service';
 import { PatientOtpChannelService } from './services/patient-otp-channel.service';
 import { StepUpService } from './services/step-up.service';
@@ -61,6 +62,7 @@ import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practition
 import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
 import { CountryRepository } from '../patients/repositories/country.repository';
+import { PractitionerLoginOtpConfigurationWarningService } from './services/practitioner-login-otp-configuration-warning.service';
 
 @Module({
   imports: [JwtModule.register({}), VerificationModule, PresenceModule],
@@ -86,6 +88,7 @@ import { CountryRepository } from '../patients/repositories/country.repository';
     AuthTokenService,
     AuthSessionService,
     GoogleIdentityService,
+    AuthLockoutService,
     PractitionerOtpChannelService,
     PatientOtpChannelService,
     StepUpService,
@@ -121,11 +124,13 @@ import { CountryRepository } from '../patients/repositories/country.repository';
     RefreshAdminTokenUseCase,
     LogoutAdminUseCase,
     VerifyAdminStepUpUseCase,
+    PractitionerLoginOtpConfigurationWarningService,
   ],
   exports: [
     JwtAccessAuthGuard,
     JwtRefreshAuthGuard,
     GetCurrentAuthUserUseCase,
+    AuthLockoutService,
     AuthRequestContextService,
     StepUpService,
   ],

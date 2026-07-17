@@ -1,11 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConversationParticipantRole } from '@prisma/client';
+import { AppRole } from '@common/enums/app-role.enum';
 import { SendCareChatMessageDto } from '../dto/send-care-chat-message.dto';
 import { CareChatPresenter } from '../presenters/care-chat.presenter';
 import { CareChatActorRepository } from '../repositories/care-chat-actor.repository';
 import { CareChatConversationRepository } from '../repositories/care-chat-conversation.repository';
 import { ValidateCareChatSendMessageService } from '../services/validate-care-chat-send-message.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { MessagingUseCase } from '@modules/messaging/use-cases/messaging.use-case';
 
 @Injectable()
 export class SendCareChatMessageUseCase {
@@ -17,6 +18,7 @@ export class SendCareChatMessageUseCase {
     private readonly validateCareChatSendMessageService: ValidateCareChatSendMessageService,
     private readonly careChatPresenter: CareChatPresenter,
     private readonly operationalNotificationService: OperationalNotificationService,
+    private readonly messagingUseCase: MessagingUseCase,
   ) {}
 
   async execute(input: {
@@ -58,38 +60,28 @@ export class SendCareChatMessageUseCase {
       now,
     });
 
-    const senderRole =
-      input.actorType === 'PATIENT'
-        ? ConversationParticipantRole.PATIENT
-        : ConversationParticipantRole.PRACTITIONER;
+    await this.messagingUseCase.sendMessage(
+      { id: input.userId, roles: [
+        input.actorType === 'PATIENT' ? AppRole.PATIENT : AppRole.PRACTITIONER,
+      ] },
+      input.conversationId,
+      input.payload.message,
+    );
 
-    const updated = await this.careChatConversationRepository.addMessage({
-      conversationId: conversation.id,
-      senderUserId: input.userId,
-      senderRole,
-      message: input.payload.message.trim(),
+    const updated = await this.careChatConversationRepository.findByIdForActor({
+      conversationId: input.conversationId,
+      actorType: input.actorType,
+      profileId,
     });
-
-    const messageId = updated.messages[updated.messages.length - 1]?.id;
-    if (messageId) {
-      await this.operationalNotificationService.notifyConversationMessage({
-        lane: 'CARE_CHAT',
-        threadId: input.conversationId,
-        messageId,
-        senderUserId: input.userId,
-        participants: updated.participants,
+    if (!updated) {
+      throw new NotFoundException({
+        messageKey: 'careChat.errors.conversationNotFound',
+        error: 'CARE_CHAT_CONVERSATION_NOT_FOUND',
       });
     }
 
-    await this.careChatConversationRepository.markRead({
-      conversationId: updated.id,
-      userId: input.userId,
-      lastReadMessageId: updated.messages[updated.messages.length - 1]?.id,
-      at: now,
-    });
-
     this.logger.log(
-      `Care chat message sent (conversation=${updated.id}, sender=${input.userId}, role=${senderRole})`,
+      `Care chat message sent (conversation=${updated.id}, sender=${input.userId}, role=${input.actorType})`,
     );
 
     return {

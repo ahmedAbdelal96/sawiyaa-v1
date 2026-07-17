@@ -32,6 +32,7 @@ describe('OtpDeliveryDispatcherService', () => {
   let notificationRepository: VerificationNotificationRepository;
   let notificationEmailService: NotificationEmailService;
   let dispatcher: OtpDeliveryDispatcherService;
+  const qaCapture = { capture: jest.fn() };
 
   const buildNotificationType = (slug: string) => ({
     id: `type-${slug}`,
@@ -74,6 +75,7 @@ describe('OtpDeliveryDispatcherService', () => {
       notificationRepository,
       notificationEmailService,
       buildConfigService({ 'auth.otp.loginTtlMinutes': 10 }),
+      qaCapture as never,
     );
   });
 
@@ -116,6 +118,7 @@ describe('OtpDeliveryDispatcherService', () => {
         notificationRepository,
         notificationEmailService,
         buildConfigService({ 'auth.otp.loginTtlMinutes': 7 }),
+        qaCapture as never,
       );
 
       await dispatcher.dispatch({
@@ -138,6 +141,7 @@ describe('OtpDeliveryDispatcherService', () => {
         notificationRepository,
         notificationEmailService,
         buildConfigService({}),
+        qaCapture as never,
       );
 
       await dispatcher.dispatch({
@@ -163,6 +167,7 @@ describe('OtpDeliveryDispatcherService', () => {
         notificationRepository,
         notificationEmailService,
         buildConfigService({ 'auth.otp.loginTtlMinutes': 10 }),
+        qaCapture as never,
       );
 
       await dispatcher.dispatch({

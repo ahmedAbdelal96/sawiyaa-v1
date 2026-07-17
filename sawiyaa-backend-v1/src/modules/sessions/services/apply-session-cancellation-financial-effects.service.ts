@@ -11,7 +11,10 @@ import {
 } from '@prisma/client';
 import { CustomerWalletAccountingService } from '@modules/customer-wallets/services/customer-wallet-accounting.service';
 import { PostRefundLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-refund-ledger-entries.use-case';
+import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { SessionCancellationEvaluation } from './evaluate-session-cancellation-policy.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { RefundEventRepository } from '@modules/payments/repositories/refund-event.repository';
 
 type CancellationFinancialEffect = {
   cancelledPaymentId: string | null;
@@ -25,6 +28,8 @@ export class ApplySessionCancellationFinancialEffectsService {
   constructor(
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
     private readonly postRefundLedgerEntriesUseCase: PostRefundLedgerEntriesUseCase,
+    private readonly sessionEarningReviewService: SessionEarningReviewService,
+    private readonly refundEventRepository: RefundEventRepository,
   ) {}
 
   async apply(input: {
@@ -75,6 +80,10 @@ export class ApplySessionCancellationFinancialEffectsService {
         data: {
           paymentId: payment.id,
           eventType: PaymentEventType.PAYMENT_CANCELLED,
+          actorType: AuditActorType.SYSTEM,
+          source: SecurityAuditSource.SYSTEM,
+          previousStatus: payment.status,
+          newStatus: PaymentStatus.CANCELLED,
           payloadJson: {
             source: 'session-cancellation-policy',
             reason: input.cancellationReason ?? null,
@@ -184,13 +193,35 @@ export class ApplySessionCancellationFinancialEffectsService {
           },
         },
         processedAt: new Date(),
+        actorType: AuditActorType.SYSTEM,
+        source: SecurityAuditSource.SYSTEM,
       },
     });
+
+    await this.refundEventRepository.append({
+      refundId: refund.id,
+      paymentId: payment.id,
+      sessionId: input.session.id,
+      eventType: 'WALLET_POSTED',
+      previousStatus: RefundStatus.SUCCEEDED,
+      newStatus: RefundStatus.SUCCEEDED,
+      destination: RefundDestination.CUSTOMER_WALLET,
+      amount: refund.amount,
+      currencyCode: refund.currencyCode,
+      actorType: AuditActorType.SYSTEM,
+      source: SecurityAuditSource.SYSTEM,
+      reason: input.cancellationReason ?? null,
+      metadataJson: { source: 'session-cancellation-policy' },
+    }, input.tx);
 
     await input.tx.paymentEvent.create({
       data: {
         paymentId: payment.id,
         eventType: PaymentEventType.REFUND_PROCESSED,
+        actorType: AuditActorType.SYSTEM,
+        source: SecurityAuditSource.SYSTEM,
+        previousStatus: PaymentStatus.REFUND_PENDING,
+        newStatus: PaymentStatus.REFUND_PENDING,
         payloadJson: {
           source: 'session-cancellation-policy',
           refundId: refund.id,
@@ -237,6 +268,12 @@ export class ApplySessionCancellationFinancialEffectsService {
       },
     });
 
+    await this.sessionEarningReviewService.invalidatePendingReviewsForPayment({
+      paymentId: payment.id,
+      internalReason: 'SESSION_CANCELLATION_REFUND_BEFORE_REVIEW_APPROVAL',
+      tx: input.tx,
+    });
+
     return {
       cancelledPaymentId: payment.id,
       generatedRefundId: refund.id,
@@ -251,11 +288,14 @@ export class ApplySessionCancellationFinancialEffectsService {
     };
   }
 
-  async postRefundLedgerIfNeeded(refundId: string | null) {
+  async postRefundLedgerIfNeeded(
+    refundId: string | null,
+    tx?: Prisma.TransactionClient,
+  ) {
     if (!refundId) {
       return;
     }
-    await this.postRefundLedgerEntriesUseCase.execute({ refundId });
+    await this.postRefundLedgerEntriesUseCase.execute({ refundId, tx });
   }
 
   private async resolveRefundAmount(input: {

@@ -1,6 +1,5 @@
 import {
   Prisma,
-  SessionAdminDecisionType,
   SessionMode,
   SessionProvider,
   SessionStatus,
@@ -15,16 +14,8 @@ export const SESSION_JOIN_LAG_MINUTES = 0;
 export const SESSION_POST_END_RECONNECT_GRACE_MINUTES = 10;
 export const DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES = 24 * 60;
 
-export type SessionPresentationStatus =
-  | 'UPCOMING'
-  | 'JOINABLE'
-  | 'IN_PROGRESS'
-  | 'COMPLETED'
-  | 'CANCELLED'
-  | 'ENDED'
-  | 'UNAVAILABLE'
-  | 'NO_SHOW'
-  | 'UNDER_REVIEW';
+/** @deprecated Canonical Session.status is now the display lifecycle state. */
+export type SessionPresentationStatus = SessionStatus;
 
 export interface SessionJoinPolicyInput {
   status: SessionStatus;
@@ -37,8 +28,8 @@ export interface SessionJoinPolicyInput {
   videoRoomClosedAt?: Date | null;
   now: Date;
   runtimePrepareLeadMinutes?: number;
-  /** If set, a final manual admin decision exists and should override presentationStatus */
-  finalManualDecision?: SessionAdminDecisionType | null;
+  /** Kept only until every caller stops sending this obsolete field. */
+  finalManualDecision?: unknown;
 }
 
 export interface SessionJoinPolicyResolution {
@@ -80,12 +71,11 @@ export interface SessionPresentationSummaryCounts {
   inProgress: number;
   completed: number;
   cancelled: number;
-  ended: number;
+  awaitingConfirmation: number;
   unavailable: number;
 }
 
 const joinablePresentationStatuses: SessionStatus[] = [
-  SessionStatus.CONFIRMED,
   SessionStatus.UPCOMING,
   SessionStatus.READY_TO_JOIN,
 ];
@@ -93,14 +83,13 @@ const joinablePresentationStatuses: SessionStatus[] = [
 const finishedPresentationStatuses: SessionStatus[] = [
   SessionStatus.COMPLETED,
   SessionStatus.CANCELLED,
-  SessionStatus.NO_SHOW,
+  SessionStatus.PATIENT_NO_SHOW,
+  SessionStatus.PRACTITIONER_NO_SHOW,
+  SessionStatus.BOTH_NO_SHOW,
   SessionStatus.EXPIRED,
-  SessionStatus.REFUND_PENDING,
-  SessionStatus.REFUNDED,
 ];
 
 const joinAllowedStatuses = new Set<SessionStatus>([
-  SessionStatus.CONFIRMED,
   SessionStatus.UPCOMING,
   SessionStatus.READY_TO_JOIN,
   SessionStatus.IN_PROGRESS,
@@ -244,90 +233,8 @@ export function computeSessionPostEndReconnectGraceClosesAt(
 export function resolveSessionPresentationStatus(
   input: SessionJoinPolicyInput,
 ): SessionPresentationStatus {
-  // If a final manual admin decision exists, it overrides the raw status mapping.
-  // This ensures admin decisions are visible in all presentation surfaces.
-  if (input.finalManualDecision) {
-    switch (input.finalManualDecision) {
-      case SessionAdminDecisionType.MARK_PATIENT_NO_SHOW:
-      case SessionAdminDecisionType.MARK_BOTH_NO_SHOW:
-        return 'NO_SHOW';
-      case SessionAdminDecisionType.MARK_TECHNICAL_REVIEW:
-      case SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE:
-        return 'UNDER_REVIEW';
-      case SessionAdminDecisionType.MARK_COMPLETED:
-        // Already reflects as COMPLETED via status change; this is for completeness
-        return 'COMPLETED';
-      case SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW:
-        // Practitioner no-show without patient no-show still counts as no-show
-        return 'NO_SHOW';
-      default:
-        break;
-    }
-  }
-
-  const resolution = resolveSessionJoinPolicy(input);
-  const hasScheduledWindow =
-    input.scheduledStartAt !== null && input.scheduledEndAt !== null;
-  const scheduledStartAt = input.scheduledStartAt;
-  const scheduledEndAt = input.scheduledEndAt;
-  const isWithinActualSessionWindow =
-    hasScheduledWindow &&
-    scheduledStartAt !== null &&
-    scheduledEndAt !== null &&
-    input.now >= scheduledStartAt &&
-    input.now <= scheduledEndAt;
-
-  if (input.videoRoomClosedAt) {
-    return 'ENDED';
-  }
-
-  if (
-    input.status === SessionStatus.CANCELLED ||
-    input.status === SessionStatus.REFUNDED
-  ) {
-    return 'CANCELLED';
-  }
-
-  if (
-    input.status === SessionStatus.COMPLETED ||
-    input.status === SessionStatus.NO_SHOW
-  ) {
-    return 'COMPLETED';
-  }
-
-  if (input.status === SessionStatus.EXPIRED) {
-    return 'ENDED';
-  }
-
-  if (input.status === SessionStatus.REFUND_PENDING) {
-    return 'ENDED';
-  }
-
-  if (!hasScheduledWindow) {
-    return 'UNAVAILABLE';
-  }
-
-  if (resolution.joinClosesAt && input.now > resolution.joinClosesAt) {
-    return 'ENDED';
-  }
-
-  if (resolution.joinOpensAt && input.now < resolution.joinOpensAt) {
-    return 'UPCOMING';
-  }
-
-  if (input.status === SessionStatus.IN_PROGRESS && isWithinActualSessionWindow) {
-    return 'IN_PROGRESS';
-  }
-
-  if (resolution.canJoin) {
-    return 'JOINABLE';
-  }
-
-  if (resolution.blockedReason === 'SESSION_RUNTIME_NOT_PREPARED') {
-    return 'UNAVAILABLE';
-  }
-
-  return 'UPCOMING';
+  // Compatibility helper only. It must never derive another lifecycle state.
+  return input.status;
 }
 
 export function summarizeSessionPresentations(
@@ -342,7 +249,7 @@ export function summarizeSessionPresentations(
     inProgress: 0,
     completed: 0,
     cancelled: 0,
-    ended: 0,
+    awaitingConfirmation: 0,
     unavailable: 0,
   };
 
@@ -354,26 +261,23 @@ export function summarizeSessionPresentations(
     });
 
     switch (presentationStatus) {
-      case 'UPCOMING':
+      case SessionStatus.UPCOMING:
         summary.upcoming += 1;
         break;
-      case 'JOINABLE':
+      case SessionStatus.READY_TO_JOIN:
         summary.joinable += 1;
         break;
-      case 'IN_PROGRESS':
+      case SessionStatus.IN_PROGRESS:
         summary.inProgress += 1;
         break;
-      case 'COMPLETED':
+      case SessionStatus.COMPLETED:
         summary.completed += 1;
         break;
-      case 'CANCELLED':
+      case SessionStatus.CANCELLED:
         summary.cancelled += 1;
         break;
-      case 'ENDED':
-        summary.ended += 1;
-        break;
-      case 'UNAVAILABLE':
-        summary.unavailable += 1;
+      case SessionStatus.AWAITING_COMPLETION_CONFIRMATION:
+        summary.awaitingConfirmation += 1;
         break;
       default:
         break;
@@ -462,7 +366,7 @@ export function buildSessionPresentationFilterWhere(input: {
               in: [
                 SessionStatus.DRAFT,
                 SessionStatus.PENDING_PAYMENT,
-                SessionStatus.PENDING_PRACTITIONER_RESPONSE,
+                SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
               ],
             },
             scheduledStartAt: {
@@ -493,24 +397,12 @@ export function buildSessionPresentationFilterWhere(input: {
 
     case SessionPresentationFilter.FINISHED:
       return {
-        OR: [
-          {
-            status: {
-              in: finishedPresentationStatuses,
-            },
-          },
-          {
-            videoRoomClosedAt: {
-              not: null,
-            },
-          },
-          {
-            scheduledEndAt: {
-              not: null,
-              lt: now,
-            },
-          },
-        ],
+        status: {
+          in: [
+            ...finishedPresentationStatuses,
+            SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+          ],
+        },
       };
 
     case SessionPresentationFilter.UNAVAILABLE:

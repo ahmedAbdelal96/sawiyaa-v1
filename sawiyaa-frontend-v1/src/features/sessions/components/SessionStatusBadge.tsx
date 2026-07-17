@@ -14,33 +14,26 @@ export default function SessionStatusBadge({
   labelOverride,
 }: Props) {
   const t = useTranslations("sessions");
-  const displayStatus = presentationStatus ?? status;
-  const tone = presentationStatus
-    ? displayStatus === "JOINABLE" || displayStatus === "IN_PROGRESS"
+  // The canonical status is the only lifecycle input. Missing status is
+  // rendered conservatively rather than inferred from presentation fields.
+  const displayStatus = status ?? "DRAFT";
+  const tone = displayStatus === "IN_PROGRESS"
       ? "success"
-      : displayStatus === "UPCOMING" || displayStatus === "UNAVAILABLE"
+      : displayStatus === "PENDING_PAYMENT" ||
+          displayStatus === "PENDING_PRACTITIONER_CONFIRMATION" ||
+          displayStatus === "AWAITING_COMPLETION_CONFIRMATION" ||
+          displayStatus === "EXPIRED"
         ? "warning"
-      : displayStatus === "CANCELLED" || displayStatus === "ENDED" || displayStatus === "NO_SHOW"
+        : displayStatus === "CANCELLED" ||
+            displayStatus === "PATIENT_NO_SHOW" ||
+            displayStatus === "PRACTITIONER_NO_SHOW" ||
+            displayStatus === "BOTH_NO_SHOW"
           ? "danger"
-          : displayStatus === "UNDER_REVIEW"
-            ? "warning"
-            : "neutral"
-    : status === "IN_PROGRESS"
-      ? "success"
-      : status === "PENDING_PAYMENT" ||
-          status === "PENDING_PRACTITIONER_RESPONSE" ||
-          status === "EXPIRED" ||
-          status === "REFUND_PENDING"
-        ? "warning"
-        : status === "CANCELLED" || status === "NO_SHOW"
-          ? "danger"
-          : status === "CONFIRMED" || status === "UPCOMING"
+          : displayStatus === "UPCOMING" || displayStatus === "READY_TO_JOIN"
             ? "primary"
             : "neutral";
 
-  const labelKey = presentationStatus
-    ? `presentationStatus.${displayStatus ?? "UNAVAILABLE"}`
-    : `status.${displayStatus ?? "DRAFT"}`;
+  const labelKey = `status.${displayStatus ?? "DRAFT"}`;
 
   return <AdminStatusBadge tone={tone}>{labelOverride ?? t(labelKey as Parameters<typeof t>[0])}</AdminStatusBadge>;
 }

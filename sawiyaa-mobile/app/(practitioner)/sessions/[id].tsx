@@ -40,18 +40,18 @@ import {
 } from "../../../src/lib/time-formatting";
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
-const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["JOINABLE", "IN_PROGRESS"];
+const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
 const NO_SHOW_ALLOWED: SessionPresentationStatus[] = [
   "UPCOMING",
-  "JOINABLE",
+  "READY_TO_JOIN",
   "IN_PROGRESS",
 ];
 const RUNTIME_CHECKABLE: SessionPresentationStatus[] = [
   "UPCOMING",
-  "JOINABLE",
+  "READY_TO_JOIN",
   "IN_PROGRESS",
 ];
-const PREPARE_ELIGIBLE: SessionPresentationStatus[] = ["UPCOMING", "JOINABLE"];
+const PREPARE_ELIGIBLE: SessionPresentationStatus[] = ["UPCOMING", "READY_TO_JOIN"];
 
 export default function PractitionerSessionDetailScreen() {
   const router = useRouter();
@@ -169,7 +169,7 @@ export default function PractitionerSessionDetailScreen() {
   const canCloseRoom =
     session?.sessionMode === "VIDEO" &&
     !isRoomClosed &&
-    session ? ["UPCOMING", "JOINABLE", "IN_PROGRESS"].includes(session.presentationStatus) : false;
+    session ? ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(session.status) : false;
   const roomCloseAfterEnd = Boolean(
     session?.scheduledEndAt &&
       Date.now() >= new Date(session.scheduledEndAt).getTime(),
@@ -201,8 +201,8 @@ export default function PractitionerSessionDetailScreen() {
     );
   }
 
-  const canComplete = COMPLETE_ALLOWED.includes(session.presentationStatus);
-  const canNoShow = NO_SHOW_ALLOWED.includes(session.presentationStatus);
+  const canComplete = COMPLETE_ALLOWED.includes(session.status);
+  const canNoShow = NO_SHOW_ALLOWED.includes(session.status);
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
   const canJoinNow = session.joinAvailability?.canJoin === true;
@@ -477,7 +477,7 @@ export default function PractitionerSessionDetailScreen() {
           </View>
 
           {/* Incomplete Warning Note if ENDED */}
-          {session.presentationStatus === "ENDED" ? (
+          {session.status === "AWAITING_COMPLETION_CONFIRMATION" ? (
             <View
               style={[
                 styles.warningBox,
@@ -1072,7 +1072,7 @@ function getSessionStateCopy(
   t: (key: string, options?: Record<string, unknown>) => string,
   isRTL: boolean,
 ) {
-  switch (session.presentationStatus) {
+  switch (session.status) {
     case "UPCOMING":
       return {
         summary: t("practitioner.detail.stateNote.UPCOMING"),
@@ -1088,7 +1088,7 @@ function getSessionStateCopy(
               })
             : null,
       };
-    case "JOINABLE":
+    case "READY_TO_JOIN":
       return {
         summary: joinContract?.canJoin
           ? t("practitioner.detail.stateNote.READY_TO_JOIN_NOW")
@@ -1116,22 +1116,23 @@ function getSessionStateCopy(
         summary: t("practitioner.detail.stateNote.CANCELLED"),
         hint: null,
       };
-    case "ENDED":
+    case "AWAITING_COMPLETION_CONFIRMATION":
       return {
         summary: isRTL ? "الجلسة غير مكتملة." : "The session is incomplete.",
         hint: null,
       };
-    case "UNAVAILABLE":
+    case "EXPIRED":
       return {
         summary: t("practitioner.detail.stateNote.UNAVAILABLE"),
         hint: null,
       };
-    case "NO_SHOW":
+    case "PATIENT_NO_SHOW":
       return {
         summary: isRTL ? "لم يحضر المريض الموعد." : "The patient did not show up.",
         hint: null,
       };
-    case "UNDER_REVIEW":
+    case "PRACTITIONER_NO_SHOW":
+    case "BOTH_NO_SHOW":
       return {
         summary: isRTL ? "الجلسة قيد المراجعة." : "The session is under review.",
         hint: null,
@@ -1146,18 +1147,19 @@ function getSessionStateCopy(
 
 function mapSessionBadge(status: SessionPresentationStatus) {
   switch (status) {
-    case "JOINABLE":
+    case "READY_TO_JOIN":
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "UNAVAILABLE":
-    case "UNDER_REVIEW":
+    case "AWAITING_COMPLETION_CONFIRMATION":
+    case "EXPIRED":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
-    case "ENDED":
     case "CANCELLED":
-    case "NO_SHOW":
+    case "PATIENT_NO_SHOW":
+    case "PRACTITIONER_NO_SHOW":
+    case "BOTH_NO_SHOW":
       return "error" as const;
   }
 }

@@ -7,6 +7,8 @@ import {
   RefundStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { sanitizeFinanceAuditMetadata } from '@common/security-audit/sanitize-finance-audit-metadata.util';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -248,7 +250,27 @@ export class PaymentRepository {
     data: Prisma.PaymentEventUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).paymentEvent.create({ data });
+    const actorType = data.actorType ??
+      (data.eventType === PaymentEventType.PROVIDER_WEBHOOK_RECEIVED
+        ? AuditActorType.PAYMENT_WEBHOOK
+        : AuditActorType.SYSTEM);
+    const sanitizedPayload = data.payloadJson === undefined
+      ? undefined
+      : sanitizeFinanceAuditMetadata(data.payloadJson);
+    return this.getDb(tx).paymentEvent.create({
+      data: {
+        ...data,
+        actorType,
+        source: data.source ?? (actorType === AuditActorType.PAYMENT_WEBHOOK
+          ? SecurityAuditSource.PAYMENT_WEBHOOK
+          : SecurityAuditSource.SYSTEM),
+        payloadJson: sanitizedPayload === undefined
+          ? undefined
+          : sanitizedPayload === null
+            ? Prisma.JsonNull
+            : (sanitizedPayload as Prisma.InputJsonValue),
+      },
+    });
   }
 
   findLatestProviderWebhookEventByPaymentId(paymentId: string) {
@@ -261,8 +283,8 @@ export class PaymentRepository {
     });
   }
 
-  findRefundById(refundId: string) {
-    return this.prisma.refund.findUnique({
+  findRefundById(refundId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).refund.findUnique({
       where: { id: refundId },
     });
   }
@@ -274,8 +296,11 @@ export class PaymentRepository {
     });
   }
 
-  findActiveRefundByPaymentId(paymentId: string) {
-    return this.prisma.refund.findFirst({
+  findActiveRefundByPaymentId(
+    paymentId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).refund.findFirst({
       where: {
         paymentId,
         status: {
@@ -286,8 +311,11 @@ export class PaymentRepository {
     });
   }
 
-  sumSucceededRefundAmountByPaymentId(paymentId: string) {
-    return this.prisma.refund.aggregate({
+  sumSucceededRefundAmountByPaymentId(
+    paymentId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).refund.aggregate({
       where: {
         paymentId,
         status: RefundStatus.SUCCEEDED,
@@ -302,7 +330,12 @@ export class PaymentRepository {
     data: Prisma.RefundUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).refund.create({ data });
+    if (!data.actorType || !data.actorUserId) {
+      throw new Error('Refund creation requires explicit actor context');
+    }
+    return this.getDb(tx).refund.create({
+      data,
+    });
   }
 
   updateRefund(
@@ -313,6 +346,20 @@ export class PaymentRepository {
     return this.getDb(tx).refund.update({
       where: { id: refundId },
       data,
+    });
+  }
+
+  createRefundEvent(
+    data: Prisma.RefundEventUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).refundEvent.create({
+      data: {
+        ...data,
+        metadataJson: data.metadataJson === undefined
+          ? undefined
+          : (sanitizeFinanceAuditMetadata(data.metadataJson) as Prisma.InputJsonValue | null) ?? Prisma.JsonNull,
+      },
     });
   }
 

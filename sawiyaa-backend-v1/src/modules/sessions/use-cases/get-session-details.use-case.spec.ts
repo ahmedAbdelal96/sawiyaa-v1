@@ -31,6 +31,15 @@ describe('GetSessionDetailsUseCase — ownership', () => {
     const sessionMapper = {
       toDetails: jest.fn().mockReturnValue({ id: session.id }),
     };
+    const resolvePatientSessionActionsService = {
+      resolveOne: jest.fn().mockResolvedValue({
+        canCancel: false,
+        canPrepareRoom: false,
+        canJoin: false,
+        canPay: false,
+        canReview: false,
+      }),
+    };
 
     const useCase = new GetSessionDetailsUseCase(
       sessionRepository as never,
@@ -38,6 +47,7 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       sessionPractitionerRepository as never,
       sessionMapper as never,
       new SessionAccessPolicy(),
+      resolvePatientSessionActionsService as never,
     );
 
     return { useCase };
@@ -108,6 +118,7 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         {} as never,
         {} as never,
         new SessionAccessPolicy(),
+        {} as never,
       );
       return { useCase: uc };
     })();

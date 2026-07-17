@@ -3,7 +3,7 @@ export const arAcademyCatalog = {
     errors: {
       notFound: 'لم يتم العثور على البرنامج الأكاديمي',
       registrationClosed: 'التسجيل في البرنامج الأكاديمي مغلق',
-      seatCapacityReached: 'تم الوصول إلى الحد الأقصى للأماكن المتاحة في البرنامج الأكاديمي',
+      seatCapacityReached: 'تم الوصول إلى العدد المستهدف للمتدربين في البرنامج الأكاديمي',
       missingPricing: 'بيانات تسعير البرنامج الأكاديمي مطلوبة',
       unsupportedCurrency:
         'عملة البرنامج الأكاديمي غير مدعومة حسب سياسة التوجيه الحالية',
@@ -14,6 +14,10 @@ export const arAcademyCatalog = {
         'رقم الهاتف أو واتساب أو البريد الإلكتروني مستخدم بالفعل لدى متدرب آخر',
       enrollmentAlreadyExists:
         'يوجد تسجيل مسبق لهذا البرنامج الأكاديمي والمتدرب',
+      enrollmentCancellationReasonRequired:
+        'يجب إدخال سبب عند إلغاء تسجيل الدورة التدريبية',
+      legacyEnrollmentDisabled:
+        'التسجيل القديم في نظام التدريب معطل',
       invalidPrice: 'سعر البرنامج الأكاديمي غير صالح',
       invalidDate: 'تاريخ البرنامج الأكاديمي غير صالح',
       invalidWindow: 'نافذة تاريخ البرنامج الأكاديمي غير صالحة',
@@ -22,8 +26,12 @@ export const arAcademyCatalog = {
       archivedProgramCannotBePublished:
         'لا يمكن نشر برنامج أكاديمي مؤرشف',
       archivedReadOnly: 'لا يمكن تعديل برنامج أكاديمي مؤرشف',
+      archiveReasonRequired:
+        'يجب إدخال سبب قبل أرشفة البرنامج الأكاديمي',
       sessionNotFound: 'لم يتم العثور على جلسة البرنامج الأكاديمي',
       attendanceInvalidStatus: 'حالة الحضور للبرنامج الأكاديمي غير صالحة',
+      attendanceCorrectionReasonRequired:
+        'يجب إدخال سبب عند تصحيح الحضور',
       certificateFileRequired: 'يرجى اختيار ملف PDF للشهادة قبل الرفع',
       certificateInvalidType: 'يمكن رفع ملفات PDF للشهادة فقط',
       certificateFileTooLarge:
@@ -64,5 +72,9 @@ export const arAcademyCatalog = {
     enrollmentConfirmedBody: 'تم تأكيد تسجيلك في البرنامج بتاريخ {sessionAt}.',
     scheduleReminderTitle: 'سيبدأ البرنامج قريبًا',
     scheduleReminderBody: 'تذكير: سيبدأ البرنامج في {sessionAt}.',
+    targetLearnerThresholdExceededTitle:
+      'تجاوز العدد المستهدف للمتدربين',
+    targetLearnerThresholdExceededBody:
+      'تجاوز عدد المتدربين في {programTitle} العدد المستهدف {targetLearnerCount}. عدد المتدربين النشطين حاليًا: {activeLearnerCount}.',
   },
 };

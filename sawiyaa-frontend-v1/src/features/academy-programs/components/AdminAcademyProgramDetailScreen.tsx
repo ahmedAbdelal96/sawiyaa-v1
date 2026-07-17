@@ -169,6 +169,7 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
 
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSessionCreateOpen, setIsSessionCreateOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<AcademyProgramSessionItem | null>(null);
@@ -200,13 +201,33 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
       ? t("programs.errors.invalidWindow")
       : null;
 
+  const targetLearnerCount = program?.targetLearnerCount ?? program?.maxSeats ?? null;
+  const activeLearnerCount = program?.activeLearnerCount ?? 0;
+  const remainingTargetSlots =
+    program?.remainingTargetSlots ??
+    (targetLearnerCount === null
+      ? null
+      : Math.max(targetLearnerCount - activeLearnerCount, 0));
+  const isOverTargetLearners =
+    program?.isOverTargetLearners ??
+    (targetLearnerCount !== null ? activeLearnerCount > targetLearnerCount : false);
+
   const stats = useMemo(
     () => ({
       sessions: sessions.length,
       publishedSessions: sessions.filter((item) => item.isPublished).length,
-      seats: program?.maxSeats ?? 0,
+      targetLearners: targetLearnerCount,
+      activeLearners: activeLearnerCount,
+      remainingTargetSlots,
+      isOverTargetLearners,
     }),
-    [program?.maxSeats, sessions],
+    [
+      sessions,
+      targetLearnerCount,
+      activeLearnerCount,
+      remainingTargetSlots,
+      isOverTargetLearners,
+    ],
   );
 
   const handlePublish = async () => {
@@ -230,7 +251,12 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
 
     setFeedback(null);
     try {
-      await archiveProgram.mutateAsync(program.id);
+      const reason = archiveReason.trim();
+      if (!reason) {
+        setFeedback({ tone: "error", message: t("programs.detail.actions.archiveConfirm.reasonRequired") });
+        return;
+      }
+      await archiveProgram.mutateAsync({ programId: program.id, reason });
       setFeedback({ tone: "success", message: t("programs.detail.actions.archiveSuccess") });
       setShowArchiveConfirm(false);
     } catch {
@@ -370,6 +396,30 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
           <p className="text-sm font-medium text-text-muted">{publishReadinessNote}</p>
         ) : null}
 
+        {stats.targetLearners !== null ? (
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+              stats.isOverTargetLearners
+                ? "border-amber-200 bg-amber-50 text-amber-800"
+                : "border-sky-200 bg-sky-50 text-sky-800"
+            }`}
+          >
+            <p className="font-semibold">
+              {stats.isOverTargetLearners
+                ? t("programs.detail.targetBanner.overTitle")
+                : t("programs.detail.targetBanner.title")}
+            </p>
+            <p className="mt-1">
+              {t("programs.detail.targetBanner.note", {
+                targetLearnerCount: stats.targetLearners,
+                activeLearnerCount: stats.activeLearners,
+                remainingTargetSlots:
+                  stats.remainingTargetSlots !== null ? stats.remainingTargetSlots : 0,
+              })}
+            </p>
+          </div>
+        ) : null}
+
         {program.status === "PUBLISHED" ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-800">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -417,16 +467,36 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
             icon={<CheckCircle className="h-4 w-4" />}
           />
           <AdminMetricCard
-            label={t("programs.detail.stats.seats")}
-            value={stats.seats ? String(stats.seats) : "—"}
+            label={t("programs.detail.stats.targetLearners")}
+            value={stats.targetLearners !== null ? String(stats.targetLearners) : "—"}
             tone="info"
             icon={<Users className="h-4 w-4" />}
+            hint={
+              stats.targetLearners !== null
+                ? t("programs.detail.stats.targetLearnersHint", {
+                    count: stats.activeLearners,
+                  })
+                : t("programs.detail.stats.noTargetLearners")
+            }
           />
           <AdminMetricCard
-            label={t("programs.detail.stats.registration")}
-            value={program.registrationOpen ? t("programs.registration.open") : t("programs.registration.closed")}
-            tone={program.registrationOpen ? "success" : "neutral"}
+            label={t("programs.detail.stats.remainingTargetSlots")}
+            value={
+              stats.remainingTargetSlots !== null ? String(stats.remainingTargetSlots) : "—"
+            }
+            tone={stats.isOverTargetLearners ? "warning" : "success"}
             icon={<Sparkles className="h-4 w-4" />}
+            hint={
+              stats.targetLearners !== null
+                ? stats.isOverTargetLearners
+                  ? t("programs.detail.stats.targetExceededHint", {
+                      count:
+                        stats.activeLearners -
+                        (stats.targetLearners ?? stats.activeLearners),
+                    })
+                  : t("programs.detail.stats.remainingTargetSlotsHint")
+                : t("programs.detail.stats.noTargetLearners")
+            }
           />
         </AdminStatsGrid>
       </div>
@@ -685,7 +755,10 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
 
       <DestructiveConfirmModal
         isOpen={showArchiveConfirm}
-        onClose={() => setShowArchiveConfirm(false)}
+        onClose={() => {
+          setShowArchiveConfirm(false);
+          setArchiveReason("");
+        }}
         size="sm"
         title={t("programs.detail.actions.archiveConfirm.title")}
         description={t("programs.detail.actions.archiveConfirm.description")}
@@ -696,6 +769,17 @@ export default function AdminAcademyProgramDetailScreen({ programId }: Props) {
       >
         <div className="rounded-2xl border border-status-warning-border bg-status-warning-soft px-4 py-4 text-sm text-status-warning">
           <p className="font-medium">{resolveAcademyProgramTitle(program, locale)}</p>
+          <label className="mt-4 block text-xs font-semibold text-text-primary" htmlFor="academy-archive-reason">
+            {t("programs.detail.actions.archiveConfirm.reasonLabel")}
+          </label>
+          <textarea
+            id="academy-archive-reason"
+            value={archiveReason}
+            onChange={(event) => setArchiveReason(event.target.value)}
+            rows={3}
+            maxLength={500}
+            className="mt-2 w-full rounded-xl border border-border-light bg-white px-3 py-2 text-sm text-text-primary outline-none focus:border-primary"
+          />
         </div>
       </DestructiveConfirmModal>
     </div>

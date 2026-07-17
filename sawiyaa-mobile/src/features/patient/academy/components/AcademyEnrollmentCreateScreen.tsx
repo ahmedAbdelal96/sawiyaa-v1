@@ -14,13 +14,12 @@ import {
 } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../../i18n/direction";
-import { resolveSupportedCurrencyCode } from "../../../../lib/currency";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useAuth } from "../../../../providers/AuthProvider";
-import { useCreatePublicAcademyEnrollment, usePublicAcademyCourse } from "../hooks";
+import { useCreatePublicAcademyProgramEnrollment, usePublicAcademyProgram } from "../hooks";
 import { buildAcademyEnrollmentPaymentReturnBaseUrl } from "../navigation";
-import type { CreateAcademyEnrollmentInput } from "../types";
-import { formatAcademyMoney, isAcademyCourseFree } from "../display";
+import type { CreateAcademyProgramEnrollmentInput } from "../types";
+import { formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
 
 export default function AcademyEnrollmentCreateScreen({
   slug,
@@ -41,9 +40,9 @@ export default function AcademyEnrollmentCreateScreen({
     }
     return `auth:${user.id}:${role ?? "unknown"}`;
   }, [isAuthLoading, role, user]);
-  const courseQuery = usePublicAcademyCourse(slug, { cacheScopeKey: authScopeKey });
-  const enrollMutation = useCreatePublicAcademyEnrollment();
-  const [form, setForm] = useState<CreateAcademyEnrollmentInput>({
+  const courseQuery = usePublicAcademyProgram(slug, { cacheScopeKey: authScopeKey });
+  const enrollMutation = useCreatePublicAcademyProgramEnrollment();
+  const [form, setForm] = useState<CreateAcademyProgramEnrollmentInput>({
     fullName: "",
     phoneNumber: "",
     whatsappNumber: "",
@@ -73,28 +72,18 @@ export default function AcademyEnrollmentCreateScreen({
   }, [user]);
 
   const course = courseQuery.data ?? null;
-  const displayCurrency = resolveSupportedCurrencyCode({
-    currencyCode: course?.currencyCode,
-    regionalPricingMode: course?.regionalPricingMode,
-    resolvedCountryIsoCode: course?.resolvedCountryIsoCode,
-  });
-  const hasPrice = course?.priceAmount !== null && course?.priceAmount !== undefined;
-  const isFreeCourse = hasPrice && isAcademyCourseFree(course);
+  const hasPrice = course?.priceEgp !== null || course?.priceUsd !== null;
+  const isFreeCourse = hasPrice && isAcademyProgramFree(course?.priceEgp, course?.priceUsd);
   const priceLabel = hasPrice
     ? (isFreeCourse
       ? t("academy.detail.free")
-      : formatAcademyMoney(course?.priceAmount ?? null, displayCurrency, i18n.language))
+      : formatAcademyProgramPrice(course?.priceEgp, course?.priceUsd, i18n.language))
     : null;
   const isNotFound = courseQuery.isSuccess && !course;
 
-  const lectureLabel = course?.plannedLectureCount
+  const lectureLabel = course?.sessions?.length
     ? t("academy.detail.lectures", {
-        count: course.plannedLectureCount,
-      })
-    : null;
-  const durationLabel = course?.plannedDurationDays
-    ? t("academy.detail.durationDays", {
-        count: course.plannedDurationDays,
+        count: course.sessions.length,
       })
     : null;
 
@@ -150,14 +139,6 @@ export default function AcademyEnrollmentCreateScreen({
                   <Ionicons name="book-outline" size={13} color={theme.colors.textSecondary} />
                   <Text color={theme.colors.textSecondary} style={styles.summaryMetaText}>
                     {lectureLabel}
-                  </Text>
-                </View>
-              ) : null}
-              {durationLabel ? (
-                <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceMuted }]}>
-                  <Ionicons name="time-outline" size={13} color={theme.colors.textSecondary} />
-                  <Text color={theme.colors.textSecondary} style={styles.summaryMetaText}>
-                    {durationLabel}
                   </Text>
                 </View>
               ) : null}
@@ -280,21 +261,20 @@ export default function AcademyEnrollmentCreateScreen({
 
                     const shouldShowPaymentFlow =
                       !isFreeCourse &&
-                      created.enrollmentStatus !== "PAID" &&
-                      created.enrollmentStatus !== "CONFIRMED";
+                      created.status !== "CONFIRMED";
 
                     router.replace(
                       shouldShowPaymentFlow
                         ? ({
                             pathname:
-                              "/(patient)/academy/enrollments/[id]/payment-return",
+                              "/(patient)/academy/program-enrollments/[id]/payment-return",
                             params: {
                               id: created.id,
                               token: created.publicAccessToken,
                             },
                           } as never)
                         : ({
-                            pathname: "/(patient)/academy/enrollments/[id]",
+                            pathname: "/(patient)/academy/program-enrollments/[id]",
                             params: {
                               id: created.id,
                               token: created.publicAccessToken,

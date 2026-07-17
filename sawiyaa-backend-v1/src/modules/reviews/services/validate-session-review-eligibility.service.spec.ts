@@ -5,12 +5,14 @@ import { ValidateSessionReviewEligibilityService } from './validate-session-revi
 describe('ValidateSessionReviewEligibilityService', () => {
   const reviewSessionRepository = {
     findOwnedSessionForReview: jest.fn(),
-    hasCapturedPaymentForSession: jest.fn(),
-    isSessionCompleted: jest.fn(),
   } as unknown as ReviewSessionRepository;
+  const resolveSessionReviewEligibility = {
+    resolveMany: jest.fn(),
+  };
 
   const service = new ValidateSessionReviewEligibilityService(
     reviewSessionRepository,
+    resolveSessionReviewEligibility as never,
   );
 
   beforeEach(() => {
@@ -27,12 +29,9 @@ describe('ValidateSessionReviewEligibilityService', () => {
     (
       reviewSessionRepository.findOwnedSessionForReview as jest.Mock
     ).mockResolvedValue(session);
-    (reviewSessionRepository.isSessionCompleted as jest.Mock).mockReturnValue(
-      true,
+    resolveSessionReviewEligibility.resolveMany.mockResolvedValue(
+      new Map([['session-1', { isEffectivelyCompleted: true, hasValidSource: true }]]),
     );
-    (
-      reviewSessionRepository.hasCapturedPaymentForSession as jest.Mock
-    ).mockResolvedValue(1);
 
     await expect(
       service.assertEligible({
@@ -51,8 +50,8 @@ describe('ValidateSessionReviewEligibilityService', () => {
       patientId: 'patient-1',
       practitionerId: 'practitioner-1',
     });
-    (reviewSessionRepository.isSessionCompleted as jest.Mock).mockReturnValue(
-      false,
+    resolveSessionReviewEligibility.resolveMany.mockResolvedValue(
+      new Map([['session-1', { isEffectivelyCompleted: false, hasValidSource: false }]]),
     );
 
     await expect(
@@ -74,8 +73,8 @@ describe('ValidateSessionReviewEligibilityService', () => {
       patientId: 'patient-1',
       practitionerId: 'practitioner-1',
     });
-    (reviewSessionRepository.isSessionCompleted as jest.Mock).mockReturnValue(
-      false,
+    resolveSessionReviewEligibility.resolveMany.mockResolvedValue(
+      new Map([['session-1', { isEffectivelyCompleted: false, hasValidSource: false }]]),
     );
 
     await expect(
@@ -97,12 +96,9 @@ describe('ValidateSessionReviewEligibilityService', () => {
       patientId: 'patient-1',
       practitionerId: 'practitioner-1',
     });
-    (reviewSessionRepository.isSessionCompleted as jest.Mock).mockReturnValue(
-      true,
+    resolveSessionReviewEligibility.resolveMany.mockResolvedValue(
+      new Map([['session-1', { isEffectivelyCompleted: true, hasValidSource: false }]]),
     );
-    (
-      reviewSessionRepository.hasCapturedPaymentForSession as jest.Mock
-    ).mockResolvedValue(0);
 
     await expect(
       service.assertEligible({

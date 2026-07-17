@@ -88,6 +88,17 @@ export class PractitionerCredentialStorageService {
     return EXTENSION_TO_MIME[ext] ?? null;
   }
 
+  async deleteCredential(fileUrl: string): Promise<void> {
+    const absolutePath = this.resolveAbsolutePathFromFileUrl(fileUrl);
+    if (!absolutePath) return;
+    try {
+      await fs.unlink(absolutePath);
+    } catch (error) {
+      const code = (error as { code?: string } | null)?.code;
+      if (code !== 'ENOENT') throw error;
+    }
+  }
+
   private sanitizeSegment(value: string): string {
     return value.replace(/[^a-zA-Z0-9_-]/g, '');
   }

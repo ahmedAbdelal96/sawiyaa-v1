@@ -2,7 +2,6 @@ import { ForbiddenException } from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
-import { AcademyRepository } from '../repositories/academy.repository';
 import { AcademyLearnerResolverService } from './academy-learner-resolver.service';
 
 describe('AcademyLearnerResolverService', () => {
@@ -15,13 +14,9 @@ describe('AcademyLearnerResolverService', () => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn(),
     },
   } as unknown as PrismaService;
-
-  const academyRepository = {
-    findLearnerByPhoneNumber: jest.fn(),
-    upsertLearner: jest.fn(),
-  } as unknown as AcademyRepository;
 
   const paymentGeoContextService = {
     resolveCountryResolution: jest.fn(),
@@ -29,7 +24,6 @@ describe('AcademyLearnerResolverService', () => {
 
   const service = new AcademyLearnerResolverService(
     prisma,
-    academyRepository,
     paymentGeoContextService,
   );
 
@@ -38,7 +32,7 @@ describe('AcademyLearnerResolverService', () => {
   });
 
   it('keeps guest enrollments phone-keyed and without a user link', async () => {
-    (academyRepository.findLearnerByPhoneNumber as jest.Mock).mockResolvedValue(
+    (prisma.academyLearner.findUnique as jest.Mock).mockResolvedValue(
       null,
     );
     (paymentGeoContextService.resolveCountryResolution as jest.Mock).mockResolvedValue(
@@ -50,7 +44,7 @@ describe('AcademyLearnerResolverService', () => {
         phoneCountryCode: 'EG',
       },
     );
-    (academyRepository.upsertLearner as jest.Mock).mockResolvedValue({
+    (prisma.academyLearner.upsert as jest.Mock).mockResolvedValue({
       id: 'learner_1',
       userId: null,
       fullName: 'Guest Learner',
@@ -78,11 +72,14 @@ describe('AcademyLearnerResolverService', () => {
     });
 
     expect(result.learner.userId).toBeNull();
-    expect(academyRepository.upsertLearner).toHaveBeenCalledWith(
+    expect(prisma.academyLearner.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        fullName: 'Guest Learner',
-        phoneNumber: '+201111111111',
-        sourceLabel: 'public-academy',
+        where: { phoneNumber: '+201111111111' },
+        create: expect.objectContaining({
+          fullName: 'Guest Learner',
+          phoneNumber: '+201111111111',
+          sourceLabel: 'public-academy',
+        }),
       }),
     );
   });
@@ -96,9 +93,7 @@ describe('AcademyLearnerResolverService', () => {
       patientProfile: { displayName: 'Patient Profile' },
     });
     (prisma.academyLearner.findUnique as jest.Mock).mockResolvedValue(null);
-    (academyRepository.findLearnerByPhoneNumber as jest.Mock).mockResolvedValue(
-      null,
-    );
+    (prisma.academyLearner.findUnique as jest.Mock).mockResolvedValue(null);
     (paymentGeoContextService.resolveCountryResolution as jest.Mock).mockResolvedValue(
       {
         resolvedCountryCode: 'EG',

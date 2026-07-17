@@ -5,6 +5,7 @@ import {
   type CustomerWalletEntry,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -21,7 +22,11 @@ export class CustomerWalletEntryRepository {
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).customerWalletEntry.create({
-      data,
+      data: {
+        ...data,
+        actorType: data.actorType ?? AuditActorType.SYSTEM,
+        source: data.source ?? SecurityAuditSource.SYSTEM,
+      },
     });
   }
 

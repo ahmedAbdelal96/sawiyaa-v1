@@ -5,6 +5,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { MessagingRepository } from '@modules/messaging/repositories/messaging.repository';
 import { CareChatActorType } from '../types/care-chat.types';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -222,14 +223,11 @@ export class CareChatRequestRepository {
     },
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).message.create({
-      data: {
-        conversationId: input.conversationId,
-        senderUserId: null,
-        messageType: 'APPROVAL_NOTICE',
-        visibility: 'NORMAL',
-        contentText: input.message,
-      },
+    return MessagingRepository.createInitialMessage(tx ?? this.prisma, {
+      conversationId: input.conversationId,
+      senderUserId: null,
+      messageType: 'APPROVAL_NOTICE',
+      contentText: input.message,
     });
   }
 }

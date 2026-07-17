@@ -13,6 +13,10 @@ import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 @Injectable()
 export class PrepareSessionRuntimeUseCase {
@@ -46,6 +50,10 @@ export class PrepareSessionRuntimeUseCase {
       actorType: input.actorType,
       session,
     });
+    const latestDecision =
+      await this.sessionRepository.findLatestActiveSessionAdminDecision(
+        session.id,
+      );
 
     if (session.sessionMode !== SessionMode.VIDEO) {
       throw new BadRequestException({
@@ -63,6 +71,7 @@ export class PrepareSessionRuntimeUseCase {
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
       videoRoomClosedAt: session.videoRoomClosedAt,
+      finalManualDecision: latestDecision?.decisionType ?? null,
       now: new Date(),
     });
 
@@ -140,7 +149,14 @@ export class PrepareSessionRuntimeUseCase {
           {
             sessionId: session.id,
             eventType: SessionEventType.PROVIDER_ROOM_CREATED,
+            actorType: input.userId
+              ? SecurityAuditActorType.USER
+              : SecurityAuditActorType.SYSTEM,
             actorUserId: input.userId,
+            source: input.userId
+              ? SecurityAuditSource.HTTP_REQUEST
+              : SecurityAuditSource.SYSTEM,
+            occurredAt: new Date(),
             metadataJson: {
               provider: resolvedProvider,
               providerRoomId: roomId,

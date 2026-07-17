@@ -85,8 +85,8 @@ export class PreviewCorporateSponsorshipUseCase {
 
     const validStatuses: SessionStatus[] = [
       SessionStatus.PENDING_PAYMENT,
-      SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-      SessionStatus.CONFIRMED,
+      SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+      SessionStatus.UPCOMING,
     ];
     if (!validStatuses.includes(session.status)) {
       return {
@@ -350,8 +350,8 @@ export class ReserveCorporateSponsorshipUseCase {
 
       const validStatuses: SessionStatus[] = [
         SessionStatus.PENDING_PAYMENT,
-        SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-        SessionStatus.CONFIRMED,
+        SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
+        SessionStatus.UPCOMING,
       ];
       if (!validStatuses.includes(session.status)) {
         throw new BadRequestException({

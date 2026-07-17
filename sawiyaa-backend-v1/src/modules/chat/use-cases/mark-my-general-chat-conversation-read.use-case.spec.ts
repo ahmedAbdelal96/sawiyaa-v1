@@ -5,16 +5,31 @@ import { MarkMyGeneralChatConversationReadUseCase } from './mark-my-general-chat
 describe('MarkMyGeneralChatConversationReadUseCase', () => {
   const generalChatRepository = {
     findConversationByIdInGeneralScope: jest.fn(),
+    findAccessibleMessageInConversationScope: jest.fn(),
+    markConversationMessagesReadForRecipient: jest.fn(),
     markConversationReadCursor: jest.fn(),
     countUnreadMessagesForParticipant: jest.fn(),
   } as unknown as GeneralChatRepository;
+  const messagingUseCase = {
+    markRead: jest.fn(),
+  } as any;
 
   const useCase = new MarkMyGeneralChatConversationReadUseCase(
     generalChatRepository,
+    messagingUseCase,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    messagingUseCase.markRead.mockResolvedValue({
+      item: {
+        conversationId: 'conv_1',
+        lastReadMessageId: 'msg_2',
+        lastReadAt: '2026-04-01T12:00:00.000Z',
+        unreadCount: 0,
+        hasUnread: false,
+      },
+    });
   });
 
   it('marks latest message as read for participant', async () => {
@@ -39,6 +54,13 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
     (
       generalChatRepository.countUnreadMessagesForParticipant as jest.Mock
     ).mockResolvedValue(0);
+    (
+      generalChatRepository.findAccessibleMessageInConversationScope as jest.Mock
+    ).mockResolvedValue({
+      id: 'msg_2',
+      senderUserId: 'user_2',
+      sentAt: new Date('2026-04-01T12:00:00.000Z'),
+    });
 
     const result = await useCase.execute({
       authenticatedUser: { id: 'user_1', roles: [] },
@@ -46,14 +68,10 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
       dto: {},
     });
 
-    expect(
-      generalChatRepository.markConversationReadCursor,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        conversationId: 'conv_1',
-        userId: 'user_1',
-        lastReadMessageId: 'msg_2',
-      }),
+    expect(messagingUseCase.markRead).toHaveBeenCalledWith(
+      { id: 'user_1', roles: [] },
+      'conv_1',
+      'msg_2',
     );
     expect(result.item.unreadCount).toBe(0);
     expect(result.item.hasUnread).toBe(false);
@@ -89,9 +107,11 @@ describe('MarkMyGeneralChatConversationReadUseCase', () => {
       dto: {},
     });
 
-    expect(
-      generalChatRepository.markConversationReadCursor,
-    ).not.toHaveBeenCalled();
+    expect(messagingUseCase.markRead).toHaveBeenCalledWith(
+      { id: 'user_1', roles: [] },
+      'conv_1',
+      'msg_2',
+    );
     expect(result.item.lastReadMessageId).toBe('msg_2');
     expect(result.item.lastReadAt).toBe('2026-04-01T12:00:00.000Z');
   });

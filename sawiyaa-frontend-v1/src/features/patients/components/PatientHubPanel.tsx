@@ -26,16 +26,20 @@ function formatDatetime(isoString: string | null, numLocale: string): string {
 const SESSION_STATUS_CLASS: Partial<Record<SessionStatus, string>> = {
   PENDING_PAYMENT:
     "text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20",
-  PENDING_PRACTITIONER_RESPONSE:
+  PENDING_PRACTITIONER_CONFIRMATION:
     "text-text-brand bg-primary-light dark:text-primary-light dark:bg-primary/20",
-  CONFIRMED:
-    "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/20",
   UPCOMING:
     "text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/20",
   READY_TO_JOIN: "text-primary bg-primary/10 dark:text-primary-light dark:bg-primary/15",
   IN_PROGRESS: "text-primary bg-primary/10 dark:text-primary-light dark:bg-primary/15",
   COMPLETED: "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
+  AWAITING_COMPLETION_CONFIRMATION:
+    "text-amber-700 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20",
   CANCELLED: "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
+  PATIENT_NO_SHOW: "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
+  PRACTITIONER_NO_SHOW:
+    "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
+  BOTH_NO_SHOW: "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
   EXPIRED: "text-text-muted bg-surface-tertiary dark:bg-white/10 dark:text-white/50",
 };
 
@@ -60,7 +64,6 @@ export default function PatientHubPanel() {
     : undefined;
   const upcomingSession = sessions.find(
     (s) =>
-      s.status === "CONFIRMED" ||
       s.status === "UPCOMING" ||
       s.status === "READY_TO_JOIN" ||
       s.status === "IN_PROGRESS",

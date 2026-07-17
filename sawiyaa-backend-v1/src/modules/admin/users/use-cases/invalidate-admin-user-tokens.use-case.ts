@@ -5,6 +5,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { AdminUserManagementPolicy } from '../policies/admin-user-management.policy';
 import { AdminUsersRepository } from '../repositories/admin-users.repository';
 
@@ -39,21 +40,22 @@ export class InvalidateAdminUserTokensUseCase {
         tx,
       );
       const bumped = await this.repo.bumpTokenVersion(input.userId, tx);
+      await this.securityAuditService.recordRequired(tx, {
+        action: 'security.adminUsers.tokenVersion.invalidate.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.actor.id,
+        actorRoles: input.actor.roles,
+        resourceType: 'User',
+        resourceId: input.userId,
+        targetUserId: input.userId,
+        metadata: {
+          revokedSessionsCount,
+          tokenVersion: bumped.tokenVersion,
+        },
+      });
       return { revokedSessionsCount, tokenVersion: bumped.tokenVersion };
-    });
-
-    this.securityAuditService.logAsync({
-      action: 'security.adminUsers.tokenVersion.invalidate.success',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: input.actor.id,
-      actorRoles: input.actor.roles,
-      resourceType: 'User',
-      resourceId: input.userId,
-      targetUserId: input.userId,
-      metadata: {
-        revokedSessionsCount: result.revokedSessionsCount,
-        tokenVersion: result.tokenVersion,
-      },
     });
 
     return {

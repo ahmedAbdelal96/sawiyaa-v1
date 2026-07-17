@@ -52,7 +52,6 @@ describe('SessionRepository', () => {
 
     expect(callArg.where.sessionMode).toBe(SessionMode.VIDEO);
     expect(callArg.where.status.in).toEqual([
-      SessionStatus.CONFIRMED,
       SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
     ]);
@@ -117,8 +116,7 @@ describe('SessionRepository', () => {
         expect.objectContaining({
           status: {
             in: expect.arrayContaining([
-              SessionStatus.PENDING_PRACTITIONER_RESPONSE,
-              SessionStatus.CONFIRMED,
+              SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
               SessionStatus.UPCOMING,
               SessionStatus.READY_TO_JOIN,
               SessionStatus.IN_PROGRESS,
@@ -166,7 +164,6 @@ describe('SessionRepository', () => {
         expect.objectContaining({
           status: {
             in: [
-              SessionStatus.CONFIRMED,
               SessionStatus.UPCOMING,
               SessionStatus.READY_TO_JOIN,
             ],
@@ -229,5 +226,33 @@ describe('SessionRepository', () => {
         }),
       ]),
     );
+  });
+
+  it('lists only accepted elapsed statuses with a deterministic cursor', async () => {
+    findMany.mockResolvedValue([]);
+    const scheduledEndAt = new Date('2026-05-01T10:00:00.000Z');
+
+    await repository.listSessionsDueForCompletionConfirmation({
+      now: new Date('2026-05-01T10:30:00.000Z'),
+      take: 25,
+      cursor: { scheduledEndAt, id: 'session-9' },
+    });
+
+    const callArg = findMany.mock.calls[0][0] as {
+      where: {
+        status: { in: SessionStatus[] };
+        OR: Array<Record<string, unknown>>;
+      };
+      take: number;
+    };
+    expect(callArg.where.status.in).toEqual([
+      SessionStatus.UPCOMING,
+      SessionStatus.READY_TO_JOIN,
+    ]);
+    expect(callArg.where.OR).toEqual([
+      { scheduledEndAt: { gt: scheduledEndAt } },
+      { scheduledEndAt, id: { gt: 'session-9' } },
+    ]);
+    expect(callArg.take).toBe(25);
   });
 });

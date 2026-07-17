@@ -30,6 +30,23 @@ export class SessionJoinAvailabilityDto {
   expiresAt!: string | null;
 }
 
+export class PatientSessionActionsDto {
+  @ApiProperty()
+  canCancel!: boolean;
+
+  @ApiProperty()
+  canPrepareRoom!: boolean;
+
+  @ApiProperty()
+  canJoin!: boolean;
+
+  @ApiProperty()
+  canPay!: boolean;
+
+  @ApiProperty()
+  canReview!: boolean;
+}
+
 export class SessionPractitionerSummaryDto {
   @ApiProperty()
   id!: string;
@@ -62,17 +79,8 @@ export class SessionItemResponseDto {
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
 
-  @ApiProperty({
-    enum: [
-      'UPCOMING',
-      'JOINABLE',
-      'IN_PROGRESS',
-      'COMPLETED',
-      'CANCELLED',
-      'ENDED',
-      'UNAVAILABLE',
-    ],
-  })
+  /** @deprecated Direct alias of status during the coordinated client migration. */
+  @ApiProperty({ enum: SessionStatus, deprecated: true })
   presentationStatus!: SessionPresentationStatus;
 
   @ApiProperty()
@@ -98,6 +106,9 @@ export class SessionItemResponseDto {
 
   @ApiProperty({ type: SessionJoinAvailabilityDto })
   joinAvailability!: SessionJoinAvailabilityDto;
+
+  @ApiProperty({ type: PatientSessionActionsDto })
+  actions!: PatientSessionActionsDto;
 
   @ApiProperty({ type: GeneralChatAvailabilityDto })
   chatAvailability!: GeneralChatAvailabilityDto;

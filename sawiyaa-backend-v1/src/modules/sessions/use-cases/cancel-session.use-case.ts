@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, SessionEventType, SessionStatus } from '@prisma/client';
+import { Prisma, SessionStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -13,7 +13,7 @@ import { SessionCancellationPolicyRepository } from '../repositories/session-can
 import { SessionRepository } from '../repositories/session.repository';
 import { ApplySessionCancellationFinancialEffectsService } from '../services/apply-session-cancellation-financial-effects.service';
 import { EvaluateSessionCancellationPolicyService } from '../services/evaluate-session-cancellation-policy.service';
-import { ValidateSessionStatusTransitionService } from '../services/validate-session-status-transition.service';
+import { SessionLifecycleService } from '../services/session-lifecycle.service';
 
 /**
  * Patient cancellation is transition-guarded and policy-driven.
@@ -27,7 +27,7 @@ export class CancelSessionUseCase {
     private readonly sessionRepository: SessionRepository,
     private readonly sessionCancellationPolicyRepository: SessionCancellationPolicyRepository,
     private readonly sessionMapper: SessionMapper,
-    private readonly validateSessionStatusTransitionService: ValidateSessionStatusTransitionService,
+    private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly evaluateSessionCancellationPolicyService: EvaluateSessionCancellationPolicyService,
     private readonly applySessionCancellationFinancialEffectsService: ApplySessionCancellationFinancialEffectsService,
     private readonly operationalNotificationService: OperationalNotificationService,
@@ -66,10 +66,16 @@ export class CancelSessionUseCase {
       });
     }
 
-    this.validateSessionStatusTransitionService.assertCanTransition(
-      session.status,
-      SessionStatus.CANCELLED,
-    );
+    const finalManualDecision =
+      await this.sessionRepository.findLatestActiveSessionAdminDecision(
+        session.id,
+      );
+    if (finalManualDecision) {
+      throw new ConflictException({
+        messageKey: 'sessions.errors.cancellationNotAllowedByPolicy',
+        error: 'SESSION_CANCELLATION_NOT_ALLOWED_FINAL_DECISION',
+      });
+    }
 
     const evaluation =
       await this.evaluateSessionCancellationPolicyService.evaluate({
@@ -101,23 +107,16 @@ export class CancelSessionUseCase {
 
       refundIdToPost = financialEffect.generatedRefundId;
 
-      const cancelledSession = await this.sessionRepository.updateStatus(
-        session.id,
-        {
-          status: SessionStatus.CANCELLED,
-          cancelledAt,
+      const cancelledSession = await this.sessionLifecycleService.transition({
+        session,
+        to: SessionStatus.CANCELLED,
+        at: cancelledAt,
+        actorUserId: input.userId,
+        data: {
           cancelledByUserId: input.userId,
           cancellationReason: input.reason ?? null,
         },
-        tx,
-      );
-
-      await this.sessionRepository.createEvent(
-        {
-          sessionId: session.id,
-          eventType: SessionEventType.CANCELLED_BY_PATIENT,
-          actorUserId: input.userId,
-          metadataJson: {
+        metadata: {
             reason: input.reason ?? null,
             cancellationPolicy: {
               bookingType: evaluation.bookingType,
@@ -131,10 +130,9 @@ export class CancelSessionUseCase {
               hoursBeforeStart: Number(evaluation.hoursBeforeStart.toFixed(2)),
             },
             financialEffects: financialEffect.actions,
-          } as Prisma.InputJsonValue,
-        },
+          } as Prisma.InputJsonObject,
         tx,
-      );
+      });
 
       await this.sessionCancellationPolicyRepository.createCancellationRecord(
         {
@@ -165,12 +163,13 @@ export class CancelSessionUseCase {
         tx,
       );
 
+      await this.applySessionCancellationFinancialEffectsService.postRefundLedgerIfNeeded(
+        refundIdToPost,
+        tx,
+      );
+
       return cancelledSession;
     });
-
-    await this.applySessionCancellationFinancialEffectsService.postRefundLedgerIfNeeded(
-      refundIdToPost,
-    );
 
     await this.operationalNotificationService.notifySessionCancelledByPatient({
       sessionId: updatedSession.id,

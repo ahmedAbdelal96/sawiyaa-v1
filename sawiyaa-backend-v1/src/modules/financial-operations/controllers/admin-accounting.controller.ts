@@ -44,6 +44,7 @@ import {
   LedgerExplorerAccountOptionsSuccessResponseDto,
   LedgerExplorerListSuccessResponseDto,
 } from '../dto/admin-accounting-response.dto';
+import { AdminFinanceHubSummarySuccessResponseDto } from '../dto/admin-finance-dashboard-summary.dto';
 import { ExportAdminLedgerExplorerDto } from '../dto/export-admin-ledger-explorer.dto';
 import { ListAdminAccountingReconciliationDto } from '../dto/list-admin-accounting-reconciliation.dto';
 import { ListAdminLedgerExplorerDto } from '../dto/list-admin-ledger-explorer.dto';
@@ -51,6 +52,7 @@ import { UpdateAdminAccountingReconciliationReviewDto } from '../dto/update-admi
 import { ExportAdminAccountingDashboardCsvUseCase } from '../use-cases/export-admin-accounting-dashboard-csv.use-case';
 import { ExportAdminLedgerExplorerCsvUseCase } from '../use-cases/export-admin-ledger-explorer-csv.use-case';
 import { GetAdminAccountingDashboardUseCase } from '../use-cases/get-admin-accounting-dashboard.use-case';
+import { GetAdminFinanceHubSummaryUseCase } from '../use-cases/get-admin-finance-hub-summary.use-case';
 import { GetAdminAccountingReconciliationOverviewUseCase } from '../use-cases/get-admin-accounting-reconciliation-overview.use-case';
 import { GetAdminLedgerJournalEntryUseCase } from '../use-cases/get-admin-ledger-journal-entry.use-case';
 import { ListAdminAccountingReconciliationUseCase } from '../use-cases/list-admin-accounting-reconciliation.use-case';
@@ -70,6 +72,7 @@ import { AccountingReconciliationDiagnosticsService } from '../services/accounti
 export class AdminAccountingController {
   constructor(
     private readonly getAdminAccountingDashboardUseCase: GetAdminAccountingDashboardUseCase,
+    private readonly getAdminFinanceHubSummaryUseCase: GetAdminFinanceHubSummaryUseCase,
     private readonly exportAdminAccountingDashboardCsvUseCase: ExportAdminAccountingDashboardCsvUseCase,
     private readonly getAdminAccountingReconciliationOverviewUseCase: GetAdminAccountingReconciliationOverviewUseCase,
     private readonly listAdminAccountingReconciliationUseCase: ListAdminAccountingReconciliationUseCase,
@@ -102,6 +105,29 @@ export class AdminAccountingController {
     };
   }
 
+  @Get('dashboard/summary')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Get finance dashboard summary',
+    description:
+      'Returns a compact finance summary with review, recovery, settlement, and reconciliation queue counts.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminFinanceHubSummarySuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Admin or support active account is required',
+  })
+  async dashboardSummary() {
+    const data = await this.getAdminFinanceHubSummaryUseCase.execute();
+    return {
+      success: true as const,
+      data,
+    };
+  }
+
   @Get('dashboard/export.csv')
   @Permissions(PermissionKey.ACCOUNTING_READ)
   @ApiOperation({
@@ -116,7 +142,7 @@ export class AdminAccountingController {
   })
   async exportDashboardCsv(
     @Query() query: GetAdminAccountingDashboardDto,
-    @Res({ passthrough: true }) response: Response,
+    @Res() response: Response,
   ) {
     const exported =
       await this.exportAdminAccountingDashboardCsvUseCase.execute(query);
@@ -431,7 +457,7 @@ export class AdminAccountingController {
   })
   async exportLedgerCsv(
     @Query() query: ExportAdminLedgerExplorerDto,
-    @Res({ passthrough: true }) response: Response,
+    @Res() response: Response,
   ) {
     const exported =
       await this.exportAdminLedgerExplorerCsvUseCase.execute(query);

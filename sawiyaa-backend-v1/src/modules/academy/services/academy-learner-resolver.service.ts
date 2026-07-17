@@ -2,8 +2,7 @@ import { ConflictException, ForbiddenException, Injectable } from '@nestjs/commo
 import { AppRole } from '@common/enums/app-role.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
-import { CreateAcademyEnrollmentDto } from '../dto/create-academy-enrollment.dto';
-import { AcademyRepository } from '../repositories/academy.repository';
+import { CreateAcademyProgramEnrollmentDto } from '../programs/dto/create-academy-program-enrollment.dto';
 import {
   PaymentCountryResolution,
   PaymentGeoContextService,
@@ -29,13 +28,12 @@ type LearnerRecord = {
 export class AcademyLearnerResolverService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly academyRepository: AcademyRepository,
     private readonly paymentGeoContextService: PaymentGeoContextService,
   ) {}
 
   async resolve(input: {
     currentUser: AuthenticatedUser | null;
-    payload: CreateAcademyEnrollmentDto;
+    payload: CreateAcademyProgramEnrollmentDto;
   }): Promise<{
     learner: LearnerRecord;
     countryResolution: PaymentCountryResolution;
@@ -50,9 +48,9 @@ export class AcademyLearnerResolverService {
 
     if (!input.currentUser) {
       const existingLearner =
-        await this.academyRepository.findLearnerByPhoneNumber(
-          normalizedPhoneNumber,
-        );
+        await this.prisma.academyLearner.findUnique({
+          where: { phoneNumber: normalizedPhoneNumber },
+        });
       const countryResolution =
         await this.paymentGeoContextService.resolveCountryResolution({
           phoneNumber: normalizedPhoneNumber,
@@ -165,16 +163,29 @@ export class AcademyLearnerResolverService {
     countryResolution: PaymentCountryResolution;
     sourceLabel: string | null;
   }): Promise<LearnerRecord> {
-    return this.academyRepository.upsertLearner({
-      fullName: input.fullName,
-      phoneNumber: input.phoneNumber,
-      whatsappNumber: input.whatsappNumber,
-      email: input.email,
-      countryCode: input.countryResolution.resolvedCountryCode,
-      countryCodeDeclared: null,
-      countryCodeSource: input.countryResolution.countrySource,
-      countryCodeMismatch: input.countryResolution.countryMismatch,
-      sourceLabel: input.sourceLabel,
+    return this.prisma.academyLearner.upsert({
+      where: { phoneNumber: input.phoneNumber },
+      update: {
+        fullName: input.fullName,
+        whatsappNumber: input.whatsappNumber,
+        email: input.email,
+        countryCode: input.countryResolution.resolvedCountryCode,
+        countryCodeDeclared: null,
+        countryCodeSource: input.countryResolution.countrySource,
+        countryCodeMismatch: input.countryResolution.countryMismatch,
+        sourceLabel: input.sourceLabel,
+      },
+      create: {
+        fullName: input.fullName,
+        phoneNumber: input.phoneNumber,
+        whatsappNumber: input.whatsappNumber,
+        email: input.email,
+        countryCode: input.countryResolution.resolvedCountryCode,
+        countryCodeDeclared: null,
+        countryCodeSource: input.countryResolution.countrySource,
+        countryCodeMismatch: input.countryResolution.countryMismatch,
+        sourceLabel: input.sourceLabel,
+      },
     }) as Promise<LearnerRecord>;
   }
 
@@ -191,9 +202,9 @@ export class AcademyLearnerResolverService {
       return byUserId;
     }
 
-    const byPhoneNumber = await this.academyRepository.findLearnerByPhoneNumber(
-      input.phoneNumber,
-    );
+    const byPhoneNumber = await this.prisma.academyLearner.findUnique({
+      where: { phoneNumber: input.phoneNumber },
+    });
     if (byPhoneNumber) {
       return byPhoneNumber;
     }
@@ -262,9 +273,9 @@ export class AcademyLearnerResolverService {
           });
         }
 
-        const byPhoneNumber = await this.academyRepository.findLearnerByPhoneNumber(
-          input.input.phoneNumber,
-        );
+        const byPhoneNumber = await this.prisma.academyLearner.findUnique({
+          where: { phoneNumber: input.input.phoneNumber },
+        });
         if (byPhoneNumber) {
           return (await this.prisma.academyLearner.update({
             where: { id: byPhoneNumber.id },

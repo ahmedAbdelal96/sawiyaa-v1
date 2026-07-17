@@ -1,4 +1,4 @@
-import {
+﻿import {
   ConflictException,
   Injectable,
   NotFoundException,
@@ -40,12 +40,11 @@ export class RecordPractitionerPayoutUseCase {
     }
 
     const settlement =
-      await this.settlementRepository.findPractitionerDueSettlementById(
-        practitioner.id,
+      await this.settlementRepository.findPractitionerSettlementById(
         input.body.settlementId,
       );
 
-    if (!settlement) {
+    if (!settlement || settlement.practitionerId !== practitioner.id) {
       throw new NotFoundException({
         messageKey: 'financialOperations.errors.settlementItemNotFound',
         error: FINANCIAL_OPS_ERROR_CODES.settlementItemNotFound,

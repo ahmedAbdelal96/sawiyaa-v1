@@ -111,8 +111,7 @@ export class BuildNormalizedCareSignalContextService {
   private isUpcomingSessionStatus(status: SessionStatus | null): boolean {
     return (
       status === SessionStatus.PENDING_PAYMENT ||
-      status === SessionStatus.PENDING_PRACTITIONER_RESPONSE ||
-      status === SessionStatus.CONFIRMED ||
+      status === SessionStatus.PENDING_PRACTITIONER_CONFIRMATION ||
       status === SessionStatus.UPCOMING ||
       status === SessionStatus.READY_TO_JOIN
     );

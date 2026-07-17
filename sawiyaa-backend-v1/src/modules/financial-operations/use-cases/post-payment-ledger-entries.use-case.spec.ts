@@ -5,7 +5,9 @@ import { PostPaymentLedgerEntriesUseCase } from './post-payment-ledger-entries.u
 describe('PostPaymentLedgerEntriesUseCase', () => {
   function buildUseCase(input?: { payment?: any; existingEntries?: any[] }) {
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn) => fn({})),
+      $transaction: jest.fn().mockImplementation(async (fn) =>
+        fn({ $executeRaw: jest.fn().mockResolvedValue(undefined) }),
+      ),
     };
     const financialOperationsPaymentRepository = {
       findCapturedPaymentById: jest.fn().mockResolvedValue(
