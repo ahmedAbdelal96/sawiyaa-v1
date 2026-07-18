@@ -13,6 +13,7 @@ import { PublicPractitionerReadRepository } from '../repositories/public-practit
 import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
+import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -48,6 +49,7 @@ export class ListPublicPractitionersUseCase {
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly avatarStorage?: PractitionerAvatarStorageService,
   ) {}
 
   async execute(input: {
@@ -108,8 +110,27 @@ export class ListPublicPractitionersUseCase {
         rows.map((row) => row.id),
       );
 
-    const practitioners: PublicPractitionerListEntry[] = rows.flatMap(
-      (profile) => {
+    const rowsWithPublicAvatars = await Promise.all(
+      rows.map(async (profile) => {
+        const storedAvatar = this.avatarStorage
+          ? await this.avatarStorage.resolveAvatarMetadata(profile.user.id)
+          : null;
+        return {
+          profile,
+          avatarUrl: storedAvatar
+            ? this.avatarStorage!.toPublicAvatarUrl(
+                profile.publicSlug,
+                storedAvatar.updatedAtMs,
+              )
+            : profile.avatarUrl?.match(/^https?:\/\//i)
+              ? profile.avatarUrl
+              : null,
+        };
+      }),
+    );
+
+    const practitioners: PublicPractitionerListEntry[] = rowsWithPublicAvatars.flatMap(
+      ({ profile, avatarUrl }) => {
         const pricingProfile = profile as typeof profile &
           PublicPractitionerPricingProfile;
         const ratingSummary = summaries.get(profile.id) ?? {
@@ -252,7 +273,7 @@ export class ListPublicPractitionersUseCase {
                 writtenReviewsCount: ratingSummary.writtenReviewsCount,
                 totalReviews: ratingSummary.publishedRatingsCount,
               },
-              avatarUrl: profile.avatarUrl ?? null,
+              avatarUrl,
               isVerified: visibility.isVerified,
             }),
           },

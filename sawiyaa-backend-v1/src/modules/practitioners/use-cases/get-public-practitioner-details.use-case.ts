@@ -6,6 +6,7 @@ import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitio
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
+import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -26,6 +27,7 @@ export class GetPublicPractitionerDetailsUseCase {
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly avatarStorage?: PractitionerAvatarStorageService,
   ) {}
 
   async execute(input: {
@@ -75,6 +77,9 @@ export class GetPublicPractitionerDetailsUseCase {
       await this.sessionReviewRatingAggregationService.aggregateByPractitionerId(
         profile.id,
       );
+    const storedAvatar = this.avatarStorage
+      ? await this.avatarStorage.resolveAvatarMetadata(profile.user.id)
+      : null;
     const pricingProfile = profile as typeof profile &
       PublicPractitionerPricingProfile;
 
@@ -172,7 +177,14 @@ export class GetPublicPractitionerDetailsUseCase {
           approvedCredentials,
         },
         isVerified: visibility.isVerified,
-        avatarUrl: profile.avatarUrl ?? null,
+        avatarUrl: storedAvatar
+          ? this.avatarStorage!.toPublicAvatarUrl(
+              profile.publicSlug,
+              storedAvatar.updatedAtMs,
+            )
+          : profile.avatarUrl?.match(/^https?:\/\//i)
+            ? profile.avatarUrl
+            : null,
       }),
     };
   }

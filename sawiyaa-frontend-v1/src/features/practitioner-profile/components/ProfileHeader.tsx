@@ -15,6 +15,7 @@ import {
   getPublicSessionPrices,
 } from "@/features/practitioners-discovery/lib/public-pricing";
 import type { PractitionerProfile } from "../types/profile";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
 type Props = {
   profile: PractitionerProfile;
@@ -88,9 +89,12 @@ export default async function ProfileHeader({
             <div className="flex flex-col gap-4 md:flex-row md:items-start">
               {/* Dual ring avatar wrapper */}
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] border-2 border-primary/20 p-0.5 bg-surface-secondary dark:bg-white/5">
-                <span className="flex h-full w-full items-center justify-center rounded-[20px] bg-primary-light text-xl font-bold text-primary dark:bg-primary/20 dark:text-primary-light">
-                  {p.initials}
-                </span>
+                <PractitionerAvatar
+                  src={p.avatarUrl}
+                  alt={displayName}
+                  initials={p.initials}
+                  className="h-full w-full rounded-[20px] object-cover"
+                />
               </div>
 
               <div className="min-w-0 space-y-2">

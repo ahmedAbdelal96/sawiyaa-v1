@@ -383,7 +383,7 @@ export class ApprovePractitionerApplicationUseCase {
           tx,
         );
 
-        await this.profileRepository.updateStatus(
+        await this.profileRepository.updateStatusAndPublish(
           decision.practitioner.id,
           PractitionerStatus.APPROVED,
           tx,

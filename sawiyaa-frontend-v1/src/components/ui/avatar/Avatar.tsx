@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLocale } from "next-intl";
+import { API_BASE_URL } from "@/config/api";
 
 interface AvatarProps {
   src?: string | null; // URL of the avatar image
@@ -15,6 +16,18 @@ interface AvatarProps {
 }
 
 export const DEFAULT_USER_AVATAR = "/images/default/user.avif";
+
+export function normalizeAvatarUrl(src?: string | null): string {
+  const value = src?.trim();
+  if (!value) return DEFAULT_USER_AVATAR;
+  if (/^(https?:|blob:|data:)/i.test(value)) return value;
+  if (value === DEFAULT_USER_AVATAR) return value;
+
+  const apiBase = API_BASE_URL.replace(/\/$/, "");
+  if (value === apiBase || value.startsWith(`${apiBase}/`)) return value;
+  if (value.startsWith("/")) return `${apiBase}${value}`;
+  return `${apiBase}/${value}`;
+}
 
 const sizeClasses = {
   xsmall: "h-6 w-6 max-w-6",
@@ -53,13 +66,17 @@ const Avatar: React.FC<AvatarProps> = ({
   fallbackInitials,
 }) => {
   const locale = useLocale();
-  const [imgSrc, setImgSrc] = useState<string>(src || DEFAULT_USER_AVATAR);
-  const [isFallbackState, setIsFallbackState] = useState<boolean>(false);
+  const [imgSrc, setImgSrc] = useState<string>(normalizeAvatarUrl(src));
+  const [isFallbackState, setIsFallbackState] = useState<boolean>(
+    normalizeAvatarUrl(src) === DEFAULT_USER_AVATAR,
+  );
   const [hasError, setHasError] = useState<boolean>(false);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
-    setImgSrc(src || DEFAULT_USER_AVATAR);
-    setIsFallbackState(src ? false : true); // If src is missing, we are already rendering the fallback avatar
+    const nextSrc = normalizeAvatarUrl(src);
+    setImgSrc(nextSrc);
+    setIsFallbackState(nextSrc === DEFAULT_USER_AVATAR);
     setHasError(false);
   }, [src]);
 
@@ -72,6 +89,16 @@ const Avatar: React.FC<AvatarProps> = ({
     }
   };
 
+  // An image can fail before React hydrates the server-rendered card, so the
+  // native onError handler may never receive that first failure. Inspect the
+  // actual image element once it is mounted to cover that case as well.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (image?.complete && image.naturalWidth === 0) {
+      handleError();
+    }
+  }, [imgSrc, isFallbackState]);
+
   const resolvedAlt = useMemo(() => {
     if (alt) return alt;
     if (name) {
@@ -82,17 +109,6 @@ const Avatar: React.FC<AvatarProps> = ({
     return locale === "ar" ? "الصورة الشخصية للمستخدم" : "User profile picture";
   }, [alt, name, locale]);
 
-  const resolvedInitials = useMemo(() => {
-    if (fallbackInitials) return fallbackInitials;
-    if (!name) return "";
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }, [fallbackInitials, name]);
-
   const hasCustomRounded = className.includes("rounded-");
   const roundedClass = hasCustomRounded ? "" : "rounded-full";
   const imgRoundedClass = imgClassName.includes("rounded-") ? "" : "rounded-full";
@@ -100,20 +116,15 @@ const Avatar: React.FC<AvatarProps> = ({
   return (
     <div className={`relative shrink-0 ${roundedClass} overflow-hidden ${sizeClasses[size]} ${className}`}>
       {hasError ? (
-        resolvedInitials ? (
-          <div className="flex h-full w-full items-center justify-center bg-slate-100 text-xs font-semibold text-text-muted dark:bg-slate-800">
-            {resolvedInitials}
-          </div>
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-100 text-text-muted dark:bg-slate-800">
-            <svg className="w-1/2 h-1/2 text-slate-400 dark:text-slate-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-        )
+        <div className="flex h-full w-full items-center justify-center bg-slate-100 text-text-muted dark:bg-slate-800">
+          <svg className="h-1/2 w-1/2 text-slate-400 dark:text-slate-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
+          ref={imageRef}
           src={imgSrc}
           alt={resolvedAlt}
           onError={handleError}

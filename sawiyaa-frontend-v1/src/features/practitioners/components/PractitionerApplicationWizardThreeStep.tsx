@@ -1399,6 +1399,7 @@ export default function PractitionerApplicationWizardThreeStep() {
                 defaultSelected={effectiveState.languageCodes}
                 onChange={(values) => patchState({ languageCodes: values })}
                 disabled={!canEdit}
+                placeholder={locale === "ar" ? "اختر لغة واحدة أو أكثر" : "Choose one or more languages"}
                 hint={t("application.wizard.fields.languages.hint")}
               />
             </div>
@@ -1458,6 +1459,7 @@ export default function PractitionerApplicationWizardThreeStep() {
                     setSelectedSpecialtyIds(values);
                   }}
                   disabled={!canEdit || !activeSpecialtyCategoryId}
+                  placeholder={locale === "ar" ? "اختر تخصصًا فرعيًا أو أكثر" : "Choose one or more sub-specialties"}
                   hint={
                     locale === "ar"
                       ? "يمكنك اختيار أكثر من تخصص فرعي من القائمة."

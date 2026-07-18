@@ -165,4 +165,9 @@ export class PractitionerAvatarStorageService {
     const version = Math.floor(updatedAtMs);
     return `/api/v1/practitioners/me/avatar?v=${version}`;
   }
+
+  toPublicAvatarUrl(publicSlug: string, updatedAtMs: number): string {
+    const version = Math.floor(updatedAtMs);
+    return `/api/v1/public/practitioners/${encodeURIComponent(publicSlug)}/avatar?v=${version}`;
+  }
 }

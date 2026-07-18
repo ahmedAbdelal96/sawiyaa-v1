@@ -43,6 +43,7 @@ import { PractitionerCredentialStorageService } from '@modules/practitioners/ser
 import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { ClearPractitionerAuthLockoutUseCase } from './use-cases/clear-practitioner-auth-lockout.use-case';
+import { GetAdminPractitionerAvatarFileUseCase } from './use-cases/get-admin-practitioner-avatar-file.use-case';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -84,6 +85,7 @@ import { ClearPractitionerAuthLockoutUseCase } from './use-cases/clear-practitio
     UpdateAdminPractitionerAvatarUseCase,
     RemoveAdminPractitionerAvatarUseCase,
     ClearPractitionerAuthLockoutUseCase,
+    GetAdminPractitionerAvatarFileUseCase,
     GetPractitionerApplicationDetailsUseCase,
     GetPractitionerApplicationAvatarFileUseCase,
     GetPractitionerApplicationCredentialFileUseCase,
