@@ -7,6 +7,7 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { MessagingUseCase } from '../use-cases/messaging.use-case';
+import { SendMessageDto } from '../dto/send-message.dto';
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
@@ -40,8 +41,10 @@ export class MessagingController {
   }
 
   @Post(':conversationId/messages')
-  send(@CurrentUser() actor: AuthenticatedUser, @Param('conversationId') id: string, @Body() body: { message: string; attachments?: Array<{ fileId: string; fileUrl: string; mimeType: string; fileSize?: number; originalName?: string }> }) {
-    return this.messaging.sendMessage(actor, id, body.message ?? '', body.attachments ?? []);
+  send(@CurrentUser() actor: AuthenticatedUser, @Param('conversationId') id: string, @Body() body: SendMessageDto) {
+    return this.messaging
+      .sendMessage(actor, id, body.message ?? '', body.attachments ?? [], body.clientMessageId)
+      .then((result) => ({ item: result.item }));
   }
 
   @Post(':conversationId/read')

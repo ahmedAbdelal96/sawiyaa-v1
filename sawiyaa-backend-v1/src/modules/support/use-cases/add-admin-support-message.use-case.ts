@@ -36,6 +36,8 @@ export class AddAdminSupportMessageUseCase {
         { id: input.userId, roles: input.roles },
         ticket.conversationId,
         input.payload.message,
+        [],
+        input.payload.clientMessageId,
       )
       .then(() => this.supportTicketRepository.findByIdForAdmin(input.ticketId));
 

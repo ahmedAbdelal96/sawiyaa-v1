@@ -88,11 +88,14 @@ export function resolveNotificationClickTarget(
     if (primaryAction.kind === "messages") {
       if (input.role === "admin") {
         const lane = primaryAction.lane || "session";
+        if (lane !== "support") {
+          return { kind: "href", href: "/admin" };
+        }
         return {
           kind: "href",
           href: primaryAction.id
-            ? `/admin/messages?lane=${lane}&id=${primaryAction.id}`
-            : `/admin/messages?lane=${lane}`,
+            ? `/admin/messages?lane=support&id=${primaryAction.id}`
+            : "/admin/messages?lane=support",
         };
       }
       const lane = primaryAction.lane === "care" ? "followup" : (primaryAction.lane || "session");
@@ -103,6 +106,9 @@ export function resolveNotificationClickTarget(
       };
     }
     if (primaryAction.kind === "session") {
+      if (input.role === "admin") {
+        return { kind: "href", href: "/admin" };
+      }
       return {
         kind: "href",
         href: primaryAction.id 
@@ -140,6 +146,18 @@ export function resolveNotificationClickTarget(
     input.item.typeSlug === "messages.session-message-received" ||
     input.item.typeSlug === "messages.follow-up-message-received"
   ) {
+    if (input.role === "admin") {
+      if (input.item.typeSlug === "messages.support-message-received") {
+        const target = getMessageShellTarget(input);
+        return {
+          kind: "href",
+          href: target.threadId
+            ? `/admin/messages?lane=support&id=${target.threadId}`
+            : "/admin/messages?lane=support",
+        };
+      }
+      return { kind: "href", href: "/admin" };
+    }
     return { kind: "messages-shell", ...getMessageShellTarget(input) };
   }
 
@@ -149,9 +167,25 @@ export function resolveNotificationClickTarget(
       ? (input.item.payload["routePath"] as string)
       : null,
   );
-  const href = normalizedActionHref ?? normalizedRoutePath;
+  let href = normalizedActionHref ?? normalizedRoutePath;
+
+  if (input.role === "admin" && href) {
+    const lower = href.toLowerCase();
+    if (
+      lower.includes("session") ||
+      lower.includes("care-chat") ||
+      lower.includes("chat") ||
+      lower.includes("lane=session") ||
+      lower.includes("lane=care")
+    ) {
+      href = "/admin";
+    }
+  }
 
   if (input.item.typeSlug.startsWith("sessions.session-")) {
+    if (input.role === "admin") {
+      return { kind: "href", href: "/admin" };
+    }
     if (href) {
       return { kind: "href", href };
     }
@@ -164,3 +198,4 @@ export function resolveNotificationClickTarget(
 
   return { kind: "href", href: buildRoleHomeHref(input.role) };
 }
+

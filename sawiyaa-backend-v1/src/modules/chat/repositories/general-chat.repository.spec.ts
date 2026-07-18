@@ -90,6 +90,7 @@ describe('GeneralChatRepository', () => {
       conversationId: 'conversation_1',
       userId: 'user_1',
       lastReadAt: new Date('2026-04-01T10:00:00.000Z'),
+      lastReadMessageId: 'message_1',
     });
 
     expect(prisma.message.count).toHaveBeenCalledWith(
@@ -97,7 +98,13 @@ describe('GeneralChatRepository', () => {
         where: expect.objectContaining({
           conversationId: 'conversation_1',
           senderUserId: { not: 'user_1' },
-          sentAt: { gt: new Date('2026-04-01T10:00:00.000Z') },
+          OR: [
+            { sentAt: { gt: new Date('2026-04-01T10:00:00.000Z') } },
+            {
+              sentAt: new Date('2026-04-01T10:00:00.000Z'),
+              id: { gt: 'message_1' },
+            },
+          ],
         }),
       }),
     );

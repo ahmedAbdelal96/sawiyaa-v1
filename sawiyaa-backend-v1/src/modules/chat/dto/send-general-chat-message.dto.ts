@@ -10,6 +10,7 @@ import {
   IsUrl,
   Max,
   MaxLength,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -46,6 +47,14 @@ export class GeneralChatAttachmentRefDto {
 }
 
 export class SendGeneralChatMessageDto {
+  @ApiPropertyOptional({ maxLength: 191 })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(191)
+  @Matches(/^[A-Za-z0-9_-]+$/)
+  clientMessageId?: string;
+
   @ApiProperty({
     maxLength: 4000,
     description: 'Plain text content for general chat message',

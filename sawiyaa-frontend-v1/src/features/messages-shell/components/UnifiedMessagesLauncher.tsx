@@ -1,4 +1,5 @@
 "use client";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -41,10 +42,12 @@ type Props = {
   role: UnifiedMessagingRole;
   showFloatingTrigger?: boolean;
 };
+
 type SessionReadState = Record<
   string,
   { readAt: string; sessionStatus: UnifiedSessionChatStatus | null }
 >;
+
 function formatRelativeAt(value: string | null | undefined, locale: string) {
   if (!value) return null;
   const date = new Date(value);
@@ -97,7 +100,7 @@ function LaneItem({
         <div className="flex min-w-0 items-start gap-2.5">
           <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/24 to-primary/6 text-[12px] font-bold text-primary ring-1 ring-primary/25 dark:from-primary/35 dark:to-primary/15 dark:ring-primary/30">
             {item.hasUnread ? (
-              <span className="absolute -top-0.5 -start-0.5 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-surface-secondary" />
+              <span className="absolute -top-0.5 -start-0.5 h-3 w-3 rounded-full bg-teal-600 ring-2 ring-white dark:ring-surface-secondary" />
             ) : null}
             {initials(item.title)}
           </span>
@@ -106,8 +109,11 @@ function LaneItem({
               {item.title}
             </p>
             <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-secondary dark:text-white/72">
-              {item.note}
+              {item.hasUnread
+                ? (locale.startsWith("ar") ? "رسالة جديدة" : "New message")
+                : (locale.startsWith("ar") ? "محادثة نشطة" : "Active conversation")}
             </p>
+
             {item.status ? (
               <p className="mt-1 inline-flex rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-semibold text-primary dark:bg-primary/24 dark:text-primary-light">
                 {item.status}
@@ -121,7 +127,7 @@ function LaneItem({
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
           ) : null}
           {item.unreadCount && item.unreadCount > 0 ? (
-            <span className="inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-200">
+            <span className="inline-flex items-center rounded-full bg-teal-600/10 px-2 py-0.5 text-[11px] font-semibold text-teal-700 dark:bg-teal-600/15 dark:text-teal-200">
               {item.unreadCount > 99 ? "99+" : item.unreadCount}
             </span>
           ) : null}
@@ -142,6 +148,7 @@ export default function UnifiedMessagesLauncher({
   const t = useTranslations("messages-shell");
   const pathname = usePathname();
   const isRtl = locale.startsWith("ar");
+
   const copy = useMemo(() => ({
     title: t("title"),
     subtitle: t("subtitle"),
@@ -200,6 +207,7 @@ export default function UnifiedMessagesLauncher({
     conversationsSwitcherCount: (count: number) =>
       t("conversationsSwitcherCount", { count }),
   }), [t, role]);
+
   const isSupportDetailPageActive = useMemo(() => {
     const roleSegment =
       role === "admin" ? "admin" : role === "patient" ? "patient" : "practitioner";
@@ -302,8 +310,6 @@ export default function UnifiedMessagesLauncher({
   );
 
   useEffect(() => {
-    // Avoid hydration mismatches: the server cannot read localStorage, so we always start from a
-    // deterministic default and restore continuity after the component hydrates.
     const snapshot = loadMessagesShellContinuitySnapshot(continuityStorageKey);
     queueMicrotask(() => {
       if (snapshot) {
@@ -590,7 +596,7 @@ export default function UnifiedMessagesLauncher({
         >
           <MessageCircle className="h-5 w-5" />
           {adjustedUnreadLikeCount > 0 ? (
-            <span className="absolute -top-1 -right-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
+            <span className="absolute -top-1 -right-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 px-1 text-[11px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
               {badgeValue}
             </span>
           ) : null}
@@ -612,7 +618,6 @@ export default function UnifiedMessagesLauncher({
         }`}
       >
         <section className="flex h-[min(84vh,800px)] max-h-[calc(100vh-88px)] flex-col overflow-hidden rounded-[24px] border border-border-strong/60 bg-surface-primary shadow-[0_48px_100px_-44px_rgba(34,52,56,0.38),0_0_0_1px_rgba(68,161,148,0.06)] dark:border-white/10 dark:bg-surface-secondary">
-
           {/* ── Header ── */}
           <header className="shrink-0 border-b border-border-light/60 bg-gradient-to-b from-primary-light/80 via-primary-light/40 to-white/0 px-4 pb-3 pt-3.5 dark:border-white/8 dark:from-primary/30 dark:via-primary/10 dark:to-transparent">
             <div className="flex items-center justify-between gap-3">
@@ -713,7 +718,7 @@ export default function UnifiedMessagesLauncher({
                       </span>
                       <span className="truncate leading-tight">{copy.lanes[lane]}</span>
                       {laneCount > 0 ? (
-                        <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                        <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
                           {laneCount > 9 ? "9+" : laneCount}
                         </span>
                       ) : null}

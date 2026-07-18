@@ -51,6 +51,7 @@ export class GetMyGeneralChatConversationDetailUseCase {
         conversationId: input.conversationId,
         userId: input.authenticatedUser.id,
         lastReadAt: viewerParticipant.lastReadAt,
+        lastReadMessageId: viewerParticipant.lastReadMessageId,
       });
 
     const participantDirectoryRecords =

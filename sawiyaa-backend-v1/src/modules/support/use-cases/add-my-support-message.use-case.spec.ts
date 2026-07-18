@@ -73,6 +73,8 @@ describe('AddMySupportMessageUseCase', () => {
       { id: 'user-pr', roles: [] },
       'conv-1',
       'hello',
+      [],
+      undefined,
     );
     expect(supportTicketRepository.addMessage).not.toHaveBeenCalled();
   });

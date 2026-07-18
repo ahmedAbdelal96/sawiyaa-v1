@@ -48,6 +48,7 @@ import { UpdateSupportTicketStatusUseCase } from '../use-cases/update-support-ti
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
+@Permissions(PermissionKey.CHAT_CONVERSATIONS_READ)
 // BUSINESS DECISION: ADMIN and SUPPORT_AGENT roles can read support tickets.
 // Public replies use the shared inbox; assignment remains an optional operational field and
 // is not required for an authorized employee to reply.

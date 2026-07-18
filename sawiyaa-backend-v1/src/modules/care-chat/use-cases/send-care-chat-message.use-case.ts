@@ -66,6 +66,8 @@ export class SendCareChatMessageUseCase {
       ] },
       input.conversationId,
       input.payload.message,
+      [],
+      input.payload.clientMessageId,
     );
 
     const updated = await this.careChatConversationRepository.findByIdForActor({

@@ -56,6 +56,7 @@ export class ListMyGeneralChatConversationsUseCase {
             conversationId: row.id,
             userId: input.authenticatedUser.id,
             lastReadAt,
+            lastReadMessageId: viewerParticipant?.lastReadMessageId ?? null,
           });
         const participantSummaries = row.participants.map((participant) =>
           buildGeneralChatParticipantSummary(participant, participantDirectory),

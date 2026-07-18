@@ -51,3 +51,82 @@ export type UnifiedMessagingUnreadSummary = {
   totalUnreadMessages: number;
   totalUnreadConversations: number;
 };
+
+export interface MessagingParticipant {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  publicRoleLabel: "Patient" | "Practitioner" | "Support team" | "Admin" | "System";
+}
+
+export interface MessagingMessage {
+  id: string;
+  sender: MessagingParticipant;
+  body: string;
+  messageType: string;
+  sentAt: string;
+  status: string;
+  deliveredAt: string | null;
+  readAt: string | null;
+  attachments?: Array<{
+    id: string;
+    fileUrl: string;
+    mimeType: string;
+    fileSize?: number;
+    originalName?: string;
+  }>;
+  clientMessageId?: string;
+  deliveryState?: "sending" | "sent" | "failed";
+  deliveryErrorCode?: string;
+}
+
+export interface CanonicalConversation {
+  id: string;
+  conversationId: string;
+  supportTicketId: string | null;
+  type: "SESSION" | "CARE" | "SUPPORT";
+  title: string;
+  subject: string | null;
+  contextLabel: string;
+  contextId: string;
+  status: string;
+  isResolved: boolean;
+  isReadOnly: boolean;
+  canSend: boolean;
+  sendDisabledReason: string | null;
+  unreadCount: number;
+  lastMessage: MessagingMessage | null;
+  participants: MessagingParticipant[];
+  otherParty: MessagingParticipant | null;
+  supportQueueState: "NEEDS_SUPPORT_REPLY" | "WAITING_FOR_USER" | "RESOLVED" | null;
+  createdAt: string;
+  updatedAt: string;
+  lastActivityAt: string;
+}
+
+export interface CanonicalConversationListResponse {
+  items: CanonicalConversation[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CanonicalMessageListResponse {
+  items: MessagingMessage[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CanonicalUnreadSummary {
+  unreadCount: number;
+  needsSupportReplyCount: number;
+  hasUnread: boolean;
+}
+

@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getUnifiedMessagingUnreadSummary } from "../api/messages-shell.api";
-import type {
-  UnifiedMessagingRole,
-  UnifiedMessagingUnreadSummary,
-} from "../types/messages-shell.types";
+import { useQuery } from "@tanstack/react-query";
+import { getCanonicalUnreadSummary } from "../api/messages-shell.api";
+import type { UnifiedMessagingRole } from "../types/messages-shell.types";
 
 export function useUnifiedUnreadBadge(role: UnifiedMessagingRole) {
   const [isPageVisible, setIsPageVisible] = useState(
     () => (typeof document === "undefined" ? true : document.visibilityState === "visible"),
   );
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -27,24 +23,20 @@ export function useUnifiedUnreadBadge(role: UnifiedMessagingRole) {
     };
   }, []);
 
-  const unreadSummaryQueryKey = useMemo(
-    () => ["unified-messages-shell", role, "unread-summary"] as const,
-    [role],
-  );
-
   const unreadSummaryQuery = useQuery({
-    queryKey: unreadSummaryQueryKey,
-    queryFn: () => getUnifiedMessagingUnreadSummary(),
-    initialData: () =>
-      queryClient.getQueryData<{ item: UnifiedMessagingUnreadSummary }>(
-        unreadSummaryQueryKey,
-      ),
-    placeholderData: (previous) => previous,
-    staleTime: 15_000,
-    refetchInterval: isPageVisible ? 20_000 : false,
+    queryKey: ["canonical-unread-summary", role],
+    queryFn: () => getCanonicalUnreadSummary(),
+    staleTime: 10000,
+    refetchInterval: isPageVisible ? 15000 : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
   });
 
-  return unreadSummaryQuery.data?.item.totalUnreadMessages ?? 0;
+  const summary = unreadSummaryQuery.data;
+
+  if (role === "admin") {
+    return summary?.item.needsSupportReplyCount ?? 0;
+  }
+  return summary?.item.unreadCount ?? 0;
+
 }
