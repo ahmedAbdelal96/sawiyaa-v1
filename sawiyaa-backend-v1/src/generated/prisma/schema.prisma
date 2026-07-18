@@ -3746,8 +3746,10 @@ model Message {
   status         MessageStatus     @default(SENT)
   visibility     MessageVisibility @default(NORMAL)
 
-  contentText      String?
-  replyToMessageId String? @db.Uuid
+  contentText              String?
+  replyToMessageId         String? @db.Uuid
+  clientMessageId          String? @db.VarChar(191)
+  clientMessagePayloadHash String? @db.Char(64)
 
   sentAt      DateTime  @default(now())
   deliveredAt DateTime?
@@ -3767,6 +3769,7 @@ model Message {
   moderationActions ChatModerationAction[]
 
   @@index([conversationId, sentAt])
+  @@index([conversationId, senderUserId, clientMessageId])
   @@index([senderUserId, sentAt])
   @@index([replyToMessageId])
   @@index([status, sentAt])

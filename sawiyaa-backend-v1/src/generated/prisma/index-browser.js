@@ -1726,6 +1726,8 @@ exports.Prisma.MessageScalarFieldEnum = {
   visibility: 'visibility',
   contentText: 'contentText',
   replyToMessageId: 'replyToMessageId',
+  clientMessageId: 'clientMessageId',
+  clientMessagePayloadHash: 'clientMessagePayloadHash',
   sentAt: 'sentAt',
   deliveredAt: 'deliveredAt',
   readAt: 'readAt',
