@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
@@ -31,10 +31,17 @@ import {
 } from "../../../src/features/messages/components/ConversationPrimitives";
 
 export default function CareChatConversationScreen() {
+  const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
+
+  React.useEffect(() => {
+    if (id) {
+      router.replace(`/(patient)/messages/${id}`);
+    }
+  }, [id, router]);
 
   const convQuery = useCareChatConversation(id ?? null);
   const sendMessage = useSendCareChatMessage(id ?? "");

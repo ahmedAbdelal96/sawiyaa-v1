@@ -35,6 +35,7 @@ import { PublicPractitionerPricingContextService } from './services/public-pract
 import { PractitionerSpecialtyIntegrityService } from './services/practitioner-specialty-integrity.service';
 import { CreatePractitionerProfileUseCase } from './use-cases/create-practitioner-profile.use-case';
 import { GetPublicPractitionerDetailsUseCase } from './use-cases/get-public-practitioner-details.use-case';
+import { GetPublicPractitionerAvatarFileUseCase } from './use-cases/get-public-practitioner-avatar-file.use-case';
 import { GetPractitionerApplicationStatusUseCase } from './use-cases/get-practitioner-application-status.use-case';
 import { GetPractitionerProfileReadinessUseCase } from './use-cases/get-practitioner-profile-readiness.use-case';
 import { GetPractitionerProfileUseCase } from './use-cases/get-practitioner-profile.use-case';
@@ -103,6 +104,7 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     ListPublicPractitionersUseCase,
     ListPublicPractitionerFiltersUseCase,
     GetPublicPractitionerDetailsUseCase,
+    GetPublicPractitionerAvatarFileUseCase,
   ],
   exports: [
     PublicPractitionerReadRepository,

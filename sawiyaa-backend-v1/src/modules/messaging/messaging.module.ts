@@ -10,11 +10,12 @@ import { GeneralChatAttachmentStorageService } from '@modules/chat/services/gene
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { MessagingGateway } from './gateways/messaging.gateway';
+import { MessagingRealtimePublisher } from './services/messaging-realtime.publisher';
 
 @Module({
   imports: [PrismaModule, NotificationsModule, AuthModule],
   controllers: [MessagingController],
-  providers: [JwtAccessAuthGuard, MessagingPolicyRegistry, MessagingPresenter, MessagingRepository, MessagingUseCase, GeneralChatAttachmentStorageService, MessagingGateway],
-  exports: [MessagingPolicyRegistry, MessagingPresenter, MessagingRepository, MessagingUseCase],
+  providers: [JwtAccessAuthGuard, MessagingPolicyRegistry, MessagingPresenter, MessagingRepository, MessagingUseCase, GeneralChatAttachmentStorageService, MessagingGateway, MessagingRealtimePublisher],
+  exports: [MessagingPolicyRegistry, MessagingPresenter, MessagingRepository, MessagingUseCase, MessagingRealtimePublisher],
 })
 export class MessagingModule {}

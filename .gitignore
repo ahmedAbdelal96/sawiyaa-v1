@@ -87,6 +87,8 @@ run-articles-only.ts
 
 # Local backups (do not commit)
 git-subrepos-backup/
+**/backups/
+backups/
 deploy/backups/
 deploy/tmp/
 deploy/*.log
@@ -107,6 +109,7 @@ patient_mobile_app_screen/whatsapp_image_*
 **/artifacts/
 **/*artifacts*/
 **/smokes/
+**/tmp-*
 **/tmp/
 **/*.tmp*
 artifacts/

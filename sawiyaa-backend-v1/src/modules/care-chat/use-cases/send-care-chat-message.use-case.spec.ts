@@ -118,6 +118,8 @@ describe('SendCareChatMessageUseCase', () => {
       { id: 'user-1', roles: ['PATIENT'] },
       'conversation-1',
       'hello',
+      [],
+      undefined,
     );
     expect(conversationRepository.addMessage).not.toHaveBeenCalled();
     expect(conversationRepository.markRead).not.toHaveBeenCalled();

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -8,7 +8,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import { createReadStream } from 'fs';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { Public } from '@common/decorators/public.decorator';
@@ -26,6 +27,7 @@ import {
 import { ListPublicPractitionerFiltersUseCase } from '../use-cases/list-public-practitioner-filters.use-case';
 import { GetPublicPractitionerDetailsUseCase } from '../use-cases/get-public-practitioner-details.use-case';
 import { ListPublicPractitionersUseCase } from '../use-cases/list-public-practitioners.use-case';
+import { GetPublicPractitionerAvatarFileUseCase } from '../use-cases/get-public-practitioner-avatar-file.use-case';
 import {
   PublicPractitionerFiltersResponseDto,
   PublicPractitionerFiltersSuccessResponseDto,
@@ -43,6 +45,7 @@ export class PublicPractitionerController {
     private readonly listPublicPractitionersUseCase: ListPublicPractitionersUseCase,
     private readonly listPublicPractitionerFiltersUseCase: ListPublicPractitionerFiltersUseCase,
     private readonly getPublicPractitionerDetailsUseCase: GetPublicPractitionerDetailsUseCase,
+    private readonly getPublicPractitionerAvatarFileUseCase: GetPublicPractitionerAvatarFileUseCase,
   ) {}
 
   /** Public listing endpoint with baseline filters/search/sort for discovery pages. */
@@ -125,6 +128,21 @@ export class PublicPractitionerController {
       guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       duration: query.duration,
     });
+  }
+
+  @Get(':slug/avatar')
+  @ApiOperation({
+    summary: 'Get a public practitioner avatar',
+    description: 'Returns only the avatar of an approved, publicly visible practitioner.',
+  })
+  async avatar(
+    @Param('slug') slug: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const avatar = await this.getPublicPractitionerAvatarFileUseCase.execute(slug);
+    response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('Cache-Control', 'public, max-age=300');
+    return new StreamableFile(createReadStream(avatar.absolutePath));
   }
 
   /** Public details endpoint by SEO-friendly slug (not by id). */

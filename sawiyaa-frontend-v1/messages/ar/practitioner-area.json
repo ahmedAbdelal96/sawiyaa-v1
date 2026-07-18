@@ -1535,6 +1535,16 @@
       }
     },
     "wizard": {
+      "subtitle": "أكمل بياناتك خطوة بخطوة، ويمكنك الحفظ والعودة لاحقًا قبل الإرسال.",
+      "stepCount": "الخطوة {current} من {total}",
+      "basicAvatarTitle": "صورة الملف الشخصي",
+      "basicAvatarHint": "اختر صورة من جهازك لتظهر كصورة الملف الشخصي عند اعتماد الطلب. يمكنك تغييرها لاحقًا.",
+      "fields": {
+        "languages": {
+          "label": "اللغات التي تقدم بها خدماتك",
+          "hint": "اختر اللغات التي يمكنك استخدامها مع المستفيدين أثناء الجلسات."
+        }
+      },
       "eyebrow": "معالج الطلب",
       "title": "أكمل طلبك",
       "lockedTitle": "الطلب مغلق",
@@ -1593,24 +1603,71 @@
       "CHANGES_REQUESTED": "مطلوب تعديلات",
       "ARCHIVED": "مؤرشف"
     },
-    "completionIssues": {
-      "codes": {
+      "completionIssues": {
+        "generic": {
+          "title": "مفقود",
+          "description": "يوجد عنصر واحد أو أكثر مطلوب ولم يكتمل في هذه الخطوة.",
+          "whyItMatters": "يجب استكمال هذه العناصر قبل إرسال الطلب للمراجعة.",
+          "recommendedAction": "أكمل الحقول أو الملفات المفقودة، ثم احفظ الخطوة مرة أخرى."
+        },
+        "codes": {
+        "BASIC_PROFILE_COUNTRY_MISSING": {
+          "title": "البلد غير محدد",
+          "description": "اختر بلدك حتى يتم ضبط الخيارات والبيانات المرتبطة بملفك بشكل صحيح."
+        },
+        "PROFESSIONAL_DETAILS_TITLE_MISSING": {
+          "title": "المسمى المهني غير مكتمل",
+          "description": "اختر المسمى المهني الذي يعبّر عن دورك وتخصصك."
+        },
+        "PROFESSIONAL_DETAILS_BIO_MISSING": {
+          "title": "النبذة المهنية غير مكتملة",
+          "description": "اكتب نبذة قصيرة عن خبرتك ومجالات تركيزك."
+        },
+        "QUALIFICATIONS_CREDENTIAL_REQUIRED": {
+          "title": "المؤهل المهني مطلوب",
+          "description": "أضف مستندًا يثبت مؤهلك المهني قبل إرسال الطلب."
+        },
+        "DOCUMENTS_CREDENTIAL_REQUIRED": {
+          "title": "مستند مهني مطلوب",
+          "description": "ارفع مستندًا مهنيًا مطلوبًا لاستكمال مراجعة الطلب."
+        },
+        "PROFESSIONAL_DETAILS_YEARS_MISSING": {
+          "title": "سنوات الخبرة غير مكتملة",
+          "description": "أدخل عدد سنوات خبرتك المهنية."
+        },
+        "PROFESSIONAL_DETAILS_LANGUAGE_MISSING": {
+          "title": "اللغات غير محددة",
+          "description": "اختر لغة واحدة على الأقل لتقديم خدماتك بها."
+        },
+        "PROFESSIONAL_DETAILS_PRIMARY_CATEGORY_MISSING": {
+          "title": "التصنيف الأساسي غير محدد",
+          "description": "اختر التصنيف المهني الأساسي لملفك."
+        },
         "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
+          "description": "أضف مستندًا واضحًا يثبت هويتك لاستكمال مراجعة الطلب.",
           "title": "مستند إثبات الهوية مطلوب"
         },
+        "DOCUMENTS_NATIONAL_ID_BACK_MISSING": {
+          "title": "الوجه الخلفي للبطاقة الوطنية مفقود",
+          "description": "ارفع صورة واضحة للوجه الخلفي من بطاقة الهوية الوطنية."
+        },
         "DOCUMENTS_NATIONAL_ID_FRONT_MISSING": {
+          "description": "ارفع صورة واضحة للوجه الأمامي من بطاقة الهوية الوطنية.",
           "title": "الوجه الأمامي للبطاقة الوطنية مفقود"
         },
         "DOCUMENTS_CREDENTIAL_NOT_APPROVED": {
           "title": "المستندات قيد المراجعة"
         },
         "PAYOUT_DESTINATION_REQUIRED": {
+          "description": "أضف طريقة استلام مستحقاتك قبل إرسال الطلب.",
           "title": "طريقة الدفع مفقودة"
         },
         "PAYOUT_ACCOUNT_HOLDER_REQUIRED": {
+          "description": "أدخل اسم صاحب الحساب كما هو مسجل لدى جهة الدفع.",
           "title": "اسم صاحب الحساب مفقود"
         },
         "QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED": {
+          "description": "أضف شهادة أكاديمية أو مؤهلًا دراسيًا يدعم طلبك.",
           "title": "الشهادة الأكاديمية مطلوبة"
         }
       }

@@ -1,6 +1,5 @@
 {
   "welcome": "Welcome to Sawiyaa",
-  "retry": "Retry",
   "assessments": {
     "tab": "Assessments",
     "card": {
@@ -116,63 +115,12 @@
     }
   },
   "sessions": "Sessions",
-  "reviews": {
-    "patient": {
-      "reminder": {
-        "eyebrow": "Feedback reminder",
-        "modalTitle": "You can leave feedback for your completed session",
-        "modalDescription": "Your session is finished and your feedback helps us improve care quality.",
-        "sessionLabel": "Completed session",
-        "sessionNote": "Please share feedback for your recent session with {{practitioner}}.",
-        "practitionerLabel": "Practitioner",
-        "completedAtLabel": "Completed at",
-        "completedAtFallback": "Not available",
-        "ratingLabel": "Your rating",
-        "ratingHelp": "Tap one star to five stars to rate your session.",
-        "ratingPicked": "{{value}} out of 5 selected",
-        "titleLabel": "Short title",
-        "titlePlaceholder": "Optional short summary",
-        "noteLabel": "Written feedback",
-        "notePlaceholder": "Share anything you want the care team to know",
-        "noteHint": "This note stays private and follows the normal moderation flow.",
-        "submit": "Submit feedback",
-        "submitting": "Submitting...",
-        "later": "Later",
-        "errors": {
-          "ratingRequired": "Please choose a rating before submitting.",
-          "generic": "Could not submit your feedback. Please try again."
-        }
-      }
-    }
-  },
   "profile": "Profile",
   "profileScreen": {
     "fallbackName": "Patient",
     "fallbackEmail": "Email not available",
     "none": "Not set",
     "logout": "Log Out",
-    "moreTitle": "More",
-    "moreSections": {
-      "account": "Account",
-      "accountSubtitle": "Account information and personal details",
-      "contentSupport": "Content and support",
-      "contentSupportSubtitle": "Articles, messages, notifications, and support",
-      "learningPurchases": "Learning and purchases",
-      "learningPurchasesSubtitle": "Training and session packages",
-      "accountLogoutSubtitle": "Sign out of your account"
-    },
-    "more": {
-      "rows": {
-        "academy": {
-          "title": "Training",
-          "subtitle": "Browse health content and guidance"
-        },
-        "packages": {
-          "title": "Session packages",
-          "subtitle": "Review your available and purchased packages"
-        }
-      }
-    },
     "hub": {
       "hero": {
         "caption": "Manage your personal information, preferences, alerts, and account support without digging through one crowded screen.",
@@ -220,14 +168,6 @@
         "support": {
           "title": "Support",
           "subtitle": "Open a support request or continue an existing one"
-        },
-        "articles": {
-          "title": "Articles",
-          "subtitle": "Browse health content and guidance"
-        },
-        "messages": {
-          "title": "Messages",
-          "subtitle": "Open conversations with your practitioner"
         }
       },
       "onboarding": {
@@ -261,17 +201,8 @@
       "invalidBirthDateBody": "Use the date format YYYY-MM-DD.",
       "avatar": {
         "title": "Profile photo",
-        "body": "Tap the camera icon to change or remove your profile photo.",
-        "updatedAt": "Last profile update: {{date}}",
-        "changePhoto": "Change photo",
-        "removePhoto": "Remove photo",
-        "choosePhoto": "Choose photo",
-        "imageTooLarge": "Image is too large. Maximum size is 5MB.",
-        "unsupportedType": "Image type is not supported. Use JPG, PNG, or WebP.",
-        "uploadFailed": "Could not upload photo. Please try again.",
-        "photoUpdated": "Profile photo updated.",
-        "permissionDenied": "Permission was denied. You can change it from device settings.",
-        "permissionNeeded": "We need photo access to choose a profile picture."
+        "body": "Your current photo can be shown here, but secure photo upload and removal are not supported in this mobile build yet.",
+        "updatedAt": "Last profile update: {{date}}"
       },
       "readOnly": {
         "email": "Email",
@@ -281,8 +212,6 @@
       "genderOptions": {
         "male": "Male",
         "female": "Female",
-        "other": "Other",
-        "prefer_not_to_say": "Prefer not to say",
         "unspecified": "Prefer not to say"
       },
       "fields": {
@@ -293,9 +222,7 @@
         "countryCode": "Country code",
         "countryCodePlaceholder": "EG",
         "timezone": "Timezone"
-      },
-      "personalSectionTitle": "Personal information",
-      "editButton": "Edit information"
+      }
     },
     "preferences": {
       "screenTitle": "Preferences & language",
@@ -325,20 +252,6 @@
     "notifications": {
       "title": "Notifications",
       "subtitle": "Session reminders and account alerts",
-      "categories": {
-        "sessions": {
-          "title": "Sessions & Appointments",
-          "subtitle": "Alerts about booking confirmation and join availability"
-        },
-        "messages": {
-          "title": "Chats & Messages",
-          "subtitle": "Alerts when you receive a message from practitioners or support"
-        },
-        "general": {
-          "title": "General Alerts",
-          "subtitle": "Other system alerts and updates"
-        }
-      },
       "unavailableSubtitle": "Notification preferences are not available for this account yet",
       "modalTitle": "Notification preferences",
       "screenTitle": "Notification preferences",
@@ -366,38 +279,6 @@
       "save": "Save",
       "apply": "Apply",
       "saving": "Saving..."
-    },
-    "edit": {
-      "screenTitle": "Edit profile",
-      "sectionTitle": "Personal details",
-      "avatarHint": "Profile photo is shown here",
-      "fields": {
-        "displayName": "Display name",
-        "displayNamePlaceholder": "Your full name",
-        "displayNameRequired": "Display name is required.",
-        "dateOfBirth": "Birth date",
-        "dateOfBirthPlaceholder": "YYYY-MM-DD",
-        "dateOfBirthRequired": "Birth date is required.",
-        "invalidDateFormat": "Use the format YYYY-MM-DD.",
-        "futureDateError": "Birth date cannot be in the future.",
-        "genderRequired": "Gender is required.",
-        "countryRequired": "Country is required.",
-        "gender": "Gender",
-        "countryCode": "Country"
-      },
-      "datePicker": {
-        "placeholder": "Select birth date",
-        "cancel": "Cancel",
-        "confirm": "Confirm"
-      },
-      "countryPicker": {
-        "placeholder": "Select country",
-        "searchPlaceholder": "Search country"
-      },
-      "contactNote": "Email and phone are managed through account settings and cannot be changed here.",
-      "cancel": "Cancel",
-      "save": "Save changes",
-      "saveFailedBody": "Could not save your profile changes right now."
     }
   },
   "patientNotifications": {
@@ -430,45 +311,6 @@
     "actionFailedTitle": "Could not open notification",
     "actionFailedBody": "Try again in a moment.",
     "profileEntrySubtitle": "Open your notification feed and unread alerts"
-  },
-  "practitionerNotifications": {
-    "title": "Notifications",
-    "centerTitle": "Notification center",
-    "summaryBody": "You have {{count}} unread notifications.",
-    "summaryEmptyBody": "You do not have any unread notifications right now.",
-    "markAll": "Mark all read",
-    "markAllLoading": "Updating...",
-    "filters": {
-      "all": "All",
-      "unread": "Unread",
-      "read": "Read"
-    },
-    "emptyTitle": "No notifications yet",
-    "emptyBody": "Session alerts and account alerts will appear here when the system creates them.",
-    "emptyUnreadTitle": "No unread notifications",
-    "emptyUnreadBody": "You are caught up on the latest alerts.",
-    "emptyReadTitle": "No read notifications",
-    "emptyReadBody": "No notifications have been marked as read yet.",
-    "errorTitle": "Could not load notifications",
-    "errorBody": "Try again to sync your latest notifications.",
-    "statusUnread": "Unread",
-    "statusRead": "Read",
-    "openAction": "Open",
-    "unsupportedAlertTitle": "Could not open notification",
-    "unsupportedAlertBody": "This notification does not have a supported practitioner destination on mobile yet.",
-    "actionFailedTitle": "Could not open notification",
-    "actionFailedBody": "Try again in a moment.",
-    "feedTypes": {
-      "packageSessionContext": "Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.",
-      "sessionConfirmedPractitionerTitle": "New confirmed session",
-      "sessionConfirmedPractitionerBody": "A new session has been confirmed for you{{packageContext}}. Open your sessions page to review the details.",
-      "sessionConfirmedTitle": "Session confirmed",
-      "sessionConfirmedBody": "Your session has been confirmed{{packageContext}}. You can review the details from the sessions page.",
-      "sessionJoinAvailableTitle": "Session ready to join",
-      "sessionJoinAvailableBody": "Your session is ready to join{{packageContext}}. Open the session page to join securely.",
-      "sessionCancelledPractitionerTitle": "Session cancelled by patient",
-      "sessionCancelledPractitionerBody": "A patient cancelled a scheduled session for you{{packageContext}}."
-    }
   },
   "auth": {
     "common": {
@@ -506,21 +348,6 @@
     "validation": {
       "email": "Enter a valid email address.",
       "passwordHint": "Use the same credential rules enforced by the backend."
-    },
-    "loginError": "The email or password is incorrect.",
-    "otpError": "The verification code is invalid or has expired.",
-    "lockout": {
-      "invalidCredentials": "The login details are incorrect. You have {count} attempts left.",
-      "invalidCredentialsOne": "The login details are incorrect. You have 1 attempt left.",
-      "loginTemporarilyLocked": "Login attempts are temporarily locked. Try again in {minutes} minutes.",
-      "loginTemporarilyLockedFallback": "Login attempts are temporarily locked. Please try again later.",
-      "practitionerLoginTemporarilyLockedWithSupport": "Login attempts are temporarily locked. Try again in {minutes} minutes or contact support.",
-      "practitionerLoginTemporarilyLockedFallback": "Login attempts are temporarily locked. Please try again later or contact support.",
-      "practitionerOtpInvalidCredentials": "The verification code is incorrect. You have {count} attempts left.",
-      "practitionerOtpInvalidCredentialsOne": "The verification code is incorrect. You have 1 attempt left.",
-      "practitionerOtpSuperseded": "A newer code was sent. Use the most recent code you received.",
-      "practitionerOtpTemporarilyLocked": "Verification attempts are temporarily locked. Try again in {minutes} minutes.",
-      "practitionerOtpTemporarilyLockedFallback": "Verification attempts are temporarily locked. Please try again later."
     },
     "entry": {
       "eyebrow": "Mobile access",
@@ -570,29 +397,8 @@
       "title": "Reset your password",
       "subtitle": "Enter your email to receive a password reset code.",
       "sendCode": "Send reset code",
-      "step2Title": "Verify reset code",
-      "step2Description": "Enter the reset code to continue.",
-      "verifyOtp": "Verify code",
-      "step3Title": "Create a new password",
-      "step3Description": "Code verified. Set your new password to finish recovery.",
       "resetPassword": "Set new password",
-      "confirmPassword": "Confirm new password",
-      "confirmPasswordPlaceholder": "Re-enter your new password",
-      "otpEmailInfoLabel": "Code was sent to",
-      "passwordEmailInfoLabel": "Resetting password for",
-      "changeEmail": "Change email",
-      "rememberPassword": "Remember your password?",
-      "goToSignIn": "Go to sign in",
-      "errorMessage": "Unable to continue password recovery right now.",
-      "backToSignIn": "Back to patient sign in",
-      "cooldownMessage": "You can request a new code in {{seconds}} seconds.",
-      "resendCode": "Resend code",
-      "errors": {
-        "patientAccountNotFound": "No patient account was found with this email.",
-        "practitionerEmailOnPatientPage": "This email belongs to a practitioner account. Please use practitioner reset.",
-        "patientEmailOnPractitionerPage": "This email belongs to a patient account. Please use patient reset.",
-        "passwordsMismatch": "Passwords do not match."
-      }
+      "backToSignIn": "Back to patient sign in"
     },
     "practitionerSignUp": {
       "eyebrow": "Practitioner registration",
@@ -612,26 +418,7 @@
       "title": "Recover practitioner access",
       "subtitle": "Request the reset code first, then use the same verified email and code to set a new password.",
       "sendCode": "Send reset code",
-      "step2Title": "Verify reset code",
-      "step2Description": "Enter the reset code to continue.",
-      "verifyOtp": "Verify code",
-      "step3Title": "Create a new password",
-      "step3Description": "Code verified. Set your new password to complete reset.",
-      "resetPassword": "Reset password",
-      "confirmPassword": "Confirm new password",
-      "confirmPasswordPlaceholder": "Re-enter your new password",
-      "otpEmailInfoLabel": "Code was sent to",
-      "passwordEmailInfoLabel": "Resetting password for",
-      "changeEmail": "Change email",
-      "errorMessage": "Unable to continue password recovery right now.",
-      "cooldownMessage": "You can request a new code in {{seconds}} seconds.",
-      "resendCode": "Resend code",
-      "errors": {
-        "practitionerAccountNotFound": "No practitioner account was found with this email.",
-        "practitionerEmailOnPatientPage": "This email belongs to a practitioner account. Please use practitioner reset.",
-        "patientEmailOnPractitionerPage": "This email belongs to a patient account. Please use patient reset.",
-        "passwordsMismatch": "Passwords do not match."
-      }
+      "resetPassword": "Reset password"
     },
     "practitionerTypes": {
       "PSYCHOLOGIST": "Psychologist",
@@ -805,7 +592,6 @@
   },
   "articlesMobile": {
     "header": "Articles",
-    "detailTitle": "Article",
     "loading": "Loading articles...",
     "error": "We could not load articles right now. Please try again.",
     "emptyTitle": "No articles found",
@@ -822,41 +608,25 @@
     "loadMoreErrorSubtitle": "Try again to load the next set of results."
   },
   "academyMobile": {
-    "title": "Learning Programs",
-    "loading": "Loading learning programs...",
-    "errorTitle": "We could not load learning programs right now",
+    "title": "Academy",
+    "loading": "Loading academy programs...",
+    "errorTitle": "We could not load the academy right now",
     "errorMessage": "Please try again in a moment.",
     "emptyTitle": "No programs found",
-    "emptyDescription": "There are no public learning programs available right now.",
-    "sectionTitle": "Learning Programs",
-    "sectionSubtitle": "Short learning programs that help you understand your state and follow practical steps alongside your sessions.",
+    "emptyDescription": "There are no public academy programs available right now.",
+    "sectionTitle": "Programs",
+    "sectionSubtitle": "Browse public programs, prices, and schedules at a calm pace.",
     "resultsCount": "Showing {{shown}} of {{total}} programs",
-    "loadingMore": "Loading more learning programs...",
+    "loadingMore": "Loading more academy programs...",
     "endOfList": "You have reached the end of the list.",
-    "loadMoreErrorTitle": "Could not load more learning programs",
+    "loadMoreErrorTitle": "Could not load more academy programs",
     "loadMoreErrorSubtitle": "Try again to load the next set of results.",
     "free": "Free",
     "durationDays": "{{count}} days",
-    "lectureCount": "{{count}} units",
-    "viewDetails": "View details",
-    "paid": "Paid",
-    "available": "Available",
-    "lectures": "{{count}} units",
-    "durationDays_zero": "No duration set",
-    "durationDays_one": "1 day",
-    "durationDays_two": "2 days",
-    "durationDays_few": "{{count}} days",
-    "durationDays_many": "{{count}} days",
-    "durationDays_other": "{{count}} days",
-    "lectureCount_zero": "No units",
-    "lectureCount_one": "1 unit",
-    "lectureCount_two": "2 units",
-    "lectureCount_few": "{{count}} units",
-    "lectureCount_many": "{{count}} units",
-    "lectureCount_other": "{{count}} units",
-    "card": {
-      "accessibilityLabel": "View details for program {{title}}"
-    }
+    "published": "Published",
+    "draft": "Draft",
+    "lectureCount": "{{count}} modules/lessons",
+    "viewDetails": "View details"
   },
   "patientSessionsFlow": {
     "common": {
@@ -888,58 +658,21 @@
       "REFUND_PENDING": "Refund pending",
       "REFUNDED": "Refunded"
     },
-    "presentationStatus": {
-      "UPCOMING": "Upcoming",
-      "JOINABLE": "Ready to join",
-      "IN_PROGRESS": "In progress",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "ENDED": "Incomplete",
-      "UNAVAILABLE": "Unavailable",
-      "NO_SHOW": "No show",
-      "UNDER_REVIEW": "Under review"
-    },
     "selectTime": {
       "title": "Choose session time",
-      "headingSubtitle": "Select a date and time for your session",
       "morning": "Morning",
       "afternoon": "Afternoon",
       "evening": "Evening",
-      "noSlots": "No available times right now.",
-      "noSlotsThisDay": "No available slots on this day.",
+      "noSlots": "No available slots in this week. Try another week.",
       "selectedSlot": "Selected slot",
       "noSelectedSlot": "No time selected",
-      "loadError": "Could not load available times right now.",
-      "showBookedToggle": "Show booked slots",
-      "bookedSlotsUnavailable": "Booked slots cannot be selected.",
-      "bookingTypeTitle": "Booking type",
-      "bookingTypeNow": "Book now",
-      "bookingTypePackage": "Use package",
-      "packagesUnavailable": "No available packages for this practitioner.",
-      "packageIntro": "You have a package that covers this session.",
-      "packagePlansTitle": "Select a package",
-      "packageDurationUnavailable": "This package does not cover the selected duration.",
-      "quoteTitle": "Price quote",
-      "quoteDiscount": "Package discount",
-      "quotePayable": "Amount due",
-      "quoteRegularTotal": "Regular total",
-      "packageProgressTitle": "Package progress",
-      "packageQuoteError": "Could not calculate package quote.",
-      "packageSessionsLabel": "{{count}} sessions remaining",
-      "packageLoadError": "Could not load package details.",
       "continue": "Continue",
-      "continueToPackagePayment": "Continue to payment",
       "timezoneHint": "All times are shown in {{timezone}} timezone."
     },
     "confirmation": {
       "title": "Booking confirmation",
       "heading": "Review session details",
       "subtitle": "Please verify the information below before proceeding.",
-      "reviewTitle": "Review your booking",
-      "reviewSubtitle": "Please review the details before confirming.",
-      "missingParamsTitle": "Missing information",
-      "missingParamsBody": "Some required information is missing. Please go back and select a time.",
-      "backToSelectTime": "Back to time selection",
       "sessionDetails": "Session details",
       "selectDuration": "Session duration",
       "duration30": "30 minutes",
@@ -958,18 +691,12 @@
       "honestPaymentNotice": "Payment is 100% secure. Charges are only applied after the practitioner confirms the appointment.",
       "reviewBeforeCreateNotice": "We will create a pending-payment session first, then show the final backend payment breakdown before you continue to checkout.",
       "reviewBeforePaymentNotice": "Your session is now pending payment. Review this final breakdown before you continue to checkout.",
-      "previewNotice": "This is a preview. The final charges will be confirmed after the practitioner approves the booking.",
       "cancellationPolicy": "Cancellation policy",
       "policyHint": "You can cancel or reschedule free of charge up to 24 hours before the session.",
       "reviewBreakdownCta": "Create booking and review payment",
       "continueToPaymentCta": "Continue to payment",
       "confirmCta": "Confirm booking",
-      "confirming": "Confirming...",
-      "errors": {
-        "generic": "We could not complete this action right now.",
-        "timeout": "The request timed out. Please try again.",
-        "unavailableSelection": "This time is no longer available. Please choose another available time."
-      }
+      "confirming": "Confirming..."
     },
     "success": {
       "title": "Booking completed",
@@ -999,7 +726,6 @@
         "subtitle": "Your sessions at a glance",
         "heroNote": "Upcoming, active, and recent sessions are grouped so you can act quickly without digging.",
         "viewDetails": "View details",
-        "viewDetailsWithName": "View session details with {{name}}",
         "loadingMore": "Loading more sessions...",
         "endOfList": "You have reached the end of the list.",
         "loadMoreErrorTitle": "Could not load more sessions",
@@ -1026,11 +752,6 @@
             "subtitle": "Completed or closed sessions."
           }
         }
-      },
-      "filters": {
-        "upcoming": "Upcoming",
-        "previous": "Previous",
-        "cancelled": "Cancelled"
       }
     },
     "detail": {
@@ -1047,154 +768,11 @@
       "joinBlockedReasons": {
         "SESSION_NOT_JOINABLE_STATUS": "This session status is not joinable yet.",
         "SESSION_NOT_VIDEO_MODE": "Only video sessions can be joined here.",
-        "SESSION_TIME_WINDOW_NOT_OPEN": "The join window has not opened yet.",
-        "SESSION_RUNTIME_NOT_PREPARED": "The session room is still being prepared.",
-        "SESSION_JOIN_WINDOW_CLOSED": "The join window for this session has already closed.",
-        "SESSION_ROOM_CLOSED": "This session room is already closed."
-      },
-      "roomClosed": {
-        "title": "The session room is closed",
-        "body": "The practitioner has closed this room. If you still need help with this session, contact support and we will review it with you.",
-        "cta": "Contact support",
-        "supportSubject": "Support needed for session {{sessionCode}}",
-        "supportMessage": "I tried to join session {{sessionCode}}, but the room is already closed. Please help me review this issue."
+        "SESSION_TIME_WINDOW_NOT_OPEN": "Joining window is not open yet.",
+        "SESSION_RUNTIME_NOT_PREPARED": "Session room is still being prepared."
       },
       "payNow": "Pay now",
-      "viewCancellation": "View cancellation preview",
-      "summary": "Summary",
-      "heroSubtitle": "Session code: {{sessionCode}}",
-      "sessionCodeLabel": "Session code: {{sessionCode}}",
-      "messages": "Session messages",
-      "messagesReadOnly": "You can review the session messages if they are available.",
-      "joinAvailableAt": "You can join after {{datetime}}.",
-      "openMessagesError": "Could not open session messages right now.",
-      "paymentSectionTitle": "Payment and cancellation",
-      "heroMode": "Session type: {{mode}}",
-      "sessionAt": "Session time: {{datetime}}",
-      "currentState": "Current state",
-      "nextStepLabel": "Next step",
-      "actionsTitle": "What can you do now?",
-      "sessionFacts": "Quick facts",
-      "sessionType": "Appointment type",
-      "mode": "Session type",
-      "duration": "Duration",
-      "flowType": "Flow type",
-      "timezone": "Timezone",
-      "timezoneValue": "Timezone: {{city}}",
-      "cancellationReasonLabel": "Cancellation reason",
-      "runtime": "Live session setup",
-      "runtimeBody": "This screen uses the same preparation and join contracts as the practitioner backend. The room link only opens when the contract allows it.",
-      "prepare": "Prepare session room",
-      "preparing": "Preparing room...",
-      "prepareReady": "The session has been prepared successfully.",
-      "preparePending": "The preparation request was sent, but the session is not ready yet.",
-      "checkJoin": "Check join availability",
-      "checkingJoin": "Checking join availability...",
-      "openRoom": "Open session room",
-      "openRoomReady": "You can open the session room now.",
-      "prepareError": "Could not prepare the room right now. Try again when the session is closer to its time.",
-      "joinError": "Could not check join availability right now. Try again in a moment.",
-      "openRoomError": "Could not open the session room from this device right now.",
-      "closeoutError": "Could not update the session status right now. Please try again.",
-      "roomClose": {
-        "action": "Close room",
-        "beforeTitle": "Close this session room",
-        "beforeNote": "Tell us why you want to close the room now. This helps support understand the situation if needed.",
-        "afterTitle": "Close room after the session has started",
-        "afterNote": "The session has already started or ended. You can close the room now without choosing a reason.",
-        "reasonLabel": "Reason for closing",
-        "reasonHelp": "Choose the option that best matches the current situation.",
-        "options": {
-          "technicalIssue": "Technical issue",
-          "patientNoShow": "Patient no-show",
-          "endedByAgreement": "Ended by agreement",
-          "safetyConcern": "Safety concern",
-          "other": "Other reason"
-        },
-        "submitBefore": "Close room",
-        "submitAfter": "Close room now",
-        "cancel": "Cancel",
-        "continue": "Continue",
-        "success": "The session room has been closed.",
-        "alreadyClosed": "This session room was already closed.",
-        "errors": {
-          "reasonRequired": "Please choose a reason before closing the room.",
-          "onlyAfterStart": "You can only close the room after the session has started.",
-          "notAllowed": "You do not have permission to close this room.",
-          "generic": "Could not close the room right now. Please try again."
-        }
-      },
-      "noImmediateAction": "No action is required right now.",
-      "blocked": {
-        "SESSION_NOT_JOINABLE_STATUS": "This session status is not joinable yet.",
-        "SESSION_NOT_VIDEO_MODE": "Only video sessions can be joined here.",
-        "SESSION_TIME_WINDOW_NOT_OPEN": "Joining window is not open yet.",
-        "SESSION_RUNTIME_NOT_PREPARED": "Session room is still being prepared.",
-        "SESSION_JOIN_WINDOW_CLOSED": "The join window for this session has already closed.",
-        "SESSION_ROOM_CLOSED": "This session room is already closed."
-      },
-      "closeout": "Close session",
-      "markCompleted": "Mark session completed",
-      "completing": "Completing...",
-      "markNoShow": "Mark no-show",
-      "markingNoShow": "Updating...",
-      "completedFeedback": "The session was updated to completed.",
-      "noShowFeedback": "The session was updated to no-show.",
-      "flowTypeValue": {
-        "SCHEDULED": "Scheduled appointment",
-        "INSTANT": "Instant session",
-        "DEFAULT": "Care session"
-      },
-      "stateNote": {
-        "PENDING_PAYMENT": "This session is still waiting for payment, so there is no direct action required right now.",
-        "PENDING_PRACTITIONER_RESPONSE": "This session is waiting for your confirmation or for the system to move it to the next state.",
-        "UPCOMING": "The appointment is coming soon.",
-        "UPCOMING_NEEDS_PREPARE": "Prepare the session room before the join window opens.",
-        "READY_TO_JOIN_NOW": "The session is available now.",
-        "READY_TO_JOIN_PREPARE": "Prepare the session room first.",
-        "READY_TO_JOIN_CHECK": "Check join availability now.",
-        "READY_TO_JOIN_CLOSED": "The join window for this session has already closed.",
-        "IN_PROGRESS": "The session is in progress.",
-        "IN_PROGRESS_OPEN": "You can open the session room now.",
-        "IN_PROGRESS_CLOSED": "The session has ended.",
-        "COMPLETED": "The session is completed.",
-        "NO_SHOW": "The session was marked as no-show.",
-        "CANCELLED": "The session was cancelled.",
-        "EXPIRED": "The session has expired.",
-        "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions right now.",
-        "REFUNDED": "A refund has already been processed for this session, so there are no direct actions right now.",
-        "ENDED": "The session is incomplete.",
-        "UNAVAILABLE": "The session is not available right now.",
-        "DEFAULT": "This session does not have a direct action available from this screen right now."
-      },
-      "nextStep": {
-        "waitForPayment": "Wait for payment to complete before any operational step.",
-        "waitForConfirmation": "Check back later when the session moves to a confirmed schedule.",
-        "waitForWindow": "Return when the appointment time gets closer to see whether the join window has opened.",
-        "prepareRoom": "Prepare the room first, then check whether joining is available.",
-        "checkJoin": "Check join availability now to see whether the session is ready to open.",
-        "openRoom": "Open the room and start the appointment.",
-        "reviewOnly": "Review the details only. No further operational action is needed right now."
-      },
-      "actionSummary": {
-        "openRoom": "You can open the session room now without any extra step.",
-        "prepareRoom": "The next clear step is to prepare the session room.",
-        "checkJoin": "Check join availability to see whether the session window is open now.",
-        "closeout": "You can update the session outcome if it ended or if the patient did not attend.",
-        "messages": "You can open the session messages now and review the related conversation.",
-        "none": "This screen shows the current truth of the session, but no operational action is required right now."
-      },
-      "closeoutSummary": {
-        "COMPLETED": "This session is already closed and does not need any additional closeout.",
-        "NO_SHOW": "This session was already marked as no-show and does not need another update.",
-        "CLOSED": "This session is already closed, so there are no extra closeout actions.",
-        "NOT_READY": "Closeout actions only appear when the session reaches a state that allows them."
-      },
-      "modeValue": {
-        "VIDEO": "Video",
-        "AUDIO": "Audio",
-        "CHAT": "Chat"
-      }
+      "viewCancellation": "View cancellation preview"
     },
     "cancelPreview": {
       "title": "Cancel session",
@@ -1228,18 +806,12 @@
       "matchedRuleCodes": {
         "STANDARD_FREE_CANCEL": "Free cancellation",
         "STANDARD_PARTIAL_REFUND": "Partial refund",
-        "STANDARD_LATE_NO_CANCEL": "Late cancellation â€” not permitted",
+        "STANDARD_LATE_NO_CANCEL": "Late cancellation — not permitted",
         "STANDARD_NO_REFUND": "No refund",
-        "INSTANT_FREE_CANCEL": "Free cancellation â€” instant booking",
+        "INSTANT_FREE_CANCEL": "Free cancellation — instant booking",
         "INSTANT_NO_CANCEL": "Cancellation not permitted for instant bookings",
         "UNKNOWN": "Policy not specified"
       }
-    },
-    "sessionModes": {
-      "VIDEO": "Video",
-      "AUDIO": "Audio",
-      "CHAT": "Chat",
-      "UNKNOWN": "Not specified"
     }
   },
   "commonNotFound": {
@@ -1368,7 +940,7 @@
       "completed": "Completed",
       "pending": "Processing",
       "walletScopeNote": "This balance is your in-app wallet only.",
-      "walletOnlyNote": "Payments via card / Mada gateway are not shown here â€” check the Payments screen for a full transaction history."
+      "walletOnlyNote": "Payments via card / Mada gateway are not shown here — check the Payments screen for a full transaction history."
     },
     "checkout": {
       "title": "Payment Summary",
@@ -1512,308 +1084,6 @@
       }
     }
   },
-  "packagePurchases": {
-    "create": {
-      "headingTitle": "Purchase a session package",
-      "headingSubtitle": "Choose a suitable session package and complete your purchase to unlock discounted sessions.",
-      "badge": "Package purchase",
-      "sessions": "Sessions",
-      "discount": "Discount",
-      "total": "Total",
-      "selectionTitle": "Choose session times",
-      "selectionSubtitle": "Pick one visible time for each session in the package.",
-      "weekNote": "Use the upcoming weeks to select all required sessions.",
-      "loadingSlots": "Loading available times...",
-      "loadError": "Could not load available times right now.",
-      "retry": "Try again",
-      "noSlots": "No available times right now.",
-      "noSlotsHint": "This practitioner has not published available times for the current or next week yet. Please check again later or choose another practitioner.",
-      "daySelected_zero": "No sessions selected",
-      "daySelected_one": "1 session selected",
-      "daySelected_two": "2 sessions selected",
-      "daySelected_few": "{{count}} sessions selected",
-      "daySelected_many": "{{count}} sessions selected",
-      "daySelected_other": "{{count}} sessions selected",
-      "parts": {
-        "morning": "Morning",
-        "afternoon": "Afternoon",
-        "evening": "Evening"
-      },
-      "reviewTitle": "Review",
-      "reviewSubtitle": "Review your selection before payment.",
-      "selectedCount": "Selected",
-      "package": "Package",
-      "duration": "Session duration",
-      "minutes_zero": "0 minutes",
-      "minutes_one": "1 minute",
-      "minutes_two": "2 minutes",
-      "minutes_few": "{{count}} minutes",
-      "minutes_many": "{{count}} minutes",
-      "minutes_other": "{{count}} minutes",
-      "selectedTimes": "Selected times",
-      "creating": "Creating...",
-      "continue": "Continue to payment",
-      "validation": "Please select all required session times first.",
-      "notFoundTitle": "Package not available",
-      "notFoundDescription": "The package link is missing important details.",
-      "back": "Back",
-      "errorTitle": "We could not load the package",
-      "errorMessage": "Please try again in a moment.",
-      "errors": {
-        "generic": "We could not complete this action right now.",
-        "timeout": "The request timed out. Please try again.",
-        "unavailableSelection": "This time is no longer available. Please choose another available time."
-      },
-      "prefillAdjusted": "Selected times were updated automatically because some choices were no longer available."
-    },
-    "pay": {
-      "headingTitle": "Package payment",
-      "headingSubtitle": "Review your package purchase and complete the payment.",
-      "loading": "Loading payment...",
-      "errorTitle": "We could not load the payment",
-      "errorMessage": "Please try again in a moment.",
-      "retry": "Try again",
-      "refundPolicyMissing": "Package refund policy is not available right now.",
-      "acceptRefundPolicy": "Please confirm that you accept the package refund policy before continuing.",
-      "unsupportedRedirect": "We could not open the payment link.",
-      "openFailed": "We could not open the payment page. Please try again.",
-      "nativeUnsupported": "This payment method requires a native card flow that is not enabled yet.",
-      "subtitle": "Complete the package payment securely.",
-      "total": "Final amount",
-      "progress": "Progress",
-      "paymentDueBy": "Payment due by",
-      "paymentDueByHelper": "Complete the payment before this date.",
-      "paymentExpired": "The payment deadline has passed.",
-      "refundTitle": "Refund policy",
-      "refundSubtitle": "Please confirm the package refund policy before continuing.",
-      "refundLoading": "Loading refund policy...",
-      "policyClauses_zero": "No clauses",
-      "policyClauses_one": "1 clause",
-      "policyClauses_two": "2 clauses",
-      "policyClauses_few": "{{count}} clauses",
-      "policyClauses_many": "{{count}} clauses",
-      "policyClauses_other": "{{count}} clauses",
-      "acceptNote": "I accept the package refund policy.",
-      "refundUnavailable": "The refund policy is unavailable right now.",
-      "redirecting": "Redirecting to payment...",
-      "processing": "Processing...",
-      "continue": "Complete payment"
-    },
-    "title": "Package purchases",
-    "loading": "Loading package purchases...",
-    "errorTitle": "We could not load your packages",
-    "errorMessage": "Please try again in a moment.",
-    "retry": "Try again",
-    "emptyTitle": "No package purchases yet",
-    "emptyDescription": "When you buy a package, it will appear here so you can follow what you used and what remains.",
-    "emptyAction": "Explore practitioners",
-    "heroTitle": "Package purchases",
-    "heroSubtitle": "Follow the packages you bought, what you used, and what remains.",
-    "list": {
-      "loadingMore": "Loading more packages...",
-      "endOfList": "You've reached the end of your package purchases."
-    },
-    "summary": {
-      "active_zero": "No active packages",
-      "active_one": "1 active package",
-      "active_two": "2 active packages",
-      "active_few": "{{count}} active packages",
-      "active_many": "{{count}} active packages",
-      "active_other": "{{count}} active packages",
-      "pending_zero": "No packages waiting for payment",
-      "pending_one": "1 package waiting for payment",
-      "pending_two": "2 packages waiting for payment",
-      "pending_few": "{{count}} packages waiting for payment",
-      "pending_many": "{{count}} packages waiting for payment",
-      "pending_other": "{{count}} packages waiting for payment",
-      "remaining_zero": "No remaining sessions",
-      "remaining_one": "1 session remaining",
-      "remaining_two": "2 sessions remaining",
-      "remaining_few": "{{count}} sessions remaining",
-      "remaining_many": "{{count}} sessions remaining",
-      "remaining_other": "{{count}} sessions remaining"
-    },
-    "plans": {
-      "SESSIONS_4": "4-session package",
-      "SESSIONS_6": "6-session package",
-      "SESSIONS_8": "8-session package",
-      "generic": "{{count}}-session package",
-      "unknown": "Session package"
-    },
-    "statuses": {
-      "ACTIVE": "Active",
-      "PENDING_PAYMENT": "Pending payment",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "EXPIRED": "Expired",
-      "REFUNDED": "Refunded",
-      "UNKNOWN": "Unknown"
-    },
-    "sessionStatuses": {
-      "DRAFT": "Draft",
-      "PENDING_PAYMENT": "Pending payment",
-      "PENDING_PRACTITIONER_RESPONSE": "Awaiting practitioner response",
-      "CONFIRMED": "Confirmed",
-      "UPCOMING": "Upcoming",
-      "READY_TO_JOIN": "Ready to join",
-      "IN_PROGRESS": "In progress",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "NO_SHOW": "No show",
-      "EXPIRED": "Expired",
-      "REFUND_PENDING": "Refund pending",
-      "REFUNDED": "Refunded",
-      "UNKNOWN": "Unknown"
-    },
-    "presentationStatuses": {
-      "UPCOMING": "Upcoming",
-      "JOINABLE": "Ready to join",
-      "IN_PROGRESS": "In progress",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "ENDED": "Incomplete",
-      "UNAVAILABLE": "Unavailable",
-      "UNKNOWN": "Unknown"
-    },
-    "card": {
-      "accessibilityLabel": "View details for a {{count}}-session package",
-      "subtitle": "{{completed}} of {{total}} sessions used",
-      "usedSummary": "Used {{completed}} of {{total}} · {{remaining}} sessions remaining",
-      "priceSummary": "{{value}} · {{discount}} discount",
-      "nextSessionSummary": "Next: {{value}}",
-      "noNextSession": "No upcoming session yet",
-      "paymentDueSummary": "Payment due by {{value}}",
-      "total": "Final amount",
-      "discount": "Discount",
-      "progress": "Progress",
-      "progressValue": "{{completed}} of {{total}}",
-      "remainingSessions_zero": "No remaining sessions",
-      "remainingSessions_one": "1 session remaining",
-      "remainingSessions_two": "2 sessions remaining",
-      "remainingSessions_few": "{{count}} sessions remaining",
-      "remainingSessions_many": "{{count}} sessions remaining",
-      "remainingSessions_other": "{{count}} sessions remaining",
-      "discountValue": "Discount: {{value}}",
-      "paymentDueBy": "Payment due by",
-      "paymentDueByHelper": "Complete the payment before this date.",
-      "paymentExpired": "The payment deadline has passed.",
-      "nextSession": "Next session",
-      "sessionIndex": "Session {{current}}/{{total}}",
-      "viewDetails": "View details",
-      "continuePayment": "Complete payment"
-    },
-    "detail": {
-      "title": "Package purchases",
-      "subtitle": "The package shows booked sessions and the sessions that still have no scheduled time yet.",
-      "usedSummary": "Used {{completed}} of {{total}}",
-      "bookedSummary": "Booked {{booked}} of {{total}}",
-      "remainingSummary": "{{count}} sessions remaining",
-      "unbookedSummary_zero": "No sessions left unbooked",
-      "unbookedSummary_one": "1 session is still unbooked",
-      "unbookedSummary_two": "2 sessions are still unbooked",
-      "unbookedSummary_few": "{{count}} sessions are still unbooked",
-      "unbookedSummary_many": "{{count}} session is still unbooked",
-      "unbookedSummary_other": "{{count}} session is still unbooked",
-      "priceSummary": "{{value}} · {{discount}} discount",
-      "nextSessionSummary": "Next: {{value}}",
-      "noNextSession": "No upcoming session yet",
-      "paymentDueSummary": "Payment due by {{value}}",
-      "paymentTitle": "Payment",
-      "paymentSubtitle": "Complete payment to activate the package sessions.",
-      "paymentExpired": "The payment deadline has passed.",
-      "paymentDueByHelper": "Complete the payment before this date.",
-      "continuePayment": "Complete payment",
-      "sessionIndex": "Session {{current}}/{{total}}",
-      "sessionModeValue": {
-        "VIDEO": "Video",
-        "AUDIO": "Audio",
-        "CHAT": "Chat",
-        "UNKNOWN": "Session type"
-      },
-      "sessionCodeLabel": "Session code",
-      "groups": {
-        "upcoming": "Upcoming",
-        "completed": "Completed",
-        "terminal": "Ended"
-      },
-      "timelineTitle": "Session timeline",
-      "timelineSubtitle": "Booked sessions appear here, and the sessions that still have no time yet appear in a separate section.",
-      "startAt": "Start",
-      "endAt": "End",
-      "duration": "Duration",
-      "joinAvailableAt": "You can join after {{datetime}}.",
-      "minutes_zero": "0 minutes",
-      "minutes_one": "1 minute",
-      "minutes_two": "2 minutes",
-      "minutes_few": "{{count}} minutes",
-      "minutes_many": "{{count}} minutes",
-      "minutes_other": "{{count}} minutes",
-      "viewSession": "View session",
-      "notFoundTitle": "Purchase not found",
-      "notFoundDescription": "The package purchase link is invalid or the record is no longer available.",
-      "back": "Back",
-      "loading": "Loading purchase...",
-      "errorTitle": "We could not load the purchase",
-      "errorMessage": "Please try again in a moment.",
-      "retry": "Try again",
-      "paymentDueHelper": "Complete the payment before this date.",
-      "bookedSessionsTitle": "Booked sessions",
-      "unbookedSessionsTitle": "Sessions without a time",
-      "unbookedSessionsBody": "{{count}} sessions still have no scheduled time.",
-      "notBookedYet": "No time yet",
-      "unbookedSessionSubtitle": "No scheduled time has been chosen yet",
-      "summaryUsageBooked": "Used {{completed}} of {{total}} · Booked {{booked}} of {{total}}",
-      "summaryRemainingUnbooked": "{{remaining}} sessions remaining · {{unbooked}} sessions still unbooked",
-      "duration_zero": "0 min",
-      "duration_one": "1 min",
-      "duration_two": "2 min",
-      "duration_few": "{{count}} min",
-      "duration_many": "{{count}} min",
-      "duration_other": "{{count}} min",
-      "summaryRemainingUnbooked_zero": "No sessions left unbooked",
-      "summaryRemainingUnbooked_one": "1 session is still unbooked",
-      "summaryRemainingUnbooked_two": "2 sessions are still unbooked",
-      "summaryRemainingUnbooked_few": "{{count}} sessions are still unbooked",
-      "summaryRemainingUnbooked_many": "{{count}} sessions are still unbooked",
-      "summaryRemainingUnbooked_other": "{{count}} sessions are still unbooked",
-      "unbookedSessionsBody_zero": "No sessions left without a time",
-      "unbookedSessionsBody_one": "1 session can still be booked later.",
-      "unbookedSessionsBody_two": "2 sessions can still be booked later.",
-      "unbookedSessionsBody_few": "{{count}} sessions can still be booked later.",
-      "unbookedSessionsBody_many": "{{count}} sessions can still be booked later.",
-      "unbookedSessionsBody_other": "{{count}} sessions can still be booked later.",
-      "summaryUsageBooked_zero": "No sessions used out of {{total}}",
-      "summaryUsageBooked_one": "Used 1 session of {{total}}",
-      "summaryUsageBooked_two": "Used 2 sessions of {{total}}",
-      "summaryUsageBooked_few": "Used {{count}} sessions of {{total}}",
-      "summaryUsageBooked_many": "Used {{count}} sessions of {{total}}",
-      "summaryUsageBooked_other": "Used {{count}} sessions of {{total}}",
-      "bookedSummary_zero": "No sessions booked yet",
-      "bookedSummary_one": "1 session booked, 1 session still unbooked",
-      "bookedSummary_two": "2 sessions booked, 2 sessions still unbooked",
-      "bookedSummary_few": "{{booked}} sessions booked, {{count}} sessions still unbooked",
-      "bookedSummary_many": "{{booked}} sessions booked, {{count}} sessions still unbooked",
-      "bookedSummary_other": "{{booked}} sessions booked, {{count}} sessions still unbooked"
-    },
-    "errors": {
-      "patientNotFound": "Patient profile was not found.",
-      "notFound": "The package was not found.",
-      "financialContextUnavailable": "The financial context is not available right now.",
-      "invalidSlotCount": "The selected slot count is not valid.",
-      "invalidSlotStartAt": "One of the selected slot start times is invalid.",
-      "duplicateSlot": "There is a duplicate selected slot.",
-      "overlappingSlots": "The selected times overlap.",
-      "timezoneResolutionFailed": "Could not resolve the timezone.",
-      "paymentNotFound": "The payment was not found.",
-      "notPayable": "This package is not ready for payment yet."
-    },
-    "sessionModes": {
-      "VIDEO": "Video",
-      "AUDIO": "Audio",
-      "CHAT": "Chat",
-      "UNKNOWN": "Session type"
-    }
-  },
   "support": {
     "title": "Support Center",
     "tabs": {
@@ -1846,27 +1116,22 @@
       "resolvedSubtitle": "No resolved or closed tickets yet."
     },
     "newTicket": "Open a support request",
-      "new": {
-        "title": "New Support Request",
-        "categoryLabel": "Issue type",
-        "subjectLabel": "Subject",
-        "subjectPlaceholder": "Briefly describe your issue",
+    "new": {
+      "title": "New Support Request",
+      "categoryLabel": "Issue type",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Briefly describe your issue",
       "descriptionLabel": "Details",
       "descriptionPlaceholder": "Describe your issue in detail so our support team can help you better",
       "subjectRequired": "Please enter a subject with at least 4 characters.",
-        "descriptionRequired": "Please enter a description with at least 10 characters.",
-        "messageRequired": "Write at least one message before sending.",
-        "samplePrompt": "Write your question directly, and support will reply in this same conversation.",
-        "sessionContextTitle": "Session linked",
-        "sessionContextBody": "This request is attached to session {{sessionCode}} so support can review the closed-room issue faster.",
-        "submit": "Submit Request"
-      },
+      "descriptionRequired": "Please enter a description with at least 10 characters.",
+      "submit": "Submit Request"
+    },
     "detail": {
       "title": "Ticket Details",
       "noMessages": "No messages yet. Start the conversation with our support team.",
       "replyPlaceholder": "Write your reply here...",
-      "closedNotice": "This ticket is closed and no longer accepts replies.",
-      "sendMessage": "Send message"
+      "closedNotice": "This ticket is closed and no longer accepts replies."
     }
   },
   "careChat": {
@@ -1905,7 +1170,7 @@
     },
     "new": {
       "title": "Request Professional Chat",
-      "approvalNote": "Your request will be reviewed by the Sawiyaa team. You will be notified once a decision is made.",
+      "approvalNote": "Your request will be reviewed by our team. You will be notified once a decision is made.",
       "practitionerSlugLabel": "Practitioner identifier",
       "practitionerSlugPlaceholder": "e.g. dr-ahmed-ali",
       "practitionerSlugHint": "You can find the identifier on the practitioner's profile page.",
@@ -1919,7 +1184,7 @@
       "title": "Request Details",
       "reason": "Reason",
       "expiresAt": "Expiry date",
-      "pendingNotice": "Your request is under review by the Sawiyaa team. You will be notified once a decision is made.",
+      "pendingNotice": "Your request is under review. You will be notified once a decision is made.",
       "rejectedNotice": "Unfortunately, your chat request was rejected. You can open a support ticket if you need assistance.",
       "openConversation": "Open Conversation"
     },
@@ -1929,39 +1194,10 @@
     },
     "systemMessages": {
       "approvalNotice": "This conversation is now available while active."
-    },
-    "sessionFollowUp": {
-      "title": "Follow up after session",
-      "practitionerLabel": "Practitioner",
-      "approvalNote": "Your follow-up request will be reviewed by the Sawiyaa team.",
-      "reasonLabel": "Reason for follow-up",
-      "reasonPlaceholder": "Briefly explain what you'd like to follow up on...",
-      "submit": "Submit follow-up request",
-      "submitting": "Submitting...",
-      "existing": {
-        "pending": {
-          "title": "Pending follow-up",
-          "body": "You already have a pending follow-up request for this session.",
-          "action": "View request"
-        },
-        "approvedWithConv": {
-          "title": "Follow-up approved",
-          "body": "Your follow-up request was approved. Open the conversation to continue.",
-          "action": "Open conversation"
-        },
-        "approvedNoConv": {
-          "title": "Approved - no conversation yet",
-          "body": "Your follow-up was approved but the conversation is not available yet.",
-          "action": "View details"
-        }
-      }
     }
   },
   "home": {
     "tabLabel": "Home",
-    "sessionsTab": "Sessions",
-    "notificationsTab": "Notifications",
-    "moreTab": "More",
     "journey": {
       "pendingPayment": "Pending Payment",
       "completePaymentTitle": "Complete Payment",
@@ -1970,44 +1206,10 @@
     },
     "quickActions": {
       "title": "Quick Actions",
-      "findDoctor": "Find doctor",
       "findTherapist": "Find therapist",
-      "mySessions": "My sessions",
       "assessments": "Assessments",
-      "payments": "Payments",
       "support": "Support",
       "careChat": "Care Chat"
-    },
-    "matching": {
-      "title": "Get matched with a therapist",
-      "body": "Answer a few questions and we'll recommend the best fit for you.",
-      "cta": "Start matching"
-    },
-    "featured": {
-      "title": "Featured practitioners",
-      "badge": "Featured"
-    },
-    "mostBookedToday": {
-      "title": "Most booked today"
-    },
-    "topRated": {
-      "title": "Top rated",
-      "trustScore": "{{score}}% would recommend",
-      "reviewsCount_zero": "No reviews yet",
-      "reviewsCount_one": "1 review",
-      "reviewsCount_two": "2 reviews",
-      "reviewsCount_few": "{{count}} reviews",
-      "reviewsCount_many": "{{count}} reviews",
-      "reviewsCount_other": "{{count}} reviews"
-    },
-    "recentlyVisited": {
-      "title": "Recently visited",
-      "badge": "Visited"
-    },
-    "support": {
-      "title": "Need support?",
-      "body": "Our support team is here to help with any questions.",
-      "cta": "Contact support"
     },
     "nextSession": {
       "badge": "Confirmed",
@@ -2021,8 +1223,7 @@
   "common": {
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "notSet": "Not set",
-    "cancel": "Cancel"
+    "notSet": "Not set"
   },
   "messages": {
     "common": {
@@ -2033,7 +1234,9 @@
       "retryNext": "Try again",
       "startOfConversation": "You have reached the start of this conversation.",
       "errorTitle": "Could not load conversation",
-      "errorMessage": "Please try again in a moment."
+      "errorMessage": "Please try again in a moment.",
+      "rolePatient": "Patient",
+      "rolePractitioner": "Practitioner"
     },
     "inbox": {
       "title": "Messages",
@@ -2084,83 +1287,27 @@
       "availabilityLoadingTitle": "Loading conversation status...",
       "availabilityLoadingNote": "The composer will appear only after the send contract arrives from the server.",
       "closedHint": "This conversation is not accepting new messages right now.",
-      "sendError": "Could not send this message right now."
+      "sendError": "Could not send this message right now.",
+      "endedSessionNotice": "Messaging has ended for this session. You can review the previous conversation.",
+      "expiredCareNotice": "The follow-up period has ended. You can review previous messages or submit a new follow-up request.",
+      "resolvedSupportNotice": "The support request has been resolved and this conversation is closed. You can review previous messages.",
+      "startNewSupport": "Start new support request",
+      "attachmentComingSoon": "File sharing will be available soon.",
+      "offlineState": "You are currently offline. New messages may not be sent.",
+      "reconnectingState": "Reconnecting...",
+      "unreadAccessibilityLabel": "Messages, you have {{count}} unread messages",
+      "supportRoleLabel": "Sawiyaa Support Team",
+      "sessionWithCounterpart": "Session with {{name}}",
+      "careWithCounterpart": "Follow-up with {{name}}",
+      "supportFallback": "Support request",
+      "supportEmployeeLabel": "Support Team"
     }
   },
   "practitioner": {
     "tab": {
       "dashboard": "Dashboard",
       "sessions": "Sessions",
-      "availability": "Availability",
-      "more": "More"
-    },
-    "more": {
-      "title": "More",
-      "subtitle": "Quick access to your daily workspace from one place.",
-      "sections": {
-        "daily": "Daily work",
-        "workTools": "Work tools",
-        "finance": "Finance",
-        "accountSupport": "Account & support"
-      },
-      "dailySubtitle": "Sessions, messages, availability, and alerts in one place.",
-      "workToolsSubtitle": "Quick tools for day-to-day operations and alerts.",
-      "financeSubtitle": "Jump into finance without extra clutter.",
-      "accountSupportSubtitle": "Account, support, and sign out from one path.",
-      "rows": {
-        "sessions": {
-          "title": "Sessions",
-          "subtitle": "Review upcoming, active, and recent sessions"
-        },
-        "messages": {
-          "title": "Messages",
-          "subtitle": "All session, support, and follow-up conversations in one place"
-        },
-        "availability": {
-          "title": "Availability",
-          "subtitle": "Update your weekly schedule and temporary changes"
-        },
-        "notifications": {
-          "title": "Notifications",
-          "subtitle": "Review recent alerts and reminders"
-        },
-        "careChat": {
-          "title": "Follow-up requests",
-          "subtitle": "Review and manage follow-up requests from one place"
-        },
-        "finance": {
-          "title": "Finance",
-          "subtitle": "Open the financial workspace"
-        },
-        "wallet": {
-          "title": "Wallet",
-          "subtitle": "Your current balance and financial activity"
-        },
-        "ledger": {
-          "title": "Ledger",
-          "subtitle": "All financial entries sorted by newest first"
-        },
-        "settlements": {
-          "title": "Settlements",
-          "subtitle": "Payout records and their related states"
-        },
-        "promoCodes": {
-          "title": "Promo codes",
-          "subtitle": "Create and review your promo codes"
-        },
-        "account": {
-          "title": "Account",
-          "subtitle": "Identity, preferences, and profile data"
-        },
-        "support": {
-          "title": "Support",
-          "subtitle": "Ask for help or review support conversations"
-        },
-        "logout": {
-          "title": "Sign out",
-          "subtitle": "End the session on this device"
-        }
-      }
+      "availability": "Availability"
     },
     "common": {
       "loadError": "Could not load the practitioner workspace right now.",
@@ -2169,29 +1316,9 @@
     },
     "finance": {
       "quickAccess": "Finance",
-      "title": "Finance",
-      "subtitle": "A quick view of your wallet, ledger, settlements, and promo codes.",
-      "summary": {
-        "title": "Quick finance snapshot",
-        "subtitle": "A compact view of your current financial position.",
-        "balanceHint": "This is the amount currently available based on recorded financial entries."
-      },
-      "quickActions": "Quick access",
-      "actions": {
-        "wallet": "Wallet",
-        "ledger": "Activity log",
-        "settlements": "Settlements",
-        "promoCodes": "Promo codes"
-      },
-      "filters": {
-        "all": "All",
-        "income": "Income",
-        "deduction": "Deduction",
-        "settlement": "Settlement",
-        "period": "Date range",
-        "kind": "Entry type",
-        "status": "Status"
-      },
+      "title": "Practitioner finance",
+      "subtitle": "Review your projected balance, earnings ledger, and settlement snapshots without the admin complexity.",
+      "quickActions": "Quick actions",
       "common": {
         "loading": "Loading finance data...",
         "loadingMore": "Loading more...",
@@ -2201,49 +1328,40 @@
         "currencyUnavailable": "Currency unavailable"
       },
       "wallet": {
-        "title": "Wallet",
-        "subtitle": "A compact snapshot of your current financial position.",
-        "available": "Current balance",
-        "pending": "Pending collection",
-        "reserved": "In payout",
-        "totalEarned": "Total earnings",
-        "lifetimePaidOut": "Total paid out to you",
-        "lastLedgerEntryAt": "Last financial activity",
+        "title": "Projected wallet balance",
+        "subtitle": "A simple snapshot derived from the ledger and settlement history.",
+        "available": "Projected balance",
+        "pending": "Pending balance",
+        "reserved": "Reserved balance",
+        "totalEarned": "Total earned",
+        "lifetimePaidOut": "Lifetime paid out",
+        "lastLedgerEntryAt": "Last ledger entry",
         "updatedAt": "Last updated",
-        "balanceHint": "This is the amount currently available based on recorded financial entries.",
-        "hints": {
-          "available": "An amount ready for financial follow-up or payout.",
-          "pending": "Amounts from sessions or operations that have not been fully settled yet.",
-          "reserved": "Amounts included in a settlement that has not been paid yet.",
-          "totalEarned": "Everything recorded as your earnings.",
-          "lifetimePaidOut": "The total amount paid to you previously."
-        },
+        "balanceHint": "This balance is derived from recorded accounting entries and shows the current read model.",
         "summary": "Wallet summary",
         "recentSettlements": "Recent settlements",
         "errorTitle": "Could not load wallet summary",
         "errorBody": "The practitioner wallet summary is unavailable right now."
       },
       "ledger": {
-        "title": "Activity log",
-        "subtitle": "Finance entries sorted with newest first.",
-        "recentTitle": "Recent financial activity",
-        "emptyTitle": "No financial activity yet",
-        "emptyBody": "Financial activity will appear here when it is recorded.",
+        "title": "Ledger",
+        "subtitle": "A plain view of earnings, coupons, refunds, and payout-related ledger entries.",
+        "recentTitle": "Recent ledger entries",
+        "emptyTitle": "No ledger entries yet",
+        "emptyBody": "Ledger entries will appear here when financial activity is recorded.",
         "errorTitle": "Could not load ledger entries",
         "errorBody": "The practitioner ledger is unavailable right now.",
-        "searchPlaceholder": "Search entries or descriptions",
-        "groupSubtitle": "{{count}} items",
         "entryTypes": {
-          "SESSION_GROSS": "Session earnings",
-          "PLATFORM_COMMISSION": "Platform fee",
-          "PRACTITIONER_EARNING": "Session earnings",
-          "COUPON_PLATFORM_SHARE": "Promo code discount",
-          "COUPON_PRACTITIONER_SHARE": "Promo code discount",
-          "REFUND_PLATFORM_REVERSAL": "Session refund",
-          "REFUND_PRACTITIONER_REVERSAL": "Session refund",
-          "MANUAL_ADJUSTMENT": "Financial adjustment",
-          "SETTLEMENT_PAYOUT": "Payout to your account",
-          "SETTLEMENT_REVERSAL": "Settlement adjustment"
+          "SESSION_GROSS": "Session gross",
+          "PLATFORM_COMMISSION": "Platform commission",
+          "PRACTITIONER_EARNING": "Practitioner earning",
+          "COUPON_PLATFORM_SHARE": "Coupon platform share",
+          "COUPON_PRACTITIONER_SHARE": "Coupon practitioner share",
+          "REFUND_PLATFORM_REVERSAL": "Refund platform reversal",
+          "REFUND_PRACTITIONER_REVERSAL": "Refund practitioner reversal",
+          "MANUAL_ADJUSTMENT": "Manual adjustment",
+          "SETTLEMENT_PAYOUT": "Settlement payout",
+          "SETTLEMENT_REVERSAL": "Settlement reversal"
         },
         "directions": {
           "CREDIT": "Credit",
@@ -2251,199 +1369,32 @@
         },
         "buckets": {
           "AVAILABLE": "Available",
-          "PENDING": "Pending collection",
-          "RESERVED": "Inside current settlement"
-        },
-        "details": {
-          "type": "Type",
-          "bucket": "Balance state",
-          "createdAt": "Created at",
-          "effectiveAt": "Effective at",
-          "source": "Source",
-          "none": "Not available"
+          "PENDING": "Pending",
+          "RESERVED": "Reserved"
         }
       },
       "settlements": {
         "title": "Settlements",
-        "subtitle": "A quick view of payout history and status.",
+        "subtitle": "A simple snapshot of settlement records, payout status, and currency separation.",
         "recentTitle": "Recent settlements",
         "emptyTitle": "No settlements yet",
         "emptyBody": "Settlement records will appear here when payouts are generated.",
         "errorTitle": "Could not load settlements",
         "errorBody": "The practitioner settlement list is unavailable right now.",
-        "summary": {
-          "total": "Settlement count",
-          "paid": "Paid out",
-          "ready": "Ready for payout",
-          "failed": "Payout failed"
-        },
-        "labels": {
-          "netAmount": "Amount due",
-          "grossAmount": "Session value before deductions",
-          "adjustments": "Settlement deductions",
-          "batchStatus": "Batch status",
-          "updated": "Updated"
-        },
-        "received": "Paid out",
-        "receivedRef": "Payout reference",
+        "received": "Received",
+        "receivedRef": "Received reference",
         "pendingPayout": "Waiting for payout",
-        "failedPayout": "Payout failed",
         "failedAt": "Failed at",
         "paidAt": "Paid at",
         "createdAt": "Created at",
         "statuses": {
           "DRAFT": "Draft",
-          "READY": "Ready for payout",
-          "PROCESSING": "Waiting for payout",
-          "PAID": "Paid out",
-          "FAILED": "Payout failed",
+          "READY": "Ready",
+          "PROCESSING": "Processing",
+          "PAID": "Paid",
+          "FAILED": "Failed",
           "CANCELLED": "Cancelled"
         }
-      }
-    },
-    "promoCodes": {
-      "title": "Promo Codes",
-      "subtitle": "Create promo codes in one compact place.",
-      "financialNote": "Promo discounts are percentage-only and capped at 20%.",
-      "cardBadge": "Promo codes",
-      "quickAccess": "Promo Codes",
-      "openAction": "Open promo codes",
-      "createCta": "Create promo code",
-      "loading": "Loading promo codes...",
-      "errorTitle": "Could not load promo codes",
-      "errorBody": "Try again to sync your practitioner promo codes.",
-      "searchPlaceholder": "Search by code name",
-      "filters": {
-        "all": "All",
-        "status": "Status"
-      },
-      "empty": {
-        "title": "You have not created any promo codes yet.",
-        "body": "Create at least one code to get started.",
-        "action": "Create promo code"
-      },
-      "status": {
-        "DRAFT": "Draft",
-        "PENDING_REVIEW": "Pending review",
-        "APPROVED": "Approved",
-        "REJECTED": "Rejected",
-        "ACTIVE": "Active",
-        "EXPIRED": "Expired",
-        "DISABLED": "Disabled",
-        "NOT_STARTED": "Not started",
-        "USAGE_LIMIT_REACHED": "Usage limit reached"
-      },
-      "list": {
-        "discount": "Discount: {{value}}",
-        "usage": "Usage",
-        "usageWithLimit": "{{current}} of {{total}} uses",
-        "usageWithoutLimit": "{{current}} uses",
-        "perPatient": "Per patient",
-        "noDateWindow": "No start or end date set",
-        "dateRange": "{{start}} to {{end}}",
-        "startsAt": "Starts {{value}}",
-        "endsAt": "Ends {{value}}"
-      },
-      "actions": {
-        "edit": "Edit",
-        "disable": "Disable",
-        "details": "Details",
-        "activate": "Activate"
-      },
-      "activate": {
-        "title": "Activate promo code",
-        "body": "This code will become active again and can be used once more.",
-        "confirm": "Activate"
-      },
-      "disable": {
-        "title": "Disable promo code",
-        "body": "Are you sure you want to disable this code? Patients will not be able to use it afterward.",
-        "confirm": "Disable"
-      },
-      "notifications": {
-        "success": "Success",
-        "notice": "Notice",
-        "createdTitle": "Promo code created",
-        "createdBody": "{{code}} is now available to your patients.",
-        "updatedTitle": "Promo code updated",
-        "updatedBody": "{{code}} was updated successfully.",
-        "activatedTitle": "Promo code activated",
-        "activatedBody": "{{code}} is active again now.",
-        "disabledTitle": "Promo code disabled",
-        "disabledBody": "{{code}} is now inactive.",
-        "actionFailedTitle": "Action failed",
-        "actionFailedBody": "Could not complete the action. Please try again."
-      },
-      "form": {
-        "createTitle": "Create promo code",
-        "editTitle": "Edit promo code",
-        "subtitle": "Keep the code percentage-only, session-only, and within the 20% limit.",
-        "note": "Backend validation still decides the final result. The mobile form only helps you prepare a safe request.",
-        "codeLabel": "Code",
-        "codePlaceholder": "DR_AHMED20",
-        "codeHint": "Use letters and numbers only. You may also use - or _.",
-        "codeReadOnlyHint": "The code is read-only after creation.",
-        "discountLabel": "Discount percentage",
-        "discountPlaceholder": "10",
-        "discountHint": "Promo codes are percentage-only, with a maximum of 20%.",
-        "discountReadOnlyHint": "This discount is read-only because the code has already been redeemed.",
-        "totalLimitLabel": "Usage limit total",
-        "totalLimitPlaceholder": "Optional",
-        "totalLimitHint": "Leave blank if there is no total usage limit.",
-        "patientLimitLabel": "Usage limit per patient",
-        "patientLimitPlaceholder": "Optional",
-        "patientLimitHint": "Leave blank if patients may reuse the code without a per-patient cap.",
-        "startsAtLabel": "Starts at",
-        "endsAtLabel": "Ends at",
-        "startsAtPlaceholder": "No start date",
-        "endsAtPlaceholder": "No end date",
-        "startsAtHint": "Leave it blank to start the code immediately.",
-        "endsAtHint": "Leave it blank if the code has no expiry date.",
-        "datePicker": {
-          "cancel": "Cancel",
-          "confirm": "Select",
-          "clear": "Clear date"
-        },
-        "activeLabel": "Active now",
-        "activeHint": "Turn this off to create the code in a disabled state.",
-        "createSubmit": "Create promo code",
-        "updateSubmit": "Save changes",
-        "errors": {
-          "required": "This field is required.",
-          "invalid": "Enter a valid value.",
-          "tooHigh": "Practitioner promo codes cannot exceed 20%.",
-          "invalidRange": "The end date must be on or after the start date.",
-          "locked": "The discount can no longer be changed because this code has already been redeemed."
-        }
-      },
-      "detail": {
-        "title": "Promo code details",
-        "loading": "Loading promo code details...",
-        "errorTitle": "Could not load promo code details",
-        "errorBody": "Try again to load the details and redemption history.",
-        "financeTitle": "Financial note",
-        "financeBody": "The system calculates each share automatically on redemption.",
-        "redemptionsTitle": "Redemptions",
-        "emptyRedemptionsTitle": "This promo code has not been used yet.",
-        "emptyRedemptionsBody": "Redemption history will appear here after the first successful payment capture.",
-        "unknownPatient": "Patient",
-        "grossAmount": "Gross",
-        "platformShare": "Platform share",
-        "practitionerShare": "Practitioner share",
-        "sessionRef": "Session",
-        "paymentRef": "Payment"
-      },
-      "errors": {
-        "genericTitle": "Could not save promo code",
-        "generic": "Could not save the promo code right now.",
-        "duplicateCode": "That promo code already exists.",
-        "invalidCode": "Enter a code with only letters, numbers, dash, or underscore.",
-        "discountTooHigh": "Practitioner promo codes cannot exceed 20%.",
-        "percentageOnly": "Practitioner promo codes are percentage-only.",
-        "invalidDateRange": "The promo code date range is invalid.",
-        "usageLimitBelowCurrentUsage": "The usage limit cannot be lower than the number of redemptions already recorded.",
-        "notPractitioner": "Only practitioner accounts can manage promo codes.",
-        "notFound": "That promo code was not found."
       }
     },
     "profileStatus": {
@@ -2477,17 +1428,6 @@
       "REFUND_PENDING": "Refund pending",
       "REFUNDED": "Refunded"
     },
-    "presentationStatus": {
-      "UPCOMING": "Upcoming",
-      "JOINABLE": "Ready to join",
-      "IN_PROGRESS": "In progress",
-      "COMPLETED": "Completed",
-      "CANCELLED": "Cancelled",
-      "ENDED": "Incomplete",
-      "UNAVAILABLE": "Unavailable",
-      "NO_SHOW": "No show",
-      "UNDER_REVIEW": "Under review"
-    },
     "weekday": {
       "SUNDAY": "Sunday",
       "MONDAY": "Monday",
@@ -2500,7 +1440,7 @@
     "home": {
       "title": "Practitioner workspace",
       "fallbackName": "Practitioner",
-      "fallbackTitle": "Practitioner account",
+      "fallbackTitle": "Professional account",
       "nextSessions": "Next sessions",
       "viewAll": "View all",
       "noSessions": "There are no upcoming sessions in active states right now.",
@@ -2626,16 +1566,6 @@
           "OTHER": "Other"
         }
       },
-      "requiredDocuments": {
-        "title": "Required documents",
-        "subtitle": "Upload and track the documents needed for your practitioner application.",
-        "idOrPassport": "ID or passport",
-        "pendingReview": "Pending review",
-        "degree": "Degree certificate",
-        "degreeHint": "Your primary medical or psychology degree.",
-        "pendingWarning": "This document is still under review.",
-        "catalogLoading": "Loading document requirements..."
-      },
       "application": {
         "title": "Application review",
         "subtitle": "Review your readiness and submit the current workspace snapshot when everything is ready.",
@@ -2670,44 +1600,6 @@
       "verifiedPhone": "Phone verified",
       "unverifiedPhone": "Phone not verified",
       "healthTitle": "Account health",
-      "summary": {
-        "helper": "Your professional account details and approval status on Sawiyaa.",
-        "nextStep": "Next step",
-        "payout": "Payout",
-        "account": "Account"
-      },
-      "sections": {
-        "overview": "Overview",
-        "overviewSubtitle": "A quick snapshot of your profile and current status.",
-        "readiness": "Submission readiness",
-        "readinessSubtitle": "Items required before you can submit.",
-        "communication": "Communication hub",
-        "communicationSubtitle": "Messages and support in one place.",
-        "basicInfo": "Basic info",
-        "workInfo": "Work settings",
-        "professional": "Professional info",
-        "professionalSubtitle": "The core professional details shown inside Sawiyaa.",
-        "financial": "Financial details",
-        "financialSubtitle": "Payout summary and related payment details."
-      },
-      "statusCard": {
-        "title": "Account status",
-        "subtitle": "A compact view of your current account and profile state.",
-        "approvedNote": "Your account is approved and you can use practitioner tools.",
-        "payoutReady": "Complete",
-        "payoutMissing": "Incomplete",
-        "missingTitle": "Profile notes",
-        "notesTitle": "Profile notes",
-        "moreMissing": "+{{count}} more",
-        "moreNotes": "+{{count}} more",
-        "rows": {
-          "account": "Account",
-          "approval": "Approval",
-          "applicationStatus": "Application status",
-          "lastUpdated": "Last updated",
-          "payoutStatus": "Payout data status"
-        }
-      },
       "metrics": {
         "readiness": "Readiness",
         "application": "Application",
@@ -2718,6 +1610,11 @@
       "currentTitle": "Current profile",
       "editTitle": "Edit profile",
       "editSubtitle": "Keep only the details that you want to change. Everything else stays as it is.",
+      "summary": {
+        "nextStep": "Next step",
+        "payout": "Payout",
+        "account": "Account"
+      },
       "nextStepReady": "You are ready to submit your application.",
       "nextStepMissing": "{{count}} more items are still missing before you can submit.",
       "nextStepNotReady": "A few required items are still missing before you can submit.",
@@ -2732,19 +1629,15 @@
       "moreDetails": {
         "title": "More details",
         "subtitle": "Payout, verification, specialties, and record timestamps.",
-        "credentialsTitle": "Credential summary",
         "profileTitle": "Profile details",
         "payoutTitle": "Payout details",
-        "verificationTitle": "Verification and contact",
-        "specialtiesTitle": "Specialties",
-        "applicationTitle": "Application"
+        "verificationTitle": "Verification and contact"
       },
       "verificationTitle": "Verification and contact",
       "timestampsTitle": "Record timestamps",
       "fields": {
         "displayName": "Display name",
         "professionalTitle": "Professional title",
-        "specialty": "Specialty",
         "countryCode": "Country code",
         "locale": "App language",
         "timezone": "Timezone",
@@ -2767,17 +1660,12 @@
         "phone": "Phone",
         "credentialSummary": "Credential summary",
         "createdAt": "Created at",
-        "updatedAt": "Updated at",
-        "applicationSubmittedAt": "Application submitted at",
-        "applicationReviewedAt": "Application reviewed at"
+        "updatedAt": "Updated at"
       },
       "placeholders": {
         "displayName": "Your display name",
         "professionalTitle": "Your public title",
         "bio": "Short bio for your profile",
-        "countryCode": "EG",
-        "timezone": "e.g. Africa/Cairo",
-        "yearsOfExperience": "10",
         "languageCodes": "ar, en",
         "payoutAccountHolderName": "Account holder name",
         "payoutBankName": "Bank name",
@@ -2803,57 +1691,9 @@
         "saveFailedTitle": "Could not save profile",
         "saveFailedBody": "Please try again in a moment."
       },
-      "messages": {
-        "title": "Messages",
-        "subtitle": "All session, support, and follow-up chats in one place"
-      },
-      "support": {
-        "title": "Support",
-        "subtitle": "Start a direct support conversation or continue an existing one."
-      },
       "actions": {
-        "messages": "Messages",
-        "messagesSubtitle": "All session, support, and follow-up conversations in one place.",
-        "support": "Support",
-        "supportSubtitle": "Contact the support team when needed.",
         "save": "Save profile",
-        "clearPayout": "Clear payout",
-        "logout": "Log out",
-        "logoutSubtitle": "End the current session on this device."
-      },
-      "requirements": {
-        "displayName": "Display name",
-        "professionalTitle": "Professional title",
-        "bio": "Bio",
-        "countryCode": "Country code",
-        "yearsOfExperience": "Years of experience",
-        "languages": "Languages",
-        "specialties": "Specialties",
-        "primarySpecialtyCategoryId": "Primary specialty category",
-        "credentials": "Credentials",
-        "identityDocuments": "Identity documents",
-        "academicCertificate": "Academic certificate",
-        "payoutDestination": "Payout destination",
-        "payoutAccountHolderName": "Account holder name",
-        "activeAccount": "Active account",
-        "approvedProfile": "Approved profile",
-        "packagesEnabled": "Packages enabled",
-        "packagePurchasesEnabled": "Package purchases enabled",
-        "sessionPrice30Egp": "30-minute price in EGP",
-        "sessionPrice30Usd": "30-minute price in USD",
-        "sessionPrice60Egp": "60-minute price in EGP",
-        "sessionPrice60Usd": "60-minute price in USD",
-        "practitionerOtpVerified": "OTP verification",
-        "other": "Another required item",
-        "more": "+{{count}} more"
-      },
-      "statuses": {
-        "ACTIVE": "Active",
-        "INACTIVE": "Inactive",
-        "SUSPENDED": "Suspended",
-        "PENDING_VERIFICATION": "Pending verification",
-        "PENDING_APPROVAL": "Pending review",
-        "DELETED": "Deleted"
+        "clearPayout": "Clear payout"
       },
       "errorTitle": "Could not load account",
       "errorBody": "The practitioner account profile is unavailable right now.",
@@ -2861,9 +1701,7 @@
         "ready": "Ready to submit",
         "notReady": "Not ready yet",
         "complete": "Profile is complete",
-        "incomplete": "Some required items are still missing",
-        "approvedNote": "Your account is approved and you can use practitioner tools.",
-        "notApprovedNote": "Your account is still under verification or review."
+        "incomplete": "Some required items are still missing"
       },
       "otpVerified": "OTP verified",
       "otpNotVerified": "OTP not verified",
@@ -2909,10 +1747,10 @@
       "credentialsSummary": "{{total}} total, {{approved}} approved, {{pending}} pending"
     },
     "support": {
-      "title": "Support",
+      "title": "Practitioner support",
       "quickAccess": "Support",
-      "heading": "Support conversations",
-      "subtitle": "Your conversations with the support team appear here. Reply directly in the same thread.",
+      "heading": "Support tickets",
+      "subtitle": "Open tickets from practitioners and patients appear here. Reply only with the information that belongs in the ticket thread.",
       "tabs": {
         "active": "Active",
         "resolved": "Resolved"
@@ -2946,101 +1784,73 @@
       },
       "reference": "Reference: {{value}}",
       "empty": {
-        "title": "No support conversations",
-        "activeSubtitle": "There are no active support conversations right now.",
-        "resolvedSubtitle": "There are no resolved support conversations yet."
+        "title": "No support tickets",
+        "activeSubtitle": "There are no active support tickets right now.",
+        "resolvedSubtitle": "There are no resolved support tickets yet."
       },
       "detail": {
-        "title": "Support conversation",
-        "noMessages": "No messages yet. The conversation will appear here once it starts.",
-        "replyPlaceholder": "Write your message",
+        "title": "Support ticket",
+        "noMessages": "No replies yet. The thread will appear here once a support conversation starts.",
+        "replyPlaceholder": "Write a reply",
         "sendMessage": "Send message",
-        "closedNotice": "This conversation is closed and no longer accepts replies.",
-        "backToList": "Back to support"
+        "closedNotice": "This ticket is closed and no longer accepts replies.",
+        "backToList": "Back to tickets"
       }
     },
     "careChat": {
-      "title": "Follow-up requests",
-      "quickAccess": "Follow-up requests",
-      "heading": "Follow-up requests",
-      "subtitle": "Review new, active, and closed follow-up requests in one place.",
+      "title": "Care chat",
+      "quickAccess": "Care chat",
+      "heading": "Care chat requests",
+      "subtitle": "Review pending requests and open approved conversations. Chat stays text-only and tied to the existing request.",
       "fallbackPatient": "Patient",
       "sessionReference": "Session: {{value}}",
       "tabs": {
-        "all": "All",
-        "new": "New",
         "active": "Active",
-        "closed": "Closed"
+        "history": "History"
       },
       "requestStatus": {
-        "new": "New",
-        "active": "In progress",
-        "closed": "Closed"
+        "PENDING": "Pending approval",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "EXPIRED": "Expired",
+        "CANCELLED": "Cancelled",
+        "REVOKED": "Revoked"
       },
       "activityState": {
         "ACTIVE": "Active",
         "EXPIRED": "Expired",
-        "REVOKED": "Paused",
+        "REVOKED": "Revoked",
         "CLOSED": "Closed"
       },
       "inactiveNotice": {
         "EXPIRED": "This conversation has expired.",
-        "REVOKED": "This follow-up has been paused.",
+        "REVOKED": "Access to this conversation has been revoked.",
         "CLOSED": "This conversation is closed.",
-        "default": "This follow-up is no longer active."
+        "default": "This conversation is no longer active."
       },
       "empty": {
-        "title": "No follow-ups yet",
-        "allSubtitle": "There are no follow-ups yet.",
-        "newSubtitle": "There are no new requests right now.",
-        "activeSubtitle": "There are no active follow-up requests right now.",
-        "closedSubtitle": "There are no closed follow-up requests yet."
+        "title": "No requests",
+        "activeSubtitle": "There are no active care-chat requests right now.",
+        "historySubtitle": "There are no historical care-chat requests yet."
       },
       "requestDetail": {
-        "title": "Follow-up details",
+        "title": "Request details",
         "reason": "Reason",
-        "session": "Linked session",
-        "sessionLinked": "Linked to a session",
-        "updatedAt": "Last updated",
+        "session": "Related session",
         "expiresAt": "Expiry date",
         "pendingNotice": "This request is still under review.",
         "rejectedNotice": "This request was rejected.",
         "expiredNotice": "This request has expired.",
-        "noReason": "No reason provided.",
-        "extraTitle": "Additional details",
-        "openConversation": "Open in Messages"
+        "openConversation": "Open conversation"
       },
       "conversation": {
-        "empty": "No messages yet. Start the follow-up with a short message.",
-        "inputPlaceholder": "Write a follow-up message",
-        "sessionLinked": "Linked session",
-        "expiresAt": "Expires on {{date}}",
-        "detailsTitle": "Follow-up details",
-        "openRequest": "Open follow-up request",
-        "statusLabel": "Follow-up status",
-        "lastUpdated": "Last updated",
-        "activity": "Status",
-        "sendDisabledNotice": "New messages cannot be sent right now."
+        "empty": "No messages yet. Start the conversation here.",
+        "inputPlaceholder": "Write a message"
       },
       "systemMessages": {
         "approvalNotice": "This conversation is now available while active."
       },
-      "expiresOn": "Expires on {{date}}",
-      "unknownPractitioner": "Practitioner",
-      "lastUpdated": "Last updated: {{date}}",
-      "unreadOne": "Unread",
-      "unreadMany": "{{count}} unread",
-      "filters": {
-        "all": "All",
-        "new": "New",
-        "active": "Active",
-        "closed": "Closed"
-      },
-      "summary": {
-        "new": "New requests",
-        "active": "In progress",
-        "closed": "Closed"
-      }
+      "expiresOn": "Expires on {{date}}"
     },
     "sessions": {
       "title": "Practitioner sessions",
@@ -3051,21 +1861,12 @@
       "emptyBody": "Upcoming and recent sessions will appear here once bookings are created.",
       "workspace": {
         "title": "Sessions workspace",
-        "subtitle": "Track sessions from one compact mobile workspace.",
-        "listTitle": "Sessions",
-        "listSubtitle": "Use the filters to narrow the list, then open any session for details or join.",
-        "priorityHeading": "Priority now",
-        "sessionCodeLabel": "Session code",
+        "subtitle": "Track upcoming, active, and recent sessions in one mobile view.",
         "viewDetails": "View details",
-        "viewDetailsWithName": "View session details with {{name}}",
         "loadingMore": "Loading more sessions...",
         "endOfList": "You have reached the end of the list.",
         "loadMoreErrorTitle": "Could not load more sessions",
         "loadMoreErrorSubtitle": "Try again to load the next set of results.",
-        "retry": "Try again",
-        "emptyFilteredTitle": "No matching sessions",
-        "emptyFilteredBody": "Try another filter or switch back to All to see the rest of the list.",
-        "emptyFilteredAction": "Show all",
         "sections": {
           "upcoming": "Upcoming",
           "upcomingSubtitle": "Scheduled sessions and anything waiting to start.",
@@ -3080,20 +1881,13 @@
         "upcoming": "Upcoming",
         "ready": "Ready",
         "live": "Live",
-        "closed": "Closed",
         "completed": "Completed"
       }
     },
-    "detail": {
+    "sessionDetail": {
       "title": "Session details",
       "summary": "Summary",
       "heroSubtitle": "Session code: {{sessionCode}}",
-      "sessionCodeLabel": "Session code: {{sessionCode}}",
-      "messages": "Session messages",
-      "messagesReadOnly": "You can review the session messages if they are available.",
-      "joinAvailableAt": "You can join after {{datetime}}.",
-      "openMessagesError": "Could not open session messages right now.",
-      "paymentSectionTitle": "Payment & cancellation",
       "heroMode": "Session mode: {{mode}}",
       "sessionAt": "Time: {{datetime}}",
       "currentState": "Current state",
@@ -3106,7 +1900,6 @@
       "flowType": "Flow type",
       "timezone": "Timezone",
       "timezoneValue": "Using {{city}} time",
-      "cancellationReasonLabel": "Cancellation reason",
       "runtime": "Live session runtime",
       "runtimeBody": "This screen uses the real practitioner prepare and join contracts from the backend. A room link only opens if the contract explicitly allows it.",
       "prepare": "Prepare session room",
@@ -3124,13 +1917,12 @@
       "joinError": "Join availability could not be checked right now. Try again in a moment.",
       "openRoomError": "The session room could not be opened from this device right now.",
       "closeoutError": "The session status could not be updated right now. Try again.",
-      "noImmediateAction": "No immediate action is needed.",
+      "noImmediateAction": "There is no immediate action required for this session right now.",
       "blocked": {
         "SESSION_NOT_JOINABLE_STATUS": "The current session status does not allow joining.",
         "SESSION_NOT_VIDEO_MODE": "This session is not in video mode.",
         "SESSION_TIME_WINDOW_NOT_OPEN": "The join window is not open yet.",
-        "SESSION_RUNTIME_NOT_PREPARED": "The session runtime is not prepared yet.",
-        "SESSION_JOIN_WINDOW_CLOSED": "The join window for this session has already closed."
+        "SESSION_RUNTIME_NOT_PREPARED": "The session runtime is not prepared yet."
       },
       "closeout": "Closeout",
       "markCompleted": "Confirm session ended",
@@ -3147,23 +1939,19 @@
       "stateNote": {
         "PENDING_PAYMENT": "This session is still waiting for payment, so there is no direct action for you right now.",
         "PENDING_PRACTITIONER_RESPONSE": "This session is waiting for your confirmation or for the system to move it to the next state.",
-        "UPCOMING": "The session is coming up.",
-        "UPCOMING_NEEDS_PREPARE": "Prepare the session room before the join window opens.",
-        "READY_TO_JOIN_NOW": "The session is ready now.",
-        "READY_TO_JOIN_PREPARE": "Prepare the session room first.",
-        "READY_TO_JOIN_CHECK": "Check join availability now.",
-        "READY_TO_JOIN_CLOSED": "The join window for this session has ended.",
-        "IN_PROGRESS": "The session is in progress.",
-        "IN_PROGRESS_OPEN": "You can open the session room now.",
-        "IN_PROGRESS_CLOSED": "The session has ended.",
-        "COMPLETED": "The session is completed.",
-        "NO_SHOW": "The session was marked as no-show.",
-        "CANCELLED": "The session was cancelled.",
-        "EXPIRED": "The session expired.",
+        "UPCOMING": "The appointment is coming up, but the join window is not open yet. Review the time and get ready before it starts.",
+        "UPCOMING_NEEDS_PREPARE": "The appointment is coming up, and the clearest next step is to prepare the session room before checking access.",
+        "READY_TO_JOIN_NOW": "This session is ready now, and you can open the room directly.",
+        "READY_TO_JOIN_PREPARE": "The session is near its time, but the room still needs preparation before you try to join.",
+        "READY_TO_JOIN_CHECK": "This session is near its time. Check join access now to confirm whether the room can be opened.",
+        "IN_PROGRESS": "The session is live now. Check join access if you need to continue the session immediately.",
+        "IN_PROGRESS_OPEN": "The session is live now and the room can be opened directly.",
+        "COMPLETED": "This session has already finished. There is no direct action now besides reviewing the details.",
+        "NO_SHOW": "This session has already been recorded as a no-show, so there is no further direct action now.",
+        "CANCELLED": "This session was cancelled, so the room cannot be opened and there are no live actions left.",
+        "EXPIRED": "This session expired before completion, so there are no direct actions now.",
         "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions now.",
         "REFUNDED": "The refund for this session has already been processed, so there are no direct actions now.",
-        "ENDED": "The session is incomplete.",
-        "UNAVAILABLE": "The session is not available right now.",
         "DEFAULT": "This session does not expose a direct action from this screen right now."
       },
       "nextStep": {
@@ -3180,202 +1968,6 @@
         "prepareRoom": "The clearest next action right now is to prepare the session room.",
         "checkJoin": "Check join access to confirm whether the room can be opened right now.",
         "closeout": "You can update the session outcome if it has ended or if the patient did not attend.",
-        "messages": "You can open the session messages now and review the linked conversation.",
-        "none": "This screen reflects the current backend truth, but there is no operational action required right now."
-      },
-      "closeoutSummary": {
-        "COMPLETED": "This session is already completed and does not need another closeout update.",
-        "NO_SHOW": "This session is already marked as no-show and does not need another update.",
-        "CLOSED": "This session is already effectively closed, so there is no further closeout action.",
-"newSubtitle": "There are no new requests right now.",
-        "activeSubtitle": "There are no active follow-up requests right now.",
-        "closedSubtitle": "There are no closed follow-up requests yet."
-      },
-      "requestDetail": {
-        "title": "Follow-up details",
-        "reason": "Reason",
-        "session": "Linked session",
-        "sessionLinked": "Linked to a session",
-        "updatedAt": "Last updated",
-        "expiresAt": "Expiry date",
-        "pendingNotice": "This request is still under review.",
-        "rejectedNotice": "This request was rejected.",
-        "expiredNotice": "This request has expired.",
-        "noReason": "No reason provided.",
-        "extraTitle": "Additional details",
-        "openConversation": "Open in Messages"
-      },
-      "conversation": {
-        "empty": "No messages yet. Start the follow-up with a short message.",
-        "inputPlaceholder": "Write a follow-up message",
-        "sessionLinked": "Linked session",
-        "expiresAt": "Expires on {{date}}",
-        "detailsTitle": "Follow-up details",
-        "openRequest": "Open follow-up request",
-        "statusLabel": "Follow-up status",
-        "lastUpdated": "Last updated",
-        "activity": "Status",
-        "sendDisabledNotice": "New messages cannot be sent right now."
-      },
-      "systemMessages": {
-        "approvalNotice": "This conversation is now available while active."
-      },
-      "expiresOn": "Expires on {{date}}",
-      "unknownPractitioner": "Practitioner",
-      "lastUpdated": "Last updated: {{date}}",
-      "unreadOne": "Unread",
-      "unreadMany": "{{count}} unread",
-      "filters": {
-        "all": "All",
-        "new": "New",
-        "active": "Active",
-        "closed": "Closed"
-      },
-      "summary": {
-        "new": "New requests",
-        "active": "In progress",
-        "closed": "Closed"
-      }
-    },
-    "sessions": {
-      "title": "Practitioner sessions",
-      "unknownPatient": "Unknown patient",
-      "noSchedule": "No schedule has been assigned yet",
-      "duration": "{{minutes}} min",
-      "emptyTitle": "No sessions",
-      "emptyBody": "Upcoming and recent sessions will appear here once bookings are created.",
-      "workspace": {
-        "title": "Sessions workspace",
-        "subtitle": "Track sessions from one compact mobile workspace.",
-        "listTitle": "Sessions",
-        "listSubtitle": "Use the filters to narrow the list, then open any session for details or join.",
-        "priorityHeading": "Priority now",
-        "sessionCodeLabel": "Session code",
-        "viewDetails": "View details",
-        "viewDetailsWithName": "View session details with {{name}}",
-        "loadingMore": "Loading more sessions...",
-        "endOfList": "You have reached the end of the list.",
-        "loadMoreErrorTitle": "Could not load more sessions",
-        "loadMoreErrorSubtitle": "Try again to load the next set of results.",
-        "retry": "Try again",
-        "emptyFilteredTitle": "No matching sessions",
-        "emptyFilteredBody": "Try another filter or switch back to All to see the rest of the list.",
-        "emptyFilteredAction": "Show all",
-        "sections": {
-          "upcoming": "Upcoming",
-          "upcomingSubtitle": "Scheduled sessions and anything waiting to start.",
-          "active": "Active",
-          "activeSubtitle": "Sessions ready to join now or already in progress.",
-          "recent": "Recent",
-          "recentSubtitle": "Completed or closed sessions."
-        }
-      },
-      "filters": {
-        "all": "All",
-        "upcoming": "Upcoming",
-        "ready": "Ready",
-        "live": "Live",
-        "closed": "Closed",
-        "completed": "Completed"
-      }
-    },
-    "detail": {
-      "title": "Session details",
-      "summary": "Summary",
-      "heroSubtitle": "Session code: {{sessionCode}}",
-      "sessionCodeLabel": "Session code: {{sessionCode}}",
-      "messages": "Session messages",
-      "messagesReadOnly": "You can review the session messages if they are available.",
-      "joinAvailableAt": "You can join after {{datetime}}.",
-      "openMessagesError": "Could not open session messages right now.",
-      "paymentSectionTitle": "Payment & cancellation",
-      "heroMode": "Session mode: {{mode}}",
-      "sessionAt": "Time: {{datetime}}",
-      "currentState": "Current state",
-      "nextStepLabel": "Next step",
-      "actionsTitle": "What you can do now",
-      "sessionFacts": "Quick facts",
-      "sessionType": "Appointment type",
-      "mode": "Session mode",
-      "duration": "Duration",
-      "flowType": "Flow type",
-      "timezone": "Timezone",
-      "timezoneValue": "Using {{city}} time",
-      "cancellationReasonLabel": "Cancellation reason",
-      "runtime": "Live session runtime",
-      "runtimeBody": "This screen uses the real practitioner prepare and join contracts from the backend. A room link only opens if the contract explicitly allows it.",
-      "prepare": "Prepare session room",
-      "preparing": "Preparing room...",
-      "prepareReady": "The session runtime is prepared.",
-      "preparePending": "Prepare request was sent, but the runtime is not ready yet.",
-      "join": "Join",
-      "checkJoin": "Check if you can join",
-      "checkingJoin": "Checking join access...",
-      "openRoom": "Open session room",
-      "openRoomReady": "The session room is ready to open.",
-      "joining": "Opening session...",
-      "joinBlocked": "Cannot join right now: {{reason}}",
-      "prepareError": "The room cannot be prepared right now. Try again closer to the session time.",
-      "joinError": "Join availability could not be checked right now. Try again in a moment.",
-      "openRoomError": "The session room could not be opened from this device right now.",
-      "closeoutError": "The session status could not be updated right now. Try again.",
-      "noImmediateAction": "No immediate action is needed.",
-      "blocked": {
-        "SESSION_NOT_JOINABLE_STATUS": "The current session status does not allow joining.",
-        "SESSION_NOT_VIDEO_MODE": "This session is not in video mode.",
-        "SESSION_TIME_WINDOW_NOT_OPEN": "The join window is not open yet.",
-        "SESSION_RUNTIME_NOT_PREPARED": "The session runtime is not prepared yet.",
-        "SESSION_JOIN_WINDOW_CLOSED": "The join window for this session has already closed."
-      },
-      "closeout": "Closeout",
-      "markCompleted": "Confirm session ended",
-      "completing": "Completing...",
-      "markNoShow": "Record no-show",
-      "markingNoShow": "Updating...",
-      "completedFeedback": "The session was marked as completed.",
-      "noShowFeedback": "The session was marked as no show.",
-      "flowTypeValue": {
-        "SCHEDULED": "Scheduled appointment",
-        "INSTANT": "Instant session",
-        "DEFAULT": "Care session"
-      },
-      "stateNote": {
-        "PENDING_PAYMENT": "This session is still waiting for payment, so there is no direct action for you right now.",
-        "PENDING_PRACTITIONER_RESPONSE": "This session is waiting for your confirmation or for the system to move it to the next state.",
-        "UPCOMING": "The session is coming up.",
-        "UPCOMING_NEEDS_PREPARE": "Prepare the session room before the join window opens.",
-        "READY_TO_JOIN_NOW": "The session is ready now.",
-        "READY_TO_JOIN_PREPARE": "Prepare the session room first.",
-        "READY_TO_JOIN_CHECK": "Check join availability now.",
-        "READY_TO_JOIN_CLOSED": "The join window for this session has ended.",
-        "IN_PROGRESS": "The session is in progress.",
-        "IN_PROGRESS_OPEN": "You can open the session room now.",
-        "IN_PROGRESS_CLOSED": "The session has ended.",
-        "COMPLETED": "The session is completed.",
-        "NO_SHOW": "The session was marked as no-show.",
-        "CANCELLED": "The session was cancelled.",
-        "EXPIRED": "The session expired.",
-        "REFUND_PENDING": "This session is in a pending refund state, so there are no direct actions now.",
-        "REFUNDED": "The refund for this session has already been processed, so there are no direct actions now.",
-        "ENDED": "The session is incomplete.",
-        "UNAVAILABLE": "The session is not available right now.",
-        "DEFAULT": "This session does not expose a direct action from this screen right now."
-      },
-      "nextStep": {
-        "waitForPayment": "Wait for payment to finish before any operational step.",
-        "waitForConfirmation": "Check back when the session moves into a confirmed appointment state.",
-        "waitForWindow": "Come back near the appointment time to see whether the join window has opened.",
-        "prepareRoom": "Prepare the room first, then check whether joining is available.",
-        "checkJoin": "Check join access now to see whether the session can be opened.",
-        "openRoom": "Open the room and continue with the patient.",
-        "reviewOnly": "Review the details only. There is no further operational step right now."
-      },
-      "actionSummary": {
-        "openRoom": "You can open the session room now without any extra step.",
-        "prepareRoom": "The clearest next action right now is to prepare the session room.",
-        "checkJoin": "Check join access to confirm whether the room can be opened right now.",
-        "closeout": "You can update the session outcome if it has ended or if the patient did not attend.",
-        "messages": "You can open the session messages now and review the linked conversation.",
         "none": "This screen reflects the current backend truth, but there is no operational action required right now."
       },
       "closeoutSummary": {
@@ -3392,7 +1984,7 @@
     },
     "availability": {
       "title": "Availability and presence",
-      "presenceTitle": "Presence status",
+      "presenceTitle": "Live presence",
       "overviewTitle": "At a glance",
       "overviewBody": "Keep your live status, weekly hours, and temporary changes easy to understand.",
       "presenceBody": "Choose how patients should see you right now. This does not change your weekly hours.",
@@ -3404,93 +1996,31 @@
       "instantBookingEnabled": "Instant booking is currently on for cases the system allows.",
       "instantBookingDisabled": "Instant booking is currently off, so new instant requests will not reach you.",
       "scheduleTitle": "Weekly schedule",
-      "scheduleBody": "Choose the times you can receive sessions. Patients will book from your schedule after you approve it.",
-      "webManagedTitle": "Availability is managed on the web dashboard",
-      "webManagedBody": "Sawiyaa now uses a week-by-week availability system for safe booking. Please manage your current and next week availability from the web dashboard. Mobile editing will be added later.",
-      "webManagedSafetyNote": "Changes made in the old mobile weekly schedule would not control patient booking anymore, so editing is temporarily disabled here.",
-      "openWebDashboard": "Open web dashboard",
-      "webManagedSecondary": "Patients can only book times from published weekly availability.",
-      "timezone": "Timezone: {{timezone}}",
-      "timezoneLabel": "Schedule time",
-      "status": {
-        "NOT_SET": "Not set up",
-        "DRAFT": "Editing",
-        "PUBLISHED": "Available to book",
-        "ARCHIVED": "Old"
-      },
-      "weeks": {
-        "currentLabel": "This Week",
-        "nextLabel": "Next Week",
-        "rangeLabel": "{{range}}",
-        "empty": {
-          "title": "No schedule set",
-          "body": "You have not started setting up this week's schedule yet."
-        },
-        "published": {
-          "note": "This schedule is published and active for patient bookings. It cannot be edited."
-        },
-        "archived": {
-          "note": "This schedule is archived and is read-only."
-        },
-        "editor": {
-          "saving": "Saving changes...",
-          "saveDraft": "Save Changes",
-          "createDraft": "Start Schedule",
-          "publishing": "Approving...",
-          "publishWeek": "Approve Schedule",
-          "copying": "Copying...",
-          "copyToNext": "Copy to Next Week",
-          "unsaved": "Unsaved Changes",
-          "saveBeforePublish": "Save your changes before approving the schedule.",
-          "publishedEditNotice": "Changes will only be applied to future unbooked slots.",
-          "addSlotBeforePublish": "Add at least one available time before approving.",
-          "dailySlotCount": "{{count}} available times today",
-          "weeklySlotCount": "{{count}} available times this week",
-          "noSlots": "No available times for this day"
-        },
-        "days": {
-          "sunday": "Sunday",
-          "monday": "Monday",
-          "tuesday": "Tuesday",
-          "wednesday": "Wednesday",
-          "thursday": "Thursday",
-          "friday": "Friday",
-          "saturday": "Saturday"
-        },
-        "durations": {
-          "m30": "30 minutes",
-          "m60": "60 minutes"
-        },
-        "periods": {
-          "morning": "Morning",
-          "afternoon": "Afternoon",
-          "evening": "Evening",
-          "night": "Night"
-        },
-        "feedback": {
-          "successSaved": "The changes were saved successfully.",
-          "successPublished": "The week schedule was approved successfully.",
-          "successCopied": "The schedule was copied to next week successfully.",
-          "failedSave": "Could not save the changes.",
-          "failedPublish": "Could not approve the week.",
-          "failedCopy": "Could not copy the schedule."
-        }
-      },
-      "selectDay": "Select day",
-      "timeSlots": "Available times",
-      "selectedSlots": "Selected times",
-      "selectedSlotsEmpty": "No slots selected for this day yet.",
-      "removeSlotsHint": "Tap a time to remove it.",
-      "weeklySummary": "Week summary",
-      "daySlotsCount": "{{count}} slots",
-      "morningGroup": "Morning",
-      "afternoonGroup": "Afternoon",
-      "eveningGroup": "Evening",
+      "scheduleBody": "Set your repeating working hours here. Patients see the windows created from this schedule.",
+      "timezone": "Current timezone: {{timezone}}",
+      "timezoneLabel": "Timezone used for this schedule",
+      "emptySchedule": "You have not set any weekly hours yet.",
+      "noSlots": "Closed",
+      "slotCount": "{{count}} slot",
+      "slotRange": "{{start}} to {{end}}",
+      "addSlot": "Add slot",
+      "editSlot": "Edit",
+      "removeSlot": "Remove",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "timeHint": "Enter time like 09:00",
+      "confirmSlot": "Confirm slot",
+      "saveSchedule": "Save schedule",
+      "resetChanges": "Reset changes",
+      "saveHint": "Make your changes, then save the full week in one step.",
+      "saveSuccess": "The weekly schedule was saved successfully.",
+      "saveError": "The weekly schedule could not be saved right now.",
+      "saving": "Saving...",
       "exceptionsTitle": "Temporary changes",
       "exceptionsBody": "Use a block when you need time off, or open extra hours outside your weekly schedule.",
       "emptyExceptions": "There are no active exceptions right now.",
       "addException": "Add temporary change",
-      "saveException": "Save change",
+      "saveException": "Save exception",
       "editException": "Edit exception",
       "removeException": "Remove exception",
       "exceptionStartsAt": "Start date and time",
@@ -3513,369 +2043,128 @@
         "invalidDateTime": "Enter a valid date and time, like 2026-04-25 14:00."
       },
       "exceptionType": {
-        "BLOCK": "Block time",
+        "BLOCK": "Temporary block",
         "OPEN_EXTRA": "Extra hours"
-      },
-      "picker": {
-        "confirm": "Confirm",
-        "cancel": "Cancel",
-        "selectDate": "Select Date",
-        "selectTime": "Select Time",
-        "startsAt": "Start",
-        "endsAt": "End",
-        "selectHour": "Select Hour",
-        "selectMinute": "Select Minute"
       }
-    }
-  },
-  "academy": {
-    "detail": {
-      "title": "Program details",
-      "loading": "Loading program details...",
-      "errorTitle": "We could not load the program",
-      "errorMessage": "Please try again in a moment.",
-      "retry": "Try again",
-      "notFoundTitle": "Program not available",
-      "notFoundDescription": "This program is no longer available or the link is invalid.",
-      "backToAcademy": "Back to learning programs",
-      "free": "Free",
-      "paid": "Paid",
-      "available": "Available",
-      "lectures": "{{count}} units",
-      "lectures_zero": "No units",
-      "lectures_one": "1 unit",
-      "lectures_two": "2 units",
-      "lectures_few": "{{count}} units",
-      "lectures_many": "{{count}} units",
-      "lectures_other": "{{count}} units",
-      "durationDays_zero": "No duration set",
-      "durationDays_one": "1 day",
-      "durationDays_two": "2 days",
-      "durationDays_few": "{{count}} days",
-      "durationDays_many": "{{count}} days",
-      "durationDays_other": "{{count}} days",
-      "descriptionTitle": "About the program",
-      "descriptionSubtitle": "Read a clear, concise summary before signing up.",
-      "scheduleTitle": "Program content",
-      "scheduleSubtitle": "The units available in this program, in order.",
-      "unnamedLesson": "Lesson",
-      "priceTitle": "Registration Fee",
-      "enrollTitle": "Start enrollment",
-      "enrollSubtitle": "Complete your details in a separate enrollment screen.",
-      "form": {
-        "fullName": "Full name",
-        "fullNamePlaceholder": "Your full name",
-        "phone": "Phone number",
-        "phonePlaceholder": "05xxxxxxxx",
-        "whatsapp": "WhatsApp number",
-        "whatsappPlaceholder": "Optional",
-        "whatsappHelp": "Optional, but useful for enrollment updates.",
-        "email": "Email",
-        "emailPlaceholder": "name@example.com",
-        "accountPrefillNote": "We filled in the details we already have from your account. You can edit anything missing."
-      },
-      "submitting": "Submitting...",
-      "registerFree": "Register free",
-      "subscribeNow": "Subscribe now",
-      "formValidation": "Please enter your name and phone number first.",
-      "minutes": "{{count}} minutes",
-      "minutes_zero": "0 minutes",
-      "minutes_one": "1 minute",
-      "minutes_two": "2 minutes",
-      "minutes_few": "{{count}} minutes",
-      "minutes_many": "{{count}} minutes",
-      "minutes_other": "{{count}} minutes",
-      "durationDays": "{{count}} days"
     },
-    "enrollment": {
-      "title": "Enrollment details",
-      "loading": "Loading enrollment...",
-      "errorTitle": "We could not load the enrollment",
-      "errorMessage": "Please try again in a moment.",
-      "retry": "Try again",
-      "notFoundTitle": "Enrollment not found",
-      "notFoundDescription": "The enrollment link is invalid or the record is no longer available.",
-      "back": "Back",
-      "course": "Program enrollment",
-      "registeredAt": "Registered",
-        "learner": "Trainee",
-      "phone": "Phone",
-      "reference": "Enrollment code",
-      "paymentTitle": "Payment",
-      "paymentSubtitle": "Complete payment when you are ready.",
-      "amount": "Amount",
-      "payNow": "Complete payment",
-      "paymentUnsupported": "This payment method requires a native card flow that is not enabled yet.",
-      "joinTitle": "Access links",
-      "joinSubtitle": "Open the session or group link when it becomes available.",
-      "openMeeting": "Open session",
-      "openGroup": "Open group",
-      "statuses": {
-        "PENDING_PAYMENT": "Pending payment",
-        "PAID": "Paid",
-        "CONFIRMED": "Registered",
-        "PAYMENT_FAILED": "Payment failed",
-        "CANCELLED": "Cancelled",
-        "REFUNDED": "Refunded",
-        "UNKNOWN": "Unknown"
+    "promoCodes": {
+      "title": "Promo Codes",
+      "subtitle": "Create promo codes for your sessions and share them with your patients.",
+      "financialNote": "Promo-code discounts cannot exceed 20%. The discount cost is split equally between the platform and the practitioner.",
+      "cardBadge": "Promo codes",
+      "quickAccess": "Promo Codes",
+      "openAction": "Open promo codes",
+      "createCta": "Create promo code",
+      "loading": "Loading promo codes...",
+      "errorTitle": "Could not load promo codes",
+      "errorBody": "Try again to sync your practitioner promo codes.",
+      "empty": {
+        "title": "You have not created any promo codes yet.",
+        "body": "Create session-only promo codes for your own patients and manage them from this screen.",
+        "action": "Create promo code"
       },
-      "pendingPaymentTitle": "Complete payment",
-      "pendingPaymentSubtitle": "Your enrollment is saved, and access appears after payment is confirmed.",
-      "pendingPaymentHelp": "If the payment button is not available yet, please try again shortly or contact support.",
-      "paymentStatusLabel": "Payment status",
-      "paymentStatuses": {
-        "CREATED": "Payment created",
-        "PENDING": "Pending payment",
-        "REQUIRES_ACTION": "Action needed to finish payment",
-        "AUTHORIZED": "Payment authorized",
-        "CAPTURED": "Payment completed",
-        "FAILED": "Payment failed",
-        "CANCELLED": "Payment cancelled",
-        "EXPIRED": "Payment window expired",
-        "UNKNOWN": "Payment status is not clear right now"
-      },
-      "accessLockedReasons": {
-        "PAYMENT_PENDING": "Access links will appear after payment is confirmed.",
-        "PAYMENT_FAILED": "Access is not available because payment has not been completed yet.",
-        "ENROLLMENT_CANCELLED": "This enrollment was cancelled, so access links are not available.",
-        "ENROLLMENT_REFUNDED": "This enrollment was refunded, so access links are no longer available.",
-        "ACCESS_NOT_AVAILABLE": "Access will appear here when the program makes it available.",
-        "DEFAULT": "Access will appear here when it becomes available."
-      },
-      "paymentReturnTitle": "Payment status",
-      "paymentReturnPendingTitle": "Complete payment",
-      "paymentReturnPendingSubtitle": "You can continue the payment now and unlock access after it is confirmed.",
-      "paymentReturnProcessingSubtitle": "We are checking the payment right now.",
-      "paymentReturnProcessingNote": "Please wait a moment while we confirm the payment with the provider.",
-      "paymentReturnVerifyingTitle": "Verifying payment",
-      "paymentReturnVerifyingSubtitle": "We are confirming the payment now. This may take a moment.",
-      "paymentReturnSuccessTitle": "Payment confirmed",
-      "paymentReturnSuccessSubtitle": "Your enrollment is active, and access is now available.",
-      "paymentReturnSuccessActionsTitle": "What would you like to do next?",
-      "paymentReturnSuccessActionsSubtitle": "You can review the enrollment or open the program now.",
-      "paymentReturnFailedTitle": "Payment could not be completed",
-      "paymentReturnFailedSubtitle": "The payment did not go through. You can try again.",
-      "paymentReturnExpiredTitle": "This payment attempt expired",
-      "paymentReturnExpiredSubtitle": "This payment attempt expired. Tap Complete payment to start a new one.",
-      "paymentReturnUnavailableTitle": "Payment is unavailable right now",
-      "paymentReturnUnavailableSubtitle": "We could not create a new payment attempt right now. Please try again later or contact support.",
-      "paymentReturnCancelledTitle": "Payment cancelled",
-      "paymentReturnCancelledSubtitle": "The checkout was closed before the payment was completed.",
-      "paymentReturnSupportNote": "If you keep running into trouble, contact support and we will help you continue.",
-      "paymentReturnOpenFailedTitle": "Could not open the payment page",
-      "paymentReturnOpenFailedSubtitle": "Please press Complete payment again. If the problem continues, try another browser or contact support.",
-      "paymentReturnCompletePayment": "Complete payment",
-      "paymentReturnCheckAgain": "Check again",
-      "paymentReturnOpenProgram": "Open program",
-      "paymentReturnViewEnrollment": "View enrollment"
-    },
-    "enroll": {
-      "title": "Complete enrollment",
-      "loading": "Loading enrollment setup...",
-      "errorTitle": "We could not load the enrollment setup",
-      "errorMessage": "Please try again in a moment.",
-      "retry": "Try again",
-      "notFoundTitle": "Program not available",
-      "notFoundDescription": "This program is no longer available or the link is invalid.",
-      "back": "Back",
-      "course": "Learning program",
-      "registeredAt": "Registered",
-        "learner": "Trainee",
-      "phone": "Phone",
-      "reference": "Enrollment code",
-      "paymentTitle": "Payment",
-      "paymentSubtitle": "Complete payment when you are ready.",
-      "amount": "Amount",
-      "payNow": "Complete payment",
-      "paymentUnsupported": "This payment method requires a native card flow that is not enabled yet.",
-      "joinTitle": "Access links",
-      "joinSubtitle": "Open the session or group link when it becomes available.",
-      "openMeeting": "Open session",
-      "openGroup": "Open group",
-      "statuses": {
-        "PENDING_PAYMENT": "Pending payment",
-        "PAID": "Paid",
-        "CONFIRMED": "Registered",
-        "PAYMENT_FAILED": "Payment failed",
-        "CANCELLED": "Cancelled",
-        "REFUNDED": "Refunded",
-        "UNKNOWN": "Unknown"
-      }
-    }
-  },
-  "instantBooking": {
-    "modes": {
-      "VIDEO": "Video",
-      "AUDIO": "Audio"
-    },
-    "statuses": {
-      "PENDING": "Pending",
-      "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected",
-      "EXPIRED": "Expired",
-      "CANCELLED": "Cancelled"
-    },
-    "patient": {
-      "home": {
-        "title": "Instant booking",
-        "subtitle": "Book a session today with a practitioner who is available now.",
-        "cta": "Start now"
-      },
-      "hero": {
-        "eyebrow": "Available now",
-        "title": "Instant booking with a practitioner who is available now",
-        "note": "Browse practitioners who are available right now, choose the right duration, and send the request immediately.",
-        "chips": {
-          "onlineNow": "Online now",
-          "durationOptions": "30 or 60 minutes",
-          "backendPricing": "Backend pricing"
-        }
+      "status": {
+        "DRAFT": "Draft",
+        "PENDING_REVIEW": "Pending review",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "ACTIVE": "Active",
+        "EXPIRED": "Expired",
+        "DISABLED": "Disabled"
       },
       "list": {
-        "title": "Practitioners available now",
-        "note": "Choose a practitioner, then pick 30 or 60 minutes to send the request.",
-        "currencyLabel": "Prices are calculated for your currency"
+        "discount": "Discount: {{value}}",
+        "usage": "Usage",
+        "perPatient": "Per patient",
+        "noDateWindow": "No start or end date set",
+        "dateRange": "{{start}} to {{end}}",
+        "startsAt": "Starts {{value}}",
+        "endsAt": "Ends {{value}}"
       },
-      "empty": {
-        "loading": "Loading practitioners available now...",
-        "title": "No practitioners are available now",
-        "note": "Try again in a moment or browse practitioners from the main home screen.",
-        "action": "Try again"
+      "actions": {
+        "edit": "Edit",
+        "disable": "Disable",
+        "details": "Details"
       },
-      "errors": {
-        "genericHeading": "We could not start instant booking",
-        "pendingRequestAlreadyExists": "A pending instant booking request already exists for this practitioner.",
-        "practitionerNotFound": "We could not find this practitioner.",
-        "practitionerNotOnline": "The practitioner is not online right now.",
-        "practitionerNotAvailableNow": "The practitioner is not available for instant booking right now.",
-        "practitionerBusy": "The practitioner is busy right now.",
-        "practitionerNotEligible": "This practitioner is not eligible for instant booking right now.",
-        "instantBookingDisabled": "The practitioner is not accepting instant bookings right now.",
-        "invalidSessionMode": "The selected session mode is not supported.",
-        "invalidDuration": "The selected duration is not supported.",
-        "timeout": "The request timed out. Please try again.",
-        "generic": "We could not complete this action right now.",
-        "cancelFailed": "We could not cancel the instant booking request. Please try again."
+      "disable": {
+        "title": "Disable promo code",
+        "body": "Are you sure you want to disable this code? Patients will not be able to use it afterward.",
+        "confirm": "Disable"
       },
-      "card": {
-        "availableNow": "Available now",
-        "until": "Available until {{value}}",
-        "rating": "Rating {{value}}",
-        "completedSessions": "{{count}} completed sessions",
-        "selectDuration": "Choose duration",
-        "durationLabel": "{{minutes}} min",
-        "bioFallback": "Specialty",
-        "priceUnavailable": "Price unavailable",
-        "bookNow": "Send request"
+      "notifications": {
+        "success": "Success",
+        "notice": "Notice",
+        "createdTitle": "Promo code created",
+        "createdBody": "{{code}} is now available to your patients.",
+        "updatedTitle": "Promo code updated",
+        "updatedBody": "{{code}} was updated successfully.",
+        "disabledTitle": "Promo code disabled",
+        "disabledBody": "{{code}} is now inactive."
       },
-      "request": {
-        "duration": "{{minutes}} min",
-        "fields": {
-          "practitioner": "Practitioner",
-          "duration": "Duration",
-          "sessionMode": "Session mode",
-          "expiresAt": "Expires at"
-        },
-        "titles": {
-          "PENDING": "Your instant request is pending",
-          "ACCEPTED": "Request accepted",
-          "REJECTED": "Request rejected",
-          "EXPIRED": "Request expired",
-          "CANCELLED": "Request cancelled"
-        },
-        "notes": {
-          "PENDING": "The request was sent and we are waiting for the practitioner.",
-          "ACCEPTED": "The request was accepted. Complete payment now to confirm the session.",
-          "REJECTED": "You can pick another practitioner or start a new request.",
-          "EXPIRED": "This request expired. Start a new request if needed.",
-          "CANCELLED": "The instant booking request was cancelled."
-        },
-        "cancelAction": "Cancel request",
-        "payAction": "Complete payment",
-        "resetAction": "New request"
-      }
-    },
-    "practitioner": {
-      "home": {
-        "title": "Instant booking requests",
-        "subtitle": "Track instant requests here when you are ready.",
-        "enabled": "On",
-        "disabled": "Off",
-        "enabledNote": "Instant booking is on now, so new requests can reach you while you are available.",
-        "disabledNote": "Instant booking is off right now, so new requests will not reach you until you enable it.",
-        "cta": "View requests"
-      },
-      "queue": {
-        "title": "Instant booking queue",
-        "eyebrow": "Instant requests",
-        "subtitle": "Review live requests and respond quickly.",
-        "enabled": "Instant booking is on",
-        "disabled": "Instant booking is off",
-        "summary": {
-          "pendingCount": "Pending requests",
-          "nearestExpiry": "Nearest expiry",
-          "noPending": "No pending requests",
-          "liveHintTitle": "Live tip",
-          "liveHint": "Fast responses keep the instant window available."
-        },
-        "openAvailability": "Open availability",
-        "pendingHeading": "Pending requests",
-        "pendingNote": "These requests are waiting for your approval now.",
-        "handledHeading": "Previous requests",
-        "handledNote": "Requests you already handled appear here."
-      },
-      "empty": {
-        "title": "No instant requests right now",
-        "note": "When a patient sends a new instant request, it will appear here."
-      },
-      "feedback": {
-        "accepted": "Request accepted. The linked session was created.",
-        "rejected": "Request rejected."
-      },
-      "errors": {
-        "loadingHeading": "Loading instant booking requests...",
-        "loadingNote": "The list refreshes automatically when new requests arrive.",
-        "generic": "We could not complete this action right now.",
-        "timeout": "The request timed out. Please try again.",
-        "requestNotFound": "We could not find the request.",
-        "requestAlreadyAccepted": "This request was already accepted.",
-        "requestAlreadyRejected": "This request was already rejected.",
-        "requestAlreadyCancelled": "This request was already cancelled.",
-        "pendingRequestAlreadyExists": "A pending instant request already exists for this practitioner.",
-        "requestAlreadyFinalized": "This request has already been finalized.",
-        "practitionerNotFound": "We could not find the practitioner.",
-        "practitionerNotOnline": "The practitioner is not online right now.",
-        "practitionerNotAvailableNow": "The practitioner is not available for instant booking right now.",
-        "practitionerBusy": "The practitioner is busy right now.",
-        "practitionerNotEligible": "The practitioner is not eligible for instant booking right now.",
-        "instantBookingDisabled": "The practitioner is not accepting instant bookings right now.",
-        "invalidSessionMode": "The session mode is not supported.",
-        "invalidStatusTransition": "This request cannot move to that status."
-      },
-      "request": {
-        "unknownPatient": "Unknown patient",
-        "duration": "{{minutes}} min",
-        "detailsLine": "{{duration}} · {{mode}}",
-        "fields": {
-          "expiresAt": "Expires at"
-        },
-        "hasReason": "Saved reason",
-        "acceptAction": "Accept",
-        "rejectAction": "Reject",
-        "titles": {
-          "PENDING": "New instant request",
-          "ACCEPTED": "Request accepted",
-          "REJECTED": "Request rejected",
-          "EXPIRED": "Request expired",
-          "CANCELLED": "Request cancelled"
-        },
-        "notes": {
-          "PENDING": "This request is waiting for your response.",
-          "ACCEPTED": "The request was accepted and the linked session is ready for the next step.",
-          "REJECTED": "The request was rejected by the practitioner.",
-          "EXPIRED": "The response window for this request expired.",
-          "CANCELLED": "This request was cancelled."
+      "form": {
+        "createTitle": "Create promo code",
+        "editTitle": "Edit promo code",
+        "subtitle": "Keep the code percentage-only, session-only, and within the 20% limit.",
+        "note": "Backend validation still decides the final result. The mobile form only helps you prepare a safe request.",
+        "codeLabel": "Code",
+        "codePlaceholder": "DR_AHMED20",
+        "codeHint": "Use letters and numbers only. You may also use - or _.",
+        "codeReadOnlyHint": "The code is read-only after creation.",
+        "discountLabel": "Discount percentage",
+        "discountPlaceholder": "10",
+        "discountHint": "Maximum discount is 20%.",
+        "discountReadOnlyHint": "This discount is read-only because the code has already been redeemed.",
+        "totalLimitLabel": "Usage limit total",
+        "totalLimitPlaceholder": "Optional",
+        "totalLimitHint": "Leave blank if there is no total usage limit.",
+        "patientLimitLabel": "Usage limit per patient",
+        "patientLimitPlaceholder": "Optional",
+        "patientLimitHint": "Leave blank if patients may reuse the code without a per-patient cap.",
+        "startsAtLabel": "Starts at",
+        "endsAtLabel": "Ends at",
+        "datePlaceholder": "YYYY-MM-DD",
+        "startsAtHint": "Optional. Use a valid date format like 2026-05-01.",
+        "endsAtHint": "Optional. Use a valid date format like 2026-12-31.",
+        "activeLabel": "Active now",
+        "activeHint": "Turn this off to create the code in a disabled state.",
+        "createSubmit": "Create promo code",
+        "updateSubmit": "Save changes",
+        "errors": {
+          "required": "This field is required.",
+          "invalid": "Enter a valid value.",
+          "tooHigh": "Practitioner promo codes cannot exceed 20%.",
+          "invalidRange": "The end date must be after the start date.",
+          "locked": "The discount can no longer be changed because this code has already been redeemed."
         }
+      },
+      "detail": {
+        "title": "Promo code details",
+        "loading": "Loading promo code details...",
+        "errorTitle": "Could not load promo code details",
+        "errorBody": "Try again to load the details and redemption history.",
+        "financeTitle": "Financial note",
+        "financeBody": "Each redemption records the discounted amount, the platform share, and the practitioner share using the backend calculation.",
+        "redemptionsTitle": "Redemptions",
+        "emptyRedemptionsTitle": "This promo code has not been used yet.",
+        "emptyRedemptionsBody": "Redemption history will appear here after the first successful payment capture.",
+        "unknownPatient": "Patient",
+        "grossAmount": "Gross",
+        "platformShare": "Platform share",
+        "practitionerShare": "Practitioner share",
+        "sessionRef": "Session",
+        "paymentRef": "Payment"
+      },
+      "errors": {
+        "genericTitle": "Could not save promo code",
+        "generic": "Could not save the promo code right now.",
+        "duplicateCode": "That promo code already exists.",
+        "invalidCode": "Enter a code with only letters, numbers, dash, or underscore.",
+        "discountTooHigh": "Practitioner promo codes cannot exceed 20%.",
+        "percentageOnly": "Practitioner promo codes are percentage-only.",
+        "invalidDateRange": "The promo code date range is invalid.",
+        "usageLimitBelowCurrentUsage": "The usage limit cannot be lower than the number of redemptions already recorded.",
+        "notPractitioner": "Only practitioner accounts can manage promo codes.",
+        "notFound": "That promo code was not found."
       }
     }
   }

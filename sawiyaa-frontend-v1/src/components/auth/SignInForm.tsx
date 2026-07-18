@@ -312,6 +312,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const resetPractitionerOtpState = () => {
     setChallenge(null);
     otpForm.reset({ code: "" });
+    otpSubmitLockRef.current = false;
   };
 
   const getSafeCredentialsErrorMessage = (cause: unknown) =>
@@ -378,17 +379,25 @@ export default function SignInForm({ mode }: SignInFormProps) {
 
     otpSubmitLockRef.current = true;
     setError(null);
+    let verified = false;
 
     try {
       const result = await practitionerVerifyOtp.mutateAsync({
         challengeId: challenge.challengeId,
         code: data.code,
       });
+      verified = true;
+      setChallenge(null);
+      otpForm.reset({ code: "" });
       redirectAfterAuth(result.user);
     } catch (cause) {
       setError(getSafeOtpErrorMessage(cause));
     } finally {
-      otpSubmitLockRef.current = false;
+      // Keep the one-shot lock through navigation so a double-submit cannot
+      // reuse the already-consumed challenge and surface a misleading error.
+      if (!verified) {
+        otpSubmitLockRef.current = false;
+      }
     }
   };
 
@@ -448,7 +457,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     if (mode === "practitioner") {
       return isRtl ? "تسجيل دخول الممارس" : "Practitioner sign in";
     }
-    return isRtl ? "تسجيل دخول المراجع" : "Patient sign in";
+    return isRtl ? "تسجيل دخول المستخدم " : "Patient sign in";
   };
 
   const getDynamicSubtitle = () => {

@@ -282,6 +282,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         dto: {
           message: payload.message,
           attachments: payload.attachments ?? [],
+          clientMessageId: payload.clientMessageId,
         },
       });
 
@@ -513,6 +514,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         actor,
         ticketId: payload.ticketId,
         message: normalizedMessage,
+        clientMessageId: payload.clientMessageId,
       });
 
       const message = detail.messages[detail.messages.length - 1];
@@ -732,6 +734,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         actor,
         conversationId: payload.conversationId,
         message: normalizedMessage,
+        clientMessageId: payload.clientMessageId,
       });
 
       const message = detail.messages[detail.messages.length - 1];
@@ -1038,6 +1041,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
     actor: AuthenticatedUser;
     conversationId: string;
     message: string;
+    clientMessageId?: string;
   }) {
     const actorType = input.actor.roles.includes(AppRole.PRACTITIONER)
       ? 'PRACTITIONER'
@@ -1047,7 +1051,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       actorType,
       userId: input.actor.id,
       conversationId: input.conversationId,
-      payload: { message: input.message },
+      payload: { message: input.message, clientMessageId: input.clientMessageId },
     });
 
     return result.item;
@@ -1057,6 +1061,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
     actor: AuthenticatedUser;
     ticketId: string;
     message: string;
+    clientMessageId?: string;
   }) {
     const isAdminLike =
       input.actor.roles.includes(AppRole.ADMIN) ||
@@ -1067,7 +1072,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         userId: input.actor.id,
         roles: input.actor.roles,
         ticketId: input.ticketId,
-        payload: { message: input.message },
+        payload: { message: input.message, clientMessageId: input.clientMessageId },
       });
 
       return result.item;
@@ -1081,7 +1086,7 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       actorKind,
       userId: input.actor.id,
       ticketId: input.ticketId,
-      payload: { message: input.message },
+      payload: { message: input.message, clientMessageId: input.clientMessageId },
     });
 
     return result.item;

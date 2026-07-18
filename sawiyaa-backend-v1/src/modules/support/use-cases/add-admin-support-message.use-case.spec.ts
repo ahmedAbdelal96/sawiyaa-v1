@@ -53,6 +53,8 @@ describe('AddAdminSupportMessageUseCase', () => {
       { id: 'admin-1', roles: [AppRole.ADMIN] },
       'conv-1',
       'reply',
+      [],
+      undefined,
     );
     expect(supportTicketRepository.addPublicSupportMessage).not.toHaveBeenCalled();
   });

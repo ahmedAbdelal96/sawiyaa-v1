@@ -15,25 +15,22 @@ import { Card, Header, Screen, Text } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../i18n/direction";
 import {
-  buildCareInboxItem,
-  buildSessionInboxItem,
-  buildSupportInboxItem,
   sortInboxItemsByActivity,
   type NormalizedInboxItem,
 } from "../inbox-types";
-import { formatMessageTimestamp } from "../utils";
+import {
+  getConversationHeaderPresentation,
+  getConversationStatusPresentation,
+  CONVERSATION_STATUS_TONE_COLORS,
+  formatInboxRelativeTime,
+} from "../utils";
 import type {
   MessagesRole,
-  GeneralChatConversationListItemDto,
+  CanonicalConversation,
 } from "../types";
 import {
-  useInfiniteGeneralChatConversations,
-  useGeneralChatResumeRefresh,
+  useCanonicalConversations,
 } from "../hooks";
-import { usePatientSupportTickets } from "../../patient/support/hooks";
-import { useMyCareChatRequests } from "../../patient/care-chat/hooks";
-import { usePractitionerSupportTickets } from "../../practitioner/support/hooks";
-import { usePractitionerCareChatRequests } from "../../practitioner/care-chat/hooks";
 
 type InboxTab = "all" | "sessions" | "support" | "followup";
 
@@ -52,115 +49,23 @@ function isTextEnglish(text?: string | null): boolean {
   return false;
 }
 
-function statusColor(status: string): string {
-  const value = status.trim().toUpperCase();
-  if (value === "OPEN" || value === "PENDING" || value === "APPROVED" || value === "ACTIVE") {
-    return "#24564F"; // Deep Teal for active/open
-  }
-  if (value === "IN_PROGRESS" || value === "WAITING_FOR_USER" || value === "FOLLOW_UP") {
-    return "#C8A979"; // Warm Gold for warning/pending action
-  }
-  if (value === "ESCALATED" || value === "REJECTED") {
-    return "#ef4444"; // standard error red
-  }
-  return "#6F7E78"; // Muted Text
-}
 
-type SourceType = "session" | "support" | "care";
 
-function getHumanStatusFallback(
-  sourceType: SourceType,
-  status: string,
-  locale: string,
-) {
-  const isArabic = locale.startsWith("ar");
-  const value = status.trim().toUpperCase();
-
-  if (
-    value === "OPEN" ||
-    value === "PENDING" ||
-    value === "ACTIVE"
-  ) {
-    return isArabic ? "مفتوح" : "Open";
-  }
-
-  if (
-    value === "IN_PROGRESS" ||
-    value === "WAITING_FOR_USER" ||
-    value === "FOLLOW_UP"
-  ) {
-    return isArabic ? "قيد المتابعة" : "In progress";
-  }
-
-  if (value === "READ") {
-    return isArabic ? "مقروء" : "Read";
-  }
-
-  if (
-    value === "CLOSED" ||
-    value === "RESOLVED" ||
-    value === "EXPIRED" ||
-    value === "SUSPENDED"
-  ) {
-    return isArabic ? "مغلق" : "Closed";
-  }
-
-  if (sourceType === "support") {
-    return isArabic ? "محادثة الدعم" : "Support conversation";
-  }
-
-  if (sourceType === "care") {
-    return isArabic ? "متابعة" : "Follow-up";
-  }
-
-  return value.replaceAll("_", " ");
-}
-
-function getInboxStatusLabel(
-  sourceType: SourceType,
-  status: string,
-  t: (key: string, options?: Record<string, unknown>) => string,
-  locale: string,
-): string {
-  if (sourceType === "support") {
-    const key = `support.statuses.${status}`;
-    const translated = t(key);
-    return translated !== key
-      ? translated
-      : getHumanStatusFallback(sourceType, status, locale);
-  }
-  if (sourceType === "care") {
-    const key = `careChat.requestStatus.${status}`;
-    const translated = t(key);
-    return translated !== key
-      ? translated
-      : getHumanStatusFallback(sourceType, status, locale);
-  }
-
-  const key = `messages.inbox.statuses.session.${status}`;
-  const translated = t(key);
-  return translated !== key
-    ? translated
-    : getHumanStatusFallback(sourceType, status, locale);
-}
 
 function StatusPill({
-  sourceType,
-  status,
-  t,
+  conversation,
   locale,
 }: {
-  sourceType: SourceType;
-  status: string;
-  t: (key: string, options?: Record<string, unknown>) => string;
+  conversation: CanonicalConversation;
   locale: string;
 }) {
-  const color = statusColor(status);
-  const label = getInboxStatusLabel(sourceType, status, t, locale);
+  const status = getConversationStatusPresentation(conversation, locale);
+  if (!status) return null;
+  const color = CONVERSATION_STATUS_TONE_COLORS[status.tone];
 
   return (
     <View style={[styles.statusPill, { backgroundColor: color + "12", borderColor: color + "24" }]}>
-      <Text style={[styles.statusPillText, { color }]}>{label}</Text>
+      <Text style={[styles.statusPillText, { color }]}>{status.label}</Text>
     </View>
   );
 }
@@ -180,43 +85,41 @@ export function MessagesInboxScreen({
   const isPatient = role === "patient";
 
   const validTabs: InboxTab[] = ["all", "sessions", "support", "followup"];
+  // Patients see unified list — start on "all", no visible tab bar
   const [activeTab, setActiveTab] = useState<InboxTab>(
-    initialTab && validTabs.includes(initialTab) ? initialTab : "all",
+    isPatient ? "all" : (initialTab && validTabs.includes(initialTab) ? initialTab : "all"),
   );
 
-  const sessionsQuery = useInfiniteGeneralChatConversations(role, { pageSize: 20 }, true);
-  useGeneralChatResumeRefresh(role);
-
-  const patientSupportQuery = usePatientSupportTickets({ page: 1, limit: 20 });
-  const practitionerSupportQuery = usePractitionerSupportTickets({ page: 1, limit: 20 });
-  const supportQuery = isPatient ? patientSupportQuery : practitionerSupportQuery;
-
-  const patientCareQuery = useMyCareChatRequests({ page: 1, limit: 20 });
-  const practitionerCareQuery = usePractitionerCareChatRequests({ page: 1, limit: 20 });
-  const careQuery = isPatient ? patientCareQuery : practitionerCareQuery;
+  const canonicalQuery = useCanonicalConversations(role, { page: 1, limit: 100 }, true);
 
   const allItems = useMemo(() => {
-    const sessionItems: NormalizedInboxItem[] =
-      sessionsQuery.data?.pages.flatMap((page) => page.items).map((conversation) =>
-        buildSessionInboxItem(conversation, role, locale),
-      ) ?? [];
+    const conversations = canonicalQuery.data?.items ?? [];
+    const mapped: NormalizedInboxItem[] = conversations.map((conversation) => {
+      const header = getConversationHeaderPresentation(conversation, role, t);
 
-    const supportItems: NormalizedInboxItem[] = (supportQuery.data?.items ?? []).map((ticket) =>
-      buildSupportInboxItem(ticket, role, locale),
-    );
+      const preview = conversation.lastMessage?.body ||
+        (locale.startsWith("ar") ? "لا توجد رسائل بعد." : "No messages yet.");
 
-    const careItems: NormalizedInboxItem[] = (careQuery.data?.items ?? [])
-      .filter((request) => request.status === "APPROVED" || request.status === "PENDING")
-      .map((request) => buildCareInboxItem(request, role, locale));
+      const destinationRoute = role === "patient"
+        ? `/(patient)/messages/${conversation.conversationId}`
+        : `/(practitioner)/messages/${conversation.conversationId}`;
 
-    return sortInboxItemsByActivity([...sessionItems, ...supportItems, ...careItems]);
-  }, [
-    careQuery.data?.items,
-    locale,
-    role,
-    sessionsQuery.data?.pages,
-    supportQuery.data?.items,
-  ]);
+      return {
+        id: conversation.conversationId,
+        sourceType: conversation.type.toLowerCase() as "session" | "support" | "care",
+        title: header.title,
+        subtitle: header.subtitle,
+        preview,
+        latestActivityAt: conversation.lastActivityAt || conversation.createdAt,
+        unreadCount: conversation.unreadCount,
+        status: conversation.status,
+        destinationRoute,
+        raw: conversation as any,
+      };
+    });
+
+    return sortInboxItemsByActivity(mapped);
+  }, [canonicalQuery.data?.items, locale, role, t]);
 
   const tabItems = useMemo(() => {
     if (activeTab === "all") return allItems;
@@ -226,21 +129,14 @@ export function MessagesInboxScreen({
     return allItems;
   }, [allItems, activeTab]);
 
-  const isLoadingAny =
-    sessionsQuery.isLoading || supportQuery.isLoading || careQuery.isLoading;
-  const hasErrorAny =
-    sessionsQuery.isError || supportQuery.isError || careQuery.isError;
-  const isRefreshing =
-    sessionsQuery.isRefetching ||
-    supportQuery.isRefetching ||
-    careQuery.isRefetching;
+  const isLoadingAny = canonicalQuery.isLoading;
+  const hasErrorAny = canonicalQuery.isError;
+  const isRefreshing = canonicalQuery.isRefetching;
 
   const isInitialLoading = isLoadingAny && tabItems.length === 0;
 
   const handleRefresh = () => {
-    void sessionsQuery.refetch();
-    void supportQuery.refetch();
-    void careQuery.refetch();
+    void canonicalQuery.refetch();
   };
 
   const handleCardPress = (item: NormalizedInboxItem) => {
@@ -272,7 +168,23 @@ export function MessagesInboxScreen({
 
   return (
     <Screen bg="background">
-      <Header title={t("messages.inbox.title", "Messages")} showBack />
+      <Header
+        title={t("messages.inbox.title", "Messages")}
+        showBack
+        rightElement={
+          isPatient ? (
+            <TouchableOpacity
+              onPress={handleStartSupport}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t("messages.inbox.supportCtaBtn")}
+              style={[styles.headerSupportBtn, { backgroundColor: "#EEF4EF" }]}
+            >
+              <Ionicons name="headset-outline" size={18} color="#24564F" />
+            </TouchableOpacity>
+          ) : undefined
+        }
+      />
 
       {role === "practitioner" ? (
         <Card
@@ -282,7 +194,7 @@ export function MessagesInboxScreen({
             styles.introCard,
             {
               borderColor: "#E8DED0",
-              backgroundColor: "#FCFAF6", // Warm Card
+              backgroundColor: "#FCFAF6",
             },
           ]}
         >
@@ -292,74 +204,74 @@ export function MessagesInboxScreen({
             </View>
             <View style={styles.introCopy}>
               <Text weight="700" style={[styles.introTitle, { textAlign: isRtl ? "right" : "left" }]} color="#1F332F">
-                {t("messages.inbox.practitionerIntroTitle", "التواصل")}
+                {t("messages.inbox.practitionerIntroTitle")}
               </Text>
               <Text color="#6F7E78" style={[styles.introSubtitle, { textAlign: isRtl ? "right" : "left" }]}>
-                {t(
-                  "messages.inbox.practitionerIntroSubtitle",
-                  "كل محادثات الجلسات والدعم والمتابعة في مكان واحد.",
-                )}
+                {t("messages.inbox.practitionerIntroSubtitle")}
               </Text>
             </View>
           </View>
         </Card>
       ) : null}
 
-      <View
-        style={[
-          styles.tabsBar,
-          {
-            flexDirection: rowDirection,
-          },
-        ]}
-      >
-        {TAB_ORDER.map((tab) => {
-          const active = activeTab === tab;
+      {/* Practitioner only: show tab filter bar */}
+      {role === "practitioner" ? (
+        <View
+          style={[
+            styles.tabsBar,
+            {
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          {TAB_ORDER.map((tab) => {
+            const active = activeTab === tab;
 
-          return (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={
-                tab === "all"
-                  ? t("messages.tabs.all")
-                  : tab === "sessions"
-                  ? t("messages.tabs.sessions")
-                  : tab === "support"
-                  ? t("messages.tabs.support")
-                  : t("messages.tabs.followup")
-              }
-              style={[
-                styles.tabBtn,
-                {
-                  borderColor: active ? "transparent" : "#E8DED0",
-                  backgroundColor: active ? "#24564F" : "#FFFFFF",
-                },
-              ]}
-            >
-              <Text
-                weight={active ? "700" : "500"}
+            return (
+              <TouchableOpacity
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  tab === "all"
+                    ? t("messages.tabs.all")
+                    : tab === "sessions"
+                    ? t("messages.tabs.sessions")
+                    : tab === "support"
+                    ? t("messages.tabs.support")
+                    : t("messages.tabs.followup")
+                }
                 style={[
-                  styles.tabLabel,
+                  styles.tabBtn,
                   {
-                    color: active ? "#FFFFFF" : "#6F7E78",
+                    borderColor: active ? "transparent" : "#E8DED0",
+                    backgroundColor: active ? "#24564F" : "#FFFFFF",
                   },
                 ]}
               >
-                {tab === "all"
-                  ? t("messages.tabs.all")
-                  : tab === "sessions"
-                  ? t("messages.tabs.sessions")
-                  : tab === "support"
-                  ? t("messages.tabs.support")
-                  : t("messages.tabs.followup")}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                <Text
+                  weight={active ? "700" : "500"}
+                  style={[
+                    styles.tabLabel,
+                    {
+                      color: active ? "#FFFFFF" : "#6F7E78",
+                    },
+                  ]}
+                >
+                  {tab === "all"
+                    ? t("messages.tabs.all")
+                    : tab === "sessions"
+                    ? t("messages.tabs.sessions")
+                    : tab === "support"
+                    ? t("messages.tabs.support")
+                    : t("messages.tabs.followup")}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      ) : null}
 
       {activeTab === "support" ? (
         <View
@@ -513,13 +425,7 @@ export function MessagesInboxScreen({
                 </View>
               ) : null
             }
-            ListFooterComponent={
-              sessionsQuery.isFetchingNextPage ? (
-                <View style={styles.paginationLoader}>
-                  <ActivityIndicator color="#24564F" size="small" />
-                </View>
-              ) : null
-            }
+            ListFooterComponent={null}
             renderItem={({ item }) => (
               <InboxCard
                 item={item}
@@ -528,7 +434,6 @@ export function MessagesInboxScreen({
                 isRtl={isRtl}
                 rowDirection={rowDirection}
                 chevronForward={chevronForward}
-                role={role}
                 t={t}
               />
             )}
@@ -546,7 +451,6 @@ function InboxCard({
   isRtl,
   rowDirection,
   chevronForward,
-  role,
   t,
 }: {
   item: NormalizedInboxItem;
@@ -555,21 +459,12 @@ function InboxCard({
   isRtl: boolean;
   rowDirection: "row" | "row-reverse";
   chevronForward: string;
-  role: MessagesRole;
   t: (key: string) => string;
 }) {
-  // Check if existing participants have avatarUrl
   const avatarUrl = useMemo(() => {
-    if (item.sourceType === "session") {
-      const conversation = item.raw as GeneralChatConversationListItemDto;
-      const counterpart = conversation.participants?.find(
-        (p) =>
-          p.role === (role === "patient" ? "PRACTITIONER" : "PATIENT"),
-      );
-      return counterpart?.identity?.avatarUrl || null;
-    }
-    return null;
-  }, [item, role]);
+    const conversation = item.raw as unknown as CanonicalConversation;
+    return conversation?.otherParty?.avatarUrl || null;
+  }, [item]);
 
   const avatarBg =
     item.sourceType === "session"
@@ -600,8 +495,10 @@ function InboxCard({
       : t("messages.inbox.sourceFollowup");
 
   const activityValue = item.latestActivityAt
-    ? formatMessageTimestamp(item.latestActivityAt, locale)
+    ? formatInboxRelativeTime(item.latestActivityAt, locale)
     : "-";
+
+  const rawConversation = item.raw as unknown as CanonicalConversation;
 
   const isUnread = item.unreadCount > 0;
 
@@ -684,12 +581,12 @@ function InboxCard({
                 {sourceLabel}
               </Text>
             </View>
-            <StatusPill
-              sourceType={item.sourceType}
-              status={item.status}
-              t={t}
-              locale={locale}
-            />
+            {rawConversation ? (
+              <StatusPill
+                conversation={rawConversation}
+                locale={locale}
+              />
+            ) : null}
           </View>
 
           <View style={[styles.metadataGroup, { flexDirection: rowDirection }]}>
@@ -718,6 +615,13 @@ function InboxCard({
 }
 
 const styles = StyleSheet.create({
+  headerSupportBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   introCard: {
     marginHorizontal: 14,
     marginTop: 12,

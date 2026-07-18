@@ -6,10 +6,12 @@ import {
   Platform,
   RefreshControl,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import {
   ErrorState,
   Header,
@@ -21,22 +23,21 @@ import { useAuth } from "../../../providers/AuthProvider";
 import { useAppDirection } from "../../../i18n/direction";
 import {
   formatMessageTime,
-  getConversationDisplayName,
-  getConversationSubLabel,
+  getConversationHeaderPresentation,
   getMessageSenderLabel,
   getMessageSenderRoleLabel,
   getMessageStatusLabel,
   isSameSenderMessage,
-  sortMessagesChronologically,
-  uniqByMessageId,
 } from "../utils";
-import type { GeneralChatMessageItemDto, MessagesRole } from "../types";
+import type {
+  GeneralChatMessageItemDto,
+  MessagesRole,
+  CanonicalMessage,
+  GeneralChatConversationDetailItemDto,
+} from "../types";
 import {
-  useGeneralChatConversation,
-  useGeneralChatResumeRefresh,
-  useInfiniteGeneralChatMessages,
-  useMarkGeneralChatConversationReadMutation,
-  useSendGeneralChatMessageMutation,
+  useCanonicalConversation,
+  useUnifiedMessages,
 } from "../hooks";
 import {
   ConversationBubble,
@@ -90,26 +91,31 @@ export function MessageThreadScreen({
   role,
   conversationId,
 }: MessageThreadScreenProps) {
+  const router = useRouter();
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const { isRtl } = useAppDirection();
   const locale = i18n.language || "en";
+  const currentUserId = user?.id || null;
 
-  const conversationQuery = useGeneralChatConversation(role, conversationId);
-  const messagesQuery = useInfiniteGeneralChatMessages(role, conversationId, {
-    pageSize: 25,
-  });
-  const sendMutation = useSendGeneralChatMessageMutation(role, conversationId);
-  const markReadMutation = useMarkGeneralChatConversationReadMutation(
-    role,
-    conversationId,
-  );
-  useGeneralChatResumeRefresh(role, conversationId);
+  const conversationQuery = useCanonicalConversation(role, conversationId);
+  const conversation = conversationQuery.data?.item ?? null;
+
+  const {
+    messages,
+    isLoading,
+    isError,
+    loadMore,
+    hasMore,
+    isLoadingMore,
+    sendMessage,
+    retryMessage,
+    markRead,
+  } = useUnifiedMessages({ conversationId, currentUserId });
 
   const listRef = useRef<FlatList<ThreadMessageRow> | null>(null);
   const didInitialScrollRef = useRef(false);
-  const didMarkReadRef = useRef<string | null>(null);
   const listViewportHeightRef = useRef(0);
   const listContentHeightRef = useRef(0);
   const autoFillInFlightRef = useRef(false);
@@ -119,22 +125,84 @@ export function MessageThreadScreen({
 
   useEffect(() => {
     didInitialScrollRef.current = false;
-    didMarkReadRef.current = null;
     setDraft("");
     setComposerError(null);
   }, [conversationId]);
 
-  const conversation = conversationQuery.data?.item ?? null;
-  const messages = useMemo(() => {
-    const pages = messagesQuery.data?.pages ?? [];
-    const rows = pages.flatMap((page) => page.items);
+  const legacyMessages = useMemo<GeneralChatMessageItemDto[]>(() => {
+    return messages.map((m: CanonicalMessage) => ({
+      messageId: m.id,
+      conversationId: m.conversationId,
+      senderUserId: m.sender.userId,
+      senderIdentity: {
+        participantId: m.sender.userId,
+        userId: m.sender.userId,
+        displayName: m.sender.displayName,
+        avatarUrl: m.sender.avatarUrl,
+        role: m.sender.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+        subtitle: m.sender.publicRoleLabel === "Support team" || m.sender.publicRoleLabel === "Admin"
+          ? t("messages.thread.supportRoleLabel")
+          : (m.sender.publicRoleLabel === "Patient"
+              ? (isRtl ? "المريض" : "Patient")
+              : (isRtl ? "المختص" : "Practitioner")),
+        status: null,
+        verificationStatus: null,
+      },
+      messageType: m.body ? "TEXT" : "SYSTEM",
+      status: m.status,
+      contentText: m.body,
+      sentAt: m.sentAt,
+      deliveredAt: m.deliveredAt,
+      readAt: m.readAt,
+      attachments: [],
+      conversationLatestActivityAt: m.sentAt,
+      clientMessageId: m.clientMessageId,
+      deliveryState: m.deliveryState,
+      deliveryErrorCode: m.deliveryErrorCode,
+    }));
+  }, [messages, isRtl, t]);
 
-    return sortMessagesChronologically(uniqByMessageId(rows));
-  }, [messagesQuery.data?.pages]);
+  const legacyConversation = useMemo<GeneralChatConversationDetailItemDto | null>(() => {
+    if (!conversation) return null;
+    return {
+      conversationId: conversation.conversationId,
+      conversationRef: conversation.conversationId,
+      status: conversation.status,
+      linkedSessionId: conversation.contextId,
+      participants: conversation.participants.map((p) => ({
+        userId: p.userId,
+        role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+        identity: {
+          participantId: p.userId,
+          userId: p.userId,
+          displayName: p.displayName,
+          avatarUrl: p.avatarUrl,
+          role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+          subtitle: p.publicRoleLabel,
+          status: null,
+          verificationStatus: null,
+        },
+      })),
+      createdAt: conversation.createdAt,
+      latestActivityAt: conversation.lastActivityAt,
+      latestMessage: null,
+      unreadCount: conversation.unreadCount,
+      hasUnread: conversation.unreadCount > 0,
+      lastReadMessageId: null,
+      lastReadAt: null,
+      chatAvailability: {
+        canRead: true,
+        canSend: conversation.canSend,
+        readOnly: conversation.isReadOnly || conversation.isResolved,
+        reason: conversation.sendDisabledReason as any || "ALLOWED",
+      },
+      hasMessages: true,
+    };
+  }, [conversation]);
 
   const messageRows = useMemo<ThreadMessageRow[]>(() => {
-    return messages.map((message, index) => {
-      const previous = index > 0 ? messages[index - 1] : null;
+    return legacyMessages.map((message: GeneralChatMessageItemDto, index: number) => {
+      const previous = index > 0 ? legacyMessages[index - 1] : null;
 
       let showDateSeparator = false;
       let dateSeparatorText = "";
@@ -170,40 +238,32 @@ export function MessageThreadScreen({
         dateSeparatorText,
       };
     });
-  }, [locale, messages, role, user?.id]);
+  }, [locale, legacyMessages, role, user?.id]);
 
-  const threadTitle = t("messages.thread.sessionTitle", "Session chat");
-
-  // Counterpart Details for Header title/subtitle context
-  const headerTitle = useMemo(() => {
+  const headerPresentation = useMemo(() => {
     if (!conversation) {
-      return threadTitle;
+      return { title: t("messages.thread.sessionTitle", "Session chat"), subtitle: undefined };
     }
-    return getConversationDisplayName(conversation, role, user?.id ?? null, locale);
-  }, [conversation, role, user?.id, locale, threadTitle]);
+    const result = getConversationHeaderPresentation(conversation, role, t);
+    return { title: result.title, subtitle: result.subtitle || undefined };
+  }, [conversation, role, t]);
 
-  const headerSubtitle = useMemo(() => {
-    if (!conversation) {
-      return undefined;
-    }
-    return getConversationSubLabel(conversation, user?.id ?? null, locale) || undefined;
-  }, [conversation, user?.id, locale]);
+  const headerTitle = headerPresentation.title;
+  const headerSubtitle = headerPresentation.subtitle;
 
   const isInitialLoading =
     (conversationQuery.isLoading && !conversationQuery.data) ||
-    (messagesQuery.isLoading && messages.length === 0);
+    (isLoading && legacyMessages.length === 0);
   const isInitialError =
     (conversationQuery.isError && !conversationQuery.data) ||
-    (messagesQuery.isError && messages.length === 0);
-  const isRefreshing =
-    (conversationQuery.isRefetching || messagesQuery.isRefetching) &&
-    !messagesQuery.isFetchingNextPage;
+    (isError && legacyMessages.length === 0);
+  const isRefreshing = conversationQuery.isRefetching && !isLoadingMore;
 
   const maybeAutoFillOlderMessages = useCallback(async () => {
     if (
       autoFillInFlightRef.current ||
-      messagesQuery.isFetchingNextPage ||
-      !messagesQuery.hasNextPage
+      isLoadingMore ||
+      !hasMore
     ) {
       return;
     }
@@ -218,29 +278,24 @@ export function MessageThreadScreen({
 
     autoFillInFlightRef.current = true;
     try {
-      await messagesQuery.fetchNextPage();
+      await loadMore();
     } finally {
       autoFillInFlightRef.current = false;
     }
-  }, [messagesQuery]);
+  }, [isLoadingMore, hasMore, loadMore]);
+
+  const lastIncomingMessage = useMemo(() => {
+    return [...legacyMessages].reverse().find((msg) => msg.senderUserId !== currentUserId) || null;
+  }, [legacyMessages, currentUserId]);
 
   useEffect(() => {
-    if (!conversation || didMarkReadRef.current === conversationId) {
-      return;
+    if (lastIncomingMessage?.messageId) {
+      void markRead(lastIncomingMessage.messageId);
     }
-
-    if (conversation.unreadCount <= 0 && messages.length === 0) {
-      return;
-    }
-
-    didMarkReadRef.current = conversationId;
-    void markReadMutation.mutateAsync().catch(() => {
-      didMarkReadRef.current = null;
-    });
-  }, [conversation, conversationId, markReadMutation, messages.length]);
+  }, [lastIncomingMessage?.messageId, markRead]);
 
   useEffect(() => {
-    if (didInitialScrollRef.current || messages.length === 0) {
+    if (didInitialScrollRef.current || legacyMessages.length === 0) {
       return;
     }
 
@@ -250,23 +305,22 @@ export function MessageThreadScreen({
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [messages.length]);
+  }, [legacyMessages.length]);
 
   useEffect(() => {
     void maybeAutoFillOlderMessages();
-  }, [messages.length, maybeAutoFillOlderMessages]);
+  }, [legacyMessages.length, maybeAutoFillOlderMessages]);
 
-  const chatAvailability = conversation?.chatAvailability ?? null;
+  const chatAvailability = legacyConversation?.chatAvailability ?? null;
   const showComposer =
     chatAvailability?.canSend === true && chatAvailability?.readOnly !== true;
-  const showAvailabilityLoading = chatAvailability == null;
+  const showAvailabilityLoading = conversationQuery.isLoading;
   const showReadOnlyNotice =
     !showAvailabilityLoading &&
     (chatAvailability?.canSend !== true || chatAvailability?.readOnly === true);
 
   const handleRefresh = () => {
     void conversationQuery.refetch();
-    void messagesQuery.refetch();
   };
 
   const handleSend = async () => {
@@ -279,13 +333,8 @@ export function MessageThreadScreen({
     setIsSending(true);
 
     try {
-      await sendMutation.mutateAsync({ message: trimmed });
+      await sendMessage(trimmed);
       setDraft("");
-      await Promise.allSettled([
-        conversationQuery.refetch(),
-        messagesQuery.refetch(),
-        markReadMutation.mutateAsync().catch(() => null),
-      ]);
       requestAnimationFrame(() => {
         listRef.current?.scrollToEnd({ animated: true });
       });
@@ -298,22 +347,18 @@ export function MessageThreadScreen({
     }
   };
 
-  if (isInitialLoading) {
-    return (
-      <Screen bg="background">
-        <Header showBack title={threadTitle} />
-        <LoadingState
-          fullScreen
-          message={t("messages.common.loading", "Loading...")}
-        />
-      </Screen>
-    );
-  }
+  const handleRetryMessage = useCallback((clientMessageId: string) => {
+    void retryMessage(clientMessageId).catch(() => {
+      setComposerError(
+        t("messages.thread.sendError", "Could not send this message right now."),
+      );
+    });
+  }, [retryMessage, t]);
 
   if (isInitialError || !conversation) {
     return (
       <Screen bg="background">
-        <Header showBack title={threadTitle} />
+        <Header showBack title={headerTitle} />
         <ErrorState
           fullScreen
           title={t("messages.common.errorTitle", "Could not load conversation")}
@@ -369,10 +414,10 @@ export function MessageThreadScreen({
 
             if (
               event.nativeEvent.contentOffset.y < 120 &&
-              messagesQuery.hasNextPage &&
-              !messagesQuery.isFetchingNextPage
+              hasMore &&
+              !isLoadingMore
             ) {
-              void messagesQuery.fetchNextPage();
+              void loadMore();
             }
           }}
           scrollEventThrottle={16}
@@ -381,7 +426,7 @@ export function MessageThreadScreen({
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View style={styles.headerWrap}>
-              {messagesQuery.isFetchingNextPage ? (
+              {isLoadingMore ? (
                 <View style={styles.topState}>
                   <ActivityIndicator color="#24564F" size="small" />
                   <Text color="#6F7E78" style={styles.topStateText}>
@@ -391,21 +436,7 @@ export function MessageThreadScreen({
                     )}
                   </Text>
                 </View>
-              ) : messagesQuery.isFetchNextPageError ? (
-                <View
-                  style={[
-                    styles.topRetry,
-                    {
-                      borderColor: "#E8DED0",
-                      backgroundColor: "#FCFAF6",
-                    },
-                  ]}
-                >
-                  <Text weight="600" style={{ color: "#24564F" }}>
-                    {t("messages.common.retryNext", "Try again")}
-                  </Text>
-                </View>
-              ) : !messagesQuery.hasNextPage && messages.length > 0 ? (
+              ) : !hasMore && legacyMessages.length > 0 ? (
                 <Text color="#6F7E78" style={styles.startHint}>
                   {t(
                     "messages.common.startOfConversation",
@@ -416,6 +447,8 @@ export function MessageThreadScreen({
             </View>
           }
           ListEmptyComponent={
+
+
             <ConversationEmptyState
               title={t("messages.thread.emptyTitle", "No messages yet")}
             />
@@ -434,10 +467,20 @@ export function MessageThreadScreen({
               <MessageBubble
                 message={item.message}
                 locale={locale}
-                isMine={item.message.senderUserId === user?.id}
+                isMine={
+                  item.message.senderUserId === user?.id ||
+                  (role === "patient" && item.message.senderIdentity?.role === "PATIENT") ||
+                  (role === "practitioner" && item.message.senderIdentity?.role === "PRACTITIONER")
+                }
                 showIdentity={item.isGroupStart}
                 senderLabel={item.senderLabel}
                 senderRoleLabel={item.senderRoleLabel}
+                onRetry={item.message.deliveryState === "failed" &&
+                  item.message.deliveryErrorCode !== "MESSAGE_IDEMPOTENCY_CONFLICT" &&
+                  item.message.clientMessageId
+                  ? () => handleRetryMessage(item.message.clientMessageId!)
+                  : undefined}
+                retryLabel={t("messages.common.retryNext", "Try again")}
               />
             </View>
           )}
@@ -455,10 +498,7 @@ export function MessageThreadScreen({
               ]}
             >
               <Text weight="600" color="#1F332F" style={[styles.readOnlyTitle, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.availabilityLoadingTitle")}
-              </Text>
-              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.availabilityLoadingNote")}
+                {t("messages.thread.availabilityLoadingTitle", "Loading availability...")}
               </Text>
             </View>
           ) : showReadOnlyNotice ? (
@@ -467,26 +507,60 @@ export function MessageThreadScreen({
                 styles.readOnlyNotice,
                 {
                   borderColor: "#E8DED0",
-                  backgroundColor: "#EEF4EF", // Green Surface soft
+                  backgroundColor: "#FCFAF6",
+                  padding: 16,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  marginHorizontal: 12,
+                  marginVertical: 8,
                 },
               ]}
             >
-              <Text weight="700" color="#24564F" style={[styles.readOnlyTitle, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.readOnlyTitle")}
-              </Text>
-              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.readOnlyReviewNote")}
-              </Text>
-              <Text color="#6F7E78" style={[styles.readOnlyLine, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.readOnlySendNote")}
-              </Text>
+              {conversation?.type === "SESSION" && (
+                <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                  {t("messages.thread.endedSessionNotice")}
+                </Text>
+              )}
+              {conversation?.type === "CARE" && (
+                <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                  {t("messages.thread.expiredCareNotice")}
+                </Text>
+              )}
+              {conversation?.type === "SUPPORT" && (
+                <View style={{ gap: 12 }}>
+                  <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                    {t("messages.thread.resolvedSupportNotice")}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const pathname = role === "patient"
+                        ? "/(patient)/support/new"
+                        : "/(practitioner)/support/new";
+                      router.push(pathname as any);
+                    }}
+                    style={{
+                      backgroundColor: "#24564F",
+                      paddingVertical: 10,
+                      paddingHorizontal: 16,
+                      borderRadius: 8,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      alignSelf: isRtl ? "flex-start" : "flex-end",
+                    }}
+                  >
+                    <Text color="#FFFFFF" weight="600" style={{ fontSize: 14 }}>
+                      {t("messages.thread.startNewSupport")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ) : showComposer ? (
             <ConversationComposer
               value={draft}
               onChangeText={setDraft}
               onSend={() => void handleSend()}
-              disabled={!draft.trim() || sendMutation.isPending || isSending}
+              disabled={!draft.trim() || isSending}
               placeholder={t(
                 "messages.thread.composerPlaceholder",
                 "Write your message",
@@ -507,6 +581,8 @@ function MessageBubble({
   showIdentity,
   senderLabel,
   senderRoleLabel,
+  onRetry,
+  retryLabel,
 }: {
   message: GeneralChatMessageItemDto;
   locale: string;
@@ -514,10 +590,14 @@ function MessageBubble({
   showIdentity: boolean;
   senderLabel: string;
   senderRoleLabel: string;
+  onRetry?: () => void;
+  retryLabel: string;
 }) {
   const contentText = resolveMessageText(message, locale);
   const timeValue = formatMessageTime(message.sentAt, locale);
-  const statusLabel = isMine ? getMessageStatusLabel(message.status, locale) : null;
+  const statusLabel = isMine
+    ? getMessageStatusLabel(message.status, locale, message.deliveryState)
+    : null;
   const avatarUrl = message.senderIdentity?.avatarUrl || null;
 
   if (message.messageType === "SYSTEM") {
@@ -527,7 +607,7 @@ function MessageBubble({
           style={[
             styles.systemBubble,
             {
-              backgroundColor: "#EEF4EF", // Soft Green Tint
+              backgroundColor: "#EEF4EF",
               borderColor: "#D9E4DB",
             },
           ]}
@@ -568,6 +648,8 @@ function MessageBubble({
         key: attachment.fileId,
         label: attachment.originalName || attachment.mimeType || "Attachment",
       }))}
+      onRetry={onRetry}
+      retryLabel={retryLabel}
     />
   );
 }

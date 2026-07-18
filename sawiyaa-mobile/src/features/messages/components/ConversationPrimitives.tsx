@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -39,6 +40,8 @@ export function ConversationBubble({
   attachments,
   avatarUrl,
   senderLabel: _senderLabel,
+  onRetry,
+  retryLabel,
 }: {
   isMine: boolean;
   text: string;
@@ -48,6 +51,8 @@ export function ConversationBubble({
   attachments?: AttachmentItem[];
   avatarUrl?: string | null;
   senderLabel?: string;
+  onRetry?: () => void;
+  retryLabel?: string;
 }) {
   const { isRtl } = useAppDirection();
 
@@ -69,6 +74,7 @@ export function ConversationBubble({
         source={avatarUrl ? { uri: avatarUrl } : require("../../../../assets/user.avif")}
         style={bubbleStyles.avatarImage}
         resizeMode="cover"
+        accessible={false}
       />
     </View>
   );
@@ -208,6 +214,11 @@ export function ConversationBubble({
         </View>
       ) : null}
       {bubbleComponent}
+      {onRetry && retryLabel ? (
+        <TouchableOpacity onPress={onRetry} style={bubbleStyles.retryButton} accessibilityRole="button">
+          <Text color="#8A5A22" style={bubbleStyles.retryText}>{retryLabel}</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -282,6 +293,7 @@ export function ConversationComposer({
   error?: string | null;
   hint?: string | null;
 }) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { isRtl, rowDirection, arrowForward } = useAppDirection();
 
@@ -322,6 +334,21 @@ export function ConversationComposer({
           { flexDirection: rowDirection },
         ]}
       >
+        <TouchableOpacity
+          disabled={true}
+          style={{
+            opacity: 0.4,
+            padding: 8,
+            justifyContent: "center",
+            alignItems: "center",
+            alignSelf: "center",
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={t("messages.thread.attachmentComingSoon", "File sharing will be available soon.")}
+        >
+          <Ionicons name="attach-outline" size={24} color="#6F7E78" />
+        </TouchableOpacity>
+
         <View
           style={[
             composerStyles.inputContainer,
@@ -448,22 +475,22 @@ const bubbleStyles = StyleSheet.create({
     gap: 6,
   },
   bubbleMine: {
-    elevation: 1,
+    elevation: 2,
     shadowColor: "#24564F",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   bubbleTheirs: {
-    elevation: 1,
+    elevation: 2,
     shadowColor: "#24564F",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   text: {
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
   },
   attachmentsWrap: {
     gap: 6,
@@ -480,8 +507,8 @@ const bubbleStyles = StyleSheet.create({
     maxWidth: "100%",
   },
   attachmentText: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
     flexShrink: 1,
   },
   metaRow: {
@@ -491,8 +518,18 @@ const bubbleStyles = StyleSheet.create({
     marginTop: 2,
   },
   metaText: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  retryButton: {
+    marginTop: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    alignSelf: "flex-end",
+  },
+  retryText: {
+    fontSize: 12,
+    lineHeight: 17,
   },
 });
 

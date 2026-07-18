@@ -1598,8 +1598,14 @@
       "CHANGES_REQUESTED": "Changes requested",
       "ARCHIVED": "Archived"
     },
-    "completionIssues": {
-      "codes": {
+      "completionIssues": {
+        "generic": {
+          "title": "Missing requirement",
+          "description": "One or more required items are missing for this step.",
+          "whyItMatters": "These items are required before the application can be submitted for review.",
+          "recommendedAction": "Complete the missing fields or uploads, then save the step again."
+        },
+        "codes": {
         "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
           "title": "Identity document required"
         },

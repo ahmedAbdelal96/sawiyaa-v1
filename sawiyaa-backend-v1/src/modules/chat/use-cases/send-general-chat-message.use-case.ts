@@ -115,6 +115,7 @@ export class SendGeneralChatMessageUseCase {
       input.conversationId,
       normalized.contentText,
       normalized.attachments,
+      input.dto.clientMessageId,
     );
     const canonicalItem = canonical.item;
 

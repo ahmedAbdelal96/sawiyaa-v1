@@ -34,12 +34,14 @@ describe('MessagingPolicyRegistry', () => {
   const policy = new MessagingPolicyRegistry();
 
   it('allows authorized support staff without assignment or participant membership', () => {
-    expect(
-      policy.canSend(conversation(), {
-        id: 'agent-1',
-        roles: [AppRole.SUPPORT_AGENT],
-      }),
-    ).toEqual({ allowed: true });
+    for (const agentId of ['agent-1', 'agent-2']) {
+      expect(
+        policy.canSend(conversation(), {
+          id: agentId,
+          roles: [AppRole.SUPPORT_AGENT],
+        }),
+      ).toEqual({ allowed: true });
+    }
   });
 
   it('does not grant support staff access to session or care conversations', () => {

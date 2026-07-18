@@ -8,6 +8,8 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -28,6 +30,8 @@ import { AdminGuard } from '@common/guards/authorization/admin.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
+import { Response } from 'express';
+import { createReadStream } from 'fs';
 import { AdminPractitionerAvatarSuccessResponseDto } from '../dto/admin-practitioner-avatar-response.dto';
 import { ListAdminPractitionersDto } from '../dto/list-admin-practitioners.dto';
 import { UpsertAdminPractitionerAvatarDto } from '../dto/upsert-admin-practitioner-avatar.dto';
@@ -35,6 +39,7 @@ import { ClearPractitionerAuthLockoutUseCase } from '../use-cases/clear-practiti
 import { RemoveAdminPractitionerAvatarUseCase } from '../use-cases/remove-admin-practitioner-avatar.use-case';
 import { ListAdminPractitionersDirectoryUseCase } from '../use-cases/list-admin-practitioners-directory.use-case';
 import { UpdateAdminPractitionerAvatarUseCase } from '../use-cases/update-admin-practitioner-avatar.use-case';
+import { GetAdminPractitionerAvatarFileUseCase } from '../use-cases/get-admin-practitioner-avatar-file.use-case';
 
 /**
  * Admin practitioner directory controller.
@@ -51,6 +56,7 @@ export class AdminPractitionersController {
     private readonly updateAdminPractitionerAvatarUseCase: UpdateAdminPractitionerAvatarUseCase,
     private readonly removeAdminPractitionerAvatarUseCase: RemoveAdminPractitionerAvatarUseCase,
     private readonly clearPractitionerAuthLockoutUseCase: ClearPractitionerAuthLockoutUseCase,
+    private readonly getAdminPractitionerAvatarFileUseCase: GetAdminPractitionerAvatarFileUseCase,
   ) {}
 
   @Get()
@@ -91,6 +97,23 @@ export class AdminPractitionersController {
       page: query.page,
       limit: query.limit,
     });
+  }
+
+  @Get(':id/avatar')
+  @ApiOperation({
+    summary: 'Get practitioner avatar from admin scope',
+    description: 'Returns only the stored avatar image for an admin-visible practitioner.',
+  })
+  @ApiResponse({ status: 200, description: 'Avatar image stream' })
+  @ApiNotFoundResponse({ description: 'Practitioner or avatar not found' })
+  async avatar(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const avatar = await this.getAdminPractitionerAvatarFileUseCase.execute(id);
+    response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('Cache-Control', 'private, max-age=300');
+    return new StreamableFile(createReadStream(avatar.absolutePath));
   }
 
   @Patch(':id/avatar')

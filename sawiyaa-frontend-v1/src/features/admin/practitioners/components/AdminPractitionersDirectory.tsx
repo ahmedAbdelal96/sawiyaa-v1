@@ -61,7 +61,7 @@ export default function AdminPractitionersDirectory() {
   const [minRating, setMinRating] = useState<"" | "3" | "4" | "4.5">("");
   const [sort, setSort] = useState<
     "recommended" | "experience" | "rating" | "newest" | "oldest"
-  >("recommended");
+  >("newest");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
   const hasAdvancedFilters =
@@ -259,7 +259,7 @@ export default function AdminPractitionersDirectory() {
     setCountry("");
     setOnlineOnly(false);
     setMinRating("");
-    setSort("recommended");
+    setSort("newest");
     setPage(1);
   };
 

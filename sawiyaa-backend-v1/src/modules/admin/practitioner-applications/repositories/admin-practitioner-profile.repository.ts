@@ -81,6 +81,25 @@ export class AdminPractitionerProfileRepository {
     });
   }
 
+  updateStatusAndPublish(
+    practitionerId: string,
+    status: PractitionerStatus,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerProfile.update({
+      where: { id: practitionerId },
+      data: {
+        status,
+        isPublicProfilePublished: true,
+      },
+      select: {
+        id: true,
+        status: true,
+        isPublicProfilePublished: true,
+      },
+    });
+  }
+
   updateAvatar(
     practitionerId: string,
     avatarUrl: string | null,

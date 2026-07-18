@@ -124,7 +124,15 @@ export class LoginPractitionerPasswordUseCase {
       });
     }
 
-    if (practitionerProfile.status !== PractitionerStatus.APPROVED) {
+    // Account authentication is separate from practitioner application approval.
+    // Newly registered practitioners start in DRAFT and must be able to sign in
+    // to complete the separate professional application flow. Only statuses that
+    // explicitly disable the account remain blocked here.
+    if (
+      practitionerProfile.status === PractitionerStatus.REJECTED ||
+      practitionerProfile.status === PractitionerStatus.SUSPENDED ||
+      practitionerProfile.status === PractitionerStatus.INACTIVE
+    ) {
       throw await this.throwFailedLogin({
         subject: lockoutSubject,
         reason: `PRACTITIONER_STATUS_${practitionerProfile.status}`,

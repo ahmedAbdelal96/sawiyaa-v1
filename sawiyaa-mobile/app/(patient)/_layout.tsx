@@ -141,16 +141,19 @@ export default function PatientLayout() {
         <Tabs.Screen name="support/index" options={{ href: null }} />
         <Tabs.Screen
           name="support/new"
-          options={{ href: null }}
+          options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
           name="support/[id]"
+          options={{ href: null, tabBarStyle: { display: "none" } }}
+        />
+        <Tabs.Screen
+          name="messages/index"
           options={{ href: null }}
         />
-        <Tabs.Screen name="messages/index" options={{ href: null }} />
         <Tabs.Screen
           name="messages/[id]"
-          options={{ href: null }}
+          options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen name="profile-details" options={{ href: null }} />
         <Tabs.Screen name="profile-details/edit" options={{ href: null }} />
@@ -163,7 +166,7 @@ export default function PatientLayout() {
         />
         <Tabs.Screen
           name="care-chat/[id]"
-          options={{ href: null }}
+          options={{ href: null, tabBarStyle: { display: "none" } }}
         />
         <Tabs.Screen
           name="care-chat/request/[id]"

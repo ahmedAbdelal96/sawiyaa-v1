@@ -491,9 +491,7 @@ export class SupportTicketRepository {
               deletedAt: null,
               visibility: MessageVisibility.NORMAL,
             },
-            orderBy: {
-              sentAt: 'asc',
-            },
+            orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
             select: {
               id: true,
               senderUserId: true,
@@ -505,7 +503,7 @@ export class SupportTicketRepository {
             },
           },
           internalNotes: {
-            orderBy: { createdAt: 'asc' },
+            orderBy: [{ createdAt: 'asc' }],
             select: {
               id: true,
               noteText: true,
@@ -514,6 +512,6 @@ export class SupportTicketRepository {
           },
         },
       },
-    } as const;
+    } satisfies Prisma.SupportTicketInclude;
   }
 }

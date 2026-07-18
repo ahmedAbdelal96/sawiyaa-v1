@@ -4,6 +4,7 @@ import { MessageCircle } from "lucide-react";
 import type { UnifiedMessagingRole } from "../types/messages-shell.types";
 import { useUnifiedUnreadBadge } from "../hooks/use-unified-unread-badge";
 import { dispatchToggleMessagesShell } from "../lib/messages-shell-events";
+import { cn } from "@/lib/utils";
 
 type Props = {
   role: UnifiedMessagingRole;
@@ -25,6 +26,8 @@ export default function MessagesHeaderButton({ role }: Props) {
     });
   };
 
+  const isBtnAdmin = role === "admin";
+
   return (
     <button
       type="button"
@@ -35,11 +38,15 @@ export default function MessagesHeaderButton({ role }: Props) {
     >
       <MessageCircle className="h-5 w-5" />
       {unreadLikeCount > 0 ? (
-        <span className="absolute -top-1 -end-1 z-10 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold ring-2 ring-white dark:ring-surface-secondary">
+        <span
+          className={cn(
+            "absolute -top-1 -end-1 z-10 flex min-w-[20px] h-5 px-1.5 items-center justify-center rounded-full text-white text-[11px] font-bold ring-2 ring-white dark:ring-surface-secondary",
+            isBtnAdmin ? "bg-amber-600" : "bg-teal-600"
+          )}
+        >
           {badgeValue}
         </span>
       ) : null}
     </button>
   );
 }
-

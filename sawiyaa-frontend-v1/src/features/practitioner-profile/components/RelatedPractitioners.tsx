@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { Star, BadgeCheck, ArrowRight } from "lucide-react";
 import type { PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
+import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
 type Props = {
   practitioners: PublicPractitioner[];
@@ -52,7 +53,12 @@ export default async function RelatedPractitioners({
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border-light bg-surface-secondary text-lg font-bold text-primary dark:bg-primary/15 dark:text-primary-light"
                 >
-                  {p.initials}
+                  <PractitionerAvatar
+                    src={p.avatarUrl}
+                    alt={displayName}
+                    initials={p.initials}
+                    className="h-full w-full rounded-2xl object-cover"
+                  />
                 </div>
 
                 <div className="min-w-0 flex-1">

@@ -13,6 +13,7 @@ import { AuthRequestContextService } from '@modules/auth/services/auth-request-c
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { MessagingUseCase } from '../use-cases/messaging.use-case';
+import { MessagingRealtimePublisher } from '../services/messaging-realtime.publisher';
 
 type MessagingSocket = Socket & { data: { authenticatedUser?: AuthenticatedUser } };
 
@@ -31,9 +32,11 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayInit {
   constructor(
     private readonly authRequestContextService: AuthRequestContextService,
     private readonly messaging: MessagingUseCase,
+    private readonly realtimePublisher: MessagingRealtimePublisher,
   ) {}
 
   afterInit(server: Server) {
+    this.realtimePublisher.attachServer(server);
     server.use(async (socket: MessagingSocket, next) => {
       try {
         const token = this.extractAccessToken(socket);
@@ -111,13 +114,13 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayInit {
         payload.conversationId,
         payload.message ?? '',
         payload.attachments ?? [],
+        payload.clientMessageId,
       );
       const event = {
         conversationId: payload.conversationId,
         clientMessageId: payload.clientMessageId,
         item: result.item,
       };
-      client.to(this.room(payload.conversationId)).emit('messages:new', event);
       return { ok: true, ...event };
     } catch (error) {
       return this.failure(error);

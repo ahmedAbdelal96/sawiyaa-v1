@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   ConversationType,
@@ -129,6 +129,8 @@ export class MessagingRepository {
     senderUserId: string;
     senderRole: ConversationParticipantRole;
     message: string;
+    clientMessageId?: string;
+    clientMessagePayloadHash?: string;
     attachments?: Array<{
       fileId: string;
       fileUrl: string;
@@ -137,7 +139,7 @@ export class MessagingRepository {
       originalName?: string;
     }>;
   }) {
-    return this.prisma.$transaction(async (tx) => {
+    const createMessage = async () => this.prisma.$transaction(async (tx) => {
       const message = await tx.message.create({
         data: {
           conversationId: input.conversationId,
@@ -146,6 +148,8 @@ export class MessagingRepository {
           status: MessageStatus.SENT,
           visibility: MessageVisibility.NORMAL,
           contentText: input.message,
+          clientMessageId: input.clientMessageId ?? null,
+          clientMessagePayloadHash: input.clientMessagePayloadHash ?? null,
         },
         select: {
           id: true,
@@ -184,6 +188,48 @@ export class MessagingRepository {
       }
       return message;
     });
+
+    try {
+      return { message: await createMessage(), created: true };
+    } catch (error) {
+      if (
+        !input.clientMessageId ||
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== 'P2002'
+      ) {
+        throw error;
+      }
+
+      const existing = await this.prisma.message.findFirst({
+        where: {
+          conversationId: input.conversationId,
+          senderUserId: input.senderUserId,
+          clientMessageId: input.clientMessageId,
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          senderUserId: true,
+          messageType: true,
+          status: true,
+          contentText: true,
+          sentAt: true,
+          deliveredAt: true,
+          readAt: true,
+          clientMessagePayloadHash: true,
+        },
+      });
+
+      if (!existing) throw error;
+      if (existing.clientMessagePayloadHash !== input.clientMessagePayloadHash) {
+        throw new ConflictException({
+          messageKey: 'messages.errors.idempotencyConflict',
+          errorCode: 'MESSAGE_IDEMPOTENCY_CONFLICT',
+        });
+      }
+
+      return { message: existing, created: false };
+    }
   }
 
   async markRead(input: { conversationId: string; userId: string; messageId: string }) {
@@ -201,14 +247,19 @@ export class MessagingRepository {
       where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
       select: { lastReadMessageId: true, lastReadAt: true },
     });
-    if (!participant) return { lastReadMessageId: null, lastReadAt: null, unreadCount: 0 };
+    if (!participant) return { lastReadMessageId: null, lastReadAt: null };
     const current = participant.lastReadAt?.getTime() ?? -1;
-    if (target.senderUserId !== input.userId && target.sentAt.getTime() > current) {
+    const currentMsgId = participant.lastReadMessageId ?? '';
+    const shouldUpdate =
+      target.sentAt.getTime() > current ||
+      (target.sentAt.getTime() === current && target.id > currentMsgId);
+
+    if (target.senderUserId !== input.userId && shouldUpdate) {
       const now = new Date();
       await this.prisma.$transaction([
         this.prisma.conversationParticipant.updateMany({
           where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
-          data: { lastReadMessageId: target.id, lastReadAt: now },
+          data: { lastReadMessageId: target.id, lastReadAt: target.sentAt },
         }),
         this.prisma.message.updateMany({
           where: {
@@ -217,12 +268,15 @@ export class MessagingRepository {
             status: { in: [MessageStatus.SENT, MessageStatus.DELIVERED] },
             deletedAt: null,
             visibility: MessageVisibility.NORMAL,
-            sentAt: { lte: target.sentAt },
+            OR: [
+              { sentAt: { lt: target.sentAt } },
+              { sentAt: target.sentAt, id: { lte: target.id } },
+            ],
           },
           data: { status: MessageStatus.READ, deliveredAt: now, readAt: now },
         }),
       ]);
-      return { lastReadMessageId: target.id, lastReadAt: now };
+      return { lastReadMessageId: target.id, lastReadAt: target.sentAt };
     }
     return { lastReadMessageId: participant.lastReadMessageId, lastReadAt: participant.lastReadAt };
   }
@@ -272,14 +326,29 @@ export class MessagingRepository {
     }));
   }
 
-  async countUnread(conversationId: string, userId: string, lastReadAt: Date | null) {
+  async countUnread(
+    conversationId: string,
+    userId: string,
+    lastReadAt: Date | null,
+    lastReadMessageId: string | null = null,
+  ) {
     return this.prisma.message.count({
       where: {
         conversationId,
         senderUserId: { not: userId },
         deletedAt: null,
         visibility: MessageVisibility.NORMAL,
-        ...(lastReadAt ? { sentAt: { gt: lastReadAt } } : {}),
+        ...(lastReadAt
+          ? {
+              OR: [
+                { sentAt: { gt: lastReadAt } },
+                {
+                  sentAt: lastReadAt,
+                  ...(lastReadMessageId ? { id: { gt: lastReadMessageId } } : {}),
+                },
+              ],
+            }
+          : {}),
       },
     });
   }

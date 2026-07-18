@@ -82,7 +82,9 @@ export class ListAdminPractitionersDirectoryUseCase {
         slug: row.publicSlug || row.id,
         displayName: row.user.displayName ?? null,
         email: row.user.emails?.[0]?.email ?? null,
-        avatarUrl: row.avatarUrl ?? null,
+        avatarUrl: row.avatarUrl
+          ? `/api/v1/admin/practitioners/${row.id}/avatar`
+          : null,
         professionalTitle: row.professionalTitle ?? null,
         practitionerType: row.practitionerType,
         countryCode: row.country?.isoCode ?? null,

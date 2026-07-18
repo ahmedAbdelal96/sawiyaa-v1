@@ -545,6 +545,19 @@ export class PublicPractitionerReadRepository {
     });
   }
 
+  findPublicAvatarSource(slug: string) {
+    return this.prisma.practitionerProfile.findFirst({
+      where: {
+        ...this.buildPublicWhere({}),
+        publicSlug: slug.trim().toLowerCase(),
+      },
+      select: {
+        userId: true,
+        publicSlug: true,
+      },
+    });
+  }
+
   countApprovedCredentials(practitionerId: string) {
     return this.prisma.practitionerCredential.count({
       where: {

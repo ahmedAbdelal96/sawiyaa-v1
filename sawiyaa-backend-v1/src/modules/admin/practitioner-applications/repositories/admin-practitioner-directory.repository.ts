@@ -140,11 +140,18 @@ export class AdminPractitionerDirectoryRepository {
     };
   }
 
-  private buildOrderBy(sort?: AdminPractitionerSortByDto) {
-    if (sort === AdminPractitionerSortByDto.NEWEST) return 'newest';
-    if (sort === AdminPractitionerSortByDto.OLDEST) return 'oldest';
-    if (sort === AdminPractitionerSortByDto.EXPERIENCE) return 'experience';
-    return 'rating';
+  private buildOrderBy(sort?: AdminPractitionerSortByDto): Prisma.PractitionerProfileOrderByWithRelationInput[] {
+    if (sort === AdminPractitionerSortByDto.OLDEST) {
+      return [{ createdAt: 'asc' }, { id: 'asc' }];
+    }
+
+    if (sort === AdminPractitionerSortByDto.EXPERIENCE) {
+      return [{ yearsOfExperience: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }];
+    }
+
+    // Rating is decorated after the profile query, so keep its database order
+    // deterministic and apply the rating comparison below before pagination.
+    return [{ createdAt: 'desc' }, { id: 'desc' }];
   }
 
   async list(input: {
@@ -161,6 +168,7 @@ export class AdminPractitionerDirectoryRepository {
     const where = this.buildWhere(input);
     const rows = await this.prisma.practitionerProfile.findMany({
       where,
+      orderBy: this.buildOrderBy(input.sort),
       select: {
         id: true,
         publicSlug: true,
@@ -211,21 +219,30 @@ export class AdminPractitionerDirectoryRepository {
           return rating !== null && rating >= input.minRating!;
         });
 
-    const sortMode = this.buildOrderBy(input.sort);
+    const sortMode = input.sort ?? AdminPractitionerSortByDto.NEWEST;
     filteredRows.sort((left, right) => {
       if (sortMode === 'newest') {
-        return right.createdAt.getTime() - left.createdAt.getTime();
+        return (
+          right.createdAt.getTime() - left.createdAt.getTime() ||
+          right.id.localeCompare(left.id)
+        );
       }
 
       if (sortMode === 'oldest') {
-        return left.createdAt.getTime() - right.createdAt.getTime();
+        return (
+          left.createdAt.getTime() - right.createdAt.getTime() ||
+          left.id.localeCompare(right.id)
+        );
       }
 
       if (sortMode === 'experience') {
         if ((right.yearsOfExperience ?? 0) !== (left.yearsOfExperience ?? 0)) {
           return (right.yearsOfExperience ?? 0) - (left.yearsOfExperience ?? 0);
         }
-        return right.createdAt.getTime() - left.createdAt.getTime();
+        return (
+          right.createdAt.getTime() - left.createdAt.getTime() ||
+          right.id.localeCompare(left.id)
+        );
       }
 
       const leftRating = left.ratingSummary.averageRating ?? -1;
@@ -238,7 +255,10 @@ export class AdminPractitionerDirectoryRepository {
         return (right.yearsOfExperience ?? 0) - (left.yearsOfExperience ?? 0);
       }
 
-      return right.createdAt.getTime() - left.createdAt.getTime();
+      return (
+        right.createdAt.getTime() - left.createdAt.getTime() ||
+        right.id.localeCompare(left.id)
+      );
     });
 
     const total = filteredRows.length;

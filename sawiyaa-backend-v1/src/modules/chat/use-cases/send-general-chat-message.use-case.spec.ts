@@ -146,6 +146,7 @@ describe('SendGeneralChatMessageUseCase', () => {
       'conv_1',
       'Hello',
       [],
+      undefined,
     );
     expect(
       generalChatRepository.appendMessageInGeneralConversation,

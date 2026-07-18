@@ -140,8 +140,12 @@ export class VerifyPractitionerLoginOtpUseCase {
       });
     }
 
+    // Application approval controls practitioner-facing eligibility, not access
+    // to the account needed to complete onboarding/application work.
     if (
-      currentUser.practitionerProfile.status !== PractitionerStatus.APPROVED
+      currentUser.practitionerProfile.status === PractitionerStatus.REJECTED ||
+      currentUser.practitionerProfile.status === PractitionerStatus.SUSPENDED ||
+      currentUser.practitionerProfile.status === PractitionerStatus.INACTIVE
     ) {
       this.securityAuditService.logAsync({
         action: 'auth.practitioner.login.failure',

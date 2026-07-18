@@ -68,7 +68,7 @@ const generalConversationReadSelect =
         deletedAt: null,
         visibility: MessageVisibility.NORMAL,
       },
-      orderBy: [{ sentAt: 'desc' }, { id: 'asc' }],
+      orderBy: [{ sentAt: 'desc' }, { id: 'desc' }],
       take: 1,
       select: {
         id: true,
@@ -231,6 +231,7 @@ export class GeneralChatRepository {
     conversationId: string;
     userId: string;
     lastReadAt: Date | null;
+    lastReadMessageId?: string | null;
   }) {
     return this.prisma.message.count({
       where: {
@@ -240,7 +241,19 @@ export class GeneralChatRepository {
         senderUserId: {
           not: input.userId,
         },
-        ...(input.lastReadAt ? { sentAt: { gt: input.lastReadAt } } : {}),
+        ...(input.lastReadAt
+          ? {
+              OR: [
+                { sentAt: { gt: input.lastReadAt } },
+                {
+                  sentAt: input.lastReadAt,
+                  ...(input.lastReadMessageId
+                    ? { id: { gt: input.lastReadMessageId } }
+                    : {}),
+                },
+              ],
+            }
+          : {}),
       },
     });
   }

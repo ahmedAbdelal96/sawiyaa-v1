@@ -1,4 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { ConversationParticipantRole } from '@prisma/client';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
@@ -7,6 +10,8 @@ import { MessagingPresenter } from '../presenters/messaging.presenter';
 import { MessagingRepository } from '../repositories/messaging.repository';
 import { MessagingActor, MessagingConversationRecord } from '../types/messaging.types';
 import { GeneralChatAttachmentStorageService } from '@modules/chat/services/general-chat-attachment-storage.service';
+import { createHash } from 'node:crypto';
+import { MessagingRealtimePublisher } from '../services/messaging-realtime.publisher';
 
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
@@ -18,9 +23,12 @@ export class MessagingUseCase {
     private readonly presenter: MessagingPresenter,
     private readonly notifications: OperationalNotificationService,
     private readonly attachmentStorage: GeneralChatAttachmentStorageService,
+    private readonly permissionResolver: PermissionResolverService,
+    private readonly realtimePublisher: MessagingRealtimePublisher,
   ) {}
 
   async listConversations(actor: AuthenticatedUser, page = 1, limit = 20) {
+    await this.assertSupportStaffPermission(actor);
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
     const result = await this.repository.listConversations(actor, safePage, safeLimit);
@@ -30,12 +38,14 @@ export class MessagingUseCase {
 
   async getConversation(actor: AuthenticatedUser, conversationId: string) {
     const conversation = await this.requireConversation(conversationId);
+    await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
     return { item: await this.presentConversation(conversation, actor) };
   }
 
   async listMessages(actor: AuthenticatedUser, conversationId: string, page = 1, limit = 30) {
     const conversation = await this.requireConversation(conversationId);
+    await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
@@ -74,48 +84,84 @@ export class MessagingUseCase {
       fileSize?: number;
       originalName?: string;
     }> = [],
+    clientMessageId?: string,
   ) {
     const conversation = await this.requireConversation(conversationId);
+    await this.assertSupportStaffPermission(actor, conversation);
     const authorization = this.policies.canSend(conversation, actor);
     if (!authorization.allowed) {
       throw new BadRequestException({ messageKey: 'messages.errors.conversationNotSendable', errorCode: `MESSAGING_${authorization.reason}` });
     }
     const normalized = message.trim();
     if (!normalized) throw new BadRequestException({ messageKey: 'messages.errors.messageRequired', errorCode: 'MESSAGING_MESSAGE_REQUIRED' });
+    const normalizedClientMessageId = clientMessageId?.trim() || undefined;
+    if (normalizedClientMessageId && !/^[A-Za-z0-9_-]{1,191}$/.test(normalizedClientMessageId)) {
+      throw new BadRequestException({ messageKey: 'messages.errors.invalidClientMessageId', errorCode: 'MESSAGE_INVALID_CLIENT_MESSAGE_ID' });
+    }
+    const clientMessagePayloadHash = normalizedClientMessageId
+      ? this.buildMessagePayloadHash(normalized, attachments)
+      : undefined;
     const senderRole = this.resolveSenderRole(conversation, actor);
-    const created = await this.repository.appendMessage({ conversationId, senderUserId: actor.id, senderRole, message: normalized, attachments });
+    const stored = await this.repository.appendMessage({ conversationId, senderUserId: actor.id, senderRole, message: normalized, attachments, clientMessageId: normalizedClientMessageId, clientMessagePayloadHash });
     const fresh = await this.requireConversation(conversationId);
-    await this.notifications.notifyConversationMessage({
-      lane:
-        conversation.conversationType === 'SUPPORT'
-          ? 'SUPPORT'
-          : conversation.conversationType === 'CARE_APPROVED'
-            ? 'CARE_CHAT'
-            : 'SESSION_CHAT',
-      threadId: conversation.supportTicketId ?? conversationId,
-      messageId: created.id,
-      senderUserId: actor.id,
-      participants: fresh.participants,
-    });
-    const identities = await this.buildIdentities(fresh, [{ id: actor.id, role: senderRole }]);
+    const item = this.presenter.presentMessage(
+      stored.message as MessagingConversationRecord['messages'][number],
+      await this.buildIdentities(fresh, [{ id: actor.id, role: senderRole }]),
+    );
+    if (stored.created) {
+      await this.notifications.notifyConversationMessage({
+        lane:
+          conversation.conversationType === 'SUPPORT'
+            ? 'SUPPORT'
+            : conversation.conversationType === 'CARE_APPROVED'
+              ? 'CARE_CHAT'
+              : 'SESSION_CHAT',
+        threadId: conversation.supportTicketId ?? conversationId,
+        messageId: stored.message.id,
+        senderUserId: actor.id,
+        participants: fresh.participants,
+      });
+      this.realtimePublisher.publishNewMessage({
+        conversationId,
+        clientMessageId: normalizedClientMessageId,
+        item: { ...item, conversationId, attachments, conversationLatestActivityAt: fresh.updatedAt.toISOString() },
+      });
+    }
     return {
       item: {
-        ...this.presenter.presentMessage(
-          created as MessagingConversationRecord['messages'][number],
-          identities,
-        ),
+        ...item,
         conversationId,
         attachments,
         conversationLatestActivityAt: fresh.updatedAt.toISOString(),
       },
+      created: stored.created,
     };
+  }
+
+  private buildMessagePayloadHash(
+    message: string,
+    attachments: Array<{ fileId: string; fileUrl: string; mimeType: string; fileSize?: number; originalName?: string }>,
+  ) {
+    const payload = JSON.stringify({
+      messageType: 'TEXT',
+      message,
+      attachments: attachments.map((attachment) => ({
+        fileId: attachment.fileId,
+        fileUrl: attachment.fileUrl,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize ?? null,
+        originalName: attachment.originalName ?? null,
+      })),
+    });
+    return createHash('sha256').update(payload, 'utf8').digest('hex');
   }
 
   async markRead(actor: AuthenticatedUser, conversationId: string, messageId: string) {
     const conversation = await this.requireConversation(conversationId);
+    await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
     const result = await this.repository.markRead({ conversationId, userId: actor.id, messageId });
-    const unreadCount = await this.repository.countUnread(conversationId, actor.id, result.lastReadAt);
+    const unreadCount = await this.repository.countUnread(conversationId, actor.id, result.lastReadAt, result.lastReadMessageId);
     return { item: { conversationId, ...result, lastReadAt: result.lastReadAt?.toISOString() ?? null, unreadCount, hasUnread: unreadCount > 0 } };
   }
 
@@ -185,6 +231,7 @@ export class MessagingUseCase {
   }
 
   async getUnreadSummary(actor: AuthenticatedUser) {
+    await this.assertSupportStaffPermission(actor);
     const result = await this.repository.listConversations(actor, 1, 50);
     let unreadCount = 0;
     for (const conversation of result.items) {
@@ -196,6 +243,7 @@ export class MessagingUseCase {
           conversation.id,
           actor.id,
           participant.lastReadAt,
+          participant.lastReadMessageId,
         );
       }
     }
@@ -220,12 +268,37 @@ export class MessagingUseCase {
     return conversation;
   }
 
+  private async assertSupportStaffPermission(
+    actor: AuthenticatedUser,
+    conversation?: MessagingConversationRecord,
+  ) {
+    if (conversation && conversation.conversationType !== 'SUPPORT') return;
+
+    const isSupportStaff = actor.roles.some((role) =>
+      [AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT].includes(role),
+    );
+    if (!isSupportStaff) return;
+
+    const allowed = await this.permissionResolver.hasPermissions({
+      userId: actor.id,
+      roles: actor.roles,
+      requiredPermissions: [PermissionKey.CHAT_CONVERSATIONS_READ],
+    });
+    if (!allowed) {
+      throw new ForbiddenException({
+        messageKey: 'messages.errors.conversationAccessDenied',
+        errorCode: 'MESSAGING_CONVERSATION_ACCESS_DENIED',
+      });
+    }
+  }
+
   private async assertAttachmentAccess(
     actor: AuthenticatedUser,
     conversationId: string,
     options: { allowLegacyAdmin?: boolean },
   ) {
     const conversation = await this.requireConversation(conversationId);
+    await this.assertSupportStaffPermission(actor, conversation);
     const isLegacyAdmin =
       options.allowLegacyAdmin === true &&
       actor.roles.some((role) => ['ADMIN', 'SUPER_ADMIN'].includes(role as string));
@@ -235,7 +308,7 @@ export class MessagingUseCase {
 
   private async presentConversation(conversation: MessagingConversationRecord, actor: AuthenticatedUser) {
     const participant = conversation.participants.find((item) => item.userId === actor.id);
-    const unreadCount = participant ? await this.repository.countUnread(conversation.id, actor.id, participant.lastReadAt) : 0;
+    const unreadCount = participant ? await this.repository.countUnread(conversation.id, actor.id, participant.lastReadAt, participant.lastReadMessageId) : 0;
     const authorization = this.policies.canSend(conversation, actor);
     return this.presenter.presentConversation({ conversation, actorId: actor.id, participants: await this.buildIdentities(conversation), unreadCount, canSend: authorization.allowed, sendDisabledReason: authorization.allowed ? null : authorization.reason, publicType: this.policies.getPublicType(conversation) });
   }
