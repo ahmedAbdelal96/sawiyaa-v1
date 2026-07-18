@@ -109,7 +109,7 @@ patient_mobile_app_screen/whatsapp_image_*
 **/artifacts/
 **/*artifacts*/
 **/smokes/
-**/tmp-*.txt
+**/tmp-*
 **/tmp/
 **/*.tmp*
 artifacts/
