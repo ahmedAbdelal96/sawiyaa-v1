@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { LogOut, User } from "lucide-react";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import type { ReactNode } from "react";
 import Avatar from "@/components/ui/avatar/Avatar";
 
@@ -39,6 +40,9 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   const [isOpen, setIsOpen] = useState(false);
   const { user, tenant, isLoading } = useAuthState();
   const patientProfileQuery = usePatientProfile(user?.role === "PATIENT" && Boolean(user));
+  const practitionerProfileQuery = usePractitionerProfile(
+    user?.role === "PRACTITIONER" && Boolean(user),
+  );
   const { logout } = useAuthActions();
   const locale = useLocale();
   const t = useTranslations("common.nav");
@@ -55,7 +59,13 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   const profileHref = getProfileHref(user?.role);
   const dropdownAlignment = locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
   const patientAvatar = patientProfileQuery.data?.profile.avatarDataUrl ?? null;
-  const effectiveAvatar = user?.role === "PATIENT" ? patientAvatar : user?.avatar ?? null;
+  const practitionerAvatar = practitionerProfileQuery.data?.profile.avatarUrl ?? null;
+  const effectiveAvatar =
+    user?.role === "PATIENT"
+      ? patientAvatar
+      : user?.role === "PRACTITIONER"
+        ? practitionerAvatar
+        : user?.avatar ?? null;
 
   const handleLogout = async () => {
     setIsOpen(false);

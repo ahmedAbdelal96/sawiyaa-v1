@@ -1,0 +1,15 @@
+import { chromium } from "playwright";
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+await page.goto("http://localhost:3000/ar/signin/practitioner", { waitUntil: "domcontentloaded" });
+await page.locator('input[name="email"]').fill(process.env.QA_EMAIL);
+await page.locator('input[name="password"]').fill(process.env.QA_PASSWORD);
+await page.locator('button[type="submit"]').click();
+await page.waitForTimeout(800);
+await page.goto("http://localhost:3000/ar/practitioner/application", { waitUntil: "domcontentloaded" }).catch(() => undefined);
+await page.waitForTimeout(1000);
+const step = page.getByRole("button", { name: /^3/ });
+if (await step.count()) await step.click();
+await page.waitForTimeout(300);
+console.log(JSON.stringify({ url: page.url(), buttons: await page.locator("button").allTextContents(), text: (await page.locator("body").innerText()).slice(-3500) }));
+await browser.close();
