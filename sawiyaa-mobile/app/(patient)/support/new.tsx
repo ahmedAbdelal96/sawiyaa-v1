@@ -5,79 +5,58 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Header, Text, Input } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { useCreateSupportTicket } from "../../../src/features/patient/support/hooks";
+import { createPatientSupportTicket } from "../../../src/features/messages/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { extractApiErrorMessage } from "../../../src/lib/api";
-import type { SupportTicketType } from "../../../src/features/patient/support/types";
 
 export default function NewSupportChatScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{
-    returnTo?: string;
-    relatedSessionId?: string;
-    category?: string;
-    subject?: string;
-    message?: string;
-    sessionCode?: string;
-  }>();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language?.startsWith("ar") ?? false;
+  const queryClient = useQueryClient();
 
-  const relatedSessionId = toSingleParam(params.relatedSessionId);
-  const linkedSessionCode = toSingleParam(params.sessionCode);
-  const initialSubject = toSingleParam(params.subject) ?? "";
-  const initialMessage = toSingleParam(params.message) ?? "";
-  const initialCategory = normalizeCategory(toSingleParam(params.category));
-
-  const [message, setMessage] = useState(initialMessage);
-  const [category, setCategory] = useState<SupportTicketType>(
-    initialCategory ?? (relatedSessionId ? "SESSION" : "GENERAL"),
-  );
-  const [showCategory, setShowCategory] = useState(false);
+  const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const createMutation = useCreateSupportTicket();
+  const [isPending, setIsPending] = useState(false);
 
   async function handleSend() {
     setError(null);
-    if (!message.trim() || message.trim().length < 10) {
-      setError(t("support.new.descriptionRequired"));
+    const trimmed = message.trim();
+    if (!trimmed || trimmed.length < 10) {
+      setError(
+        isRTL
+          ? "يرجى كتابة وصف المشكلة (10 أحرف على الأقل)"
+          : "Please describe your issue (at least 10 characters)"
+      );
       return;
     }
 
+    setIsPending(true);
     try {
-      const subjectText = initialSubject.trim() || message.trim().slice(0, 60);
-      const res = await createMutation.mutateAsync({
-        category,
-        subject: subjectText,
-        description: message.trim(),
-        relatedSessionId: relatedSessionId ?? undefined,
-      });
-      router.replace({
-        pathname: "/(patient)/support/[id]",
-        params: { id: res.item.id, returnTo: toSingleParam(params.returnTo) ?? "" },
-      } as any);
+      const res = await createPatientSupportTicket({ description: trimmed });
+      // Invalidate canonical conversations to fetch new support ticket
+      await queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+
+      const conversationId = res?.item?.conversationId || res?.item?.id;
+      if (conversationId) {
+        router.replace(`/(patient)/messages/${conversationId}`);
+      } else {
+        router.replace("/(patient)/messages?tab=support");
+      }
     } catch (err) {
       setError(extractApiErrorMessage(err));
+    } finally {
+      setIsPending(false);
     }
   }
-
-  const CATEGORIES: SupportTicketType[] = [
-    "GENERAL",
-    "BOOKING",
-    "PAYMENT",
-    "SESSION",
-    "TECHNICAL",
-    "ACCOUNT",
-    "CHAT",
-    "OTHER",
-  ];
 
   return (
     <Screen bg="background">
@@ -89,209 +68,78 @@ export default function NewSupportChatScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={90}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        {/* Body: empty chat-like area */}
         <View style={styles.body}>
-          {relatedSessionId ? (
-            <View
-              style={[
-                styles.sessionContextBox,
-                {
-                  backgroundColor: theme.colors.primaryLight,
-                  borderColor: theme.colors.borderLight,
-                  flexDirection: isRTL ? "row-reverse" : "row",
-                },
-              ]}
-            >
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={16}
-                color={theme.colors.primary}
-              />
-              <View style={styles.sessionContextCopy}>
-                <Text weight="600" style={[styles.sessionContextTitle, isRTL ? styles.subtitleRtl : null]}>
-                  {t("support.new.sessionContextTitle")}
-                </Text>
-                <Text
-                  color={theme.colors.textSecondary}
-                  style={[styles.sessionContextBody, isRTL ? styles.subtitleRtl : null]}
-                >
-                  {t("support.new.sessionContextBody", {
-                    sessionCode: linkedSessionCode ?? relatedSessionId,
-                  })}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-
           <Text
+            weight="600"
             color={theme.colors.textSecondary}
-            style={[styles.subtitle, isRTL ? styles.subtitleRtl : null]}
+            style={[styles.label, { textAlign: isRTL ? "right" : "left" }]}
           >
-            {t(
-              "messages.inbox.newSupportCardDesc",
-              "Describe your issue and we will get back to you shortly.",
-            )}
+            {isRTL ? "كيف يمكننا مساعدتك؟ *" : "How can we help you? *"}
           </Text>
 
-          {/* Category selector — compact, hidden by default */}
-          <TouchableOpacity
-            onPress={() => setShowCategory((v) => !v)}
-            style={[
-              styles.categoryToggle,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.borderLight,
-                flexDirection: isRTL ? "row-reverse" : "row",
-              },
-            ]}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="folder-outline"
-              size={14}
-              color={theme.colors.textMuted}
-            />
-            <Text style={[styles.categoryToggleText, { color: theme.colors.textSecondary }]}>
-              {t(`support.categories.${category}`, category)}
-            </Text>
-            <Ionicons
-              name={showCategory ? "chevron-up" : "chevron-down"}
-              size={13}
-              color={theme.colors.textMuted}
-            />
-          </TouchableOpacity>
+          <Input
+            value={message}
+            onChangeText={setMessage}
+            placeholder={
+              isRTL
+                ? "اكتب تفاصيل استفسارك أو مشكلتك هنا..."
+                : "Type the details of your inquiry or issue here..."
+            }
+            placeholderTextColor={theme.colors.textMuted}
+            multiline
+            style={[styles.input, isRTL ? styles.inputRtl : null]}
+            containerStyle={styles.inputContainer}
+            maxLength={2000}
+          />
 
-          {showCategory ? (
+          {error ? (
             <View
               style={[
-                styles.categorySheet,
+                styles.errorBox,
                 {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.borderLight,
+                  backgroundColor: theme.colors.error + "15",
                   flexDirection: isRTL ? "row-reverse" : "row",
                 },
               ]}
             >
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  onPress={() => {
-                    setCategory(cat);
-                    setShowCategory(false);
-                  }}
-                  style={[
-                    styles.categoryItem,
-                    cat === category && {
-                      backgroundColor: theme.colors.primary + "15",
-                    },
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.categoryItemText,
-                      { color: cat === category ? theme.colors.primary : theme.colors.textSecondary },
-                    ]}
-                  >
-                    {t(`support.categories.${cat}`, cat)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <Ionicons name="warning" size={14} color={theme.colors.error} />
+              <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                {error}
+              </Text>
             </View>
           ) : null}
-        </View>
 
-        {/* Error */}
-        {error ? (
-          <View
-            style={[
-              styles.errorBox,
-              {
-                backgroundColor: theme.colors.error + "15",
-                marginHorizontal: 16,
-                flexDirection: isRTL ? "row-reverse" : "row",
-              },
-            ]}
-          >
-            <Ionicons name="warning" size={14} color={theme.colors.error} />
-            <Text style={[styles.errorText, { color: theme.colors.error }]}>
-              {error}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Composer */}
-        <View
-          style={[
-            styles.composer,
-            {
-              borderTopColor: theme.colors.borderLight,
-              backgroundColor: theme.colors.surface,
-              flexDirection: isRTL ? "row-reverse" : "row",
-            },
-          ]}
-        >
-          <View style={styles.inputWrap}>
-            <Input
-              value={message}
-              onChangeText={setMessage}
-              placeholder={t("messages.inbox.composerPlaceholder", "اكتب رسالتك...")}
-              placeholderTextColor={theme.colors.textMuted}
-              multiline
-              style={[
-                styles.input,
-                isRTL ? styles.inputRtl : null,
-              ]}
-              containerStyle={styles.inputContainer}
-              maxLength={2000}
-            />
-          </View>
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!message.trim() || createMutation.isPending}
+            disabled={!message.trim() || isPending}
             style={[
-              styles.sendBtn,
+              styles.submitBtn,
               {
                 backgroundColor: theme.colors.primary,
-                opacity: !message.trim() || createMutation.isPending ? 0.45 : 1,
+                opacity: !message.trim() || isPending ? 0.6 : 1,
               },
             ]}
             activeOpacity={0.8}
-            accessibilityLabel={t("support.detail.sendMessage", "Send message")}
+            accessibilityRole="button"
+            accessibilityLabel={isRTL ? "إرسال طلب الدعم" : "Submit Support Request"}
           >
-            <Ionicons name="send" size={18} color="#fff" />
+            {isPending ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="paper-plane-outline" size={18} color="#fff" style={styles.btnIcon} />
+                <Text weight="700" style={styles.submitBtnText} color="#FFFFFF">
+                  {isRTL ? "إرسال الطلب" : "Submit Request"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </Screen>
   );
-}
-
-function toSingleParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizeCategory(value: string | undefined): SupportTicketType | null {
-  const allowed: SupportTicketType[] = [
-    "GENERAL",
-    "BOOKING",
-    "PAYMENT",
-    "SESSION",
-    "TECHNICAL",
-    "ACCOUNT",
-    "CHAT",
-    "OTHER",
-  ];
-
-  if (!value) {
-    return null;
-  }
-
-  return allowed.includes(value as SupportTicketType)
-    ? (value as SupportTicketType)
-    : null;
 }
 
 const styles = StyleSheet.create({
@@ -300,114 +148,58 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 16,
   },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 19,
+  label: {
+    fontSize: 15,
+    lineHeight: 22,
   },
-  sessionContextBox: {
-    alignItems: "flex-start",
-    gap: 10,
-    borderRadius: 14,
+  inputContainer: {
+    minHeight: 140,
+    maxHeight: 240,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  sessionContextCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  sessionContextTitle: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  sessionContextBody: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  subtitleRtl: {
-    textAlign: "right",
-  },
-  categoryToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  categoryToggleText: {
-    fontSize: 12,
-  },
-  categorySheet: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    padding: 12,
+    borderColor: "#E8DED0",
     borderRadius: 12,
-    borderWidth: 1,
-  },
-  categoryItem: {
+    backgroundColor: "#FCFAF6",
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
   },
-  categoryItemText: {
-    fontSize: 12,
-    fontWeight: "500",
+  input: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlignVertical: "top",
+    color: "#1F332F",
+  },
+  inputRtl: {
+    textAlign: "right",
   },
   errorBox: {
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   errorText: {
     fontSize: 13,
     flex: 1,
   },
-  composer: {
-    borderTopWidth: 1,
-    alignItems: "flex-end",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  inputWrap: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-  },
-  inputContainer: {
-    flex: 1,
-    marginBottom: 0,
-  },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    paddingTop: 10,
-    paddingHorizontal: 12,
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  inputRtl: {
-    textAlign: "right",
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+  submitBtn: {
+    height: 48,
+    borderRadius: 12,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
+    gap: 8,
+    marginTop: 8,
+  },
+  btnIcon: {
+    transform: [{ rotate: "0deg" }],
+  },
+  submitBtnText: {
+    fontSize: 15,
   },
 });

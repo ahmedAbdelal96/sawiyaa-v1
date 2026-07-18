@@ -23,4 +23,9 @@ export const generalChatQueryKeys = {
     [...generalChatQueryKeys.role(role), "unread-summary"] as const,
   sessionConversation: (role: MessagesRole, sessionId: string) =>
     [...generalChatQueryKeys.role(role), "session-conversation", sessionId] as const,
+  canonicalConversations: () => ["canonical-conversations"] as const,
+  canonicalConversation: (conversationId: string) => ["canonical-conversation", conversationId] as const,
+  canonicalMessages: (conversationId: string) => ["canonical-messages", conversationId] as const,
+  canonicalUnreadSummary: () => ["canonical-unread-summary"] as const,
 };
+

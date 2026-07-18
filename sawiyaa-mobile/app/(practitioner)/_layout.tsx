@@ -143,7 +143,7 @@ export default function PractitionerLayout() {
       />
       <Tabs.Screen
         name="messages/[id]"
-        options={{ href: null }}
+        options={{ href: null, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
         name="care-chat/index"
@@ -155,7 +155,7 @@ export default function PractitionerLayout() {
       />
       <Tabs.Screen
         name="care-chat/[id]"
-        options={{ href: null }}
+        options={{ href: null, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
         name="finance/index"

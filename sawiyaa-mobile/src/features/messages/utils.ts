@@ -4,6 +4,7 @@ import type {
   GeneralChatMessageItemDto,
   GeneralChatParticipantSummaryDto,
   MessagesRole,
+  CanonicalConversation,
 } from "./types";
 import { safeDisplayText } from "./inbox-types";
 import {
@@ -156,73 +157,211 @@ export function getParticipantInitials(
   return parts.map((part) => part.charAt(0).toUpperCase()).join("") || "M";
 }
 
-export function getConversationDisplayName(
-  conversation:
-    | GeneralChatConversationListItemDto
-    | GeneralChatConversationDetailItemDto
-    | null
-    | undefined,
-  role: MessagesRole,
-  currentUserId?: string | null,
-  locale?: string,
-) {
-  const isArabic = isArabicLocale(locale);
-  const primaryParticipant = getConversationPrimaryParticipant(conversation, currentUserId);
-  const fallbackName =
-    role === "patient"
-      ? (isArabic ? "المختص" : "Practitioner")
-      : (isArabic ? "المريض" : "Patient");
-  const primaryName = primaryParticipant
-    ? getParticipantDisplayName(primaryParticipant, fallbackName)
-    : null;
-  const safePrimaryName = safeDisplayText(primaryName, "");
+export type MessagingViewerRole = "patient" | "practitioner";
 
-  if (safePrimaryName) {
-    return conversation?.linkedSessionId
-      ? isArabic
-        ? `جلسة مع ${safePrimaryName}`
-        : `Session with ${safePrimaryName}`
-      : safePrimaryName;
-  }
-
-  if (!conversation) {
-    return role === "patient"
-      ? (isArabic ? "محادثة جلسة" : "Session conversation")
-      : (isArabic ? "محادثة جلسة" : "Session conversation");
-  }
-
-  return role === "patient"
-    ? (isArabic ? "محادثة جلسة" : "Session conversation")
-    : (isArabic ? "محادثة جلسة" : "Session conversation");
+export interface ConversationHeaderPresentation {
+  title: string;
+  subtitle: string;
+  context: "SESSION" | "CARE" | "SUPPORT";
 }
 
-export function getConversationSubLabel(
-  conversation:
-    | GeneralChatConversationListItemDto
-    | GeneralChatConversationDetailItemDto
-    | null
-    | undefined,
-  currentUserId?: string | null,
-  locale?: string,
-) {
-  if (!conversation) {
+export function getConversationHeaderPresentation(
+  conversation: CanonicalConversation,
+  viewerRole: MessagingViewerRole,
+  t: (key: string, options?: any) => string,
+): ConversationHeaderPresentation {
+  const context = conversation.type;
+  const counterpartName = conversation.otherParty?.displayName || conversation.title;
+
+  if (context === "SESSION") {
+    const isCounterpartPatient = conversation.otherParty?.publicRoleLabel === "Patient";
+    const subtitleKey = isCounterpartPatient
+      ? "messages.common.rolePatient"
+      : "messages.common.rolePractitioner";
+
+    const title = t("messages.thread.sessionWithCounterpart", { name: counterpartName });
+    const subtitle = t(subtitleKey);
+
+    return { title, subtitle, context };
+  }
+
+  if (context === "CARE") {
+    const isCounterpartPatient = conversation.otherParty?.publicRoleLabel === "Patient";
+    const subtitleKey = isCounterpartPatient
+      ? "messages.common.rolePatient"
+      : "messages.common.rolePractitioner";
+
+    const title = t("messages.thread.careWithCounterpart", { name: counterpartName });
+    const subtitle = t(subtitleKey);
+
+    return { title, subtitle, context };
+  }
+
+  if (context === "SUPPORT") {
+    const title = conversation.subject?.trim() || conversation.title?.trim() || t("messages.thread.supportFallback");
+    const subtitle = t("messages.thread.supportRoleLabel");
+
+    return { title, subtitle, context };
+  }
+
+  return {
+    title: conversation.title,
+    subtitle: "",
+    context: "SESSION",
+  };
+}
+
+export type ConversationStatusTone =
+  | "active"
+  | "waiting"
+  | "resolved"
+  | "ended"
+  | "neutral";
+
+export interface ConversationStatusPresentation {
+  label: string;
+  tone: ConversationStatusTone;
+}
+
+export function getConversationStatusPresentation(
+  conversation: {
+    type: "SESSION" | "CARE" | "SUPPORT" | string;
+    status: string;
+    isResolved?: boolean;
+    supportQueueState?: string | null;
+  } | null | undefined,
+  locale: string,
+): ConversationStatusPresentation | null {
+  if (!conversation) return null;
+  const isAr = locale.startsWith("ar");
+  const statusVal = conversation.status?.toUpperCase() || "";
+
+  if (conversation.type === "SESSION" || conversation.type === "CARE") {
+    if (statusVal === "OPEN" || statusVal === "ACTIVE") {
+      return { label: isAr ? "نشطة" : "Active", tone: "active" };
+    }
+    if (statusVal === "CLOSED" || statusVal === "EXPIRED") {
+      return { label: isAr ? "انتهت" : "Ended", tone: "ended" };
+    }
     return null;
   }
 
-  const primaryParticipant = getConversationPrimaryParticipant(conversation, currentUserId);
-  const subtitle = getParticipantSubtitle(primaryParticipant, null);
-  if (subtitle) {
-    return subtitle;
+  if (conversation.type === "SUPPORT") {
+    if (conversation.isResolved || statusVal === "RESOLVED" || statusVal === "CLOSED") {
+      return { label: isAr ? "تم الحل" : "Resolved", tone: "resolved" };
+    }
+    const queue = conversation.supportQueueState?.toUpperCase();
+    if (queue === "NEEDS_SUPPORT_REPLY") {
+      return { label: isAr ? "في انتظار رد الدعم" : "Waiting for support", tone: "waiting" };
+    }
+    if (queue === "WAITING_FOR_USER") {
+      return { label: isAr ? "بانتظار ردك" : "Waiting for your reply", tone: "waiting" };
+    }
+    return { label: isAr ? "مفتوح" : "Open", tone: "neutral" };
   }
 
-  const isArabic = isArabicLocale(locale);
-  return conversation.linkedSessionId
-    ? isArabic
-      ? "محادثة جلسة"
-      : "Session conversation"
-    : isArabic
-    ? "محادثة"
-    : "Conversation";
+  return null;
+}
+
+/** Colour tokens mapped from semantic tone — single source of truth for status colours. */
+export const CONVERSATION_STATUS_TONE_COLORS: Record<ConversationStatusTone, string> = {
+  active: "#24564F",   // Deep Teal
+  waiting: "#C8A979",  // Warm Gold
+  resolved: "#6F7E78", // Muted Grey
+  ended: "#6F7E78",    // Muted Grey
+  neutral: "#24564F",  // Deep Teal (Open = positive)
+};
+
+/** @deprecated use getConversationStatusPresentation instead */
+export function getConversationStatusPresenter(
+  conversation: {
+    type: "SESSION" | "CARE" | "SUPPORT" | string;
+    status: string;
+    isResolved?: boolean;
+    supportQueueState?: string | null;
+  } | null | undefined,
+  locale: string,
+): string | null {
+  return getConversationStatusPresentation(conversation, locale)?.label ?? null;
+}
+
+/** @deprecated use CONVERSATION_STATUS_TONE_COLORS[tone] instead */
+export function getConversationStatusColor(_label: string | null, _locale: string): string {
+  // This shim is kept for callers that have not yet migrated to tone-based styling.
+  // It always returns muted grey as the safe fallback since callers should migrate.
+  return "#6F7E78";
+}
+
+export function formatInboxRelativeTime(
+  value: string | null | undefined,
+  locale: string,
+): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return "-";
+
+  const isAr = locale.startsWith("ar");
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  if (diffMins < 1) {
+    return isAr ? "الآن" : "Now";
+  }
+
+  if (diffMins < 60) {
+    if (isAr) {
+      if (diffMins === 1) return "منذ دقيقة";
+      if (diffMins === 2) return "منذ دقيقتين";
+      if (diffMins >= 3 && diffMins <= 10) return `منذ ${diffMins} دقائق`;
+      return `منذ ${diffMins} دقيقة`;
+    }
+    return `${diffMins}m ago`;
+  }
+
+  const isSameDay =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  if (isSameDay) {
+    if (isAr) {
+      if (diffHours === 1) return "منذ ساعة";
+      if (diffHours === 2) return "منذ ساعتين";
+      if (diffHours >= 3 && diffHours <= 10) return `منذ ${diffHours} ساعات`;
+      return `منذ ${diffHours} ساعة`;
+    }
+    return `${diffHours}h ago`;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+
+  if (isYesterday) {
+    return isAr ? "أمس" : "Yesterday";
+  }
+
+  const monthsAr = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ];
+  const monthsEn = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
+
+  const day = date.getDate();
+  const monthIdx = date.getMonth();
+
+  if (isAr) {
+    return `${day} ${monthsAr[monthIdx]}`;
+  }
+  return `${monthsEn[monthIdx]} ${day}`;
 }
 
 export function getConversationParticipantLabels(role: MessagesRole, locale?: string) {
@@ -315,7 +454,10 @@ export function getConversationStatusLabel(
 export function getMessageStatusLabel(
   status: string | null | undefined,
   locale?: string,
+  deliveryState?: "sending" | "sent" | "failed",
 ) {
+  if (deliveryState === "sending") return isArabicLocale(locale) ? "جارٍ الإرسال" : "Sending";
+  if (deliveryState === "failed") return isArabicLocale(locale) ? "تعذّر الإرسال" : "Not sent";
   if (!status) return "-";
 
   if (!isArabicLocale(locale)) {
@@ -367,9 +509,18 @@ export function getMessageSenderLabel(
     return isArabic ? "أنت" : "You";
   }
 
+  // Always prefer the actual display name — support employees must remain individually identifiable.
   const displayName = safeDisplayText(message.senderIdentity?.displayName, "");
   if (displayName) {
     return displayName;
+  }
+
+  // Only use generic label when identity is genuinely missing.
+  const publicRole = message.senderIdentity?.publicRoleLabel;
+  const isSupport = publicRole === "Support team" || publicRole === "Admin";
+  if (isSupport) {
+    // Keep the shared inbox label separate from an individual responder fallback.
+    return isArabic ? "عضو في فريق الدعم" : "Support team member";
   }
 
   return role === "patient"
@@ -393,6 +544,12 @@ export function getMessageSenderRoleLabel(
     return role === "patient"
       ? (isArabic ? "المريض" : "Patient")
       : (isArabic ? "المختص" : "Practitioner");
+  }
+
+  const publicRole = message.senderIdentity?.publicRoleLabel;
+  const isSupport = publicRole === "Support team" || publicRole === "Admin";
+  if (isSupport) {
+    return isArabic ? "فريق الدعم" : "Support Team";
   }
 
   const subtitle = safeDisplayText(message.senderIdentity?.subtitle, "");

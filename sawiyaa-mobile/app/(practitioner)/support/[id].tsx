@@ -44,6 +44,13 @@ export default function PractitionerSupportConversationScreen() {
       : "/(practitioner)/messages?tab=support";
 
   const ticketQuery = usePractitionerSupportTicket(id ?? null);
+
+  React.useEffect(() => {
+    if (ticketQuery.data?.conversationId) {
+      router.replace(`/(practitioner)/messages/${ticketQuery.data.conversationId}`);
+    }
+  }, [ticketQuery.data?.conversationId, router]);
+
   const addMessage = useAddPractitionerSupportMessage(id ?? "");
 
   const [draft, setDraft] = useState("");

@@ -11,6 +11,10 @@ import type {
   SendGeneralChatMessageInput,
   SendGeneralChatMessageResponse,
   UnifiedMessagingUnreadSummaryResponse,
+  CanonicalConversationListResponse,
+  CanonicalConversation,
+  CanonicalMessageListResponse,
+  CanonicalUnreadSummaryResponse,
 } from "./types";
 
 export async function listMyGeneralChatConversations(
@@ -70,3 +74,47 @@ export async function getMyGeneralChatUnreadSummary() {
   const response = await apiClient.get("/chat/conversations/unread-summary");
   return extractApiData<UnifiedMessagingUnreadSummaryResponse>(response);
 }
+
+export async function listCanonicalConversations(params?: { page?: number; limit?: number }) {
+  const response = await apiClient.get("/messages/conversations", { params });
+  return extractApiData<CanonicalConversationListResponse>(response);
+}
+
+export async function getCanonicalConversation(conversationId: string) {
+  const response = await apiClient.get(`/messages/conversations/${conversationId}`);
+  return extractApiData<{ item: CanonicalConversation }>(response);
+}
+
+export async function listCanonicalMessages(conversationId: string, params?: { page?: number; limit?: number }) {
+  const response = await apiClient.get(`/messages/conversations/${conversationId}/messages`, { params });
+  return extractApiData<CanonicalMessageListResponse>(response);
+}
+
+export async function sendCanonicalMessage(
+  conversationId: string,
+  payload: { message: string; clientMessageId: string },
+) {
+  const response = await apiClient.post(`/messages/conversations/${conversationId}/messages`, payload);
+  return extractApiData<{ item: import("./types").CanonicalMessage }>(response);
+}
+
+export async function markCanonicalConversationRead(conversationId: string, payload: { lastReadMessageId: string }) {
+  const response = await apiClient.post(`/messages/conversations/${conversationId}/read`, payload);
+  return extractApiData<any>(response);
+}
+
+export async function getCanonicalUnreadSummary() {
+  const response = await apiClient.get("/messages/conversations/unread-summary");
+  return extractApiData<CanonicalUnreadSummaryResponse>(response);
+}
+
+export async function createPatientSupportTicket(payload: { description: string }) {
+  const response = await apiClient.post("/patients/me/support/tickets", payload);
+  return extractApiData<any>(response);
+}
+
+export async function createPractitionerSupportTicket(payload: { description: string }) {
+  const response = await apiClient.post("/practitioners/me/support/tickets", payload);
+  return extractApiData<any>(response);
+}
+

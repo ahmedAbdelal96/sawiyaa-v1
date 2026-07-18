@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Screen,
@@ -32,12 +32,19 @@ import {
 const CLOSED_STATUSES: SupportTicketStatus[] = ["RESOLVED", "CLOSED"];
 
 export default function SupportTicketDetailScreen() {
+  const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const ticketQuery = usePatientSupportTicket(id ?? null);
+
+  React.useEffect(() => {
+    if (ticketQuery.data?.conversationId) {
+      router.replace(`/(patient)/messages/${ticketQuery.data.conversationId}`);
+    }
+  }, [ticketQuery.data?.conversationId, router]);
   const addMessage = useAddSupportMessage(id ?? "");
 
   const [draft, setDraft] = useState("");

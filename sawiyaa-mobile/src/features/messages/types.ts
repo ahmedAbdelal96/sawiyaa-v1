@@ -11,6 +11,7 @@ export type GeneralChatParticipantIdentityDto = {
   subtitle: string | null;
   status: string | null;
   verificationStatus: string | null;
+  publicRoleLabel?: string | null;
 };
 
 export type GeneralChatConversationStatus =
@@ -53,6 +54,8 @@ export type GeneralChatMessageStatus =
   | "FAILED"
   | "DELETED"
   | string;
+
+export type MessageDeliveryState = "sending" | "sent" | "failed";
 
 export interface GeneralChatParticipantSummaryDto {
   userId: string;
@@ -127,6 +130,9 @@ export interface GeneralChatMessageItemDto {
   readAt: string | null;
   attachments: GeneralChatMessageAttachmentDto[];
   conversationLatestActivityAt: string;
+  clientMessageId?: string;
+  deliveryState?: MessageDeliveryState;
+  deliveryErrorCode?: string;
 }
 
 export interface GeneralChatMessageListResponse {
@@ -208,3 +214,90 @@ export interface GeneralChatConversationIdentityDto {
 export interface GeneralChatOpenSessionResponse {
   item: GeneralChatConversationIdentityDto;
 }
+
+export interface CanonicalMessageParticipant {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  publicRoleLabel: "Patient" | "Practitioner" | "Support team" | "Admin" | "System";
+}
+
+export interface CanonicalMessageAttachment {
+  id: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize?: number;
+  originalName?: string;
+}
+
+export interface CanonicalMessage {
+  id: string;
+  conversationId: string;
+  sender: CanonicalMessageParticipant;
+  body: string;
+  messageType: string;
+  sentAt: string;
+  status: string;
+  deliveredAt: string | null;
+  readAt: string | null;
+  attachments?: CanonicalMessageAttachment[];
+  clientMessageId?: string;
+  deliveryState?: MessageDeliveryState;
+  deliveryErrorCode?: string;
+}
+
+export interface CanonicalConversation {
+  id: string;
+  conversationId: string;
+  supportTicketId: string | null;
+  type: "SESSION" | "CARE" | "SUPPORT";
+  title: string;
+  subject: string | null;
+  contextLabel: string;
+  contextId: string;
+  status: string;
+  isResolved: boolean;
+  isReadOnly: boolean;
+  canSend: boolean;
+  sendDisabledReason: string | null;
+  unreadCount: number;
+  lastMessage: CanonicalMessage | null;
+  participants: CanonicalMessageParticipant[];
+  otherParty: CanonicalMessageParticipant | null;
+  supportQueueState: "NEEDS_SUPPORT_REPLY" | "WAITING_FOR_USER" | "RESOLVED" | null;
+  createdAt: string;
+  updatedAt: string;
+  lastActivityAt: string;
+}
+
+export interface CanonicalConversationListResponse {
+  items: CanonicalConversation[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CanonicalMessageListResponse {
+  items: CanonicalMessage[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface CanonicalUnreadSummary {
+  unreadCount: number;
+  needsSupportReplyCount: number;
+  hasUnread: boolean;
+  totalUnreadMessages?: number;
+}
+
+export interface CanonicalUnreadSummaryResponse {
+  item: CanonicalUnreadSummary;
+}
+

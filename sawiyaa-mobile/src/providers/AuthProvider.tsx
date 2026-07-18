@@ -72,6 +72,7 @@ import {
 } from "../features/push/service";
 import type { PushRegistrationStatus } from "../features/push/types";
 import { configureApiAuthSessionHandlers, setApiAccessToken } from "../lib/api";
+import { disconnectUnifiedMessagesSocket } from "../features/messages/realtime-socket";
 
 interface AuthContextValue {
   user: AuthenticatedUser | null;
@@ -210,6 +211,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearAuthenticatedState = useCallback(async () => {
     await persistSession(null);
+    disconnectUnifiedMessagesSocket();
     queryClient.clear();
     setPushRegistrationStatus("checking");
   }, [persistSession, queryClient]);
@@ -379,6 +381,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         rawTargetRole === "patient" || rawTargetRole === "practitioner"
           ? rawTargetRole
           : currentRole;
+
+      if (effectiveRole === "patient" || effectiveRole === "practitioner") {
+        const roleGroup = effectiveRole === "patient" ? "patient" : "practitioner";
+
+        // 1. Prioritize canonical conversationId
+        if (typeof data?.conversationId === "string" && data.conversationId.trim()) {
+          return `/(${roleGroup})/messages/${data.conversationId.trim()}`;
+        }
+
+        // 2. Resolve legacy supportTicketId
+        if (typeof data?.supportTicketId === "string" && data.supportTicketId.trim()) {
+          return `/(${roleGroup})/support/${data.supportTicketId.trim()}`;
+        }
+
+        // 3. Resolve legacy careChatConversationId
+        if (typeof data?.careChatConversationId === "string" && data.careChatConversationId.trim()) {
+          return `/(${roleGroup})/care-chat/${data.careChatConversationId.trim()}`;
+        }
+      }
 
       if (effectiveRole === "patient") {
         return (

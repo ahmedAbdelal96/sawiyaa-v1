@@ -19,8 +19,8 @@ jest.mock("../../src/features/auth/secure-token-storage", () => ({
 
 import * as secureTokenStorage from "../../src/features/auth/secure-token-storage";
 
-const V1_KEY = "fayed.mobile.auth.session.v1";
-const V2_KEY = "fayed.mobile.auth.session.v2";
+const V1_KEY = "sawiyaa.mobile.auth.session.v1";
+const V2_KEY = "sawiyaa.mobile.auth.session.v2";
 
 function makeLegacySession() {
   return {

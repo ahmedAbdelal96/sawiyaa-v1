@@ -2111,7 +2111,9 @@
       "retryNext": "حاول مرة أخرى",
       "startOfConversation": "وصلت إلى بداية هذه المحادثة.",
       "errorTitle": "تعذر تحميل المحادثة",
-      "errorMessage": "حاول مرة أخرى بعد قليل."
+      "errorMessage": "حاول مرة أخرى بعد قليل.",
+      "rolePatient": "المريض",
+      "rolePractitioner": "المختص"
     },
     "inbox": {
       "title": "الرسائل",
@@ -2162,7 +2164,20 @@
       "availabilityLoadingTitle": "جارٍ تحميل حالة المحادثة...",
       "availabilityLoadingNote": "لن يظهر مربع الكتابة حتى تصل حالة الإرسال من الخادم.",
       "closedHint": "هذه المحادثة لا تقبل رسائل جديدة حاليًا.",
-      "sendError": "تعذّر إرسال هذه الرسالة الآن."
+      "sendError": "تعذّر إرسال هذه الرسالة الآن.",
+      "endedSessionNotice": "انتهت إمكانية إرسال الرسائل في هذه الجلسة. يمكنك مراجعة المحادثة السابقة.",
+      "expiredCareNotice": "انتهت فترة المتابعة. يمكنك مراجعة الرسائل السابقة أو تقديم طلب متابعة جديد.",
+      "resolvedSupportNotice": "تم حل طلب الدعم وإغلاق هذه المحادثة. يمكنك مراجعة الرسائل السابقة.",
+      "startNewSupport": "بدء طلب دعم جديد",
+      "attachmentComingSoon": "مشاركة الملفات ستتوفر قريبًا",
+      "offlineState": "أنت غير متصل بالإنترنت حاليًا. قد لا تصل الرسائل الجديدة.",
+      "reconnectingState": "جاري إعادة الاتصال...",
+      "unreadAccessibilityLabel": "الرسائل، لديك {{count}} رسائل غير مقروءة",
+      "supportRoleLabel": "فريق دعم سويّة",
+      "sessionWithCounterpart": "جلسة مع {{name}}",
+      "careWithCounterpart": "متابعة مع {{name}}",
+      "supportFallback": "طلب دعم",
+      "supportEmployeeLabel": "فريق الدعم"
     }
   },
   "practitioner": {

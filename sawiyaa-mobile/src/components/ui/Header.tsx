@@ -221,6 +221,27 @@ export const AppHeader = ({
       </View>
     ) : null;
 
+  const renderMessagesCountBadge = (count: number) =>
+    count > 0 ? (
+      <View
+        style={[
+          styles.unreadBadge,
+          badgePosition,
+          {
+            backgroundColor: "#24564F", // Sawiyaa Teal
+            borderColor: theme.colors.surfaceRaised,
+          },
+        ]}
+      >
+        <Text
+          weight="700"
+          style={[styles.unreadBadgeText, badgeTextPosition, { color: "#FFFFFF" }]}
+        >
+          {count > 99 ? "99+" : count.toString()}
+        </Text>
+      </View>
+    ) : null;
+
   const quickActions = (
     <View
       style={[
@@ -239,7 +260,11 @@ export const AppHeader = ({
         ]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel="app-header-messages-button"
+        accessibilityLabel={
+          isRTL
+            ? `الرسائل${unreadMessages > 0 ? `، لديك ${unreadMessages} رسائل غير مقروءة` : ""}`
+            : `Messages${unreadMessages > 0 ? `, you have ${unreadMessages} unread messages` : ""}`
+        }
       >
         <View style={styles.iconContainer}>
           <Ionicons
@@ -247,7 +272,7 @@ export const AppHeader = ({
             size={21}
             color={theme.colors.textPrimary}
           />
-          {renderCountBadge(unreadMessages)}
+          {renderMessagesCountBadge(unreadMessages)}
         </View>
       </TouchableOpacity>
 
