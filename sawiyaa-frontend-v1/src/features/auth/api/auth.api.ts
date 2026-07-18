@@ -108,7 +108,6 @@ function isPractitionerAuthenticatedResponse(
     (response.nextStep === "AUTHENTICATED" || response.nextStep === undefined) &&
     !!tokens &&
     typeof tokens.accessToken === "string" &&
-    typeof tokens.refreshToken === "string" &&
     !!user &&
     typeof user.id === "string"
   );
