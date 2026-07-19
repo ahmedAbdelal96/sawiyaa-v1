@@ -40,7 +40,7 @@ echo "Running Prisma migrations..."
 docker compose -f "$COMPOSE_FILE" run --rm backend npm run prisma:migrate:deploy
 
 echo "Synchronizing production permissions..."
-docker compose -f "$COMPOSE_FILE" run --rm backend npm run db:sync:permissions -- --apply
+docker compose -f "$COMPOSE_FILE" run --rm -e PERMISSION_SYNC_ADMIN_PASSWORD backend npm run db:sync:permissions -- --apply
 
 echo "Starting backend, frontend, and nginx..."
 docker compose -f "$COMPOSE_FILE" up -d backend frontend nginx
