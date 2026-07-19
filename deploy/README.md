@@ -122,6 +122,19 @@ Run migrations manually as a release step, before exposing new traffic:
 docker compose -f docker-compose.prod.yml run --rm backend npm run prisma:migrate:deploy
 ```
 
+Synchronize canonical permissions separately from the full development seed:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:permissions -- --dry-run
+docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:permissions -- --apply
+```
+
+The apply command is idempotent, preserves existing permission rows and user
+permission overrides, and never runs the full Prisma seed. If the canonical
+production admin does not exist, set `PERMISSION_SYNC_ADMIN_PASSWORD` in the
+backend environment before applying so the command can create the account
+without placing a password in source control.
+
 Back up the database before running migrations.
 
 The backend container must never auto-run migrations on startup.

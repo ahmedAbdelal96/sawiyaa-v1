@@ -125,7 +125,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       return t("signUpForm.validation.genericError");
     }
 
-    if (err.message) {
+    if (typeof err.message === "string" && err.message.trim()) {
       const msgLower = err.message.toLowerCase();
       if (msgLower.includes("email must be an email")) {
         return t("signUpForm.validation.emailInvalid");
@@ -139,7 +139,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       if (msgLower.includes("specialtyids")) {
         return t("signUpForm.validation.subSpecialtyRequired");
       }
-      return err.message;
+      return err.message.trim();
     }
 
     return t("registrationError");

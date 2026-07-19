@@ -99,8 +99,14 @@ function getInitials(value: string | null | undefined) {
     .join("");
 }
 
+function getSafeText(value: unknown, fallback = "-") {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return fallback;
+}
+
 function getModeLabel(mode: AdminSessionListItem["sessionMode"]) {
-  return mode === "VIDEO" ? "Video" : mode;
+  return mode === "VIDEO" ? "Video" : getSafeText(mode);
 }
 
 function getStatusLabel(status: SessionStatus, locale: string) {
@@ -125,7 +131,7 @@ function getStatusLabel(status: SessionStatus, locale: string) {
   labels.PRACTITIONER_NO_SHOW = locale === "ar" ? "Practitioner did not attend" : "Practitioner did not attend";
   labels.BOTH_NO_SHOW = locale === "ar" ? "Neither participant attended" : "Neither participant attended";
   labels.AWAITING_COMPLETION_CONFIRMATION = locale === "ar" ? "Waiting for session confirmation" : "Waiting for session confirmation";
-  return labels[status] ?? status;
+  return labels[status] ?? getSafeText(status);
 }
 
 function getRowClass(status: AdminSessionListItem["status"]) {
@@ -350,12 +356,12 @@ export default function AdminSessionsListScreen() {
 
     return baseItems.filter((row) => {
       const values = [
-        row.sessionCode,
-        row.patient?.displayName,
-        row.practitioner.displayName,
-        row.practitioner.slug,
-        row.patient?.id,
-        row.practitioner.id,
+        getSafeText(row.sessionCode),
+        getSafeText(row.patient?.displayName),
+        getSafeText(row.practitioner.displayName),
+        getSafeText(row.practitioner.slug),
+        getSafeText(row.patient?.id),
+        getSafeText(row.practitioner.id),
       ];
 
       return values.some((value) => value?.toLowerCase().includes(searchTerm));
@@ -704,21 +710,21 @@ export default function AdminSessionsListScreen() {
                             <p className="text-sm text-text-secondary">
                               {formatTimeOnly(row.scheduledStartAt, locale)}
                             </p>
-                            <p className="text-xs font-medium text-text-muted">{row.sessionCode}</p>
+                            <p className="text-xs font-medium text-text-muted">{getSafeText(row.sessionCode)}</p>
                           </div>
                         </td>
 
                         <td className="px-4 py-4 sm:px-6">
                           <div className="flex min-w-[12rem] items-center gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-light bg-primary-light text-xs font-semibold text-text-brand">
-                              {getInitials(row.patient?.displayName)}
+                              {getInitials(getSafeText(row.patient?.displayName, ""))}
                             </div>
                             <div className="min-w-0">
                               <p className="truncate text-sm font-semibold text-text-primary">
-                                {row.patient?.displayName ?? t("table.fallback.noName")}
+                                {getSafeText(row.patient?.displayName, t("table.fallback.noName"))}
                               </p>
                               <p className="truncate text-xs text-text-muted">
-                                {row.patient?.id ?? (locale === "ar" ? "غير متوفر" : "Unavailable")}
+                                {getSafeText(row.patient?.id, locale === "ar" ? "غير متوفر" : "Unavailable")}
                               </p>
                             </div>
                           </div>
@@ -727,9 +733,9 @@ export default function AdminSessionsListScreen() {
                         <td className="px-4 py-4 sm:px-6">
                           <div className="min-w-[12rem]">
                             <p className="truncate text-sm font-semibold text-text-primary">
-                              {row.practitioner.displayName ?? t("table.fallback.noName")}
+                              {getSafeText(row.practitioner.displayName, t("table.fallback.noName"))}
                             </p>
-                            <p className="truncate text-xs text-text-muted">{row.practitioner.slug}</p>
+                            <p className="truncate text-xs text-text-muted">{getSafeText(row.practitioner.slug)}</p>
                           </div>
                         </td>
 
@@ -741,12 +747,14 @@ export default function AdminSessionsListScreen() {
                         </td>
 
                         <td className="px-4 py-4 sm:px-6">
-                          <p className="text-sm font-semibold text-text-primary">{row.durationMinutes} min</p>
+                          <p className="text-sm font-semibold text-text-primary">{getSafeText(row.durationMinutes)} min</p>
                         </td>
 
                         <td className="px-4 py-4 sm:px-6">
                           <div className="flex flex-wrap items-center gap-2">
-                            <SessionStatusBadge status={row.status} />
+                            <SessionStatusBadge
+                              status={typeof row.status === "string" ? row.status : "DRAFT"}
+                            />
                             {row.isDelayed ? (
                               <AdminStatusBadge tone="danger">
                                 {locale === "ar" ? "متأخرة" : "Delayed"}
@@ -814,14 +822,14 @@ export default function AdminSessionsListScreen() {
           eyebrow={locale === "ar" ? "تفاصيل الجلسة" : "Session details"}
           title={
             selectedSession
-              ? `${selectedSession.patient?.displayName ?? t("table.fallback.noName")} · ${selectedSession.sessionCode}`
+              ? `${getSafeText(selectedSession.patient?.displayName, t("table.fallback.noName"))} · ${getSafeText(selectedSession.sessionCode)}`
               : locale === "ar"
                 ? "تفاصيل الجلسة"
                 : "Session details"
           }
           description={
             selectedSession
-              ? `${formatDateTime(selectedSession.scheduledStartAt, locale)} · ${selectedSession.practitioner.displayName ?? selectedSession.practitioner.slug}`
+              ? `${formatDateTime(selectedSession.scheduledStartAt, locale)} · ${getSafeText(selectedSession.practitioner.displayName, getSafeText(selectedSession.practitioner.slug))}`
               : undefined
           }
         />
@@ -834,7 +842,13 @@ export default function AdminSessionsListScreen() {
                     {locale === "ar" ? "الحالة" : "Status"}
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <SessionStatusBadge status={selectedSession.status} />
+                    <SessionStatusBadge
+                      status={
+                        typeof selectedSession.status === "string"
+                          ? selectedSession.status
+                          : "DRAFT"
+                      }
+                    />
                     {selectedSession.isDelayed ? (
                       <AdminStatusBadge tone="danger">
                         {locale === "ar" ? "متأخرة" : "Delayed"}
@@ -860,10 +874,10 @@ export default function AdminSessionsListScreen() {
                     {locale === "ar" ? "المستفيد" : "Beneficiary"}
                   </p>
                   <p className="mt-2 text-sm font-semibold text-text-primary">
-                    {selectedSession.patient?.displayName ?? t("table.fallback.noName")}
+                    {getSafeText(selectedSession.patient?.displayName, t("table.fallback.noName"))}
                   </p>
                   <p className="text-sm text-text-secondary">
-                    {selectedSession.patient?.id ?? (locale === "ar" ? "غير متوفر" : "Unavailable")}
+                    {getSafeText(selectedSession.patient?.id, locale === "ar" ? "غير متوفر" : "Unavailable")}
                   </p>
                 </div>
 
@@ -872,9 +886,9 @@ export default function AdminSessionsListScreen() {
                     {locale === "ar" ? "المعالج" : "Practitioner"}
                   </p>
                   <p className="mt-2 text-sm font-semibold text-text-primary">
-                    {selectedSession.practitioner.displayName ?? t("table.fallback.noName")}
+                    {getSafeText(selectedSession.practitioner.displayName, t("table.fallback.noName"))}
                   </p>
-                  <p className="text-sm text-text-secondary">{selectedSession.practitioner.slug}</p>
+                  <p className="text-sm text-text-secondary">{getSafeText(selectedSession.practitioner.slug)}</p>
                 </div>
               </div>
 
@@ -950,7 +964,7 @@ export default function AdminSessionsListScreen() {
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                       {locale === "ar" ? "المزوّد" : "Provider"}
                     </p>
-                    <p className="mt-2 text-sm font-semibold text-text-primary">{runtimeItem?.provider ?? "-"}</p>
+                    <p className="mt-2 text-sm font-semibold text-text-primary">{getSafeText(runtimeItem?.provider)}</p>
                   </div>
 
                   <div className="rounded-[20px] border border-border-light bg-surface-tertiary p-4">
@@ -1008,13 +1022,13 @@ export default function AdminSessionsListScreen() {
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p className="text-sm font-semibold text-text-primary">
-                            {item.attendanceEventType} · {item.participantRole}
+                            {getSafeText(item.attendanceEventType)} · {getSafeText(item.participantRole)}
                           </p>
                           <p className="text-xs text-text-muted">{formatDateTime(item.occurredAt, locale)}</p>
                         </div>
                         <p className="mt-2 text-sm text-text-secondary">
-                          {item.providerEventType}
-                          {item.providerEventRef ? ` · ${item.providerEventRef}` : ""}
+                          {getSafeText(item.providerEventType)}
+                          {getSafeText(item.providerEventRef) !== "-" ? ` · ${getSafeText(item.providerEventRef)}` : ""}
                         </p>
                       </div>
                     ))
