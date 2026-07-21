@@ -1,2 +1,2 @@
 ALTER TABLE "PractitionerPayoutDestination"
-ADD COLUMN "countryCode" VARCHAR(2);
+ADD COLUMN IF NOT EXISTS "countryCode" VARCHAR(2);

@@ -30,6 +30,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --preferTsExts prisma/seed.ts",
     "db:bootstrap:development-payment-routes": "ts-node --preferTsExts prisma/scripts/bootstrap-development-payment-routes.ts",
+    "db:bootstrap:payment-routes": "ts-node --preferTsExts prisma/scripts/bootstrap-payment-routes.ts",
     "db:sync:permissions": "ts-node --preferTsExts prisma/scripts/sync-permissions.ts",
     "db:sync:countries": "ts-node --preferTsExts prisma/scripts/sync-countries.ts",
     "seed:practitioner-finance": "ts-node --preferTsExts prisma/seed/practitioner-finance.seed.ts",

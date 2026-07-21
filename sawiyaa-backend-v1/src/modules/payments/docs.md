@@ -22,13 +22,12 @@ provider confirmation. Alternatively, configure
 the explicit integration variables and the method registry at the same time.
 
 The existing `PaymentProviderResolverService` remains the single provider
-selection point. Currency/method routes are configured by
-`PAYMENT_PROVIDER_ROUTES_JSON` or the existing payment-gateway-control
-database override. The route contract is `{ currencyCode, paymentMethod,
-provider, integrationKey, environment, enabled, priority, source }`. Database
-overrides take precedence over environment defaults; an unavailable route does
-not fall back to the first database row. Equal-priority active routes are
-reported as `PAYMENT_ROUTING_AMBIGUOUS`.
+selection point. Currency/method routes are configured only by the
+payment-gateway-control database value. `PAYMENT_PROVIDER_ROUTES_JSON` is not a
+runtime authority and must not be used. The route contract is `{ currencyCode,
+paymentMethod, provider, integrationKey, environment, enabled, priority,
+source }`. An unavailable route does not fall back to another database row;
+equal-priority active routes are reported as `PAYMENT_ROUTING_AMBIGUOUS`.
 
 The Paymob aliases `paymob-egp-card` and `paymob-usd-card` resolve to the
 currency-specific integration settings. A payment stores the selected provider

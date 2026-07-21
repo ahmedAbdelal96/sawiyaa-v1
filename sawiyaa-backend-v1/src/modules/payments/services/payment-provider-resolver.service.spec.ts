@@ -37,6 +37,29 @@ function buildResolver(config: {
     source: 'DATABASE' | 'ENVIRONMENT';
   }>;
 }) {
+  const databaseRoutes = config.currencyRoutes ?? [
+    {
+      currencyCode: 'EGP' as const,
+      paymentMethod: 'CARD',
+      provider: PaymentProvider.PAYMOB,
+      integrationKey: 'paymob-egp-card',
+      environment: 'development' as const,
+      enabled: true,
+      priority: 100,
+      source: 'DATABASE' as const,
+    },
+    {
+      currencyCode: 'USD' as const,
+      paymentMethod: 'CARD',
+      provider: PaymentProvider.PAYMOB,
+      integrationKey: 'paymob-usd-card',
+      environment: 'development' as const,
+      enabled: true,
+      priority: 100,
+      source: 'DATABASE' as const,
+    },
+  ];
+
   const capabilitiesService = new PaymentProviderCapabilitiesService({
     getStripeConfig: () => ({
       enabled: config.stripeEnabled ?? true,
@@ -148,7 +171,7 @@ function buildResolver(config: {
         fallbackProvider: 'config',
         currencyRoutes: config.currencyRoutes ? 'config' : 'env',
       },
-      currencyRoutes: config.currencyRoutes ?? [],
+      currencyRoutes: databaseRoutes,
       updatedAt: new Date().toISOString(),
     }),
     getPaymentEnvironment: () => 'development',
@@ -196,7 +219,7 @@ describe('PaymentProviderResolverService', () => {
       currencyRoutes: [
         {
           currencyCode: 'USD', paymentMethod: 'CARD', provider: PaymentProvider.PAYMOB,
-          integrationKey: 'paymob-usd-card-a', environment: 'development', enabled: true, priority: 100, source: 'ENVIRONMENT',
+          integrationKey: 'paymob-usd-card-a', environment: 'development', enabled: true, priority: 100, source: 'DATABASE',
         },
         {
           currencyCode: 'USD', paymentMethod: 'CARD', provider: PaymentProvider.STRIPE,
@@ -274,30 +297,30 @@ describe('PaymentProviderResolverService', () => {
     ).toBe(PaymentProvider.PAYMOB);
   });
 
-  it('fails when routing context is ambiguous', () => {
+  it('uses the database route when country context is unavailable', () => {
     const service = buildResolver({});
 
-    expect(() =>
+    expect(
       service.resolveProvider({
         currencyCode: 'USD',
         commissionMarketType: MarketType.ANY,
         operatingCountryIsoCode: null,
         checkoutCountryIsoCode: 'US',
       }),
-    ).toThrow(BadRequestException);
+    ).toBe(PaymentProvider.PAYMOB);
   });
 
-  it('does not normalize an invalid stored country to Egypt', () => {
+  it('keeps route selection independent from an invalid stored country', () => {
     const service = buildResolver({});
 
-    expect(() =>
+    expect(
       service.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,
         operatingCountryIsoCode: 'XX',
         checkoutCountryIsoCode: 'EG',
       }),
-    ).toThrow(BadRequestException);
+    ).toBe(PaymentProvider.PAYMOB);
   });
 
   it('routes the canonical USD fallback without a checkout country', () => {

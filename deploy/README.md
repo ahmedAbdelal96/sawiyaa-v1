@@ -337,6 +337,32 @@ SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-product
 7. Start Nginx only after the certificate files exist.
 8. Verify `/api/v1/health` and the public homepage.
 
+## GeoIP and payment routing
+
+The production Compose file mounts the approved GeoLite country database at
+`/opt/sawiyaa/geoip/GeoLite2-Country.mmdb`. The backend production environment
+must use:
+
+```dotenv
+GEOIP_ENABLED=true
+GEOIP_DATABASE_PATH=/opt/sawiyaa/geoip/GeoLite2-Country.mmdb
+TRUSTED_PROXY_MODE=single
+CLOUDFLARE_COUNTRY_HEADER_ENABLED=false
+```
+
+Payment currency/method routing is database-authoritative. Do not configure
+`PAYMENT_PROVIDER_ROUTES_JSON`; manage route rows through the admin workflow or
+the explicit operator bootstrap below. The provider remains independently
+controlled by `PAYMENT_PAYMOB_ENABLED` and its credential environment values.
+
+For an approved initial production/staging EGP route only, run the bootstrap
+explicitly inside the backend container with
+`ALLOW_PAYMENT_ROUTE_BOOTSTRAP=true` and
+`npm run db:bootstrap:payment-routes`. The command is idempotent, refuses
+conflicting active snapshots, never creates a USD route, and is not part of
+backend startup. Obtain and install any approved USD integration separately;
+never copy the EGP integration ID into the USD variable.
+
 ## Repeat deploy checklist
 
 1. Back up the database first.
