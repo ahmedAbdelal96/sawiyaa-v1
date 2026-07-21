@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getPractitionerApplicationStatus,
+  listPractitionerCountries,
   getPractitionerCredentials,
   getPractitionerProfile,
   getPractitionerReadiness,
@@ -80,6 +81,19 @@ export function usePractitionerSpecialties(enabled = true) {
   return useQuery({
     queryKey: practitionersQueryKeys.meSpecialties(),
     queryFn: getPractitionerSpecialties,
+    enabled,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+}
+
+/**
+ * Reads active countries for practitioner selectors.
+ */
+export function usePractitionerCountries(enabled = true) {
+  return useQuery({
+    queryKey: practitionersQueryKeys.meCountries(),
+    queryFn: listPractitionerCountries,
     enabled,
     staleTime: 60_000,
     gcTime: 10 * 60_000,

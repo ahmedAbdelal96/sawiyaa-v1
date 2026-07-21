@@ -43,6 +43,7 @@ export function usePatientPayments(params?: ListPaymentsParams) {
  */
 export function useInitiateSessionPayment() {
   return useMutation({
+    retry: false,
     mutationFn: ({
       sessionId,
       input,

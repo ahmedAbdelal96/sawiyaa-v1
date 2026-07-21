@@ -276,6 +276,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
   if (error instanceof AxiosError) {
     const responseData = error.response?.data as ErrorShape | undefined;
     const statusCode = responseData?.statusCode ?? error.response?.status ?? 500;
+    const requestId = readFirstStringField(responseData, "requestId") ?? undefined;
     const lockoutMetadata = readAuthLockoutMetadata(responseData);
     const message = normalizeMessage(
       responseData?.message,
@@ -302,6 +303,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
       diagnostics: {
         axiosCode: error.code,
         hasResponse: Boolean(error.response),
+        ...(requestId ? { requestId } : {}),
         ...(context.diagnostics ?? {}),
       },
       errorType: resolveErrorType({
@@ -311,7 +313,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
         hasResponse: Boolean(error.response),
       }),
       requestPath: context.requestPath,
-      referenceId: context.referenceId,
+      referenceId: requestId ?? context.referenceId,
     });
   }
 

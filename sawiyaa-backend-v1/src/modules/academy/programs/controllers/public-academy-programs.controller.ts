@@ -27,6 +27,7 @@ import { GetPublicAcademyProgramEnrollmentPaymentRedirectUseCase } from '../use-
 import { GetPublicAcademyProgramEnrollmentUseCase } from '../use-cases/get-public-academy-program-enrollment.use-case';
 import { ListPublicAcademyProgramsUseCase } from '../use-cases/list-public-academy-programs.use-case';
 import { AcademyProgramCoverStorageService } from '../services/academy-program-cover-storage.service';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Academy')
 @Controller('academy')
@@ -47,7 +48,8 @@ export class PublicAcademyProgramsController {
     @Param('fileName') fileName: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.academyProgramCoverStorageService.getCoverFile(fileName);
+    const file =
+      await this.academyProgramCoverStorageService.getCoverFile(fileName);
     if (!file) {
       throw new NotFoundException({
         messageKey: 'common.errors.notFound',
@@ -59,7 +61,9 @@ export class PublicAcademyProgramsController {
     response.setHeader('Cache-Control', 'public, max-age=86400');
 
     return new StreamableFile(
-      this.academyProgramCoverStorageService.createFileStream(file.absolutePath),
+      this.academyProgramCoverStorageService.createFileStream(
+        file.absolutePath,
+      ),
     );
   }
 
@@ -69,10 +73,12 @@ export class PublicAcademyProgramsController {
   list(
     @Query() query: ListPublicAcademyProgramsDto,
     @CurrentLocale() locale: SupportedLocale,
+    @Req() request: Request,
   ) {
     return this.listPublicAcademyProgramsUseCase.execute({
       ...query,
       locale,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 
@@ -82,10 +88,12 @@ export class PublicAcademyProgramsController {
   getBySlug(
     @Param('slug') slug: string,
     @CurrentLocale() locale: SupportedLocale,
+    @Req() request: Request,
   ) {
     return this.getPublicAcademyProgramBySlugUseCase.execute({
       slug,
       locale,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 
@@ -97,18 +105,22 @@ export class PublicAcademyProgramsController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: CreateAcademyProgramEnrollmentDto,
     @CurrentUser() currentUser: AuthenticatedUser | null,
+    @Req() request: Request,
   ) {
     return this.createAcademyProgramEnrollmentUseCase.execute({
       slug,
       locale,
       currentUser: currentUser ?? null,
       payload: body,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 
   @Get('program-enrollments/:id')
   @Public()
-  @ApiOperation({ summary: 'Get academy program enrollment status by public token' })
+  @ApiOperation({
+    summary: 'Get academy program enrollment status by public token',
+  })
   getEnrollment(
     @Param('id') enrollmentId: string,
     @Query() query: AcademyProgramEnrollmentTokenDto,

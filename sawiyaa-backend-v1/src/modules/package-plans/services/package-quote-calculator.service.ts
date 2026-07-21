@@ -13,6 +13,7 @@ import { ValidatePackagePlanService } from './validate-package-plan.service';
 import { PackagePlanQuoteViewModel } from '../types/package-plans.types';
 
 type PackagePlanQuoteInput = {
+  requestCountryIsoCode?: string | null;
   plan: {
     code: string;
     sessionCount: number;
@@ -72,11 +73,7 @@ export class PackageQuoteCalculatorService {
     this.validateSessionDurationService.validate(input.selectedDurationMinutes);
 
     const regionalResolution = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: input.patientCountryIsoCode ?? null,
-      accountCountryIsoCode: input.accountCountryIsoCode ?? null,
-      checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
-      operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-      currencyCode: input.selectedCurrencyCode ?? null,
+      requestCountryIsoCode: input.requestCountryIsoCode ?? null,
     });
     const normalizedCurrencyCode = regionalResolution.currencyCode;
     if (!['EGP', 'USD'].includes(normalizedCurrencyCode)) {

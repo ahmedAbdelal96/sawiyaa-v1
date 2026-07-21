@@ -10,10 +10,9 @@ import {
   ShieldCheck,
   Star,
 } from "lucide-react";
-import {
-  formatPublicMoney,
-  getPublicSessionPrices,
-} from "@/features/practitioners-discovery/lib/public-pricing";
+import { getPublicSessionPrices } from "@/features/practitioners-discovery/lib/public-pricing";
+import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery/lib/practitioner-price";
+import { MoneyText } from "@/components/money/MoneyText";
 import type { PractitionerProfile } from "../types/profile";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
@@ -149,9 +148,7 @@ export default async function ProfileHeader({
                               : t("booking.duration60")}
                           </span>
                           <span className="mx-2 text-text-muted">-</span>
-                          <span className="font-bold text-text-primary dark:text-white/95">
-                            {formatPublicMoney(locale, price.amount, p.currencyCode)}
-                          </span>
+                          <span className="font-bold text-text-primary dark:text-white/95">{(() => { const money = mapPractitionerDurationMoney({ amount: price.amount, currencyCode: p.currencyCode }); return money ? <MoneyText money={money} /> : null; })()}</span>
                         </div>
                       ))}
                     </div>

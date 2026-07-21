@@ -749,6 +749,7 @@ exports.Prisma.PractitionerPayoutDestinationScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
   methodType: 'methodType',
+  countryCode: 'countryCode',
   accountHolderName: 'accountHolderName',
   bankName: 'bankName',
   bankAccountNumber: 'bankAccountNumber',

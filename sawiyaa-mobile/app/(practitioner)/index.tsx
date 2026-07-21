@@ -731,7 +731,6 @@ function mapSessionBadge(status: SessionStatus) {
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "UPCOMING":
     case "PENDING_PRACTITIONER_CONFIRMATION":
       return "warning" as const;
     case "PATIENT_NO_SHOW":

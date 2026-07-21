@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiNotFoundResponse,
   ApiOperation,
@@ -13,6 +14,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { PublicPackagePlansQueryDto } from '../dto/public-package-plans-query.dto';
 import { PackagePlanQuotedListSuccessResponseDto } from '../dto/package-plan-quote-response.dto';
 import { ListPublicPackagePlansUseCase } from '../use-cases/list-public-package-plans.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Public - Package Plans')
 @Controller('public/practitioners')
@@ -35,6 +37,7 @@ export class PublicPackagePlansController {
     @CurrentUser() currentUser: AuthenticatedUser | undefined,
     @CurrentLocale() locale: SupportedLocale,
     @Query() query: PublicPackagePlansQueryDto,
+    @Req() request: Request,
   ) {
     return this.listPublicPackagePlansUseCase
       .execute({
@@ -43,7 +46,7 @@ export class PublicPackagePlansController {
         locale,
         durationMinutes: query.durationMinutes,
         sessionMode: query.sessionMode,
-        requestedCurrencyCode: query.currencyCode,
+        guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       })
       .then((data) => ({ success: true as const, data }));
   }

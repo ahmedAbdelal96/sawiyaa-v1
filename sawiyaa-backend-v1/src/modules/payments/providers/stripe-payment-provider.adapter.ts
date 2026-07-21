@@ -26,6 +26,9 @@ type StripeWebhookEvent = {
   data?: {
     object?: {
       id?: string;
+      amount?: number;
+      amount_received?: number;
+      currency?: string;
       metadata?: Record<string, string>;
     };
   };
@@ -140,7 +143,8 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
       input.rawBody.toString('utf8'),
     ) as StripeWebhookEvent;
 
-    const providerPaymentRef = event.data?.object?.id;
+    const stripeObject = event.data?.object;
+    const providerPaymentRef = stripeObject?.id;
 
     if (!event.id || !providerPaymentRef) {
       return { handled: false };
@@ -153,6 +157,9 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
           providerEventRef: event.id,
           providerPaymentRef,
           outcome: 'SUCCEEDED',
+          amountMinor:
+            stripeObject?.amount_received ?? stripeObject?.amount ?? null,
+          currencyCode: stripeObject?.currency ?? null,
           payload: event as unknown as Record<string, unknown>,
         };
       case 'payment_intent.payment_failed':
@@ -161,6 +168,8 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
           providerEventRef: event.id,
           providerPaymentRef,
           outcome: 'FAILED',
+          amountMinor: stripeObject?.amount ?? null,
+          currencyCode: stripeObject?.currency ?? null,
           payload: event as unknown as Record<string, unknown>,
         };
       case 'payment_intent.canceled':
@@ -169,6 +178,8 @@ export class StripePaymentProviderAdapter implements PaymentProviderAdapter {
           providerEventRef: event.id,
           providerPaymentRef,
           outcome: 'EXPIRED',
+          amountMinor: stripeObject?.amount ?? null,
+          currencyCode: stripeObject?.currency ?? null,
           payload: event as unknown as Record<string, unknown>,
         };
       default:

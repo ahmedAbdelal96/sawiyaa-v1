@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 import { ExpirePackagePurchaseUseCase } from './expire-package-purchase.use-case';
 
 describe('ExpirePackagePurchaseUseCase', () => {
@@ -8,6 +9,9 @@ describe('ExpirePackagePurchaseUseCase', () => {
     updateStatus: jest.fn(),
     createEvent: jest.fn(),
   } as never;
+  const sessionLifecycleService = {
+    transition: jest.fn(),
+  } as unknown as SessionLifecycleService;
   const packagePurchaseRepository = {
     findById: jest.fn(),
     updateExpiryStatus: jest.fn(),
@@ -22,10 +26,12 @@ describe('ExpirePackagePurchaseUseCase', () => {
     prisma,
     packagePurchaseRepository,
     sessionRepository,
+    sessionLifecycleService,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (sessionLifecycleService.transition as jest.Mock).mockResolvedValue({});
   });
 
   it('expires a pending purchase and its linked pending sessions', async () => {
@@ -65,12 +71,11 @@ describe('ExpirePackagePurchaseUseCase', () => {
       },
       expect.anything(),
     );
-    expect(sessionRepository.updateStatus).toHaveBeenCalledTimes(2);
-    expect(sessionRepository.createEvent).toHaveBeenCalledWith(
+    expect(sessionLifecycleService.transition).toHaveBeenCalledTimes(2);
+    expect(sessionLifecycleService.transition).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: SessionEventType.EXPIRED_UNPAID,
+        to: SessionStatus.EXPIRED,
       }),
-      expect.anything(),
     );
   });
 

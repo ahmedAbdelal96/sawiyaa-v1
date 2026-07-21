@@ -52,6 +52,8 @@
     "active": "نشط",
     "none": "لا شيء",
     "unavailable": "غير متاح",
+    "ready": "جاهز",
+    "notReady": "غير جاهز",
     "noChangesYet": "لا توجد تغييرات بعد",
     "noReasonProvided": "لا يوجد سبب مذكور"
   },
@@ -130,7 +132,43 @@
     "routingValidation": "التحقق من التوجيه",
     "pendingChanges": "التغييرات المعلّقة",
     "unableRequestStepUp": "تعذر طلب خطوة التحقق.",
-    "unableSaveRoutingConfiguration": "تعذر حفظ إعدادات التوجيه."
+    "unableSaveRoutingConfiguration": "تعذر حفظ إعدادات التوجيه.",
+    "confirmNewPaymentsOnly": "سيؤثر هذا التغيير على عمليات الدفع الجديدة فقط. ستحتفظ عمليات الدفع الحالية بمزودها ومسارها الأصلي. هل تريد المتابعة؟"
+  },
+  "routeTable": {
+    "title": "مسارات الدفع حسب العملة",
+    "description": "تُحفظ المسارات التشغيلية في قاعدة البيانات عند تعديلها هنا، وتظل إعدادات البيئة الافتراضية متاحة حتى حفظ تجاوز من قاعدة البيانات.",
+    "currency": "العملة",
+    "method": "طريقة الدفع",
+    "provider": "المزود",
+    "integration": "معرف التكامل",
+    "environment": "البيئة",
+    "priority": "الأولوية",
+    "status": "الحالة",
+    "readiness": "الجاهزية",
+    "source": "المصدر",
+    "updatedBy": "تم التحديث بواسطة",
+    "updatedAt": "تاريخ التحديث",
+    "database": "تجاوز من قاعدة البيانات",
+    "environmentDefault": "افتراضي البيئة",
+    "actions": "الإجراءات",
+    "empty": "لا توجد مسارات للعملات",
+    "emptyDescription": "أضف مساراً للتحكم في اختيار مزود الدفع حسب العملة والطريقة."
+  },
+  "routeEditor": {
+    "title": "إدارة مسارات العملات",
+    "description": "اختر المزودين المسجلين ومعرفات التكامل الآمنة فقط. تبقى بيانات الاعتماد خارج لوحة الإدارة.",
+    "add": "إضافة مسار",
+    "remove": "إزالة المسار",
+    "empty": "لا توجد مسارات في هذه المسودة.",
+    "currency": "العملة",
+    "method": "الطريقة",
+    "provider": "المزود",
+    "integration": "معرف التكامل",
+    "chooseIntegration": "اختر معرفاً",
+    "priority": "الأولوية",
+    "environment": "البيئة",
+    "enabled": "مفعل"
   },
   "rollbackModal": {
     "title": "الرجوع عن التغيير",
@@ -162,6 +200,7 @@
     "countryIsoCodes": "أكواد الدول",
     "integrationReference": "مرجع التكامل",
     "integrationPlaceholder": "معرّف التكامل / الطريقة",
+    "integrationManaged": "تُدار بيانات اعتماد التكامل ومعرفات المزود في بيئة الخادم. يمكن تعديل معرفات المسارات الآمنة فقط هنا.",
     "flowLegacy": "القديم",
     "flowIntention": "النية"
   },
@@ -189,6 +228,7 @@
     "methods": "الطرق",
     "defaultProvider": "المزود الافتراضي",
     "fallbackProvider": "المزود البديل",
-    "priorityOrder": "ترتيب الأولوية"
+    "priorityOrder": "ترتيب الأولوية",
+    "currencyRoutes": "مسارات العملات"
   }
 }

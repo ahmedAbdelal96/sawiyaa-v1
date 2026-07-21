@@ -71,9 +71,11 @@ async function fetchJson<T>(
     const requestHeaders = await headers();
     const cfCountry = requestHeaders.get("cf-ipcountry");
     const vercelCountry = requestHeaders.get("x-vercel-ip-country");
+    const geoIpCountry = requestHeaders.get("x-geoip-country");
     trustedCountryHeaders = {
       ...(cfCountry ? { "cf-ipcountry": cfCountry } : {}),
       ...(vercelCountry ? { "x-vercel-ip-country": vercelCountry } : {}),
+      ...(geoIpCountry ? { "x-geoip-country": geoIpCountry } : {}),
     };
   } catch {
     // No request context available. Keep public fallback behavior.

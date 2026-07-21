@@ -19,6 +19,7 @@ import loggingConfig from './config/logging.config';
 import sessionConfig from './config/session.config';
 import throttleConfig from './config/throttle.config';
 import stepUpConfig from './config/step-up.config';
+import geoipConfig from './config/geoip.config';
 import { I18nModule } from './common/i18n/i18n.module';
 import { LocaleContextMiddleware } from './common/i18n/services/locale-context.middleware';
 import { PrismaModule } from './common/prisma/prisma.module';
@@ -65,6 +66,8 @@ import { UsersModule } from './modules/users/users.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { CorporateSponsorshipModule } from './modules/corporate-sponsorship/corporate-sponsorship.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { TrustedCountryResolutionMiddleware } from './common/country-resolution/trusted-country-resolution.middleware';
+import { TrustedCountryResolutionService } from './common/country-resolution/trusted-country-resolution.service';
 
 @Module({
   imports: [
@@ -85,6 +88,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
         sessionConfig,
         throttleConfig,
         stepUpConfig,
+        geoipConfig,
       ],
     }),
     LoggingModule,
@@ -129,6 +133,8 @@ import { MessagingModule } from './modules/messaging/messaging.module';
     MessagingModule,
   ],
   providers: [
+    TrustedCountryResolutionService,
+    TrustedCountryResolutionMiddleware,
     AllExceptionsFilter,
     {
       provide: APP_GUARD,
@@ -147,7 +153,11 @@ import { MessagingModule } from './modules/messaging/messaging.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
-      .apply(RequestContextMiddleware, LocaleContextMiddleware)
+      .apply(
+        RequestContextMiddleware,
+        LocaleContextMiddleware,
+        TrustedCountryResolutionMiddleware,
+      )
       .forRoutes({
         path: '*path',
         method: RequestMethod.ALL,

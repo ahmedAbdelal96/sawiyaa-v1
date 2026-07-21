@@ -5,14 +5,12 @@ import { PaymentMapper } from '../mappers/payment.mapper';
 import { PaymentRepository } from '../repositories/payment.repository';
 import { PaymentSessionRepository } from '../repositories/payment-session.repository';
 import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-session-payment-status.service';
-import { MarkPaymentSucceededUseCase } from './mark-payment-succeeded.use-case';
 
 @Injectable()
 export class ReconcileSessionPaymentReturnUseCase {
   constructor(
     private readonly paymentSessionRepository: PaymentSessionRepository,
     private readonly paymentRepository: PaymentRepository,
-    private readonly markPaymentSucceededUseCase: MarkPaymentSucceededUseCase,
     private readonly orchestrateSessionPaymentStatusService: OrchestrateSessionPaymentStatusService,
     private readonly paymentMapper: PaymentMapper,
     private readonly logger: AppLoggerService,
@@ -101,21 +99,11 @@ export class ReconcileSessionPaymentReturnUseCase {
       };
     }
 
-    const updated = await this.markPaymentSucceededUseCase.execute({
-      paymentId: payment.id,
-      providerEventRef: `paymob-return:${input.providerReference ?? payment.providerPaymentRef ?? payment.id}`,
-      payload: {
-        source: 'payment-return-reconciliation',
-        providerReference: input.providerReference ?? null,
-        redirectStatus: input.redirectStatus ?? null,
-        success: input.success ?? null,
-        pending: input.pending ?? null,
-      },
-    });
-
     return {
-      item: updated.item,
-      reconciled: true,
+      // A browser redirect is not proof of settlement. The payment webhook
+      // must provide the provider amount/currency and perform the capture.
+      item: this.paymentMapper.toViewModel(payment),
+      reconciled: false,
     };
   }
 }

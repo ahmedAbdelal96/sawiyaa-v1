@@ -19,7 +19,8 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { useCreatePublicAcademyProgramEnrollment, usePublicAcademyProgram } from "../hooks";
 import { buildAcademyEnrollmentPaymentReturnBaseUrl } from "../navigation";
 import type { CreateAcademyProgramEnrollmentInput } from "../types";
-import { formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
+import { PriceDisplay } from "../../../../components/money";
+import { academyPriceOf } from "../display";
 
 export default function AcademyEnrollmentCreateScreen({
   slug,
@@ -28,7 +29,7 @@ export default function AcademyEnrollmentCreateScreen({
 }) {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { rowDirection, textAlign } = useAppDirection();
   const { user, role, isLoading: isAuthLoading } = useAuth();
   const authScopeKey = useMemo(() => {
@@ -72,13 +73,8 @@ export default function AcademyEnrollmentCreateScreen({
   }, [user]);
 
   const course = courseQuery.data ?? null;
-  const hasPrice = course?.priceEgp !== null || course?.priceUsd !== null;
-  const isFreeCourse = hasPrice && isAcademyProgramFree(course?.priceEgp, course?.priceUsd);
-  const priceLabel = hasPrice
-    ? (isFreeCourse
-      ? t("academy.detail.free")
-      : formatAcademyProgramPrice(course?.priceEgp, course?.priceUsd, i18n.language))
-    : null;
+  const price = academyPriceOf(course ?? {});
+  const canEnroll = price.status === "PAID" && course?.registrationOpen === true;
   const isNotFound = courseQuery.isSuccess && !course;
 
   const lectureLabel = course?.sessions?.length
@@ -120,13 +116,9 @@ export default function AcademyEnrollmentCreateScreen({
                 { flexDirection: rowDirection },
               ]}
             >
-              {priceLabel ? (
-                <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Text color={theme.colors.primary} weight="700" style={styles.price}>
-                    {priceLabel}
-                  </Text>
-                </View>
-              ) : <View />}
+              <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+                <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={styles.price} />
+              </View>
             </View>
             <View
               style={[
@@ -234,13 +226,15 @@ export default function AcademyEnrollmentCreateScreen({
                 title={
                   enrollMutation.isPending
                     ? t("academy.detail.submitting")
-                    : isFreeCourse
-                      ? t("academy.detail.registerFree")
-                      : t("academy.detail.subscribeNow")
+                    : t("academy.detail.subscribeNow")
                 }
-                disabled={enrollMutation.isPending}
+                disabled={enrollMutation.isPending || !canEnroll}
                 onPress={async () => {
                   setErrorMessage(null);
+                  if (!canEnroll) {
+                    setErrorMessage(t("money.unavailable", "Price unavailable"));
+                    return;
+                  }
                   if (!form.fullName.trim() || !form.phoneNumber.trim()) {
                     setErrorMessage(t("academy.detail.formValidation"));
                     return;
@@ -255,13 +249,11 @@ export default function AcademyEnrollmentCreateScreen({
                         whatsappNumber: form.whatsappNumber?.trim() || undefined,
                         email: form.email?.trim() || undefined,
                         sourceLabel: form.sourceLabel?.trim() || undefined,
-                        returnUrlBase: isFreeCourse ? undefined : paymentReturnBaseUrl,
+                        returnUrlBase: paymentReturnBaseUrl,
                       },
                     });
 
-                    const shouldShowPaymentFlow =
-                      !isFreeCourse &&
-                      created.status !== "CONFIRMED";
+                    const shouldShowPaymentFlow = created.status !== "CONFIRMED";
 
                     router.replace(
                       shouldShowPaymentFlow

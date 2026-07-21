@@ -26,9 +26,25 @@ export interface PatientPackagePurchaseViewModel {
   id: string;
   status: string;
   planCode: string;
+  title: string;
+  description: string | null;
   sessionCount: number;
   discountPercent: string;
   practitionerId: string;
+  practitioner?: {
+    id: string;
+    publicSlug: string;
+    displayName: string;
+    avatarUrl: string | null;
+    professionalTitle: string | null;
+  };
+  progress: {
+    totalSessions: number;
+    completedSessions: number;
+    remainingSessions: number;
+    scheduledSessions: number;
+    progressPercent: number;
+  };
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;

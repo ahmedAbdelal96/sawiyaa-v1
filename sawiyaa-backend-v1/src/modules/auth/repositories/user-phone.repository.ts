@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
@@ -28,19 +28,34 @@ export class UserPhoneRepository {
     isVerified: boolean,
     tx?: Prisma.TransactionClient,
   ) {
-    return this.getDb(tx).userPhone.upsert({
-      where: { phone },
-      create: {
-        userId,
-        phone,
-        isPrimary: true,
-        isVerified,
-      },
-      update: {
-        userId,
-        isPrimary: true,
-        isVerified,
-      },
-    });
+    const db = this.getDb(tx);
+    return db.userPhone
+      .findUnique({
+        where: { phone },
+        select: { id: true, userId: true },
+      })
+      .then((existing) => {
+        if (existing && existing.userId !== userId) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.phoneAlreadyRegistered',
+            error: 'PHONE_ALREADY_REGISTERED',
+          });
+        }
+
+        return db.userPhone.upsert({
+          where: { phone },
+          create: {
+            userId,
+            phone,
+            isPrimary: true,
+            isVerified,
+          },
+          update: {
+            userId,
+            isPrimary: true,
+            isVerified,
+          },
+        });
+      });
   }
 }

@@ -13,7 +13,6 @@ import type {
 
 export type PatientInstantBookingPractitionersParams = {
   duration?: InstantBookingDiscoveryDuration;
-  currency?: InstantBookingDiscoveryCurrency;
   page?: number;
   limit?: number;
 };
@@ -31,7 +30,6 @@ export async function getPatientInstantBookingPractitioners(
     {
       params: {
         duration: params?.duration,
-        currency: params?.currency,
         page: params?.page ?? 1,
         limit: params?.limit ?? 30,
       },

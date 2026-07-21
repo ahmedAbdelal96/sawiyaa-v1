@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { AcademyProgramStatus, AcademyProgramDeliveryMethod } from '@prisma/client';
+import {
+  AcademyProgramStatus,
+  AcademyProgramDeliveryMethod,
+} from '@prisma/client';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+import { isPositiveAcademyPriceAmount } from '../../utils/academy-pricing.util';
 
 type AcademyProgramCapacitySummary = {
   targetLearnerCount?: number | null;
@@ -24,34 +29,37 @@ export class AcademyProgramPresenter {
     };
   }
 
-  presentPublicProgramItem(program: {
-    id: string;
-    slug: string;
-    titleAr: string;
-    titleEn: string;
-    descriptionAr: string | null;
-    descriptionEn: string | null;
-    coverImageUrl: string | null;
-    category?: {
+  presentPublicProgramItem(
+    program: {
       id: string;
-      slugRoot: string;
-      translations?: Array<{
-        locale: string;
-        title: string;
-      }>;
-    } | null;
-    priceEgp: { toString(): string } | null;
-    priceUsd: { toString(): string } | null;
-    registrationOpen: boolean;
-    maxSeats: number | null;
-    startAt: Date | null;
-    endAt: Date | null;
-    publishedAt: Date | null;
-    _count?: {
-      sessions?: number;
-    };
-  } & AcademyProgramCapacitySummary,
-  locale: SupportedLocale) {
+      slug: string;
+      titleAr: string;
+      titleEn: string;
+      descriptionAr: string | null;
+      descriptionEn: string | null;
+      coverImageUrl: string | null;
+      category?: {
+        id: string;
+        slugRoot: string;
+        translations?: Array<{
+          locale: string;
+          title: string;
+        }>;
+      } | null;
+      priceEgp: { toString(): string } | null;
+      priceUsd: { toString(): string } | null;
+      registrationOpen: boolean;
+      maxSeats: number | null;
+      startAt: Date | null;
+      endAt: Date | null;
+      publishedAt: Date | null;
+      _count?: {
+        sessions?: number;
+      };
+    } & AcademyProgramCapacitySummary,
+    locale: SupportedLocale,
+    requestCountryIsoCode: string | null,
+  ) {
     const category = this.presentCategorySummary(program.category, locale);
     const title = this.resolveLocalizedValue({
       locale,
@@ -65,7 +73,8 @@ export class AcademyProgramPresenter {
       secondary: program.descriptionEn,
     });
 
-    const targetLearnerCount = program.targetLearnerCount ?? program.maxSeats ?? null;
+    const targetLearnerCount =
+      program.targetLearnerCount ?? program.maxSeats ?? null;
     const activeLearnerCount = program.activeLearnerCount ?? 0;
     const remainingTargetSlots =
       program.remainingTargetSlots ??
@@ -75,6 +84,28 @@ export class AcademyProgramPresenter {
     const isOverTargetLearners =
       program.isOverTargetLearners ??
       (targetLearnerCount !== null && activeLearnerCount > targetLearnerCount);
+    const regionalResolution = resolvePaymentRegionalResolution({
+      requestCountryIsoCode,
+    });
+    const selectedAmount =
+      regionalResolution.currencyCode === 'EGP'
+        ? (program.priceEgp?.toString() ?? null)
+        : (program.priceUsd?.toString() ?? null);
+    const publicPricing = isPositiveAcademyPriceAmount(selectedAmount)
+      ? {
+            priceStatus: 'PAID' as const,
+            pricingStatus: 'AVAILABLE' as const,
+            priceAmount: selectedAmount,
+            currencyCode: regionalResolution.currencyCode,
+            reasonCode: null,
+          }
+      : {
+          priceStatus: 'UNAVAILABLE' as const,
+          pricingStatus: 'UNAVAILABLE' as const,
+          priceAmount: null,
+          currencyCode: null,
+          reasonCode: 'SELECTED_PRICE_MISSING' as const,
+        };
 
     return {
       id: program.id,
@@ -87,8 +118,7 @@ export class AcademyProgramPresenter {
       description,
       coverImageUrl: program.coverImageUrl ?? null,
       category,
-      priceEgp: program.priceEgp?.toString() ?? null,
-      priceUsd: program.priceUsd?.toString() ?? null,
+      ...publicPricing,
       registrationOpen: program.registrationOpen,
       maxSeats: program.maxSeats ?? null,
       targetLearnerCount,
@@ -141,9 +171,10 @@ export class AcademyProgramPresenter {
       }>;
     } & AcademyProgramCapacitySummary,
     locale: SupportedLocale,
+    requestCountryIsoCode: string | null,
   ) {
     return {
-      ...this.presentPublicProgramItem(program, locale),
+      ...this.presentPublicProgramItem(program, locale, requestCountryIsoCode),
       sessions:
         program.sessions?.map((session) =>
           this.presentPublicSessionItem(session, locale),
@@ -151,40 +182,43 @@ export class AcademyProgramPresenter {
     };
   }
 
-  presentAdminProgramItem(program: {
-    id: string;
-    slug: string;
-    titleAr: string;
-    titleEn: string;
-    descriptionAr: string | null;
-    descriptionEn: string | null;
-    coverImageUrl: string | null;
-    categoryId: string | null;
-    category?: {
+  presentAdminProgramItem(
+    program: {
       id: string;
-      slugRoot: string;
-      translations?: Array<{
-        locale: string;
-        title: string;
-      }>;
-    } | null;
-    priceEgp: { toString(): string } | null;
-    priceUsd: { toString(): string } | null;
-    registrationOpen: boolean;
-    maxSeats: number | null;
-    startAt: Date | null;
-    endAt: Date | null;
-    status: AcademyProgramStatus;
-    publishedAt: Date | null;
-    archivedAt: Date | null;
-    createdByUserId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count?: {
-      sessions?: number;
-    };
-  } & AcademyProgramCapacitySummary) {
-    const targetLearnerCount = program.targetLearnerCount ?? program.maxSeats ?? null;
+      slug: string;
+      titleAr: string;
+      titleEn: string;
+      descriptionAr: string | null;
+      descriptionEn: string | null;
+      coverImageUrl: string | null;
+      categoryId: string | null;
+      category?: {
+        id: string;
+        slugRoot: string;
+        translations?: Array<{
+          locale: string;
+          title: string;
+        }>;
+      } | null;
+      priceEgp: { toString(): string } | null;
+      priceUsd: { toString(): string } | null;
+      registrationOpen: boolean;
+      maxSeats: number | null;
+      startAt: Date | null;
+      endAt: Date | null;
+      status: AcademyProgramStatus;
+      publishedAt: Date | null;
+      archivedAt: Date | null;
+      createdByUserId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      _count?: {
+        sessions?: number;
+      };
+    } & AcademyProgramCapacitySummary,
+  ) {
+    const targetLearnerCount =
+      program.targetLearnerCount ?? program.maxSeats ?? null;
     const activeLearnerCount = program.activeLearnerCount ?? 0;
     const remainingTargetSlots =
       program.remainingTargetSlots ??
@@ -224,58 +258,60 @@ export class AcademyProgramPresenter {
     };
   }
 
-  presentAdminProgramDetails(program: {
-    id: string;
-    slug: string;
-    titleAr: string;
-    titleEn: string;
-    descriptionAr: string | null;
-    descriptionEn: string | null;
-    coverImageUrl: string | null;
-    categoryId: string | null;
-    category?: {
+  presentAdminProgramDetails(
+    program: {
       id: string;
-      slugRoot: string;
-      translations?: Array<{
-        locale: string;
-        title: string;
-      }>;
-    } | null;
-    priceEgp: { toString(): string } | null;
-    priceUsd: { toString(): string } | null;
-    registrationOpen: boolean;
-    maxSeats: number | null;
-    startAt: Date | null;
-    endAt: Date | null;
-    status: AcademyProgramStatus;
-    publishedAt: Date | null;
-    archivedAt: Date | null;
-    createdByUserId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    _count?: {
-      sessions?: number;
-    };
-    sessions?: Array<{
-      id: string;
-      academyProgramId: string;
+      slug: string;
       titleAr: string;
       titleEn: string;
       descriptionAr: string | null;
       descriptionEn: string | null;
-      startsAt: Date;
-      endsAt: Date;
-      deliveryMethod: AcademyProgramDeliveryMethod;
-      internalDeliveryNote: string | null;
-      internalDeliveryLink: string | null;
-      sortOrder: number;
-      isPublished: boolean;
+      coverImageUrl: string | null;
+      categoryId: string | null;
+      category?: {
+        id: string;
+        slugRoot: string;
+        translations?: Array<{
+          locale: string;
+          title: string;
+        }>;
+      } | null;
+      priceEgp: { toString(): string } | null;
+      priceUsd: { toString(): string } | null;
+      registrationOpen: boolean;
+      maxSeats: number | null;
+      startAt: Date | null;
+      endAt: Date | null;
+      status: AcademyProgramStatus;
       publishedAt: Date | null;
+      archivedAt: Date | null;
       createdByUserId: string | null;
       createdAt: Date;
       updatedAt: Date;
-    }>;
-  } & AcademyProgramCapacitySummary) {
+      _count?: {
+        sessions?: number;
+      };
+      sessions?: Array<{
+        id: string;
+        academyProgramId: string;
+        titleAr: string;
+        titleEn: string;
+        descriptionAr: string | null;
+        descriptionEn: string | null;
+        startsAt: Date;
+        endsAt: Date;
+        deliveryMethod: AcademyProgramDeliveryMethod;
+        internalDeliveryNote: string | null;
+        internalDeliveryLink: string | null;
+        sortOrder: number;
+        isPublished: boolean;
+        publishedAt: Date | null;
+        createdByUserId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+      }>;
+    } & AcademyProgramCapacitySummary,
+  ) {
     return {
       ...this.presentAdminProgramItem(program),
       sessions:

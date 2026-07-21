@@ -6,7 +6,9 @@ import { AdminPackagePlansController } from './controllers/admin-package-plans.c
 import { AdminPackagePlanSettingsController } from './controllers/admin-package-plan-settings.controller';
 import { PatientPackagePurchasesController } from './controllers/patient-package-purchases.controller';
 import { PublicPackagePlansController } from './controllers/public-package-plans.controller';
+import { PublicPackageOffersController } from './controllers/public-package-offers.controller';
 import { PatientPackageQuotesController } from './controllers/patient-package-quotes.controller';
+import { ListPublicPackageOffersUseCase } from './use-cases/list-public-package-offers.use-case';
 import { PackagePlanPresenter } from './presenters/package-plan.presenter';
 import { PackagePlanQuotePresenter } from './presenters/package-plan-quote.presenter';
 import { PackagePurchasePresenter } from './presenters/package-purchase.presenter';
@@ -57,10 +59,12 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
     FinancialOperationsModule,
   ],
   controllers: [
-    AdminPackagePlansController,
+    // Register the static settings route before the dynamic :code routes.
     AdminPackagePlanSettingsController,
+    AdminPackagePlansController,
     PatientPackagePurchasesController,
     PublicPackagePlansController,
+    PublicPackageOffersController,
     PatientPackageQuotesController,
   ],
   providers: [
@@ -84,6 +88,7 @@ import { UpdatePackagePlanSettingsUseCase } from './use-cases/update-package-pla
     GetPackagePlanSettingsUseCase,
     UpdatePackagePlanSettingsUseCase,
     ListPublicPackagePlansUseCase,
+    ListPublicPackageOffersUseCase,
     CreatePackagePurchaseUseCase,
     InitiatePackagePurchasePaymentUseCase,
     HandlePackagePurchasePaymentSuccessUseCase,

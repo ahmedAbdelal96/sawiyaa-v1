@@ -52,6 +52,8 @@
     "active": "active",
     "none": "None",
     "unavailable": "Unavailable",
+    "ready": "Ready",
+    "notReady": "Not ready",
     "noChangesYet": "No changes yet",
     "noReasonProvided": "No reason provided"
   },
@@ -130,7 +132,43 @@
     "routingValidation": "Routing validation",
     "pendingChanges": "Pending changes",
     "unableRequestStepUp": "Unable to request step-up.",
-    "unableSaveRoutingConfiguration": "Unable to save routing configuration."
+    "unableSaveRoutingConfiguration": "Unable to save routing configuration.",
+    "confirmNewPaymentsOnly": "This changes routing for new payments only. Existing payments keep their original provider and route. Continue?"
+  },
+  "routeTable": {
+    "title": "Currency payment routes",
+    "description": "Operational routes are stored in the database when changed here. Environment defaults remain available until a database override is saved.",
+    "currency": "Currency",
+    "method": "Payment method",
+    "provider": "Provider",
+    "integration": "Integration alias",
+    "environment": "Environment",
+    "priority": "Priority",
+    "status": "Status",
+    "readiness": "Readiness",
+    "source": "Source",
+    "updatedBy": "Updated by",
+    "updatedAt": "Updated at",
+    "database": "Database override",
+    "environmentDefault": "Environment default",
+    "actions": "Actions",
+    "empty": "No currency routes",
+    "emptyDescription": "Add a route to control payment-provider selection by currency and method."
+  },
+  "routeEditor": {
+    "title": "Manage currency routes",
+    "description": "Choose only registered providers and safe integration aliases. Credentials stay outside the Admin dashboard.",
+    "add": "Add route",
+    "remove": "Remove route",
+    "empty": "No routes in this draft.",
+    "currency": "Currency",
+    "method": "Method",
+    "provider": "Provider",
+    "integration": "Integration alias",
+    "chooseIntegration": "Choose an alias",
+    "priority": "Priority",
+    "environment": "Environment",
+    "enabled": "Enabled"
   },
   "rollbackModal": {
     "title": "Rollback change",
@@ -162,6 +200,7 @@
     "countryIsoCodes": "Country ISO codes",
     "integrationReference": "Integration reference",
     "integrationPlaceholder": "Integration / method ID",
+    "integrationManaged": "Integration credentials and provider IDs are managed by the server environment. Only safe route aliases are editable here.",
     "flowLegacy": "Legacy",
     "flowIntention": "Intention"
   },
@@ -189,6 +228,7 @@
     "methods": "Methods",
     "defaultProvider": "Default provider",
     "fallbackProvider": "Fallback provider",
-    "priorityOrder": "Priority order"
+    "priorityOrder": "Priority order",
+    "currencyRoutes": "Currency routes"
   }
 }

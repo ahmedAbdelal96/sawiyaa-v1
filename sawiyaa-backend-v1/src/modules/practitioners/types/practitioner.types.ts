@@ -42,6 +42,7 @@ export interface PractitionerSpecialtySelectionInput {
 
 export interface PractitionerPayoutDestinationInput {
   methodType: PractitionerPayoutMethodType;
+  countryCode?: string | null;
   accountHolderName?: string | null;
   bankName?: string | null;
   bankAccountNumber?: string | null;
@@ -53,6 +54,7 @@ export interface PractitionerPayoutDestinationInput {
 
 export interface PractitionerPayoutDestinationViewModel {
   methodType: PractitionerPayoutMethodType | null;
+  countryCode: string | null;
   accountHolderName: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;

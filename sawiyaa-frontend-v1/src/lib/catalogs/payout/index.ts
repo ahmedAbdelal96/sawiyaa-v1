@@ -135,4 +135,14 @@ export const resolveBankLabel = getBankLabel;
 export const resolveWalletProviderLabel = getWalletProviderLabel;
 
 export { BANK_CATALOG, WALLET_PROVIDER_CATALOG };
+export { IBAN_REGISTRY } from "./iban-registry";
+export {
+  formatIbanForDisplay,
+  maskIban,
+  normalizeAccountHolderName,
+  normalizeIban,
+  normalizeWalletIdentifier,
+  validateAccountHolderName,
+  validateIban,
+} from "./validation";
 export type { PayoutCatalogItem, PayoutCatalogOption, LocalizedLabel } from "./payout-catalog.types";

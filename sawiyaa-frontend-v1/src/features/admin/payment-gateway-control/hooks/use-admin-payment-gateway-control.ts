@@ -3,6 +3,7 @@ import {
   getAdminPaymentGatewayControl,
   getAdminPaymentGatewayControlHistory,
   getAdminPaymentGatewayControlRouting,
+  getAdminPaymentGatewayRouteCapabilities,
   listAdminPaymentGatewayControl,
   rollbackAdminPaymentGatewayControl,
   requestAdminPaymentGatewayControlStepUp,
@@ -14,6 +15,7 @@ import type {
   PaymentGatewayControlProvider,
   PaymentGatewayControlScope,
   PaymentGatewayControlValidationResult,
+  PaymentGatewayMutationSecurity,
   PaymentRoutingDraft,
   PaymentRoutingRuntimeSnapshot,
   PaymobGatewayControlRuntimeSnapshot,
@@ -42,6 +44,15 @@ export function useAdminPaymentGatewayControlRouting() {
   return useQuery({
     queryKey: adminPaymentGatewayControlQueryKeys.routing(),
     queryFn: () => getAdminPaymentGatewayControlRouting(),
+    staleTime: 20_000,
+    gcTime: 10 * 60_000,
+  });
+}
+
+export function useAdminPaymentGatewayRouteCapabilities() {
+  return useQuery({
+    queryKey: [...adminPaymentGatewayControlQueryKeys.all, "route-capabilities"],
+    queryFn: () => getAdminPaymentGatewayRouteCapabilities(),
     staleTime: 20_000,
     gcTime: 10 * 60_000,
   });
@@ -91,9 +102,9 @@ export function useUpdateAdminPaymentGatewayControl(
   return useMutation({
     mutationFn: (
       payload:
-        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymobGatewayControlRuntimeSnapshot)
-        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & StripeGatewayControlRuntimeSnapshot)
-        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentRoutingDraft),
+        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & PaymobGatewayControlRuntimeSnapshot)
+        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & StripeGatewayControlRuntimeSnapshot)
+        | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & PaymentRoutingDraft),
     ) => updateAdminPaymentGatewayControl(scope, provider, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminPaymentGatewayControlQueryKeys.all });
@@ -113,6 +124,7 @@ export function useRollbackAdminPaymentGatewayControl(
       revisionId: string;
       stepUpChallengeId: string;
       stepUpCode: string;
+      currentPassword: string;
     }) => rollbackAdminPaymentGatewayControl(scope, provider, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminPaymentGatewayControlQueryKeys.all });

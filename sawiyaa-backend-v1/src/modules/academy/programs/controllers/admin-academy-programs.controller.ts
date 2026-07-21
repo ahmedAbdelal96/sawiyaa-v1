@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Put,
   Res,
   StreamableFile,
@@ -28,7 +29,8 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createReadStream } from 'fs';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
@@ -118,11 +120,18 @@ export class AdminAcademyProgramsController {
       required: ['file'],
     },
   })
-  @ApiResponse({ status: 200, description: 'Cover image uploaded successfully' })
-  @ApiBadRequestResponse({ description: 'Missing file, invalid type, or file too large' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cover image uploaded successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Missing file, invalid type, or file too large',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_COVER_IMAGE_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_COVER_IMAGE_BYTES } }),
+  )
   uploadProgramCover(
     @UploadedFile()
     file:
@@ -149,34 +158,38 @@ export class AdminAcademyProgramsController {
       });
     }
 
-    if (!this.academyProgramCoverStorageService.isAllowedMimeType(file.mimetype)) {
+    if (
+      !this.academyProgramCoverStorageService.isAllowedMimeType(file.mimetype)
+    ) {
       throw new BadRequestException({
         messageKey: 'academyProgram.errors.coverInvalidType',
         error: 'ACADEMY_PROGRAM_COVER_INVALID_TYPE',
       });
     }
 
-    return this.academyProgramCoverStorageService.saveCover(file.buffer, file.mimetype).then((url) => {
-      this.securityAuditService.logAsync({
-        action: 'academy.program.cover.upload',
-        outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: currentUser.id,
-        actorRoles: currentUser.roles,
-        resourceType: 'AcademyProgram',
-        resourceId: null,
-        targetUserId: null,
-        metadata: {
-          fileName: file.originalname ?? null,
-          mimeType: file.mimetype,
-          fileSizeBytes: file.size,
-        },
-      });
+    return this.academyProgramCoverStorageService
+      .saveCover(file.buffer, file.mimetype)
+      .then((url) => {
+        this.securityAuditService.logAsync({
+          action: 'academy.program.cover.upload',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: currentUser.id,
+          actorRoles: currentUser.roles,
+          resourceType: 'AcademyProgram',
+          resourceId: null,
+          targetUserId: null,
+          metadata: {
+            fileName: file.originalname ?? null,
+            mimeType: file.mimetype,
+            fileSizeBytes: file.size,
+          },
+        });
 
-      return {
-        success: true as const,
-        data: { url },
-      };
-    });
+        return {
+          success: true as const,
+          data: { url },
+        };
+      });
   }
 
   @Get('programs')
@@ -192,7 +205,9 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs/:id/enrollments')
-  @ApiOperation({ summary: 'List academy program enrollments for admin management' })
+  @ApiOperation({
+    summary: 'List academy program enrollments for admin management',
+  })
   listProgramEnrollments(
     @Param('id') academyProgramId: string,
     @Query() query: ListAdminAcademyProgramEnrollmentsDto,
@@ -206,7 +221,9 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs/:id/attendance')
-  @ApiOperation({ summary: 'Get academy program attendance for admin management' })
+  @ApiOperation({
+    summary: 'Get academy program attendance for admin management',
+  })
   listProgramAttendance(
     @Param('id') programId: string,
     @Query() query: ListAdminAcademyProgramAttendanceDto,
@@ -220,7 +237,9 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('program-enrollments/:id')
-  @ApiOperation({ summary: 'Get academy program enrollment details for admin management' })
+  @ApiOperation({
+    summary: 'Get academy program enrollment details for admin management',
+  })
   getProgramEnrollment(
     @Param('id') enrollmentId: string,
     @CurrentLocale() locale: 'ar' | 'en',
@@ -232,7 +251,9 @@ export class AdminAcademyProgramsController {
   }
 
   @Get('programs/:id/enrollments/export')
-  @ApiOperation({ summary: 'Export academy program enrollments for admin management' })
+  @ApiOperation({
+    summary: 'Export academy program enrollments for admin management',
+  })
   exportProgramEnrollments(
     @Param('id') academyProgramId: string,
     @Query() query: ListAdminAcademyProgramEnrollmentsDto,
@@ -253,18 +274,21 @@ export class AdminAcademyProgramsController {
     @Body() body: CreateAdminAcademyProgramEnrollmentDto,
     @CurrentLocale() locale: 'ar' | 'en',
     @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
   ) {
-    return this.createAdminAcademyProgramEnrollmentUseCase
-      .execute({
-        programId,
-        locale,
-        actorUserId: currentUser.id,
-        payload: body,
-      });
+    return this.createAdminAcademyProgramEnrollmentUseCase.execute({
+      programId,
+      locale,
+      actorUserId: currentUser.id,
+      payload: body,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
+    });
   }
 
   @Patch('program-enrollments/:id/learner')
-  @ApiOperation({ summary: 'Update academy program enrollment learner details' })
+  @ApiOperation({
+    summary: 'Update academy program enrollment learner details',
+  })
   updateProgramEnrollmentLearner(
     @Param('id') enrollmentId: string,
     @Body() body: UpdateAcademyProgramEnrollmentLearnerDto,
@@ -283,7 +307,9 @@ export class AdminAcademyProgramsController {
   @Post('program-enrollments/:id/certificate')
   @RequireStepUp('academy.programEnrollment.certificate.manage')
   @Permissions(PermissionKey.PATIENTS_UPDATE_ADMIN)
-  @ApiOperation({ summary: 'Upload academy program enrollment certificate PDF' })
+  @ApiOperation({
+    summary: 'Upload academy program enrollment certificate PDF',
+  })
   @ApiParam({ name: 'id', description: 'Academy program enrollment id' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -295,12 +321,19 @@ export class AdminAcademyProgramsController {
       required: ['file'],
     },
   })
-  @ApiResponse({ status: 200, description: 'Certificate uploaded successfully' })
-  @ApiBadRequestResponse({ description: 'Missing file, invalid type, or file too large' })
+  @ApiResponse({
+    status: 200,
+    description: 'Certificate uploaded successfully',
+  })
+  @ApiBadRequestResponse({
+    description: 'Missing file, invalid type, or file too large',
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
   @ApiNotFoundResponse({ description: 'Enrollment was not found' })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   uploadProgramEnrollmentCertificate(
     @Param('id') enrollmentId: string,
     @UploadedFile()
@@ -315,18 +348,19 @@ export class AdminAcademyProgramsController {
     @CurrentLocale() locale: 'ar' | 'en',
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.uploadAdminAcademyProgramEnrollmentCertificateUseCase
-      .execute({
-        enrollmentId,
-        locale,
-        actorUserId: currentUser.id,
-        file,
-      });
+    return this.uploadAdminAcademyProgramEnrollmentCertificateUseCase.execute({
+      enrollmentId,
+      locale,
+      actorUserId: currentUser.id,
+      file,
+    });
   }
 
   @Get('program-enrollments/:id/certificate')
   @Permissions(PermissionKey.PATIENTS_READ_ADMIN)
-  @ApiOperation({ summary: 'Stream academy program enrollment certificate PDF' })
+  @ApiOperation({
+    summary: 'Stream academy program enrollment certificate PDF',
+  })
   @ApiParam({ name: 'id', description: 'Academy program enrollment id' })
   @ApiResponse({ status: 200, description: 'Certificate PDF stream' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
@@ -336,9 +370,10 @@ export class AdminAcademyProgramsController {
     @Param('id') enrollmentId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.getAcademyProgramEnrollmentCertificateFileUseCase.execute({
-      enrollmentId,
-    });
+    const file =
+      await this.getAcademyProgramEnrollmentCertificateFileUseCase.execute({
+        enrollmentId,
+      });
 
     response.setHeader('Content-Type', file.mimeType);
     response.setHeader('Cache-Control', 'private, max-age=300');
@@ -351,20 +386,21 @@ export class AdminAcademyProgramsController {
   }
 
   @Put('programs/:id/attendance')
-  @ApiOperation({ summary: 'Save academy program attendance for admin management' })
+  @ApiOperation({
+    summary: 'Save academy program attendance for admin management',
+  })
   saveProgramAttendance(
     @Param('id') programId: string,
     @Body() body: SaveAdminAcademyProgramAttendanceDto,
     @CurrentLocale() locale: 'ar' | 'en',
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.saveAdminAcademyProgramAttendanceUseCase
-      .execute({
-        programId,
-        locale,
-        actorUserId: currentUser.id,
-        payload: body,
-      });
+    return this.saveAdminAcademyProgramAttendanceUseCase.execute({
+      programId,
+      locale,
+      actorUserId: currentUser.id,
+      payload: body,
+    });
   }
 
   @Patch('program-enrollments/:id/cancel')
@@ -437,12 +473,11 @@ export class AdminAcademyProgramsController {
     @Body() body: CreateAcademyProgramDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.createAcademyProgramUseCase
-      .execute({
-        createdByUserId: currentUser.id,
-        actorRoles: currentUser.roles,
-        payload: body,
-      });
+    return this.createAcademyProgramUseCase.execute({
+      createdByUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      payload: body,
+    });
   }
 
   @Patch('programs/:id')
@@ -452,8 +487,12 @@ export class AdminAcademyProgramsController {
     @Body() body: UpdateAcademyProgramDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.updateAcademyProgramUseCase
-      .execute({ programId, actorUserId: currentUser.id, actorRoles: currentUser.roles, payload: body });
+    return this.updateAcademyProgramUseCase.execute({
+      programId,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      payload: body,
+    });
   }
 
   @Patch('programs/:id/publish')
@@ -462,8 +501,11 @@ export class AdminAcademyProgramsController {
     @Param('id') programId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.publishAcademyProgramUseCase
-      .execute({ programId, actorUserId: currentUser.id, actorRoles: currentUser.roles });
+    return this.publishAcademyProgramUseCase.execute({
+      programId,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+    });
   }
 
   @Patch('programs/:id/archive')
@@ -473,13 +515,12 @@ export class AdminAcademyProgramsController {
     @Body() body: ArchiveAcademyProgramDto,
     @CurrentUser() currentUser: AuthenticatedUser,
   ) {
-    return this.archiveAcademyProgramUseCase
-      .execute({
-        programId,
-        actorUserId: currentUser.id,
-        actorRoles: currentUser.roles,
-        reason: body.reason,
-      });
+    return this.archiveAcademyProgramUseCase.execute({
+      programId,
+      actorUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      reason: body.reason,
+    });
   }
 
   @Post('programs/:id/sessions')

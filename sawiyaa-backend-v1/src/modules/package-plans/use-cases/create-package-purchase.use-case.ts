@@ -86,7 +86,7 @@ export class CreatePackagePurchaseUseCase {
     practitionerSlug: string;
     durationMinutes: 30 | 60;
     sessionMode: SessionMode;
-    selectedCurrencyCode: string;
+    requestCountryIsoCode?: string | null;
     selectedSessionSlots: Array<{
       scheduledStartAt: string;
     }>;
@@ -157,6 +157,7 @@ export class CreatePackagePurchaseUseCase {
       selectedDurationMinutes: input.durationMinutes,
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,
+      requestCountryIsoCode: input.requestCountryIsoCode,
       patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
       operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {

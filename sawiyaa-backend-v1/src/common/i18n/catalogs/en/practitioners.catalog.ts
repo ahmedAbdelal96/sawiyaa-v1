@@ -29,6 +29,17 @@ export const enPractitionersCatalog = {
       'Selected specialties do not belong to the selected primary category',
     invalidPayoutDestination:
       'Payout destination details do not satisfy the selected payout method',
+    payoutAccountHolderRequired: 'Enter the payout account-holder or wallet-owner name',
+    payoutAccountHolderInvalid: 'Enter a valid account-holder or wallet-owner name',
+    payoutCountryRequired: 'Select the payout destination country',
+    payoutMixedMethodFields: 'Remove fields that do not belong to the selected payout method',
+    payoutWalletInvalid: 'Enter a valid mobile-wallet number for the selected country',
+    ibanRequired: 'Enter an IBAN',
+    ibanInvalidCharacters: 'IBAN contains unsupported characters',
+    ibanCountryMismatch: 'The IBAN country does not match the selected country',
+    ibanInvalidLength: 'IBAN length is incorrect for the selected country',
+    ibanInvalidBbanFormat: 'IBAN structure is incorrect for the selected country',
+    ibanInvalidChecksum: 'IBAN check digits are incorrect',
     invalidProfileState:
       'Practitioner profile does not satisfy the minimum readiness requirements',
     applicationNotEligible:

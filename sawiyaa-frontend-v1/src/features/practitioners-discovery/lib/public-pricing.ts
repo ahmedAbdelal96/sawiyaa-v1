@@ -1,4 +1,4 @@
-import { formatMoney, normalizeCurrencyCode } from "@/lib/finance-format";
+import { formatLocalizedMoney } from "@/lib/finance-format";
 import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 
 export type PublicSessionPrice = {
@@ -9,17 +9,17 @@ export type PublicSessionPrice = {
 export function getPublicSessionPrices(
   practitioner: Pick<
     PublicPractitioner,
-    "displaySessionPrice30" | "displaySessionPrice60"
+    "sessionPrice30" | "sessionPrice60"
   >,
 ): PublicSessionPrice[] {
   const prices: PublicSessionPrice[] = [];
 
-  if (typeof practitioner.displaySessionPrice30 === "number") {
-    prices.push({ duration: 30, amount: practitioner.displaySessionPrice30 });
+  if (typeof practitioner.sessionPrice30 === "number") {
+    prices.push({ duration: 30, amount: practitioner.sessionPrice30 });
   }
 
-  if (typeof practitioner.displaySessionPrice60 === "number") {
-    prices.push({ duration: 60, amount: practitioner.displaySessionPrice60 });
+  if (typeof practitioner.sessionPrice60 === "number") {
+    prices.push({ duration: 60, amount: practitioner.sessionPrice60 });
   }
 
   return prices;
@@ -30,7 +30,8 @@ export function formatPublicMoney(
   amount: number,
   currencyCode?: string | null,
 ): string {
-  return formatMoney(locale, amount, normalizeCurrencyCode(currencyCode) ?? "USD");
+  return formatLocalizedMoney({ amount, currencyCode, locale }) ??
+    (locale.startsWith("ar") ? "تعذر عرض السعر حالياً" : "Price unavailable");
 }
 
 export function isPublicSessionPriceInActiveFeeRange(

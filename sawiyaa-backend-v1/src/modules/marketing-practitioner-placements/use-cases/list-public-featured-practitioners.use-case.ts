@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
   FeaturedPractitionerHomeCard,
   PractitionerMarketingPlacementRepository,
@@ -14,11 +15,18 @@ export class ListPublicFeaturedPractitionersUseCase {
     private readonly placementRepository: PractitionerMarketingPlacementRepository,
   ) {}
 
-  async execute(input: { locale: SupportedLocale }): Promise<FeaturedPractitionerHomeCard[]> {
+  async execute(input: {
+    locale: SupportedLocale;
+    requestCountryIsoCode: string | null;
+  }): Promise<FeaturedPractitionerHomeCard[]> {
+    const pricing = resolvePaymentRegionalResolution({
+      requestCountryIsoCode: input.requestCountryIsoCode,
+    });
     return this.placementRepository.listActiveHomeFeaturedPractitioners({
       locale: input.locale,
       now: new Date(),
       limit: PUBLIC_FEATURED_LIMIT,
+      currencyCode: pricing.currencyCode,
     });
   }
 }

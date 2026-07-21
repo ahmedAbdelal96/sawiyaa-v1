@@ -190,6 +190,7 @@ export default function PatientHomeScreen() {
               items={(featured?.items || []).slice(0, 5)}
               locale={locale}
               variant="featured"
+              currencyCode={featured?.currencyCode}
             />
           ) : null}
 
@@ -199,6 +200,7 @@ export default function PatientHomeScreen() {
               items={mostBooked?.items || []}
               locale={locale}
               variant="default"
+              currencyCode={mostBooked?.currencyCode}
             />
           ) : null}
 
@@ -208,6 +210,7 @@ export default function PatientHomeScreen() {
               items={(topRated?.items || []).slice(0, 5)}
               locale={locale}
               variant="topRated"
+              currencyCode={topRated?.currencyCode}
             />
           ) : null}
 
@@ -217,6 +220,7 @@ export default function PatientHomeScreen() {
               items={recentlyVisited}
               locale={locale}
               variant="recentlyVisited"
+              currencyCode={data?.recentlyVisitedPractitioners?.currencyCode}
             />
           ) : null}
 

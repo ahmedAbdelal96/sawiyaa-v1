@@ -8,10 +8,12 @@ import {
   Clock3,
   History,
   Pencil,
+  Plus,
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   WalletCards,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
@@ -24,6 +26,8 @@ import {
 } from "@/components/shared/admin/AdminOperationalListShell";
 import { FormModal } from "@/components/ui/modal";
 import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
+import AdminForbiddenView from "@/components/admin/AdminForbiddenView";
+import { useCurrentUser } from "@/features/users/hooks/use-users";
 import {
   useAdminPaymentGatewayControlList,
   useAdminPaymentGatewayControlHistory,
@@ -36,6 +40,8 @@ import type {
   PaymentGatewayControlHistoryItem,
   PaymentGatewayControlProvider,
   PaymentRoutingDraft,
+  PaymentRoute,
+  PaymentRouteDraft,
   PaymentRoutingRuntimeSnapshot,
   PaymobCheckoutFlow,
   PaymobGatewayControlMethodEntry,
@@ -100,6 +106,7 @@ function cloneRoutingDraft(snapshot: PaymentRoutingRuntimeSnapshot): PaymentRout
     defaultProvider: snapshot.defaultProvider,
     priorityOrder: [...snapshot.priorityOrder],
     fallbackProvider: snapshot.fallbackProvider,
+    currencyRoutes: snapshot.currencyRoutes.map(({ source: _source, ...route }) => ({ ...route })),
   };
 }
 
@@ -152,6 +159,7 @@ function getRoutingChangeLabels(original: PaymentRoutingRuntimeSnapshot, draft: 
   if (original.defaultProvider !== draft.defaultProvider) changed.push("defaultProvider");
   if (original.fallbackProvider !== draft.fallbackProvider) changed.push("fallbackProvider");
   if (joinList(original.priorityOrder) !== joinList(draft.priorityOrder)) changed.push("priorityOrder");
+  if (JSON.stringify(original.currencyRoutes) !== JSON.stringify(draft.currencyRoutes)) changed.push("currencyRoutes");
   return changed;
 }
 
@@ -250,15 +258,9 @@ function MethodEditorRow({
         </label>
       </div>
 
-      <label className="mt-4 block">
-        <span className="mb-1 block text-xs font-medium text-text-muted">{t("methodEditor.integrationReference")}</span>
-        <input
-          value={method.integrationId ?? ""}
-          onChange={(event) => onChange({ ...method, integrationId: event.target.value.trim() || null })}
-          className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm dark:border-white/10 dark:bg-surface-secondary"
-          placeholder={t("methodEditor.integrationPlaceholder")}
-        />
-      </label>
+      <div className="mt-4 rounded-2xl border border-primary/20 bg-primary-light/30 px-3 py-2 text-xs leading-5 text-text-secondary">
+        {t("methodEditor.integrationManaged")}
+      </div>
     </div>
   );
 }
@@ -322,6 +324,7 @@ function ProviderEditModal({
   const [reason, setReason] = useState("");
   const [stepUpChallengeId, setStepUpChallengeId] = useState("");
   const [stepUpCode, setStepUpCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [validationPreview, setValidationPreview] = useState<ValidationPreview | null>(null);
 
@@ -332,6 +335,8 @@ function ProviderEditModal({
       setReason("");
       setStepUpChallengeId("");
       setStepUpCode("");
+      setCurrentPassword("");
+      setCurrentPassword("");
       setFeedback(null);
       setValidationPreview(null);
     });
@@ -341,7 +346,7 @@ function ProviderEditModal({
 
   const changedFields = getProviderChangeLabels(snapshot ?? draft, draft);
   const canSave = Boolean(
-    changedFields.length > 0 && reason.trim() && stepUpChallengeId.trim() && stepUpCode.trim(),
+    changedFields.length > 0 && reason.trim() && currentPassword,
   );
 
   const handleValidate = async () => {
@@ -374,6 +379,7 @@ function ProviderEditModal({
           reason: reason.trim(),
           stepUpChallengeId: stepUpChallengeId.trim(),
           stepUpCode: stepUpCode.trim(),
+          currentPassword,
         });
       } else {
         await updateMutation.mutateAsync({
@@ -381,6 +387,7 @@ function ProviderEditModal({
           reason: reason.trim(),
           stepUpChallengeId: stepUpChallengeId.trim(),
           stepUpCode: stepUpCode.trim(),
+          currentPassword,
         });
       }
       onClose();
@@ -389,6 +396,8 @@ function ProviderEditModal({
         kind: "error",
         message: error instanceof Error ? error.message : t("providerModal.unableSaveProviderConfiguration"),
       });
+    } finally {
+      setCurrentPassword("");
     }
   };
 
@@ -432,6 +441,17 @@ function ProviderEditModal({
               <option value="true">{t("states.enabled")}</option>
               <option value="false">{t("states.disabled")}</option>
             </select>
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-sm font-medium text-text-primary">Current password</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
+            />
           </label>
 
           <label className="space-y-2">
@@ -556,31 +576,12 @@ function ProviderEditModal({
           </label>
 
           <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("providerModal.stepUpChallengeId")}</span>
-            <input
-              value={stepUpChallengeId}
-              onChange={(event) => setStepUpChallengeId(event.target.value)}
-              placeholder={t("providerModal.stepUpChallengePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
-          </label>
-
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("providerModal.stepUpCode")}</span>
-            <input
-              value={stepUpCode}
-              onChange={(event) => setStepUpCode(event.target.value)}
-              placeholder={t("providerModal.stepUpCodePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
+            <span className="text-sm font-medium text-text-primary">{locale === "ar" ? "كلمة المرور الحالية" : "Current password"}</span>
+            <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm" />
           </label>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleRequestStepUp} disabled={stepUpMutation.isPending}>
-            <ShieldAlert className="h-4 w-4" />
-            {t("actions.requestStepUp")}
-          </Button>
           <Button type="button" variant="outline" onClick={handleValidate} disabled={validateMutation.isPending}>
             <ShieldCheck className="h-4 w-4" />
             {t("actions.validate")}
@@ -612,6 +613,86 @@ function ProviderEditModal({
   );
 }
 
+function RouteEditorRow({
+  route,
+  catalog,
+  onChange,
+  onRemove,
+}: {
+  route: PaymentRouteDraft;
+  catalog: PaymentRoutingRuntimeSnapshot["routeCatalog"];
+  onChange: (route: PaymentRouteDraft) => void;
+  onRemove: () => void;
+}) {
+  const t = useTranslations("payment-gateway-control");
+  const aliases = catalog.filter(
+    (entry) =>
+      entry.provider === route.provider &&
+      entry.currencyCodes.includes(route.currencyCode) &&
+      entry.paymentMethods.includes(route.paymentMethod),
+  );
+  const selectedAlias = aliases.some((entry) => entry.integrationKey === route.integrationKey);
+  const update = (patch: Partial<PaymentRouteDraft>) => onChange({ ...route, ...patch });
+
+  return (
+    <div className="rounded-[20px] border border-border-light bg-surface-secondary/60 p-4 dark:border-white/8 dark:bg-white/[0.03]">
+      <div className="grid gap-3 lg:grid-cols-12">
+        <label className="lg:col-span-2">
+          <span className="mb-1 block text-xs font-medium text-text-muted">{t("routeEditor.currency")}</span>
+          <select value={route.currencyCode} onChange={(event) => update({ currencyCode: event.target.value as "EGP" | "USD" })} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm">
+            <option value="EGP">EGP</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
+        <label className="lg:col-span-2">
+          <span className="mb-1 block text-xs font-medium text-text-muted">{t("routeEditor.method")}</span>
+          <select value={route.paymentMethod} onChange={(event) => update({ paymentMethod: event.target.value })} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm">
+            <option value="CARD">CARD</option>
+          </select>
+        </label>
+        <label className="lg:col-span-2">
+          <span className="mb-1 block text-xs font-medium text-text-muted">{t("routeEditor.provider")}</span>
+          <select value={route.provider} onChange={(event) => {
+            const provider = event.target.value as PaymentGatewayControlProvider;
+            const nextAlias = catalog.find((entry) => entry.provider === provider && entry.currencyCodes.includes(route.currencyCode) && entry.paymentMethods.includes(route.paymentMethod));
+            update({ provider, integrationKey: nextAlias?.integrationKey ?? "" });
+          }} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm">
+            {Array.from(new Set(catalog.filter((entry) => entry.currencyCodes.includes(route.currencyCode) && entry.paymentMethods.includes(route.paymentMethod)).map((entry) => entry.provider))).map((provider) => <option key={provider} value={provider}>{providerLabel(provider)}</option>)}
+          </select>
+        </label>
+        <label className="lg:col-span-3">
+          <span className="mb-1 block text-xs font-medium text-text-muted">{t("routeEditor.integration")}</span>
+          <select value={selectedAlias ? route.integrationKey : ""} onChange={(event) => update({ integrationKey: event.target.value })} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm">
+            <option value="">{t("routeEditor.chooseIntegration")}</option>
+            {aliases.map((entry) => <option key={entry.integrationKey} value={entry.integrationKey}>{entry.integrationKey}</option>)}
+          </select>
+        </label>
+        <label className="lg:col-span-1">
+          <span className="mb-1 block text-xs font-medium text-text-muted">{t("routeEditor.priority")}</span>
+          <input type="number" min={0} max={1000} value={route.priority} onChange={(event) => update({ priority: Number(event.target.value) || 0 })} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm" />
+        </label>
+        <button type="button" aria-label={t("routeEditor.remove")} onClick={onRemove} className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl border border-rose-200 px-3 text-rose-600 hover:bg-rose-50 lg:col-span-1 dark:border-rose-400/20 dark:hover:bg-rose-400/10">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2 text-sm text-text-primary">
+          <input type="checkbox" checked={route.enabled} onChange={(event) => update({ enabled: event.target.checked })} className="h-4 w-4 rounded border-border-light text-primary focus:ring-primary" />
+          {t("routeEditor.enabled")}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-text-primary">
+          <span>{t("routeEditor.environment")}</span>
+          <select value={route.environment} onChange={(event) => update({ environment: event.target.value as PaymentRouteDraft["environment"] })} className="rounded-2xl border border-border-light bg-surface-secondary px-3 py-1.5 text-sm">
+            <option value="development">development</option>
+            <option value="staging">staging</option>
+            <option value="production">production</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function RoutingEditModal({
   snapshot,
   isOpen,
@@ -631,6 +712,7 @@ function RoutingEditModal({
   const [reason, setReason] = useState("");
   const [stepUpChallengeId, setStepUpChallengeId] = useState("");
   const [stepUpCode, setStepUpCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
   const [validationPreview, setValidationPreview] = useState<ValidationPreview | null>(null);
 
@@ -649,7 +731,7 @@ function RoutingEditModal({
   if (!snapshot || !draft) return null;
 
   const changedFields = getRoutingChangeLabels(snapshot, draft);
-  const canSave = Boolean(changedFields.length > 0 && reason.trim() && stepUpChallengeId.trim() && stepUpCode.trim());
+  const canSave = Boolean(changedFields.length > 0 && reason.trim() && currentPassword);
 
   const handleValidate = async () => {
     const result = (await validateMutation.mutateAsync(draft)) as ValidationPreview;
@@ -675,11 +757,19 @@ function RoutingEditModal({
 
   const handleSave = async () => {
     try {
+      if (
+        draft.currencyRoutes.length > 0 &&
+        typeof window !== "undefined" &&
+        !window.confirm(t("routingModal.confirmNewPaymentsOnly"))
+      ) {
+        return;
+      }
       await updateMutation.mutateAsync({
         ...draft,
         reason: reason.trim(),
         stepUpChallengeId: stepUpChallengeId.trim(),
         stepUpCode: stepUpCode.trim(),
+        currentPassword,
       });
       onClose();
     } catch (error) {
@@ -687,6 +777,8 @@ function RoutingEditModal({
         kind: "error",
         message: error instanceof Error ? error.message : t("routingModal.unableSaveRoutingConfiguration"),
       });
+    } finally {
+      setCurrentPassword("");
     }
   };
 
@@ -778,6 +870,53 @@ function RoutingEditModal({
           </label>
         </div>
 
+        <div className="rounded-[22px] border border-border-light bg-white/70 p-4 dark:border-white/8 dark:bg-white/[0.02]">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-text-primary">{t("routeEditor.title")}</h3>
+              <p className="mt-1 text-xs leading-5 text-text-secondary">{t("routeEditor.description")}</p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const first = snapshot.routeCatalog.find((entry) => entry.currencyCodes.includes("USD") && entry.paymentMethods.includes("CARD")) ?? snapshot.routeCatalog[0];
+                if (!first) return;
+                setDraft({
+                  ...draft,
+                  currencyRoutes: [
+                    ...draft.currencyRoutes,
+                    {
+                      currencyCode: first.currencyCodes[0] ?? "USD",
+                      paymentMethod: first.paymentMethods[0] ?? "CARD",
+                      provider: first.provider,
+                      integrationKey: first.integrationKey,
+                      environment: "development",
+                      enabled: false,
+                      priority: 100,
+                    },
+                  ],
+                });
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              {t("routeEditor.add")}
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {draft.currencyRoutes.length > 0 ? draft.currencyRoutes.map((route, index) => (
+              <RouteEditorRow
+                key={`${route.currencyCode}-${route.paymentMethod}-${index}`}
+                route={route}
+                catalog={snapshot.routeCatalog}
+                onChange={(next) => setDraft({ ...draft, currencyRoutes: draft.currencyRoutes.map((item, itemIndex) => itemIndex === index ? next : item) })}
+                onRemove={() => setDraft({ ...draft, currencyRoutes: draft.currencyRoutes.filter((_, itemIndex) => itemIndex !== index) })}
+              />
+            )) : <p className="text-sm text-text-secondary">{t("routeEditor.empty")}</p>}
+          </div>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-3">
           <label className="space-y-2 lg:col-span-1">
             <span className="text-sm font-medium text-text-primary">{t("routingModal.changeReason")}</span>
@@ -790,30 +929,12 @@ function RoutingEditModal({
             />
           </label>
           <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("routingModal.stepUpChallengeId")}</span>
-            <input
-              value={stepUpChallengeId}
-              onChange={(event) => setStepUpChallengeId(event.target.value)}
-              placeholder={t("routingModal.stepUpChallengePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("routingModal.stepUpCode")}</span>
-            <input
-              value={stepUpCode}
-              onChange={(event) => setStepUpCode(event.target.value)}
-              placeholder={t("routingModal.stepUpCodePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
+            <span className="text-sm font-medium text-text-primary">{locale === "ar" ? "كلمة المرور الحالية" : "Current password"}</span>
+            <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm" />
           </label>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleRequestStepUp} disabled={stepUpMutation.isPending}>
-            <ShieldAlert className="h-4 w-4" />
-            {t("actions.requestStepUp")}
-          </Button>
           <Button type="button" variant="outline" onClick={handleValidate} disabled={validateMutation.isPending}>
             <ShieldCheck className="h-4 w-4" />
             {t("actions.validate")}
@@ -861,6 +982,7 @@ function RollbackModal({
   const [reason, setReason] = useState("");
   const [stepUpChallengeId, setStepUpChallengeId] = useState("");
   const [stepUpCode, setStepUpCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
@@ -869,13 +991,14 @@ function RollbackModal({
       setReason("");
       setStepUpChallengeId("");
       setStepUpCode("");
+      setCurrentPassword("");
       setFeedback(null);
     });
   }, [isOpen]);
 
   if (!item) return null;
 
-  const canSave = Boolean(reason.trim() && stepUpChallengeId.trim() && stepUpCode.trim());
+  const canSave = Boolean(reason.trim() && currentPassword);
 
   const handleRequestStepUp = async () => {
     try {
@@ -897,6 +1020,7 @@ function RollbackModal({
         revisionId: item.id,
         stepUpChallengeId: stepUpChallengeId.trim(),
         stepUpCode: stepUpCode.trim(),
+        currentPassword,
       });
       onClose();
     } catch (error) {
@@ -904,6 +1028,8 @@ function RollbackModal({
         kind: "error",
         message: error instanceof Error ? error.message : t("rollbackModal.unableRollbackConfiguration"),
       });
+    } finally {
+      setCurrentPassword("");
     }
   };
 
@@ -964,32 +1090,12 @@ function RollbackModal({
           />
         </label>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("rollbackModal.stepUpChallengeId")}</span>
-            <input
-              value={stepUpChallengeId}
-              onChange={(event) => setStepUpChallengeId(event.target.value)}
-              placeholder={t("rollbackModal.stepUpChallengePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-text-primary">{t("rollbackModal.stepUpCode")}</span>
-            <input
-              value={stepUpCode}
-              onChange={(event) => setStepUpCode(event.target.value)}
-              placeholder={t("rollbackModal.stepUpCodePlaceholder")}
-              className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm"
-            />
-          </label>
-        </div>
+        <label className="space-y-2 block">
+          <span className="text-sm font-medium text-text-primary">{locale === "ar" ? "كلمة المرور الحالية" : "Current password"}</span>
+          <input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="w-full rounded-2xl border border-border-light bg-surface-secondary px-3 py-2 text-sm" />
+        </label>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={handleRequestStepUp} disabled={stepUpMutation.isPending}>
-            <ShieldAlert className="h-4 w-4" />
-            {t("rollbackModal.requestStepUp")}
-          </Button>
           <p className="self-center text-xs leading-5 text-text-muted">
             {t("rollbackModal.note")}
           </p>
@@ -1023,6 +1129,7 @@ function Badge({
 export default function AdminPaymentGatewayControlScreen() {
   const locale = useLocale();
   const t = useTranslations("payment-gateway-control");
+  const currentUserQuery = useCurrentUser(true);
   const listQuery = useAdminPaymentGatewayControlList();
   const paymobHistoryQuery = useAdminPaymentGatewayControlHistory("provider", "PAYMOB");
   const stripeHistoryQuery = useAdminPaymentGatewayControlHistory("provider", "STRIPE");
@@ -1031,6 +1138,11 @@ export default function AdminPaymentGatewayControlScreen() {
   const [providerModal, setProviderModal] = useState<PaymentGatewayControlProvider | null>(null);
   const [routingModalOpen, setRoutingModalOpen] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<PaymentGatewayControlHistoryItem | null>(null);
+
+  const allowedRoles = currentUserQuery.data?.roles.roles ?? [];
+  if (!currentUserQuery.isLoading && !allowedRoles.some((role) => role === "ADMIN" || role === "SUPER_ADMIN")) {
+    return <AdminForbiddenView />;
+  }
 
   const providers = listQuery.data?.items ?? [];
   const routing = listQuery.data?.routing ?? null;
@@ -1176,6 +1288,78 @@ export default function AdminPaymentGatewayControlScreen() {
       cell: (row) => <span className="text-sm text-text-secondary">{formatDateTime(row.updatedAt, locale)}</span>,
     },
   ], [locale, t]);
+
+  const routeColumns = useMemo<ColumnDef<PaymentRoute>[]>(() => [
+    {
+      id: "currency",
+      header: t("routeTable.currency"),
+      accessor: (row) => row.currencyCode,
+      cell: (row) => <Badge tone="primary">{row.currencyCode}</Badge>,
+    },
+    {
+      id: "method",
+      header: t("routeTable.method"),
+      accessor: (row) => row.paymentMethod,
+      cell: (row) => <span className="text-sm text-text-secondary">{row.paymentMethod}</span>,
+    },
+    {
+      id: "provider",
+      header: t("routeTable.provider"),
+      accessor: (row) => row.provider,
+      cell: (row) => <span className="text-sm font-semibold text-text-primary">{providerLabel(row.provider)}</span>,
+    },
+    {
+      id: "integration",
+      header: t("routeTable.integration"),
+      accessor: (row) => row.integrationKey,
+      cell: (row) => <code className="rounded-lg bg-surface-tertiary px-2 py-1 text-xs text-text-secondary">{row.integrationKey}</code>,
+    },
+    {
+      id: "environment",
+      header: t("routeTable.environment"),
+      accessor: (row) => row.environment,
+      cell: (row) => <span className="text-sm text-text-secondary">{row.environment}</span>,
+    },
+    {
+      id: "priority",
+      header: t("routeTable.priority"),
+      accessor: (row) => row.priority,
+      cell: (row) => <span className="text-sm text-text-secondary">{row.priority}</span>,
+    },
+    {
+      id: "enabled",
+      header: t("routeTable.status"),
+      accessor: (row) => row.enabled,
+      cell: (row) => <Badge tone={row.enabled ? "success" : "neutral"}>{row.enabled ? t("states.enabled") : t("states.disabled")}</Badge>,
+    },
+    {
+      id: "readiness",
+      header: t("routeTable.readiness"),
+      accessor: (row) => routing?.routeReadiness.find((item) => item.route.currencyCode === row.currencyCode && item.route.paymentMethod === row.paymentMethod && item.route.provider === row.provider && item.route.integrationKey === row.integrationKey)?.ready ?? false,
+      cell: (row) => {
+        const readiness = routing?.routeReadiness.find((item) => item.route.currencyCode === row.currencyCode && item.route.paymentMethod === row.paymentMethod && item.route.provider === row.provider && item.route.integrationKey === row.integrationKey);
+        return <div className="max-w-[18rem] space-y-1"><Badge tone={readiness?.ready ? "success" : "danger"}>{readiness?.ready ? t("states.ready") : t("states.notReady")}</Badge>{!readiness?.ready && readiness?.issues[0] ? <p className="text-xs text-rose-600">{readiness.issues[0]}</p> : null}</div>;
+      },
+    },
+    {
+      id: "source",
+      header: t("routeTable.source"),
+      accessor: (row) => row.source,
+      cell: (row) => <Badge tone={row.source === "DATABASE" ? "primary" : "neutral"}>{row.source === "DATABASE" ? t("routeTable.database") : t("routeTable.environmentDefault")}</Badge>,
+    },
+    {
+      id: "updatedBy",
+      header: t("routeTable.updatedBy"),
+      accessor: () => routingHistory[0]?.actorDisplayName ?? routingHistory[0]?.actorUserId ?? "-",
+      cell: () => <span className="text-sm text-text-secondary">{routingHistory[0]?.actorDisplayName ?? routingHistory[0]?.actorUserId ?? "-"}</span>,
+    },
+    {
+      id: "updatedAt",
+      header: t("routeTable.updatedAt"),
+      accessor: () => (routingHistory[0]?.changedAt ? new Date(routingHistory[0].changedAt).getTime() : 0),
+      cell: () => <span className="text-sm text-text-secondary">{formatDateTime(routingHistory[0]?.changedAt ?? null, locale)}</span>,
+    },
+  ], [locale, routing, routingHistory, t]);
 
   const historyColumns = useMemo<ColumnDef<PaymentGatewayControlHistoryItem>[]>(() => [
     {
@@ -1346,6 +1530,29 @@ export default function AdminPaymentGatewayControlScreen() {
               </Button>
             )}
           />
+
+          <div className="mt-6 border-t border-border-light pt-6 dark:border-white/8">
+            <div className="mb-4">
+              <h3 className="text-base font-semibold text-text-primary">{t("routeTable.title")}</h3>
+              <p className="mt-1 text-sm text-text-secondary">{t("routeTable.description")}</p>
+            </div>
+            <DataTable
+              data={routing.currencyRoutes}
+              columns={routeColumns}
+              getRowId={(row) => `${row.currencyCode}-${row.paymentMethod}-${row.provider}-${row.integrationKey}-${row.environment}`}
+              loading={routingLoading}
+              striped
+              hoverable
+              rowActionsHeader={t("routeTable.actions")}
+              rowActions={() => (
+                <Button type="button" size="sm" variant="outline" onClick={() => setRoutingModalOpen(true)}>
+                  <Pencil className="h-4 w-4" />
+                  {t("actions.configure")}
+                </Button>
+              )}
+              emptyState={{ title: t("routeTable.empty"), description: t("routeTable.emptyDescription") }}
+            />
+          </div>
         </SurfaceCard>
       ) : null}
 

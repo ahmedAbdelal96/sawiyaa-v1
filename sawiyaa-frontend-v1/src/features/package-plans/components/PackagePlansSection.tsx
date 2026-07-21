@@ -1,27 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { BadgePercent, CircleDollarSign, Package, Sparkles } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Link } from "@/i18n/navigation";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { useAuthStore } from "@/stores/auth-store";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
+import { PriceDisplay } from "@/components/money/PriceDisplay";
 import type { PractitionerProfile } from "@/features/practitioner-profile/types/profile";
 import { usePublicPractitionerPackagePlans } from "../hooks/use-package-plans";
-import {
-  formatDurationLabel,
-  formatMoney,
-  formatPercent,
-  getSupportedCurrencies,
-  resolveDefaultCurrency,
-  resolveDefaultDuration,
-  resolvePricingMatrix,
-  type CurrencyCode,
-  type PricingMatrix,
-} from "../lib/package-plan-pricing";
+import { formatDurationLabel, formatPercent } from "../lib/package-plan-display";
+import { mapPackagePublicPrice } from "../lib/package-money";
 import PackagePurchaseFlowModal from "./PackagePurchaseFlowModal";
 
 type Props = {
@@ -31,7 +22,6 @@ type Props = {
 
 export default function PackagePlansSection({ slug, profile }: Props) {
   const t = useTranslations("practitioner-profile.packages");
-  const locale = useLocale();
   const { user, isInitialized } = useAuthStore();
   const isPatient = user?.role === "PATIENT";
   const authScopeKey = useMemo(() => {
@@ -46,38 +36,18 @@ export default function PackagePlansSection({ slug, profile }: Props) {
     return `auth:${user.id}:${user.role}`;
   }, [isInitialized, user]);
 
-  const pricing = useMemo(() => resolvePricingMatrix(profile), [profile]);
-  const availableDurations = useMemo(
-    () =>
-      ([30, 60] as const).filter(
-        (duration) =>
-          pricing[duration === 30 ? "session30" : "session60"].egp !== null ||
-          pricing[duration === 30 ? "session30" : "session60"].usd !== null,
-      ),
-    [pricing],
-  );
-  const hasAvailablePricing = availableDurations.length > 0;
+  const availableDurations = [30, 60] as const;
+  const hasAvailablePricing = true;
 
-  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(() => resolveDefaultDuration(pricing));
-  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() =>
-    resolveDefaultCurrency(pricing, resolveDefaultDuration(pricing)),
-  );
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [purchasePlanCode, setPurchasePlanCode] = useState<string | null>(null);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const normalizedDuration = useMemo<30 | 60>(() => {
     if (availableDurations.includes(selectedDuration)) {
       return selectedDuration;
     }
-    return resolveDefaultDuration(pricing);
-  }, [availableDurations, pricing, selectedDuration]);
-
-  const normalizedCurrency = useMemo<CurrencyCode>(() => {
-    const supportedCurrencies = getSupportedCurrencies(pricing, normalizedDuration);
-    if (supportedCurrencies.includes(selectedCurrency)) {
-      return selectedCurrency;
-    }
-    return supportedCurrencies[0] ?? "EGP";
-  }, [normalizedDuration, pricing, selectedCurrency]);
+    return 60;
+  }, [availableDurations, selectedDuration]);
 
   const selectedSessionMode = "VIDEO" as const;
   const packagePlansQuery = usePublicPractitionerPackagePlans(
@@ -85,7 +55,6 @@ export default function PackagePlansSection({ slug, profile }: Props) {
     {
       durationMinutes: normalizedDuration,
       sessionMode: selectedSessionMode,
-      currencyCode: normalizedCurrency,
     },
     {
       enabled: hasAvailablePricing,
@@ -148,7 +117,6 @@ export default function PackagePlansSection({ slug, profile }: Props) {
                   onClick={() => {
                     if (!enabled) return;
                     setSelectedDuration(duration);
-                    setSelectedCurrency(resolveDefaultCurrency(pricing, duration));
                   }}
                   className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                     active
@@ -163,32 +131,8 @@ export default function PackagePlansSection({ slug, profile }: Props) {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
-              {t("controls.currency")}
-            </span>
-            {(["EGP", "USD"] as const).map((currency) => {
-              const enabled = getSupportedCurrencies(pricing, normalizedDuration).includes(currency);
-              const active = currency === normalizedCurrency;
-              return (
-                <button
-                  key={currency}
-                  type="button"
-                  onClick={() => {
-                    if (!enabled) return;
-                    setSelectedCurrency(currency);
-                  }}
-                  className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    active
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-white/5"
-                  } ${enabled ? "" : "cursor-not-allowed opacity-45"}`}
-                  disabled={!enabled}
-                >
-                  {t(`currency.${currency}`)}
-                </button>
-              );
-            })}
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-text-muted">
+            {t("controls.currency")}
           </div>
         </div>
 
@@ -237,16 +181,26 @@ export default function PackagePlansSection({ slug, profile }: Props) {
       ) : (
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {plans.map(({ item, quote }) => {
-            const quoteCurrency =
-              resolvePatientCurrencyCode({
-                currencyCode: quote.selectedCurrencyCode,
-                regionalPricingMode: quote.regionalPricingMode,
-                resolvedCountryIsoCode: quote.resolvedCountryIsoCode,
-              }) ?? (quote.selectedCurrencyCode as CurrencyCode);
-            const savings = formatMoney(locale, quoteCurrency, quote.discountAmount);
-            const payable = formatMoney(locale, quoteCurrency, quote.patientPayableTotal);
-            const regularTotal = formatMoney(locale, quoteCurrency, quote.undiscountedTotal);
-            const baseSessionPrice = formatMoney(locale, quoteCurrency, quote.selectedBaseSessionPrice);
+            const baseSessionPrice = mapPackagePublicPrice({
+              priceStatus: "PAID",
+              priceAmount: quote.selectedBaseSessionPrice,
+              currencyCode: quote.selectedCurrencyCode,
+            });
+            const regularTotal = mapPackagePublicPrice({
+              priceStatus: "PAID",
+              priceAmount: quote.undiscountedTotal,
+              currencyCode: quote.selectedCurrencyCode,
+            });
+            const savings = mapPackagePublicPrice({
+              priceStatus: "PAID",
+              priceAmount: quote.discountAmount,
+              currencyCode: quote.selectedCurrencyCode,
+            });
+            const payable = mapPackagePublicPrice({
+              priceStatus: "PAID",
+              priceAmount: quote.patientPayableTotal,
+              currencyCode: quote.selectedCurrencyCode,
+            });
             const discountPercent = formatPercent(quote.discountPercent);
 
             return (
@@ -295,30 +249,32 @@ export default function PackagePlansSection({ slug, profile }: Props) {
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-text-secondary">{t("quote.baseSessionPrice")}</dt>
                     <dd className="font-semibold text-text-primary dark:text-white/90">
-                      {baseSessionPrice}
+                      <PriceDisplay price={baseSessionPrice} />
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-text-secondary">{t("quote.regularTotal")}</dt>
                     <dd className="font-semibold text-text-primary dark:text-white/90">
-                      {regularTotal}
+                      <PriceDisplay price={regularTotal} />
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-text-secondary">{t("quote.discountAmount")}</dt>
                     <dd className="font-semibold text-success-700 dark:text-success-300">
-                      {t("plan.save", { amount: savings })}
+                      {t.rich("plan.save", {
+                        amount: () => <PriceDisplay price={savings} />,
+                      })}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t border-border-light pt-3">
                     <dt className="text-text-secondary">{t("quote.payableTotal")}</dt>
-                    <dd className="text-base font-bold text-primary">{payable}</dd>
+                    <dd className="text-base font-bold text-primary"><PriceDisplay price={payable} /></dd>
                   </div>
                 </dl>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-text-muted">
                   <span>
-                    {t("controls.currency")}: {t(`currency.${quoteCurrency}`)}
+                    {t("controls.currency")}: {t(`currency.${quote.selectedCurrencyCode}`)}
                   </span>
                   <span>•</span>
                   <span>
@@ -340,7 +296,7 @@ export default function PackagePlansSection({ slug, profile }: Props) {
                       {t("quote.currency")}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                      {quoteCurrency}
+                      {quote.selectedCurrencyCode}
                     </p>
                   </div>
                 </div>

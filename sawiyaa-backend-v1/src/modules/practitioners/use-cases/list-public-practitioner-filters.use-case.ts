@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PublicPractitionerSessionDuration } from '../dto/list-public-practitioners.dto';
 import { PractitionerType } from '@prisma/client';
@@ -26,7 +26,7 @@ export class ListPublicPractitionerFiltersUseCase {
       currentUserId: input.currentUserId,
       guestCountryIsoCode: input.guestCountryIsoCode,
     });
-    const currencyCode = regionalResolution.currencyCode as 'EGP' | 'USD';
+    const currencyCode = regionalResolution.currencyCode;
     const rows = await this.publicReadRepository.listPublicFilterMetadataSource(
       {
         locale: input.locale,
@@ -58,7 +58,12 @@ export class ListPublicPractitionerFiltersUseCase {
     >();
     const countryMap = new Map<
       string,
-      { value: string; label: string; practitionerIds: Set<string> }
+      {
+        value: string;
+        label: string;
+        description: string | null;
+        practitionerIds: Set<string>;
+      }
     >();
     const kindMap = new Map<
       string,
@@ -162,6 +167,10 @@ export class ListPublicPractitionerFiltersUseCase {
           countryMap.set(value, {
             value,
             label,
+            description:
+              input.locale === 'ar'
+                ? row.country.name?.trim() || null
+                : row.country.nativeName?.trim() || null,
             practitionerIds: new Set([practitionerId]),
           });
         }
@@ -268,13 +277,19 @@ export class ListPublicPractitionerFiltersUseCase {
   private sortCountOptions(
     source: Map<
       string,
-      { value: string; label: string; practitionerIds: Set<string> }
+      {
+        value: string;
+        label: string;
+        description?: string | null;
+        practitionerIds: Set<string>;
+      }
     >,
   ) {
     return Array.from(source.values())
       .map((item) => ({
         value: item.value,
         label: item.label,
+        description: item.description,
         practitionerCount: item.practitionerIds.size,
       }))
       .sort((left, right) => {
@@ -454,10 +469,7 @@ export class ListPublicPractitionerFiltersUseCase {
     return value === 'male' ? 'Male' : 'Female';
   }
 
-  private getDurationLabel(
-    value: 30 | 60,
-    locale: SupportedLocale,
-  ): string {
+  private getDurationLabel(value: 30 | 60, locale: SupportedLocale): string {
     if (locale === 'ar') {
       return value === 30 ? '30 دقيقة' : '60 دقيقة';
     }

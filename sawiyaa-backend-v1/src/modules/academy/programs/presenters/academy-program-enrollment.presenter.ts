@@ -148,6 +148,7 @@ export class AcademyProgramEnrollmentPresenter {
       program: this.academyProgramPresenter.presentPublicProgramItem(
         input.academyProgram,
         locale,
+        input.selectedCurrencyCode === 'EGP' ? 'EG' : 'US',
       ),
       learner: {
         id: input.academyLearner.id,

@@ -26,4 +26,5 @@ export const PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS = {
   routingDefaultProvider: 'payment.routing.defaultProvider',
   routingPriorityOrder: 'payment.routing.priorityOrder',
   routingFallbackProvider: 'payment.routing.fallbackProvider',
+  routingCurrencyRoutes: 'payment.routing.currencyRoutes',
 } as const;

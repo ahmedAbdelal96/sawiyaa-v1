@@ -63,7 +63,9 @@ export class GetPractitionerApplicationDetailsUseCase {
 
     // If an avatar exists in storage, expose an admin-authenticated proxy URL.
     // Avatar storage is keyed by user id (same id used by practitioner self-service avatar endpoints).
-    const hasStoredAvatar = Boolean(await this.avatarStorage.getAvatarFile(user.id));
+    const hasStoredAvatar = Boolean(
+      await this.avatarStorage.getAvatarFile(user.id),
+    );
     const adminAvatarUrl = hasStoredAvatar
       ? `/api/v1/admin/practitioner-applications/${application.id}/avatar`
       : null;
@@ -83,7 +85,11 @@ export class GetPractitionerApplicationDetailsUseCase {
         .map((item) => [item.id, item] as const),
     );
     const normalizeCategory = (
-      category: (typeof categoryMap extends Map<string, infer TValue> ? TValue : never) | null,
+      category:
+        | (typeof categoryMap extends Map<string, infer TValue>
+            ? TValue
+            : never)
+        | null,
     ): AdminSpecialtyCategorySummaryViewModel | null =>
       category
         ? {
@@ -161,7 +167,9 @@ export class GetPractitionerApplicationDetailsUseCase {
       yearsOfExperience: profile.yearsOfExperience ?? null,
       primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
       primarySpecialtyCategory: profile.primarySpecialtyCategoryId
-        ? normalizeCategory(categoryMap.get(profile.primarySpecialtyCategoryId) ?? null)
+        ? normalizeCategory(
+            categoryMap.get(profile.primarySpecialtyCategoryId) ?? null,
+          )
         : null,
       pricing: {
         session30: {
@@ -234,22 +242,25 @@ export class GetPractitionerApplicationDetailsUseCase {
       primarySpecialtyCategoryId:
         snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
         liveProfile.primarySpecialtyCategoryId,
-      primarySpecialtyCategory:
-        normalizeCategory(
-          categoryMap.get(
+      primarySpecialtyCategory: normalizeCategory(
+        categoryMap.get(
           snapshotSpecialtySelection?.primarySpecialtyCategoryId ??
             liveProfile.primarySpecialtyCategoryId ??
             '',
-          ) ?? liveProfile.primarySpecialtyCategory,
-        ),
+        ) ?? liveProfile.primarySpecialtyCategory,
+      ),
       instantBookingPrice30Egp:
-        snapshotProfile?.instantBookingPrice30Egp ?? liveProfile.instantBookingPrice30Egp,
+        snapshotProfile?.instantBookingPrice30Egp ??
+        liveProfile.instantBookingPrice30Egp,
       instantBookingPrice30Usd:
-        snapshotProfile?.instantBookingPrice30Usd ?? liveProfile.instantBookingPrice30Usd,
+        snapshotProfile?.instantBookingPrice30Usd ??
+        liveProfile.instantBookingPrice30Usd,
       instantBookingPrice60Egp:
-        snapshotProfile?.instantBookingPrice60Egp ?? liveProfile.instantBookingPrice60Egp,
+        snapshotProfile?.instantBookingPrice60Egp ??
+        liveProfile.instantBookingPrice60Egp,
       instantBookingPrice60Usd:
-        snapshotProfile?.instantBookingPrice60Usd ?? liveProfile.instantBookingPrice60Usd,
+        snapshotProfile?.instantBookingPrice60Usd ??
+        liveProfile.instantBookingPrice60Usd,
       pricing: snapshotProfile?.pricing ?? liveProfile.pricing,
       languages: snapshotLanguageCodes ?? liveProfile.languages,
       specialties:
@@ -269,15 +280,14 @@ export class GetPractitionerApplicationDetailsUseCase {
                   slug:
                     catalogSpecialty?.slug ??
                     (typeof item?.slug === 'string' ? item.slug : ''),
-                  title:
-                    catalogSpecialty
-                      ? this.mapper.pickLocalizedTitle(
-                          catalogSpecialty.translations,
-                          input.locale,
-                        )
-                      : typeof item?.title === 'string'
-                        ? item.title
-                        : null,
+                  title: catalogSpecialty
+                    ? this.mapper.pickLocalizedTitle(
+                        catalogSpecialty.translations,
+                        input.locale,
+                      )
+                    : typeof item?.title === 'string'
+                      ? item.title
+                      : null,
                   name: null,
                   nameAr: null,
                   nameEn: null,

@@ -71,6 +71,7 @@ import { SecurityAuditService } from '@common/security-audit/security-audit.serv
 import { SecurityAuditOutcome } from '@prisma/client';
 import { UploadPractitionerCredentialFileUseCase } from '../use-cases/upload-practitioner-credential-file.use-case';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
+import { CountryRepository } from '../../patients/repositories/country.repository';
 
 /**
  * Practitioners controller provides only the current practitioner's own baseline profile/readiness/application surfaces.
@@ -101,6 +102,7 @@ export class PractitionerProfileController {
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
     private readonly securityAuditService: SecurityAuditService,
+    private readonly countryRepository: CountryRepository,
   ) {}
 
   /** Returns practitioner product-facing summary for the currently authenticated practitioner. */
@@ -128,6 +130,38 @@ export class PractitionerProfileController {
       locale,
       currentUser,
     });
+  }
+
+  /** Returns active countries for practitioner profile/application selectors. */
+  @Get('me/countries')
+  @ApiOperation({
+    summary: 'List active countries for practitioner reference data',
+    description:
+      'Returns active countries from canonical Country table for practitioner-facing selectors.',
+  })
+  @ApiResponse({
+    status: 200,
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          isoCode: { type: 'string' },
+          name: { type: 'string' },
+          nativeName: { type: 'string', nullable: true },
+        },
+        required: ['id', 'isoCode', 'name'],
+      },
+    },
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description:
+      'Route requires practitioner role, active account, and OTP-verified practitioner access',
+  })
+  listCountries(): ReturnType<CountryRepository['findAllActive']> {
+    return this.countryRepository.findAllActive();
   }
 
   /** Updates current practitioner avatar URL. */
@@ -262,30 +296,29 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: UpdatePractitionerProfileDto,
   ) {
-    return this.updatePractitionerProfileUseCase
-      .execute({
-        userId: currentUser.id,
-        locale,
-        currentUser,
-        data: {
-          displayName: body.displayName,
-          professionalTitle: body.professionalTitle,
-          bio: body.bio,
-          countryCode: body.countryCode,
-          yearsOfExperience: body.yearsOfExperience,
-          practitionerType: body.practitionerType,
-          practitionerGender: body.practitionerGender,
-          sessionPrice30Egp: body.sessionPrice30Egp,
-          sessionPrice30Usd: body.sessionPrice30Usd,
-          sessionPrice60Egp: body.sessionPrice60Egp,
-          sessionPrice60Usd: body.sessionPrice60Usd,
-          acceptsPackage: body.acceptsPackage,
-          locale: body.locale,
-          timezone: body.timezone,
-          languageCodes: body.languageCodes,
-          payoutDestination: body.payoutDestination,
-        },
-      });
+    return this.updatePractitionerProfileUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      currentUser,
+      data: {
+        displayName: body.displayName,
+        professionalTitle: body.professionalTitle,
+        bio: body.bio,
+        countryCode: body.countryCode,
+        yearsOfExperience: body.yearsOfExperience,
+        practitionerType: body.practitionerType,
+        practitionerGender: body.practitionerGender,
+        sessionPrice30Egp: body.sessionPrice30Egp,
+        sessionPrice30Usd: body.sessionPrice30Usd,
+        sessionPrice60Egp: body.sessionPrice60Egp,
+        sessionPrice60Usd: body.sessionPrice60Usd,
+        acceptsPackage: body.acceptsPackage,
+        locale: body.locale,
+        timezone: body.timezone,
+        languageCodes: body.languageCodes,
+        payoutDestination: body.payoutDestination,
+      },
+    });
   }
 
   /** Replaces practitioner specialty links in one deterministic operation. */
@@ -388,19 +421,18 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: UploadPractitionerCredentialMetadataDto,
   ) {
-    return this.uploadPractitionerCredentialMetadataUseCase
-      .execute({
-        userId: currentUser.id,
-        locale,
-        credentialType: body.credentialType,
-        fileUrl: body.fileUrl,
-        expiresAt:
-          body.expiresAt === undefined
-            ? undefined
-            : body.expiresAt === null
-              ? null
-              : new Date(body.expiresAt),
-      });
+    return this.uploadPractitionerCredentialMetadataUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      credentialType: body.credentialType,
+      fileUrl: body.fileUrl,
+      expiresAt:
+        body.expiresAt === undefined
+          ? undefined
+          : body.expiresAt === null
+            ? null
+            : new Date(body.expiresAt),
+    });
   }
 
   /** Uploads practitioner credential file and creates credential record in one request. */
@@ -453,19 +485,18 @@ export class PractitionerProfileController {
       | undefined,
     @Body() body: UploadPractitionerCredentialFileDto,
   ) {
-    return this.uploadPractitionerCredentialFileUseCase
-      .execute({
-        userId: currentUser.id,
-        locale,
-        credentialType: body.credentialType,
-        expiresAt:
-          body.expiresAt === undefined
-            ? undefined
-            : body.expiresAt === null
-              ? null
-              : new Date(body.expiresAt),
-        file,
-      });
+    return this.uploadPractitionerCredentialFileUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      credentialType: body.credentialType,
+      expiresAt:
+        body.expiresAt === undefined
+          ? undefined
+          : body.expiresAt === null
+            ? null
+            : new Date(body.expiresAt),
+      file,
+    });
   }
 
   /** Lists practitioner credential metadata records for the current practitioner. */
@@ -521,13 +552,12 @@ export class PractitionerProfileController {
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: SubmitPractitionerApplicationDto,
   ) {
-    return this.submitPractitionerApplicationUseCase
-      .execute({
-        userId: currentUser.id,
-        locale,
-        currentUser,
-        data: body,
-      });
+    return this.submitPractitionerApplicationUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      currentUser,
+      data: body,
+    });
   }
 
   /** Returns latest application status summary for the current practitioner. */

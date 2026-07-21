@@ -69,7 +69,21 @@ export default function MessagesWorkspace({ role }: Props) {
   // 1c. Resolve the canonical conversation ID for the selected support ticket (Admin only)
   const resolvedTicketQuery = useQuery({
     queryKey: ["admin-resolved-ticket", selectedId],
-    queryFn: () => getAdminSupportTicket(selectedId!),
+    queryFn: async () => {
+      const result = await listCanonicalConversations({ page: 1, limit: 50 });
+      const item = result.items.find(
+        (conversation) =>
+          conversation.supportTicketId === selectedId ||
+          conversation.conversationId === selectedId,
+      );
+
+      if (!item) {
+        const legacyResult = await getAdminSupportTicket(selectedId!);
+        return { item: legacyResult.item };
+      }
+
+      return { item };
+    },
     enabled: role === "admin" && Boolean(selectedId),
     staleTime: 30000,
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import {
@@ -12,12 +12,13 @@ import {
 } from "@/components/ui/modal";
 import StripePaymentForm from "@/features/payments/components/StripePaymentForm";
 import RefundPolicyAcceptanceCard from "@/features/refund-policies/components/RefundPolicyAcceptanceCard";
+import { MoneyText } from "@/components/money/MoneyText";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
 import { toAppError } from "@/lib/api/errors";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { useInitiatePackagePurchasePayment } from "../hooks/use-package-purchases";
-import { canContinuePackagePurchasePayment, formatMoney } from "../lib/package-purchase-display";
+import { canContinuePackagePurchasePayment } from "../lib/package-purchase-display";
+import { mapPackagePaymentSnapshotMoney, mapPackagePurchaseSnapshotMoney } from "../lib/package-money";
 import type { PatientPackagePurchaseItem } from "../types/package-purchases.types";
 
 type Props = {
@@ -44,8 +45,6 @@ export default function PackagePurchasePaymentAction({
 }: Props) {
   const t = useTranslations("package-purchases");
   const tRefundPolicy = useTranslations("refund-policies");
-  const locale = useLocale();
-  const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const initiatePayment = useInitiatePackagePurchasePayment();
   const [isConsentOpen, setIsConsentOpen] = useState(false);
   const [acceptedRefundPolicyId, setAcceptedRefundPolicyId] = useState<string | null>(null);
@@ -72,12 +71,10 @@ export default function PackagePurchasePaymentAction({
   });
   const refundPolicy = refundPolicyData?.item ?? null;
   const refundPolicyAppError = refundPolicyError ? toAppError(refundPolicyError) : null;
-  const purchaseCurrency =
-    resolvePatientCurrencyCode({
-      currencyCode: purchase.selectedCurrencyCode,
-      regionalPricingMode: purchase.regionalPricingMode,
-      resolvedCountryIsoCode: purchase.resolvedCountryIsoCode,
-    }) ?? purchase.selectedCurrencyCode;
+  const purchaseMoney = mapPackagePurchaseSnapshotMoney({
+    amount: purchase.patientPayableTotal,
+    selectedCurrencyCode: purchase.selectedCurrencyCode,
+  });
 
   function openConsentModal() {
     setAcceptedRefundPolicyId(null);
@@ -137,8 +134,16 @@ export default function PackagePurchasePaymentAction({
       }
 
       if (payment.clientSecret) {
-        setPaymentAmount(payment.amountTotal);
-        setPaymentCurrency(payment.currency);
+        const paymentMoney = mapPackagePaymentSnapshotMoney({
+          amount: payment.amountTotal,
+          currency: payment.currency,
+        });
+        if (!paymentMoney) {
+          setPaymentError(t("payment.errors.startFailed"));
+          return;
+        }
+        setPaymentAmount(paymentMoney.amount);
+        setPaymentCurrency(paymentMoney.currencyCode);
         setPaymentReturnUrl(window.location.href);
         setClientSecret(payment.clientSecret);
         return;
@@ -218,13 +223,7 @@ export default function PackagePurchasePaymentAction({
                     {t("payment.summaryHeading")}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                    {t("payment.summaryLabel", {
-                    amount: formatMoney(
-                        purchase.patientPayableTotal,
-                        purchaseCurrency,
-                        numLocale,
-                      ),
-                    })}
+                    {purchaseMoney ? <MoneyText money={purchaseMoney} /> : t("detail.fields.notAvailable")}
                   </p>
                 </div>
 

@@ -68,7 +68,9 @@ export class GetPractitionerProfileReadinessUseCase {
       this.practitionerLanguageRepository.countByPractitionerId(profile.id),
       this.practitionerSpecialtyRepository.countByPractitionerId(profile.id),
       this.practitionerCredentialRepository.getSummary(profile.id),
-      this.practitionerCredentialRepository.listTypesByPractitionerId(profile.id),
+      this.practitionerCredentialRepository.listTypesByPractitionerId(
+        profile.id,
+      ),
       this.practitionerPayoutDestinationRepository.findByPractitionerId(
         profile.id,
       ),
@@ -83,6 +85,7 @@ export class GetPractitionerProfileReadinessUseCase {
         : payoutDestination
           ? {
               methodType: payoutDestination.methodType,
+              countryCode: payoutDestination.countryCode ?? null,
               accountHolderName: payoutDestination.accountHolderName ?? null,
               bankName: payoutDestination.bankName ?? null,
               bankAccountNumber: payoutDestination.bankAccountNumber ?? null,
@@ -103,6 +106,7 @@ export class GetPractitionerProfileReadinessUseCase {
     const completionPayoutDestination = resolvedPayoutDestination
       ? {
           methodType: resolvedPayoutDestination.methodType ?? null,
+          countryCode: resolvedPayoutDestination.countryCode ?? null,
           accountHolderName:
             resolvedPayoutDestination.accountHolderName ?? null,
           bankName: resolvedPayoutDestination.bankName ?? null,

@@ -38,11 +38,4 @@ export class PackagePlanQuoteRequestDto {
   @IsEnum(SessionMode)
   sessionMode!: SessionMode;
 
-  @ApiProperty({
-    description: 'Selected pricing currency code',
-    example: 'EGP',
-  })
-  @IsString()
-  @MaxLength(3)
-  currencyCode!: string;
 }

@@ -33,7 +33,7 @@ describe('GetMyPatientHomeUseCase', () => {
     (patientRepository.findByUserId as jest.Mock).mockResolvedValue(null);
 
     await expect(
-      useCase.execute({ userId: 'missing', locale: 'ar' }),
+      useCase.execute({ userId: 'missing', locale: 'ar', requestCountryIsoCode: 'EG' }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -68,7 +68,7 @@ describe('GetMyPatientHomeUseCase', () => {
       buildRow('rated-1', now),
     ]);
 
-    const result = await useCase.execute({ userId: 'user-1', locale: 'ar' });
+    const result = await useCase.execute({ userId: 'user-1', locale: 'ar', requestCountryIsoCode: 'EG' });
 
     expect(result.featuredPractitioners.status).toBe('IMPLEMENTED');
     expect(result.featuredPractitioners.items).toHaveLength(1);

@@ -26,6 +26,16 @@ const providerKeySchema = z.enum([
   PaymentProvider.STRIPE,
 ]);
 
+const paymentRouteSchema = z.object({
+  currencyCode: currencyCodeSchema,
+  paymentMethod: z.string().trim().min(1).max(40),
+  provider: providerKeySchema,
+  integrationKey: z.string().trim().min(1).max(120),
+  environment: z.enum(['development', 'staging', 'production']),
+  enabled: z.boolean().default(true),
+  priority: z.number().int().min(0).max(1000).default(100),
+}).strict();
+
 export const paymobGatewayMethodEntrySchema = z
   .object({
     key: z
@@ -72,6 +82,7 @@ export const paymentRoutingDraftSchema = z
       .default([])
       .transform((value) => [...new Set(value)]),
     fallbackProvider: providerKeySchema.nullable().default(null),
+    currencyRoutes: z.array(paymentRouteSchema).default([]),
   })
   .strict()
   .superRefine((draft, ctx) => {

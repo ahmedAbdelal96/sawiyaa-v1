@@ -1,150 +1,66 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { MarketType, PaymentProvider } from '@prisma/client';
-import { resolveProviderForCurrency } from '@common/payments/payment-region.resolver';
+import { PaymentProvider } from '@prisma/client';
 import {
   PaymentRoutingContext,
-  PaymentRoutingMarket,
+  PaymentRoute,
 } from '../types/payment-routing.types';
 import { PaymentProviderCapabilitiesService } from './payment-provider-capabilities.service';
 import { PaymentRuntimeConfigService } from './payment-runtime-config.service';
 
 @Injectable()
 export class PaymentProviderResolverService {
-  private static readonly EGYPT_ISO_CODE = 'EGY';
-
   constructor(
     private readonly paymentProviderCapabilitiesService: PaymentProviderCapabilitiesService,
     private readonly paymentRuntimeConfigService: PaymentRuntimeConfigService,
   ) {}
 
   resolveProvider(context: PaymentRoutingContext): PaymentProvider {
-    const normalizedCurrency = context.currencyCode.trim().toUpperCase();
-    const normalizedOperatingCountry =
-      context.operatingCountryIsoCode?.trim().toUpperCase() ?? null;
-    const normalizedCheckoutCountry =
-      context.checkoutCountryIsoCode?.trim().toUpperCase() ?? null;
+    return this.resolveRoute(context).provider;
+  }
 
-    if (!normalizedCurrency || !context.commissionMarketType) {
+  resolveRoute(context: PaymentRoutingContext): PaymentRoute {
+    const normalizedCurrency = context.currencyCode.trim().toUpperCase();
+    if (!normalizedCurrency) this.throwRoutingUnavailable();
+    const routing = this.paymentRuntimeConfigService.getPaymentRoutingConfig();
+    const environment =
+      typeof this.paymentRuntimeConfigService.getPaymentEnvironment === 'function'
+        ? this.paymentRuntimeConfigService.getPaymentEnvironment()
+        : 'development';
+    const configuredRoutes = (routing.currencyRoutes ?? [])
+      .filter(
+        (route) =>
+          route.enabled &&
+          route.currencyCode === normalizedCurrency &&
+          route.paymentMethod.trim().toUpperCase() === 'CARD' &&
+          route.environment === environment,
+      )
+      .sort((left, right) => right.priority - left.priority);
+
+    if (configuredRoutes.length !== 1) {
+      if (configuredRoutes.length > 1) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.paymentRoutingAmbiguous',
+          error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        });
+      }
+      this.throwRoutingUnavailable();
+    }
+
+    const route = configuredRoutes[0];
+    if (route.source !== 'DATABASE') {
       throw new BadRequestException({
-        messageKey: 'payments.errors.paymentRoutingAmbiguous',
-        error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        messageKey: 'payments.errors.paymentRoutingUnavailable',
+        error: 'PAYMENT_ROUTING_UNAVAILABLE',
       });
     }
-
-    const market = this.resolveRoutingMarket({
-      commissionMarketType: context.commissionMarketType,
-      operatingCountryIsoCode: normalizedOperatingCountry,
-      checkoutCountryIsoCode: normalizedCheckoutCountry,
-    });
-    const provider = this.resolveProviderByMarketAndCurrency({
-      market,
-      currencyCode: normalizedCurrency,
-      operatingCountryIsoCode: normalizedOperatingCountry,
-    });
-    const routing = this.paymentRuntimeConfigService.getPaymentRoutingConfig();
-    const orderedProviders = this.orderProvidersByRoutingPreference(
-      [provider],
-      routing,
-    );
-
-    for (const candidate of orderedProviders) {
-      try {
-        this.paymentProviderCapabilitiesService.assertAvailable(
-          candidate,
-          context,
-        );
-        return candidate;
-      } catch {
-        continue;
-      }
-    }
-
-    this.paymentProviderCapabilitiesService.assertAvailable(provider, context);
-
-    return provider;
+    this.paymentProviderCapabilitiesService.assertAvailable(route.provider, context);
+    return route;
   }
 
-  private resolveRoutingMarket(input: {
-    commissionMarketType: MarketType;
-    operatingCountryIsoCode: string | null;
-    checkoutCountryIsoCode: string | null;
-  }): PaymentRoutingMarket {
-    if (input.commissionMarketType === MarketType.CROSS_BORDER) {
-      return 'INTERNATIONAL';
-    }
-
-    if (input.commissionMarketType === MarketType.LOCAL) {
-      if (!input.operatingCountryIsoCode || !input.checkoutCountryIsoCode) {
-        throw new BadRequestException({
-          messageKey: 'payments.errors.paymentRoutingAmbiguous',
-          error: 'PAYMENT_ROUTING_AMBIGUOUS',
-        });
-      }
-
-      if (input.operatingCountryIsoCode !== input.checkoutCountryIsoCode) {
-        throw new BadRequestException({
-          messageKey: 'payments.errors.paymentRoutingAmbiguous',
-          error: 'PAYMENT_ROUTING_AMBIGUOUS',
-        });
-      }
-
-      return input.operatingCountryIsoCode ===
-        PaymentProviderResolverService.EGYPT_ISO_CODE
-        ? 'EGYPT_LOCAL'
-        : 'INTERNATIONAL';
-    }
-
-    if (
-      input.commissionMarketType === MarketType.ANY &&
-      input.operatingCountryIsoCode &&
-      input.checkoutCountryIsoCode
-    ) {
-      if (input.operatingCountryIsoCode !== input.checkoutCountryIsoCode) {
-        return 'INTERNATIONAL';
-      }
-
-      return input.operatingCountryIsoCode ===
-        PaymentProviderResolverService.EGYPT_ISO_CODE
-        ? 'EGYPT_LOCAL'
-        : 'INTERNATIONAL';
-    }
-
+  private throwRoutingUnavailable(): never {
     throw new BadRequestException({
-      messageKey: 'payments.errors.paymentRoutingAmbiguous',
-      error: 'PAYMENT_ROUTING_AMBIGUOUS',
+      messageKey: 'payments.errors.paymentRoutingUnavailable',
+      error: 'PAYMENT_ROUTING_UNAVAILABLE',
     });
-  }
-
-  private resolveProviderByMarketAndCurrency(input: {
-    market: PaymentRoutingMarket;
-    currencyCode: string;
-    operatingCountryIsoCode: string | null;
-  }): PaymentProvider {
-    const provider = resolveProviderForCurrency(input.currencyCode);
-    if (provider) {
-      return provider;
-    }
-
-    throw new BadRequestException({
-      messageKey: 'payments.errors.unsupportedRoutingCombination',
-      error: 'PAYMENT_UNSUPPORTED_ROUTING_COMBINATION',
-      messageParams: {
-        market: input.market,
-        currencyCode: input.currencyCode,
-      },
-    });
-  }
-
-  private orderProvidersByRoutingPreference(
-    candidates: PaymentProvider[],
-    routing: ReturnType<PaymentRuntimeConfigService['getPaymentRoutingConfig']>,
-  ): PaymentProvider[] {
-    const priority = routing.priorityOrder;
-    const fallback = routing.fallbackProvider ? [routing.fallbackProvider] : [];
-    const preferred = routing.defaultProvider ? [routing.defaultProvider] : [];
-
-    return Array.from(
-      new Set([...preferred, ...fallback, ...priority, ...candidates]),
-    ).filter((provider) => candidates.includes(provider));
   }
 }

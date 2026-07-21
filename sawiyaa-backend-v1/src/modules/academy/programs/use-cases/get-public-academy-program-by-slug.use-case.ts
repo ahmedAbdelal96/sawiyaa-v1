@@ -10,7 +10,11 @@ export class GetPublicAcademyProgramBySlugUseCase {
     private readonly academyProgramPresenter: AcademyProgramPresenter,
   ) {}
 
-  async execute(input: { slug: string; locale: SupportedLocale }) {
+  async execute(input: {
+    slug: string;
+    locale: SupportedLocale;
+    requestCountryIsoCode: string | null;
+  }) {
     const program = await this.academyProgramRepository.findPublicProgramBySlug(
       input.slug,
     );
@@ -26,6 +30,7 @@ export class GetPublicAcademyProgramBySlugUseCase {
       item: this.academyProgramPresenter.presentPublicProgramDetails(
         program,
         input.locale,
+        input.requestCountryIsoCode,
       ),
     };
   }

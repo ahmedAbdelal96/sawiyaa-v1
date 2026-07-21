@@ -1,21 +1,35 @@
 import { PaymentProvider } from '@prisma/client';
+import { normalizeCountryIsoCode } from '@modules/auth/utils/request-country-context.util';
 
 export type PaymentRegionalPricingMode = 'EGYPT_LOCAL' | 'INTERNATIONAL';
+export type PaymentRegionalResolutionStatus = 'RESOLVED';
+export type PaymentRegionalResolutionSource =
+  | 'TRUSTED_COUNTRY'
+  | 'DEFAULT_USD';
 
 export interface PaymentRegionalResolutionInput {
+  requestCountryIsoCode?: string | null;
+  /** @deprecated Stored/account country is not a pricing signal. */
   patientCountryIsoCode?: string | null;
+  /** @deprecated Stored/account country is not a pricing signal. */
   accountCountryIsoCode?: string | null;
+  /** @deprecated Checkout country is not a trusted request signal. */
   checkoutCountryIsoCode?: string | null;
   operatingCountryIsoCode?: string | null;
   currencyCode?: string | null;
 }
 
-export interface PaymentRegionalResolution {
+export type ResolvedPaymentRegionalResolution = {
+  status: 'RESOLVED';
   resolvedCountryIsoCode: string | null;
   regionalPricingMode: PaymentRegionalPricingMode;
-  currencyCode: string;
+  currencyCode: 'EGP' | 'USD';
   provider: PaymentProvider;
-}
+  resolutionSource: PaymentRegionalResolutionSource;
+  fallbackReasonCode: 'COUNTRY_UNAVAILABLE' | null;
+};
+
+export type PaymentRegionalResolution = ResolvedPaymentRegionalResolution;
 
 const EGYPT_ISO_CODES = new Set(['EG', 'EGY']);
 const SUPPORTED_CURRENCY_CODES = new Set(['EGP', 'USD']);
@@ -23,28 +37,26 @@ const SUPPORTED_CURRENCY_CODES = new Set(['EGP', 'USD']);
 export function resolvePaymentRegionalResolution(
   input: PaymentRegionalResolutionInput,
 ): PaymentRegionalResolution {
-  // Country resolution is patient/checkout-account centric by design.
-  // We intentionally do not fallback to operating country here so an
-  // unknown patient country never implicitly routes to Egypt.
   const resolvedCountryIsoCode = normalizeCountryIsoCode(
-    input.patientCountryIsoCode ??
-      input.accountCountryIsoCode ??
-      input.checkoutCountryIsoCode ??
-      null,
+    input.requestCountryIsoCode,
   );
   const regionalPricingMode = isEgyptCountryCode(resolvedCountryIsoCode)
     ? 'EGYPT_LOCAL'
     : 'INTERNATIONAL';
-  const explicitCurrency = normalizeCurrencyCode(input.currencyCode);
   const currencyCode =
-    explicitCurrency ?? (regionalPricingMode === 'EGYPT_LOCAL' ? 'EGP' : 'USD');
+    regionalPricingMode === 'EGYPT_LOCAL' ? 'EGP' : 'USD';
   const provider = PaymentProvider.PAYMOB;
 
   return {
+    status: 'RESOLVED',
     resolvedCountryIsoCode,
     regionalPricingMode,
     currencyCode,
     provider,
+    resolutionSource: resolvedCountryIsoCode
+      ? 'TRUSTED_COUNTRY'
+      : 'DEFAULT_USD',
+    fallbackReasonCode: resolvedCountryIsoCode ? null : 'COUNTRY_UNAVAILABLE',
   };
 }
 
@@ -65,11 +77,6 @@ export function resolveProviderForCurrency(currencyCode: string) {
 export function isEgyptCountryCode(countryCode?: string | null) {
   const normalized = normalizeCountryIsoCode(countryCode);
   return Boolean(normalized && EGYPT_ISO_CODES.has(normalized));
-}
-
-function normalizeCountryIsoCode(countryCode?: string | null) {
-  const normalized = countryCode?.trim().toUpperCase() ?? null;
-  return normalized && normalized.length > 0 ? normalized : null;
 }
 
 function normalizeCurrencyCode(currencyCode?: string | null) {

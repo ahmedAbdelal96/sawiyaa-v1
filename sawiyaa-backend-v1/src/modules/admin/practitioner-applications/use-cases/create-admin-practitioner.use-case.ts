@@ -31,7 +31,13 @@ import { PractitionerApplicationCompletionService } from '@modules/practitioners
 import { PractitionerPayoutDestinationValidationService } from '@modules/practitioners/services/practitioner-payout-destination-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { UserPhoneRepository } from '@modules/auth/repositories/user-phone.repository';
+import { isUserPhoneUniqueConstraintError } from '@modules/auth/utils/is-user-phone-unique-constraint-error';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 /**
  * Creates a practitioner directly from admin scope without practitioner self-submission.
@@ -48,6 +54,8 @@ export class CreateAdminPractitionerUseCase {
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
     private readonly practitionerApplicationCompletionService: PractitionerApplicationCompletionService,
+    private readonly phoneNumberValidationService: PhoneNumberValidationService,
+    private readonly userPhoneRepository: UserPhoneRepository,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
@@ -59,10 +67,33 @@ export class CreateAdminPractitionerUseCase {
     return bcrypt.hash(password, saltRounds);
   }
 
+  private throwCountryError(input: {
+    messageKey: string;
+    errorCode:
+      | 'COUNTRY_NOT_FOUND'
+      | 'COUNTRY_INACTIVE'
+      | 'REFERENCE_DATA_MISSING'
+      | 'INVALID_COUNTRY_CODE';
+  }): never {
+    throw new BadRequestException({
+      messageKey: input.messageKey,
+      error: input.errorCode,
+      details: [
+        {
+          field: 'countryCode',
+          code: input.errorCode,
+          messageKey: input.messageKey,
+        },
+      ],
+    });
+  }
+
   async execute(input: {
     locale: SupportedLocale;
     adminUserId: string;
     email: string;
+    phone: string;
+    phoneCountryCode: string;
     password: string;
     displayName?: string | null;
     practitionerType?: PractitionerType;
@@ -86,6 +117,7 @@ export class CreateAdminPractitionerUseCase {
     };
     payoutDestination?: {
       methodType: PractitionerPayoutMethodType;
+      countryCode?: string | null;
       accountHolderName?: string | null;
       bankName?: string | null;
       bankAccountNumber?: string | null;
@@ -102,6 +134,10 @@ export class CreateAdminPractitionerUseCase {
     note?: string | null;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
+    const validatedPhone = this.phoneNumberValidationService.assertValid(
+      input.phone,
+      input.phoneCountryCode,
+    );
     const existingEmail = await this.prisma.userEmail.findUnique({
       where: { email: normalizedEmail },
       select: { id: true },
@@ -118,23 +154,48 @@ export class CreateAdminPractitionerUseCase {
       input.countryCode?.trim().toUpperCase() || null;
     let countryId: string | null = null;
     if (normalizedCountryCode) {
+      const activeCountriesCount = await this.prisma.country.count({
+        where: { isActive: true },
+      });
+
+      if (activeCountriesCount === 0) {
+        this.throwCountryError({
+          messageKey:
+            'admin.practitionerApplications.errors.countryReferenceDataMissing',
+          errorCode: 'REFERENCE_DATA_MISSING',
+        });
+      }
+
       const country = await this.prisma.country.findFirst({
         where: {
           isoCode: normalizedCountryCode,
+        },
+        select: {
+          id: true,
           isActive: true,
         },
-        select: { id: true },
       });
 
       if (!country) {
-        throw new BadRequestException({
-          messageKey:
-            'admin.practitionerApplications.errors.invalidCountryCode',
-          error: 'ADMIN_INVALID_COUNTRY_CODE',
+        this.throwCountryError({
+          messageKey: 'admin.practitionerApplications.errors.countryNotFound',
+          errorCode: 'COUNTRY_NOT_FOUND',
+        });
+      }
+
+      if (!country.isActive) {
+        this.throwCountryError({
+          messageKey: 'admin.practitionerApplications.errors.countryInactive',
+          errorCode: 'COUNTRY_INACTIVE',
         });
       }
 
       countryId = country.id;
+    } else {
+      this.throwCountryError({
+        messageKey: 'admin.practitionerApplications.errors.invalidCountryCode',
+        errorCode: 'INVALID_COUNTRY_CODE',
+      });
     }
 
     const passwordHash = await this.hashPassword(input.password);
@@ -171,8 +232,12 @@ export class CreateAdminPractitionerUseCase {
     const payoutDestination = input.payoutDestination
       ? {
           methodType: input.payoutDestination.methodType,
+          countryCode:
+            input.payoutDestination.countryCode?.trim().toUpperCase() || null,
           accountHolderName:
-            input.payoutDestination.accountHolderName?.trim() || null,
+            input.payoutDestination.accountHolderName
+              ?.trim()
+              .replace(/\s+/g, ' ') || null,
           bankName: input.payoutDestination.bankName?.trim() || null,
           bankAccountNumber:
             input.payoutDestination.bankAccountNumber?.trim() || null,
@@ -244,44 +309,43 @@ export class CreateAdminPractitionerUseCase {
       payoutDestination,
     );
 
-    const completion =
-      this.practitionerApplicationCompletionService.build({
-        displayName,
-        countryCode: normalizedCountryCode,
-        practitionerType,
-        practitionerGender,
-        professionalTitle,
-        bio,
-        yearsOfExperience,
-        languageCount: resolvedLanguages.length,
-        specialtyCount: specialtyIds.length,
-        primarySpecialtyCategoryId:
-          input.specialtySelection.primarySpecialtyCategoryId,
-        credentialSummary: {
-          totalCredentials: credentials.length,
-          approvedCount: credentials.length,
-          pendingCount: 0,
-          rejectedCount: 0,
-          expiredCount: credentials.filter(
-            (item) => item.expiresAt && item.expiresAt.getTime() < now.getTime(),
-          ).length,
+    const completion = this.practitionerApplicationCompletionService.build({
+      displayName,
+      countryCode: normalizedCountryCode,
+      practitionerType,
+      practitionerGender,
+      professionalTitle,
+      bio,
+      yearsOfExperience,
+      languageCount: resolvedLanguages.length,
+      specialtyCount: specialtyIds.length,
+      primarySpecialtyCategoryId:
+        input.specialtySelection.primarySpecialtyCategoryId,
+      credentialSummary: {
+        totalCredentials: credentials.length,
+        approvedCount: credentials.length,
+        pendingCount: 0,
+        rejectedCount: 0,
+        expiredCount: credentials.filter(
+          (item) => item.expiresAt && item.expiresAt.getTime() < now.getTime(),
+        ).length,
+      },
+      credentialTypes: credentials.map((item) => item.credentialType),
+      payoutDestination,
+      isAccountActive: true,
+      isPractitionerOtpVerified: true,
+      applicationStatus: PractitionerApplicationStatus.DRAFT,
+      pricing: {
+        session30: {
+          egp: input.sessionPrice30Egp ?? null,
+          usd: input.sessionPrice30Usd ?? null,
         },
-        credentialTypes: credentials.map((item) => item.credentialType),
-        payoutDestination,
-        isAccountActive: true,
-        isPractitionerOtpVerified: true,
-        applicationStatus: PractitionerApplicationStatus.DRAFT,
-        pricing: {
-          session30: {
-            egp: input.sessionPrice30Egp ?? null,
-            usd: input.sessionPrice30Usd ?? null,
-          },
-          session60: {
-            egp: input.sessionPrice60Egp ?? null,
-            usd: input.sessionPrice60Usd ?? null,
-          },
+        session60: {
+          egp: input.sessionPrice60Egp ?? null,
+          usd: input.sessionPrice60Usd ?? null,
         },
-      });
+      },
+    });
 
     if (completion.blockers.length > 0) {
       throw new BadRequestException({
@@ -319,8 +383,8 @@ export class CreateAdminPractitionerUseCase {
       specialties.map((item) => [item.id, item] as const),
     );
 
-    const created = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+    const created = await this.prisma
+      .$transaction(async (tx: Prisma.TransactionClient) => {
         const user = await tx.user.create({
           data: {
             displayName,
@@ -343,6 +407,13 @@ export class CreateAdminPractitionerUseCase {
             isVerified: true,
           },
         });
+
+        await this.userPhoneRepository.upsertPrimaryPhone(
+          user.id,
+          validatedPhone.e164,
+          false,
+          tx,
+        );
 
         await tx.authIdentity.create({
           data: {
@@ -418,6 +489,7 @@ export class CreateAdminPractitionerUseCase {
             data: {
               practitionerId: practitionerProfile.id,
               methodType: payoutDestination.methodType,
+              countryCode: payoutDestination.countryCode,
               accountHolderName: payoutDestination.accountHolderName,
               bankName: payoutDestination.bankName,
               bankAccountNumber: payoutDestination.bankAccountNumber,
@@ -527,8 +599,16 @@ export class CreateAdminPractitionerUseCase {
         });
 
         return { user, practitionerProfile, application };
-      },
-    );
+      })
+      .catch((error: unknown) => {
+        if (isUserPhoneUniqueConstraintError(error)) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.phoneAlreadyRegistered',
+            error: 'PHONE_ALREADY_REGISTERED',
+          });
+        }
+        throw error;
+      });
 
     return {
       message: this.i18nService.t(

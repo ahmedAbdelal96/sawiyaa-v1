@@ -49,15 +49,6 @@ export function formatDate(isoString: string | null, locale: string): string {
   return formatViewerDate(isoString, { locale });
 }
 
-export function formatMoney(amount: string, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(Number(amount || "0"));
-}
-
 export function isPackagePurchasePaymentExpired(
   purchase: Pick<PatientPackagePurchaseItem, "status" | "paymentExpiresAt">,
   now = Date.now(),
@@ -75,14 +66,50 @@ export function canContinuePackagePurchasePayment(
   return purchase.status === "PENDING_PAYMENT" && !isPackagePurchasePaymentExpired(purchase, now);
 }
 
-export function getPackagePurchaseStatusLabelKey(status: PackagePurchaseStatus): string {
-  return `package-purchases.status.${status}`;
+export interface PackageStatusPresentationConfig {
+  labelKey: string;
+  tone: "success" | "dark" | "warning" | "light";
+}
+
+export function getPackagePurchaseStatusConfig(
+  status: PackagePurchaseStatus | string,
+): PackageStatusPresentationConfig {
+  switch (status) {
+    case "ACTIVE":
+      return { labelKey: "list.status.ACTIVE", tone: "success" };
+    case "COMPLETED":
+      return { labelKey: "list.status.COMPLETED", tone: "dark" };
+    case "PENDING_PAYMENT":
+      return { labelKey: "list.status.PENDING_PAYMENT", tone: "warning" };
+    case "CANCELLED":
+      return { labelKey: "list.status.CANCELLED", tone: "light" };
+    case "EXPIRED":
+      return { labelKey: "list.status.EXPIRED", tone: "light" };
+    case "REFUNDED":
+      return { labelKey: "list.status.REFUNDED", tone: "light" };
+    default:
+      return { labelKey: "list.status.ACTIVE", tone: "light" };
+  }
+}
+
+export function formatPackageDisplayTitle(input: {
+  title?: string | null;
+  sessionCount: number;
+  t: (key: string, values?: Record<string, any>) => string;
+}): string {
+  if (input.title?.trim()) {
+    return input.title.trim();
+  }
+  if (input.sessionCount > 0) {
+    return input.t("list.table.packageSessionsLabel", { sessions: input.sessionCount });
+  }
+  return input.t("detail.packageEyebrow");
 }
 
 export function getPackagePurchaseCompletionCount(
-  purchase: Pick<PatientPackagePurchaseItem, "linkedSessions" | "sessionCount">,
+  purchase: Pick<PatientPackagePurchaseItem, "linkedSessions" | "progress">,
 ): number {
-  return purchase.linkedSessions.items.filter((session) => session.status === "COMPLETED").length;
+  return purchase.progress?.completedSessions ?? purchase.linkedSessions.items.filter((session) => session.status === "COMPLETED").length;
 }
 
 export function getPackagePurchasePendingCount(

@@ -28,11 +28,13 @@ import { PaymentRuntimeConfigService } from '../services/payment-runtime-config.
 import { ResolveSessionPaymentPricingService } from '../services/resolve-session-payment-pricing.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
+import { toGatewayMinorUnits } from '../utils/money-units.util';
 import { CorporateSponsorshipPaymentService } from '@modules/corporate-sponsorship/services/corporate-sponsorship-payment.service';
 import {
   PaymentProviderAdapter,
   PaymentProviderInitiationResult,
 } from '../providers/payment-provider-adapter.interface';
+import { PaymentRoute } from '../types/payment-routing.types';
 @Injectable()
 export class InitiateSessionPaymentUseCase {
   constructor(
@@ -54,6 +56,7 @@ export class InitiateSessionPaymentUseCase {
   ) {}
 
   async execute(input: {
+    requestCountryIsoCode?: string | null;
     userId: string;
     locale: SupportedLocale;
     sessionId: string;
@@ -117,6 +120,7 @@ export class InitiateSessionPaymentUseCase {
       await this.paymentRepository.findLatestActiveBySessionId(session.id);
 
     const pricing = await this.resolveSessionPaymentPricingService.resolve({
+      requestCountryIsoCode: input.requestCountryIsoCode,
       session,
       couponCode: input.couponCode ?? null,
     });
@@ -205,22 +209,25 @@ export class InitiateSessionPaymentUseCase {
       : new Prisma.Decimal(0);
 
     let provider: PaymentProvider;
-    if (amountFromGateway.lte(0)) {
+    let paymentRoute: PaymentRoute | null = null;
+    if (activePayment) {
+      provider = activePayment.provider;
+    } else if (amountFromGateway.lte(0)) {
       provider = PaymentProvider.INTERNAL_WALLET;
     } else {
-      if (!session.patient.country?.isoCode?.trim()) {
-        throw new BadRequestException({
-          messageKey: 'payments.errors.paymentRoutingAmbiguous',
-          error: 'PAYMENT_ROUTING_AMBIGUOUS',
-        });
-      }
-
-      provider = this.paymentProviderResolverService.resolveProvider({
+      const routingContext = {
         currencyCode: pricing.currencyCode,
         commissionMarketType: pricing.marketType,
         operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
-        checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
-      });
+        checkoutCountryIsoCode: input.requestCountryIsoCode ?? null,
+      };
+      const resolver = this.paymentProviderResolverService as PaymentProviderResolverService & {
+        resolveRoute?: (context: typeof routingContext) => PaymentRoute;
+      };
+      paymentRoute = resolver.resolveRoute
+        ? resolver.resolveRoute(routingContext)
+        : null;
+      provider = paymentRoute?.provider ?? resolver.resolveProvider(routingContext);
     }
     const providerCode = String(provider);
     const isInternalWalletProvider = providerCode === 'INTERNAL_WALLET';
@@ -234,10 +241,10 @@ export class InitiateSessionPaymentUseCase {
     });
     const paymobContext = {
       currencyCode: effectiveBreakdown.currency ?? pricing.currencyCode,
-      checkoutCountryIsoCode: session.patient.country?.isoCode ?? null,
+      checkoutCountryIsoCode: input.requestCountryIsoCode ?? null,
       operatingCountryIsoCode: session.practitioner.country?.isoCode ?? null,
     };
-    const amountMinor = this.toMinorUnits(amountFromGateway.toFixed(2));
+    const amountMinor = toGatewayMinorUnits(amountFromGateway, pricing.currencyCode);
     const providerAdapter: PaymentProviderAdapter | null =
       isInternalWalletProvider
         ? null
@@ -252,7 +259,7 @@ export class InitiateSessionPaymentUseCase {
     const selectedPaymobMethod =
       isPaymobProvider && paymobCheckoutFlow === 'legacy'
         ? this.paymentRuntimeConfigService.resolvePaymobCheckoutMethod(
-            input.paymobMethod ?? null,
+            paymentRoute?.paymentMethod ?? input.paymobMethod ?? null,
             paymobContext,
           )
         : null;
@@ -290,6 +297,23 @@ export class InitiateSessionPaymentUseCase {
     const payment =
       activePayment ??
       (await this.prisma.$transaction(async (tx) => {
+        if (typeof (tx as { $executeRaw?: unknown }).$executeRaw === 'function') {
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${session.id})::bigint)`;
+        }
+        const repositoryWithTransactionRecheck = this.paymentRepository as PaymentRepository & {
+          findLatestActiveBySessionIdInTransaction?: (
+            sessionId: string,
+            transaction: typeof tx,
+          ) => Promise<typeof activePayment>;
+        };
+        if (repositoryWithTransactionRecheck.findLatestActiveBySessionIdInTransaction) {
+          const lockedActive =
+            await repositoryWithTransactionRecheck.findLatestActiveBySessionIdInTransaction(
+              session.id,
+              tx,
+            );
+          if (lockedActive) return lockedActive;
+        }
         const paymobRegistrySnapshot = isPaymobProvider
           ? this.paymentRuntimeConfigService
               .getPaymobMethodRegistry()
@@ -339,6 +363,8 @@ export class InitiateSessionPaymentUseCase {
               providerMode,
               redirectUrls,
               providerMethod: selectedPaymobMethod ?? null,
+              routeIntegrationKey: paymentRoute?.integrationKey ?? null,
+              routeSource: paymentRoute?.source ?? null,
               paymobCheckoutFlow,
               paymobRegistrySnapshot,
               amountFromWallet: amountFromWallet.toFixed(2),
@@ -402,6 +428,8 @@ export class InitiateSessionPaymentUseCase {
               resolvedProvider: provider,
               providerMode,
               providerMethod: selectedPaymobMethod ?? null,
+              routeIntegrationKey: paymentRoute?.integrationKey ?? null,
+              routeSource: paymentRoute?.source ?? null,
               paymobCheckoutFlow,
               countrySnapshot,
             },
@@ -455,6 +483,7 @@ export class InitiateSessionPaymentUseCase {
         patientEmail: patient.user.emails[0]?.email ?? null,
         redirectionUrl: providerRedirectionUrl,
         paymobMethod: selectedPaymobMethod,
+        routeIntegrationKey: paymentRoute?.integrationKey ?? null,
         checkoutCountryIsoCode: paymobContext.checkoutCountryIsoCode,
         operatingCountryIsoCode: paymobContext.operatingCountryIsoCode,
       });
@@ -557,9 +586,6 @@ export class InitiateSessionPaymentUseCase {
     };
   }
 
-  private toMinorUnits(amount: string): number {
-    return Math.round(Number(amount) * 100);
-  }
 
   private resolveProviderRedirectionUrl(input: {
     provider: PaymentProvider;

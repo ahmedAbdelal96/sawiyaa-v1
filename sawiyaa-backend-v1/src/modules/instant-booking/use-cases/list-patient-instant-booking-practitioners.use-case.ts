@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
 import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
@@ -16,6 +16,8 @@ import {
   InstantBookingEligiblePractitionersListViewModel,
 } from '../types/instant-booking.types';
 import { InstantBookingDiscoveryDuration } from '../dto/list-patient-instant-booking-practitioners.dto';
+import { PatientProfileRepository } from '@modules/patients/repositories/patient-profile.repository';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 
 type DiscoveryCandidate = Awaited<
   ReturnType<
@@ -44,21 +46,31 @@ export class ListPatientInstantBookingPractitionersUseCase {
     private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    @Optional() private readonly patientProfileRepository?: PatientProfileRepository,
   ) {}
 
   async execute(input: {
     locale: SupportedLocale;
+    currentUserId?: string;
+    guestCountryIsoCode?: string | null;
     duration?: InstantBookingDiscoveryDuration;
     currency?: CurrencyCode;
     page: number;
     limit: number;
   }): Promise<InstantBookingEligiblePractitionersListViewModel> {
+    const patientProfile = input.currentUserId && this.patientProfileRepository
+      ? await this.patientProfileRepository.findByUserId(input.currentUserId)
+      : null;
+    const regionalResolution = resolvePaymentRegionalResolution({
+      requestCountryIsoCode: input.guestCountryIsoCode ?? null,
+    });
+    const resolvedCurrency = regionalResolution.currencyCode as CurrencyCode;
     const now = new Date();
     const candidateRows =
       await this.instantBookingPractitionerRepository.listEligibleDiscoveryCandidates(
         {
           locale: input.locale,
-          currencyCode: input.currency ?? null,
+          currencyCode: resolvedCurrency,
           durationMinutes: input.duration ?? null,
         },
       );
@@ -73,6 +85,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
           hasMore: false,
           generatedAt: now.toISOString(),
         },
+        currencyCode: resolvedCurrency,
       };
     }
 
@@ -111,7 +124,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
             locale: input.locale,
             rating: ratingSummaries.get(row.id)?.averageRating ?? null,
             completedSessionsCount: completedSessionsMap.get(row.id) ?? 0,
-            currency: input.currency ?? null,
+            currency: resolvedCurrency ?? input.currency ?? null,
             requestedDuration: input.duration ?? null,
           }),
         ),
@@ -133,6 +146,7 @@ export class ListPatientInstantBookingPractitionersUseCase {
         hasMore: skip + items.length < total,
         generatedAt: now.toISOString(),
       },
+      currencyCode: resolvedCurrency,
     };
   }
 

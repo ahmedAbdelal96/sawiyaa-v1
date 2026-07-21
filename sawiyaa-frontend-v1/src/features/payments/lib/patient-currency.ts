@@ -22,15 +22,7 @@ export function resolvePatientCurrencyCode(input: {
     return explicitCurrency;
   }
 
-  const resolvedCountryIsoCode = input.resolvedCountryIsoCode?.trim().toUpperCase();
-  if (resolvedCountryIsoCode === "EG" || resolvedCountryIsoCode === "EGY") {
-    return LOCAL_CURRENCY_CODE;
-  }
-
-  const countryCode = input.countryCode?.trim().toUpperCase();
-  if (!countryCode) {
-    return null;
-  }
-
-  return countryCode === "EG" ? LOCAL_CURRENCY_CODE : FOREIGN_CURRENCY_CODE;
+  // Country-to-currency resolution is backend-only. These values are safe here
+  // only when they were returned by a backend pricing contract.
+  return null;
 }

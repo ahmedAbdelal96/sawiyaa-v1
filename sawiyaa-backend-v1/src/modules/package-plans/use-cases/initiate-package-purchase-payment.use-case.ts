@@ -24,6 +24,7 @@ import { PaymentProviderResolverService } from '@modules/payments/services/payme
 import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { RefundPolicyService } from '@modules/refund-policies/services/refund-policy.service';
+import { toGatewayMinorUnits } from '@modules/payments/utils/money-units.util';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 import {
   PaymentProviderAdapter,
@@ -61,6 +62,7 @@ export class InitiatePackagePurchasePaymentUseCase {
     displayLocale: string;
     userAgent?: string | null;
     ipAddress?: string | null;
+    requestCountryIsoCode?: string | null;
   }) {
     const patient = await this.patientProfileRepository.findByUserId(
       input.userId,
@@ -144,30 +146,24 @@ export class InitiatePackagePurchasePaymentUseCase {
 
     const practitionerCountryIsoCode =
       purchase.practitioner?.country?.isoCode ?? null;
-    const patientCountryIsoCode = patient.country?.isoCode ?? null;
-    if (!patientCountryIsoCode) {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.paymentRoutingAmbiguous',
-        error: 'PAYMENT_ROUTING_AMBIGUOUS',
-      });
-    }
+    const requestCountryIsoCode = input.requestCountryIsoCode ?? null;
 
     const provider = this.resolveProvider({
       currencyCode,
-      patientCountryIsoCode,
+      patientCountryIsoCode: requestCountryIsoCode,
       practitionerCountryIsoCode,
     });
 
     const amountDecimal = new Prisma.Decimal(amount).toDecimalPlaces(2);
-    const amountMinor = Math.round(Number(amountDecimal.toFixed(2)) * 100);
+    const amountMinor = toGatewayMinorUnits(amountDecimal, currencyCode);
     const countrySnapshot = this.paymentGeoContextService.buildCountrySnapshot({
-      declaredCountryCode: patientCountryIsoCode,
-      resolvedCountryCode: patientCountryIsoCode ?? practitionerCountryIsoCode,
-      countrySource: patientCountryIsoCode ? 'ACCOUNT' : 'SYSTEM',
+      declaredCountryCode: requestCountryIsoCode,
+      resolvedCountryCode: requestCountryIsoCode,
+      countrySource: 'SYSTEM',
       countryMismatch: false,
       phoneCountryCode: null,
       operatingCountryCode: practitionerCountryIsoCode,
-      checkoutCountryCode: patientCountryIsoCode ?? practitionerCountryIsoCode,
+      checkoutCountryCode: requestCountryIsoCode,
       pricingCurrencyCode: currencyCode,
       pricingMarketType:
         currencyCode === 'EGP' ? MarketType.LOCAL : MarketType.CROSS_BORDER,
@@ -264,7 +260,7 @@ export class InitiatePackagePurchasePaymentUseCase {
     const providerAdapter: PaymentProviderAdapter =
       this.paymentProviderRegistryService.get(provider, {
         currencyCode,
-        checkoutCountryIsoCode: patientCountryIsoCode,
+        checkoutCountryIsoCode: requestCountryIsoCode,
         operatingCountryIsoCode: practitionerCountryIsoCode,
       });
 
@@ -283,7 +279,7 @@ export class InitiatePackagePurchasePaymentUseCase {
         sessionId: purchase.id,
         patientEmail: null,
         redirectionUrl: trustedReturnUrl,
-        checkoutCountryIsoCode: patientCountryIsoCode,
+        checkoutCountryIsoCode: requestCountryIsoCode,
         operatingCountryIsoCode: practitionerCountryIsoCode,
       });
     } catch (error) {
@@ -395,13 +391,6 @@ export class InitiatePackagePurchasePaymentUseCase {
   }): PaymentProvider {
     const provider = resolveProviderForCurrency(input.currencyCode);
     if (provider === PaymentProvider.PAYMOB) {
-      if (!input.patientCountryIsoCode) {
-        throw new BadRequestException({
-          messageKey: 'payments.errors.paymentRoutingAmbiguous',
-          error: 'PAYMENT_ROUTING_AMBIGUOUS',
-        });
-      }
-
       const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
 
       if (normalizedCurrencyCode === 'USD') {

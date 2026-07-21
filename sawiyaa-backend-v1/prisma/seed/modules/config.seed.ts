@@ -264,6 +264,18 @@ export const configSeedModule: SeedModule = {
         isRequired: false,
         supportsOverride: true,
       },
+      {
+        key: 'payment.routing.currencyRoutes',
+        slug: 'payment-routing-currency-routes',
+        displayName: 'Payment Routing Currency Routes',
+        description: 'Currency and payment-method-specific provider routes',
+        configKind: ConfigKind.SETTING,
+        dataType: ConfigDataType.JSON,
+        category: ConfigCategory.PAYMENT,
+        isSensitive: false,
+        isRequired: false,
+        supportsOverride: true,
+      },
       ];
 
     for (const key of keySeed) {

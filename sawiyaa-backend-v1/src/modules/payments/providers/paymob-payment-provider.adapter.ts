@@ -89,6 +89,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     patientEmail?: string | null;
     redirectionUrl?: string | null;
     paymobMethod?: string | null;
+    routeIntegrationKey?: string | null;
     checkoutCountryIsoCode?: string | null;
     operatingCountryIsoCode?: string | null;
   }): Promise<PaymentProviderInitiationResult> {
@@ -118,14 +119,25 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
         : null;
     const integrationId =
       paymobCheckoutFlow === PaymobCheckoutFlow.LEGACY
-        ? this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
-            selectedMethod,
-            {
-              currencyCode: input.currency,
-              checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
-              operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
-            },
-          )
+        ? (typeof this.paymentRuntimeConfigService
+              .resolvePaymobIntegrationIdForRoute === 'function'
+            ? this.paymentRuntimeConfigService.resolvePaymobIntegrationIdForRoute(
+                input.routeIntegrationKey ?? null,
+                selectedMethod,
+                {
+                  currencyCode: input.currency,
+                  checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+                  operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+                },
+              )
+            : this.paymentRuntimeConfigService.resolvePaymobIntegrationId(
+                selectedMethod,
+                {
+                  currencyCode: input.currency,
+                  checkoutCountryIsoCode: input.checkoutCountryIsoCode ?? null,
+                  operatingCountryIsoCode: input.operatingCountryIsoCode ?? null,
+                },
+              ))
         : null;
 
     if (
@@ -279,6 +291,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       providerEventRef: `paymob:${event.id}`,
       providerPaymentRef,
       outcome,
+      amountMinor:
+        typeof event.amount_cents === 'number' ? event.amount_cents : null,
+      currencyCode: event.currency ?? null,
       payload: event as unknown as Record<string, unknown>,
     };
   }

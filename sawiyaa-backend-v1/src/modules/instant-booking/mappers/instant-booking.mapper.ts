@@ -15,7 +15,7 @@ type InstantBookingRequestWithRelations = InstantBookingRequest & {
     user: {
       displayName: string | null;
     };
-  };
+  } | null;
 };
 
 @Injectable()
@@ -38,10 +38,12 @@ export class InstantBookingMapper {
         slug: request.practitioner.publicSlug,
         displayName: request.practitioner.user.displayName ?? null,
       },
-      patient: {
-        id: request.patient.id,
-        displayName: request.patient.user.displayName ?? null,
-      },
+      patient: request.patient
+        ? {
+            id: request.patient.id,
+            displayName: request.patient.user.displayName ?? null,
+          }
+        : null,
     };
   }
 }

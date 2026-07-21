@@ -3,11 +3,11 @@ import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Text } from "../../../../components/ui";
 import { PublicPractitionerListItem } from "../types";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { PriceDisplay } from "../../../../components/money";
+import { mapPractitionerDurationPrice } from "../practitioner-money";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { getPatientPreferredCurrency } from "../../../../lib/currency";
-import { usePatientProfile } from "../../profile/hooks";
 
 const STAR_COLOR = "#eab308";
 const ONLINE_GREEN = "#22c55e";
@@ -26,21 +26,14 @@ export const PractitionerCompactCard = ({
   const { theme } = useTheme();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const profileQuery = usePatientProfile();
 
   const primarySpecialty =
     practitioner.specialties.find((s) => s.isPrimary) ??
     practitioner.specialties[0];
 
-  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
-  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
-  const currencyCode = getPatientPreferredCurrency(patientCountryCode, practitioner);
-
-  // Select the correct price for the patient's currency
-  const price =
-    currencyCode === "EGP"
-      ? (practitioner.sessionPrice30Egp ?? practitioner.sessionPrice60Egp ?? null)
-      : (practitioner.sessionPrice30Usd ?? practitioner.sessionPrice60Usd ?? null);
+  const currencyCode = practitioner.currencyCode ?? null;
+  const price = practitioner.sessionPrice30 ?? practitioner.sessionPrice60 ?? null;
+  const priceState = mapPractitionerDurationPrice({ amount: price, currencyCode });
   const averageRating = practitioner.ratingSummary.averageRating;
   const totalReviews = practitioner.ratingSummary.totalReviews;
 
@@ -177,20 +170,9 @@ export const PractitionerCompactCard = ({
               </View>
             ) : null}
 
-            {price != null && price !== undefined ? (
-              <View style={styles.priceTag}>
-                <Text weight="600" style={styles.priceText}>
-                  {new Intl.NumberFormat(
-                    i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-                    {
-                      style: "currency",
-                      currency: currencyCode,
-                      maximumFractionDigits: 0,
-                    },
-                  ).format(price)}
-                </Text>
-              </View>
-            ) : null}
+            <View style={styles.priceTag}>
+              <PriceDisplay price={priceState} weight="600" style={styles.priceText} />
+            </View>
           </View>
 
           {practitioner.specialties.length > 0 && (

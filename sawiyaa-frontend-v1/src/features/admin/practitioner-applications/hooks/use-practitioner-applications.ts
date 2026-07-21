@@ -26,6 +26,7 @@ import type {
 } from "../types/practitioner-applications.types";
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { isAdminRole } from "@/lib/auth/roles";
+import { toAppError } from "@/lib/api/errors";
 
 /**
  * Lists admin review queue items with optional status/search/pagination filters.
@@ -170,6 +171,13 @@ export function useCreateAdminPractitionerDirect() {
   return useMutation({
     mutationFn: (data: CreateAdminPractitionerRequest) =>
       createAdminPractitionerDirectly(data),
+    retry: (failureCount, error) => {
+      const appError = toAppError(error);
+      if (appError.statusCode >= 400 && appError.statusCode < 500) {
+        return false;
+      }
+      return failureCount < 1;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: adminPractitionerApplicationsQueryKeys.all,

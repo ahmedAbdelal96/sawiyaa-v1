@@ -240,6 +240,7 @@ export class PractitionerManualPayoutBalanceService {
       payoutDestinationSnapshot: practitioner?.payoutDestination
         ? {
             methodType: practitioner.payoutDestination.methodType ?? null,
+            countryCode: practitioner.payoutDestination.countryCode ?? null,
             accountHolderName:
               practitioner.payoutDestination.accountHolderName ?? null,
             bankName: practitioner.payoutDestination.bankName ?? null,

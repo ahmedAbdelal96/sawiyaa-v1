@@ -44,6 +44,12 @@ export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   'auth-admin-login': { limit: 10, windowMs: 15 * 60_000 },
   'auth-admin-refresh': { limit: 30, windowMs: 15 * 60_000 },
   'auth-admin-step-up-verify': { limit: 5, windowMs: 15 * 60_000 },
+  // Gateway mutations verify a password server-side.  This prevents repeated
+  // guesses from reaching the password verifier indefinitely.
+  'admin-payment-gateway-control-password-confirmation': {
+    limit: 5,
+    windowMs: 15 * 60_000,
+  },
 
   // Public forms / abuse-prone mutations
   'academy-public-enrollment': { limit: 10, windowMs: 15 * 60_000 },

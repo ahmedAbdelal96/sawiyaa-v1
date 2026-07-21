@@ -1,4 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -22,6 +23,9 @@ import {
 } from '../dto/instant-booking-discovery-response.dto';
 import { ListPatientInstantBookingPractitionersDto } from '../dto/list-patient-instant-booking-practitioners.dto';
 import { ListPatientInstantBookingPractitionersUseCase } from '../use-cases/list-patient-instant-booking-practitioners.use-case';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Instant Booking')
 @ApiBearerAuth()
@@ -68,9 +72,13 @@ export class PatientInstantBookingDiscoveryController {
   async list(
     @CurrentLocale() locale: SupportedLocale,
     @Query() query: ListPatientInstantBookingPractitionersDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Req() request: Request,
   ) {
     const data = await this.listPatientInstantBookingPractitionersUseCase.execute({
       locale,
+      currentUserId: currentUser.id,
+      guestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       duration: query.duration,
       currency: query.currency,
       page: query.page,

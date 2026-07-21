@@ -22,23 +22,8 @@ import {
 } from "@/features/academy-programs/lib/academy-program-localization";
 import { usePublicAcademyPrograms } from "@/features/academy-programs/hooks/use-academy-programs";
 import type { AcademyProgramItem } from "@/features/academy-programs/types/academy-programs.types";
-
-function formatMoney(amount: string | null, currency: "EGP" | "USD", locale: string) {
-  if (!amount) {
-    return null;
-  }
-
-  const value = Number(amount);
-  if (Number.isNaN(value)) {
-    return `${amount} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { PriceDisplay } from "@/components/money/PriceDisplay";
+import { mapAcademyPublicPrice } from "../lib/academy-public-price";
 
 function formatDate(value: string | null, locale: string) {
   if (!value) {
@@ -246,8 +231,11 @@ export default function PublicAcademyHomeScreen({
               {items.map((item) => {
                 const title = resolveProgramTitle(item, locale);
                 const description = resolveProgramDescription(item, locale);
-                const egpPrice = formatMoney(item.priceEgp, "EGP", locale);
-                const usdPrice = formatMoney(item.priceUsd, "USD", locale);
+                const price = mapAcademyPublicPrice({
+                  priceStatus: item.priceStatus,
+                  priceAmount: item.priceAmount,
+                  currencyCode: item.currencyCode,
+                });
                 const sessionCount = item.sessions?.length ?? 0;
 
                 return (
@@ -280,13 +268,8 @@ export default function PublicAcademyHomeScreen({
                         </div>
                         <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                           <div className="text-lg font-bold text-primary">
-                            {egpPrice ?? usdPrice ?? t("public.card.free")}
+                            <PriceDisplay price={price} />
                           </div>
-                          {egpPrice && usdPrice ? (
-                            <div className="text-sm font-semibold text-text-secondary">
-                              {usdPrice}
-                            </div>
-                          ) : null}
                         </div>
                       </div>
 

@@ -2,67 +2,278 @@ import { Request } from 'express';
 
 export interface ResolvedCountryContext {
   countryCode: string | null;
-  source: 'HEADER_CF' | 'HEADER_VERCEL' | 'DEV_OVERRIDE' | 'NONE';
+  source: 'HEADER_CF' | 'DEV_OVERRIDE' | 'GEOIP' | 'NONE';
 }
 
+export const COUNTRY_CONTEXT_KEY = Symbol('sawiyaa.country-context');
+
 /**
- * Extracts the visitor's country code from trusted request headers.
- *
- * Trusted headers:
- * - `cf-ipcountry` – Cloudflare Worker / Krabs metadata header (most reliable, CF-proxied requests only)
- * - `x-vercel-ip-country` – Vercel Edge header (when deployed behind Vercel Edge)
- *
- * SAWIYAA_DEV_COUNTRY_CODE env var is local-development only and is completely
- * ignored in production to prevent accidental country override in live environments.
- *
- * Returns null if no trusted signal is available, letting the payment resolver
- * default to INTERNATIONAL (USD) for unknown origins. Unknown country never
- * defaults to Egypt.
- *
- * @param request Express Request object
- * @returns ResolvedCountryContext with country code and detection source
+ * Reads the context attached by TrustedCountryResolutionMiddleware.
+ * Country headers and client IPs are intentionally not parsed at call sites.
  */
 export function resolveCountryFromRequest(
   request: Request,
 ): ResolvedCountryContext {
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  // Dev override — local development only, completely disabled in production
-  if (!isProduction) {
-    const devOverride = process.env.SAWIYAA_DEV_COUNTRY_CODE;
-    if (devOverride && devOverride.trim().length > 0) {
-      return {
-        countryCode: devOverride.trim().toUpperCase(),
-        source: 'DEV_OVERRIDE',
-      };
-    }
-  }
-
-  // Cloudflare (cf-ipcountry is set by Cloudflare edge for proxied requests)
-  const cfCountry = request.headers['cf-ipcountry'];
-  if (typeof cfCountry === 'string' && cfCountry.trim().length > 0) {
-    return {
-      countryCode: cfCountry.trim().toUpperCase(),
-      source: 'HEADER_CF',
-    };
-  }
-
-  // Vercel Edge (x-vercel-ip-country is set when deployed behind Vercel Edge)
-  const vercelCountry = request.headers['x-vercel-ip-country'];
-  if (typeof vercelCountry === 'string' && vercelCountry.trim().length > 0) {
-    return {
-      countryCode: vercelCountry.trim().toUpperCase(),
-      source: 'HEADER_VERCEL',
-    };
-  }
-
-  return {
-    countryCode: null,
-    source: 'NONE',
-  };
+  return (
+    request as Request & { [COUNTRY_CONTEXT_KEY]?: ResolvedCountryContext }
+  )[COUNTRY_CONTEXT_KEY] ?? { countryCode: null, source: 'NONE' };
 }
 
 const EGYPT_ISO_CODES = new Set(['EG', 'EGY']);
+
+// ISO 3166-1 alpha-2 codes. Keep this dependency-free allowlist at the trust
+// boundary so arbitrary two-letter values cannot become pricing regions.
+const ISO_3166_ALPHA2_CODES = new Set([
+  'AD',
+  'AE',
+  'AF',
+  'AG',
+  'AI',
+  'AL',
+  'AM',
+  'AO',
+  'AQ',
+  'AR',
+  'AS',
+  'AT',
+  'AU',
+  'AW',
+  'AX',
+  'AZ',
+  'BA',
+  'BB',
+  'BD',
+  'BE',
+  'BF',
+  'BG',
+  'BH',
+  'BI',
+  'BJ',
+  'BL',
+  'BM',
+  'BN',
+  'BO',
+  'BQ',
+  'BR',
+  'BS',
+  'BT',
+  'BV',
+  'BW',
+  'BY',
+  'BZ',
+  'CA',
+  'CC',
+  'CD',
+  'CF',
+  'CG',
+  'CH',
+  'CI',
+  'CK',
+  'CL',
+  'CM',
+  'CN',
+  'CO',
+  'CR',
+  'CU',
+  'CV',
+  'CW',
+  'CX',
+  'CY',
+  'CZ',
+  'DE',
+  'DJ',
+  'DK',
+  'DM',
+  'DO',
+  'DZ',
+  'EC',
+  'EE',
+  'EG',
+  'EH',
+  'ER',
+  'ES',
+  'ET',
+  'FI',
+  'FJ',
+  'FK',
+  'FM',
+  'FO',
+  'FR',
+  'GA',
+  'GB',
+  'GD',
+  'GE',
+  'GF',
+  'GG',
+  'GH',
+  'GI',
+  'GL',
+  'GM',
+  'GN',
+  'GP',
+  'GQ',
+  'GR',
+  'GS',
+  'GT',
+  'GU',
+  'GW',
+  'GY',
+  'HK',
+  'HM',
+  'HN',
+  'HR',
+  'HT',
+  'HU',
+  'ID',
+  'IE',
+  'IL',
+  'IM',
+  'IN',
+  'IO',
+  'IQ',
+  'IR',
+  'IS',
+  'IT',
+  'JE',
+  'JM',
+  'JO',
+  'JP',
+  'KE',
+  'KG',
+  'KH',
+  'KI',
+  'KM',
+  'KN',
+  'KP',
+  'KR',
+  'KW',
+  'KY',
+  'KZ',
+  'LA',
+  'LB',
+  'LC',
+  'LI',
+  'LK',
+  'LR',
+  'LS',
+  'LT',
+  'LU',
+  'LV',
+  'LY',
+  'MA',
+  'MC',
+  'MD',
+  'ME',
+  'MF',
+  'MG',
+  'MH',
+  'MK',
+  'ML',
+  'MM',
+  'MN',
+  'MO',
+  'MP',
+  'MQ',
+  'MR',
+  'MS',
+  'MT',
+  'MU',
+  'MV',
+  'MW',
+  'MX',
+  'MY',
+  'MZ',
+  'NA',
+  'NC',
+  'NE',
+  'NF',
+  'NG',
+  'NI',
+  'NL',
+  'NO',
+  'NP',
+  'NR',
+  'NU',
+  'NZ',
+  'OM',
+  'PA',
+  'PE',
+  'PF',
+  'PG',
+  'PH',
+  'PK',
+  'PL',
+  'PM',
+  'PN',
+  'PR',
+  'PS',
+  'PT',
+  'PW',
+  'PY',
+  'QA',
+  'RE',
+  'RO',
+  'RS',
+  'RU',
+  'RW',
+  'SA',
+  'SB',
+  'SC',
+  'SD',
+  'SE',
+  'SG',
+  'SH',
+  'SI',
+  'SJ',
+  'SK',
+  'SL',
+  'SM',
+  'SN',
+  'SO',
+  'SR',
+  'SS',
+  'ST',
+  'SV',
+  'SX',
+  'SY',
+  'SZ',
+  'TC',
+  'TD',
+  'TF',
+  'TG',
+  'TH',
+  'TJ',
+  'TK',
+  'TL',
+  'TM',
+  'TN',
+  'TO',
+  'TR',
+  'TT',
+  'TV',
+  'TW',
+  'TZ',
+  'UA',
+  'UG',
+  'UM',
+  'US',
+  'UY',
+  'UZ',
+  'VA',
+  'VC',
+  'VE',
+  'VG',
+  'VI',
+  'VN',
+  'VU',
+  'WF',
+  'WS',
+  'YE',
+  'YT',
+  'ZA',
+  'ZM',
+  'ZW',
+]);
 
 export function isEgyptCountryCode(
   countryCode: string | null | undefined,
@@ -77,5 +288,7 @@ export function normalizeCountryIsoCode(
 ): string | null {
   if (!code) return null;
   const trimmed = code.trim().toUpperCase();
-  return trimmed.length >= 2 && trimmed.length <= 3 ? trimmed : null;
+  if (['XX', 'ZZ', 'T1', 'UNKNOWN', 'UN'].includes(trimmed)) return null;
+  if (trimmed === 'EGY') return 'EG';
+  return ISO_3166_ALPHA2_CODES.has(trimmed) ? trimmed : null;
 }

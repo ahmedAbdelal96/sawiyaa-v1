@@ -23,12 +23,12 @@ import { PaymentProvider } from '@prisma/client';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
 import { Roles } from '@common/decorators/roles.decorator';
+import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
 import { PaymentGatewayControlService } from '../services/payment-gateway-control.service';
 
@@ -36,7 +36,7 @@ import { PaymentGatewayControlService } from '../services/payment-gateway-contro
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/payment-gateway-control')
 export class AdminPaymentGatewayControlController {
   constructor(
@@ -131,7 +131,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Patch('providers/:provider')
-  @RequireStepUp('finance.payment-gateway-control.provider.update')
+  @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Update provider control state',
     description:
@@ -151,6 +151,7 @@ export class AdminPaymentGatewayControlController {
       actorUserId: request.user!.id,
       requestId,
       reason: String(body.reason ?? '').trim(),
+      currentPassword: String(body.currentPassword ?? ''),
       stepUpChallengeId: String(body.stepUpChallengeId ?? '').trim(),
       stepUpCode: String(body.stepUpCode ?? '').trim(),
       rawDraft: body as never,
@@ -158,7 +159,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('providers/:provider/rollback')
-  @RequireStepUp('finance.payment-gateway-control.provider.rollback')
+  @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Rollback provider control state',
     description:
@@ -178,6 +179,7 @@ export class AdminPaymentGatewayControlController {
       actorUserId: request.user!.id,
       requestId,
       reason: String(body.reason ?? '').trim(),
+      currentPassword: String(body.currentPassword ?? ''),
       revisionId: String(body.revisionId ?? '').trim(),
       stepUpChallengeId: String(body.stepUpChallengeId ?? '').trim(),
       stepUpCode: String(body.stepUpCode ?? '').trim(),
@@ -193,6 +195,16 @@ export class AdminPaymentGatewayControlController {
   @ApiResponse({ status: 200 })
   getRouting() {
     return this.paymentGatewayControlService.getRouting();
+  }
+
+  @Get('routing/capabilities')
+  @ApiOperation({
+    summary: 'List safe payment route capabilities',
+    description:
+      'Returns registered providers and integration aliases without exposing credentials.',
+  })
+  getRoutingCapabilities() {
+    return this.paymentGatewayControlService.getRoutingCapabilities();
   }
 
   @Get('routing/history')
@@ -235,7 +247,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Patch('routing')
-  @RequireStepUp('finance.payment-gateway-control.routing.update')
+  @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Update routing control state',
     description:
@@ -251,6 +263,7 @@ export class AdminPaymentGatewayControlController {
       actorUserId: request.user!.id,
       requestId,
       reason: String(body.reason ?? '').trim(),
+      currentPassword: String(body.currentPassword ?? ''),
       stepUpChallengeId: String(body.stepUpChallengeId ?? '').trim(),
       stepUpCode: String(body.stepUpCode ?? '').trim(),
       rawDraft: body as never,
@@ -258,7 +271,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('routing/rollback')
-  @RequireStepUp('finance.payment-gateway-control.routing.rollback')
+  @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Rollback routing control state',
     description:
@@ -274,6 +287,7 @@ export class AdminPaymentGatewayControlController {
       actorUserId: request.user!.id,
       requestId,
       reason: String(body.reason ?? '').trim(),
+      currentPassword: String(body.currentPassword ?? ''),
       revisionId: String(body.revisionId ?? '').trim(),
       stepUpChallengeId: String(body.stepUpChallengeId ?? '').trim(),
       stepUpCode: String(body.stepUpCode ?? '').trim(),

@@ -128,6 +128,9 @@ describe('PaymentGatewayControlService', () => {
   const verifyOtpChallengeUseCase = {
     execute: jest.fn(),
   };
+  const passwordConfirmationService = {
+    verify: jest.fn(),
+  };
 
   const service = new PaymentGatewayControlService(
     prisma as never,
@@ -136,6 +139,7 @@ describe('PaymentGatewayControlService', () => {
     createOtpChallengeUseCase as never,
     sendOtpChallengeUseCase as never,
     verifyOtpChallengeUseCase as never,
+    passwordConfirmationService as never,
   );
 
   beforeEach(() => {
@@ -207,6 +211,7 @@ describe('PaymentGatewayControlService', () => {
         actorUserId: 'user-1',
         requestId: 'request-1',
         reason: 'Operational rollout',
+        currentPassword: '',
         stepUpChallengeId: '',
         stepUpCode: '',
         rawDraft: {
@@ -221,10 +226,10 @@ describe('PaymentGatewayControlService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('rejects updates from non-super-admin users', async () => {
+  it('rejects updates from non-admin users', async () => {
     prisma.user.findUnique.mockResolvedValueOnce({
       id: 'user-2',
-      roles: [{ role: UserRoleType.ADMIN }],
+      roles: [{ role: UserRoleType.FINANCE_STAFF }],
       emails: [{ email: 'admin@example.com', isVerified: true }],
     });
 
@@ -234,6 +239,7 @@ describe('PaymentGatewayControlService', () => {
         actorUserId: 'user-2',
         requestId: 'request-2',
         reason: 'Operational rollout',
+        currentPassword: 'current-password',
         stepUpChallengeId: 'challenge-1',
         stepUpCode: '123456',
         rawDraft: {
@@ -248,23 +254,25 @@ describe('PaymentGatewayControlService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('rolls back to a previous snapshot after step-up verification', async () => {
+  it('rolls back to a previous snapshot after fresh password verification', async () => {
     const result = await service.rollbackProvider({
       provider: PaymentProvider.PAYMOB,
       actorUserId: 'user-1',
       requestId: 'request-3',
       reason: 'Rollback after validation issue',
+      currentPassword: 'current-password',
       revisionId: 'event-1',
       stepUpChallengeId: 'challenge-1',
       stepUpCode: '123456',
     });
 
-    expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledWith({
-      challengeId: 'challenge-1',
-      code: '123456',
-      userId: 'user-1',
-      purpose: OtpPurpose.ADMIN_STEP_UP,
-    });
+    expect(passwordConfirmationService.verify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: 'user-1',
+        operation: 'provider.rollback',
+        targetId: PaymentProvider.PAYMOB,
+      }),
+    );
     expect(repository.applySnapshot).toHaveBeenCalled();
     expect(result.revisionNumber).toBe(7);
   });

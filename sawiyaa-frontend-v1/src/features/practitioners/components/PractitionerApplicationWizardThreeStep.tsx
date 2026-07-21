@@ -20,11 +20,13 @@ import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Label from "@/components/form/Label";
 import MultiSelect from "@/components/form/MultiSelect";
+import { SearchableCombobox } from "@/components/form/SearchableCombobox";
 import { StateCard } from "@/components/shared/ContentStates";
 import { useSpecialties, useSpecialtyCategories } from "@/features/specialties/hooks/use-specialties";
 import { toAppError } from "@/lib/api/errors";
 import {
   usePractitionerApplicationStatus,
+  usePractitionerCountries,
   usePractitionerCredentials,
   usePractitionerProfile,
   usePractitionerReadiness,
@@ -49,16 +51,26 @@ import type {
 } from "../types/practitioners.types";
 import PractitionerCredentialsList from "./PractitionerCredentialsList";
 import { getPractitionerApplicationIssueCopy } from "./practitioner-application-issue-copy";
-import { getLocalizedCountryOptions } from "../constants/country-options";
 import { getLocalizedProfessionalTitleOptions, normalizeProfessionalTitle } from "../constants/professional-title-options";
 import { getLocalizedTimezoneOptions } from "../constants/timezone-options";
 import { extractPractitionerCompletionDebug } from "../utils/extract-practitioner-completion";
+import {
+  buildCountryOptionsWithStaleSelection,
+  buildPractitionerCountryOptions,
+  resolvePractitionerCountryLoadState,
+} from "../utils/country-source";
 import {
   getBankOptions,
   getCatalogItemCountryCodes,
   getWalletProviderOptions,
   normalizeBankValue,
   normalizeWalletProviderValue,
+  formatIbanForDisplay,
+  normalizeAccountHolderName,
+  normalizeIban,
+  normalizeWalletIdentifier,
+  validateAccountHolderName,
+  validateIban,
 } from "@/lib/catalogs/payout";
 import {
   getLocalizedSpecialtyCategoryName,
@@ -275,25 +287,23 @@ function buildUpdatePayload(
       payload.instantBookingPrice60Usd = normalizeMoney(state.instantBookingPrice60Usd);
 
     if (state.payoutMethodType) {
-      payload.payoutDestination = {
+      const payoutDestination: NonNullable<UpdatePractitionerProfileRequest["payoutDestination"]> = {
         methodType: state.payoutMethodType,
-        accountHolderName: state.payoutAccountHolderName.trim() || undefined,
-        bankName:
-          isCatalogValueCompatibleWithCountry(normalizeBankValue(state.payoutBankName), state.payoutCountryCode)
-            ? normalizeBankValue(state.payoutBankName)
-            : undefined,
-        bankAccountNumber: state.payoutBankAccountNumber.trim() || undefined,
-        iban: state.payoutIban.trim() || undefined,
-        walletProvider:
-          isCatalogValueCompatibleWithCountry(
-            normalizeWalletProviderValue(state.payoutWalletProvider),
-            state.payoutCountryCode,
-          )
-            ? normalizeWalletProviderValue(state.payoutWalletProvider)
-            : undefined,
-        walletIdentifier: state.payoutWalletIdentifier.trim() || undefined,
-        otherDetails: state.payoutOtherDetails.trim() || undefined,
+        countryCode: state.payoutCountryCode.trim().toUpperCase() || undefined,
+        accountHolderName: normalizeAccountHolderName(state.payoutAccountHolderName),
       };
+      if (state.payoutMethodType === "BANK_ACCOUNT") {
+        payoutDestination.bankName = isCatalogValueCompatibleWithCountry(normalizeBankValue(state.payoutBankName), state.payoutCountryCode) ? normalizeBankValue(state.payoutBankName) : undefined;
+        payoutDestination.bankAccountNumber = state.payoutBankAccountNumber.trim() || undefined;
+      } else if (state.payoutMethodType === "IBAN") {
+        payoutDestination.iban = normalizeIban(state.payoutIban);
+      } else if (state.payoutMethodType === "WALLET") {
+        payoutDestination.walletProvider = isCatalogValueCompatibleWithCountry(normalizeWalletProviderValue(state.payoutWalletProvider), state.payoutCountryCode) ? normalizeWalletProviderValue(state.payoutWalletProvider) : undefined;
+        payoutDestination.walletIdentifier = normalizeWalletIdentifier(state.payoutWalletIdentifier, state.payoutCountryCode);
+      } else {
+        payoutDestination.otherDetails = state.payoutOtherDetails.trim() || undefined;
+      }
+      payload.payoutDestination = payoutDestination;
     }
   }
 
@@ -488,6 +498,7 @@ export default function PractitionerApplicationWizardThreeStep() {
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const profileQuery = usePractitionerProfile();
+  const countriesQuery = usePractitionerCountries();
   const credentialsQuery = usePractitionerCredentials();
   const applicationQuery = usePractitionerApplicationStatus();
   const readinessQuery = usePractitionerReadiness();
@@ -550,8 +561,48 @@ export default function PractitionerApplicationWizardThreeStep() {
   const initialState = useMemo(() => (profile ? createInitialState(profile) : null), [profile]);
   const effectiveState = draftState ?? initialState;
   const selectedAvatarPreview = avatarDraft.previewUrl ?? effectiveState?.avatarUrl ?? null;
-  const payoutCountryOptions = useMemo(() => getLocalizedCountryOptions(locale), [locale]);
   const payoutCountryCode = effectiveState?.payoutCountryCode.trim().toUpperCase() ?? "";
+  const countryFieldValue = effectiveState?.countryCode.trim().toUpperCase() ?? "";
+  const {
+    countriesLoading,
+    countriesLoadFailed,
+    countriesEmpty,
+    countrySelectionBlocked,
+  } = resolvePractitionerCountryLoadState({
+    isLoading: countriesQuery.isLoading,
+    isError: countriesQuery.isError,
+    isSuccess: countriesQuery.isSuccess,
+    optionsCount: countriesQuery.data?.length ?? 0,
+  });
+  const countryFieldHint = countriesLoading
+    ? t("profile.countryStates.loading")
+    : countriesLoadFailed
+      ? t("profile.countryStates.loadError")
+      : countriesEmpty
+        ? t("profile.countryStates.empty")
+        : null;
+  const baseCountryOptions = useMemo(
+    () => buildPractitionerCountryOptions(countriesQuery.data ?? [], locale),
+    [countriesQuery.data, locale],
+  );
+  const countryOptions = useMemo(
+    () =>
+      buildCountryOptionsWithStaleSelection(
+        baseCountryOptions,
+        countryFieldValue,
+        t("profile.countryStates.staleSelection"),
+      ),
+    [baseCountryOptions, countryFieldValue, t],
+  );
+  const payoutCountryOptions = useMemo(
+    () =>
+      buildCountryOptionsWithStaleSelection(
+        baseCountryOptions,
+        payoutCountryCode,
+        t("profile.countryStates.staleSelection"),
+      ),
+    [baseCountryOptions, payoutCountryCode, t],
+  );
   const hasPayoutCountry = payoutCountryCode.length > 0;
   const payoutBankSelectedValue =
     effectiveState?.payoutBankName &&
@@ -656,7 +707,6 @@ export default function PractitionerApplicationWizardThreeStep() {
     ],
     [t],
   );
-  const countryOptions = useMemo(() => getLocalizedCountryOptions(locale), [locale]);
   const timezoneOptions = useMemo(
     () => {
       const options = getLocalizedTimezoneOptions(locale, effectiveState?.countryCode);
@@ -808,6 +858,23 @@ export default function PractitionerApplicationWizardThreeStep() {
   const submitApplication = async () => {
     if (!effectiveState || !canSubmit || !profile) return;
 
+    const ownerError = validateAccountHolderName(effectiveState.payoutAccountHolderName);
+    if (ownerError) {
+      toast.error(t(`profile.validation.${ownerError}`));
+      return;
+    }
+    if (effectiveState.payoutMethodType === "IBAN") {
+      const ibanResult = validateIban(effectiveState.payoutIban, effectiveState.payoutCountryCode);
+      if (!ibanResult.valid) {
+        toast.error(t(`profile.validation.${ibanResult.code}`));
+        return;
+      }
+    }
+    if (effectiveState.payoutMethodType === "WALLET" && !normalizeWalletIdentifier(effectiveState.payoutWalletIdentifier, effectiveState.payoutCountryCode)) {
+      toast.error(t("profile.validation.payoutWalletInvalid"));
+      return;
+    }
+
     try {
       await saveSpecialtiesDraft();
     } catch (error) {
@@ -846,28 +913,25 @@ export default function PractitionerApplicationWizardThreeStep() {
           : undefined,
       payoutDestination:
         effectiveState.payoutMethodType && effectiveState.payoutMethodType.length > 0
-          ? {
+          ? (() => {
+              const destination: NonNullable<SubmitPractitionerApplicationRequest["payoutDestination"]> = {
               methodType: effectiveState.payoutMethodType,
-              accountHolderName: effectiveState.payoutAccountHolderName.trim() || undefined,
-              bankName:
-                isCatalogValueCompatibleWithCountry(
-                  normalizeBankValue(effectiveState.payoutBankName),
-                  effectiveState.payoutCountryCode,
-                )
-                  ? normalizeBankValue(effectiveState.payoutBankName)
-                  : undefined,
-              bankAccountNumber: effectiveState.payoutBankAccountNumber.trim() || undefined,
-              iban: effectiveState.payoutIban.trim() || undefined,
-              walletProvider:
-                isCatalogValueCompatibleWithCountry(
-                  normalizeWalletProviderValue(effectiveState.payoutWalletProvider),
-                  effectiveState.payoutCountryCode,
-                )
-                  ? normalizeWalletProviderValue(effectiveState.payoutWalletProvider)
-                  : undefined,
-              walletIdentifier: effectiveState.payoutWalletIdentifier.trim() || undefined,
-              otherDetails: effectiveState.payoutOtherDetails.trim() || undefined,
-            }
+              countryCode: effectiveState.payoutCountryCode.trim().toUpperCase() || undefined,
+              accountHolderName: normalizeAccountHolderName(effectiveState.payoutAccountHolderName),
+              };
+              if (effectiveState.payoutMethodType === "BANK_ACCOUNT") {
+                destination.bankName = isCatalogValueCompatibleWithCountry(normalizeBankValue(effectiveState.payoutBankName), effectiveState.payoutCountryCode) ? normalizeBankValue(effectiveState.payoutBankName) : undefined;
+                destination.bankAccountNumber = effectiveState.payoutBankAccountNumber.trim() || undefined;
+              } else if (effectiveState.payoutMethodType === "IBAN") {
+                destination.iban = normalizeIban(effectiveState.payoutIban);
+              } else if (effectiveState.payoutMethodType === "WALLET") {
+                destination.walletProvider = isCatalogValueCompatibleWithCountry(normalizeWalletProviderValue(effectiveState.payoutWalletProvider), effectiveState.payoutCountryCode) ? normalizeWalletProviderValue(effectiveState.payoutWalletProvider) : undefined;
+                destination.walletIdentifier = normalizeWalletIdentifier(effectiveState.payoutWalletIdentifier, effectiveState.payoutCountryCode);
+              } else {
+                destination.otherDetails = effectiveState.payoutOtherDetails.trim() || undefined;
+              }
+              return destination;
+            })()
           : null,
       avatarUrl: effectiveState.avatarUrl.trim() || null,
     };
@@ -1149,25 +1213,16 @@ export default function PractitionerApplicationWizardThreeStep() {
 
             <div>
               <Label htmlFor="country-code">{t("profile.fields.countryCode.label")}</Label>
-              <select
-                id="country-code"
-                value={effectiveState.countryCode}
-                onChange={(event) => patchState({ countryCode: event.target.value })}
-                disabled={!canEdit}
-                className="app-control h-11 w-full appearance-none px-4 py-2.5 text-sm"
-              >
-                <option value="">{t("profile.fields.countryCode.placeholder")}</option>
-                {countryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-text-secondary">
-                {locale === "ar"
-                  ? "يتم حفظ الدولة برمز البلد (مثل EG / SA) مع عرض الاسم المترجم فقط."
-                  : "Country is saved as a system code (for example EG/SA) while showing the localized name to you."}
-              </p>
+              <SearchableCombobox
+                value={effectiveState.countryCode || null}
+                onChange={(value) => patchState({ countryCode: value })}
+                options={countryOptions}
+                placeholder={t("profile.fields.countryCode.placeholder")}
+                searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+                emptyMessage={countryFieldHint || t("countryStates.empty")}
+                disabled={!canEdit || countrySelectionBlocked}
+                hint={countryFieldHint || undefined}
+              />
             </div>
 
             <div>
@@ -1709,23 +1764,17 @@ export default function PractitionerApplicationWizardThreeStep() {
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <Label htmlFor="payout-country">{t("profile.fields.payoutCountryCode.label")}</Label>
-              <select
-                id="payout-country"
-                value={payoutCountryCode}
-                onChange={(event) => handlePayoutCountryChange(event.target.value)}
-                disabled={!canEdit}
-                className="app-control h-11 w-full appearance-none px-4 py-2.5 text-sm"
-              >
-                <option value="">{t("profile.fields.payoutCountryCode.placeholder")}</option>
-                {payoutCountryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-2 text-xs leading-5 text-text-secondary">
-                {t("profile.fields.payoutCountryCode.hint")}
-              </p>
+              <SearchableCombobox
+                value={payoutCountryCode || null}
+                onChange={handlePayoutCountryChange}
+                options={payoutCountryOptions}
+                placeholder={t("profile.fields.payoutCountryCode.placeholder")}
+                searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+                emptyMessage={countryFieldHint || t("countryStates.empty")}
+                disabled={!canEdit || countrySelectionBlocked}
+                hint={countryFieldHint || t("profile.fields.payoutCountryCode.hint")}
+                clearable
+              />
             </div>
 
             <div>
@@ -1733,7 +1782,15 @@ export default function PractitionerApplicationWizardThreeStep() {
               <select
                 id="payout-method"
                 value={effectiveState.payoutMethodType}
-                onChange={(event) => patchState({ payoutMethodType: event.target.value as PractitionerPayoutMethodType | "" })}
+                onChange={(event) => patchState({
+                  payoutMethodType: event.target.value as PractitionerPayoutMethodType | "",
+                  payoutBankName: "",
+                  payoutBankAccountNumber: "",
+                  payoutIban: "",
+                  payoutWalletProvider: "",
+                  payoutWalletIdentifier: "",
+                  payoutOtherDetails: "",
+                })}
                 disabled={!canEdit}
                 className="app-control h-11 w-full appearance-none px-4 py-2.5 text-sm"
               >
@@ -1755,6 +1812,9 @@ export default function PractitionerApplicationWizardThreeStep() {
                 placeholder={t("profile.fields.payoutAccountHolderName.placeholder")}
                 disabled={!canEdit}
               />
+              <p className="mt-2 text-sm leading-6 text-text-secondary">
+                {t("profile.fields.payoutAccountHolderName.warning")}
+              </p>
             </div>
 
             {effectiveState.payoutMethodType === "BANK_ACCOUNT" ? (
@@ -1806,13 +1866,16 @@ export default function PractitionerApplicationWizardThreeStep() {
                 <Label htmlFor="payout-iban">{t("profile.fields.payoutIban.label")}</Label>
                 <InputField
                   id="payout-iban"
+                  dir="ltr"
                   value={effectiveState.payoutIban}
-                  onChange={(event) => patchState({ payoutIban: event.target.value })}
+                  onChange={(event) => patchState({ payoutIban: formatIbanForDisplay(event.target.value) })}
                   placeholder={t("profile.fields.payoutIban.placeholder")}
                   disabled={!canEdit}
                 />
+                <p className="mt-2 text-sm text-text-secondary">{t("profile.fields.payoutIban.helper")}</p>
               </div>
             ) : null}
+
 
             {effectiveState.payoutMethodType === "WALLET" ? (
               hasPayoutCountry ? (

@@ -20,7 +20,7 @@ import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { extractApiErrorMessage } from "../../../../lib/api";
 import { useCreatePackagePurchase, usePublicPractitionerPackagePlans } from "../hooks";
 import { usePublicAvailabilityWindows } from "../../sessions/hooks";
-import { getPatientPreferredCurrency } from "../../../../lib/currency";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../../lib/money";
 import { usePatientProfile } from "../../profile/hooks";
 import { useGetPublicPractitionerDetails } from "../../discovery/api";
 import { useAppDirection } from "../../../../i18n/direction";
@@ -37,20 +37,8 @@ import {
 import type { PackagePlanQuotedItem } from "../types";
 
 function formatMoney(amount: string | null | undefined, currencyCode: string | null | undefined, locale: string) {
-  if (!amount || !currencyCode) {
-    return "-";
-  }
-
-  const num = Number(amount);
-  if (!Number.isFinite(num)) {
-    return `${amount} ${currencyCode.toUpperCase()}`;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currencyCode.toUpperCase(),
-    maximumFractionDigits: 0,
-  }).format(num);
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatCentralMoney(money, locale) : "-";
 }
 
 function resolveQuoteLabel(
@@ -86,7 +74,6 @@ export default function PackagePurchaseCreateScreen() {
     packagePlanCode: string;
     durationMinutes?: string;
     sessionMode?: string;
-    currencyCode?: string;
     preselectedSlots?: string;
   }>();
 
@@ -114,15 +101,10 @@ export default function PackagePurchaseCreateScreen() {
   const practitionerSlug = params.practitionerSlug ?? null;
   const practitionerQuery = useGetPublicPractitionerDetails(practitionerSlug);
   const practitioner = practitionerQuery.data?.data.item ?? null;
-  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
 
   const packagePlansQuery = usePublicPractitionerPackagePlans(
     practitionerSlug,
-    {
-      durationMinutes,
-      sessionMode,
-      currencyCode: getPatientPreferredCurrency(patientCountryCode, practitioner ?? {}),
-    },
+    { durationMinutes, sessionMode },
     {
       cacheScopeKey: authScopeKey,
     },
@@ -130,11 +112,7 @@ export default function PackagePurchaseCreateScreen() {
   const plan = packagePlansQuery.data?.items.find(
     (item) => item.item.code === params.packagePlanCode,
   );
-  const quoteCurrency = getPatientPreferredCurrency(patientCountryCode, {
-    currencyCode: plan?.quote.selectedCurrencyCode ?? null,
-    regionalPricingMode: plan?.quote.regionalPricingMode ?? null,
-    resolvedCountryIsoCode: plan?.quote.resolvedCountryIsoCode ?? null,
-  });
+  const quoteCurrency = plan?.quote.selectedCurrencyCode ?? null;
   const sessionCount = plan?.quote.sessionCount ?? plan?.item.sessionCount ?? 0;
   const localizedPlanLabel = plan
     ? t(getPackagePurchasePlanTranslationKey(plan.item.code), {
@@ -561,7 +539,6 @@ export default function PackagePurchaseCreateScreen() {
                   practitionerSlug: params.practitionerSlug,
                   durationMinutes,
                   sessionMode,
-                  selectedCurrencyCode: quoteCurrency,
                   selectedSessionSlots: selectedStartsAt.map((startsAt) => ({ scheduledStartAt: startsAt })),
                 });
 

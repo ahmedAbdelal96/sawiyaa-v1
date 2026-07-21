@@ -31,15 +31,17 @@ export class AddAdminSupportMessageUseCase {
       });
     }
 
-    const updated = await this.messagingUseCase
+    const messagingResult = await this.messagingUseCase
       .sendMessage(
         { id: input.userId, roles: input.roles },
         ticket.conversationId,
         input.payload.message,
         [],
         input.payload.clientMessageId,
-      )
-      .then(() => this.supportTicketRepository.findByIdForAdmin(input.ticketId));
+      );
+    const updated = await this.supportTicketRepository.findByIdForAdmin(
+      input.ticketId,
+    );
 
     if (!updated) {
       throw new NotFoundException({ messageKey: 'support.errors.ticketNotFound', error: 'SUPPORT_TICKET_NOT_FOUND' });
@@ -51,6 +53,7 @@ export class AddAdminSupportMessageUseCase {
 
     return {
       item: this.supportPresenter.presentAdminTicketDetails(updated),
+      created: messagingResult.created,
     };
   }
 }

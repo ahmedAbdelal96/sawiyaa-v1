@@ -16,12 +16,43 @@ async function bootstrap(): Promise<void> {
     rawBody: true,
   });
 
+  // Do not trust forwarded headers unless the operator explicitly declares
+  // the deployment path. The country resolver uses the same explicit mode.
+  const trustedProxyMode = process.env.TRUSTED_PROXY_MODE ?? 'none';
+  app.getHttpAdapter().getInstance().set(
+    'trust proxy',
+    trustedProxyMode === 'none' ? false : 1,
+  );
+
   const logger = app.get(AppLoggerService);
   app.useLogger(logger);
 
   app.use(helmet());
   app.use(compression());
   app.use(cookieParser());
+
+  // Only region-sensitive pricing responses are forced private. Unrelated
+  // APIs retain their normal cache policy.
+  const regionSensitivePrefixes = [
+    '/api/v1/practitioners',
+    '/api/v1/public/featured-practitioners',
+    '/api/v1/package-plans',
+    '/api/v1/academy',
+    '/api/v1/patients/me',
+    '/api/v1/sessions',
+    '/api/v1/payments',
+    '/api/v1/instant-booking',
+  ];
+  app.use((request, response, next) => {
+    if (regionSensitivePrefixes.some((prefix) => request.path.startsWith(prefix))) {
+      response.setHeader('Cache-Control', 'private, no-store, max-age=0');
+      response.setHeader(
+        'Vary',
+        'Cookie, Authorization, CF-IPCountry',
+      );
+    }
+    next();
+  });
 
   const apiPrefix = 'api/v1';
   app.setGlobalPrefix(apiPrefix);

@@ -1,21 +1,14 @@
 import type { AcademyProgramEnrollmentItem } from "./types";
 import { formatViewerDate, formatViewerTime } from "../../../lib/time-formatting";
+import { formatMoney, parseAcademyPrice } from "../../../lib/money";
 
 export function formatAcademyMoney(amount: string | null | undefined, currencyCode: string | null | undefined, locale: string) {
-  if (!amount || !currencyCode) return null;
-  const numeric = Number(amount);
-  if (!Number.isFinite(numeric)) return `${amount} ${currencyCode.toUpperCase()}`;
-  return new Intl.NumberFormat(locale, { style: "currency", currency: currencyCode.toUpperCase(), maximumFractionDigits: 0 }).format(numeric);
+  const money = parseAcademyPrice({ priceStatus: "PAID", priceAmount: amount, currencyCode }).money;
+  return money ? formatMoney(money, locale) : null;
 }
 
-export function isAcademyProgramFree(priceEgp: string | null | undefined, priceUsd: string | null | undefined) {
-  return priceEgp === "0" && priceUsd === "0";
-}
-
-export function formatAcademyProgramPrice(priceEgp: string | null | undefined, priceUsd: string | null | undefined, locale: string) {
-  return priceEgp !== null && priceEgp !== undefined
-    ? formatAcademyMoney(priceEgp, "EGP", locale)
-    : formatAcademyMoney(priceUsd, "USD", locale);
+export function academyPriceOf(input: { priceStatus?: string | null; pricingStatus?: string | null; priceAmount?: string | null; currencyCode?: string | null }) {
+  return parseAcademyPrice(input);
 }
 
 export function formatAcademySessionDateRange(startAt: string | null | undefined, endAt: string | null | undefined, locale: string) {

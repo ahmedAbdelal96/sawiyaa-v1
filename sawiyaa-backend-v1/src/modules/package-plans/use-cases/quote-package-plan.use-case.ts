@@ -45,7 +45,7 @@ export class QuotePackagePlanUseCase {
     practitionerSlug: string;
     durationMinutes: number;
     sessionMode: SessionMode;
-    requestedCurrencyCode?: string | null;
+    requestCountryIsoCode?: string | null;
   }): Promise<PackagePlanQuotedResultViewModel> {
     await this.packagePlanPolicyService.assertPackagesEnabled();
     await this.packagePlanPolicyService.assertPurchasesEnabled();
@@ -114,6 +114,7 @@ export class QuotePackagePlanUseCase {
       selectedDurationMinutes: input.durationMinutes,
       sessionMode: input.sessionMode,
       selectedCurrencyCode: null,
+      requestCountryIsoCode: input.requestCountryIsoCode,
       patientCountryIsoCode: patientProfile.country?.isoCode ?? null,
       operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
       patient: {

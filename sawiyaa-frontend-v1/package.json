@@ -12,6 +12,8 @@
     "dev:lan:turbo": "next dev --turbopack -H 0.0.0.0 -p 3000",
     "i18n:check": "node scripts/validate-i18n.mjs",
     "typecheck": "next typegen && tsc -p tsconfig.typecheck.json --noEmit --incremental false",
+    "test:country-contract": "playwright test tests/admin-practitioner-direct-create-country.spec.ts",
+    "test:practitioner-country-contract": "playwright test tests/practitioner-country-source.spec.ts",
     "module:new": "node scripts/create-module-scaffold.mjs",
     "ci:local": "npm run i18n:check && npm run lint && npm run build",
     "build": "npm run i18n:check && next build --webpack",

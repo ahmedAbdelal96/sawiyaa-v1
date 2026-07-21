@@ -17,8 +17,7 @@ export class PublicPractitionerPricingContextService {
       : null;
 
     return resolvePaymentRegionalResolution({
-      patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
-      checkoutCountryIsoCode: input.guestCountryIsoCode ?? null,
+      requestCountryIsoCode: input.guestCountryIsoCode ?? null,
     });
   }
 }

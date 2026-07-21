@@ -62,4 +62,5 @@ export interface InstantBookingEligiblePractitionersMetaViewModel {
 export interface InstantBookingEligiblePractitionersListViewModel {
   items: InstantBookingEligiblePractitionerViewModel[];
   meta: InstantBookingEligiblePractitionersMetaViewModel;
+  currencyCode: 'EGP' | 'USD';
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { SessionReviewRatingAggregationService } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { PublicPractitionerMapper } from '../mappers/public-practitioner.mapper';
@@ -82,6 +82,13 @@ export class GetPublicPractitionerDetailsUseCase {
       : null;
     const pricingProfile = profile as typeof profile &
       PublicPractitionerPricingProfile;
+    const publicPricing = resolvePublicPractitionerPricing({
+      regionalResolution,
+      sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
+      sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
+      sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
+      sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
+    });
 
     return {
       item: this.mapper.toDetails({
@@ -101,13 +108,7 @@ export class GetPublicPractitionerDetailsUseCase {
         })),
         languages: profile.languages.map((item) => item.language.code),
         countryCode: profile.country?.isoCode ?? null,
-        ...resolvePublicPractitionerPricing({
-          regionalResolution,
-          sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
-          sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
-          sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
-          sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
-        }),
+        ...publicPricing,
         yearsExperience: profile.yearsOfExperience ?? null,
         pricing: {
           session30: {
@@ -135,16 +136,11 @@ export class GetPublicPractitionerDetailsUseCase {
                 : Number(pricingProfile.sessionPrice60Usd),
           },
         },
-        sessionPrice30:
-          profile.sessionPrice30 === null ||
-          profile.sessionPrice30 === undefined
-            ? null
-            : Number(profile.sessionPrice30),
-        sessionPrice60:
-          profile.sessionPrice60 === null ||
-          profile.sessionPrice60 === undefined
-            ? null
-            : Number(profile.sessionPrice60),
+        // Public selected amounts and currency must originate from the same
+        // request-scoped regional resolution; legacy profile fields are not
+        // regional public prices.
+        sessionPrice30: publicPricing.displaySessionPrice30,
+        sessionPrice60: publicPricing.displaySessionPrice60,
         sessionPrice30Egp:
           pricingProfile.sessionPrice30Egp === null ||
           pricingProfile.sessionPrice30Egp === undefined

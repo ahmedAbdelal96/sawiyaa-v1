@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
-import { Prisma, PractitionerStatus, SecurityAuditOutcome } from '@prisma/client';
+import {
+  Prisma,
+  PractitionerStatus,
+  SecurityAuditOutcome,
+} from '@prisma/client';
 import { ConfigResolverService } from '@modules/config/services/config-resolver.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -17,7 +21,10 @@ import { normalizePractitionerProfileInput } from '../utils/normalize-practition
 import { CreatePractitionerProfileUseCase } from './create-practitioner-profile.use-case';
 import { GetPractitionerProfileUseCase } from './get-practitioner-profile.use-case';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 /**
  * Profile update orchestrates practitioner profile + user preference writes in one transaction.
@@ -156,165 +163,207 @@ export class UpdatePractitionerProfileUseCase {
     ]);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const profile = await this.createPractitionerProfileUseCase.execute(
-        input.userId,
-        tx,
-      );
-
-      const wantsPackageAvailability =
-        normalizedInput.acceptsPackage === true &&
-        normalizedInput.acceptsPackage !== profile.acceptsPackages;
-
-      if (wantsPackageAvailability) {
-        const missingRequirements =
-          this.resolvePackageAvailabilityMissingRequirements({
-            profile,
-            currentUser: input.currentUser,
-            packagesEnabled,
-            packagePurchasesEnabled,
-            proposedPrices: {
-              sessionPrice30Egp:
-                normalizedInput.sessionPrice30Egp === undefined
-                  ? profile.sessionPrice30Egp
-                  : normalizedInput.sessionPrice30Egp,
-              sessionPrice30Usd:
-                normalizedInput.sessionPrice30Usd === undefined
-                  ? profile.sessionPrice30Usd
-                  : normalizedInput.sessionPrice30Usd,
-              sessionPrice60Egp:
-                normalizedInput.sessionPrice60Egp === undefined
-                  ? profile.sessionPrice60Egp
-                  : normalizedInput.sessionPrice60Egp,
-              sessionPrice60Usd:
-                normalizedInput.sessionPrice60Usd === undefined
-                  ? profile.sessionPrice60Usd
-                  : normalizedInput.sessionPrice60Usd,
-            },
-          });
-
-        if (missingRequirements.length > 0) {
-          throw new BadRequestException({
-            messageKey:
-              'practitioners.errors.packageAvailabilityRequirementsNotMet',
-            error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
-            details: {
-              missingRequirements,
-            },
-          });
-        }
-      }
-
-      await this.practitionerProfileRepository.updateByUserId(
-        input.userId,
-        {
-          professionalTitle: normalizedInput.professionalTitle,
-          bio: normalizedInput.bio,
-          yearsOfExperience: normalizedInput.yearsOfExperience,
-          practitionerType: normalizedInput.practitionerType,
-          practitionerGender: normalizedInput.practitionerGender,
-          sessionPrice30Egp: normalizedInput.sessionPrice30Egp,
-          sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
-          sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
-          sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
-          instantBookingPrice30Egp: normalizedInput.instantBookingPrice30Egp,
-          instantBookingPrice30Usd: normalizedInput.instantBookingPrice30Usd,
-          instantBookingPrice60Egp: normalizedInput.instantBookingPrice60Egp,
-          instantBookingPrice60Usd: normalizedInput.instantBookingPrice60Usd,
-          acceptsPackages: normalizedInput.acceptsPackage,
-          countryId:
-            country === undefined ? undefined : country ? country.id : null,
-        },
-        tx,
-      );
-
-      await this.practitionerUserRepository.updateProfilePreferences(
-        input.userId,
-        {
-          displayName: normalizedInput.displayName,
-          defaultLocale: normalizedInput.locale,
-          timezone: normalizedInput.timezone,
-        },
-        tx,
-      );
-
-      if (resolvedLanguages !== undefined) {
-        await this.practitionerLanguageRepository.replaceAll(
-          profile.id,
-          resolvedLanguages.map((language, index) => ({
-            languageId: language.id,
-            isPrimary: index === 0,
-          })),
+        const profile = await this.createPractitionerProfileUseCase.execute(
+          input.userId,
           tx,
         );
-      }
 
-      if (normalizedInput.payoutDestination !== undefined) {
-        await this.practitionerPayoutDestinationRepository.upsert(
-          profile.id,
-          normalizedInput.payoutDestination,
+        const wantsPackageAvailability =
+          normalizedInput.acceptsPackage === true &&
+          normalizedInput.acceptsPackage !== profile.acceptsPackages;
+
+        if (wantsPackageAvailability) {
+          const missingRequirements =
+            this.resolvePackageAvailabilityMissingRequirements({
+              profile,
+              currentUser: input.currentUser,
+              packagesEnabled,
+              packagePurchasesEnabled,
+              proposedPrices: {
+                sessionPrice30Egp:
+                  normalizedInput.sessionPrice30Egp === undefined
+                    ? profile.sessionPrice30Egp
+                    : normalizedInput.sessionPrice30Egp,
+                sessionPrice30Usd:
+                  normalizedInput.sessionPrice30Usd === undefined
+                    ? profile.sessionPrice30Usd
+                    : normalizedInput.sessionPrice30Usd,
+                sessionPrice60Egp:
+                  normalizedInput.sessionPrice60Egp === undefined
+                    ? profile.sessionPrice60Egp
+                    : normalizedInput.sessionPrice60Egp,
+                sessionPrice60Usd:
+                  normalizedInput.sessionPrice60Usd === undefined
+                    ? profile.sessionPrice60Usd
+                    : normalizedInput.sessionPrice60Usd,
+              },
+            });
+
+          if (missingRequirements.length > 0) {
+            throw new BadRequestException({
+              messageKey:
+                'practitioners.errors.packageAvailabilityRequirementsNotMet',
+              error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
+              details: {
+                missingRequirements,
+              },
+            });
+          }
+        }
+
+        await this.practitionerProfileRepository.updateByUserId(
+          input.userId,
+          {
+            professionalTitle: normalizedInput.professionalTitle,
+            bio: normalizedInput.bio,
+            yearsOfExperience: normalizedInput.yearsOfExperience,
+            practitionerType: normalizedInput.practitionerType,
+            practitionerGender: normalizedInput.practitionerGender,
+            sessionPrice30Egp: normalizedInput.sessionPrice30Egp,
+            sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
+            sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
+            sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
+            instantBookingPrice30Egp: normalizedInput.instantBookingPrice30Egp,
+            instantBookingPrice30Usd: normalizedInput.instantBookingPrice30Usd,
+            instantBookingPrice60Egp: normalizedInput.instantBookingPrice60Egp,
+            instantBookingPrice60Usd: normalizedInput.instantBookingPrice60Usd,
+            acceptsPackages: normalizedInput.acceptsPackage,
+            countryId:
+              country === undefined ? undefined : country ? country.id : null,
+          },
           tx,
         );
-      }
 
-      const changedFields = Object.keys(normalizedInput).filter((field) =>
-        [
-          'displayName',
-          'professionalTitle',
-          'bio',
-          'yearsOfExperience',
-          'practitionerType',
-          'practitionerGender',
-          'sessionPrice30Egp',
-          'sessionPrice30Usd',
-          'sessionPrice60Egp',
-          'sessionPrice60Usd',
-          'instantBookingPrice30Egp',
-          'instantBookingPrice30Usd',
-          'instantBookingPrice60Egp',
-          'instantBookingPrice60Usd',
-          'acceptsPackage',
-          'countryCode',
-          'languageCodes',
-          'locale',
-          'timezone',
-          'payoutDestination',
-        ].includes(field),
-      );
-      const pricingChanges: Record<string, { previous: string | null; next: string | null }> = {};
-      const pricingInputs: Array<[string, unknown, unknown]> = [
-        ['sessionPrice30Egp', profile.sessionPrice30Egp, normalizedInput.sessionPrice30Egp],
-        ['sessionPrice30Usd', profile.sessionPrice30Usd, normalizedInput.sessionPrice30Usd],
-        ['sessionPrice60Egp', profile.sessionPrice60Egp, normalizedInput.sessionPrice60Egp],
-        ['sessionPrice60Usd', profile.sessionPrice60Usd, normalizedInput.sessionPrice60Usd],
-        ['instantBookingPrice30Egp', profile.instantBookingPrice30Egp, normalizedInput.instantBookingPrice30Egp],
-        ['instantBookingPrice30Usd', profile.instantBookingPrice30Usd, normalizedInput.instantBookingPrice30Usd],
-        ['instantBookingPrice60Egp', profile.instantBookingPrice60Egp, normalizedInput.instantBookingPrice60Egp],
-        ['instantBookingPrice60Usd', profile.instantBookingPrice60Usd, normalizedInput.instantBookingPrice60Usd],
-      ];
-      for (const [field, previous, next] of pricingInputs) {
-        if (next !== undefined) {
-          pricingChanges[field] = {
-            previous: previous === null || previous === undefined ? null : String(previous),
-            next: next === null || next === undefined ? null : String(next),
-          };
+        await this.practitionerUserRepository.updateProfilePreferences(
+          input.userId,
+          {
+            displayName: normalizedInput.displayName,
+            defaultLocale: normalizedInput.locale,
+            timezone: normalizedInput.timezone,
+          },
+          tx,
+        );
+
+        if (resolvedLanguages !== undefined) {
+          await this.practitionerLanguageRepository.replaceAll(
+            profile.id,
+            resolvedLanguages.map((language, index) => ({
+              languageId: language.id,
+              isPrimary: index === 0,
+            })),
+            tx,
+          );
         }
-      }
-      await this.securityAuditService?.recordRequired(tx, {
-        action: 'security.practitioner.profile.update',
-        outcome: SecurityAuditOutcome.SUCCESS,
-        actorType: SecurityAuditActorType.USER,
-        source: SecurityAuditSource.HTTP_REQUEST,
-        actorUserId: input.userId,
-        actorRoles: input.currentUser.roles,
-        resourceType: 'PractitionerProfile',
-        resourceId: profile.id,
-        targetUserId: input.userId,
-        metadata: {
-          changedFields,
-          pricingChanged: changedFields.some((field) => field.toLowerCase().includes('price')),
-          ...(Object.keys(pricingChanges).length > 0 ? { pricingChanges } : {}),
-        },
-      });
+
+        if (normalizedInput.payoutDestination !== undefined) {
+          await this.practitionerPayoutDestinationRepository.upsert(
+            profile.id,
+            normalizedInput.payoutDestination,
+            tx,
+          );
+        }
+
+        const changedFields = Object.keys(normalizedInput).filter((field) =>
+          [
+            'displayName',
+            'professionalTitle',
+            'bio',
+            'yearsOfExperience',
+            'practitionerType',
+            'practitionerGender',
+            'sessionPrice30Egp',
+            'sessionPrice30Usd',
+            'sessionPrice60Egp',
+            'sessionPrice60Usd',
+            'instantBookingPrice30Egp',
+            'instantBookingPrice30Usd',
+            'instantBookingPrice60Egp',
+            'instantBookingPrice60Usd',
+            'acceptsPackage',
+            'countryCode',
+            'languageCodes',
+            'locale',
+            'timezone',
+            'payoutDestination',
+          ].includes(field),
+        );
+        const pricingChanges: Record<
+          string,
+          { previous: string | null; next: string | null }
+        > = {};
+        const pricingInputs: Array<[string, unknown, unknown]> = [
+          [
+            'sessionPrice30Egp',
+            profile.sessionPrice30Egp,
+            normalizedInput.sessionPrice30Egp,
+          ],
+          [
+            'sessionPrice30Usd',
+            profile.sessionPrice30Usd,
+            normalizedInput.sessionPrice30Usd,
+          ],
+          [
+            'sessionPrice60Egp',
+            profile.sessionPrice60Egp,
+            normalizedInput.sessionPrice60Egp,
+          ],
+          [
+            'sessionPrice60Usd',
+            profile.sessionPrice60Usd,
+            normalizedInput.sessionPrice60Usd,
+          ],
+          [
+            'instantBookingPrice30Egp',
+            profile.instantBookingPrice30Egp,
+            normalizedInput.instantBookingPrice30Egp,
+          ],
+          [
+            'instantBookingPrice30Usd',
+            profile.instantBookingPrice30Usd,
+            normalizedInput.instantBookingPrice30Usd,
+          ],
+          [
+            'instantBookingPrice60Egp',
+            profile.instantBookingPrice60Egp,
+            normalizedInput.instantBookingPrice60Egp,
+          ],
+          [
+            'instantBookingPrice60Usd',
+            profile.instantBookingPrice60Usd,
+            normalizedInput.instantBookingPrice60Usd,
+          ],
+        ];
+        for (const [field, previous, next] of pricingInputs) {
+          if (next !== undefined) {
+            pricingChanges[field] = {
+              previous:
+                previous === null || previous === undefined
+                  ? null
+                  : String(previous),
+              next: next === null || next === undefined ? null : String(next),
+            };
+          }
+        }
+        await this.securityAuditService?.recordRequired(tx, {
+          action: 'security.practitioner.profile.update',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorType: SecurityAuditActorType.USER,
+          source: SecurityAuditSource.HTTP_REQUEST,
+          actorUserId: input.userId,
+          actorRoles: input.currentUser.roles,
+          resourceType: 'PractitionerProfile',
+          resourceId: profile.id,
+          targetUserId: input.userId,
+          metadata: {
+            changedFields,
+            pricingChanged: changedFields.some((field) =>
+              field.toLowerCase().includes('price'),
+            ),
+            ...(Object.keys(pricingChanges).length > 0
+              ? { pricingChanges }
+              : {}),
+          },
+        });
     });
 
     const updated = await this.getPractitionerProfileUseCase.execute({

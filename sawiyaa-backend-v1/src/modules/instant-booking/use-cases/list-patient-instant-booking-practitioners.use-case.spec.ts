@@ -34,8 +34,7 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
   } as never;
   const resolvePractitionerTimezoneService =
     new ResolvePractitionerTimezoneService();
-  const availabilityWeekCalendarService =
-    new AvailabilityWeekCalendarService();
+  const availabilityWeekCalendarService = new AvailabilityWeekCalendarService();
   const buildPublishedWeekAvailabilityWindowsService =
     new BuildPublishedWeekAvailabilityWindowsService();
   const publicPractitionerVisibilityPolicy = {
@@ -56,6 +55,15 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     publicPractitionerVisibilityPolicy,
     sessionReviewRatingAggregationService,
   );
+  const executeWithTrustedCountry = useCase.execute.bind(useCase);
+  useCase.execute = ((input: any) =>
+    executeWithTrustedCountry({
+      ...input,
+      guestCountryIsoCode:
+        input.guestCountryIsoCode === undefined
+          ? 'EG'
+          : input.guestCountryIsoCode,
+    })) as typeof useCase.execute;
 
   const resolveTimezoneSpy = jest.spyOn(
     resolvePractitionerTimezoneService,
@@ -172,7 +180,9 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     (
       practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
     ).mockResolvedValue([currentWeek, nextWeek]);
-    (availabilityExceptionRepository.listActiveForRange as jest.Mock).mockResolvedValue([]);
+    (
+      availabilityExceptionRepository.listActiveForRange as jest.Mock
+    ).mockResolvedValue([]);
     (
       sessionRepository.listBlockingSessionRangesInRangeForPractitioner as jest.Mock
     ).mockResolvedValue([]);
@@ -201,11 +211,10 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     });
     expect(
       practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts,
-    ).toHaveBeenCalledWith('practitioner-1', [
-      currentWeekStart,
-      nextWeekStart,
-    ]);
-    expect(availabilityExceptionRepository.listActiveForRange).toHaveBeenCalledWith(
+    ).toHaveBeenCalledWith('practitioner-1', [currentWeekStart, nextWeekStart]);
+    expect(
+      availabilityExceptionRepository.listActiveForRange,
+    ).toHaveBeenCalledWith(
       'practitioner-1',
       referenceTime,
       new Date('2026-06-26T12:00:00.000Z'),
@@ -230,6 +239,7 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
       }),
     );
     expect(result).toEqual({
+      currencyCode: 'EGP',
       items: [
         expect.objectContaining({
           practitionerId: 'practitioner-1',
@@ -249,12 +259,9 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
               30: '520.00',
               60: '940.00',
             },
-            USD: {
-              30: '31.00',
-              60: '56.00',
-            },
           },
-          shortBio: 'A warm and experienced therapist with instant booking availability.',
+          shortBio:
+            'A warm and experienced therapist with instant booking availability.',
           rating: 4.8,
           completedSessionsCount: 12,
         }),
@@ -269,33 +276,46 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     });
   });
 
-  it.each([
-    'no published week',
-    'draft week only',
-    'archived week only',
-  ])('does not discover practitioners when there is %s', async () => {
-    (
-      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
-    ).mockResolvedValueOnce([]);
-
+  it('defaults a missing trusted request country to USD before preparing discovery pricing', async () => {
     const result = await useCase.execute({
       locale: 'ar',
       page: 1,
       limit: 20,
+      guestCountryIsoCode: null,
     });
+    expect(result.currencyCode).toBe('USD');
+    expect(
+      instantBookingPractitionerRepository.listEligibleDiscoveryCandidates,
+    ).toHaveBeenCalledWith(expect.objectContaining({ currencyCode: 'USD' }));
+  });
 
-    expect(result).toEqual({
-      items: [],
-      meta: {
+  it.each(['no published week', 'draft week only', 'archived week only'])(
+    'does not discover practitioners when there is %s',
+    async () => {
+      (
+        practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts as jest.Mock
+      ).mockResolvedValueOnce([]);
+
+      const result = await useCase.execute({
+        locale: 'ar',
         page: 1,
         limit: 20,
-        total: 0,
-        hasMore: false,
-        generatedAt: expect.any(String),
-      },
-    });
-    expect(buildWindowsSpy).not.toHaveBeenCalled();
-  });
+      });
+
+      expect(result).toEqual({
+        currencyCode: 'EGP',
+        items: [],
+        meta: {
+          page: 1,
+          limit: 20,
+          total: 0,
+          hasMore: false,
+          generatedAt: expect.any(String),
+        },
+      });
+      expect(buildWindowsSpy).not.toHaveBeenCalled();
+    },
+  );
 
   it('does not discover practitioners when legacy recurring slots exist but no published week is returned', async () => {
     (
@@ -372,9 +392,8 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     });
 
     expect(result.items).toHaveLength(0);
-    expect(practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts).toHaveBeenCalledWith(
-      'practitioner-1',
-      [currentWeekStart, nextWeekStart],
-    );
+    expect(
+      practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts,
+    ).toHaveBeenCalledWith('practitioner-1', [currentWeekStart, nextWeekStart]);
   });
 });

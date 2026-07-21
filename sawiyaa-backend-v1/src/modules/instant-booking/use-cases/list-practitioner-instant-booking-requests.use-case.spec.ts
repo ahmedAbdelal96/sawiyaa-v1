@@ -1,4 +1,5 @@
 import { InstantBookingRequestStatus, SessionMode } from '@prisma/client';
+import { InstantBookingMapper } from '../mappers/instant-booking.mapper';
 import { ListPractitionerInstantBookingRequestsUseCase } from './list-practitioner-instant-booking-requests.use-case';
 
 describe('ListPractitionerInstantBookingRequestsUseCase', () => {
@@ -9,9 +10,7 @@ describe('ListPractitionerInstantBookingRequestsUseCase', () => {
     markExpired: jest.fn(),
     listPractitionerRequests: jest.fn(),
   } as never;
-  const instantBookingMapper = {
-    toViewModel: jest.fn((request) => request),
-  } as never;
+  const instantBookingMapper = new InstantBookingMapper();
 
   const useCase = new ListPractitionerInstantBookingRequestsUseCase(
     instantBookingPractitionerRepository,

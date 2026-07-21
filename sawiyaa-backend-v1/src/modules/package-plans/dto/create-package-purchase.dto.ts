@@ -47,14 +47,6 @@ export class CreatePackagePurchaseDto {
   sessionMode!: SessionMode;
 
   @ApiProperty({
-    example: 'EGP',
-    description: 'Selected pricing currency code',
-  })
-  @IsString()
-  @MaxLength(3)
-  selectedCurrencyCode!: string;
-
-  @ApiProperty({
     type: [PackagePurchaseSessionSlotDto],
     description:
       'Exactly one slot per package session count, each with a requested UTC start datetime',

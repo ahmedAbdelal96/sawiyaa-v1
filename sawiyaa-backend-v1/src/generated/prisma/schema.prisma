@@ -2192,6 +2192,7 @@ model PractitionerPayoutDestination {
   id                String                       @id @default(uuid()) @db.Uuid
   practitionerId    String                       @unique @db.Uuid
   methodType        PractitionerPayoutMethodType
+  countryCode       String?                      @db.VarChar(2)
   accountHolderName String?                      @db.VarChar(191)
   bankName          String?                      @db.VarChar(191)
   bankAccountNumber String?                      @db.VarChar(191)

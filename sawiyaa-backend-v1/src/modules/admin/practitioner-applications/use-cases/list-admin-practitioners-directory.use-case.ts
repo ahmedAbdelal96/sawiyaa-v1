@@ -8,6 +8,8 @@ import {
   AdminPractitionerSortByDto,
 } from '../dto/list-admin-practitioners.dto';
 import { AdminPractitionerDirectoryRepository } from '../repositories/admin-practitioner-directory.repository';
+import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { PractitionerStatus, UserStatus } from '@prisma/client';
 
 /**
  * Admin-only practitioner directory listing.
@@ -17,14 +19,18 @@ type AdminPractitionerDirectoryRow = {
   id: string;
   publicSlug: string | null;
   status: string;
+  isPublicProfilePublished: boolean;
   yearsOfExperience: number | null;
   avatarUrl: string | null;
   practitionerType: string;
   professionalTitle: string | null;
+  bio: string | null;
   user: {
     displayName: string | null;
+    status: string;
     emails: { email: string }[];
   };
+  specialties: { id: string }[];
   country: {
     isoCode: string | null;
   } | null;
@@ -40,6 +46,7 @@ export class ListAdminPractitionersDirectoryUseCase {
   constructor(
     private readonly i18nService: I18nService,
     private readonly repository: AdminPractitionerDirectoryRepository,
+    private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
   ) {}
 
   async execute(input: {
@@ -86,7 +93,20 @@ export class ListAdminPractitionersDirectoryUseCase {
           ? `/api/v1/admin/practitioners/${row.id}/avatar`
           : null,
         professionalTitle: row.professionalTitle ?? null,
+        status: row.status,
         practitionerType: row.practitionerType,
+        accountStatus: row.user.status,
+        isPublicProfilePublished: row.isPublicProfilePublished,
+        publicationBlockers: this.visibilityPolicy.getBlockers({
+          practitionerStatus: row.status as PractitionerStatus,
+          userStatus: row.user.status as UserStatus,
+          isPublicProfilePublished: row.isPublicProfilePublished,
+          hasPublicSlug: Boolean(row.publicSlug?.trim()),
+          hasDisplayName: Boolean(row.user.displayName?.trim()),
+          hasProfessionalTitle: Boolean(row.professionalTitle?.trim()),
+          hasBio: Boolean(row.bio?.trim()),
+          hasAtLeastOneActiveSpecialty: row.specialties.length > 0,
+        }),
         countryCode: row.country?.isoCode ?? null,
         isOnlineNow: isPresenceEffectivelyOnline(row.presence),
         isVerified: row.status === 'APPROVED',

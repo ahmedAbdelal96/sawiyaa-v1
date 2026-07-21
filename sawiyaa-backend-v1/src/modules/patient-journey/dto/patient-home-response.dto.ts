@@ -90,6 +90,8 @@ export class PatientHomeDataResponseDto {
 }
 
 export class PatientHomeSuccessResponseDto {
+  @ApiProperty({ enum: ['EGP', 'USD'] })
+  currencyCode!: 'EGP' | 'USD';
   @ApiProperty({ example: true })
   success!: true;
 

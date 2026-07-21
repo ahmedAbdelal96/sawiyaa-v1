@@ -1,6 +1,7 @@
 export type AcademyProgramLocale = "ar" | "en" | string;
 
 export type AcademyProgramStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED" | string;
+export type AcademyPublicPriceStatus = "PAID" | "UNAVAILABLE";
 
 export type AcademyProgramDeliveryMethod =
   | "ZOOM"
@@ -57,8 +58,11 @@ export type AcademyProgramItem = {
   coverImageUrl: string | null;
   categoryId: string | null;
   category?: AcademyProgramCategorySummary | null;
-  priceEgp: string | null;
-  priceUsd: string | null;
+  priceEgp?: string | null;
+  priceUsd?: string | null;
+  priceStatus?: AcademyPublicPriceStatus | null;
+  priceAmount?: string | null;
+  currencyCode?: "EGP" | "USD" | null;
   registrationOpen: boolean;
   maxSeats: number | null;
   targetLearnerCount?: number | null;

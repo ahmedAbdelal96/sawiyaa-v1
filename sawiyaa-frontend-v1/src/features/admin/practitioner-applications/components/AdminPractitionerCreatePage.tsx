@@ -6,9 +6,10 @@ import { Link, useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
-import Select from "@/components/form/Select";
 import Label from "@/components/form/Label";
 import MultiSelect from "@/components/form/MultiSelect";
+import Select from "@/components/form/Select";
+import { SearchableCombobox } from "@/components/form/SearchableCombobox";
 import {
   useCreateAdminPractitionerDirect,
   useUploadAdminDirectPractitionerCredentialFile,
@@ -29,14 +30,27 @@ import {
   getLocalizedSpecialtyCategoryName,
   getLocalizedSpecialtyName,
 } from "@/features/specialties/utils/localized-specialty";
-import { SUPPORTED_COUNTRY_CODE_OPTIONS } from "@/constants/reference-data";
+import { useAdminCountries } from "@/features/admin/patients/hooks/use-admin-patients";
+import { normalizeDirectCreateTranslationKey } from "../utils/country-source";
 import {
   getLocalizedBankOptions,
   getLocalizedWalletProviderOptions,
   normalizeBankValue,
   normalizeWalletProviderValue,
+  formatIbanForDisplay,
+  normalizeAccountHolderName,
+  normalizeIban,
+  normalizeWalletIdentifier,
+  validateAccountHolderName,
+  validateIban,
 } from "@/lib/catalogs/payout";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { normalizeFormError } from "@/lib/form-errors";
+import {
+  buildCountryOptions,
+  resolveCountryLoadState,
+} from "../utils/country-source";
+import { PractitionerPhoneField } from "@/components/form/group-input/PractitionerPhoneField";
 
 const PRACTITIONER_TYPES: PractitionerType[] = [
   "PSYCHOLOGIST",
@@ -65,6 +79,14 @@ const PAYOUT_METHODS: PractitionerPayoutMethodType[] = [
   "OTHER",
 ];
 
+const ADMIN_PHONE_COUNTRIES = [
+  { value: "EG", label: "Egypt (EG)", phoneCode: "+20", searchText: "Egypt EG +20" },
+  { value: "SA", label: "Saudi Arabia (SA)", phoneCode: "+966", searchText: "Saudi Arabia SA +966" },
+  { value: "AE", label: "United Arab Emirates (AE)", phoneCode: "+971", searchText: "United Arab Emirates UAE AE +971" },
+  { value: "KW", label: "Kuwait (KW)", phoneCode: "+965", searchText: "Kuwait KW +965" },
+  { value: "QA", label: "Qatar (QA)", phoneCode: "+974", searchText: "Qatar QA +974" },
+];
+
 type StepId = "account" | "professional" | "payout" | "credentials" | "review";
 
 type UploadedCredential = {
@@ -78,6 +100,8 @@ type UploadedCredential = {
 
 type FormState = {
   email: string;
+  phoneCountryCode: string;
+  phone: string;
   password: string;
   displayName: string;
   practitionerType: PractitionerType;
@@ -118,6 +142,8 @@ type FieldErrors = Record<string, string>;
 
 const INITIAL_FORM: FormState = {
   email: "",
+  phoneCountryCode: "",
+  phone: "",
   password: "",
   displayName: "",
   practitionerType: "PSYCHOLOGIST",
@@ -133,7 +159,7 @@ const INITIAL_FORM: FormState = {
   instantBookingPrice30Usd: "",
   instantBookingPrice60Egp: "",
   instantBookingPrice60Usd: "",
-  countryCode: "EG",
+  countryCode: "",
   languageCodes: ["ar"],
   primarySpecialtyCategoryId: "",
   specialtyIds: [],
@@ -189,9 +215,10 @@ function buildCompactPayoutDestination(form: FormState) {
 
   const payload: NonNullable<CreateAdminPractitionerRequest["payoutDestination"]> = {
     methodType: form.payoutMethodType,
+    countryCode: form.countryCode.trim().toUpperCase(),
   };
 
-  const accountHolderName = compactOptionalText(form.accountHolderName);
+  const accountHolderName = compactOptionalText(normalizeAccountHolderName(form.accountHolderName));
   if (accountHolderName) {
     payload.accountHolderName = accountHolderName;
   }
@@ -210,7 +237,7 @@ function buildCompactPayoutDestination(form: FormState) {
       break;
     }
     case "IBAN": {
-      const iban = compactOptionalText(form.iban)?.toUpperCase();
+      const iban = compactOptionalText(normalizeIban(form.iban));
       if (iban) {
         payload.iban = iban;
       }
@@ -222,7 +249,7 @@ function buildCompactPayoutDestination(form: FormState) {
         payload.walletProvider = walletProvider;
       }
 
-      const walletIdentifier = compactOptionalText(form.walletIdentifier);
+      const walletIdentifier = compactOptionalText(normalizeWalletIdentifier(form.walletIdentifier, form.countryCode));
       if (walletIdentifier) {
         payload.walletIdentifier = walletIdentifier;
       }
@@ -259,8 +286,20 @@ function isBankValidationIssue(text: string) {
   );
 }
 
+function normalizeErrorCode(raw: string | undefined) {
+  return (raw ?? "").trim().toUpperCase();
+}
+
 export default function AdminPractitionerCreatePage() {
-  const t = useTranslations("admin-area");
+  const translate = useTranslations("admin-area");
+  const t = (
+    key: string,
+    values?: Record<string, string | number | Date>,
+  ) =>
+    translate(
+      normalizeDirectCreateTranslationKey(key) as never,
+      values as never,
+    );
   const locale = useLocale();
   const router = useRouter();
   const isRtl = locale.startsWith("ar");
@@ -285,6 +324,7 @@ export default function AdminPractitionerCreatePage() {
 
   const specialtyCategoriesQuery = useSpecialtyCategories(true);
   const specialtiesQuery = useSpecialties(undefined, true);
+  const countriesQuery = useAdminCountries();
 
   const categoryOptions = useMemo(
     () =>
@@ -330,6 +370,23 @@ export default function AdminPractitionerCreatePage() {
     ],
     [form.languageCodes, t]
   );
+
+  const countryOptions = useMemo(
+    () => buildCountryOptions(countriesQuery.data ?? []),
+    [countriesQuery.data]
+  );
+
+  const {
+    countriesLoading,
+    countriesLoadFailed,
+    countriesEmpty,
+    countrySelectionBlocked,
+  } = resolveCountryLoadState({
+    isLoading: countriesQuery.isLoading,
+    isError: countriesQuery.isError,
+    isSuccess: countriesQuery.isSuccess,
+    optionsCount: countryOptions.length,
+  });
 
   const payoutBankOptions = useMemo(
     () => getLocalizedBankOptions(locale, form.countryCode, form.bankName),
@@ -389,7 +446,9 @@ export default function AdminPractitionerCreatePage() {
     const payoutDestination = buildCompactPayoutDestination(form);
 
     return {
-      email: form.email.trim().toLowerCase(),
+    email: form.email.trim().toLowerCase(),
+      phoneCountryCode: form.phoneCountryCode.trim().toUpperCase(),
+      phone: form.phone.trim(),
       password: form.password.trim(),
       displayName: form.displayName.trim(),
       practitionerType: form.practitionerType,
@@ -469,9 +528,21 @@ export default function AdminPractitionerCreatePage() {
     if (!form.displayName.trim()) {
       nextErrors.displayName = t("applications.directCreate.validation.displayNameRequired");
     }
-    if (!form.countryCode.trim()) {
+
+    if (countriesLoadFailed) {
+      nextErrors.countryCode = t("applications.directCreate.countryStates.loadError");
+    } else if (countriesEmpty) {
+      nextErrors.countryCode = t("applications.directCreate.countryStates.empty");
+    } else if (countriesLoading) {
+      nextErrors.countryCode = t("applications.directCreate.countryStates.loading");
+    } else if (!form.countryCode.trim()) {
       nextErrors.countryCode = t("applications.directCreate.validation.countryRequired");
+    } else if (
+      !countryOptions.some((option) => option.value === form.countryCode.trim().toUpperCase())
+    ) {
+      nextErrors.countryCode = t("applications.directCreate.countryStates.invalidSelection");
     }
+
     if (!form.practitionerType) {
       nextErrors.practitionerType = t("applications.directCreate.validation.typeRequired");
     }
@@ -517,8 +588,18 @@ export default function AdminPractitionerCreatePage() {
     if (!form.payoutMethodType) {
       nextErrors.payoutMethodType = t("applications.directCreate.validation.payoutMethodRequired");
     }
-    if (!form.accountHolderName.trim()) {
+    const ownerError = validateAccountHolderName(form.accountHolderName);
+    if (ownerError === "PAYOUT_ACCOUNT_HOLDER_REQUIRED") {
       nextErrors.accountHolderName = t("applications.directCreate.validation.accountHolderRequired");
+    } else if (ownerError) {
+      nextErrors.accountHolderName = t("applications.directCreate.validation.accountHolderInvalid");
+    }
+
+    if (!form.phoneCountryCode.trim()) {
+      nextErrors.phoneCountryCode = t("applications.directCreate.validation.phoneCountryRequired");
+    }
+    if (!form.phone.trim()) {
+      nextErrors.phone = t("applications.directCreate.validation.phoneRequired");
     }
 
     if (form.payoutMethodType === "BANK_ACCOUNT") {
@@ -532,8 +613,11 @@ export default function AdminPractitionerCreatePage() {
       }
     }
 
-    if (form.payoutMethodType === "IBAN" && !form.iban.trim()) {
-      nextErrors.iban = t("applications.directCreate.validation.ibanRequired");
+    if (form.payoutMethodType === "IBAN") {
+      const ibanResult = validateIban(form.iban, form.countryCode);
+      if (!ibanResult.valid) {
+        nextErrors.iban = t(`applications.directCreate.validation.${ibanResult.code}`);
+      }
     }
 
     if (form.payoutMethodType === "WALLET") {
@@ -542,7 +626,7 @@ export default function AdminPractitionerCreatePage() {
           "applications.directCreate.validation.walletProviderRequired"
         );
       }
-      if (!form.walletIdentifier.trim()) {
+      if (!normalizeWalletIdentifier(form.walletIdentifier, form.countryCode)) {
         nextErrors.walletIdentifier = t(
           "applications.directCreate.validation.walletIdentifierRequired"
         );
@@ -606,7 +690,10 @@ export default function AdminPractitionerCreatePage() {
   };
 
   const reviewErrors = validateStep("review");
-  const canSubmit = Object.keys(reviewErrors).length === 0 && Boolean(normalizedPayload);
+  const canSubmit =
+    Object.keys(reviewErrors).length === 0 &&
+    Boolean(normalizedPayload) &&
+    !countrySelectionBlocked;
 
   const goNext = () => {
     const nextErrors = validateStep(step);
@@ -694,6 +781,21 @@ export default function AdminPractitionerCreatePage() {
   };
 
   const handleSubmit = () => {
+    if (countrySelectionBlocked) {
+      const blockedMessage = countriesLoadFailed
+        ? t("applications.directCreate.countryStates.loadError")
+        : countriesEmpty
+          ? t("applications.directCreate.countryStates.empty")
+          : t("applications.directCreate.countryStates.loading");
+      setErrors((current) => ({
+        ...current,
+        countryCode: blockedMessage,
+      }));
+      setGlobalError(blockedMessage);
+      setStep("account");
+      return;
+    }
+
     const nextErrors = validateStep("review");
     if (Object.keys(nextErrors).length > 0 || !normalizedPayload) {
       setErrors((current) => ({ ...current, ...nextErrors }));
@@ -722,30 +824,55 @@ export default function AdminPractitionerCreatePage() {
           throw appError;
         }
 
-        const response = (cause as {
-          response?: {
-            data?: {
-              message?: string;
-              details?: Array<{ messageKey?: string; field?: string; code?: string }>;
-            };
-          };
-        })?.response?.data;
+        const normalized = normalizeFormError(
+          cause,
+          t("applications.directCreate.submitError")
+        );
+        const normalizedCode = normalizeErrorCode(normalized.code ?? appError.code);
 
-        const flattenedDetails = [
-          response?.message ?? "",
-          ...(response?.details ?? []).flatMap((item) => [
-            item.messageKey ?? "",
-            item.code ?? "",
-            item.field ?? "",
-          ]),
+        const knownCodeMessages: Record<string, string> = {
+          COUNTRY_NOT_FOUND: t("applications.directCreate.errors.countryNotFound"),
+          COUNTRY_INACTIVE: t("applications.directCreate.errors.countryInactive"),
+          REFERENCE_DATA_MISSING: t(
+            "applications.directCreate.errors.countryReferenceDataMissing"
+          ),
+          INVALID_COUNTRY_CODE: t("applications.directCreate.errors.invalidCountry"),
+          ADMIN_INVALID_COUNTRY_CODE: t("applications.directCreate.errors.invalidCountry"),
+          EMAIL_ALREADY_REGISTERED: t("applications.directCreate.errors.emailAlreadyUsed"),
+          DUPLICATE_EMAIL: t("applications.directCreate.errors.emailAlreadyUsed"),
+          PHONE_ALREADY_REGISTERED: t("applications.directCreate.errors.phoneAlreadyUsed"),
+          DUPLICATE_PHONE: t("applications.directCreate.errors.phoneAlreadyUsed"),
+        };
+        const knownMessage = knownCodeMessages[normalizedCode];
+
+        const nextErrors: FieldErrors = {
+          ...normalized.fieldErrors,
+        };
+
+        if (
+          [
+            "COUNTRY_NOT_FOUND",
+            "COUNTRY_INACTIVE",
+            "REFERENCE_DATA_MISSING",
+            "INVALID_COUNTRY_CODE",
+            "ADMIN_INVALID_COUNTRY_CODE",
+          ].includes(normalizedCode)
+        ) {
+          nextErrors.countryCode =
+            knownMessage || t("applications.directCreate.errors.invalidCountry");
+        }
+
+        const payoutHintCorpus = [
+          normalized.message,
+          normalized.code ?? "",
+          ...Object.values(nextErrors),
         ]
           .filter(Boolean)
           .join(" ");
 
-        const nextErrors: FieldErrors = {};
         const friendlyDetails: string[] = [];
 
-        if (isWalletValidationIssue(flattenedDetails)) {
+        if (isWalletValidationIssue(payoutHintCorpus)) {
           nextErrors.walletProvider = t(
             "applications.directCreate.validation.walletProviderRequired"
           );
@@ -758,7 +885,7 @@ export default function AdminPractitionerCreatePage() {
           );
         }
 
-        if (isBankValidationIssue(flattenedDetails)) {
+        if (isBankValidationIssue(payoutHintCorpus)) {
           if (!nextErrors.accountHolderName) {
             nextErrors.accountHolderName = t(
               "applications.directCreate.validation.accountHolderRequired"
@@ -767,13 +894,13 @@ export default function AdminPractitionerCreatePage() {
               t("applications.directCreate.validation.accountHolderRequired")
             );
           }
-          if (flattenedDetails.toLowerCase().includes("bankname")) {
+          if (payoutHintCorpus.toLowerCase().includes("bankname")) {
             nextErrors.bankName = t("applications.directCreate.validation.bankNameRequired");
             friendlyDetails.push(t("applications.directCreate.validation.bankNameRequired"));
           }
           if (
-            flattenedDetails.toLowerCase().includes("bankaccountnumber") ||
-            flattenedDetails.toLowerCase().includes("bank account number")
+            payoutHintCorpus.toLowerCase().includes("bankaccountnumber") ||
+            payoutHintCorpus.toLowerCase().includes("bank account number")
           ) {
             nextErrors.bankAccountNumber = t(
               "applications.directCreate.validation.bankAccountRequired"
@@ -782,13 +909,13 @@ export default function AdminPractitionerCreatePage() {
               t("applications.directCreate.validation.bankAccountRequired")
             );
           }
-          if (flattenedDetails.toLowerCase().includes("iban")) {
+          if (payoutHintCorpus.toLowerCase().includes("iban")) {
             nextErrors.iban = t("applications.directCreate.validation.ibanRequired");
             friendlyDetails.push(t("applications.directCreate.validation.ibanRequired"));
           }
         }
 
-        if (flattenedDetails.toLowerCase().includes("other details")) {
+        if (payoutHintCorpus.toLowerCase().includes("other details")) {
           nextErrors.otherDetails = t(
             "applications.directCreate.validation.otherPayoutRequired"
           );
@@ -799,15 +926,37 @@ export default function AdminPractitionerCreatePage() {
 
         if (Object.keys(nextErrors).length > 0) {
           setErrors((current) => ({ ...current, ...nextErrors }));
-          setStep("payout");
+          if (nextErrors.countryCode || nextErrors.email || nextErrors.phone) {
+            setStep("account");
+          } else if (
+            nextErrors.walletProvider ||
+            nextErrors.walletIdentifier ||
+            nextErrors.bankName ||
+            nextErrors.bankAccountNumber ||
+            nextErrors.iban ||
+            nextErrors.otherDetails
+          ) {
+            setStep("payout");
+          }
         }
+
+        if (knownMessage) {
+          friendlyDetails.unshift(knownMessage);
+        }
+
+        const requestId = normalized.requestId;
+        const fallbackError = requestId
+          ? t("applications.directCreate.errors.unknownWithRequestId", {
+              requestId,
+            })
+          : t("applications.directCreate.submitError");
 
         setGlobalError(
           appError.statusCode === 403
             ? t("applications.directCreate.submitForbidden")
-            : t("applications.directCreate.submitError")
+            : knownMessage || fallbackError
         );
-        setServerDetails(Array.from(new Set(friendlyDetails)));
+        setServerDetails(Array.from(new Set(friendlyDetails.filter(Boolean))));
       }
     };
 
@@ -1022,6 +1171,25 @@ export default function AdminPractitionerCreatePage() {
                   onChange={(event) => setField("password", event.target.value)}
                 />
               </div>
+              <div className="md:col-span-2">
+                <PractitionerPhoneField
+                  countryCode={form.phoneCountryCode}
+                  phone={form.phone}
+                  countries={ADMIN_PHONE_COUNTRIES}
+                  onCountryChange={(value) => setField("phoneCountryCode", value)}
+                  onPhoneChange={(value) => setField("phone", value)}
+                  countryLabel={t("applications.directCreate.fields.phoneCountry")}
+                  phoneLabel={t("applications.directCreate.fields.phone")}
+                  countryPlaceholder={t("applications.directCreate.placeholders.phoneCountry")}
+                  searchPlaceholder={t("applications.directCreate.placeholders.phoneCountrySearch")}
+                  phonePlaceholder={t("applications.directCreate.placeholders.phone")}
+                  helperText={t("applications.directCreate.phoneHelper")}
+                  savedAsLabel={t("applications.directCreate.phoneSavedAs")}
+                  countryError={fieldError("phoneCountryCode")}
+                  phoneError={fieldError("phone")}
+                  disabled={countriesLoading || countriesEmpty || countriesLoadFailed}
+                />
+              </div>
               <div>
                 <Label>{t("applications.directCreate.fields.displayName")}</Label>
                 <InputField
@@ -1035,15 +1203,45 @@ export default function AdminPractitionerCreatePage() {
               </div>
               <div>
                 <Label>{t("applications.directCreate.fields.countryCode")}</Label>
-                <Select
-                  key={`country-${form.countryCode}`}
-                  options={SUPPORTED_COUNTRY_CODE_OPTIONS}
-                  placeholder={t("applications.directCreate.placeholders.countryCode")}
-                  defaultValue={form.countryCode}
-                  error={Boolean(fieldError("countryCode"))}
-                  hint={fieldError("countryCode")}
-                  onChange={(value) => setField("countryCode", value)}
-                />
+                {countriesLoadFailed ? (
+                  <div className="space-y-2">
+                    <SearchableCombobox
+                      key="country-error"
+                      options={[]}
+                      value={null}
+                      placeholder={t("applications.directCreate.placeholders.countryCode")}
+                      searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+                      emptyMessage={t("applications.directCreate.countryStates.empty")}
+                      error={Boolean(fieldError("countryCode"))}
+                      hint={fieldError("countryCode") || t("applications.directCreate.countryStates.loadError")}
+                      disabled
+                      onChange={() => undefined}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        void countriesQuery.refetch();
+                      }}
+                    >
+                      {t("applications.directCreate.countryStates.retry")}
+                    </Button>
+                  </div>
+                ) : (
+                  <SearchableCombobox
+                    key={`country-${countriesLoading ? "loading" : form.countryCode || "empty"}`}
+                    options={countriesLoading || countriesEmpty ? [] : countryOptions}
+                    value={form.countryCode || null}
+                    placeholder={t("applications.directCreate.placeholders.countryCode")}
+                    searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+                    emptyMessage={t("applications.directCreate.countryStates.empty")}
+                    error={Boolean(fieldError("countryCode"))}
+                    hint={fieldError("countryCode") || (countriesLoading ? t("applications.directCreate.countryStates.loading") : countriesEmpty ? t("applications.directCreate.countryStates.empty") : undefined)}
+                    disabled={countriesLoading || countriesEmpty}
+                    onChange={(value) => setField("countryCode", value)}
+                      clearable
+                  />
+                )}
               </div>
               <div>
                 <Label>{t("applications.directCreate.fields.practitionerType")}</Label>
@@ -1187,9 +1385,23 @@ export default function AdminPractitionerCreatePage() {
                     defaultValue={form.payoutMethodType}
                     error={Boolean(fieldError("payoutMethodType"))}
                     hint={fieldError("payoutMethodType")}
-                    onChange={(value) =>
-                      setField("payoutMethodType", value as PractitionerPayoutMethodType)
-                    }
+                    onChange={(value) => {
+                      setForm((current) => ({
+                        ...current,
+                        payoutMethodType: value as PractitionerPayoutMethodType,
+                        bankName: "",
+                        bankAccountNumber: "",
+                        iban: "",
+                        walletProvider: "",
+                        walletIdentifier: "",
+                        otherDetails: "",
+                      }));
+                      setErrors((current) => {
+                        const next = { ...current };
+                        for (const key of ["bankName", "bankAccountNumber", "iban", "walletProvider", "walletIdentifier", "otherDetails"]) delete next[key];
+                        return next;
+                      });
+                    }}
                   />
                 </div>
                 <div>
@@ -1204,6 +1416,9 @@ export default function AdminPractitionerCreatePage() {
                       setField("accountHolderName", event.target.value)
                     }
                   />
+                  <p className="mt-2 text-sm leading-6 text-text-secondary">
+                    {t("applications.directCreate.payout.ownerWarning")}
+                  </p>
                 </div>
               </div>
 
@@ -1246,7 +1461,7 @@ export default function AdminPractitionerCreatePage() {
                     value={form.iban}
                     error={Boolean(fieldError("iban"))}
                     hint={fieldError("iban")}
-                    onChange={(event) => setField("iban", event.target.value)}
+                    onChange={(event) => setField("iban", formatIbanForDisplay(event.target.value))}
                   />
                 </div>
               ) : null}

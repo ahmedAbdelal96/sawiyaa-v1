@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
-import { formatPublicMoney } from "../lib/public-pricing";
+import { SearchableCombobox } from "@/components/form/SearchableCombobox";
+import { MoneyText } from "@/components/money/MoneyText";
+import { mapPractitionerFilterMoney } from "../lib/practitioner-filter-money";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import type {
   PractitionerFeeBounds,
@@ -72,7 +74,8 @@ function formatFeeValue(
   value: number,
   currency: PractitionerFeeBounds["currency"],
 ) {
-  return formatPublicMoney(locale, value, currency);
+  const money = mapPractitionerFilterMoney({ amount: value, currencyCode: currency });
+  return money ? <MoneyText money={money} /> : null;
 }
 
 function getFeeFilterCopy(
@@ -136,33 +139,6 @@ function FeeRangeSlider({
 
   const [draftMin, setDraftMin] = useState(safeMin);
   const [draftMax, setDraftMax] = useState(safeMax);
-
-  useEffect(() => {
-    setDraftMin(safeMin);
-    setDraftMax(safeMax);
-  }, [safeMin, safeMax]);
-
-  useEffect(() => {
-    if (!hasBounds) return;
-
-    const timeoutId = window.setTimeout(() => {
-      const nextMin = draftMin <= minBound ? "" : String(draftMin);
-      const nextMax = draftMax >= maxBound ? "" : String(draftMax);
-      if (nextMin === currentMinFee && nextMax === currentMaxFee) return;
-      onChange(nextMin, nextMax);
-    }, 120);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [
-    currentMaxFee,
-    currentMinFee,
-    draftMax,
-    draftMin,
-    hasBounds,
-    maxBound,
-    minBound,
-    onChange,
-  ]);
 
   if (!hasBounds) {
     return (
@@ -251,7 +227,7 @@ export default function FilterControls({
   const [, startTransition] = useTransition();
   const searchFormRef = useRef<HTMLFormElement>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isFirstSearchSyncRef = useRef(true);
+  const searchTimeoutRef = useRef<number | null>(null);
 
   const currentSearch = searchParams.get("search") ?? "";
   const currentSpecialtyCategorySlug = searchParams.get("specialtyCategorySlug") ?? "";
@@ -291,20 +267,15 @@ export default function FilterControls({
     [updateParams],
   );
 
-  useEffect(() => {
-    setSearchInput(currentSearch);
-  }, [currentSearch]);
-
-  useEffect(() => {
-    if (isFirstSearchSyncRef.current) {
-      isFirstSearchSyncRef.current = false;
-      return;
+  const updateSearchInput = (nextSearch: string) => {
+    setSearchInput(nextSearch);
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
     }
-    const nextSearch = searchInput.trim();
-    if (nextSearch === currentSearch.trim()) return;
-    const timeoutId = window.setTimeout(() => updateParam("search", nextSearch), 350);
-    return () => window.clearTimeout(timeoutId);
-  }, [searchInput, currentSearch, updateParam]);
+    searchTimeoutRef.current = window.setTimeout(() => {
+      updateParam("search", nextSearch.trim());
+    }, 350);
+  };
 
   const activeFiltersCount = [
     currentSearch.trim(),
@@ -341,6 +312,11 @@ export default function FilterControls({
     startTransition(() => {
       router.push(pathname, { scroll: false });
     });
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
+    setSearchInput("");
     setDrawerOpen(false);
   };
 
@@ -381,7 +357,12 @@ export default function FilterControls({
   ];
   const countryOptions = [
     { value: "", label: t("filter.allCountries") },
-    ...filters.countries.map((item) => ({ value: item.value, label: item.label })),
+    ...filters.countries.map((item) => ({
+      value: item.value,
+      label: item.label,
+      description: item.description ?? undefined,
+      searchText: [item.label, item.description, item.value].filter(Boolean).join(" "),
+    })),
   ];
   const sortOptions = [
     { value: "recommended", label: t("sort.recommended") },
@@ -499,10 +480,14 @@ export default function FilterControls({
         {filters.countries.length > 0 ? (
           <div>
             <FilterSectionTitle title={t("filter.country")} />
-            <FilterSelect
-              value={currentCountry}
+            <SearchableCombobox
+              value={currentCountry || null}
               onChange={(value) => updateParam("country", value)}
               options={countryOptions}
+              placeholder={t("filter.country")}
+              searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+              emptyMessage={locale === "ar" ? "لا توجد دول مطابقة" : "No countries found"}
+              clearable
             />
           </div>
         ) : null}
@@ -553,6 +538,7 @@ export default function FilterControls({
             {feeFilterCopy.helper}
           </p>
           <FeeRangeSlider
+            key={`${currentMinSessionFee || "min"}:${currentMaxSessionFee || "max"}:${filters.feeBounds.min}:${filters.feeBounds.max}`}
             locale={locale}
             bounds={filters.feeBounds}
             currentMinFee={currentMinSessionFee}
@@ -595,7 +581,7 @@ export default function FilterControls({
             name="search"
             type="search"
             value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+            onChange={(event) => updateSearchInput(event.target.value)}
             placeholder={t("search.placeholder")}
             className="min-w-0 flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
           />

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PaymentPurpose } from '@prisma/client';
+import { PaymentProvider, PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
@@ -29,22 +29,35 @@ export class CalculateSessionFinancialBreakdownService {
 
   async calculate(input: {
     session: SessionFinancialContext;
+    requestCountryIsoCode?: string | null;
     couponCode?: string | null;
   }): Promise<PaymentFinancialResolution> {
-    const regionalResolution = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: input.session.patient.country?.isoCode ?? null,
-      accountCountryIsoCode: null,
-      checkoutCountryIsoCode: null,
-      operatingCountryIsoCode:
-        input.session.practitioner.country?.isoCode ?? null,
-    });
+    const paymentSnapshot = this.resolvePaymentSnapshot(input.session);
+    const regionalResolution = paymentSnapshot
+      ? {
+          currencyCode: paymentSnapshot.currencyCode,
+          regionalPricingMode:
+            paymentSnapshot.currencyCode === 'EGP'
+              ? ('EGYPT_LOCAL' as const)
+              : ('INTERNATIONAL' as const),
+          provider: paymentSnapshot.provider,
+          resolvedCountryIsoCode: null,
+        }
+      : resolvePaymentRegionalResolution({
+          requestCountryIsoCode:
+            input.requestCountryIsoCode ??
+            input.session.requestCountryIsoCode ??
+            null,
+        });
     const currencyCode = regionalResolution.currencyCode;
-    const grossAmount = this.resolveGrossAmount(input.session, currencyCode);
+    const grossAmount = paymentSnapshot
+      ? paymentSnapshot.amountSubtotal
+      : this.resolveGrossAmount(input.session, currencyCode);
 
     const commission =
       await this.resolveCommissionRuleService.resolveForSession(input.session);
 
-    const couponCode = input.couponCode?.trim()
+    const couponCode = !paymentSnapshot && input.couponCode?.trim()
       ? normalizeCouponCode(input.couponCode)
       : null;
     const coupon = couponCode
@@ -65,9 +78,12 @@ export class CalculateSessionFinancialBreakdownService {
         })
       : null;
 
-    const netPaidAmount = this.moneyMathService
-      .subtract(grossAmount, couponBreakdown?.discountAmount ?? '0')
-      .toFixed(2);
+    const discountAmount = paymentSnapshot
+      ? paymentSnapshot.amountDiscount
+      : (couponBreakdown?.discountAmount ?? '0.00');
+    const netPaidAmount = paymentSnapshot
+      ? paymentSnapshot.amountTotal
+      : this.moneyMathService.subtract(grossAmount, discountAmount).toFixed(2);
     const platformCommissionAmount = this.moneyMathService
       .percentOf(netPaidAmount, commission.platformRatePercent)
       .toFixed(2);
@@ -83,7 +99,7 @@ export class CalculateSessionFinancialBreakdownService {
       provider: regionalResolution.provider,
       resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
       grossAmount,
-      discountAmount: couponBreakdown?.discountAmount ?? '0.00',
+      discountAmount,
       netPaidAmount,
       platformCommissionAmount,
       practitionerShareAmount,
@@ -112,7 +128,7 @@ export class CalculateSessionFinancialBreakdownService {
       paymentPurpose: commission.paymentPurpose,
       marketType: commission.rule.marketType,
       amountSubtotal: grossAmount,
-      amountDiscount: breakdown.discountAmount,
+      amountDiscount: discountAmount,
       amountTotal: netPaidAmount,
       currencyCode,
       regionalPricingMode: regionalResolution.regionalPricingMode,
@@ -138,11 +154,6 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext,
     currencyCode: string,
   ) {
-    const latestPaymentAmount = session.payments?.[0]?.amountSubtotal ?? null;
-    if (latestPaymentAmount) {
-      return this.moneyMathService.toDecimal(latestPaymentAmount).toFixed(2);
-    }
-
     if (session.flowType === 'INSTANT') {
       const quoteAmount = this.resolveInstantBookingQuoteAmount(
         session,
@@ -184,6 +195,51 @@ export class CalculateSessionFinancialBreakdownService {
       return this.moneyMathService.toDecimal(amountFromPractitioner).toFixed(2);
     }
 
+    throw new BadRequestException({
+      messageKey: 'financialRules.errors.pricingUnavailable',
+      error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',
+    });
+  }
+
+  private resolvePaymentSnapshot(session: SessionFinancialContext): {
+    amountSubtotal: string;
+    amountDiscount: string;
+    amountTotal: string;
+    currencyCode: 'EGP' | 'USD';
+    provider: PaymentProvider;
+  } | null {
+    const payment = session.payments?.[0] ?? null;
+    if (!payment) {
+      return null;
+    }
+
+    const currencyCode = payment.currencyCode.trim().toUpperCase();
+    if (currencyCode !== 'EGP' && currencyCode !== 'USD') {
+      this.throwInvalidPaymentSnapshot();
+    }
+
+    return {
+      amountSubtotal: this.normalizeSnapshotAmount(payment.amountSubtotal),
+      amountDiscount: this.normalizeSnapshotAmount(payment.amountDiscount),
+      amountTotal: this.normalizeSnapshotAmount(payment.amountTotal),
+      currencyCode,
+      provider: payment.provider,
+    };
+  }
+
+  private normalizeSnapshotAmount(value: { toString(): string } | string) {
+    try {
+      const normalized = this.moneyMathService.toDecimal(value).toFixed(2);
+      if (this.moneyMathService.toDecimal(normalized).lt(0)) {
+        this.throwInvalidPaymentSnapshot();
+      }
+      return normalized;
+    } catch {
+      this.throwInvalidPaymentSnapshot();
+    }
+  }
+
+  private throwInvalidPaymentSnapshot(): never {
     throw new BadRequestException({
       messageKey: 'financialRules.errors.pricingUnavailable',
       error: 'FINANCIAL_RULE_PRICING_UNAVAILABLE',

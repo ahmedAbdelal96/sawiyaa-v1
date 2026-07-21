@@ -48,6 +48,7 @@ import {
   stripeGatewayControlDraftSchema,
 } from '../schemas/paymob-gateway-control.schema';
 import { PaymentGatewayControlRuntimeService } from './payment-gateway-control.runtime';
+import { PaymentGatewayPasswordConfirmationService } from './payment-gateway-password-confirmation.service';
 
 @Injectable()
 export class PaymentGatewayControlService {
@@ -58,6 +59,7 @@ export class PaymentGatewayControlService {
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
     private readonly verifyOtpChallengeUseCase: VerifyOtpChallengeUseCase,
+    private readonly passwordConfirmationService: PaymentGatewayPasswordConfirmationService,
   ) {}
 
   async listProviders(): Promise<{
@@ -87,6 +89,12 @@ export class PaymentGatewayControlService {
   async getRouting(): Promise<{ item: PaymentRoutingRuntimeSnapshot }> {
     return {
       item: this.paymentGatewayControlRuntimeService.getRoutingSnapshot(),
+    };
+  }
+
+  async getRoutingCapabilities() {
+    return {
+      items: this.paymentGatewayControlRuntimeService.getPaymentRouteCatalog(),
     };
   }
 
@@ -196,14 +204,14 @@ export class PaymentGatewayControlService {
     actorUserId: string;
     requestId: string;
     reason: string;
+    currentPassword: string;
     stepUpChallengeId: string;
     stepUpCode: string;
     rawDraft: PaymobGatewayControlDraftInput | StripeGatewayControlDraftInput;
   }) {
     this.assertSupportedProvider(input.provider);
-    await this.assertSuperAdmin(input.actorUserId);
+    const actorRoles = await this.assertGatewayAdministrator(input.actorUserId);
     this.assertReason(input.reason);
-    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
     const provider = input.provider as PaymentGatewayControlManagedProvider;
 
     if (input.provider === PaymentProvider.PAYMOB) {
@@ -222,10 +230,13 @@ export class PaymentGatewayControlService {
         });
       }
 
-      await this.verifyStepUp({
-        challengeId: input.stepUpChallengeId,
-        code: input.stepUpCode,
+      await this.verifyCurrentPassword({
         actorUserId: input.actorUserId,
+        actorRoles,
+        currentPassword: input.currentPassword,
+        operation: 'provider.update',
+        targetId: provider,
+        requestId: input.requestId,
       });
 
       const nextSnapshot = this.toPaymobRuntimeSnapshot(normalized, current);
@@ -267,10 +278,13 @@ export class PaymentGatewayControlService {
       });
     }
 
-    await this.verifyStepUp({
-      challengeId: input.stepUpChallengeId,
-      code: input.stepUpCode,
+    await this.verifyCurrentPassword({
       actorUserId: input.actorUserId,
+      actorRoles,
+      currentPassword: input.currentPassword,
+      operation: 'provider.update',
+      targetId: provider,
+      requestId: input.requestId,
     });
 
     const nextSnapshot = this.toStripeRuntimeSnapshot(normalized, current);
@@ -301,13 +315,13 @@ export class PaymentGatewayControlService {
     actorUserId: string;
     requestId: string;
     reason: string;
+    currentPassword: string;
     stepUpChallengeId: string;
     stepUpCode: string;
     rawDraft: PaymentRoutingDraftInput;
   }) {
-    await this.assertSuperAdmin(input.actorUserId);
+    const actorRoles = await this.assertGatewayAdministrator(input.actorUserId);
     this.assertReason(input.reason);
-    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
 
     const normalized = this.normalizeRoutingDraft(input.rawDraft);
     const current =
@@ -322,10 +336,13 @@ export class PaymentGatewayControlService {
       });
     }
 
-    await this.verifyStepUp({
-      challengeId: input.stepUpChallengeId,
-      code: input.stepUpCode,
+    await this.verifyCurrentPassword({
       actorUserId: input.actorUserId,
+      actorRoles,
+      currentPassword: input.currentPassword,
+      operation: 'routing.update',
+      targetId: 'routing',
+      requestId: input.requestId,
     });
 
     const nextSnapshot = this.toRoutingRuntimeSnapshot(normalized, current);
@@ -355,14 +372,14 @@ export class PaymentGatewayControlService {
     actorUserId: string;
     requestId: string;
     reason: string;
+    currentPassword: string;
     revisionId: string;
     stepUpChallengeId: string;
     stepUpCode: string;
   }) {
     this.assertSupportedProvider(input.provider);
-    await this.assertSuperAdmin(input.actorUserId);
+    const actorRoles = await this.assertGatewayAdministrator(input.actorUserId);
     this.assertReason(input.reason);
-    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
     const provider = input.provider as PaymentGatewayControlManagedProvider;
 
     const revision =
@@ -423,10 +440,13 @@ export class PaymentGatewayControlService {
       }
     }
 
-    await this.verifyStepUp({
-      challengeId: input.stepUpChallengeId,
-      code: input.stepUpCode,
+    await this.verifyCurrentPassword({
       actorUserId: input.actorUserId,
+      actorRoles,
+      currentPassword: input.currentPassword,
+      operation: 'provider.rollback',
+      targetId: provider,
+      requestId: input.requestId,
     });
 
     const current =
@@ -461,13 +481,13 @@ export class PaymentGatewayControlService {
     actorUserId: string;
     requestId: string;
     reason: string;
+    currentPassword: string;
     revisionId: string;
     stepUpChallengeId: string;
     stepUpCode: string;
   }) {
-    await this.assertSuperAdmin(input.actorUserId);
+    const actorRoles = await this.assertGatewayAdministrator(input.actorUserId);
     this.assertReason(input.reason);
-    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
 
     const revision =
       await this.paymentGatewayControlRepository.findHistoryEvent({
@@ -508,10 +528,13 @@ export class PaymentGatewayControlService {
       });
     }
 
-    await this.verifyStepUp({
-      challengeId: input.stepUpChallengeId,
-      code: input.stepUpCode,
+    await this.verifyCurrentPassword({
       actorUserId: input.actorUserId,
+      actorRoles,
+      currentPassword: input.currentPassword,
+      operation: 'routing.rollback',
+      targetId: 'routing',
+      requestId: input.requestId,
     });
 
     const current =
@@ -619,6 +642,7 @@ export class PaymentGatewayControlService {
             defaultProvider: input.defaultProvider,
             priorityOrder: input.priorityOrder,
             fallbackProvider: input.fallbackProvider,
+            currencyRoutes: input.currencyRoutes,
           }
         : input;
 
@@ -698,11 +722,33 @@ export class PaymentGatewayControlService {
       sourceSnapshot,
       draft,
     );
+    const routeCatalog =
+      this.paymentGatewayControlRuntimeService.getRoutingSnapshot().routeCatalog;
+    const currencyRoutes = draft.currencyRoutes.map((route) => ({
+      ...route,
+      source: 'DATABASE' as const,
+    }));
 
     return {
       defaultProvider: draft.defaultProvider,
       priorityOrder: draft.priorityOrder,
       fallbackProvider: draft.fallbackProvider,
+      currencyRoutes,
+      routeCatalog,
+      routeReadiness: currencyRoutes.map((route) => {
+        const entry = routeCatalog.find(
+          (candidate) =>
+            candidate.provider === route.provider &&
+            candidate.integrationKey === route.integrationKey &&
+            candidate.currencyCodes.includes(route.currencyCode) &&
+            candidate.paymentMethods.includes(route.paymentMethod),
+        );
+        return {
+          route,
+          ready: Boolean(entry?.ready),
+          issues: entry?.issues ?? ['PAYMENT_ROUTE_INTEGRATION_ALIAS_UNKNOWN'],
+        };
+      }),
       validation: {
         healthy: validation.valid,
         issues: validation.issues,
@@ -711,6 +757,7 @@ export class PaymentGatewayControlService {
         defaultProvider: 'config',
         priorityOrder: 'config',
         fallbackProvider: 'config',
+        currencyRoutes: 'config',
       },
       updatedAt: new Date().toISOString(),
     };
@@ -863,6 +910,50 @@ export class PaymentGatewayControlService {
       (item) =>
         item.enabled && !item.maintenanceMode && item.validation.healthy,
     );
+    const runtimeWithCatalog = this.paymentGatewayControlRuntimeService as
+      | (PaymentGatewayControlRuntimeService & {
+          getPaymentRouteCatalog?: () => ReturnType<
+            PaymentGatewayControlRuntimeService['getPaymentRouteCatalog']
+          >;
+        })
+      | undefined;
+    const routeCatalog = runtimeWithCatalog?.getPaymentRouteCatalog
+      ? runtimeWithCatalog.getPaymentRouteCatalog()
+      : (current.currencyRoutes ?? []).map((route) => ({
+          provider: route.provider,
+          integrationKey: route.integrationKey,
+          currencyCodes: [route.currencyCode],
+          paymentMethods: [route.paymentMethod],
+          ready: true,
+          issues: [],
+        }));
+    const activeRouteKeys = new Set<string>();
+    for (const route of next.currencyRoutes) {
+      const catalogEntry = routeCatalog.find(
+        (entry) =>
+          entry.provider === route.provider &&
+          entry.integrationKey === route.integrationKey &&
+          entry.currencyCodes.includes(route.currencyCode) &&
+          entry.paymentMethods.includes(route.paymentMethod),
+      );
+      if (!catalogEntry) {
+        issues.push(
+          `Unknown or incompatible payment route alias ${route.integrationKey} for ${route.provider}.`,
+        );
+      } else if (route.enabled && !catalogEntry.ready) {
+        issues.push(
+          `Enabled payment route ${route.currencyCode}/${route.paymentMethod} is not ready: ${catalogEntry.issues.join(', ')}.`,
+        );
+      }
+
+      if (route.enabled) {
+        const key = `${route.currencyCode}:${route.paymentMethod}:${route.environment}:${route.priority}`;
+        if (activeRouteKeys.has(key)) {
+          issues.push(`Ambiguous enabled payment route for ${key}.`);
+        }
+        activeRouteKeys.add(key);
+      }
+    }
 
     if (next.priorityOrder.length === 0 && usableProviders.length > 0) {
       issues.push(
@@ -971,7 +1062,7 @@ export class PaymentGatewayControlService {
       });
   }
 
-  private async assertSuperAdmin(userId: string): Promise<void> {
+  private async assertGatewayAdministrator(userId: string): Promise<string[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -987,12 +1078,36 @@ export class PaymentGatewayControlService {
       });
     }
 
-    if (!user.roles.some((role) => role.role === UserRoleType.SUPER_ADMIN)) {
+    const roles = user.roles.map((entry) => entry.role);
+    if (
+      !roles.some(
+        (role) =>
+          role === UserRoleType.SUPER_ADMIN || role === UserRoleType.ADMIN,
+      )
+    ) {
       throw new ForbiddenException({
         messageKey: 'auth.errors.forbidden',
-        error: 'SUPER_ADMIN_REQUIRED',
+        error: 'ADMIN_REQUIRED',
       });
     }
+    return roles;
+  }
+
+  private async verifyCurrentPassword(input: {
+    actorUserId: string;
+    actorRoles: string[];
+    currentPassword: string;
+    operation: string;
+    targetId: string;
+    requestId: string;
+  }): Promise<void> {
+    if (!input.currentPassword) {
+      throw new BadRequestException({
+        messageKey: 'auth.errors.invalidCredentials',
+        error: 'CURRENT_PASSWORD_REQUIRED',
+      });
+    }
+    await this.passwordConfirmationService.verify(input);
   }
 
   private assertReason(reason: string): void {
@@ -1039,10 +1154,15 @@ export class PaymentGatewayControlService {
       });
     }
 
-    if (!user.roles.some((role) => role.role === UserRoleType.SUPER_ADMIN)) {
+    if (
+      !user.roles.some(
+        (role) =>
+          role.role === UserRoleType.SUPER_ADMIN || role.role === UserRoleType.ADMIN,
+      )
+    ) {
       throw new ForbiddenException({
         messageKey: 'auth.errors.forbidden',
-        error: 'SUPER_ADMIN_REQUIRED',
+        error: 'ADMIN_REQUIRED',
       });
     }
 

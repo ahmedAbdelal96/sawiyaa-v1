@@ -26,6 +26,7 @@ import { arSpecialtiesCatalog } from './specialties.catalog';
 import { arSupportCatalog } from './support.catalog';
 import { arUsersCatalog } from './users.catalog';
 import { arValidationCatalog } from './validation.catalog';
+import { arPackagePlansCatalog } from './package-plans.catalog';
 
 export const arCatalog = {
   academy: arAcademyCatalog,
@@ -48,6 +49,7 @@ export const arCatalog = {
   patientJourney: arPatientJourneyCatalog,
   patients: arPatientsCatalog,
   payments: arPaymentsCatalog,
+  packagePlans: arPackagePlansCatalog,
   presence: arPresenceCatalog,
   practitioners: arPractitionersCatalog,
   reviews: arReviewsCatalog,

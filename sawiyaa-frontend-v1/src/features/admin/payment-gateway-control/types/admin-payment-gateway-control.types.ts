@@ -3,6 +3,36 @@ export type PaymentGatewayControlProvider = "PAYMOB" | "STRIPE";
 export type PaymentGatewayControlScope = "provider" | "routing";
 
 export type PaymentGatewayControlSource = "env" | "config";
+export type PaymentRouteSource = "DATABASE" | "ENVIRONMENT";
+export type PaymentRouteEnvironment = "development" | "staging" | "production";
+
+export type PaymentRoute = {
+  currencyCode: "EGP" | "USD";
+  paymentMethod: string;
+  provider: PaymentGatewayControlProvider;
+  integrationKey: string;
+  environment: PaymentRouteEnvironment;
+  enabled: boolean;
+  priority: number;
+  source: PaymentRouteSource;
+};
+
+export type PaymentRouteDraft = Omit<PaymentRoute, "source">;
+
+export type PaymentRouteReadiness = {
+  route: PaymentRoute;
+  ready: boolean;
+  issues: string[];
+};
+
+export type PaymentRouteCatalogEntry = {
+  provider: PaymentGatewayControlProvider;
+  integrationKey: string;
+  currencyCodes: Array<"EGP" | "USD">;
+  paymentMethods: string[];
+  ready: boolean;
+  issues: string[];
+};
 
 export type PaymobCheckoutFlow = "legacy" | "intention";
 
@@ -36,6 +66,7 @@ export type PaymentRoutingDraft = {
   defaultProvider: PaymentGatewayControlProvider | null;
   priorityOrder: PaymentGatewayControlProvider[];
   fallbackProvider: PaymentGatewayControlProvider | null;
+  currencyRoutes: PaymentRouteDraft[];
 };
 
 export type PaymentGatewayControlBaseValidation = {
@@ -68,7 +99,10 @@ export type StripeGatewayControlRuntimeSnapshot = StripeGatewayControlDraft & {
   updatedAt: string | null;
 };
 
-export type PaymentRoutingRuntimeSnapshot = PaymentRoutingDraft & {
+export type PaymentRoutingRuntimeSnapshot = Omit<PaymentRoutingDraft, "currencyRoutes"> & {
+  currencyRoutes: PaymentRoute[];
+  routeReadiness: PaymentRouteReadiness[];
+  routeCatalog: PaymentRouteCatalogEntry[];
   validation: PaymentGatewayControlBaseValidation;
   sources: {
     defaultProvider: PaymentGatewayControlSource;
@@ -135,4 +169,8 @@ export type PaymentGatewayControlRevisionResponse = {
 export type PaymentGatewayControlListResponse = {
   items: PaymentGatewayControlRuntimeSnapshot[];
   routing: PaymentRoutingRuntimeSnapshot;
+};
+
+export type PaymentGatewayMutationSecurity = {
+  currentPassword: string;
 };

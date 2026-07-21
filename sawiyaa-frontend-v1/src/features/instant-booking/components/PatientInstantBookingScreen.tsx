@@ -28,8 +28,7 @@ import {
 } from "@/components/patient/PatientChrome";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
-import { formatMoney } from "@/lib/finance-format";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
+import { MoneyText } from "@/components/money/MoneyText";
 import { toAppError } from "@/lib/api/errors";
 import {
   useCancelPatientInstantBookingRequest,
@@ -45,6 +44,7 @@ import type {
   InstantBookingRequest,
   SessionMode,
 } from "../types/instant-booking.types";
+import { mapInstantBookingDiscoveryMoney } from "../lib/instant-booking-money";
 
 function formatDateTime(isoString: string | null, numLocale: string): string {
   if (!isoString) return "";
@@ -76,14 +76,6 @@ function getPractitionerInitials(displayName: string | null | undefined): string
   const parts = clean.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-}
-
-function getPrice(
-  practitioner: InstantBookingEligiblePractitionerItem,
-  currency: InstantBookingDiscoveryCurrency,
-  minutes: InstantBookingDiscoveryDuration,
-): string | null {
-  return practitioner.instantBookingPricing?.[currency]?.[minutes] ?? null;
 }
 
 function requestStatusTone(status: InstantBookingRequest["status"]) {
@@ -379,8 +371,12 @@ function PractitionerCard({
 
         <div className="grid gap-2 sm:grid-cols-2">
           {practitioner.supportedDurations.map((duration) => {
-            const price = getPrice(practitioner, currency, duration);
-            if (!price) return null;
+            const money = mapInstantBookingDiscoveryMoney({
+              practitioner,
+              currencyCode: currency,
+              durationMinutes: duration,
+            });
+            if (!money) return null;
 
             const isPending = cardBusy && pendingBookKey === `${practitioner.slug}:${duration}`;
 
@@ -397,7 +393,7 @@ function PractitionerCard({
                 }
               >
                 <span>{t("card.durationLabel", { minutes: duration })}</span>
-                <span className="font-semibold">{formatMoney(numLocale, price, currency)}</span>
+                <span className="font-semibold"><MoneyText money={money} /></span>
               </Button>
             );
           })}
@@ -417,19 +413,11 @@ export default function PatientInstantBookingScreen() {
   const requestIdFromUrl = searchParams.get("requestId")?.trim() || null;
 
   const patientProfileQuery = usePatientProfile();
-  const resolvedCurrency = useMemo(() => {
-    const profileCountryCode = patientProfileQuery.data?.profile.countryCode ?? null;
-    return (
-      resolvePatientCurrencyCode({ countryCode: profileCountryCode }) ??
-      (locale === "ar" ? "EGP" : "USD")
-    ) as InstantBookingDiscoveryCurrency;
-  }, [locale, patientProfileQuery.data?.profile.countryCode]);
-
   const practitionersQuery = usePatientInstantBookingPractitioners({
     page: 1,
     limit: 30,
-    currency: resolvedCurrency,
   });
+  const resolvedCurrency = practitionersQuery.data?.currencyCode ?? null;
   const requestsQuery = usePatientInstantBookingRequests();
   const latestPendingRequest = useMemo(
     () => requestsQuery.data?.find((request) => request.status === "PENDING") ?? null,
@@ -449,6 +437,7 @@ export default function PatientInstantBookingScreen() {
   const [pageError, setPageError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPageError(null);
   }, [locale, activeRequestId, resolvedCurrency]);
 
@@ -618,7 +607,7 @@ export default function PatientInstantBookingScreen() {
           description={t("list.note")}
           actions={
             <PatientStatusBadge className="bg-primary-light text-text-brand">
-              {resolvedCurrency}
+              {resolvedCurrency ?? "—"}
             </PatientStatusBadge>
           }
         >
@@ -637,7 +626,7 @@ export default function PatientInstantBookingScreen() {
                 },
               }}
             />
-          ) : practitionersQuery.data?.items.length ? (
+          ) : practitionersQuery.data?.items.length && resolvedCurrency ? (
             <div className="grid gap-4 lg:grid-cols-2">
               {practitionersQuery.data.items.map((practitioner) => (
                 <PractitionerCard
@@ -656,6 +645,12 @@ export default function PatientInstantBookingScreen() {
                 />
               ))}
             </div>
+          ) : practitionersQuery.data?.items.length ? (
+            <StateCard
+              icon={<AlertCircle className="h-5 w-5 text-primary" />}
+              title={t("errors.loadingHeading")}
+              note={t("errors.loadingNote")}
+            />
           ) : (
             <StateCard
               icon={<Sparkles className="h-5 w-5 text-primary" />}

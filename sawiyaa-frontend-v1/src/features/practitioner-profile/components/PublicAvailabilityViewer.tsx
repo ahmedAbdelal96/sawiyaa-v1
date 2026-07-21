@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { formatPublicMoney } from "@/features/practitioners-discovery/lib/public-pricing";
+import { MoneyText } from "@/components/money/MoneyText";
+import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery/lib/practitioner-price";
 import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
 import { toAppError } from "@/lib/api/errors";
 import { usePublicAvailabilityWindows } from "../hooks/use-public-availability";
@@ -353,7 +354,7 @@ export default function PublicAvailabilityViewer({
           {typeof selectedDurationPrice === "number" ? (
             <p className="mt-2 text-xs font-semibold text-primary">
               {selectedPriceLabel}:{" "}
-              {formatPublicMoney(locale, selectedDurationPrice, currencyCode)}
+              {(() => { const money = mapPractitionerDurationMoney({ amount: selectedDurationPrice, currencyCode }); return money ? <MoneyText money={money} /> : null; })()}
             </p>
           ) : null}
         </div>
@@ -481,12 +482,12 @@ export default function PublicAvailabilityViewer({
               <div className="mt-2 flex flex-wrap gap-2">
                 {typeof displaySessionPrice30 === "number" ? (
                   <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-text-secondary dark:bg-white/5">
-                    {tBook("duration30")} - {formatPublicMoney(locale, displaySessionPrice30, currencyCode)}
+                    {tBook("duration30")} - {(() => { const money = mapPractitionerDurationMoney({ amount: displaySessionPrice30, currencyCode }); return money ? <MoneyText money={money} /> : null; })()}
                   </span>
                 ) : null}
                 {typeof displaySessionPrice60 === "number" ? (
                   <span className="rounded-full bg-white/80 px-3 py-1 font-medium text-text-secondary dark:bg-white/5">
-                    {tBook("duration60")} - {formatPublicMoney(locale, displaySessionPrice60, currencyCode)}
+                    {tBook("duration60")} - {(() => { const money = mapPractitionerDurationMoney({ amount: displaySessionPrice60, currencyCode }); return money ? <MoneyText money={money} /> : null; })()}
                   </span>
                 ) : null}
               </div>

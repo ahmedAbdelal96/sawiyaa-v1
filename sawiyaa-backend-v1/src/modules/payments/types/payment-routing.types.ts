@@ -3,6 +3,19 @@ import { MarketType } from '@prisma/client';
 
 export type PaymentRoutingMarket = 'EGYPT_LOCAL' | 'INTERNATIONAL';
 
+export type PaymentRouteSource = 'DATABASE' | 'ENVIRONMENT';
+
+export interface PaymentRoute {
+  currencyCode: 'EGP' | 'USD';
+  paymentMethod: string;
+  provider: PaymentProvider;
+  integrationKey: string;
+  environment: 'development' | 'staging' | 'production';
+  enabled: boolean;
+  priority: number;
+  source: PaymentRouteSource;
+}
+
 export interface PaymentRoutingContext {
   currencyCode: string;
   commissionMarketType: MarketType;

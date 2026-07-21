@@ -83,6 +83,14 @@ export class PaymentRuntimeConfigService {
     };
   }
 
+  getPaymentEnvironment(): 'development' | 'staging' | 'production' {
+    return this.paymentCfg.appEnv === 'production'
+      ? 'production'
+      : this.paymentCfg.appEnv === 'staging'
+        ? 'staging'
+        : 'development';
+  }
+
   getPaymentRoutingConfig(): PaymentRoutingRuntimeSnapshot {
     return this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
   }
@@ -263,6 +271,19 @@ export class PaymentRuntimeConfigService {
         ) ?? enabledMethods[0]);
 
     return selected?.integrationId ?? null;
+  }
+
+  resolvePaymobIntegrationIdForRoute(
+    routeIntegrationKey: string | null | undefined,
+    checkoutMethod?: string | null,
+    context?: PaymobMethodContext,
+  ): string | null {
+    const key = routeIntegrationKey?.trim().toLowerCase();
+    const config = this.getPaymobConfig();
+    if (key === 'paymob-egp-card') return config.egpCardIntegrationId;
+    if (key === 'paymob-usd-card') return config.usdCardIntegrationId;
+    if (key === 'paymob-egp-wallet') return config.egpWalletIntegrationId;
+    return this.resolvePaymobIntegrationId(checkoutMethod, context);
   }
 
   getPaymobIntentionPaymentMethodIds(context?: PaymobMethodContext): number[] {

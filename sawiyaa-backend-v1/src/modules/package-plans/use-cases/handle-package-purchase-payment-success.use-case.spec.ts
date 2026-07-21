@@ -100,8 +100,8 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       updateStatus: jest.fn().mockResolvedValue({}),
       createEvent: jest.fn().mockResolvedValue({}),
     };
-    const validateSessionStatusTransitionService = {
-      assertCanTransition: jest.fn(),
+    const sessionLifecycleService = {
+      transition: jest.fn().mockResolvedValue({}),
     };
     const operationalNotificationService = {
       notifySessionConfirmed: jest.fn().mockResolvedValue(undefined),
@@ -115,7 +115,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       paymentRepository as never,
       packagePurchaseRepository as never,
       sessionRepository as never,
-      validateSessionStatusTransitionService as never,
+      sessionLifecycleService as never,
       operationalNotificationService,
       packageSettlementService,
     );
@@ -124,7 +124,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       useCase,
       packagePurchaseRepository,
       sessionRepository,
-      validateSessionStatusTransitionService,
+      sessionLifecycleService,
       operationalNotificationService,
       packageSettlementService,
     };
@@ -148,7 +148,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(2);
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(2);
     expect(setup.sessionRepository.createEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: SessionEventType.PAYMENT_CONFIRMED,
@@ -191,7 +191,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
       1,
     );
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(2);
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(2);
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
   });
@@ -211,7 +211,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     });
 
     expect(setup.packagePurchaseRepository.updateStatus).not.toHaveBeenCalled();
-    expect(setup.sessionRepository.updateStatus).not.toHaveBeenCalled();
+    expect(setup.sessionLifecycleService.transition).not.toHaveBeenCalled();
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
   });
@@ -231,8 +231,8 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
     expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
       1,
     );
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(1);
-    expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(2);
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(1);
+    expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(1);
     expect(setup.packageSettlementService.reconcilePurchase).toHaveBeenCalled();
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.ACTIVE);
   });

@@ -21,7 +21,6 @@ import DateField from "@/components/form/input/DateField";
 import FileInput from "@/components/form/input/FileInput";
 import Label from "@/components/form/Label";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import {
   ProfileWorkspaceShell,
   ProfileWorkspaceCard,
@@ -117,18 +116,11 @@ export default function PatientProfileForm() {
   const uploadAvatar = useUploadPatientAvatar();
   const removeAvatar = useRemovePatientAvatar();
   const profile = data?.profile;
-  const preferredWalletCurrencyCode = resolvePatientCurrencyCode({
-    countryCode: profile?.countryCode ?? null,
-  });
   const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary(
-    preferredWalletCurrencyCode ?? undefined,
+    undefined,
   );
   const walletSummary = walletSummaryData?.item ?? null;
-  const walletCurrencyCode =
-    resolvePatientCurrencyCode({
-      currencyCode: walletSummary?.currencyCode ?? null,
-      countryCode: profile?.countryCode ?? null,
-    }) ?? walletSummary?.currencyCode ?? null;
+  const walletCurrencyCode = walletSummary?.currencyCode ?? null;
 
   const avatarPreviewUrl = useMemo(
     () => (selectedAvatarFile ? URL.createObjectURL(selectedAvatarFile) : null),

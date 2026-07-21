@@ -16,6 +16,7 @@ import type {
 } from '../utils/coupon-effective-status.util';
 
 export type SessionFinancialContext = {
+  requestCountryIsoCode?: string | null;
   id: string;
   flowType: SessionFlowType;
   sessionMode: SessionMode;
@@ -52,6 +53,10 @@ export type SessionFinancialContext = {
   };
   payments?: Array<{
     amountSubtotal: { toString(): string } | string;
+    amountDiscount: { toString(): string } | string;
+    amountTotal: { toString(): string } | string;
+    currencyCode: string;
+    provider: PaymentProvider;
   }>;
   instantBookingRequest?: {
     metadataJson?: unknown | null;

@@ -4,6 +4,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { toGatewayMinorUnits } from '@modules/payments/utils/money-units.util';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import {
   PaymentEventType,
@@ -199,7 +200,7 @@ export class GetPublicAcademyProgramEnrollmentPaymentRedirectUseCase {
 
       const providerResult = await providerAdapter.initiateSessionPayment({
         paymentId: createdPayment.id,
-        amountMinor: this.toMinorUnits(createdPayment.amountTotal.toString()),
+        amountMinor: toGatewayMinorUnits(createdPayment.amountTotal, createdPayment.currencyCode),
         currency: createdPayment.currencyCode,
         description: `Academy program enrollment payment: ${enrollment.academyProgram.slug}`,
         sessionId: enrollment.academyProgram.id,
@@ -501,7 +502,4 @@ export class GetPublicAcademyProgramEnrollmentPaymentRedirectUseCase {
     return normalized.slice(0, maxLength);
   }
 
-  private toMinorUnits(amount: string): number {
-    return Math.round(Number(amount) * 100);
-  }
 }

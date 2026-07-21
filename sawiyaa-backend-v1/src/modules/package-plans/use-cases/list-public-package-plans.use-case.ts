@@ -40,7 +40,7 @@ export class ListPublicPackagePlansUseCase {
     practitionerSlug: string;
     durationMinutes?: number;
     sessionMode?: SessionMode;
-    requestedCurrencyCode?: string;
+    guestCountryIsoCode?: string | null;
   }): Promise<PackagePlanQuotedListResultViewModel> {
     await this.packagePlanPolicyService.assertPackagesEnabled();
 
@@ -78,12 +78,6 @@ export class ListPublicPackagePlansUseCase {
     const plans = await this.packagePlanRepository.listActive();
     const durationMinutes = input.durationMinutes ?? 60;
     const sessionMode = input.sessionMode ?? SessionMode.VIDEO;
-    const selectedCurrencyCode = patientProfile
-      ? null
-      : input.requestedCurrencyCode?.trim().toUpperCase() ||
-        this.packagePlanPolicyService.resolveDefaultPreviewCurrency({
-          practitionerCurrencyCode: practitioner.country?.currencyCode ?? null,
-        });
 
     const items = await Promise.all(
       plans.map(async (plan) => {
@@ -95,8 +89,8 @@ export class ListPublicPackagePlansUseCase {
             practitioner: pricingPractitioner,
             selectedDurationMinutes: durationMinutes,
             sessionMode,
-            selectedCurrencyCode,
-            patientCountryIsoCode: patientProfile?.country?.isoCode ?? null,
+            selectedCurrencyCode: null,
+            requestCountryIsoCode: input.guestCountryIsoCode ?? null,
             operatingCountryIsoCode: practitioner.country?.isoCode ?? null,
             patient: null,
             internalBreakdownVisible: false,

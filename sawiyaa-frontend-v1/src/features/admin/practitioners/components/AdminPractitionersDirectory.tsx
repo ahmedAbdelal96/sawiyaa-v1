@@ -11,6 +11,8 @@ import {
   Trash2,
   Users,
   Wifi,
+  Globe2,
+  GlobeLock,
 } from "lucide-react";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
@@ -29,6 +31,8 @@ import {
   useAdminPractitioners,
   useRemoveAdminPractitionerAvatar,
   useUpdateAdminPractitionerAvatar,
+  useAdminPractitionerPublication,
+  useUpdateAdminPractitionerPublication,
 } from "../hooks/use-admin-practitioners";
 import { useAdminCountries } from "@/features/admin/patients/hooks/use-admin-patients";
 import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
@@ -37,12 +41,16 @@ import type { PractitionerType } from "@/features/practitioners/types/practition
 import Button from "@/components/ui/button/Button";
 import AdvancedFiltersToggleButton from "@/components/ui/filters/AdvancedFiltersToggleButton";
 import { useDebouncedValue } from "@/hooks/use-debounce";
-import { SUPPORTED_COUNTRY_CODES } from "@/constants/reference-data";
 import { FormModal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
+import { isStepUpRequiredError } from "@/lib/api/errors";
+import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
+import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
 import InputField from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import Avatar from "@/components/ui/avatar/Avatar";
+import { SearchableCombobox } from "@/components/form/SearchableCombobox";
+import TextArea from "@/components/form/input/TextArea";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 type PractitionerTabValue = "" | "doctor" | "therapist";
@@ -72,9 +80,15 @@ export default function AdminPractitionersDirectory() {
   const [avatarUrlInput, setAvatarUrlInput] = useState("");
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
+  const [publicationPractitioner, setPublicationPractitioner] = useState<AdminPractitionerListItem | null>(null);
+  const [publicationReason, setPublicationReason] = useState("");
+  const [existingBookingAcknowledged, setExistingBookingAcknowledged] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
   const updateAvatarMutation = useUpdateAdminPractitionerAvatar();
   const removeAvatarMutation = useRemoveAdminPractitionerAvatar();
+  const publicationQuery = useAdminPractitionerPublication(publicationPractitioner?.id ?? null);
+  const publicationMutation = useUpdateAdminPractitionerPublication();
+  const stepUp = useAdminStepUp();
 
   const { data, isLoading, isError, refetch } = useAdminPractitioners({
     search: debouncedSearch.trim() || undefined,
@@ -112,6 +126,31 @@ export default function AdminPractitionersDirectory() {
 
   const columns = useMemo<ColumnDef<AdminPractitionerListItem>[]>(
     () => [
+      {
+        id: "approval",
+        header: tAdmin("practitionersDirectory.publication.approval"),
+        accessor: (row) => row.status,
+        align: "center",
+        cell: (row) => (
+          <AdminStatusBadge tone={row.status === "APPROVED" ? "success" : row.status === "REJECTED" ? "danger" : "warning"}>
+            {row.status === "APPROVED" ? tAdmin("practitionersDirectory.publication.approved") : row.status === "REJECTED" ? tAdmin("practitionersDirectory.publication.rejected") : tAdmin("practitionersDirectory.publication.pending")}
+          </AdminStatusBadge>
+        ),
+      },
+      {
+        id: "publication",
+        header: tAdmin("practitionersDirectory.publication.publication"),
+        accessor: (row) => row.isPublicProfilePublished ? "published" : "unpublished",
+        align: "center",
+        cell: (row) => (
+          <AdminStatusBadge tone={row.isPublicProfilePublished ? "success" : "muted"}>
+            <span className="inline-flex items-center gap-1.5">
+              {row.isPublicProfilePublished ? <Globe2 className="h-3 w-3" /> : <GlobeLock className="h-3 w-3" />}
+              {row.isPublicProfilePublished ? tAdmin("practitionersDirectory.publication.published") : tAdmin("practitionersDirectory.publication.unpublished")}
+            </span>
+          </AdminStatusBadge>
+        ),
+      },
       {
         id: "name",
         header: tAdmin("applications.table.applicant"),
@@ -220,11 +259,13 @@ export default function AdminPractitionersDirectory() {
   );
 
   const countryOptions = useMemo(() => {
-    return SUPPORTED_COUNTRY_CODES.map((code) => ({
-      value: code.toUpperCase(),
-      label: tListing(`countries.${code}`),
+    return countries.map((country) => ({
+      value: country.isoCode.toUpperCase(),
+      label: locale === "ar" ? country.nativeName || country.name : country.name,
+      description: locale === "ar" ? country.name : country.nativeName || undefined,
+      searchText: [country.name, country.nativeName, country.isoCode].filter(Boolean).join(" "),
     }));
-  }, [tListing]);
+  }, [countries, locale]);
 
   const ratingOptions = useMemo(() => [
     { value: "", label: tListing("filter.anyRating") },
@@ -490,20 +531,24 @@ export default function AdminPractitionersDirectory() {
                   />
                 </label>
 
-                <label className="block">
+                <div>
                   <span className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
                     {tListing("filter.country")}
                   </span>
-                  <Select
+                  <SearchableCombobox
                     key={`countryFilter-${country}`}
-                    defaultValue={country}
+                    value={country || null}
                     onChange={(value) => {
                       setCountry(value);
                       setPage(1);
                     }}
                     options={countryOptionsCombined}
+                    placeholder={tListing("filter.country")}
+                    searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
+                    emptyMessage={locale === "ar" ? "لا توجد دول مطابقة" : "No countries found"}
+                    clearable
                   />
-                </label>
+                </div>
               </div>
             ) : null}
           </div>
@@ -544,6 +589,19 @@ export default function AdminPractitionersDirectory() {
                   setAvatarSuccess(null);
                 }}
               />
+              <Button
+                variant={row.isPublicProfilePublished ? "outline" : "primary"}
+                className="h-8 px-2 text-xs"
+                onClick={() => {
+                  setPublicationPractitioner(row);
+                  setPublicationReason("");
+                  setExistingBookingAcknowledged(false);
+                }}
+                title={row.status !== "APPROVED" ? tAdmin("practitionersDirectory.publication.mustApprove") : undefined}
+                disabled={row.status !== "APPROVED"}
+              >
+                {row.isPublicProfilePublished ? tAdmin("practitionersDirectory.publication.unpublish") : tAdmin("practitionersDirectory.publication.publish")}
+              </Button>
               <ActionIconLink
                 intent="view"
                 href={`/practitioners/${row.slug}`}
@@ -664,6 +722,69 @@ export default function AdminPractitionersDirectory() {
           </div>
         ) : null}
       </FormModal>
+
+      <FormModal
+        isOpen={Boolean(publicationPractitioner)}
+        onClose={() => setPublicationPractitioner(null)}
+        size="lg"
+        title={publicationPractitioner?.isPublicProfilePublished ? tAdmin("practitionersDirectory.publication.titleUnpublish") : tAdmin("practitionersDirectory.publication.titlePublish")}
+        description={publicationPractitioner?.isPublicProfilePublished ? tAdmin("practitionersDirectory.publication.unpublishDescription") : tAdmin("practitionersDirectory.publication.readyDescription")}
+        cancelLabel={tAdmin("practitionersDirectory.publication.close")}
+        submitLabel={publicationMutation.isPending ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />{tAdmin("applications.actions.saving")}</span> : publicationPractitioner?.isPublicProfilePublished ? tAdmin("practitionersDirectory.publication.confirmUnpublish") : tAdmin("practitionersDirectory.publication.confirmPublish")}
+        loading={publicationMutation.isPending || publicationQuery.isLoading}
+        destructive={Boolean(publicationPractitioner?.isPublicProfilePublished)}
+        submitDisabled={
+          !publicationQuery.data ||
+          (!publicationPractitioner?.isPublicProfilePublished && !publicationQuery.data.isReadyForPublication) ||
+          (Boolean(publicationPractitioner?.isPublicProfilePublished) && (!publicationReason.trim() || (publicationQuery.data.impact.activeUpcomingCount > 0 && !existingBookingAcknowledged)))
+        }
+        onSubmit={async () => {
+          if (!publicationPractitioner || !publicationQuery.data) return;
+          const performPublication = async () => {
+            await publicationMutation.mutateAsync({ practitionerId: publicationPractitioner.id, isPublished: !publicationPractitioner.isPublicProfilePublished, reason: publicationReason.trim() || undefined });
+            setPublicationPractitioner(null);
+            setPublicationReason("");
+          };
+          try {
+            await performPublication();
+          } catch (error) {
+            if (isStepUpRequiredError(error)) {
+              stepUp.requestStepUp(performPublication);
+              return;
+            }
+            // The mutation error is rendered below without hiding backend blockers.
+          }
+        }}
+      >
+        {publicationPractitioner && publicationQuery.data ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-tertiary p-3">
+              <Avatar src={publicationQuery.data.avatarUrl} name={publicationQuery.data.displayName ?? ""} size="large" />
+              <div className="min-w-0"><p className="truncate font-semibold text-text-primary">{publicationQuery.data.displayName ?? tAdmin("applications.table.noName")}</p><p className="text-xs text-text-muted">{publicationQuery.data.practitionerStatus}</p></div>
+            </div>
+            {!publicationPractitioner.isPublicProfilePublished && !publicationQuery.data.isReadyForPublication ? (
+              <div className="rounded-xl border border-status-warning-border bg-status-warning-soft p-3" role="alert">
+                <p className="text-sm font-semibold text-text-primary">{tAdmin("practitionersDirectory.publication.blockers")}</p>
+                <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-text-secondary">{publicationQuery.data.blockers.map((blocker) => <li key={blocker.code}>{tAdmin(`practitionersDirectory.publication.blockerMessages.${blocker.code}` as never)}</li>)}</ul>
+              </div>
+            ) : null}
+            {publicationPractitioner.isPublicProfilePublished ? (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border-light bg-surface-tertiary p-3 text-sm text-text-secondary">
+                  <p>{tAdmin("practitionersDirectory.publication.activeBookings")}: <strong>{publicationQuery.data.impact.activeUpcomingCount}</strong></p>
+                  <p>{tAdmin("practitionersDirectory.publication.todayBookings")}: <strong>{publicationQuery.data.impact.scheduledTodayCount}</strong></p>
+                  {publicationQuery.data.impact.nearestUpcomingAt ? <p>{tAdmin("practitionersDirectory.publication.nearestBooking")}: <strong>{new Date(publicationQuery.data.impact.nearestUpcomingAt).toLocaleString(locale)}</strong></p> : <p>{tAdmin("practitionersDirectory.publication.noBookings")}</p>}
+                </div>
+                <Label htmlFor="publicationReason">{tAdmin("practitionersDirectory.publication.reason")}</Label>
+                <TextArea id="publicationReason" value={publicationReason} maxLength={500} onChange={setPublicationReason} placeholder={tAdmin("practitionersDirectory.publication.reasonPlaceholder")} />
+                {publicationQuery.data.impact.activeUpcomingCount > 0 ? <label className="flex items-start gap-2 text-sm text-text-secondary"><input type="checkbox" checked={existingBookingAcknowledged} onChange={(event) => setExistingBookingAcknowledged(event.target.checked)} className="mt-1" /> <span>{tAdmin("practitionersDirectory.publication.confirmExisting")}</span></label> : null}
+              </div>
+            ) : null}
+            {publicationMutation.isError ? <p className="text-sm font-medium text-status-danger" role="alert">{tAdmin("practitionersDirectory.publication.error")}</p> : null}
+          </div>
+        ) : publicationQuery.isError ? <p className="text-sm text-status-danger" role="alert">{tAdmin("practitionersDirectory.publication.error")}</p> : <p className="text-sm text-text-muted">{tAdmin("applications.loading")}</p>}
+      </FormModal>
+      <AdminUserStepUpDialog controller={stepUp} />
     </>
   );
 }

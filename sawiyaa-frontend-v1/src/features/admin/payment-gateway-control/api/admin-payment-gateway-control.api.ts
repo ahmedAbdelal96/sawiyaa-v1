@@ -10,6 +10,8 @@ import type {
   PaymentGatewayControlValidationResult,
   PaymentRoutingDraft,
   PaymentRoutingRuntimeSnapshot,
+  PaymentRouteCatalogEntry,
+  PaymentGatewayMutationSecurity,
   PaymobGatewayControlRuntimeSnapshot,
   StripeGatewayControlRuntimeSnapshot,
 } from "../types/admin-payment-gateway-control.types";
@@ -31,6 +33,13 @@ export async function getAdminPaymentGatewayControl(provider: PaymentGatewayCont
 export async function getAdminPaymentGatewayControlRouting() {
   const response = await httpClient.get<ApiPayload<{ item: PaymentRoutingRuntimeSnapshot }>>(
     "/admin/payment-gateway-control/routing",
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminPaymentGatewayRouteCapabilities() {
+  const response = await httpClient.get<ApiPayload<{ items: PaymentRouteCatalogEntry[] }>>(
+    "/admin/payment-gateway-control/routing/capabilities",
   );
   return extractData(response.data);
 }
@@ -81,9 +90,9 @@ export async function updateAdminPaymentGatewayControl(
   scope: PaymentGatewayControlScope,
   provider: PaymentGatewayControlProvider | null,
   payload:
-    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymobGatewayControlRuntimeSnapshot)
-    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & StripeGatewayControlRuntimeSnapshot)
-    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentRoutingDraft),
+    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & PaymobGatewayControlRuntimeSnapshot)
+    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & StripeGatewayControlRuntimeSnapshot)
+    | ({ reason: string; stepUpChallengeId: string; stepUpCode: string } & PaymentGatewayMutationSecurity & PaymentRoutingDraft),
 ) {
   const url =
     scope === "routing"
@@ -104,6 +113,7 @@ export async function rollbackAdminPaymentGatewayControl(
     revisionId: string;
     stepUpChallengeId: string;
     stepUpCode: string;
+    currentPassword: string;
   },
 ) {
   const url =

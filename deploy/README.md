@@ -105,6 +105,49 @@ This is local validation only. It does not deploy, does not run production migra
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+## Pricing-region proxy requirements
+
+Pricing uses the current request region, not the stored account country. In
+production, Cloudflare must be the only public path to Nginx: restrict the
+origin firewall/security group to Cloudflare's published IPv4 and IPv6 ranges
+and block direct access to ports 80/443 from the public internet.
+
+Before enabling traffic, install a generated Nginx include containing the
+current Cloudflare ranges, for example:
+
+```nginx
+    set_real_ip_from 103.21.244.0/22;
+    set_real_ip_from 103.22.200.0/22;
+    set_real_ip_from 103.31.4.0/22;
+    set_real_ip_from 104.16.0.0/13;
+    set_real_ip_from 104.24.0.0/14;
+    set_real_ip_from 108.162.192.0/18;
+    set_real_ip_from 131.0.72.0/22;
+    set_real_ip_from 141.101.64.0/18;
+    set_real_ip_from 162.158.0.0/15;
+    set_real_ip_from 172.64.0.0/13;
+    set_real_ip_from 173.245.48.0/20;
+    set_real_ip_from 188.114.96.0/20;
+    set_real_ip_from 190.93.240.0/20;
+    set_real_ip_from 197.234.240.0/22;
+    set_real_ip_from 198.41.128.0/17;
+    set_real_ip_from 2400:cb00::/32;
+    set_real_ip_from 2606:4700::/32;
+    set_real_ip_from 2803:f800::/32;
+    set_real_ip_from 2405:b500::/32;
+    set_real_ip_from 2405:8100::/32;
+    set_real_ip_from 2a06:98c0::/29;
+    set_real_ip_from 2c0f:f248::/32;
+real_ip_header CF-Connecting-IP;
+real_ip_recursive on;
+```
+
+The include must be maintained from Cloudflare's current published ranges;
+never trust `CF-Connecting-IP` from arbitrary peers. With that include loaded,
+`$remote_addr` is the real client address and the main Nginx config overwrites
+forwarding headers before proxying. Cloudflare cache rules must bypass all
+`/api/v1/*` responses, especially pricing and payment routes.
+
 ## Stop
 
 ```bash
@@ -127,6 +170,13 @@ Synchronize canonical permissions separately from the full development seed:
 ```bash
 docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:permissions -- --dry-run
 docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:permissions -- --apply
+```
+
+Synchronize canonical countries separately from the full development seed:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:countries -- --dry-run
+docker compose -f docker-compose.prod.yml run --rm backend npm run db:sync:countries -- --apply
 ```
 
 The apply command is idempotent, preserves existing permission rows and user

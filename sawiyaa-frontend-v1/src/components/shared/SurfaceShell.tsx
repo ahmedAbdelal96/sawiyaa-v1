@@ -171,7 +171,7 @@ export function SurfaceActionLink({
 
 type SurfaceStatCardProps = {
   label: string;
-  value: string;
+  value: ReactNode;
   hint?: ReactNode;
   tone?: SurfaceTone;
   icon?: ReactNode;

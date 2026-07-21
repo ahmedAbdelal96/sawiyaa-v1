@@ -6,6 +6,7 @@ import type {
   AdminPractitionersListResponse,
   ListAdminPractitionersParams,
   UpdateAdminPractitionerAvatarRequest,
+  PractitionerPublicationResponse,
 } from "../types/admin-practitioners.types";
 
 /**
@@ -43,5 +44,23 @@ export async function removeAdminPractitionerAvatar(practitionerId: string) {
       `/admin/practitioners/${practitionerId}/avatar`,
     );
 
+  return extractData(response.data);
+}
+
+export async function getAdminPractitionerPublication(practitionerId: string) {
+  const response = await httpClient.get<ApiPayload<PractitionerPublicationResponse>>(
+    `/admin/practitioners/${practitionerId}/publication`,
+  );
+  return extractData(response.data);
+}
+
+export async function updateAdminPractitionerPublication(
+  practitionerId: string,
+  data: { isPublished: boolean; reason?: string },
+) {
+  const response = await httpClient.patch<ApiPayload<{ message: string; publication: PractitionerPublicationResponse }>>(
+    `/admin/practitioners/${practitionerId}/publication`,
+    { isPublished: data.isPublished, reason: data.reason },
+  );
   return extractData(response.data);
 }

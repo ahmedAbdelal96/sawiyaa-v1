@@ -69,6 +69,10 @@ export class PaymentSessionRepository {
         payments: {
           select: {
             amountSubtotal: true,
+            amountDiscount: true,
+            amountTotal: true,
+            currencyCode: true,
+            provider: true,
             createdAt: true,
           },
           orderBy: [{ createdAt: 'desc' }],

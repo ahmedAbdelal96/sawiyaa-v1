@@ -17,6 +17,8 @@ export type PaymentWebhookResult =
       providerEventRef: string;
       providerPaymentRef: string;
       outcome: 'SUCCEEDED' | 'FAILED' | 'EXPIRED';
+      amountMinor: number | null;
+      currencyCode: string | null;
       payload: Record<string, unknown>;
     }
   | {
@@ -41,6 +43,7 @@ export interface PaymentProviderAdapter {
     patientEmail?: string | null;
     redirectionUrl?: string | null;
     paymobMethod?: string | null;
+    routeIntegrationKey?: string | null;
     checkoutCountryIsoCode?: string | null;
     operatingCountryIsoCode?: string | null;
   }): Promise<PaymentProviderInitiationResult>;

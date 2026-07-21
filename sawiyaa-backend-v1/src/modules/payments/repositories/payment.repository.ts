@@ -273,6 +273,34 @@ export class PaymentRepository {
     });
   }
 
+  findLatestActiveBySessionIdInTransaction(
+    sessionId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return this.findLatestActiveBySessionIdWithDb(sessionId, tx);
+  }
+
+  private findLatestActiveBySessionIdWithDb(
+    sessionId: string,
+    db: DbClient,
+  ) {
+    return db.payment.findFirst({
+      where: {
+        sessionId,
+        status: {
+          in: [
+            PaymentStatus.CREATED,
+            PaymentStatus.PENDING,
+            PaymentStatus.REQUIRES_ACTION,
+            PaymentStatus.AUTHORIZED,
+          ],
+        },
+      },
+      include: this.paymentInclude,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
   findLatestProviderWebhookEventByPaymentId(paymentId: string) {
     return this.prisma.paymentEvent.findFirst({
       where: {

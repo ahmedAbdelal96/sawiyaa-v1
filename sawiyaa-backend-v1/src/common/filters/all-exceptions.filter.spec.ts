@@ -155,4 +155,65 @@ describe('AllExceptionsFilter', () => {
       }),
     );
   });
+
+  it('forwards structured details payload for field-level handling', () => {
+    const logger = {
+      error: jest.fn(),
+    } as never;
+    const i18nService = {
+      t: jest.fn((key: string) => key),
+    } as never;
+
+    const filter = new AllExceptionsFilter(i18nService, logger, {
+      stackEnabled: true,
+      nodeEnv: 'development',
+    } as never);
+
+    const response = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    } as never;
+    const request = {
+      method: 'POST',
+      originalUrl: '/api/v1/admin/practitioner-applications/direct-create',
+      url: '/api/v1/admin/practitioner-applications/direct-create',
+      locale: 'ar',
+      requestId: 'req_4',
+      user: { id: 'admin_1', roles: ['ADMIN'] },
+      headers: {},
+    } as never;
+    const host = {
+      switchToHttp: () => ({
+        getResponse: () => response,
+        getRequest: () => request,
+      }),
+    } as never;
+
+    filter.catch(
+      new BadRequestException({
+        messageKey: 'admin.practitionerApplications.errors.countryNotFound',
+        error: 'COUNTRY_NOT_FOUND',
+        details: [
+          {
+            field: 'countryCode',
+            code: 'COUNTRY_NOT_FOUND',
+            messageKey: 'admin.practitionerApplications.errors.countryNotFound',
+          },
+        ],
+      }),
+      host,
+    );
+
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        errorCode: 'COUNTRY_NOT_FOUND',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'countryCode',
+            code: 'COUNTRY_NOT_FOUND',
+          }),
+        ]),
+      }),
+    );
+  });
 });

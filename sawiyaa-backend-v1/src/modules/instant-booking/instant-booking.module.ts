@@ -7,6 +7,7 @@ import { PresenceModule } from '@modules/presence/presence.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
+import { PatientsModule } from '@modules/patients/patients.module';
 import { PatientInstantBookingDiscoveryController } from './controllers/patient-instant-booking-discovery.controller';
 import { PatientInstantBookingController } from './controllers/patient-instant-booking.controller';
 import { PractitionerInstantBookingController } from './controllers/practitioner-instant-booking.controller';
@@ -40,6 +41,7 @@ import { RejectInstantBookingRequestUseCase } from './use-cases/reject-instant-b
     PresenceModule,
     ReviewsModule,
     SessionsModule,
+    PatientsModule,
   ],
   controllers: [
     PatientInstantBookingDiscoveryController,
