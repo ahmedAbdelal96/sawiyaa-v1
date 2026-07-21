@@ -18,6 +18,7 @@ export default function PublicNavbar() {
 
   const NAV_LINKS = [
     { href: "/", label: t("home") },
+    { href: "/packages", label: t("packages") },
     { href: "/specialties", label: t("specialties") },
     { href: "/practitioners", label: t("practitioners") },
     { href: "/academy", label: t("academy") },

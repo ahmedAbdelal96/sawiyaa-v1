@@ -150,7 +150,11 @@ export class PatientHomeRepository {
     });
   }
 
-  async listRecentlyVisited(patientId: string, locale: SupportedLocale) {
+  async listRecentlyVisited(
+    patientId: string,
+    locale: SupportedLocale,
+    currencyCode: 'EGP' | 'USD',
+  ) {
     const rows = await this.prisma.patientPractitionerView.findMany({
       where: {
         patientId,
@@ -239,6 +243,7 @@ export class PatientHomeRepository {
       ...this.mapPublicPractitionerCard(
         row.practitioner,
         ratingSummaries.get(row.practitioner.id) ?? null,
+        currencyCode,
       ),
       lastViewedAt: row.lastViewedAt,
     }));
@@ -249,6 +254,7 @@ export class PatientHomeRepository {
     fromUtc: Date;
     toUtc: Date;
     limit: number;
+    currencyCode: 'EGP' | 'USD';
   }) {
     const rows = await this.prisma.session.groupBy({
       by: ['practitionerId'],
@@ -287,6 +293,8 @@ export class PatientHomeRepository {
     const cards = await this.listPublicPractitionerCardsByIds(
       rowsWithPositiveCount.map((row) => row.practitionerId),
       input.locale,
+      undefined,
+      input.currencyCode,
     );
 
     const countByPractitionerId = new Map(
@@ -319,6 +327,7 @@ export class PatientHomeRepository {
     limit: number;
     minimumReviews: number;
     priorReviews: number;
+    currencyCode: 'EGP' | 'USD';
   }) {
     const practitionerIds = await this.prisma.practitionerProfile.findMany({
       where: this.publicPractitionerWhere(),
@@ -353,6 +362,7 @@ export class PatientHomeRepository {
       eligibleSummaries.map((summary) => summary.practitionerId),
       input.locale,
       summaries,
+      input.currencyCode,
     );
 
     const summaryByPractitionerId = new Map(
@@ -394,7 +404,7 @@ export class PatientHomeRepository {
         }
         return a.slug.localeCompare(b.slug);
       })
-      .map(({ weightedRating, ...card }) => card)
+      .map((card) => card)
       .slice(0, input.limit);
   }
 
@@ -439,6 +449,7 @@ export class PatientHomeRepository {
     practitionerIds: string[],
     locale: SupportedLocale,
     ratingSummaries?: Map<string, SessionReviewRatingSummary>,
+    currencyCode: 'EGP' | 'USD' = 'USD',
   ) {
     if (practitionerIds.length === 0) {
       return [];
@@ -504,28 +515,40 @@ export class PatientHomeRepository {
       .map((id) => rowsById.get(id))
       .filter((row): row is NonNullable<typeof row> => Boolean(row))
       .map((row) =>
-        this.mapPublicPractitionerCard(row, summaries.get(row.id) ?? null),
+        this.mapPublicPractitionerCard(
+          row,
+          summaries.get(row.id) ?? null,
+          currencyCode,
+        ),
       );
   }
 
-  private mapPublicPractitionerCard(row: {
-    id: string;
-    publicSlug: string;
-    professionalTitle: string | null;
-    avatarUrl: string | null;
-    user: { displayName: string | null };
-    sessionPrice30Egp: unknown;
-    sessionPrice30Usd: unknown;
-    sessionPrice60Egp: unknown;
-    sessionPrice60Usd: unknown;
-    specialties: Array<{
-      specialty: {
-        translations: Array<{
-          title: string;
-        }>;
-      };
-    }>;
-  }, ratingSummary: SessionReviewRatingSummary | null) {
+  private mapPublicPractitionerCard(
+    row: {
+      id: string;
+      publicSlug: string;
+      professionalTitle: string | null;
+      avatarUrl: string | null;
+      user: { displayName: string | null };
+      sessionPrice30Egp: unknown;
+      sessionPrice30Usd: unknown;
+      sessionPrice60Egp: unknown;
+      sessionPrice60Usd: unknown;
+      specialties: Array<{
+        specialty: {
+          translations: Array<{
+            title: string;
+          }>;
+        };
+      }>;
+    },
+    ratingSummary: SessionReviewRatingSummary | null,
+    currencyCode: 'EGP' | 'USD' = 'USD',
+  ) {
+    const sessionPrice30 =
+      currencyCode === 'EGP' ? row.sessionPrice30Egp : row.sessionPrice30Usd;
+    const sessionPrice60 =
+      currencyCode === 'EGP' ? row.sessionPrice60Egp : row.sessionPrice60Usd;
     return {
       practitionerId: row.id,
       slug: row.publicSlug,
@@ -541,22 +564,17 @@ export class PatientHomeRepository {
           : Number(ratingSummary.averageRating),
       totalReviews: ratingSummary?.publishedRatingsCount ?? 0,
       displaySessionPrice30:
-        row.sessionPrice30Egp === null || row.sessionPrice30Egp === undefined
-          ? row.sessionPrice30Usd === null || row.sessionPrice30Usd === undefined
-            ? null
-            : Number(row.sessionPrice30Usd)
-          : Number(row.sessionPrice30Egp),
+        sessionPrice30 == null ? null : Number(sessionPrice30),
       displaySessionPrice60:
-        row.sessionPrice60Egp === null || row.sessionPrice60Egp === undefined
-          ? row.sessionPrice60Usd === null || row.sessionPrice60Usd === undefined
-            ? null
-            : Number(row.sessionPrice60Usd)
-          : Number(row.sessionPrice60Egp),
+        sessionPrice60 == null ? null : Number(sessionPrice60),
+      currencyCode,
       isVerified: true,
     };
   }
 
-  private toLegacyRatingSummary(ratingSummary: SessionReviewRatingSummary | null) {
+  private toLegacyRatingSummary(
+    ratingSummary: SessionReviewRatingSummary | null,
+  ) {
     return {
       averageRating:
         ratingSummary?.averageRating === null ||

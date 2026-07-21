@@ -73,7 +73,11 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
   });
 
   it('returns Paymob capabilities with configured CARD/WALLET methods only', async () => {
-    const result = await useCase.execute({ userId: 'u1', sessionId: 's1' });
+    const result = await useCase.execute({
+      userId: 'u1',
+      sessionId: 's1',
+      requestCountryIsoCode: 'EG',
+    });
 
     expect(result.item.provider).toBe(PaymentProvider.PAYMOB);
     expect(result.item.supportedMethods).toEqual(['CARD', 'WALLET']);
@@ -115,13 +119,17 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
       practitioner: { id: 'practitioner-1', country: { isoCode: 'EGY' } },
     });
 
-    const result = await useCase.execute({ userId: 'u1', sessionId: 's1' });
+    const result = await useCase.execute({
+      userId: 'u1',
+      sessionId: 's1',
+      requestCountryIsoCode: 'US',
+    });
     expect(result.item.provider).toBe(PaymentProvider.PAYMOB);
     expect(result.item.supportedMethods).toEqual(['CARD']);
     expect(result.item.normalizedMethods.map((m) => m.key)).toEqual(['CARD']);
   });
 
-  it('throws ambiguous routing when patient country is unknown', async () => {
+  it('does not block capabilities when the trusted request country is unavailable', async () => {
     (
       paymentSessionRepository.findPatientOwnedSession as jest.Mock
     ).mockResolvedValueOnce({
@@ -129,9 +137,13 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
       patient: { id: 'patient-1', country: null },
     });
 
-    await expect(
-      useCase.execute({ userId: 'u1', sessionId: 's1' }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    const result = await useCase.execute({
+      userId: 'u1',
+      sessionId: 's1',
+      requestCountryIsoCode: null,
+    });
+
+    expect(result.item.provider).toBe(PaymentProvider.PAYMOB);
   });
 
   it('wallet capability is disabled when no wallet balance is available', async () => {
@@ -139,7 +151,11 @@ describe('GetPatientSessionPaymentCapabilitiesUseCase', () => {
       customerWalletAccountingService.getAvailableBalance as jest.Mock
     ).mockResolvedValueOnce(new Prisma.Decimal('0.00'));
 
-    const result = await useCase.execute({ userId: 'u1', sessionId: 's1' });
+    const result = await useCase.execute({
+      userId: 'u1',
+      sessionId: 's1',
+      requestCountryIsoCode: 'EG',
+    });
     expect(result.item.wallet.enabled).toBe(false);
     expect(result.item.wallet.canUseFullAmount).toBe(false);
     expect(result.item.wallet.canUsePartialAmount).toBe(false);

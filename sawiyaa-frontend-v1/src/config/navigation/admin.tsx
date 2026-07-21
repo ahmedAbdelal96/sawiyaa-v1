@@ -102,6 +102,7 @@ export const adminNavigation: NavigationConfig = [
         subItems: [
           { key: "financeDashboard", path: "/finance", namespace: "main" },
           { key: "payments", path: "/payments", namespace: "main" },
+          { key: "paymentGatewayControl", path: "/payments/gateway-control", namespace: "main" },
           { key: "practitionerPayouts", path: "/practitioner-payouts", namespace: "main" },
           { key: "practitionerPayoutsHistory", path: "/practitioner-payouts/history", namespace: "main" },
         ],

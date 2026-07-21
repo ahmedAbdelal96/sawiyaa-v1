@@ -8,6 +8,7 @@ import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.r
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { RegisterPractitionerAccountUseCase } from './register-practitioner-account.use-case';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 describe('RegisterPractitionerAccountUseCase', () => {
   const prisma = {
@@ -31,6 +32,12 @@ describe('RegisterPractitionerAccountUseCase', () => {
   const authIdentityRepository = {
     createPasswordIdentity: jest.fn(),
   } as unknown as AuthIdentityRepository;
+  const userPhoneRepository = {
+    upsertPrimaryPhone: jest.fn(),
+  } as any;
+  const phoneNumberValidationService = {
+    assertValid: jest.fn().mockReturnValue({ e164: '+201012345678' }),
+  } as unknown as PhoneNumberValidationService;
 
   const twoFactorSettingRepository = {
     upsertPractitionerDefault: jest.fn(),
@@ -44,9 +51,11 @@ describe('RegisterPractitionerAccountUseCase', () => {
     prisma,
     userRepository,
     userEmailRepository,
+    userPhoneRepository,
     authIdentityRepository,
     twoFactorSettingRepository,
     hashPasswordUseCase,
+    phoneNumberValidationService,
   );
 
   beforeEach(() => {
@@ -102,6 +111,8 @@ describe('RegisterPractitionerAccountUseCase', () => {
 
     const result = await useCase.execute({
       email: 'practitioner.new@example.com',
+      phone: '01012345678',
+      phoneCountryCode: 'EG',
       password: 'Password123!',
         displayName: 'Practitioner New',
         practitionerType: PractitionerType.OTHER,

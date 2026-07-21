@@ -177,6 +177,7 @@ export interface PatientHomePractitionerModuleDto {
   label: string;
   status?: PatientHomeModuleStatus;
   items: PatientHomePractitionerItemDto[];
+  currencyCode: "EGP" | "USD";
 }
 
 export type PatientHomeCardCtaKey = "MATCHING_INTRO" | "SUPPORT_HOME";
@@ -189,6 +190,7 @@ export interface PatientHomeCardDto {
 }
 
 export interface PatientHomeResponseDto {
+  currencyCode: "EGP" | "USD";
   featuredPractitioners: PatientHomePractitionerModuleDto;
   recentlyVisitedPractitioners: PatientHomePractitionerModuleDto;
   mostBookedTodayPractitioners: PatientHomePractitionerModuleDto;

@@ -39,7 +39,9 @@ export function usePatientInstantBookingPractitioners(
   return useQuery({
     queryKey: instantBookingQueryKeys.patientPractitioners(params),
     queryFn: () => getPatientInstantBookingPractitioners(params),
-    staleTime: 15_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

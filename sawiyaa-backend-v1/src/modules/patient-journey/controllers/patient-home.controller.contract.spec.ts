@@ -50,6 +50,7 @@ describe('PatientHomeController (contract)', () => {
     const response = await controller.getHome(
       { id: 'patient-user-1', roles: ['PATIENT'] } as never,
       'ar',
+      { headers: { 'cf-ipcountry': 'EG' } } as never,
     );
 
     expect(response.success).toBe(true);

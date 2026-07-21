@@ -1,4 +1,4 @@
-import type { PaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+import type { ResolvedPaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 
 type MoneyValue = string | { toString(): string } | number | null | undefined;
 
@@ -16,7 +16,7 @@ function resolveDisplayPrice(preferred: MoneyValue): number | null {
 }
 
 export function resolvePublicPractitionerPricing(input: {
-  regionalResolution: PaymentRegionalResolution;
+  regionalResolution: ResolvedPaymentRegionalResolution;
   sessionPrice30Egp: MoneyValue;
   sessionPrice30Usd: MoneyValue;
   sessionPrice60Egp: MoneyValue;

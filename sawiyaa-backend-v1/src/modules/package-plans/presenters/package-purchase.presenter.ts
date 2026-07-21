@@ -14,18 +14,28 @@ import {
 type PurchaseRecord = {
   id: string;
   status: string;
+  titleSnapshot?: string | null;
+  descriptionSnapshot?: string | null;
   planCodeSnapshot: string | null;
   sessionCountSnapshot: number;
   discountPercentSnapshot: { toString(): string } | string | null;
   practitionerId: string;
+  practitioner?: {
+    id: string;
+    publicSlug?: string | null;
+    avatarUrl?: string | null;
+    professionalTitle?: string | null;
+    user?: {
+      displayName?: string | null;
+    } | null;
+  } | null;
+  packagePlan?: {
+    title?: string | null;
+    description?: string | null;
+  } | null;
   sessionDurationMinutesSnapshot: number;
   sessionModeSnapshot: PackagePurchaseSessionSummaryViewModel['sessionMode'];
   selectedCurrencyCode: string;
-  patient?: {
-    country?: {
-      isoCode?: string | null;
-    } | null;
-  } | null;
   selectedBaseSessionPriceSnapshot: { toString(): string } | string | null;
   undiscountedTotalSnapshot: { toString(): string } | string | null;
   discountAmountSnapshot: { toString(): string } | string | null;
@@ -48,6 +58,12 @@ type PurchaseRecord = {
   }>;
 };
 
+const SCHEDULED_STATUSES = new Set([
+  'UPCOMING',
+  'READY_TO_JOIN',
+  'IN_PROGRESS',
+]);
+
 @Injectable()
 export class PackagePurchasePresenter {
   toViewModel(input: {
@@ -56,28 +72,85 @@ export class PackagePurchasePresenter {
     now?: Date;
   }): PatientPackagePurchaseViewModel {
     const now = input.now ?? new Date();
-    const linkedSessionItems = (input.sessions ?? input.purchase.sessions).map(
-      (session) => this.toSessionViewModel(session, now),
+    const rawSessions = input.sessions ?? input.purchase.sessions ?? [];
+
+    const linkedSessionItems = rawSessions.map((session) =>
+      this.toSessionViewModel(session, now),
     );
+
+    const totalSessions = input.purchase.sessionCountSnapshot;
+    const rawCompletedCount = linkedSessionItems.filter(
+      (s) => s.status === 'COMPLETED',
+    ).length;
+    const completedSessions = Math.min(totalSessions, rawCompletedCount);
+    const scheduledSessions = linkedSessionItems.filter((s) =>
+      SCHEDULED_STATUSES.has(s.status),
+    ).length;
+
+    // Remaining sessions can never be negative (final defensive boundary)
+    const remainingSessions = Math.max(0, totalSessions - completedSessions);
+    // Progress percentage capped between 0 and 100
+    const progressPercent = Math.min(
+      100,
+      Math.max(
+        0,
+        Math.round((completedSessions / Math.max(1, totalSessions)) * 100),
+      ),
+    );
+
+    const title =
+      input.purchase.titleSnapshot?.trim() ||
+      input.purchase.packagePlan?.title?.trim() ||
+      '';
+
+    const description =
+      input.purchase.descriptionSnapshot?.trim() ||
+      input.purchase.packagePlan?.description?.trim() ||
+      null;
+
+    const practitioner = input.purchase.practitioner
+      ? {
+          id: input.purchase.practitioner.id,
+          publicSlug:
+            input.purchase.practitioner.publicSlug ||
+            input.purchase.practitioner.id,
+          displayName:
+            input.purchase.practitioner.user?.displayName?.trim() ||
+            'Practitioner',
+          avatarUrl: input.purchase.practitioner.avatarUrl ?? null,
+          professionalTitle:
+            input.purchase.practitioner.professionalTitle ?? null,
+        }
+      : undefined;
 
     return {
       id: input.purchase.id,
       status: input.purchase.status,
       planCode: input.purchase.planCodeSnapshot ?? '',
-      sessionCount: input.purchase.sessionCountSnapshot,
+      title,
+      description,
+      sessionCount: totalSessions,
       discountPercent:
         input.purchase.discountPercentSnapshot === null ||
         input.purchase.discountPercentSnapshot === undefined
           ? '0.00'
           : input.purchase.discountPercentSnapshot.toString(),
       practitionerId: input.purchase.practitionerId,
+      practitioner,
+      progress: {
+        totalSessions,
+        completedSessions,
+        remainingSessions,
+        scheduledSessions,
+        progressPercent,
+      },
       durationMinutes: input.purchase.sessionDurationMinutesSnapshot,
       sessionMode: input.purchase.sessionModeSnapshot,
       selectedCurrencyCode: input.purchase.selectedCurrencyCode,
       regionalPricingMode: this.resolveRegionalPricingMode(
-        input.purchase.patient,
+        input.purchase.selectedCurrencyCode,
       ),
-      resolvedCountryIsoCode: input.purchase.patient?.country?.isoCode ?? null,
+      resolvedCountryIsoCode: null,
       selectedBaseSessionPrice:
         input.purchase.selectedBaseSessionPriceSnapshot === null ||
         input.purchase.selectedBaseSessionPriceSnapshot === undefined
@@ -110,11 +183,9 @@ export class PackagePurchasePresenter {
   }
 
   private resolveRegionalPricingMode(
-    patient: PurchaseRecord['patient'],
+    selectedCurrencyCode: string,
   ): PaymentRegionalPricingMode {
-    const countryIsoCode =
-      patient?.country?.isoCode?.trim().toUpperCase() ?? null;
-    return countryIsoCode === 'EG' || countryIsoCode === 'EGY'
+    return selectedCurrencyCode.trim().toUpperCase() === 'EGP'
       ? 'EGYPT_LOCAL'
       : 'INTERNATIONAL';
   }

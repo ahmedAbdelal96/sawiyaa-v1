@@ -1,5 +1,6 @@
 import { PaymentProvider } from '@prisma/client';
 import { PaymobCheckoutFlowValue } from '@modules/payments/types/paymob-payment.types';
+import { PaymentRoute } from '@modules/payments/types/payment-routing.types';
 
 export type PaymentGatewayControlProvider = PaymentProvider;
 
@@ -91,6 +92,22 @@ export type PaymentRoutingDraft = {
   defaultProvider: PaymentGatewayControlRoutingProvider | null;
   priorityOrder: PaymentGatewayControlRoutingProvider[];
   fallbackProvider: PaymentGatewayControlRoutingProvider | null;
+  currencyRoutes: Omit<PaymentRoute, 'source'>[];
+};
+
+export type PaymentRouteCatalogEntry = {
+  provider: PaymentGatewayControlManagedProvider;
+  integrationKey: string;
+  currencyCodes: Array<'EGP' | 'USD'>;
+  paymentMethods: string[];
+  ready: boolean;
+  issues: string[];
+};
+
+export type PaymentRouteReadiness = {
+  route: PaymentRoute;
+  ready: boolean;
+  issues: string[];
 };
 
 export type PaymentRoutingValidationResult = {
@@ -105,12 +122,16 @@ export type PaymentGatewayControlValidationResult =
   | StripeGatewayControlValidationResult
   | PaymentRoutingValidationResult;
 
-export type PaymentRoutingRuntimeSnapshot = PaymentRoutingDraft & {
+export type PaymentRoutingRuntimeSnapshot = Omit<PaymentRoutingDraft, 'currencyRoutes'> & {
+  currencyRoutes: PaymentRoute[];
+  routeReadiness: PaymentRouteReadiness[];
+  routeCatalog: PaymentRouteCatalogEntry[];
   validation: PaymentGatewayControlBaseValidation;
   sources: {
     defaultProvider: PaymentGatewayControlSource;
     priorityOrder: PaymentGatewayControlSource;
     fallbackProvider: PaymentGatewayControlSource;
+    currencyRoutes: PaymentGatewayControlSource;
   };
   updatedAt: string | null;
 };

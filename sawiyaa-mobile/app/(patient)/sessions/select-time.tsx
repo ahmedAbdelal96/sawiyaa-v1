@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { I18nManager, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../src/lib/money";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Button, Card, Header, Screen, ScreenHeading, Text } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useGetPublicPractitionerDetails } from "../../../src/features/patient/discovery/api";
-import { getPatientPreferredCurrency } from "../../../src/lib/currency";
-import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { usePublicPractitionerPackagePlans, usePackagePlanQuote } from "../../../src/features/patient/package-plans/hooks";
 import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
@@ -124,14 +123,8 @@ function toDateColumns(
 }
 
 function formatMoney(amount: string | null | undefined, currency: string, locale: string) {
-  if (!amount) return null;
-  const num = Number(amount);
-  if (!Number.isFinite(num)) return null;
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(num);
+  const money = parseMoney(amount, currency);
+  return money ? formatCentralMoney(money, locale) : null;
 }
 
 export default function SelectSessionTimeScreen() {
@@ -167,20 +160,13 @@ export default function SelectSessionTimeScreen() {
   const canShowBookedSlots = true;
 
   const practitionerQuery = useGetPublicPractitionerDetails(params.slug ?? null);
-  const profileQuery = usePatientProfile();
   const practitioner = practitionerQuery.data?.data.item ?? null;
 
-  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
-  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
-  const packageCurrency = practitioner
-    ? getPatientPreferredCurrency(patientCountryCode, practitioner)
-    : "USD";
   const packageSupport30Query = usePublicPractitionerPackagePlans(
     params.slug ?? null,
     {
       durationMinutes: 30,
       sessionMode: "VIDEO",
-      currencyCode: packageCurrency,
     },
     { enabled: Boolean(params.slug) },
   );
@@ -189,7 +175,6 @@ export default function SelectSessionTimeScreen() {
     {
       durationMinutes: 60,
       sessionMode: "VIDEO",
-      currencyCode: packageCurrency,
     },
     { enabled: Boolean(params.slug) },
   );
@@ -255,7 +240,6 @@ export default function SelectSessionTimeScreen() {
     {
       durationMinutes: packageDuration,
       sessionMode: "VIDEO",
-      currencyCode: packageCurrency,
     },
     { enabled: bookingType === "package" && supportsPackages },
   );
@@ -286,7 +270,6 @@ export default function SelectSessionTimeScreen() {
           practitionerSlug: params.slug,
           durationMinutes: packageDuration,
           sessionMode: "VIDEO",
-          currencyCode: packageCurrency,
         }
       : null,
   );
@@ -410,7 +393,6 @@ export default function SelectSessionTimeScreen() {
         packagePlanCode: selectedPackagePlanCode,
         durationMinutes: String(packageDuration),
         sessionMode: "VIDEO",
-        currencyCode: packageQuote?.selectedCurrencyCode ?? packageCurrency,
         preselectedSlots,
       },
     });

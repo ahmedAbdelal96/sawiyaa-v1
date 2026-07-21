@@ -30,6 +30,7 @@ import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-app
 import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { PractitionerPayoutDestinationValidationService } from '../services/practitioner-payout-destination-validation.service';
 
 /**
  * Practitioner self-submission is review-gated and snapshot-based.
@@ -52,6 +53,7 @@ export class SubmitPractitionerApplicationUseCase {
     private readonly practitionerApplicationEligibilityPolicy: PractitionerApplicationEligibilityPolicy,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
+    private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
@@ -177,6 +179,7 @@ export class SubmitPractitionerApplicationUseCase {
         : requestedPayoutDestination !== undefined
           ? {
               methodType: requestedPayoutDestination.methodType,
+              countryCode: requestedPayoutDestination.countryCode ?? null,
               accountHolderName:
                 requestedPayoutDestination.accountHolderName ?? null,
               bankName: requestedPayoutDestination.bankName ?? null,
@@ -191,6 +194,7 @@ export class SubmitPractitionerApplicationUseCase {
           : payoutDestination
             ? {
                 methodType: payoutDestination.methodType,
+                countryCode: payoutDestination.countryCode ?? null,
                 accountHolderName: payoutDestination.accountHolderName ?? null,
                 bankName: payoutDestination.bankName ?? null,
                 bankAccountNumber: payoutDestination.bankAccountNumber ?? null,
@@ -201,8 +205,10 @@ export class SubmitPractitionerApplicationUseCase {
               }
             : null;
 
-    const submissionSnapshot =
-      this.practitionerApplicationSnapshotService.build({
+    this.practitionerPayoutDestinationValidationService.validate(
+      mergedPayoutDestination,
+    );
+    const submissionSnapshot = this.practitionerApplicationSnapshotService.build({
         user: mergedUser,
         profile: mergedProfile,
         languageCodes: languageLinks.map((item) => item.language.code),

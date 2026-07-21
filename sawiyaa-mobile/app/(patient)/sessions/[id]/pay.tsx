@@ -36,7 +36,7 @@ import {
 import { useRefundPolicy } from "../../../../src/features/patient/refund-policies/hooks";
 import { extractHostedCheckoutReturnParams } from "../../../../src/features/patient/payments/return-utils";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
-import { resolveSupportedCurrencyCode } from "../../../../src/lib/currency";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../../src/lib/money";
 import { normalizeAllowedExternalUrl } from "../../../../src/lib/external-url";
 import { formatViewerDateTime } from "../../../../src/lib/time-formatting";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
@@ -60,13 +60,9 @@ const CONFIRMED_SESSION_STATUSES = new Set([
   "COMPLETED",
 ]);
 
-function formatMoney(amount: string, currencyCode: string): string {
-  const num = Number(amount);
-  if (!Number.isFinite(num)) return `${amount} ${currencyCode.toUpperCase()}`;
-  const rounded = parseFloat(num.toFixed(2));
-  const str = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2);
-  const withCommas = str.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${withCommas} ${currencyCode.toUpperCase()}`;
+function formatMoney(amount: string, currencyCode: string | null | undefined, locale: string): string {
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatCentralMoney(money, locale) : "-";
 }
 
 function formatDateTime(isoString: string | null, locale: string): string {
@@ -378,11 +374,7 @@ export default function SessionPaymentCheckoutScreen() {
   const breakdown = breakdownQuery.data?.item;
 
   const walletBalance = wallet?.availableBalance ?? "0";
-  const paymentCurrency = resolveSupportedCurrencyCode({
-    currencyCode: breakdown?.currency ?? wallet?.currencyCode ?? null,
-    regionalPricingMode: breakdown?.regionalPricingMode ?? null,
-    resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
-  });
+  const paymentCurrency = breakdown?.currency ?? wallet?.currencyCode ?? null;
   const normalizedCouponDraft = normalizePromoCodeInput(couponDraft);
   const sessionReturnUrl = useMemo(() => {
     if (!id) {
@@ -1003,6 +995,7 @@ export default function SessionPaymentCheckoutScreen() {
                       amount: formatMoney(
                         walletCapabilityBalance,
                         walletCapabilityCurrency,
+                        locale,
                       ),
                     })
                   : t("patientPaymentsFlow.checkout.walletToggle.noBalance")}
@@ -1056,7 +1049,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.sessionFee")}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.grossAmount, paymentCurrency)}
+                  {formatMoney(breakdown.grossAmount, paymentCurrency, locale)}
                 </Text>
               </View>
 
@@ -1073,7 +1066,7 @@ export default function SessionPaymentCheckoutScreen() {
                   }
                 >
                   {toNumber(breakdown.discountAmount) > 0 ? "-" : ""}
-                  {formatMoney(breakdown.discountAmount, paymentCurrency)}
+                  {formatMoney(breakdown.discountAmount, paymentCurrency, locale)}
                 </Text>
               </View>
 
@@ -1082,7 +1075,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.walletDeduction")}
                 </Text>
                 <Text weight="600" color={theme.colors.primary}>
-                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency)}
+                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency, locale)}
                 </Text>
               </View>
 
@@ -1091,7 +1084,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.breakdown.total")}
                 </Text>
                 <Text weight="bold" style={styles.totalAmount}>
-                  {formatMoney(breakdown.netPaidAmount, paymentCurrency)}
+                  {formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)}
                 </Text>
               </View>
 
@@ -1108,7 +1101,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {t("patientPaymentsFlow.checkout.state.walletPart")}
                 </Text>
                 <Text weight="600" style={styles.clarityAmount}>
-                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency)}
+                  {formatMoney(split.walletUsed.toFixed(2), paymentCurrency, locale)}
                 </Text>
                 <Text
                   color={theme.colors.textSecondary}
@@ -1120,6 +1113,7 @@ export default function SessionPaymentCheckoutScreen() {
                   {formatMoney(
                     split.gatewayRemaining.toFixed(2),
                     paymentCurrency,
+                    locale,
                   )}
                 </Text>
                 <Text
@@ -1404,7 +1398,7 @@ export default function SessionPaymentCheckoutScreen() {
           </Text>
           <Text weight="bold" style={styles.bottomSummaryAmount}>
             {breakdown
-              ? formatMoney(breakdown.netPaidAmount, paymentCurrency)
+              ? formatMoney(breakdown.netPaidAmount, paymentCurrency, locale)
               : breakdownErrorMsg
                 ? t("patientPaymentsFlow.checkout.pricingUnavailableShort")
                 : "-"}

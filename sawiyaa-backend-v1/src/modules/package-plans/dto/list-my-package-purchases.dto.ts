@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { PatientPackagePurchaseStatus } from '@prisma/client';
 
 export class ListMyPackagePurchasesDto {
   @ApiPropertyOptional({ minimum: 1, default: 1 })
@@ -17,4 +18,14 @@ export class ListMyPackagePurchasesDto {
   @Min(1)
   @Max(100)
   limit?: number;
+
+  @ApiPropertyOptional({ enum: PatientPackagePurchaseStatus })
+  @IsOptional()
+  @IsEnum(PatientPackagePurchaseStatus)
+  status?: PatientPackagePurchaseStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

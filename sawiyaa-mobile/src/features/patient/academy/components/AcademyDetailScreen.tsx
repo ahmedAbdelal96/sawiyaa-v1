@@ -17,7 +17,8 @@ import { useAppDirection } from "../../../../i18n/direction";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { formatViewerDate } from "../../../../lib/time-formatting";
 import { usePublicAcademyProgram } from "../hooks";
-import { formatAcademySessionDateRange, formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
+import { PriceDisplay } from "../../../../components/money";
+import { academyPriceOf, formatAcademySessionDateRange } from "../display";
 
 export default function AcademyDetailScreen({
   slug,
@@ -28,7 +29,7 @@ export default function AcademyDetailScreen({
 }) {
   const router = useRouter();
   const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { rowDirection, textAlign } = useAppDirection();
   const { user, role, isLoading: isAuthLoading } = useAuth();
   const authScopeKey = useMemo(() => {
@@ -44,13 +45,8 @@ export default function AcademyDetailScreen({
   const course = courseQuery.data ?? null;
   const coverUri = resolveMediaUrl(course?.coverImageUrl);
   const startLabel = course?.startAt ? formatViewerDate(course.startAt, { locale }) : null;
-  const hasPrice = course?.priceEgp !== null || course?.priceUsd !== null;
-  const isFreeCourse = hasPrice && isAcademyProgramFree(course?.priceEgp, course?.priceUsd);
-  const priceLabel = hasPrice
-    ? (isFreeCourse
-      ? t("academy.detail.free")
-      : formatAcademyProgramPrice(course?.priceEgp, course?.priceUsd, i18n.language))
-    : null;
+  const price = academyPriceOf(course ?? {});
+  const canEnroll = price.status === "PAID" && course?.registrationOpen === true;
   const lectures = course?.sessions ?? [];
   const contentBlocks = useMemo(
     () => (course?.description ? splitCourseContent(course.description) : []),
@@ -99,13 +95,9 @@ export default function AcademyDetailScreen({
 
               <View style={styles.heroContent}>
                 <View style={[styles.heroTopRow, { flexDirection: rowDirection }]}>
-                  {priceLabel ? (
-                    <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
-                      <Text color={theme.colors.primary} weight="700" style={styles.price}>
-                        {priceLabel}
-                      </Text>
-                    </View>
-                  ) : <View />}
+                  <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+                    <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={styles.price} />
+                  </View>
                 </View>
 
                 <Text weight="600" style={[styles.title, { textAlign }]} numberOfLines={2}>
@@ -253,22 +245,13 @@ export default function AcademyDetailScreen({
               subtitle={t("academy.detail.enrollSubtitle")}
             />
             <View style={styles.ctaVerticalStack}>
-              {priceLabel ? (
-                <View style={[styles.priceRow, { flexDirection: rowDirection }]}>
-                  <Text color={theme.colors.textSecondary} style={[styles.priceLabelSub, { textAlign }]}>
-                    {t("academy.detail.priceTitle")}
-                  </Text>
-                  <Text color={theme.colors.primary} weight="700" style={[styles.priceValue, { textAlign }]}>
-                    {priceLabel}
-                  </Text>
-                </View>
-              ) : null}
+              <View style={[styles.priceRow, { flexDirection: rowDirection }]}>
+                <Text color={theme.colors.textSecondary} style={[styles.priceLabelSub, { textAlign }]}>{t("academy.detail.priceTitle")}</Text>
+                <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={[styles.priceValue, { textAlign }]} />
+              </View>
               <Button
-                title={
-                  isFreeCourse
-                    ? t("academy.detail.registerFree")
-                    : t("academy.detail.subscribeNow")
-                }
+                title={t("academy.detail.subscribeNow")}
+                disabled={!canEnroll}
                 onPress={() =>
                   router.push({
                     pathname: "/(patient)/academy/enroll/[slug]",

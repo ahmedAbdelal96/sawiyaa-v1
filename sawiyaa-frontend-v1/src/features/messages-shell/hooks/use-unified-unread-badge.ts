@@ -33,10 +33,11 @@ export function useUnifiedUnreadBadge(role: UnifiedMessagingRole) {
   });
 
   const summary = unreadSummaryQuery.data;
+  const summaryItem = summary?.item;
 
   if (role === "admin") {
-    return summary?.item.needsSupportReplyCount ?? 0;
+    return summaryItem?.needsSupportReplyCount ?? 0;
   }
-  return summary?.item.unreadCount ?? 0;
+  return summaryItem?.unreadCount ?? 0;
 
 }

@@ -94,7 +94,8 @@ export class PractitionerAuthController {
   ) {
     const result = await this.registerPractitionerAccountUseCase.execute({
       email: dto.email,
-      otpEmail: dto.otpEmail,
+      phone: dto.phone,
+      phoneCountryCode: dto.phoneCountryCode,
       password: dto.password,
       displayName: dto.displayName,
       practitionerType: dto.practitionerType,

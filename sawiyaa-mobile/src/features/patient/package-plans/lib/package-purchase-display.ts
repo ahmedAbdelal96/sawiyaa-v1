@@ -4,6 +4,7 @@ import {
   formatViewerDateTime,
   formatViewerTime,
 } from "../../../../lib/time-formatting";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../../lib/money";
 
 const PACKAGE_PURCHASE_PLAN_CODE_TO_COUNT: Record<string, number> = {
   SESSIONS_4: 4,
@@ -46,20 +47,8 @@ export function formatMoney(
   currencyCode: string | null | undefined,
   locale: string,
 ) {
-  if (!amount || !currencyCode) {
-    return "-";
-  }
-
-  const num = Number(amount);
-  if (!Number.isFinite(num)) {
-    return `${amount} ${currencyCode.toUpperCase()}`;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currencyCode.toUpperCase(),
-    maximumFractionDigits: 0,
-  }).format(num);
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatCentralMoney(money, locale) : "-";
 }
 
 export function formatDatetime(value: string | null | undefined, locale: string) {

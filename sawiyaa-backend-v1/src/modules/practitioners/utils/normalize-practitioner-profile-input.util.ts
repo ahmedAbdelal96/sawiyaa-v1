@@ -46,8 +46,10 @@ export function normalizePractitionerProfileInput(
           ? null
           : {
               methodType: input.payoutDestination.methodType,
+              countryCode:
+                input.payoutDestination.countryCode?.trim().toUpperCase() || null,
               accountHolderName:
-                input.payoutDestination.accountHolderName?.trim() || null,
+                input.payoutDestination.accountHolderName?.trim().replace(/\s+/g, ' ') || null,
               bankName: input.payoutDestination.bankName?.trim() || null,
               bankAccountNumber:
                 input.payoutDestination.bankAccountNumber?.trim() || null,

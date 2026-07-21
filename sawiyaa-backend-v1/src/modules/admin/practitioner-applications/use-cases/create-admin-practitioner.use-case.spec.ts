@@ -16,12 +16,15 @@ import { PractitionerPayoutDestinationValidationService } from '@modules/practit
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-applications-admin.mapper';
 import { CreateAdminPractitionerUseCase } from './create-admin-practitioner.use-case';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 describe('CreateAdminPractitionerUseCase', () => {
   const baseInput = {
     locale: 'en' as const,
     adminUserId: 'admin-1',
     email: 'new.practitioner@example.com',
+    phone: '01012345678',
+    phoneCountryCode: 'EG',
     password: 'StrongP@ssw0rd',
     displayName: 'Dr. Nour',
     practitionerType: PractitionerType.PSYCHOLOGIST,
@@ -61,8 +64,14 @@ describe('CreateAdminPractitionerUseCase', () => {
   };
 
   const makeSut = (overrides?: {
-    completionBlockers?: Array<{ code: string; field: string; messageKey: string }>;
+    completionBlockers?: Array<{
+      code: string;
+      field: string;
+      messageKey: string;
+    }>;
     existingEmail?: boolean;
+    countryRecord?: { id: string; isActive: boolean } | null;
+    activeCountriesCount?: number;
   }) => {
     const tx = {
       user: {
@@ -72,6 +81,7 @@ describe('CreateAdminPractitionerUseCase', () => {
       },
       userRole: { create: jest.fn().mockResolvedValue({}) },
       userEmail: { create: jest.fn().mockResolvedValue({}) },
+      userPhone: { upsert: jest.fn().mockResolvedValue({}) },
       authIdentity: { create: jest.fn().mockResolvedValue({}) },
       twoFactorSetting: { upsert: jest.fn().mockResolvedValue({}) },
       practitionerProfile: {
@@ -108,10 +118,21 @@ describe('CreateAdminPractitionerUseCase', () => {
       userEmail: {
         findUnique: jest
           .fn()
-          .mockResolvedValue(overrides?.existingEmail ? { id: 'existing' } : null),
+          .mockResolvedValue(
+            overrides?.existingEmail ? { id: 'existing' } : null,
+          ),
       },
       country: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'country-1' }),
+        count: jest
+          .fn()
+          .mockResolvedValue(overrides?.activeCountriesCount ?? 1),
+        findFirst: jest
+          .fn()
+          .mockResolvedValue(
+            overrides && 'countryRecord' in overrides
+              ? overrides.countryRecord
+              : { id: 'country-1', isActive: true },
+          ),
       },
       language: {
         findMany: jest.fn().mockResolvedValue([
@@ -169,6 +190,12 @@ describe('CreateAdminPractitionerUseCase', () => {
         blockers: overrides?.completionBlockers ?? [],
       }),
     } as unknown as PractitionerApplicationCompletionService;
+    const phoneNumberValidationService = {
+      assertValid: jest.fn().mockReturnValue({ e164: '+201012345678' }),
+    } as unknown as PhoneNumberValidationService;
+    const userPhoneRepository = {
+      upsertPrimaryPhone: jest.fn(),
+    } as any;
 
     const sut = new CreateAdminPractitionerUseCase(
       prisma,
@@ -179,6 +206,8 @@ describe('CreateAdminPractitionerUseCase', () => {
       payoutValidation,
       snapshotService,
       completionService,
+      phoneNumberValidationService,
+      userPhoneRepository,
     );
 
     return {
@@ -237,5 +266,61 @@ describe('CreateAdminPractitionerUseCase', () => {
         passwordRotationFollowUpRequired: true,
       }),
     );
+  });
+
+  it('returns COUNTRY_NOT_FOUND when submitted country does not exist', async () => {
+    const { sut, prisma } = makeSut({ countryRecord: null });
+
+    await expect(sut.execute(baseInput)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'COUNTRY_NOT_FOUND',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'countryCode',
+            code: 'COUNTRY_NOT_FOUND',
+          }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns COUNTRY_INACTIVE when submitted country is inactive', async () => {
+    const { sut, prisma } = makeSut({
+      countryRecord: { id: 'country-1', isActive: false },
+    });
+
+    await expect(sut.execute(baseInput)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'COUNTRY_INACTIVE',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'countryCode',
+            code: 'COUNTRY_INACTIVE',
+          }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns REFERENCE_DATA_MISSING when no active countries exist', async () => {
+    const { sut, prisma } = makeSut({ activeCountriesCount: 0 });
+
+    await expect(sut.execute(baseInput)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'REFERENCE_DATA_MISSING',
+        details: expect.arrayContaining([
+          expect.objectContaining({
+            field: 'countryCode',
+            code: 'REFERENCE_DATA_MISSING',
+          }),
+        ]),
+      }),
+    });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

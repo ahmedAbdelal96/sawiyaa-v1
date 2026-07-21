@@ -13,23 +13,17 @@ import { useAuth } from "../../../../providers/AuthProvider";
 import { resolveMediaUrl } from "../../../../lib/resolve-media-url";
 import { useInfinitePublicAcademyPrograms } from "../hooks";
 import type { AcademyProgramItem } from "../types";
-import { formatAcademyProgramPrice, isAcademyProgramFree } from "../display";
+import { PriceDisplay } from "../../../../components/money";
+import { academyPriceOf } from "../display";
 import { useAppDirection } from "../../../../i18n/direction";
 
 function ProgramCard({ course }: { course: AcademyProgramItem }) {
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { theme } = useTheme();
-  const locale = i18n.language?.startsWith("ar") ? "ar-EG" : "en-US";
   const { rowDirection, textAlign, chevronForward } = useAppDirection();
   const coverUri = resolveMediaUrl(course.coverImageUrl);
-  const hasPrice = course.priceEgp !== null || course.priceUsd !== null;
-  const isFreeCourse = hasPrice && isAcademyProgramFree(course.priceEgp, course.priceUsd);
-  const priceLabel = hasPrice
-    ? (isFreeCourse
-      ? t("academyMobile.free")
-      : formatAcademyProgramPrice(course.priceEgp, course.priceUsd, locale))
-    : null;
+  const price = academyPriceOf(course);
   const lectureCount = course.sessions?.length ?? 0;
   const description = course.description?.trim();
   const detailsLabel = t("academyMobile.viewDetails");
@@ -84,13 +78,9 @@ function ProgramCard({ course }: { course: AcademyProgramItem }) {
         </View>
 
         <View style={[styles.bottomRow, { flexDirection: rowDirection }]}>
-          {priceLabel ? (
-            <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
-              <Text color={theme.colors.primary} weight="700" style={styles.price}>
-                {priceLabel}
-              </Text>
-            </View>
-          ) : <View />}
+          <View style={[styles.priceTag, { backgroundColor: theme.colors.primaryLight }]}>
+            <PriceDisplay price={price} color={theme.colors.primary} weight="700" style={styles.price} />
+          </View>
 
           <TouchableOpacity
             activeOpacity={0.78}

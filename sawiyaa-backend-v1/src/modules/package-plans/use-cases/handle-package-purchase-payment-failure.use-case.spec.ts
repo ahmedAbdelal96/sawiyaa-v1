@@ -1,8 +1,4 @@
-import {
-  SessionEventType,
-  SessionStatus,
-  PatientPackagePurchaseStatus,
-} from '@prisma/client';
+import { SessionStatus, PatientPackagePurchaseStatus } from '@prisma/client';
 import { HandlePackagePurchasePaymentFailureUseCase } from './handle-package-purchase-payment-failure.use-case';
 
 describe('HandlePackagePurchasePaymentFailureUseCase', () => {
@@ -81,8 +77,8 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
       updateStatus: jest.fn().mockResolvedValue({}),
       createEvent: jest.fn().mockResolvedValue({}),
     };
-    const validateSessionStatusTransitionService = {
-      assertCanTransition: jest.fn(),
+    const sessionLifecycleService = {
+      transition: jest.fn().mockResolvedValue({}),
     };
 
     const useCase = new HandlePackagePurchasePaymentFailureUseCase(
@@ -90,13 +86,14 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
       paymentRepository as never,
       packagePurchaseRepository as never,
       sessionRepository as never,
-      validateSessionStatusTransitionService as never,
+      sessionLifecycleService as never,
     );
 
     return {
       useCase,
       packagePurchaseRepository,
       sessionRepository,
+      sessionLifecycleService,
     };
   }
 
@@ -118,13 +115,7 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
       }),
       expect.anything(),
     );
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(2);
-    expect(setup.sessionRepository.createEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        eventType: SessionEventType.EXPIRED_UNPAID,
-      }),
-      expect.anything(),
-    );
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(2);
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.CANCELLED);
   });
 
@@ -166,8 +157,7 @@ describe('HandlePackagePurchasePaymentFailureUseCase', () => {
     expect(setup.packagePurchaseRepository.updateStatus).toHaveBeenCalledTimes(
       1,
     );
-    expect(setup.sessionRepository.updateStatus).toHaveBeenCalledTimes(1);
-    expect(setup.sessionRepository.createEvent).toHaveBeenCalledTimes(1);
+    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledTimes(1);
     expect(result.purchase.status).toBe(PatientPackagePurchaseStatus.CANCELLED);
   });
 

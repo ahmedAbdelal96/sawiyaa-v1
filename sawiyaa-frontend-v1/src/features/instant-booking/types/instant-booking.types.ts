@@ -69,6 +69,7 @@ export type InstantBookingEligiblePractitionersMeta = {
 export type InstantBookingEligiblePractitionersResponseData = {
   items: InstantBookingEligiblePractitionerItem[];
   meta: InstantBookingEligiblePractitionersMeta;
+  currencyCode: InstantBookingDiscoveryCurrency;
 };
 
 export type CreatePatientInstantBookingRequestInput = {

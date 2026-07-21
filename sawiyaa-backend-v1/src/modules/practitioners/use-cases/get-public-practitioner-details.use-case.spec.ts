@@ -38,7 +38,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     });
   });
 
-  it('exposes structured dual-currency pricing and keeps legacy fields compatible', async () => {
+  it('returns selected USD values paired with USD, rather than legacy profile prices', async () => {
     (publicReadRepository.findByPublicSlug as jest.Mock).mockResolvedValue({
       id: 'profile-1',
       publicSlug: 'dr-youssef-abdallah',
@@ -99,7 +99,8 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     expect(result.item.currencyCode).toBe('USD');
     expect(result.item.displaySessionPrice30).toBe(8);
     expect(result.item.displaySessionPrice60).toBe(15);
-    expect(result.item.sessionPrice60).toBe(222);
+    expect(result.item.sessionPrice30).toBe(8);
+    expect(result.item.sessionPrice60).toBe(15);
     expect(result.item.sessionPrice60Usd).toBe(15);
     expect(result.item.ratingSummary).toEqual({
       averageRating: 4.5,
@@ -169,5 +170,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     expect(result.item.currencyCode).toBe('EGP');
     expect(result.item.displaySessionPrice30).toBe(250);
     expect(result.item.displaySessionPrice60).toBe(450);
+    expect(result.item.sessionPrice30).toBe(250);
+    expect(result.item.sessionPrice60).toBe(450);
   });
 });

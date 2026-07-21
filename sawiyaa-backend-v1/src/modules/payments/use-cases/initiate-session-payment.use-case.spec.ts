@@ -164,6 +164,18 @@ describe('InitiateSessionPaymentUseCase', () => {
     corporateSponsorshipPaymentService as any,
   );
 
+  // All production callers must provide trusted request country. Keep the
+  // legacy fixture inputs concise without weakening that production contract.
+  const executeWithTrustedCountry = useCase.execute.bind(useCase);
+  useCase.execute = ((input: any) =>
+    executeWithTrustedCountry({
+      ...input,
+      requestCountryIsoCode:
+        input.requestCountryIsoCode === undefined
+          ? 'EG'
+          : input.requestCountryIsoCode,
+    })) as typeof useCase.execute;
+
   const basePatient = {
     id: 'patient-1',
     user: { emails: [{ email: 'patient@example.com' }] },
@@ -190,15 +202,17 @@ describe('InitiateSessionPaymentUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (refundPolicyService.ensureAcceptedRefundPolicyForPayment as jest.Mock)
-      .mockImplementation(() =>
-        Promise.resolve({
-          id: 'acceptance-1',
-          refundPolicyVersionId: 'refund-policy-version-1',
-        }),
-      );
-    (corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock)
-      .mockResolvedValue({ eligible: false, sponsorship: null });
+    (
+      refundPolicyService.ensureAcceptedRefundPolicyForPayment as jest.Mock
+    ).mockImplementation(() =>
+      Promise.resolve({
+        id: 'acceptance-1',
+        refundPolicyVersionId: 'refund-policy-version-1',
+      }),
+    );
+    (
+      corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
+    ).mockResolvedValue({ eligible: false, sponsorship: null });
     (paymentPatientRepository.findByUserId as jest.Mock).mockResolvedValue(
       basePatient,
     );
@@ -321,24 +335,25 @@ describe('InitiateSessionPaymentUseCase', () => {
     'http://localhost:8081/patient/sessions/session-1/payment-return',
     'http://localhost:3000/en/patient/sessions/session-1/payment-return',
     'sawiyaa://sessions/session-1/payment-return',
-  ])('preserves trusted session returnUrl %s for Paymob payments', async (returnUrl) => {
-    await useCase.execute({
-      userId: 'user-1',
-      locale: 'en',
-      sessionId: 'session-1',
-      acceptedRefundPolicyId: 'refund-policy-version-1',
-      displayLocale: 'en',
-      returnUrl,
-    });
+  ])(
+    'preserves trusted session returnUrl %s for Paymob payments',
+    async (returnUrl) => {
+      await useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        sessionId: 'session-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+        returnUrl,
+      });
 
-    expect(
-      providerAdapter.initiateSessionPayment,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        redirectionUrl: returnUrl,
-      }),
-    );
-  });
+      expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          redirectionUrl: returnUrl,
+        }),
+      );
+    },
+  );
 
   it('rejects an untrusted session returnUrl instead of silently falling back to the web default', async () => {
     await expect(
@@ -348,7 +363,8 @@ describe('InitiateSessionPaymentUseCase', () => {
         sessionId: 'session-1',
         acceptedRefundPolicyId: 'refund-policy-version-1',
         displayLocale: 'en',
-        returnUrl: 'https://evil.example/patient/sessions/session-1/payment-return',
+        returnUrl:
+          'https://evil.example/patient/sessions/session-1/payment-return',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
@@ -366,15 +382,17 @@ describe('InitiateSessionPaymentUseCase', () => {
       },
     });
 
-    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce({
-      providerPaymentRef: 'provider-payment-2',
-      providerOrderRef: 'provider-order-2',
-      providerCustomerRef: null,
-      status: PaymentStatus.PENDING,
-      checkoutUrl: 'https://checkout-refreshed',
-      clientSecret: null,
-      metadata: {},
-    });
+    (providerAdapter.initiateSessionPayment as jest.Mock).mockResolvedValueOnce(
+      {
+        providerPaymentRef: 'provider-payment-2',
+        providerOrderRef: 'provider-order-2',
+        providerCustomerRef: null,
+        status: PaymentStatus.PENDING,
+        checkoutUrl: 'https://checkout-refreshed',
+        clientSecret: null,
+        metadata: {},
+      },
+    );
     (paymentRepository.updateStatus as jest.Mock).mockResolvedValueOnce({
       id: 'payment-existing',
       status: PaymentStatus.PENDING,
@@ -551,9 +569,7 @@ describe('InitiateSessionPaymentUseCase', () => {
 
         const paymentCall = (paymentRepository.createPayment as jest.Mock).mock
           .calls[0][0];
-        expect(paymentCall.metadataJson).not.toHaveProperty(
-          'sponsorshipId',
-        );
+        expect(paymentCall.metadataJson).not.toHaveProperty('sponsorshipId');
         expect(paymentCall.metadataJson).not.toHaveProperty(
           'corporateOrganizationId',
         );
@@ -633,9 +649,7 @@ describe('InitiateSessionPaymentUseCase', () => {
         expect(paymentCall.metadataJson).toHaveProperty(
           'corporateOrganizationId',
         );
-        expect(paymentCall.metadataJson).toHaveProperty(
-          'corporateContractId',
-        );
+        expect(paymentCall.metadataJson).toHaveProperty('corporateContractId');
         expect(paymentCall.metadataJson).toHaveProperty(
           'corporateBenefitPlanId',
         );
@@ -673,7 +687,10 @@ describe('InitiateSessionPaymentUseCase', () => {
           corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
         ).mockResolvedValue({
           eligible: true,
-          sponsorship: { ...eligibleSponsorshipContext, patientPayAmount: '50.00' },
+          sponsorship: {
+            ...eligibleSponsorshipContext,
+            patientPayAmount: '50.00',
+          },
         });
 
         await useCase.execute({
@@ -805,7 +822,10 @@ describe('InitiateSessionPaymentUseCase', () => {
           corporateSponsorshipPaymentService.checkPaymentEligibility as jest.Mock
         ).mockResolvedValue({
           eligible: true,
-          sponsorship: { ...eligibleSponsorshipContext, patientPayAmount: '0.00' },
+          sponsorship: {
+            ...eligibleSponsorshipContext,
+            patientPayAmount: '0.00',
+          },
         });
 
         const result = await useCase.execute({
@@ -816,7 +836,9 @@ describe('InitiateSessionPaymentUseCase', () => {
           displayLocale: 'en',
         });
 
-        expect(paymentProviderResolverService.resolveProvider).not.toHaveBeenCalled();
+        expect(
+          paymentProviderResolverService.resolveProvider,
+        ).not.toHaveBeenCalled();
         expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
       });
     });
@@ -838,7 +860,9 @@ describe('InitiateSessionPaymentUseCase', () => {
           displayLocale: 'en',
         });
 
-        expect(corporateSponsorshipPaymentService.checkPaymentEligibility).toHaveBeenCalledWith(
+        expect(
+          corporateSponsorshipPaymentService.checkPaymentEligibility,
+        ).toHaveBeenCalledWith(
           expect.objectContaining({
             sessionId: 'session-1',
             userId: 'user-1',

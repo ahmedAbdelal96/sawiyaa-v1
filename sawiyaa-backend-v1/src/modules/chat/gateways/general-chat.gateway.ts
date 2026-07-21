@@ -510,14 +510,21 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         throw new Error('SUPPORT_MESSAGE_REQUIRED');
       }
 
-      const detail = await this.sendSupportMessageByActor({
+      const result = await this.sendSupportMessageByActor({
         actor,
         ticketId: payload.ticketId,
         message: normalizedMessage,
         clientMessageId: payload.clientMessageId,
       });
 
-      const message = detail.messages[detail.messages.length - 1];
+      const detail = result.item ?? result;
+      const message = (Array.isArray(detail.messages)
+        ? detail.messages[detail.messages.length - 1]
+        : detail) as {
+        id: string;
+        deliveredAt: string | null;
+        status: string;
+      };
       if (!message) {
         throw new Error('SUPPORT_MESSAGE_NOT_FOUND');
       }
@@ -548,12 +555,14 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         deliveredAt,
       };
 
-      this.server
-        .to(this.supportRoom(payload.ticketId))
-        .emit('chat:support:newMessage', {
-          ticketId: payload.ticketId,
-          item,
-        });
+      if (result.created) {
+        this.server
+          .to(this.supportRoom(payload.ticketId))
+          .emit('chat:support:newMessage', {
+            ticketId: payload.ticketId,
+            item,
+          });
+      }
 
       if (status === 'DELIVERED' && deliveredAt) {
         this.server
@@ -1075,7 +1084,10 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         payload: { message: input.message, clientMessageId: input.clientMessageId },
       });
 
-      return result.item;
+      return {
+        item: result.item ?? result,
+        created: result.created === true,
+      };
     }
 
     const actorKind = input.actor.roles.includes(AppRole.PRACTITIONER)
@@ -1089,7 +1101,10 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
       payload: { message: input.message, clientMessageId: input.clientMessageId },
     });
 
-    return result.item;
+    return {
+      item: result.item ?? result,
+      created: result.created === true,
+    };
   }
 
   private toAckFailure(error: unknown): AckFailure {

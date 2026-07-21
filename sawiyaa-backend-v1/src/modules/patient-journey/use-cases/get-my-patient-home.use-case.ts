@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerMarketingPlacementRepository } from '@modules/marketing-practitioner-placements/repositories/practitioner-marketing-placement.repository';
 import { PatientJourneyPatientRepository } from '../repositories/patient-journey-patient.repository';
 import { PatientHomeRepository } from '../repositories/patient-home.repository';
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 
 const FEATURED_LIMIT = 5;
 const MOST_BOOKED_LIMIT = 10;
@@ -46,7 +51,11 @@ export class GetMyPatientHomeUseCase {
     };
   }
 
-  async execute(input: { userId: string; locale: SupportedLocale }) {
+  async execute(input: {
+    userId: string;
+    locale: SupportedLocale;
+    requestCountryIsoCode: string | null;
+  }) {
     const patient = await this.patientRepository.findByUserId(input.userId);
     if (!patient) {
       throw new NotFoundException({
@@ -56,9 +65,13 @@ export class GetMyPatientHomeUseCase {
     }
 
     const copy = this.getCopy(input.locale);
+    const pricing = resolvePaymentRegionalResolution({
+      requestCountryIsoCode: input.requestCountryIsoCode,
+    });
     const viewedRows = await this.patientHomeRepository.listRecentlyVisited(
       patient.id,
       input.locale,
+      pricing.currencyCode,
     );
 
     const { startUtc, endUtcExclusive } = this.getDayUtcRange(
@@ -72,6 +85,7 @@ export class GetMyPatientHomeUseCase {
           locale: input.locale,
           now: new Date(),
           limit: FEATURED_LIMIT,
+          currencyCode: pricing.currencyCode,
         },
       ),
       this.patientHomeRepository.listMostBookedToday({
@@ -79,12 +93,14 @@ export class GetMyPatientHomeUseCase {
         fromUtc: startUtc,
         toUtc: endUtcExclusive,
         limit: MOST_BOOKED_LIMIT,
+        currencyCode: pricing.currencyCode,
       }),
       this.patientHomeRepository.listTopRated({
         locale: input.locale,
         limit: TOP_RATED_LIMIT,
         minimumReviews: MIN_TOP_RATED_REVIEWS,
         priorReviews: TOP_RATED_PRIOR_REVIEWS,
+        currencyCode: pricing.currencyCode,
       }),
     ]);
 
@@ -103,12 +119,15 @@ export class GetMyPatientHomeUseCase {
     }
 
     return {
+      currencyCode: pricing.currencyCode,
       featuredPractitioners: {
+        currencyCode: pricing.currencyCode,
         label: copy.featuredLabel,
         status: 'IMPLEMENTED' as const,
         items: featuredRows,
       },
       recentlyVisitedPractitioners: {
+        currencyCode: pricing.currencyCode,
         label: copy.recentlyVisitedLabel,
         status: 'READY' as const,
         items: Array.from(deduped.values()).map((item) => ({
@@ -117,11 +136,13 @@ export class GetMyPatientHomeUseCase {
         })),
       },
       mostBookedTodayPractitioners: {
+        currencyCode: pricing.currencyCode,
         label: copy.mostBookedTodayLabel,
         status: 'IMPLEMENTED' as const,
         items: mostBookedRows,
       },
       topRatedPractitioners: {
+        currencyCode: pricing.currencyCode,
         label: copy.topRatedLabel,
         status: 'IMPLEMENTED' as const,
         items: topRatedRows,

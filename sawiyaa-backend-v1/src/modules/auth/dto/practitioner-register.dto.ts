@@ -45,13 +45,16 @@ export class PractitionerRegisterDto {
   @IsEmail()
   email!: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Optional dedicated email to receive OTP challenges. If omitted, primary login email is used.',
-  })
-  @IsOptional()
-  @IsEmail()
-  otpEmail?: string;
+  @ApiProperty({ example: 'EG' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(3)
+  phoneCountryCode!: string;
+
+  @ApiProperty({ example: '01012345678' })
+  @IsString()
+  @MinLength(1)
+  phone!: string;
 
   @ApiProperty({ minLength: 8 })
   @IsString()

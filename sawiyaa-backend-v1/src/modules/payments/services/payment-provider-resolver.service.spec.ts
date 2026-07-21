@@ -26,6 +26,16 @@ function buildResolver(config: {
   paymobEgpWalletIntegrationId?: string | null;
   paymobUsdCardIntegrationId?: string | null;
   paymobIframeId?: string;
+  currencyRoutes?: Array<{
+    currencyCode: 'EGP' | 'USD';
+    paymentMethod: string;
+    provider: PaymentProvider;
+    integrationKey: string;
+    environment: 'development' | 'staging' | 'production';
+    enabled: boolean;
+    priority: number;
+    source: 'DATABASE' | 'ENVIRONMENT';
+  }>;
 }) {
   const capabilitiesService = new PaymentProviderCapabilitiesService({
     getStripeConfig: () => ({
@@ -136,9 +146,12 @@ function buildResolver(config: {
         defaultProvider: 'config',
         priorityOrder: 'config',
         fallbackProvider: 'config',
+        currencyRoutes: config.currencyRoutes ? 'config' : 'env',
       },
+      currencyRoutes: config.currencyRoutes ?? [],
       updatedAt: new Date().toISOString(),
     }),
+    getPaymentEnvironment: () => 'development',
   };
 
   return new PaymentProviderResolverService(
@@ -148,6 +161,60 @@ function buildResolver(config: {
 }
 
 describe('PaymentProviderResolverService', () => {
+  it('uses a centrally configured provider route for USD card payments', () => {
+    const service = buildResolver({
+      currencyRoutes: [
+        {
+          currencyCode: 'USD',
+          paymentMethod: 'CARD',
+          provider: PaymentProvider.STRIPE,
+          integrationKey: 'stripe-usd-card',
+          environment: 'development',
+          enabled: true,
+          priority: 100,
+          source: 'DATABASE',
+        },
+      ],
+    });
+
+    expect(
+      service.resolveRoute({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        operatingCountryIsoCode: 'US',
+        checkoutCountryIsoCode: 'US',
+      }),
+    ).toMatchObject({
+      provider: PaymentProvider.STRIPE,
+      integrationKey: 'stripe-usd-card',
+      source: 'DATABASE',
+    });
+  });
+
+  it('rejects equal-priority active routes as deterministic ambiguity', () => {
+    const service = buildResolver({
+      currencyRoutes: [
+        {
+          currencyCode: 'USD', paymentMethod: 'CARD', provider: PaymentProvider.PAYMOB,
+          integrationKey: 'paymob-usd-card-a', environment: 'development', enabled: true, priority: 100, source: 'ENVIRONMENT',
+        },
+        {
+          currencyCode: 'USD', paymentMethod: 'CARD', provider: PaymentProvider.STRIPE,
+          integrationKey: 'stripe-usd-card', environment: 'development', enabled: true, priority: 100, source: 'DATABASE',
+        },
+      ],
+    });
+
+    expect(() =>
+      service.resolveRoute({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        operatingCountryIsoCode: 'US',
+        checkoutCountryIsoCode: 'US',
+      }),
+    ).toThrow(BadRequestException);
+  });
+
   it('routes egypt local EGP payments to Paymob', () => {
     const service = buildResolver({});
 
@@ -161,6 +228,26 @@ describe('PaymentProviderResolverService', () => {
     ).toBe(PaymentProvider.PAYMOB);
   });
 
+  it.each([
+    ['EG', 'EGY'],
+    ['EGY', 'EG'],
+    [' eg ', 'EGY'],
+  ])(
+    'treats local country %s and %s as the same canonical country',
+    (operatingCountryIsoCode, checkoutCountryIsoCode) => {
+      const service = buildResolver({});
+
+      expect(
+        service.resolveProvider({
+          currencyCode: 'EGP',
+          commissionMarketType: MarketType.LOCAL,
+          operatingCountryIsoCode,
+          checkoutCountryIsoCode,
+        }),
+      ).toBe(PaymentProvider.PAYMOB);
+    },
+  );
+
   it('routes international USD payments to Paymob', () => {
     const service = buildResolver({});
 
@@ -169,7 +256,7 @@ describe('PaymentProviderResolverService', () => {
         currencyCode: 'USD',
         commissionMarketType: MarketType.CROSS_BORDER,
         operatingCountryIsoCode: 'EGY',
-        checkoutCountryIsoCode: 'USA',
+        checkoutCountryIsoCode: 'US',
       }),
     ).toBe(PaymentProvider.PAYMOB);
   });
@@ -181,7 +268,7 @@ describe('PaymentProviderResolverService', () => {
       service.resolveProvider({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.CROSS_BORDER,
-        operatingCountryIsoCode: 'USA',
+        operatingCountryIsoCode: 'US',
         checkoutCountryIsoCode: 'EGY',
       }),
     ).toBe(PaymentProvider.PAYMOB);
@@ -195,9 +282,35 @@ describe('PaymentProviderResolverService', () => {
         currencyCode: 'USD',
         commissionMarketType: MarketType.ANY,
         operatingCountryIsoCode: null,
-        checkoutCountryIsoCode: 'USA',
+        checkoutCountryIsoCode: 'US',
       }),
     ).toThrow(BadRequestException);
+  });
+
+  it('does not normalize an invalid stored country to Egypt', () => {
+    const service = buildResolver({});
+
+    expect(() =>
+      service.resolveProvider({
+        currencyCode: 'EGP',
+        commissionMarketType: MarketType.LOCAL,
+        operatingCountryIsoCode: 'XX',
+        checkoutCountryIsoCode: 'EG',
+      }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('routes the canonical USD fallback without a checkout country', () => {
+    const service = buildResolver({});
+
+    expect(
+      service.resolveProvider({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        operatingCountryIsoCode: 'EGY',
+        checkoutCountryIsoCode: null,
+      }),
+    ).toBe(PaymentProvider.PAYMOB);
   });
 
   it('fails clearly when selected provider is disabled', () => {
@@ -222,8 +335,8 @@ describe('PaymentProviderResolverService', () => {
       service.resolveProvider({
         currencyCode: 'USD',
         commissionMarketType: MarketType.LOCAL,
-        operatingCountryIsoCode: 'USA',
-        checkoutCountryIsoCode: 'USA',
+        operatingCountryIsoCode: 'US',
+        checkoutCountryIsoCode: 'US',
       }),
     ).toBe(PaymentProvider.PAYMOB);
   });
@@ -238,7 +351,7 @@ describe('PaymentProviderResolverService', () => {
         currencyCode: 'USD',
         commissionMarketType: MarketType.CROSS_BORDER,
         operatingCountryIsoCode: 'EGY',
-        checkoutCountryIsoCode: 'USA',
+        checkoutCountryIsoCode: 'US',
       }),
     ).toThrow(ServiceUnavailableException);
   });

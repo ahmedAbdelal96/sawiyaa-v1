@@ -1,22 +1,12 @@
+import { formatMoney, parseMoney } from "../../../lib/money";
+
 export function formatInstantBookingMoney(
   amount: string | null | undefined,
   currencyCode: string | null | undefined,
   locale: string,
 ) {
-  if (!amount || !currencyCode) {
-    return "-";
-  }
-
-  const numeric = Number(amount);
-  if (!Number.isFinite(numeric)) {
-    return `${amount} ${currencyCode.toUpperCase()}`;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: currencyCode.toUpperCase(),
-    maximumFractionDigits: 0,
-  }).format(numeric);
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatMoney(money, locale) : "-";
 }
 
 export function formatInstantBookingDateTime(

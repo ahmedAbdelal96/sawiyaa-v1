@@ -11,6 +11,7 @@ import { PaymentProviderRegistryService } from '../services/payment-provider-reg
 import { ExpirePaymentUseCase } from './expire-payment.use-case';
 import { MarkPaymentFailedUseCase } from './mark-payment-failed.use-case';
 import { MarkPaymentSucceededUseCase } from './mark-payment-succeeded.use-case';
+import { gatewayMoneyMatchesPayment } from '../utils/money-units.util';
 
 @Injectable()
 export class HandlePaymobWebhookUseCase {
@@ -76,6 +77,25 @@ export class HandlePaymobWebhookUseCase {
     }
 
     const targetStatus = this.mapOutcomeToStatus(webhook.outcome);
+
+    if (
+      webhook.outcome === 'SUCCEEDED' &&
+      !gatewayMoneyMatchesPayment({
+        amountMinor: webhook.amountMinor,
+        currencyCode: webhook.currencyCode,
+        expectedAmount: payment.amountTotal,
+        expectedCurrencyCode: payment.currencyCode,
+      })
+    ) {
+      await this.paymentRepository.createEvent({
+        paymentId: payment.id,
+        eventType: PaymentEventType.PROVIDER_WEBHOOK_RECEIVED,
+        providerEventRef: webhook.providerEventRef,
+        reason: 'FINANCIAL_MISMATCH_AMOUNT_OR_CURRENCY',
+        payloadJson: webhook.payload as Prisma.InputJsonValue,
+      });
+      return { received: true, handled: false, paymentId: payment.id };
+    }
 
     if (payment.status === targetStatus) {
       await this.paymentRepository.createEvent({

@@ -14,6 +14,12 @@ export class PractitionerPayoutDestinationInputDto {
   @IsEnum(PractitionerPayoutMethodType)
   methodType!: PractitionerPayoutMethodType;
 
+  @ApiPropertyOptional({ minLength: 2, maxLength: 2 })
+  @ValidateIf((input) => input.methodType !== PractitionerPayoutMethodType.OTHER)
+  @IsString()
+  @IsNotEmpty()
+  countryCode?: string | null;
+
   @ApiPropertyOptional()
   @ValidateIf((input) => input.methodType !== undefined && input.methodType !== null)
   @IsString()
@@ -74,6 +80,9 @@ export class PractitionerPayoutDestinationInputDto {
 export class PractitionerPayoutDestinationResponseDto {
   @ApiProperty({ enum: PractitionerPayoutMethodType, nullable: true })
   methodType!: PractitionerPayoutMethodType | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  countryCode!: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   accountHolderName!: string | null;

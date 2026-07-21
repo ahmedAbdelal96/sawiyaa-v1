@@ -30,6 +30,7 @@ export class FinancialOperationsPractitionerRepository {
     payoutDestination: {
       select: {
         methodType: true,
+        countryCode: true,
         accountHolderName: true,
         bankName: true,
         bankAccountNumber: true,

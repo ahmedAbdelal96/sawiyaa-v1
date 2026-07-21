@@ -94,7 +94,7 @@ describe('ListPublicPractitionersUseCase', () => {
     );
   });
 
-  it('exposes structured dual-currency pricing and keeps legacy fields compatible', async () => {
+  it('returns USD selected amounts that match the selected currency, not legacy prices', async () => {
     (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([baseRow]);
 
     const result = await useCase.execute({
@@ -108,7 +108,8 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].currencyCode).toBe('USD');
     expect(result.items[0].displaySessionPrice30).toBe(8);
     expect(result.items[0].displaySessionPrice60).toBe(15);
-    expect(result.items[0].sessionPrice30).toBe(111);
+    expect(result.items[0].sessionPrice30).toBe(8);
+    expect(result.items[0].sessionPrice60).toBe(15);
     expect(result.items[0].sessionPrice30Egp).toBe(250);
     expect(result.items[0].sessionPrice30Usd).toBe(8);
     expect(result.items[0].ratingSummary).toEqual({
@@ -176,5 +177,25 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].currencyCode).toBe('EGP');
     expect(result.items[0].displaySessionPrice30).toBe(250);
     expect(result.items[0].displaySessionPrice60).toBe(450);
+    expect(result.items[0].sessionPrice30).toBe(250);
+    expect(result.items[0].sessionPrice60).toBe(450);
+  });
+
+  it('does not borrow an EGP value when the selected USD value is missing', async () => {
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([
+      {
+        ...baseRow,
+        sessionPrice30Usd: null,
+        sessionPrice60Usd: null,
+      },
+    ]);
+
+    const result = await useCase.execute({ locale: 'en' });
+
+    expect(result.items[0].currencyCode).toBe('USD');
+    expect(result.items[0].sessionPrice30).toBeNull();
+    expect(result.items[0].sessionPrice60).toBeNull();
+    expect(result.items[0].displaySessionPrice30).toBeNull();
+    expect(result.items[0].displaySessionPrice60).toBeNull();
   });
 });

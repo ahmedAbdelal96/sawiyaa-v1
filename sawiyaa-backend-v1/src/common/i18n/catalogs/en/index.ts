@@ -26,6 +26,7 @@ import { enSpecialtiesCatalog } from './specialties.catalog';
 import { enSupportCatalog } from './support.catalog';
 import { enUsersCatalog } from './users.catalog';
 import { enValidationCatalog } from './validation.catalog';
+import { enPackagePlansCatalog } from './package-plans.catalog';
 
 export const enCatalog = {
   academy: enAcademyCatalog,
@@ -48,6 +49,7 @@ export const enCatalog = {
   patientJourney: enPatientJourneyCatalog,
   patients: enPatientsCatalog,
   payments: enPaymentsCatalog,
+  packagePlans: enPackagePlansCatalog,
   presence: enPresenceCatalog,
   practitioners: enPractitionersCatalog,
   reviews: enReviewsCatalog,

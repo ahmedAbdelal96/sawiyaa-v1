@@ -19,11 +19,14 @@ import {
 import { PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS } from '../payment-gateway-control.constants';
 import {
   PaymentGatewayControlManagedProvider,
+  PaymentRouteCatalogEntry,
+  PaymentRouteReadiness,
   PaymentRoutingRuntimeSnapshot,
   PaymobGatewayControlMethodEntry,
   PaymobGatewayControlRuntimeSnapshot,
   StripeGatewayControlRuntimeSnapshot,
 } from '../types/payment-gateway-control.types';
+import { PaymentRoute } from '@modules/payments/types/payment-routing.types';
 import { paymobGatewayMethodEntrySchema } from '../schemas/paymob-gateway-control.schema';
 
 type ResolvedConfig = {
@@ -55,6 +58,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.refreshAllSnapshots();
+    this.logRoutingSnapshotDiagnostics();
   }
 
   getProviderSnapshot(
@@ -79,7 +83,19 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   getRoutingSnapshot(): PaymentRoutingRuntimeSnapshot {
-    return this.routingSnapshot ?? this.buildFallbackRoutingSnapshot();
+    const snapshot = this.routingSnapshot ?? this.buildFallbackRoutingSnapshot();
+    const routeCatalog = this.buildRouteCatalog();
+    return {
+      ...snapshot,
+      routeCatalog,
+      routeReadiness: snapshot.currencyRoutes.map((route) =>
+        this.getRouteReadinessForSnapshot(route, routeCatalog),
+      ),
+    };
+  }
+
+  getPaymentRouteCatalog(): PaymentRouteCatalogEntry[] {
+    return this.buildRouteCatalog();
   }
 
   async refreshProviderSnapshot(
@@ -105,7 +121,23 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   async refreshRoutingSnapshot(): Promise<PaymentRoutingRuntimeSnapshot> {
     const snapshot = await this.loadRoutingSnapshot();
     this.routingSnapshot = snapshot;
+    this.logRoutingSnapshotDiagnostics(snapshot);
     return snapshot;
+  }
+
+  private logRoutingSnapshotDiagnostics(
+    snapshot: PaymentRoutingRuntimeSnapshot = this.getRoutingSnapshot(),
+  ): void {
+    const routes = snapshot.currencyRoutes.map((route) => {
+      const readiness = this.getRouteReadinessForSnapshot(
+        route,
+        this.buildRouteCatalog(),
+      );
+      return `${route.currencyCode}/${route.paymentMethod} -> ${route.provider}/${route.integrationKey} (${route.environment}, ${readiness.ready ? 'ready' : 'not-ready'})`;
+    });
+    this.logger.log(
+      `Database payment routing snapshot: ${routes.length} active route(s)${routes.length ? `: ${routes.join('; ')}` : ''}`,
+    );
   }
 
   async refreshAllSnapshots(): Promise<void> {
@@ -608,23 +640,15 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
   private async loadRoutingSnapshot(): Promise<PaymentRoutingRuntimeSnapshot> {
     const envSnapshot = this.buildRoutingEnvSnapshot();
-    const [defaultProvider, priorityOrder, fallbackProvider] =
-      await Promise.all([
-        this.resolveConfigValue(
-          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingDefaultProvider,
-        ),
-        this.resolveConfigValue(
-          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingPriorityOrder,
-        ),
-        this.resolveConfigValue(
-          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingFallbackProvider,
-        ),
-      ]);
+    const currencyRoutes = await this.resolveConfigValue(
+      PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingCurrencyRoutes,
+    );
 
     const configOverrides = this.normalizeRoutingConfigOverrides({
-      defaultProvider,
-      priorityOrder,
-      fallbackProvider,
+      defaultProvider: null,
+      priorityOrder: null,
+      fallbackProvider: null,
+      currencyRoutes,
     });
 
     const merged = this.mergeRoutingSnapshots(envSnapshot, configOverrides);
@@ -693,15 +717,25 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   private buildRoutingEnvSnapshot(): PaymentRoutingRuntimeSnapshot {
+    // Environment is credential infrastructure only. It intentionally exposes
+    // no routes, defaults, fallbacks, or provider priorities.
+    const currencyRoutes: PaymentRoute[] = [];
+    const routeCatalog = this.buildRouteCatalog();
     return {
       defaultProvider: null,
-      priorityOrder: [PaymentProvider.PAYMOB, PaymentProvider.STRIPE],
-      fallbackProvider: PaymentProvider.STRIPE,
+      priorityOrder: [],
+      fallbackProvider: null,
+      currencyRoutes,
+      routeReadiness: currencyRoutes.map((route) =>
+        this.getRouteReadinessForSnapshot(route, routeCatalog),
+      ),
+      routeCatalog,
       validation: { healthy: true, issues: [] },
       sources: {
         defaultProvider: 'env',
         priorityOrder: 'env',
         fallbackProvider: 'env',
+        currencyRoutes: 'env',
       },
       updatedAt: null,
     };
@@ -798,6 +832,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     defaultProvider: ResolvedConfig | null;
     priorityOrder: ResolvedConfig | null;
     fallbackProvider: ResolvedConfig | null;
+    currencyRoutes: ResolvedConfig | null;
   }): Partial<PaymentRoutingRuntimeSnapshot> {
     const overrides: Partial<PaymentRoutingRuntimeSnapshot> = {};
 
@@ -808,6 +843,13 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       overrides.defaultProvider = this.normalizeProviderKey(
         input.defaultProvider?.value,
       );
+    }
+
+    if (input.currencyRoutes?.value !== null && input.currencyRoutes?.value !== undefined) {
+      const parsed = this.parseCurrencyRoutes(input.currencyRoutes.value, 'DATABASE');
+      if (parsed.length > 0 || input.currencyRoutes.source === 'database') {
+        overrides.currencyRoutes = parsed;
+      }
     }
 
     if (
@@ -923,21 +965,179 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       overrides.fallbackProvider === undefined
         ? envSnapshot.fallbackProvider
         : overrides.fallbackProvider;
+    const currencyRoutes = this.mergeCurrencyRoutes(
+      envSnapshot.currencyRoutes,
+      overrides.currencyRoutes,
+    );
+    const routeCatalog = this.buildRouteCatalog();
 
     return {
-      defaultProvider,
-      priorityOrder,
-      fallbackProvider,
+      defaultProvider: null,
+      priorityOrder: [],
+      fallbackProvider: null,
+      currencyRoutes,
+      routeReadiness: currencyRoutes.map((route) =>
+        this.getRouteReadinessForSnapshot(route, routeCatalog),
+      ),
+      routeCatalog,
       sources: {
-        defaultProvider:
-          overrides.defaultProvider === undefined ? 'env' : 'config',
-        priorityOrder: overrides.priorityOrder === undefined ? 'env' : 'config',
-        fallbackProvider:
-          overrides.fallbackProvider === undefined ? 'env' : 'config',
+        defaultProvider: 'config',
+        priorityOrder: 'config',
+        fallbackProvider: 'config',
+        currencyRoutes:
+          overrides.currencyRoutes === undefined ? 'env' : 'config',
       },
       validation: { healthy: true, issues: [] },
       updatedAt: envSnapshot.updatedAt,
     };
+  }
+
+  private buildRouteCatalog(): PaymentRouteCatalogEntry[] {
+    const paymob = this.getPaymobSnapshot();
+    const stripe = this.getStripeSnapshot();
+    const paymobAliases = [
+      {
+        integrationKey: 'paymob-egp-card',
+        currencyCodes: ['EGP'] as Array<'EGP' | 'USD'>,
+        variable: 'PAYMOB_EGP_CARD_INTEGRATION_ID',
+        configured: Boolean(this.paymentCfg.paymob.egpCardIntegrationId),
+      },
+      {
+        integrationKey: 'paymob-usd-card',
+        currencyCodes: ['USD'] as Array<'EGP' | 'USD'>,
+        variable: 'PAYMOB_USD_CARD_INTEGRATION_ID',
+        configured: Boolean(this.paymentCfg.paymob.usdCardIntegrationId),
+      },
+    ];
+
+    return [
+      ...paymobAliases.map((alias) => ({
+        provider: PaymentProvider.PAYMOB,
+        integrationKey: alias.integrationKey,
+        currencyCodes: alias.currencyCodes,
+        paymentMethods: ['CARD'],
+        ready:
+          paymob.enabled &&
+          !paymob.maintenanceMode &&
+          paymob.validation.healthy &&
+          alias.configured,
+        issues: [
+          ...(paymob.enabled ? [] : ['PAYMENT_PAYMOB_ENABLED']),
+          ...(paymob.maintenanceMode ? ['PAYMOB_MAINTENANCE_MODE'] : []),
+          ...(alias.configured ? [] : [alias.variable]),
+        ],
+      })),
+      {
+        provider: PaymentProvider.STRIPE,
+        integrationKey: 'stripe-card',
+        currencyCodes: ['EGP', 'USD'],
+        paymentMethods: ['CARD'],
+        ready: stripe.enabled && !stripe.maintenanceMode && stripe.validation.healthy,
+        issues: [
+          ...(stripe.enabled ? [] : ['PAYMENT_STRIPE_ENABLED']),
+          ...(stripe.maintenanceMode ? ['STRIPE_MAINTENANCE_MODE'] : []),
+          ...(!stripe.validation.healthy ? stripe.validation.issues : []),
+        ],
+      },
+    ];
+  }
+
+  private mergeCurrencyRoutes(
+    _environmentRoutes: PaymentRoute[],
+    databaseRoutes?: PaymentRoute[],
+  ): PaymentRoute[] {
+    // Environment provides credentials only. It is never a route source.
+    return (databaseRoutes ?? []).filter((route) => route.enabled);
+  }
+
+  private getRouteReadinessForSnapshot(
+    route: PaymentRoute,
+    catalog: PaymentRouteCatalogEntry[],
+  ): PaymentRouteReadiness {
+    const entry = catalog.find(
+      (candidate) =>
+        candidate.provider === route.provider &&
+        candidate.integrationKey === route.integrationKey &&
+        candidate.currencyCodes.includes(route.currencyCode) &&
+        candidate.paymentMethods.includes(route.paymentMethod),
+    );
+    const issues = entry
+      ? entry.issues
+      : ['PAYMENT_ROUTE_INTEGRATION_ALIAS_UNKNOWN'];
+    return {
+      route,
+      ready: Boolean(entry?.ready),
+      issues,
+    };
+  }
+
+  private parseCurrencyRoutes(
+    raw: unknown,
+    source: PaymentRoute['source'],
+  ): PaymentRoute[] {
+    if (!raw) return [];
+    let value: unknown = raw;
+    if (typeof raw === 'string') {
+      try {
+        value = JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+    if (!Array.isArray(value)) return [];
+
+    return value
+      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
+      .map((item) => ({
+        currencyCode: String(item.currencyCode ?? '').trim().toUpperCase(),
+        paymentMethod: String(item.paymentMethod ?? '').trim().toUpperCase(),
+        provider: this.normalizeProviderKey(String(item.provider ?? '')) as PaymentRoute['provider'],
+        integrationKey: String(item.integrationKey ?? '').trim(),
+        environment: this.normalizeEnvironment(item.environment),
+        enabled: item.enabled !== false,
+        priority: Number.isFinite(Number(item.priority)) ? Number(item.priority) : -1,
+        source,
+      }))
+      .filter((route): route is PaymentRoute =>
+        (route.currencyCode === 'EGP' || route.currencyCode === 'USD') &&
+        Boolean(route.paymentMethod && route.integrationKey && route.provider) &&
+        route.priority >= 0,
+      );
+  }
+
+  private defaultCurrencyRoutes(): PaymentRoute[] {
+    const environment =
+      this.paymentCfg.appEnv === 'production'
+        ? 'production'
+        : this.paymentCfg.appEnv === 'staging'
+          ? 'staging'
+          : 'development';
+    return [
+      {
+        currencyCode: 'EGP',
+        paymentMethod: 'CARD',
+        provider: PaymentProvider.PAYMOB,
+        integrationKey: 'paymob-egp-card',
+        environment,
+        enabled: true,
+        priority: 100,
+        source: 'ENVIRONMENT',
+      },
+      {
+        currencyCode: 'USD',
+        paymentMethod: 'CARD',
+        provider: PaymentProvider.PAYMOB,
+        integrationKey: 'paymob-usd-card',
+        environment,
+        enabled: true,
+        priority: 100,
+        source: 'ENVIRONMENT',
+      },
+    ];
+  }
+
+  private normalizeEnvironment(value: unknown): PaymentRoute['environment'] {
+    return value === 'production' || value === 'staging' ? value : 'development';
   }
 
   private validatePaymobSnapshot(
@@ -1053,59 +1253,16 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     issues: string[];
   } {
     const issues: string[] = [];
-    const providerSnapshots = [
-      this.getProviderSnapshot(PaymentProvider.PAYMOB),
-      this.getProviderSnapshot(PaymentProvider.STRIPE),
-    ];
-    const availableProviders = providerSnapshots.filter(
-      (item) =>
-        item.enabled && !item.maintenanceMode && item.validation.healthy,
-    );
 
-    if (snapshot.priorityOrder.length === 0 && availableProviders.length > 0) {
-      issues.push(
-        'Priority order must contain at least one provider when runtime providers are available.',
-      );
-    }
-
-    if (
-      snapshot.defaultProvider &&
-      !snapshot.priorityOrder.includes(snapshot.defaultProvider)
-    ) {
-      issues.push('Default provider must appear in the priority order.');
-    }
-
-    if (
-      snapshot.fallbackProvider &&
-      !snapshot.priorityOrder.includes(snapshot.fallbackProvider)
-    ) {
-      issues.push('Fallback provider must appear in the priority order.');
-    }
-
-    if (
-      snapshot.defaultProvider &&
-      !availableProviders.some(
-        (item) => item.provider === snapshot.defaultProvider,
-      )
-    ) {
-      issues.push('Configured default provider is not currently usable.');
-    }
-
-    if (
-      snapshot.fallbackProvider &&
-      !availableProviders.some(
-        (item) => item.provider === snapshot.fallbackProvider,
-      )
-    ) {
-      issues.push('Configured fallback provider is not currently usable.');
-    }
-
-    const hasUsableProvider = snapshot.priorityOrder.some((provider) =>
-      availableProviders.some((item) => item.provider === provider),
-    );
-
-    if (!hasUsableProvider && availableProviders.length > 0) {
-      issues.push('No usable provider remains in the current routing order.');
+    const activeRouteKeys = new Map<string, PaymentRoute>();
+    for (const route of snapshot.currencyRoutes) {
+      if (!route.enabled) continue;
+      const key = `${route.currencyCode}:${route.paymentMethod}:${route.environment}`;
+      const previous = activeRouteKeys.get(key);
+      if (previous && previous.priority === route.priority) {
+        issues.push(`Ambiguous enabled payment routes for ${key} at priority ${route.priority}.`);
+      }
+      activeRouteKeys.set(key, route);
     }
 
     return {

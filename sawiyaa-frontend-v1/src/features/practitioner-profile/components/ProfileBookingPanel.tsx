@@ -1,9 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { BadgeCheck, Radio, ShieldCheck, Sparkles } from "lucide-react";
-import {
-  formatPublicMoney,
-  getPublicSessionPrices,
-} from "@/features/practitioners-discovery/lib/public-pricing";
+import { getPublicSessionPrices } from "@/features/practitioners-discovery/lib/public-pricing";
+import { MoneyText } from "@/components/money/MoneyText";
+import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery/lib/practitioner-price";
 import type {
   PractitionerProfile,
   PublicPractitionerPresence,
@@ -43,11 +42,7 @@ export default async function ProfileBookingPanel({
     getTranslations("practitioner-profile"),
     getLocale(),
   ]);
-  const isArabic = locale === "ar";
-  const sessionFeesLabel = isArabic ? "رسوم الجلسة" : t("pricing.sessionFees");
-  const sessionFeesHint = isArabic
-    ? "يظهر السعر قبل الحجز ويتبع البلد والعملة المحددين."
-    : t("pricing.sessionFeesHint");
+  const sessionFeesLabel = t("pricing.sessionFees");
   const presenceLabel = resolvePresenceLabel(t, presence?.status ?? null);
   const approvedCredentials = profile.credentialsSummary.approvedCredentials;
   const totalCredentials = profile.credentialsSummary.totalCredentials;
@@ -112,9 +107,6 @@ export default async function ProfileBookingPanel({
               <h3 className="text-sm font-semibold text-text-primary dark:text-white/90">
                 {sessionFeesLabel}
               </h3>
-              <p className="text-xs text-text-secondary">
-                {sessionFeesHint}
-              </p>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {sessionPrices.map((price) => (
@@ -127,9 +119,7 @@ export default async function ProfileBookingPanel({
                       ? t("booking.duration30")
                       : t("booking.duration60")}
                   </p>
-                  <p className="mt-1 text-lg font-bold text-text-primary dark:text-white/95">
-                    {formatPublicMoney(locale, price.amount, profile.currencyCode)}
-                  </p>
+                  <span className="mt-1 block text-lg font-bold text-text-primary dark:text-white/95">{(() => { const money = mapPractitionerDurationMoney({ amount: price.amount, currencyCode: profile.currencyCode }); return money ? <MoneyText money={money} /> : null; })()}</span>
                 </div>
               ))}
             </div>
@@ -140,8 +130,8 @@ export default async function ProfileBookingPanel({
           <PublicAvailabilityViewer
             slug={profile.slug}
             currencyCode={profile.currencyCode ?? null}
-            displaySessionPrice30={profile.displaySessionPrice30 ?? null}
-            displaySessionPrice60={profile.displaySessionPrice60 ?? null}
+            displaySessionPrice30={profile.sessionPrice30 ?? null}
+            displaySessionPrice60={profile.sessionPrice60 ?? null}
           />
         </div>
 

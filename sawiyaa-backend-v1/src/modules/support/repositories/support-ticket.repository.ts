@@ -197,8 +197,10 @@ export class SupportTicketRepository {
   }
 
   findByIdForAdmin(ticketId: string) {
-    return this.prisma.supportTicket.findUnique({
-      where: { id: ticketId },
+    return this.prisma.supportTicket.findFirst({
+      where: {
+        OR: [{ id: ticketId }, { conversationId: ticketId }],
+      },
       include: this.detailsInclude(),
     });
   }

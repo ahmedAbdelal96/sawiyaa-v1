@@ -84,7 +84,7 @@ describe('PractitionerApplicationCompletionService', () => {
         rejectedCount: 0,
         expiredCount: 0,
       },
-      credentialTypes: ["PASSPORT" as const, "DEGREE" as const],
+      credentialTypes: ['PASSPORT' as const, 'DEGREE' as const],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.BANK_ACCOUNT,
         accountHolderName: 'Dr. Nour',
@@ -130,7 +130,7 @@ describe('PractitionerApplicationCompletionService', () => {
         rejectedCount: 0,
         expiredCount: 0,
       },
-      credentialTypes: ["PASSPORT" as const],
+      credentialTypes: ['PASSPORT' as const],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.WALLET,
         accountHolderName: 'Dr. Nour',
@@ -225,7 +225,10 @@ describe('PractitionerApplicationCompletionService', () => {
         rejectedCount: 0,
         expiredCount: 0,
       },
-      credentialTypes: ['NATIONAL_ID_FRONT' as const, 'NATIONAL_ID_BACK' as const],
+      credentialTypes: [
+        'NATIONAL_ID_FRONT' as const,
+        'NATIONAL_ID_BACK' as const,
+      ],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.BANK_ACCOUNT,
         accountHolderName: 'Dr. Nour',
@@ -245,6 +248,10 @@ describe('PractitionerApplicationCompletionService', () => {
       },
     });
 
-    expect(result.blockers.some((item) => item.code === 'DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED')).toBe(false);
+    expect(
+      result.blockers.some(
+        (item) => item.code === 'DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED',
+      ),
+    ).toBe(false);
   });
 });

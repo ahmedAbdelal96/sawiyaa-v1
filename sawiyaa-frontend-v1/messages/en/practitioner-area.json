@@ -483,7 +483,8 @@
       },
       "payoutIban": {
         "label": "IBAN",
-        "placeholder": "Enter the IBAN"
+        "placeholder": "Enter the IBAN",
+        "helper": "Enter the IBAN exactly as shown in your banking app or bank statement."
       },
       "payoutBankAccountNumber": {
         "label": "Bank account number",
@@ -507,7 +508,8 @@
       },
       "payoutAccountHolderName": {
         "label": "Account holder name",
-        "placeholder": "Enter the account holder name"
+        "placeholder": "Enter the account holder name",
+        "warning": "Enter the account holder's name exactly as registered. A mismatch may cause the external transfer to fail."
       },
       "sessionPrice30Egp": {
         "label": "30-minute price (EGP)",
@@ -541,6 +543,12 @@
         "label": "Instant booking price (60 minutes, USD)",
         "placeholder": "Enter the instant booking price in US dollars"
       }
+    },
+    "countryStates": {
+      "loading": "Loading countries...",
+      "empty": "No active countries are configured in the system.",
+      "loadError": "Could not load country options. Please retry.",
+      "staleSelection": "currently unavailable"
     },
     "practitionerType": {
       "WEIGHT_LOSS_SPECIALIST": "Weight loss specialist",

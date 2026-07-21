@@ -32,6 +32,26 @@ import { AcademyProgramRepository } from '../repositories/academy-program.reposi
 import { AcademyProgramEnrollmentRepository } from '../repositories/academy-program-enrollment.repository';
 import { AcademyProgramTargetLearnerAlertService } from '../services/academy-program-target-learner-alert.service';
 import { resolveAcademyCheckoutPricing } from '../../utils/academy-pricing.util';
+import { toGatewayMinorUnits } from '@modules/payments/utils/money-units.util';
+
+type PaidAcademyPricing = {
+  amount: string;
+  currencyCode: 'EGP' | 'USD';
+};
+
+function requirePaidAcademyPricing(pricing: {
+  amount: string | null;
+  currencyCode: 'EGP' | 'USD' | null;
+}): PaidAcademyPricing {
+  if (!pricing.amount || !pricing.currencyCode || Number(pricing.amount) <= 0) {
+    throw new BadRequestException({
+      messageKey: 'academyProgram.errors.missingPricing',
+      error: 'ACADEMY_PROGRAM_MISSING_PRICING',
+    });
+  }
+
+  return { amount: pricing.amount, currencyCode: pricing.currencyCode };
+}
 
 @Injectable()
 export class CreateAcademyProgramEnrollmentUseCase {
@@ -63,6 +83,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
     locale: SupportedLocale;
     currentUser: AuthenticatedUser | null;
     payload: CreateAcademyProgramEnrollmentDto;
+    requestCountryIsoCode: string | null;
   }) {
     const program = await this.academyProgramRepository.findPublicProgramBySlug(
       input.slug,
@@ -117,20 +138,13 @@ export class CreateAcademyProgramEnrollmentUseCase {
       priceAmountUsd: program.priceUsd,
       priceAmount: null,
       currencyCode: null,
-      resolvedCountryCode: countryResolution.resolvedCountryCode,
+      resolvedCountryCode: input.requestCountryIsoCode,
     });
 
-    if (!pricing.amount || !pricing.currencyCode) {
-      throw new BadRequestException({
-        messageKey: 'academyProgram.errors.missingPricing',
-        error: 'ACADEMY_PROGRAM_MISSING_PRICING',
-      });
-    }
+    const { amount: paymentAmount, currencyCode: paymentCurrencyCode } =
+      requirePaidAcademyPricing(pricing);
 
     const publicAccessToken = randomUUID();
-    const isFree =
-      program.priceEgp?.toString() === '0' &&
-      program.priceUsd?.toString() === '0';
     const now = new Date();
     const seatReservationExpiresAt = new Date(
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
@@ -156,19 +170,17 @@ export class CreateAcademyProgramEnrollmentUseCase {
         academyProgramId: program.id,
         academyLearnerId: learner.id,
         publicAccessToken,
-        status: isFree
-          ? AcademyProgramEnrollmentStatus.CONFIRMED
-          : AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
-        paymentStatus: isFree ? PaymentStatus.CAPTURED : PaymentStatus.CREATED,
+        status: AcademyProgramEnrollmentStatus.PENDING_PAYMENT,
+        paymentStatus: PaymentStatus.CREATED,
         registeredAt: now,
-        lockedAt: isFree ? now : null,
-        seatReservedAt: isFree ? now : now,
-        seatReservationExpiresAt: isFree ? null : seatReservationExpiresAt,
-        confirmedAt: isFree ? now : null,
+        lockedAt: null,
+        seatReservedAt: now,
+        seatReservationExpiresAt,
+        confirmedAt: null,
         cancelledAt: null,
         expiredAt: null,
-        selectedCurrencyCode: pricing.currencyCode,
-        selectedAmountSnapshot: pricing.amount,
+        selectedCurrencyCode: paymentCurrencyCode,
+        selectedAmountSnapshot: paymentAmount,
         submittedCountry: countryResolution.declaredCountryCode,
         lockedCountry: countryResolution.resolvedCountryCode,
         lockedCountrySource: countryResolution.countrySource,
@@ -181,30 +193,8 @@ export class CreateAcademyProgramEnrollmentUseCase {
         userId: input.currentUser?.id ?? guestUserId,
       }));
 
-    if (isFree) {
-      if (previousActiveLearnerCount !== null) {
-        const currentActiveLearnerCount =
-          await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
-            program.id,
-            new Date(),
-          );
-        await this.academyProgramTargetLearnerAlertService.notifyIfTargetExceeded({
-          program,
-          previousActiveLearnerCount,
-          currentActiveLearnerCount,
-        });
-      }
-
-      return {
-        item: this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
-          enrollment,
-          input.locale,
-        ),
-      };
-    }
-
     const provider = this.resolveProvider({
-      currencyCode: pricing.currencyCode,
+      currencyCode: paymentCurrencyCode,
       learnerCountryIsoCode: learner.countryCode ?? null,
     });
     const providerAdapter = this.paymentProviderRegistryService.get(provider);
@@ -220,10 +210,10 @@ export class CreateAcademyProgramEnrollmentUseCase {
           paymentPurpose: PaymentPurpose.ACADEMY_PROGRAM_ENROLLMENT,
           provider,
           status: PaymentStatus.CREATED,
-          amountSubtotal: pricing.amount,
+          amountSubtotal: paymentAmount,
           amountDiscount: '0',
-          amountTotal: pricing.amount,
-          currencyCode: pricing.currencyCode,
+          amountTotal: paymentAmount,
+          currencyCode: paymentCurrencyCode,
           metadataJson: {
             source: 'academy-program-enrollment',
             academyProgramId: program.id,
@@ -237,9 +227,9 @@ export class CreateAcademyProgramEnrollmentUseCase {
               phoneCountryCode: countryResolution.phoneCountryCode,
               operatingCountryCode: null,
               checkoutCountryCode: countryResolution.resolvedCountryCode,
-              pricingCurrencyCode: pricing.currencyCode,
+              pricingCurrencyCode: paymentCurrencyCode,
               pricingMarketType:
-                pricing.currencyCode === 'EGP'
+                paymentCurrencyCode === 'EGP'
                   ? MarketType.LOCAL
                   : MarketType.CROSS_BORDER,
               provider,
@@ -269,10 +259,10 @@ export class CreateAcademyProgramEnrollmentUseCase {
             paymentId: createdPayment.id,
             provider,
             status: PaymentStatus.CREATED,
-            amountSubtotal: pricing.amount,
+            amountSubtotal: paymentAmount,
             amountDiscount: '0',
-            amountTotal: pricing.amount,
-            currencyCode: pricing.currencyCode,
+            amountTotal: paymentAmount,
+            currencyCode: paymentCurrencyCode,
           },
           tx,
         );
@@ -307,8 +297,8 @@ export class CreateAcademyProgramEnrollmentUseCase {
     try {
       const providerResult = await providerAdapter.initiateSessionPayment({
         paymentId: payment.id,
-        amountMinor: this.toMinorUnits(pricing.amount),
-        currency: pricing.currencyCode,
+        amountMinor: toGatewayMinorUnits(paymentAmount, paymentCurrencyCode),
+        currency: paymentCurrencyCode,
         description: `Academy program enrollment payment: ${program.slug}`,
         sessionId: program.id,
         patientEmail: learner.email ?? null,
@@ -343,9 +333,9 @@ export class CreateAcademyProgramEnrollmentUseCase {
                 phoneCountryCode: countryResolution.phoneCountryCode,
                 operatingCountryCode: null,
                 checkoutCountryCode: countryResolution.resolvedCountryCode,
-                pricingCurrencyCode: pricing.currencyCode,
+                pricingCurrencyCode: paymentCurrencyCode,
                 pricingMarketType:
-                  pricing.currencyCode === 'EGP'
+                paymentCurrencyCode === 'EGP'
                     ? MarketType.LOCAL
                     : MarketType.CROSS_BORDER,
                 provider,
@@ -535,9 +525,6 @@ export class CreateAcademyProgramEnrollmentUseCase {
     return returnUrl.toString();
   }
 
-  private toMinorUnits(amount: string): number {
-    return Math.round(Number(amount) * 100);
-  }
 
   private normalizePaymentAttemptValue(
     value: string | null | undefined,

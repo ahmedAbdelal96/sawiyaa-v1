@@ -43,5 +43,36 @@ export const enPaymentsCatalog = {
     invalidWebhookSignature: 'Payment webhook signature is invalid',
     unsupportedRoutingCombination:
       'No payment provider is available for {{currencyCode}} in {{market}} routing.',
+    paymentRoutingAmbiguous:
+      'More than one payment route is configured for this transaction. Please contact support.',
+    paymentRoutingUnavailable:
+      'No payment route is currently available for this transaction. Please contact support.',
+    invalidReturnUrl: 'The payment return URL is invalid.',
+    providerInitiationFailed: 'The payment provider could not start the payment.',
+    invalidPaymentGatewayControl: 'Payment gateway control configuration is invalid.',
+    paymentGatewayControlProviderUnsupported:
+      'This payment provider is not supported by gateway control.',
+    paymentGatewayControlReasonRequired:
+      'A reason is required for this payment gateway control change.',
+    paymentGatewayControlRevisionInvalid: 'The payment gateway control revision is invalid.',
+    paymentGatewayControlRevisionNotFound:
+      'The requested payment gateway control revision was not found.',
+    paymentGatewayControlStepUpRequired:
+      'Additional authorization is required for this payment gateway control change.',
+    paymentForbidden: 'You are not allowed to access this payment.',
+    invalidWebhookPayload: 'The payment webhook payload is invalid.',
+    providerReferenceMissing: 'The payment provider reference is missing.',
+    invalidRefundAmount: 'The refund amount is invalid.',
+    paymentAlreadyFullyRefunded: 'This payment has already been fully refunded.',
+    paymentNotRefundable: 'This payment cannot be refunded.',
+    refundAlreadyInProgress: 'A refund is already in progress for this payment.',
+    refundAmountExceedsRemaining:
+      'The refund amount exceeds the remaining refundable amount.',
+    refundNotRetryable: 'This refund cannot be retried.',
+    originalMethodRefundNotAllowedForWalletSplit:
+      'This wallet-split payment cannot be refunded to the original payment method.',
+    patientRequiredForWalletRefund:
+      'A patient is required before this refund can be credited to a wallet.',
+    refundNotFound: 'The refund was not found.',
   },
 };

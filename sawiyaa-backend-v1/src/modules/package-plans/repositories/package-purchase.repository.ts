@@ -24,6 +24,8 @@ export class PatientPackagePurchaseRepository {
 
   listByPatient(input: {
     patientId: string;
+    status?: PatientPackagePurchaseStatus;
+    search?: string;
     skip: number;
     take: number;
     tx?: Prisma.TransactionClient;
@@ -32,6 +34,30 @@ export class PatientPackagePurchaseRepository {
     const where: Prisma.PatientPackagePurchaseWhereInput = {
       patientId: input.patientId,
     };
+
+    if (input.status) {
+      where.status = input.status;
+    }
+
+    if (input.search?.trim()) {
+      const searchStr = input.search.trim();
+      where.OR = [
+        { titleSnapshot: { contains: searchStr, mode: 'insensitive' } },
+        { planCodeSnapshot: { contains: searchStr, mode: 'insensitive' } },
+        {
+          practitioner: {
+            user: {
+              displayName: { contains: searchStr, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          practitioner: {
+            professionalTitle: { contains: searchStr, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
 
     return Promise.all([
       db.patientPackagePurchase.findMany({
@@ -169,6 +195,8 @@ export class PatientPackagePurchaseRepository {
         id: true,
         publicSlug: true,
         acceptsPackages: true,
+        avatarUrl: true,
+        professionalTitle: true,
         countryId: true,
         country: {
           select: {

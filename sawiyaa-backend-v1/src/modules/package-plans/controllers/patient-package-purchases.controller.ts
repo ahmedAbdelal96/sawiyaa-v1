@@ -43,6 +43,7 @@ import { CreatePackagePurchaseUseCase } from '../use-cases/create-package-purcha
 import { GetMyPackagePurchaseUseCase } from '../use-cases/get-my-package-purchase.use-case';
 import { ListMyPackagePurchasesUseCase } from '../use-cases/list-my-package-purchases.use-case';
 import { InitiatePackagePurchasePaymentUseCase } from '../use-cases/initiate-package-purchase-payment.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Patients - Package Purchases')
 @ApiBearerAuth()
@@ -80,6 +81,7 @@ export class PatientPackagePurchasesController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: CreatePackagePurchaseDto,
+    @Req() request: Request,
   ) {
     return this.createPackagePurchaseUseCase
       .execute({
@@ -89,7 +91,7 @@ export class PatientPackagePurchasesController {
         practitionerSlug: body.practitionerSlug,
         durationMinutes: body.durationMinutes,
         sessionMode: body.sessionMode,
-        selectedCurrencyCode: body.selectedCurrencyCode,
+        requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
         selectedSessionSlots: body.selectedSessionSlots,
       })
       .then((data) => ({ success: true as const, data }));
@@ -185,6 +187,7 @@ export class PatientPackagePurchasesController {
           ? request.headers['user-agent']
           : null,
       ipAddress: request.ip ?? null,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 }

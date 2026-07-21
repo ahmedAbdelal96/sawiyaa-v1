@@ -16,7 +16,7 @@ import {
   usePatientWalletEntries,
   usePatientWalletSummary,
 } from "../../../src/features/patient/payments/hooks";
-import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../src/lib/money";
 import { formatViewerDate } from "../../../src/lib/time-formatting";
 import type {
   CustomerWalletEntryItem,
@@ -65,13 +65,9 @@ function filterEntry(entry: CustomerWalletEntryItem, tab: FilterTab): boolean {
  * NOTE: currencyCode always comes from backend data. Never hardcode currency
  * symbols or codes in screen components.
  */
-function formatMoney(amount: string, currencyCode: string): string {
-  const num = Number(amount);
-  if (!Number.isFinite(num)) return `${amount} ${currencyCode.toUpperCase()}`;
-  const rounded = parseFloat(num.toFixed(2));
-  const str = rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(2);
-  const withCommas = str.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${withCommas} ${currencyCode.toUpperCase()}`;
+function formatMoney(amount: string, currencyCode: string | null | undefined, locale: string): string {
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatCentralMoney(money, locale) : "-";
 }
 
 function formatDayLabel(
@@ -127,7 +123,8 @@ function EntryRow({
   showDivider: boolean;
 }) {
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const { isRtl, rowDirection, textAlign, oppositeTextAlign } = useAppDirection();
   const isCredit = entry.direction === "CREDIT";
   const typeKey =
@@ -202,7 +199,7 @@ function EntryRow({
           style={[styles.entryAmount, { textAlign: oppositeTextAlign }]}
         >
           {isCredit ? "+" : "−"}
-          {formatMoney(entry.amount, entry.currencyCode)}
+          {formatMoney(entry.amount, entry.currencyCode, locale)}
         </Text>
       </View>
 
@@ -239,9 +236,7 @@ export default function TransactionHistoryScreen() {
 
   const groups = useMemo(() => groupByDay(filteredEntries), [filteredEntries]);
   const todayLabel = t("patientPaymentsFlow.transactions.today");
-  const fallbackCurrency = resolveSupportedCurrencyCode({
-    currencyCode: wallet?.currencyCode ?? rawEntries?.[0]?.currencyCode ?? null,
-  });
+  const fallbackCurrency = wallet?.currencyCode ?? rawEntries?.[0]?.currencyCode ?? null;
 
   const filters: { key: FilterTab; labelKey: string }[] = [
     { key: "all", labelKey: "patientPaymentsFlow.transactions.filters.all" },
@@ -276,7 +271,7 @@ export default function TransactionHistoryScreen() {
             {t("patientPaymentsFlow.wallet.balanceLabel")}
           </Text>
           <Text weight="bold" style={[styles.heroAmount, { textAlign }]}>
-            {formatMoney(wallet?.availableBalance ?? "0", fallbackCurrency)}
+            {formatMoney(wallet?.availableBalance ?? "0", fallbackCurrency, locale)}
           </Text>
           <Text style={[styles.heroScopeNote, { textAlign }]}>
             {t("patientPaymentsFlow.transactions.walletScopeNote")}

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-liveness';
 import {
@@ -86,7 +86,7 @@ export class ListPublicPractitionersUseCase {
 
     const rows = await this.publicReadRepository.listPublic({
       locale: input.locale,
-      currencyCode: regionalResolution.currencyCode as 'EGP' | 'USD',
+      currencyCode: regionalResolution.currencyCode,
       search: input.search,
       specialtySlug: input.specialtySlug,
       specialtyCategorySlug: input.specialtyCategorySlug,
@@ -168,6 +168,14 @@ export class ListPublicPractitionersUseCase {
           totalReviews: ratingSummary.publishedRatingsCount,
         };
 
+        const publicPricing = resolvePublicPractitionerPricing({
+          regionalResolution,
+          sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
+          sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
+          sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
+          sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
+        });
+
         return [
           {
             createdAt: profile.createdAt,
@@ -190,13 +198,7 @@ export class ListPublicPractitionersUseCase {
               })),
               languages: profile.languages.map((item) => item.language.code),
               countryCode: profile.country?.isoCode ?? null,
-              ...resolvePublicPractitionerPricing({
-                regionalResolution,
-                sessionPrice30Egp: pricingProfile.sessionPrice30Egp,
-                sessionPrice30Usd: pricingProfile.sessionPrice30Usd,
-                sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
-                sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
-              }),
+              ...publicPricing,
               practitionerType: profile.practitionerType,
               practitionerGender: profile.practitionerGender ?? null,
               pricing: {
@@ -225,16 +227,11 @@ export class ListPublicPractitionersUseCase {
                       : Number(pricingProfile.sessionPrice60Usd),
                 },
               },
-              sessionPrice30:
-                profile.sessionPrice30 === null ||
-                profile.sessionPrice30 === undefined
-                  ? null
-                  : Number(profile.sessionPrice30),
-              sessionPrice60:
-                profile.sessionPrice60 === null ||
-                profile.sessionPrice60 === undefined
-                  ? null
-                  : Number(profile.sessionPrice60),
+              // The public selected amount must always be paired with the
+              // currency chosen by this request's regional resolution. The
+              // legacy profile.sessionPrice* fields are not region-specific.
+              sessionPrice30: publicPricing.displaySessionPrice30,
+              sessionPrice60: publicPricing.displaySessionPrice60,
               sessionPrice30Egp:
                 pricingProfile.sessionPrice30Egp === null ||
                 pricingProfile.sessionPrice30Egp === undefined

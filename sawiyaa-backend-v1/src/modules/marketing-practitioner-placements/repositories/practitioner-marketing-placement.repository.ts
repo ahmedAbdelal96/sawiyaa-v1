@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import {
   PractitionerMarketingPlacementStatus,
   PractitionerStatus,
@@ -22,6 +22,7 @@ export type FeaturedPractitionerHomeCard = {
   totalReviews: number;
   displaySessionPrice30: number | null;
   displaySessionPrice60: number | null;
+  currencyCode: 'EGP' | 'USD';
   isVerified: boolean;
   badgeLabel: string;
 };
@@ -30,13 +31,15 @@ export type FeaturedPractitionerHomeCard = {
 export class PractitionerMarketingPlacementRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    @Optional()
+    private readonly sessionReviewRatingAggregationService?: SessionReviewRatingAggregationService,
   ) {}
 
   async listActiveHomeFeaturedPractitioners(input: {
     locale: SupportedLocale;
     now: Date;
     limit: number;
+    currencyCode?: 'EGP' | 'USD';
   }): Promise<FeaturedPractitionerHomeCard[]> {
     const placements =
       await this.prisma.practitionerMarketingPlacement.findMany({
@@ -53,11 +56,7 @@ export class PractitionerMarketingPlacementRepository {
             ...this.publicPractitionerWhere(),
           },
         },
-        orderBy: [
-          { priority: 'asc' },
-          { startsAt: 'desc' },
-          { id: 'asc' },
-        ],
+        orderBy: [{ priority: 'asc' }, { startsAt: 'desc' }, { id: 'asc' }],
         take: input.limit * 4,
         select: {
           badgeLabelAr: true,
@@ -108,10 +107,11 @@ export class PractitionerMarketingPlacementRepository {
         },
       });
 
-    const ratingSummaries =
-      await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
-        placements.map((placement) => placement.practitioner.id),
-      );
+    const ratingSummaries = this.sessionReviewRatingAggregationService
+      ? await this.sessionReviewRatingAggregationService.aggregateByPractitionerIds(
+          placements.map((placement) => placement.practitioner.id),
+        )
+      : new Map<string, SessionReviewRatingSummary>();
 
     const deduped = new Map<string, FeaturedPractitionerHomeCard>();
     for (const placement of placements) {
@@ -121,6 +121,7 @@ export class PractitionerMarketingPlacementRepository {
         badgeLabelEn: placement.badgeLabelEn,
         practitioner: placement.practitioner,
         ratingSummary: ratingSummaries.get(placement.practitioner.id) ?? null,
+        currencyCode: input.currencyCode ?? 'USD',
       });
 
       if (deduped.has(card.slug)) {
@@ -157,6 +158,7 @@ export class PractitionerMarketingPlacementRepository {
       }>;
     };
     ratingSummary: SessionReviewRatingSummary | null;
+    currencyCode: 'EGP' | 'USD';
   }): FeaturedPractitionerHomeCard {
     const badgeLabel =
       input.locale === 'ar'
@@ -179,21 +181,18 @@ export class PractitionerMarketingPlacementRepository {
           : Number(input.ratingSummary.averageRating),
       totalReviews: input.ratingSummary?.publishedRatingsCount ?? 0,
       displaySessionPrice30:
-        input.practitioner.sessionPrice30Egp === null ||
-        input.practitioner.sessionPrice30Egp === undefined
-          ? input.practitioner.sessionPrice30Usd === null ||
-            input.practitioner.sessionPrice30Usd === undefined
-            ? null
-            : Number(input.practitioner.sessionPrice30Usd)
-          : Number(input.practitioner.sessionPrice30Egp),
+        Number(
+          input.currencyCode === 'EGP'
+            ? input.practitioner.sessionPrice30Egp
+            : input.practitioner.sessionPrice30Usd,
+        ) || null,
       displaySessionPrice60:
-        input.practitioner.sessionPrice60Egp === null ||
-        input.practitioner.sessionPrice60Egp === undefined
-          ? input.practitioner.sessionPrice60Usd === null ||
-            input.practitioner.sessionPrice60Usd === undefined
-            ? null
-            : Number(input.practitioner.sessionPrice60Usd)
-          : Number(input.practitioner.sessionPrice60Egp),
+        Number(
+          input.currencyCode === 'EGP'
+            ? input.practitioner.sessionPrice60Egp
+            : input.practitioner.sessionPrice60Usd,
+        ) || null,
+      currencyCode: input.currencyCode,
       isVerified: true,
       badgeLabel,
     };

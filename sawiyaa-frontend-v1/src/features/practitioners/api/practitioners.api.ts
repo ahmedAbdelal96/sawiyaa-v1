@@ -5,6 +5,7 @@ import type {
   PractitionerApplicationStatusSuccessResponse,
   PractitionerCredentialListResponse,
   PractitionerCredentialUploadSuccessResponse,
+  PractitionerCountryOption,
   PractitionerAvatarSuccessResponse,
   PractitionerProfileSuccessResponse,
   PractitionerReadinessSuccessResponse,
@@ -176,6 +177,16 @@ export async function getPractitionerApplicationStatus() {
 export async function getPractitionerReadiness() {
   const response = await httpClient.get<ApiPayload<PractitionerReadinessSuccessResponse>>(
     "/practitioners/me/readiness"
+  );
+  return extractData(response.data);
+}
+
+/**
+ * Lists active countries for practitioner-facing selectors.
+ */
+export async function listPractitionerCountries() {
+  const response = await httpClient.get<ApiPayload<PractitionerCountryOption[]>>(
+    "/practitioners/me/countries"
   );
   return extractData(response.data);
 }

@@ -77,6 +77,7 @@ export interface PractitionerProfile {
   pricing: PractitionerPricing;
   payoutDestination: {
     methodType: PractitionerPayoutMethodType | null;
+    countryCode: string | null;
     accountHolderName: string | null;
     bankName: string | null;
     bankAccountNumber: string | null;
@@ -176,8 +177,9 @@ export interface UpdatePractitionerProfileRequest {
   sessionPrice60Usd?: number | null;
   acceptsPackage?: boolean;
   payoutDestination?:
-    | {
+      | {
         methodType: PractitionerPayoutMethodType;
+        countryCode?: string | null;
         accountHolderName?: string | null;
         bankName?: string | null;
         bankAccountNumber?: string | null;

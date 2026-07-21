@@ -282,8 +282,9 @@ export class UpsertPractitionerApplicationCredentialUseCase {
               reviewNotes: item.reviewNotes ?? null,
             })),
             payoutDestination: profile.payoutDestination
-              ? {
+                ? {
                   methodType: profile.payoutDestination.methodType,
+                  countryCode: profile.payoutDestination.countryCode ?? null,
                   accountHolderName:
                     profile.payoutDestination.accountHolderName ?? null,
                   bankName: profile.payoutDestination.bankName ?? null,

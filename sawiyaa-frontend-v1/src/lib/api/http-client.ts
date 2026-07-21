@@ -97,6 +97,17 @@ function shouldBypassAuthRecovery(url?: string): boolean {
   return isSensitiveAuthPath(url);
 }
 
+// These routes are intentionally public. They must not wait for an optional
+// browser session to refresh, and a guest 401 must never redirect the user.
+function isPublicRequest(url?: string): boolean {
+  if (!url) return false;
+
+  return (
+    url.includes("/academy/programs") ||
+    url.includes("/academy/program-enrollments/")
+  );
+}
+
 async function refreshAccessTokenSingleFlight(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
@@ -189,7 +200,9 @@ httpClient.interceptors.request.use(
       }
     }
 
-    const accessToken = await resolveFreshAccessToken();
+    const accessToken = isPublicRequest(config.url)
+      ? Cookies.get(TOKEN_CONFIG.ACCESS_TOKEN_KEY)
+      : await resolveFreshAccessToken();
 
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -268,7 +281,7 @@ httpClient.interceptors.response.use(
       return httpClient(originalRequest);
     }
 
-    if (shouldBypassAuthRecovery(originalRequest?.url)) {
+    if (shouldBypassAuthRecovery(originalRequest?.url) || isPublicRequest(originalRequest?.url)) {
       return Promise.reject(toAppError(error));
     }
 

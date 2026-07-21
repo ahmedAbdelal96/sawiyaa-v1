@@ -74,6 +74,7 @@ export type WalletViewModel = {
 
 export type PractitionerPayoutDestinationSnapshotViewModel = {
   methodType: PractitionerPayoutMethodType | null;
+  countryCode: string | null;
   accountHolderName: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;

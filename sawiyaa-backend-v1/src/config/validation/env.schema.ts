@@ -33,6 +33,13 @@ const baseEnvSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
   LOG_MAX_FILE_SIZE: z.string().default('20m'),
 
+  // Trusted customer country resolution. GeoIP is optional and unknown always
+  // falls back to USD through the central payment-region resolver.
+  GEOIP_ENABLED: z.enum(['true', 'false']).default('false'),
+  GEOIP_DATABASE_PATH: z.string().optional(),
+  TRUSTED_PROXY_MODE: z.enum(['none', 'single', 'cloudflare']).default('none'),
+  CLOUDFLARE_COUNTRY_HEADER_ENABLED: z.enum(['true', 'false']).default('false'),
+
   // Throttling / Rate limit store
   THROTTLE_STORE: z.enum(['memory', 'redis']).default('memory'),
   REDIS_URL: z.string().url().optional(),
@@ -219,6 +226,7 @@ const baseEnvSchema = z.object({
 
 export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   const effectiveAppEnv = env.APP_ENV ?? env.NODE_ENV;
+
   const anyProviderEnabled =
     env.PAYMENT_STRIPE_ENABLED === 'true' ||
     env.PAYMENT_PAYMOB_ENABLED === 'true';
@@ -248,6 +256,25 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
           'REDIS_URL is required when THROTTLE_STORE=redis in production',
       });
     }
+  }
+
+  if (env.GEOIP_ENABLED === 'true' && !env.GEOIP_DATABASE_PATH?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['GEOIP_DATABASE_PATH'],
+      message: 'GEOIP_DATABASE_PATH is required when GEOIP_ENABLED=true',
+    });
+  }
+
+  if (
+    env.CLOUDFLARE_COUNTRY_HEADER_ENABLED === 'true' &&
+    env.TRUSTED_PROXY_MODE !== 'cloudflare'
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['TRUSTED_PROXY_MODE'],
+      message: 'TRUSTED_PROXY_MODE=cloudflare is required when Cloudflare country headers are enabled',
+    });
   }
 
   if (anyProviderEnabled) {

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PaymentProvider } from '@prisma/client';
 import { CalculateSessionFinancialBreakdownService } from '@modules/financial-rules/services/calculate-session-financial-breakdown.service';
 
 /**
@@ -13,6 +14,7 @@ export class ResolveSessionPaymentPricingService {
   ) {}
 
   resolve(input: {
+    requestCountryIsoCode?: string | null;
     session: {
       id: string;
       flowType: 'SCHEDULED' | 'INSTANT';
@@ -51,6 +53,10 @@ export class ResolveSessionPaymentPricingService {
       };
       payments?: Array<{
         amountSubtotal: { toString(): string } | string;
+        amountDiscount: { toString(): string } | string;
+        amountTotal: { toString(): string } | string;
+        currencyCode: string;
+        provider: PaymentProvider;
       }>;
       instantBookingRequest?: {
         metadataJson?: unknown | null;
@@ -60,6 +66,7 @@ export class ResolveSessionPaymentPricingService {
   }) {
     return this.calculateSessionFinancialBreakdownService.calculate({
       session: input.session,
+      requestCountryIsoCode: input.requestCountryIsoCode,
       couponCode: input.couponCode ?? null,
     });
   }

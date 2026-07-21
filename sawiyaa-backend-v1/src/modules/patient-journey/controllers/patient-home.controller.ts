@@ -1,4 +1,6 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -52,10 +54,12 @@ export class PatientHomeController {
   async getHome(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
+    @Req() request: Request,
   ) {
     const result = await this.getMyPatientHomeUseCase.execute({
       userId: currentUser.id,
       locale: locale ?? 'ar',
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
 
     return {
@@ -70,7 +74,10 @@ export class PatientHomeController {
     description:
       'Upserts a patient view record for a public practitioner profile by slug.',
   })
-  @ApiResponse({ status: 201, type: TrackPatientPractitionerViewSuccessResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: TrackPatientPractitionerViewSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description: 'Only active patient accounts may track practitioner views',

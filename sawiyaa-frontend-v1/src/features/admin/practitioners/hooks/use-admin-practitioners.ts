@@ -5,6 +5,8 @@ import {
   listAdminPractitioners,
   removeAdminPractitionerAvatar,
   updateAdminPractitionerAvatar,
+  getAdminPractitionerPublication,
+  updateAdminPractitionerPublication,
 } from "../api/admin-practitioners.api";
 import type { ListAdminPractitionersParams } from "../types/admin-practitioners.types";
 
@@ -42,6 +44,27 @@ export function useRemoveAdminPractitionerAvatar() {
       removeAdminPractitionerAvatar(practitionerId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "practitioners"] });
+    },
+  });
+}
+
+export function useAdminPractitionerPublication(practitionerId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "practitioner-publication", practitionerId],
+    queryFn: () => getAdminPractitionerPublication(practitionerId!),
+    enabled: Boolean(practitionerId),
+    staleTime: 0,
+  });
+}
+
+export function useUpdateAdminPractitionerPublication() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { practitionerId: string; isPublished: boolean; reason?: string }) =>
+      updateAdminPractitionerPublication(input.practitionerId, input),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "practitioners"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "practitioner-publication", variables.practitionerId] });
     },
   });
 }

@@ -88,4 +88,118 @@ describe('AcademyProgramPresenter', () => {
     expect(publicSession).not.toHaveProperty('internalDeliveryNote');
     expect(publicSession).not.toHaveProperty('internalDeliveryLink');
   });
+
+  it('returns PAID with the selected USD price for a non-Egyptian request', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-1', slug: 'academy-program', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: { toString: () => '500.00' }, priceUsd: { toString: () => '20.00' },
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      null,
+    );
+
+    expect(item).toMatchObject({
+      priceStatus: 'PAID',
+      pricingStatus: 'AVAILABLE',
+      priceAmount: '20.00',
+      currencyCode: 'USD',
+      reasonCode: null,
+    });
+  });
+
+  it('returns PAID with the selected EGP price for an Egyptian request', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-1', slug: 'academy-program', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: { toString: () => '500.00' }, priceUsd: { toString: () => '20.00' },
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      'EG',
+    );
+
+    expect(item).toMatchObject({
+      priceStatus: 'PAID',
+      priceAmount: '500.00',
+      currencyCode: 'EGP',
+      reasonCode: null,
+    });
+  });
+
+  it('returns UNAVAILABLE when both configured regional prices are zero', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-free', slug: 'academy-program-free', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: { toString: () => '0.00' }, priceUsd: { toString: () => '0.00' },
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      'EG',
+    );
+
+    expect(item).toMatchObject({
+      priceStatus: 'UNAVAILABLE',
+      priceAmount: null,
+      currencyCode: null,
+    });
+  });
+
+  it('returns UNAVAILABLE when the selected regional price is absent', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-missing-price', slug: 'academy-program-missing-price', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: { toString: () => '500.00' }, priceUsd: null,
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      'US',
+    );
+
+    expect(item).toMatchObject({
+      priceStatus: 'UNAVAILABLE',
+      priceAmount: null,
+      currencyCode: null,
+      reasonCode: 'SELECTED_PRICE_MISSING',
+    });
+  });
+
+  it('never turns a missing price into FREE', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-missing-price', slug: 'academy-program-missing-price', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: null, priceUsd: null,
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      'US',
+    );
+
+    expect(item.priceStatus).toBe('UNAVAILABLE');
+  });
+
+  it('returns UNAVAILABLE for a negative selected regional price', () => {
+    const item = presenter.presentPublicProgramItem(
+      {
+        id: 'program-negative-price', slug: 'academy-program-negative-price', titleAr: 'Arabic', titleEn: 'English',
+        descriptionAr: null, descriptionEn: null, coverImageUrl: null, category: null,
+        priceEgp: { toString: () => '500.00' }, priceUsd: { toString: () => '-20.00' },
+        registrationOpen: true, maxSeats: null, startAt: null, endAt: null, publishedAt: null,
+      },
+      'en',
+      'US',
+    );
+
+    expect(item).toMatchObject({
+      priceStatus: 'UNAVAILABLE',
+      priceAmount: null,
+      currencyCode: null,
+    });
+  });
 });

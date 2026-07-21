@@ -16,7 +16,10 @@ import { AuthIdentityRepository } from '../repositories/auth-identity.repository
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserRepository } from '../repositories/user.repository';
+import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { isUserEmailUniqueConstraintError } from '../utils/is-user-email-unique-constraint-error';
+import { isUserPhoneUniqueConstraintError } from '../utils/is-user-phone-unique-constraint-error';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 /**
  * Practitioner registration creates only the auth/account baseline.
@@ -28,14 +31,17 @@ export class RegisterPractitionerAccountUseCase {
     private readonly prisma: PrismaService,
     private readonly userRepository: UserRepository,
     private readonly userEmailRepository: UserEmailRepository,
+    private readonly userPhoneRepository: UserPhoneRepository,
     private readonly authIdentityRepository: AuthIdentityRepository,
     private readonly twoFactorSettingRepository: TwoFactorSettingRepository,
     private readonly hashPasswordUseCase: HashPasswordUseCase,
+    private readonly phoneNumberValidationService: PhoneNumberValidationService,
   ) {}
 
   async execute(input: {
     email: string;
-    otpEmail?: string;
+    phone: string;
+    phoneCountryCode: string;
     password: string;
     displayName?: string | null;
     practitionerType?: PractitionerType;
@@ -52,7 +58,10 @@ export class RegisterPractitionerAccountUseCase {
     };
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const normalizedOtpEmail = input.otpEmail?.trim().toLowerCase() || null;
+    const validatedPhone = this.phoneNumberValidationService.assertValid(
+      input.phone,
+      input.phoneCountryCode,
+    );
     const existingEmail =
       await this.userEmailRepository.findByEmail(normalizedEmail);
 
@@ -61,18 +70,6 @@ export class RegisterPractitionerAccountUseCase {
         messageKey: 'auth.errors.emailAlreadyRegistered',
         error: 'EMAIL_ALREADY_REGISTERED',
       });
-    }
-
-    if (normalizedOtpEmail && normalizedOtpEmail !== normalizedEmail) {
-      const existingOtpEmail =
-        await this.userEmailRepository.findByEmail(normalizedOtpEmail);
-
-      if (existingOtpEmail) {
-        throw new ConflictException({
-          messageKey: 'auth.errors.emailAlreadyRegistered',
-          error: 'EMAIL_ALREADY_REGISTERED',
-        });
-      }
     }
 
     const passwordHash = await this.hashPasswordUseCase.execute(input.password);
@@ -216,14 +213,12 @@ export class RegisterPractitionerAccountUseCase {
           true,
           tx,
         );
-        if (normalizedOtpEmail && normalizedOtpEmail !== normalizedEmail) {
-          await this.userEmailRepository.createSecondaryEmail(
-            createdUser.id,
-            normalizedOtpEmail,
-            true,
-            tx,
-          );
-        }
+        await this.userPhoneRepository.upsertPrimaryPhone(
+          createdUser.id,
+          validatedPhone.e164,
+          false,
+          tx,
+        );
         await this.authIdentityRepository.createPasswordIdentity(
           createdUser.id,
           passwordHash,
@@ -237,6 +232,13 @@ export class RegisterPractitionerAccountUseCase {
           throw new ConflictException({
             messageKey: 'auth.errors.emailAlreadyRegistered',
             error: 'EMAIL_ALREADY_REGISTERED',
+          });
+        }
+
+        if (isUserPhoneUniqueConstraintError(error)) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.phoneAlreadyRegistered',
+            error: 'PHONE_ALREADY_REGISTERED',
           });
         }
 

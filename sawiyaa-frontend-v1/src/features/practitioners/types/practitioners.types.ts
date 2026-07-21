@@ -98,6 +98,7 @@ export type PractitionerPayoutMethodType = "BANK_ACCOUNT" | "IBAN" | "WALLET" | 
 
 export interface PractitionerPayoutDestination {
   methodType: PractitionerPayoutMethodType | null;
+  countryCode: string | null;
   accountHolderName: string | null;
   bankName: string | null;
   bankAccountNumber: string | null;
@@ -180,6 +181,13 @@ export interface PractitionerProfileSuccessResponse {
   profile: PractitionerProfile;
 }
 
+export interface PractitionerCountryOption {
+  id: string;
+  isoCode: string;
+  name: string;
+  nativeName: string | null;
+}
+
 export interface PractitionerSpecialtiesSuccessResponse {
   message: string;
   specialties: PractitionerSpecialty[];
@@ -254,6 +262,7 @@ export interface PractitionerApplicationStatusSuccessResponse {
 
 export interface PractitionerPayoutDestinationInput {
   methodType: PractitionerPayoutMethodType;
+  countryCode?: string | null;
   accountHolderName?: string | null;
   bankName?: string | null;
   bankAccountNumber?: string | null;

@@ -3,11 +3,11 @@ import { View, StyleSheet, Image } from "react-native";
 import { Card, Text, Button, StatusChip } from "../../../../components/ui";
 import { PublicPractitionerListItem } from "../types";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { PriceDisplay } from "../../../../components/money";
+import { mapPractitionerDurationPrice } from "../practitioner-money";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { getPatientPreferredCurrency, getPriceForPatientCurrency } from "../../../../lib/currency";
-import { usePatientProfile } from "../../profile/hooks";
 
 export interface TherapistCardProps {
   practitioner: PublicPractitionerListItem;
@@ -18,21 +18,14 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const profileQuery = usePatientProfile();
 
   const primarySpecialty =
     practitioner.specialties.find((s) => s.isPrimary) ||
     practitioner.specialties[0];
 
-  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
-  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
-  const currencyCode = getPatientPreferredCurrency(patientCountryCode, practitioner);
-
-  // Select the correct price for the patient's currency
-  const price =
-    currencyCode === "EGP"
-      ? (practitioner.sessionPrice30Egp ?? practitioner.sessionPrice60Egp ?? null)
-      : (practitioner.sessionPrice30Usd ?? practitioner.sessionPrice60Usd ?? null);
+  const currencyCode = practitioner.currencyCode ?? null;
+  const price = practitioner.sessionPrice30 ?? practitioner.sessionPrice60 ?? null;
+  const priceState = mapPractitionerDurationPrice({ amount: price, currencyCode });
   const averageRating = practitioner.ratingSummary.averageRating;
   const totalReviews = practitioner.ratingSummary.totalReviews;
   const visibleLanguages = practitioner.languages
@@ -199,21 +192,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
           <Text color={theme.colors.textMuted} style={styles.priceLabel}>
             {t("discovery.list.priceLabel")}
           </Text>
-          <Text
-            weight="bold"
-            color={theme.colors.textBrand}
-            style={styles.priceValue}
-          >
-            {price !== null && price !== undefined
-              ? t("discovery.list.priceValue", {
-                  value: new Intl.NumberFormat(locale, {
-                    style: "currency",
-                    currency: currencyCode,
-                    maximumFractionDigits: 0,
-                  }).format(price),
-                })
-              : t("discovery.list.priceUnavailable")}
-          </Text>
+          <PriceDisplay price={priceState} weight="bold" color={theme.colors.textBrand} style={styles.priceValue} />
         </View>
         <Button
           title={t("discovery.list.viewProfile")}

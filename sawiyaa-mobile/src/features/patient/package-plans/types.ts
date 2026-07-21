@@ -51,7 +51,6 @@ export type PublicPackagePlansResponseData = {
 export type PackagePlansQuery = {
   durationMinutes?: 30 | 60;
   sessionMode?: SessionMode;
-  currencyCode?: string;
 };
 
 export type PatientPackagePlanQuoteRequest = {
@@ -59,7 +58,6 @@ export type PatientPackagePlanQuoteRequest = {
   practitionerSlug: string;
   durationMinutes: 30 | 60;
   sessionMode: SessionMode;
-  currencyCode: string;
 };
 
 export type PatientPackagePlanQuoteResponseData = {
@@ -140,7 +138,8 @@ export type CreatePatientPackagePurchaseRequest = {
   practitionerSlug: string;
   durationMinutes: 30 | 60;
   sessionMode: SessionMode;
-  selectedCurrencyCode: string;
+  /** @deprecated Backend selects package pricing; clients must omit this field. */
+  selectedCurrencyCode?: string;
   selectedSessionSlots: PackagePurchaseSessionSlot[];
 };
 

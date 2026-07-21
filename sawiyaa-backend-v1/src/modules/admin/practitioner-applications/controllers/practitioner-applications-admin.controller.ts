@@ -234,6 +234,8 @@ export class PractitionerApplicationsAdminController {
         locale,
         adminUserId: currentUser.id,
         email: body.email,
+        phone: body.phone,
+        phoneCountryCode: body.phoneCountryCode,
         password: body.password,
         displayName: body.displayName,
         practitionerType: body.practitionerType,

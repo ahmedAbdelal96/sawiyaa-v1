@@ -50,6 +50,10 @@ export const enAdminCatalog = {
       directCreateMissingRequirements:
         'Direct practitioner creation is missing required approval data',
       invalidCountryCode: 'Country code is invalid or not active',
+      countryReferenceDataMissing:
+        'No active country reference data exists in the system',
+      countryNotFound: 'Selected country does not exist in the system',
+      countryInactive: 'Selected country is currently inactive',
       invalidCredentialExpiry:
         'Credential expiry must be a future date when provided',
       credentialRejectionReasonRequired:
@@ -73,6 +77,29 @@ export const enAdminCatalog = {
         'Changes were requested for your practitioner application',
       changesRequestedBody:
         'Please update your application and resubmit. Reason: {{reason}}',
+    },
+  },
+  practitionerPublication: {
+    success: {
+      published: 'Practitioner published successfully',
+      unpublished: 'Practitioner unpublished successfully',
+      alreadyPublished: 'Practitioner is already published',
+      alreadyUnpublished: 'Practitioner is already unpublished',
+    },
+    errors: {
+      notFound: 'Practitioner profile was not found',
+      reasonRequired: 'A reason is required when unpublishing',
+      reasonTooLong: 'The unpublication reason is too long',
+      notReady: 'Practitioner is not ready for publication',
+    },
+    blockers: {
+      notApproved: 'The practitioner must be approved first',
+      accountInactive: 'The practitioner account must be active',
+      publicSlug: 'A public profile link is required',
+      displayName: 'A display name is required',
+      professionalTitle: 'A professional title is required',
+      bio: 'A professional biography is required',
+      specialty: 'At least one active specialty is required',
     },
   },
 };

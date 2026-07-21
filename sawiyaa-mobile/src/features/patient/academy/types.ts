@@ -17,7 +17,12 @@ export type AcademyProgramItem = {
   descriptionAr: string | null; descriptionEn: string | null; description: string | null;
   coverImageUrl: string | null;
   category: { id: string; slug: string; title: string } | null;
-  priceEgp: string | null; priceUsd: string | null; registrationOpen: boolean;
+  /** Selected request-region price. Patient UI must never select raw regional values. */
+  priceStatus?: "PAID" | "UNAVAILABLE" | string | null;
+  pricingStatus?: "PAID" | "UNAVAILABLE" | string | null;
+  priceAmount?: string | null;
+  currencyCode?: "EGP" | "USD" | null;
+  registrationOpen: boolean;
   maxSeats: number | null; targetLearnerCount: number | null; activeLearnerCount: number;
   remainingTargetSlots: number | null; isOverTargetLearners: boolean;
   startAt: string | null; endAt: string | null; publishedAt: string | null;

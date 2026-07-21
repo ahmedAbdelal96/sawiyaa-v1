@@ -204,6 +204,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       'retryAfterSeconds',
       'resendAvailableAt',
       'cooldownSeconds',
+      'details',
     ]);
 
     return Object.fromEntries(

@@ -6,6 +6,7 @@ export const practitionersQueryKeys = {
   me: () => [...practitionersQueryKeys.all, "me"] as const,
   meSpecialties: () => [...practitionersQueryKeys.me(), "specialties"] as const,
   meCredentials: () => [...practitionersQueryKeys.me(), "credentials"] as const,
+  meCountries: () => [...practitionersQueryKeys.me(), "countries"] as const,
   meApplication: () => [...practitionersQueryKeys.me(), "application"] as const,
   meReadiness: () => [...practitionersQueryKeys.me(), "readiness"] as const,
 };

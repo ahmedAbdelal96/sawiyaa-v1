@@ -19,11 +19,13 @@ export function SpecialistHorizontalRail({
   items,
   locale,
   variant = "default",
+  currencyCode,
 }: {
   title: string;
   items: PatientHomePractitionerItemDto[];
   locale: string;
   variant?: "default" | "topRated" | "recentlyVisited" | "featured";
+  currencyCode?: "EGP" | "USD";
 }) {
   const { i18n } = useTranslation();
   const router = useRouter();
@@ -114,6 +116,7 @@ export function SpecialistHorizontalRail({
             locale={locale}
             variant={variant}
             rank={variant === "topRated" ? index + 1 : undefined}
+            currencyCode={currencyCode}
             onPress={() => router.push(`/(patient)/discovery/${item.slug}` as any)}
           />
         )}

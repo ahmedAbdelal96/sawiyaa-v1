@@ -9,6 +9,17 @@ import type {
   MessagingMessage,
 } from "../types/messages-shell.types";
 
+function isCanonicalUnreadSummary(value: unknown): value is CanonicalUnreadSummary {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.unreadCount === "number" &&
+    typeof candidate.needsSupportReplyCount === "number" &&
+    typeof candidate.hasUnread === "boolean"
+  );
+}
+
 export async function listCanonicalConversations(params: { page?: number; limit?: number } = {}) {
   const response = await httpClient.get<ApiPayload<CanonicalConversationListResponse>>(
     "/messages/conversations",
@@ -61,7 +72,17 @@ export async function getCanonicalUnreadSummary() {
   const response = await httpClient.get<ApiPayload<{ item: CanonicalUnreadSummary }>>(
     "/messages/conversations/unread-summary",
   );
-  return extractData(response.data);
+  const data = extractData(response.data) as unknown;
+  const item =
+    data && typeof data === "object" && "item" in data
+      ? (data as { item?: unknown }).item
+      : data;
+
+  if (!isCanonicalUnreadSummary(item)) {
+    throw new Error("Invalid canonical unread summary response");
+  }
+
+  return { item };
 }
 
 export async function createPatientSupportTicket(payload: { description: string }) {
@@ -121,4 +142,3 @@ export async function getAdminSupportTicket(ticketId: string) {
   );
   return extractData(response.data);
 }
-

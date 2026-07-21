@@ -10,22 +10,14 @@ import { useSessionFinancialBreakdown } from "../../../src/features/patient/paym
 import { formatTimeZoneLabel, formatViewerDateTime } from "../../../src/lib/time-formatting";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { resolveSupportedCurrencyCode } from "../../../src/lib/currency";
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../src/lib/money";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FALLBACK_AVATAR = require("../../../assets/user.avif");
 
-function formatMoney(amount: string, currencyCode: string): string {
-  const value = Number(amount);
-  if (!Number.isFinite(value)) {
-    return `${amount} ${currencyCode.toUpperCase()}`;
-  }
-
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: currencyCode,
-    maximumFractionDigits: 2,
-  }).format(value);
+function formatMoney(amount: string, currencyCode: string | null | undefined, locale: string): string {
+  const money = parseMoney(amount, currencyCode);
+  return money ? formatCentralMoney(money, locale) : "-";
 }
 
 export default function BookingConfirmationScreen() {
@@ -74,11 +66,7 @@ export default function BookingConfirmationScreen() {
   }, [duration, t]);
 
   const breakdown = breakdownQuery.data?.item;
-  const breakdownCurrency = resolveSupportedCurrencyCode({
-    currencyCode: breakdown?.currency ?? null,
-    regionalPricingMode: breakdown?.regionalPricingMode ?? null,
-    resolvedCountryIsoCode: breakdown?.resolvedCountryIsoCode ?? null,
-  });
+  const breakdownCurrency = breakdown?.currency ?? null;
   const canContinueToPayment = Boolean(createdSession?.id && breakdown);
   const hasRequiredParams = Boolean(params.slug && params.selectedStartAt);
   const footerSummary = useMemo(() => {
@@ -299,7 +287,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.grossAmount, breakdownCurrency)}
+                  {formatMoney(breakdown.grossAmount, breakdownCurrency, locale)}
                 </Text>
               </View>
 
@@ -311,7 +299,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600">
-                  {formatMoney(breakdown.discountAmount, breakdownCurrency)}
+                  {formatMoney(breakdown.discountAmount, breakdownCurrency, locale)}
                 </Text>
               </View>
 
@@ -323,7 +311,7 @@ export default function BookingConfirmationScreen() {
                   )}
                 </Text>
                 <Text weight="600" color={theme.colors.primary}>
-                  {formatMoney(breakdown.netPaidAmount, breakdownCurrency)}
+                  {formatMoney(breakdown.netPaidAmount, breakdownCurrency, locale)}
                 </Text>
               </View>
             </>

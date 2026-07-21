@@ -46,6 +46,7 @@ import { GetPatientPaymentUseCase } from '../use-cases/get-patient-payment.use-c
 import { InitiateSessionPaymentUseCase } from '../use-cases/initiate-session-payment.use-case';
 import { ListPatientPaymentsUseCase } from '../use-cases/list-patient-payments.use-case';
 import { ReconcileSessionPaymentReturnUseCase } from '../use-cases/reconcile-session-payment-return.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
@@ -104,6 +105,7 @@ export class PatientPaymentsController {
       paymobMethod: body.paymobMethod ?? null,
       returnUrl: body.returnUrl ?? null,
       displayLocale: locale,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       userAgent:
         typeof request.headers['user-agent'] === 'string'
           ? request.headers['user-agent']
@@ -133,10 +135,12 @@ export class PatientPaymentsController {
   capabilities(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Param('id') sessionId: string,
+    @Req() request: Request,
   ) {
     return this.getPatientSessionPaymentCapabilitiesUseCase.execute({
       userId: currentUser.id,
       sessionId,
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
     });
   }
 

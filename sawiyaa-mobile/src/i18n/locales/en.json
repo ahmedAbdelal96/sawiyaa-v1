@@ -2167,5 +2167,9 @@
         "notFound": "That promo code was not found."
       }
     }
+  },
+  "money": {
+    "free": "Free",
+    "unavailable": "Price unavailable"
   }
 }

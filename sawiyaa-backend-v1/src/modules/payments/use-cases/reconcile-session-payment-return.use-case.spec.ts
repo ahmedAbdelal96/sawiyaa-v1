@@ -40,11 +40,6 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
       findSuccessfulBySessionId: jest.fn().mockResolvedValue(payment),
       findById: jest.fn().mockResolvedValue(payment),
     };
-    const markPaymentSucceededUseCase = {
-      execute: jest.fn().mockResolvedValue({
-        item: { id: 'payment_1', status: PaymentStatus.CAPTURED },
-      }),
-    };
     const orchestrateSessionPaymentStatusService = {
       markSessionConfirmedFromPayment: jest.fn().mockResolvedValue(session),
     };
@@ -58,7 +53,6 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
     const useCase = new ReconcileSessionPaymentReturnUseCase(
       paymentSessionRepository as never,
       paymentRepository as never,
-      markPaymentSucceededUseCase as never,
       orchestrateSessionPaymentStatusService as never,
       paymentMapper as never,
       logger as never,
@@ -67,14 +61,13 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
     return {
       useCase,
       paymentRepository,
-      markPaymentSucceededUseCase,
       orchestrateSessionPaymentStatusService,
       paymentMapper,
       logger,
     };
   }
 
-  it('captures a pending payment and confirms the session from hosted return data', async () => {
+  it('does not capture a pending payment from hosted return data alone', async () => {
     const setup = buildUseCase({
       paymentStatus: PaymentStatus.PENDING,
     });
@@ -88,10 +81,13 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
       pending: false,
     });
 
-    expect(setup.markPaymentSucceededUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
+    ).not.toHaveBeenCalled();
     expect(result).toEqual({
-      item: { id: 'payment_1', status: PaymentStatus.CAPTURED },
-      reconciled: true,
+      item: { id: 'payment_1' },
+      reconciled: false,
     });
   });
 
@@ -109,7 +105,6 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
       pending: false,
     });
 
-    expect(setup.markPaymentSucceededUseCase.execute).not.toHaveBeenCalled();
     expect(
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,
@@ -120,7 +115,7 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
     });
   });
 
-  it('captures a successful return even if the session is already expired', async () => {
+  it('does not capture a successful return even if the session is already expired', async () => {
     const setup = buildUseCase({
       sessionStatus: SessionStatus.EXPIRED,
       paymentStatus: PaymentStatus.PENDING,
@@ -135,14 +130,17 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
       pending: false,
     });
 
-    expect(setup.markPaymentSucceededUseCase.execute).toHaveBeenCalledTimes(1);
+    expect(
+      setup.orchestrateSessionPaymentStatusService
+        .markSessionConfirmedFromPayment,
+    ).not.toHaveBeenCalled();
     expect(
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,
     ).not.toHaveBeenCalled();
     expect(result).toEqual({
-      item: { id: 'payment_1', status: PaymentStatus.CAPTURED },
-      reconciled: true,
+      item: { id: 'payment_1' },
+      reconciled: false,
     });
   });
 
@@ -159,7 +157,6 @@ describe('ReconcileSessionPaymentReturnUseCase', () => {
       pending: false,
     });
 
-    expect(setup.markPaymentSucceededUseCase.execute).not.toHaveBeenCalled();
     expect(
       setup.orchestrateSessionPaymentStatusService
         .markSessionConfirmedFromPayment,

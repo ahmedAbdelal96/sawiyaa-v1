@@ -119,6 +119,18 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     refundPolicyService,
   );
 
+  // All production callers must provide trusted request country. Keep the
+  // legacy fixture inputs concise without weakening that production contract.
+  const executeWithTrustedCountry = useCase.execute.bind(useCase);
+  useCase.execute = ((input: any) =>
+    executeWithTrustedCountry({
+      ...input,
+      requestCountryIsoCode:
+        input.requestCountryIsoCode === undefined
+          ? 'EG'
+          : input.requestCountryIsoCode,
+    })) as typeof useCase.execute;
+
   const basePatient = {
     id: 'patient-1',
     country: { isoCode: 'EGY' },
@@ -393,6 +405,7 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
         purchaseId: 'purchase-1',
         acceptedRefundPolicyId: 'refund-policy-version-1',
         displayLocale: 'en',
+        requestCountryIsoCode: null,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
@@ -601,24 +614,42 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('does not fallback to practitioner country for EGP when patient country is unknown', async () => {
+  it('initiates a persisted USD snapshot when the request country is missing', async () => {
     (patientProfileRepository.findByUserId as jest.Mock).mockResolvedValueOnce({
       ...basePatient,
       country: null,
     });
+    (
+      packagePurchaseRepository.findByIdForPatient as jest.Mock
+    ).mockResolvedValueOnce({
+      ...basePurchase,
+      currencyCodeSnapshot: 'USD',
+      patientPayableTotalSnapshot: '20.00',
+    });
 
-    await expect(
-      useCase.execute({
-        userId: 'user-1',
-        purchaseId: 'purchase-1',
-        acceptedRefundPolicyId: 'refund-policy-version-1',
-        displayLocale: 'en',
+    await useCase.execute({
+      userId: 'user-1',
+      purchaseId: 'purchase-1',
+      acceptedRefundPolicyId: 'refund-policy-version-1',
+      displayLocale: 'en',
+      requestCountryIsoCode: null,
+      returnUrl:
+        'http://localhost:3000/en/patient/package-purchases/purchase-1/payment-return',
+    });
+
+    expect(paymentProviderResolverService.resolveProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currencyCode: 'USD',
+        commissionMarketType: MarketType.CROSS_BORDER,
+        checkoutCountryIsoCode: null,
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-
-    expect(
-      paymentProviderResolverService.resolveProvider,
-    ).not.toHaveBeenCalled();
+    );
+    expect(providerAdapter.initiateSessionPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountMinor: 2000,
+        currency: 'USD',
+      }),
+    );
   });
 
   it('routes USD package payments to Paymob and never Stripe', async () => {
@@ -642,6 +673,7 @@ describe('InitiatePackagePurchasePaymentUseCase', () => {
       purchaseId: 'purchase-1',
       acceptedRefundPolicyId: 'refund-policy-version-1',
       displayLocale: 'en',
+      requestCountryIsoCode: 'USA',
       returnUrl:
         'http://localhost:3000/en/patient/package-purchases/purchase-1/payment-return',
     });

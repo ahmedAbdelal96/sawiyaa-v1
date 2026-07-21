@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
-import { MarketType, PaymentProvider, Prisma, SessionMode } from '@prisma/client';
+import {
+  MarketType,
+  PaymentProvider,
+  Prisma,
+  SessionMode,
+} from '@prisma/client';
 import { MoneyMathService } from '@modules/financial-rules/services/money-math.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
 import { ValidatePackagePlanService } from './validate-package-plan.service';
@@ -19,6 +24,15 @@ describe('PackageQuoteCalculatorService', () => {
     resolveCommissionRuleService,
     moneyMathService,
   );
+  const calculateWithTrustedCountry = service.calculate.bind(service);
+  service.calculate = ((input: any) =>
+    calculateWithTrustedCountry({
+      ...input,
+      requestCountryIsoCode:
+        input.requestCountryIsoCode === undefined
+          ? 'EG'
+          : input.requestCountryIsoCode,
+    })) as typeof service.calculate;
 
   const practitioner = {
     id: 'practitioner-1',
@@ -107,6 +121,7 @@ describe('PackageQuoteCalculatorService', () => {
       practitioner,
       selectedDurationMinutes: 60,
       sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'US',
       selectedCurrencyCode: 'USD',
       patient: null,
       internalBreakdownVisible: false,
@@ -116,6 +131,48 @@ describe('PackageQuoteCalculatorService', () => {
     expect(result.baseSessionPriceEgp).toBe('100.00');
     expect(result.selectedBaseSessionPrice).toBe('40.00');
     expect(result.patientPayableTotal).toBe('144.00');
+  });
+
+  it('defaults an unavailable request region to USD and ignores checkout/client currency', async () => {
+    const result = await service.calculate({
+      plan: { code: 'SESSIONS_4', sessionCount: 4, discountPercent: '10' },
+      practitioner,
+      selectedDurationMinutes: 30,
+      sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: null,
+      checkoutCountryIsoCode: 'EG',
+      selectedCurrencyCode: 'EGP',
+      patient: null,
+      internalBreakdownVisible: false,
+    });
+    expect(result.selectedCurrencyCode).toBe('USD');
+    expect(result.selectedBaseSessionPrice).toBe('20.00');
+  });
+
+  it('ignores client-selected currency in favor of the trusted request region', async () => {
+    const foreignResult = await service.calculate({
+      plan: { code: 'SESSIONS_4', sessionCount: 4, discountPercent: '10' },
+      practitioner,
+      selectedDurationMinutes: 30,
+      sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'US',
+      selectedCurrencyCode: 'EGP',
+      patient: null,
+      internalBreakdownVisible: false,
+    });
+    expect(foreignResult.selectedCurrencyCode).toBe('USD');
+
+    const egyptResult = await service.calculate({
+      plan: { code: 'SESSIONS_4', sessionCount: 4, discountPercent: '10' },
+      practitioner,
+      selectedDurationMinutes: 30,
+      sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'EG',
+      selectedCurrencyCode: 'USD',
+      patient: null,
+      internalBreakdownVisible: false,
+    });
+    expect(egyptResult.selectedCurrencyCode).toBe('EGP');
   });
 
   it('uses the explicit EGP price field instead of legacy session prices', async () => {
@@ -153,6 +210,7 @@ describe('PackageQuoteCalculatorService', () => {
       practitioner,
       selectedDurationMinutes: 60,
       sessionMode: SessionMode.VIDEO,
+      requestCountryIsoCode: 'US',
       selectedCurrencyCode: 'AED',
       patient: null,
       internalBreakdownVisible: false,
@@ -160,7 +218,7 @@ describe('PackageQuoteCalculatorService', () => {
 
     expect(result.selectedCurrencyCode).toBe('USD');
     expect(result.regionalPricingMode).toBe('INTERNATIONAL');
-    expect(result.provider).toBe(PaymentProvider.STRIPE);
+    expect(result.provider).toBe(PaymentProvider.PAYMOB);
   });
 
   it('rejects EGP quotes when the EGP price is missing', async () => {
@@ -200,6 +258,7 @@ describe('PackageQuoteCalculatorService', () => {
         },
         selectedDurationMinutes: 60,
         sessionMode: SessionMode.VIDEO,
+        requestCountryIsoCode: 'US',
         selectedCurrencyCode: 'USD',
         patient: null,
         internalBreakdownVisible: false,

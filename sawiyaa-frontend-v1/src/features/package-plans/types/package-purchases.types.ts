@@ -8,6 +8,8 @@ export type PackagePurchaseSessionSlot = {
 export type ListMyPackagePurchasesParams = {
   page?: number;
   limit?: number;
+  search?: string;
+  status?: string;
 };
 
 export type PackagePurchaseStatus =
@@ -33,9 +35,25 @@ export type PatientPackagePurchaseItem = {
   id: string;
   status: PackagePurchaseStatus;
   planCode: string;
+  title?: string;
+  description?: string | null;
   sessionCount: number;
   discountPercent: string;
   practitionerId: string;
+  practitioner?: {
+    id: string;
+    publicSlug: string;
+    displayName: string;
+    avatarUrl: string | null;
+    professionalTitle: string | null;
+  };
+  progress?: {
+    totalSessions: number;
+    completedSessions: number;
+    remainingSessions: number;
+    scheduledSessions: number;
+    progressPercent: number;
+  };
   durationMinutes: number;
   sessionMode: SessionMode;
   selectedCurrencyCode: string;
@@ -60,7 +78,6 @@ export type CreatePatientPackagePurchaseRequest = {
   practitionerSlug: string;
   durationMinutes: 30 | 60;
   sessionMode: SessionMode;
-  selectedCurrencyCode: string;
   selectedSessionSlots: PackagePurchaseSessionSlot[];
 };
 

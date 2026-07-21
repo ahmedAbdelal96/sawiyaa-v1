@@ -64,6 +64,10 @@
     "refineList": "Refine the current list without leaving the page.",
     "actions": "Actions"
   },
+  "money": {
+    "currency": { "usd": { "full": "US Dollar" }, "egp": { "full": "Egyptian Pound" } },
+    "pricing": { "free": "Free", "unavailable": "Price unavailable", "sessionFees": "Session fees", "packagePrice": "Package price", "coursePrice": "Course price", "total": "Total" }
+  },
   "notFound": {
     "title": "Page not found",
     "subtitle": "The link may be incorrect, or this page is no longer available.",

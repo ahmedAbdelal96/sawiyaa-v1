@@ -82,6 +82,7 @@ export type PractitionerFilterSpecialtyOption = {
 export type PractitionerFilterOption = {
   value: string;
   label: string;
+  description?: string | null;
   practitionerCount: number;
 };
 

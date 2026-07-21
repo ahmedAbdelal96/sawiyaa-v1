@@ -89,6 +89,7 @@ export class GetPatientAcademyProgramEnrollmentUseCase {
         sessions: visibleSessions,
       },
       input.locale,
+      enrollment.selectedCurrencyCode === 'EGP' ? 'EG' : 'US',
     );
     const item = this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
       {

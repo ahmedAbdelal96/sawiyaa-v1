@@ -6,6 +6,9 @@ export interface AdminPractitionerListItem {
   avatarUrl: string | null;
   professionalTitle: string | null;
   status: string;
+  accountStatus: string;
+  isPublicProfilePublished: boolean;
+  publicationBlockers: Array<{ code: string; field?: string; messageKey: string }>;
   practitionerType: string;
   countryCode: string | null;
   isOnlineNow: boolean;
@@ -53,4 +56,29 @@ export interface AdminPractitionerAvatarResponse {
 export interface AdminPractitionerAvatarSuccessResponse {
   message: string;
   avatar: AdminPractitionerAvatarResponse;
+}
+
+export interface PractitionerPublicationImpact {
+  activeUpcomingCount: number;
+  scheduledTodayCount: number;
+  nearestUpcomingAt: string | null;
+  upcomingBookings: Array<{
+    id: string;
+    scheduledStartAt: string | null;
+    scheduledEndAt: string | null;
+    status: string;
+    sessionMode: string;
+  }>;
+}
+
+export interface PractitionerPublicationResponse {
+  practitionerId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  practitionerStatus: string;
+  accountStatus: string;
+  isPublished: boolean;
+  isReadyForPublication: boolean;
+  blockers: Array<{ code: string; field?: string; messageKey: string }>;
+  impact: PractitionerPublicationImpact;
 }

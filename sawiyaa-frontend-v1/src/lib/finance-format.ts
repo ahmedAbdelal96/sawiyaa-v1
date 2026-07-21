@@ -14,6 +14,43 @@ export function normalizeCurrencyCode(currencyCode?: string | null): string | nu
   return value ? value : null;
 }
 
+export type LocalizedMoneyInput = {
+  amount: string | number;
+  currencyCode?: string | null;
+  locale: string;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+};
+
+/**
+ * Formats an amount/currency pair already selected by the backend. It never
+ * chooses a currency or falls back when the API contract is incomplete.
+ */
+export function formatLocalizedMoney(input: LocalizedMoneyInput): string | null {
+  const numeric = typeof input.amount === "string" ? Number(input.amount) : input.amount;
+  const currencyCode = normalizeCurrencyCode(input.currencyCode);
+
+  if (!Number.isFinite(numeric) || (currencyCode !== "EGP" && currencyCode !== "USD")) {
+    return null;
+  }
+
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: input.minimumFractionDigits ?? 0,
+    maximumFractionDigits: input.maximumFractionDigits ?? 2,
+  }).format(numeric);
+  const isArabic = input.locale.toLowerCase().startsWith("ar");
+
+  if (isArabic) {
+    return currencyCode === "USD"
+      ? `${formattedAmount} دولار أمريكي`
+      : `${formattedAmount} جنيه مصري`;
+  }
+
+  return currencyCode === "USD"
+    ? `$${formattedAmount} USD`
+    : `EGP ${formattedAmount}`;
+}
+
 export function formatMoney(
   locale: string,
   amount: string | number,
@@ -25,17 +62,17 @@ export function formatMoney(
     return typeof amount === "string" ? amount : String(amount);
   }
 
-  const normalizedCurrency = normalizeCurrencyCode(currencyCode);
-  if (!normalizedCurrency) {
+  const localized = formatLocalizedMoney({
+    amount,
+    currencyCode,
+    locale,
+    minimumFractionDigits: options.minimumFractionDigits,
+    maximumFractionDigits: options.maximumFractionDigits,
+  });
+  if (!localized) {
     return options.fallbackText ?? (locale.startsWith("ar") ? "العملة غير متاحة" : "Currency unavailable");
   }
-
-  return new Intl.NumberFormat(locale.startsWith("ar") ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency: normalizedCurrency,
-    minimumFractionDigits: options.minimumFractionDigits ?? 0,
-    maximumFractionDigits: options.maximumFractionDigits ?? 2,
-  }).format(numeric);
+  return localized;
 }
 
 export function formatCurrencyLabel(currencyCode?: string | null, fallbackText = "Currency unavailable") {

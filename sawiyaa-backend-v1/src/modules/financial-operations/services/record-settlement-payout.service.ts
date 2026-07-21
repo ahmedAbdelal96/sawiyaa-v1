@@ -136,7 +136,9 @@ export class RecordSettlementPayoutService {
         tx,
       );
     if (existingPayoutByIdempotencyKey) {
-      if (existingPayoutByIdempotencyKey.settlementId !== currentSettlement.id) {
+      if (
+        existingPayoutByIdempotencyKey.settlementId !== currentSettlement.id
+      ) {
         throw new ConflictException({
           messageKey:
             'financialOperations.errors.settlementPayoutAlreadyRecorded',
@@ -393,9 +395,7 @@ export class RecordSettlementPayoutService {
 
     return aggregates.reduce((sum, entry) => {
       const amount = new Prisma.Decimal(entry._sum.amount ?? 0);
-      return entry.direction === 'CREDIT'
-        ? sum.add(amount)
-        : sum.sub(amount);
+      return entry.direction === 'CREDIT' ? sum.add(amount) : sum.sub(amount);
     }, new Prisma.Decimal(0));
   }
 }

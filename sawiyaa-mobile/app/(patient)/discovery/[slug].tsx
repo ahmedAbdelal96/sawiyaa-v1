@@ -26,31 +26,10 @@ import {
 } from "../../../src/features/patient/discovery/api";
 import { useTrackPractitionerView } from "../../../src/features/patient/journey/hooks";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { getPatientPreferredCurrency, getPriceForPatientCurrency } from "../../../src/lib/currency";
-import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
+import { PriceDisplay } from "../../../src/components/money";
+import { parsePrice } from "../../../src/lib/money";
 
 const FALLBACK_AVATAR = require("../../../assets/user.avif");
-
-function formatCurrencyAmount(
-  amount: number | string | null | undefined,
-  currency: string | null | undefined,
-  locale: string,
-) {
-  if (!currency) {
-    return null;
-  }
-
-  const value = typeof amount === "number" ? amount : Number(amount);
-  if (!Number.isFinite(value)) {
-    return null;
-  }
-
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
 
 type CountryLabel = { ar: string; en: string };
 
@@ -161,7 +140,6 @@ export default function TherapistProfileScreen() {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const trackPractitionerViewMutation = useTrackPractitionerView();
-  const profileQuery = usePatientProfile();
 
   const { data, isLoading, isError, refetch } = useGetPublicPractitionerDetails(
     slug || null,
@@ -172,28 +150,20 @@ export default function TherapistProfileScreen() {
   const presence = presenceQuery.data?.data.presence ?? null;
   const isPresenceAvailable = presence?.status === "ONLINE";
 
-  // Egyptian patients always see EGP; non-Egyptian see practitioner's USD setting
-  const patientCountryCode = profileQuery.data?.profile.countryCode ?? null;
-  const displayCurrencyCode = practitioner
-    ? getPatientPreferredCurrency(patientCountryCode, practitioner)
-    : null;
+  const displayCurrencyCode = practitioner?.currencyCode ?? null;
+  const thirtyMinutePrice = practitioner?.sessionPrice30 ?? null;
+  const sixtyMinutePrice = practitioner?.sessionPrice60 ?? null;
 
-  // Use the raw price for the patient's currency (not displaySessionPrice30/60 which may be practitioner-perspective)
-  const thirtyMinutePrice = practitioner
-    ? getPriceForPatientCurrency(displayCurrencyCode ?? "USD", practitioner, 30)
-    : null;
-
-  const sixtyMinutePrice = practitioner
-    ? getPriceForPatientCurrency(displayCurrencyCode ?? "USD", practitioner, 60)
-    : null;
-
-  const thirtyMinutePriceLabel = thirtyMinutePrice != null
-    ? formatCurrencyAmount(thirtyMinutePrice, displayCurrencyCode ?? "USD", locale)
-    : null;
-
-  const sixtyMinutePriceLabel = sixtyMinutePrice != null
-    ? formatCurrencyAmount(sixtyMinutePrice, displayCurrencyCode ?? "USD", locale)
-    : null;
+  const thirtyMinutePriceState = parsePrice({
+    priceStatus: "PAID",
+    priceAmount: thirtyMinutePrice == null ? null : String(thirtyMinutePrice),
+    currencyCode: displayCurrencyCode,
+  });
+  const sixtyMinutePriceState = parsePrice({
+    priceStatus: "PAID",
+    priceAmount: sixtyMinutePrice == null ? null : String(sixtyMinutePrice),
+    currencyCode: displayCurrencyCode,
+  });
 
   const countryLabel = resolveCountryLabel(
     practitioner?.countryCode ?? null,
@@ -273,9 +243,9 @@ export default function TherapistProfileScreen() {
       source: source || "browse",
       intent: intent || "view",
       specialtiesCount: practitioner.specialties.length,
-      hasPricing: Boolean(thirtyMinutePriceLabel || sixtyMinutePriceLabel),
+      hasPricing: thirtyMinutePriceState.status === "PAID" || sixtyMinutePriceState.status === "PAID",
     });
-  }, [intent, practitioner, source, sixtyMinutePriceLabel, thirtyMinutePriceLabel]);
+  }, [intent, practitioner, source, sixtyMinutePriceState.status, thirtyMinutePriceState.status]);
 
   const headerTitle = t("discovery.profile.screenTitle", {
     defaultValue: isArabicUi ? "ملف المختص" : "Practitioner Profile",
@@ -713,17 +683,13 @@ export default function TherapistProfileScreen() {
                 </Text>
               </View>
 
-              <Text
+              <PriceDisplay
+                price={thirtyMinutePriceState}
                 weight="bold"
                 color={theme.colors.textBrand}
                 style={styles.priceValue}
                 numberOfLines={1}
-              >
-                {thirtyMinutePriceLabel ??
-                  t("discovery.profile.pricingUnavailable", {
-                    defaultValue: isArabicUi ? "غير متاح حاليًا" : "Unavailable right now",
-                  })}
-              </Text>
+              />
             </View>
 
             <View
@@ -756,17 +722,13 @@ export default function TherapistProfileScreen() {
                 </Text>
               </View>
 
-              <Text
+              <PriceDisplay
+                price={sixtyMinutePriceState}
                 weight="bold"
                 color={theme.colors.textBrand}
                 style={styles.priceValue}
                 numberOfLines={1}
-              >
-                {sixtyMinutePriceLabel ??
-                  t("discovery.profile.pricingUnavailable", {
-                    defaultValue: isArabicUi ? "غير متاح حاليًا" : "Unavailable right now",
-                  })}
-              </Text>
+              />
             </View>
           </View>
         </Card>

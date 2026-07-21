@@ -25,6 +25,7 @@ import { OrchestrateSessionPaymentStatusService } from '../services/orchestrate-
 import { PaymentProviderRegistryService } from '../services/payment-provider-registry.service';
 import { ValidatePaymentStatusTransitionService } from '../services/validate-payment-status-transition.service';
 import { ValidateRefundEligibilityService } from '../services/validate-refund-eligibility.service';
+import { toGatewayMinorUnits } from '../utils/money-units.util';
 import { SecurityAuditActorType as AuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 
 @Injectable()
@@ -284,7 +285,7 @@ export class RequestPaymentRefundUseCase {
         providerPaymentRef: payment.providerPaymentRef ?? null,
         providerOrderRef: payment.providerOrderRef ?? null,
         providerTransactionRef,
-        amountMinor: this.toMinorUnits(refund.amount.toString()),
+        amountMinor: toGatewayMinorUnits(refund.amount, refund.currencyCode),
         currency: payment.currencyCode,
         reason: input.reason ?? null,
       });
@@ -771,7 +772,4 @@ export class RequestPaymentRefundUseCase {
     return String(transactionId);
   }
 
-  private toMinorUnits(amount: string): number {
-    return Math.round(Number(amount) * 100);
-  }
 }

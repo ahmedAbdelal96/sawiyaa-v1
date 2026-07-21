@@ -13,7 +13,6 @@ import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/moda
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
 import { formatViewerDateTime } from "@/lib/time-formatting";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
@@ -309,12 +308,8 @@ export default function PaySessionPanel({ sessionId }: Props) {
     enabled: Boolean(isPayableSession),
   });
 
-  const breakdownCurrency = breakdown
-    ? resolvePatientCurrencyCode({
-        currencyCode: breakdown.currency,
-        regionalPricingMode: breakdown.regionalPricingMode,
-        resolvedCountryIsoCode: breakdown.resolvedCountryIsoCode,
-      })
+  const breakdownCurrency = breakdown?.currency === "EGP" || breakdown?.currency === "USD"
+    ? breakdown.currency
     : null;
   const isPaymobPaymentFlow = Boolean(breakdown && breakdownCurrency === "EGP");
   const { data: paymobCapabilitiesData } = usePatientSessionPaymentCapabilities(
@@ -329,11 +324,8 @@ export default function PaySessionPanel({ sessionId }: Props) {
 
   const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary();
   const walletSummary = walletSummaryData?.item ?? null;
-  const walletCurrency = walletSummary
-    ? resolvePatientCurrencyCode({
-        currencyCode: walletSummary.currencyCode,
-        countryCode: walletSummary.currencyCode === "EGP" ? "EG" : null,
-      })
+  const walletCurrency = walletSummary?.currencyCode === "EGP" || walletSummary?.currencyCode === "USD"
+    ? walletSummary.currencyCode
     : null;
   const displayCurrency = breakdownCurrency ?? walletCurrency ?? null;
   const isCurrencySupported =

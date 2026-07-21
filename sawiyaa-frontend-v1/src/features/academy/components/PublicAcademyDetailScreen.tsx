@@ -38,23 +38,9 @@ import type {
   AcademyProgramItem,
   CreateAcademyProgramEnrollmentInput,
 } from "@/features/academy-programs/types/academy-programs.types";
-
-function formatMoney(amount: string | null, currency: "EGP" | "USD", locale: string) {
-  if (!amount) {
-    return null;
-  }
-
-  const value = Number(amount);
-  if (Number.isNaN(value)) {
-    return `${amount} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+import { PriceDisplay } from "@/components/money/PriceDisplay";
+import { tokenManager } from "@/lib/api/http-client";
+import { mapAcademyPublicPrice } from "../lib/academy-public-price";
 
 function formatDate(value: string | null, locale: string) {
   if (!value) {
@@ -108,11 +94,12 @@ function resolveProgramDescription(program: AcademyProgramItem, locale: string) 
   );
 }
 
-function resolvePricePairs(program: AcademyProgramItem, locale: string) {
-  return {
-    egp: formatMoney(program.priceEgp, "EGP", locale),
-    usd: formatMoney(program.priceUsd, "USD", locale),
-  };
+function resolvePublicPrice(program: AcademyProgramItem) {
+  return mapAcademyPublicPrice({
+    priceStatus: program.priceStatus,
+    priceAmount: program.priceAmount,
+    currencyCode: program.currencyCode,
+  });
 }
 
 function EnrollmentResultCard({
@@ -207,7 +194,7 @@ function PublicAcademyEnrollmentForm({
   isRestrictedLearner: boolean;
   disableSubmit: boolean;
 }) {
-  const prices = resolvePricePairs(program, locale);
+  const price = resolvePublicPrice(program);
 
   return (
     <form
@@ -268,15 +255,11 @@ function PublicAcademyEnrollmentForm({
 
       <div className="mt-4 space-y-2 rounded-xl border border-border-light bg-surface-tertiary px-4 py-3.5 text-xs leading-normal">
         <div className="flex items-center justify-between gap-4">
-          <span className="font-bold text-text-secondary">{t("public.form.priceEgp")}</span>
-          <span className="text-sm font-extrabold text-primary">
-            {prices.egp ?? t("public.detail.free")}
+          <span className="font-bold text-text-secondary">
+            {t("public.detail.summary.price")}
           </span>
-        </div>
-        <div className="flex items-center justify-between gap-4">
-          <span className="font-bold text-text-secondary">{t("public.form.priceUsd")}</span>
           <span className="text-sm font-extrabold text-primary">
-            {prices.usd ?? t("public.detail.free")}
+            <PriceDisplay price={price} />
           </span>
         </div>
       </div>
@@ -318,7 +301,7 @@ function ProgramDetailsPanel({
   t: ReturnType<typeof useTranslations>;
   program: AcademyProgramItem;
 }) {
-  const prices = resolvePricePairs(program, locale);
+  const price = resolvePublicPrice(program);
   const registrationState = resolveAcademyProgramRegistrationStateLabel(program.registrationOpen, t);
   const dateStart = formatDate(program.startAt, locale);
   const dateEnd = formatDate(program.endAt, locale);
@@ -345,8 +328,7 @@ function ProgramDetailsPanel({
               {t("public.detail.summary.price")}
             </div>
             <div className="mt-0.5 space-y-1 font-bold text-text-primary">
-              <div>{prices.egp ?? t("public.detail.free")}</div>
-              <div>{prices.usd ?? t("public.detail.free")}</div>
+              <div><PriceDisplay price={price} /></div>
             </div>
           </div>
           <div className="rounded-xl border border-border-light/50 bg-surface-tertiary px-3 py-2 text-xs">
@@ -423,7 +405,14 @@ function PublicAcademyProgramDetailScreen({
   const { data: program, isLoading, isError, refetch } = usePublicAcademyProgram(slug, {
     cacheScopeKey: authScopeKey,
   });
-  const currentUserQuery = useCurrentUser(Boolean(user));
+  // Public Academy detail remains available to guests.  A Zustand snapshot can
+  // outlive the browser authentication cookie (and is also rendered on the
+  // server), so only ask the protected /users/me endpoint when the browser has
+  // a real access-token session.  Otherwise its 401 interceptor would redirect
+  // a guest away before the public program request can render.
+  const hasAuthenticatedBrowserSession =
+    typeof window !== "undefined" && tokenManager.isAuthenticated();
+  const currentUserQuery = useCurrentUser(Boolean(user && hasAuthenticatedBrowserSession));
   const createEnrollment = useCreatePublicAcademyProgramEnrollment();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [form, setForm] = useState<CreateAcademyProgramEnrollmentInput>({
@@ -455,6 +444,7 @@ function PublicAcademyProgramDetailScreen({
       user.email?.trim() ||
       null;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((current) => ({
       ...current,
       fullName: current.fullName.trim() ? current.fullName : profileName ?? current.fullName,
@@ -465,7 +455,12 @@ function PublicAcademyProgramDetailScreen({
     }));
   }, [currentUserQuery.data, isRestrictedLearner, user]);
 
-  const canEnroll = Boolean(program?.publishedAt && program.registrationOpen);
+  // The public presenter is the sole authority for whether a program has a
+  // payable price.  A published program with unavailable regional pricing is
+  // still a valid detail page, but it must not expose an enrollment action.
+  const canEnroll = Boolean(
+    program?.publishedAt && program.registrationOpen && program.priceStatus === "PAID",
+  );
   const programTitle = program ? resolveProgramTitle(program, locale) : null;
   const programDescription = program ? resolveProgramDescription(program, locale) : null;
 
@@ -558,7 +553,7 @@ function PublicAcademyProgramDetailScreen({
     );
   }
 
-  const prices = resolvePricePairs(program, locale);
+  const price = resolvePublicPrice(program);
   const sessions = program.sessions ?? [];
 
   return (
@@ -601,7 +596,7 @@ function PublicAcademyProgramDetailScreen({
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
                 <Globe className="h-3.5 w-3.5 text-primary" />
-                {prices.egp ?? t("public.detail.free")}
+                <PriceDisplay price={price} />
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border-light/75 bg-white px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm">
                 <BadgeCheck className="h-3.5 w-3.5 text-primary" />

@@ -36,6 +36,7 @@ export class PractitionerPayoutDestinationRepository {
       create: {
         practitionerId,
         methodType: data.methodType,
+        countryCode: data.countryCode ?? null,
         accountHolderName: data.accountHolderName ?? null,
         bankName: data.bankName ?? null,
         bankAccountNumber: data.bankAccountNumber ?? null,
@@ -46,6 +47,7 @@ export class PractitionerPayoutDestinationRepository {
       },
       update: {
         methodType: data.methodType,
+        countryCode: data.countryCode ?? null,
         accountHolderName: data.accountHolderName ?? null,
         bankName: data.bankName ?? null,
         bankAccountNumber: data.bankAccountNumber ?? null,

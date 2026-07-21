@@ -233,7 +233,7 @@ export class PaymentGatewayControlRepository {
             afterSnapshot: input.afterSnapshot,
             configChangeLogIds,
             rollbackSourceEventId: input.rollbackSourceEventId ?? null,
-          },
+          } as unknown as Prisma.InputJsonValue,
           occurredAt: new Date(),
         },
       });
@@ -267,6 +267,12 @@ export class PaymentGatewayControlRepository {
       }
       if (beforeSnapshot.fallbackProvider !== afterSnapshot.fallbackProvider) {
         keys.push('fallbackProvider');
+      }
+      if (
+        JSON.stringify(beforeSnapshot.currencyRoutes) !==
+        JSON.stringify(afterSnapshot.currencyRoutes)
+      ) {
+        keys.push('currencyRoutes');
       }
       return keys;
     }
@@ -344,6 +350,8 @@ export class PaymentGatewayControlRepository {
           return routingSnapshot.priorityOrder;
         case 'fallbackProvider':
           return routingSnapshot.fallbackProvider;
+        case 'currencyRoutes':
+          return routingSnapshot.currencyRoutes as unknown as Prisma.JsonValue;
         default:
           return null;
       }
@@ -431,6 +439,8 @@ export class PaymentGatewayControlRepository {
           return PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingPriorityOrder;
         case 'fallbackProvider':
           return PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingFallbackProvider;
+        case 'currencyRoutes':
+          return PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingCurrencyRoutes;
         default:
           return key;
       }

@@ -4,8 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Text } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
+import { PriceDisplay } from "../../../../components/money";
+import { mapPractitionerDurationPrice } from "../../discovery/practitioner-money";
 import type { PatientHomePractitionerItemDto } from "../types";
-import { usePatientProfile } from "../../profile/hooks";
 
 const viewportWidth = Dimensions.get("window").width;
 const CARD_WIDTH = Math.max(260, Math.min(316, Math.round(viewportWidth * 0.78)));
@@ -18,12 +19,14 @@ export function SpecialistCompactCard({
   onPress,
   variant = "default",
   rank,
+  currencyCode,
 }: {
   item: PatientHomePractitionerItemDto;
   locale: string;
   onPress: () => void;
   variant?: "default" | "topRated" | "recentlyVisited" | "featured";
   rank?: number;
+  currencyCode: 'EGP' | 'USD' | null | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
@@ -32,10 +35,6 @@ export function SpecialistCompactCard({
   const [isRemoteLoaded, setIsRemoteLoaded] = useState(false);
   const normalizedAvatarUrl = typeof item.avatarUrl === "string" ? item.avatarUrl.trim() : "";
   const hasRemoteAvatar = normalizedAvatarUrl.length > 0 && !failedAvatarUrls.has(normalizedAvatarUrl);
-
-  const profileQuery = usePatientProfile();
-  const countryCode = profileQuery.data?.profile?.countryCode;
-  const currencyCode = countryCode === "EG" || countryCode === "EGY" ? "EGP" : "USD";
 
   useEffect(() => {
     setHasImageError(false);
@@ -162,13 +161,13 @@ export function SpecialistCompactCard({
           <View />
         )}
 
-        {(item.displaySessionPrice30 ?? item.displaySessionPrice60) != null ? (
-          <Text variant="caption" weight="600" color={theme.colors.primary} numberOfLines={1}>
-            {formatSpecialistPrice(item, currencyCode, locale)}
-          </Text>
-        ) : (
-          <View />
-        )}
+        <PriceDisplay
+          price={mapPractitionerDurationPrice({ amount: item.displaySessionPrice30 ?? item.displaySessionPrice60, currencyCode })}
+          variant="caption"
+          weight="600"
+          color={theme.colors.primary}
+          numberOfLines={1}
+        />
       </View>
       {variant === "topRated" ? (
         <View style={[styles.reviewMetaRow, isRTL ? styles.rowRtl : null]}>
@@ -204,27 +203,6 @@ export function SpecialistCompactCard({
 
 export const SPECIALIST_CARD_WIDTH = CARD_WIDTH;
 export const SPECIALIST_CARD_GAP = 12;
-
-function formatSpecialistPrice(
-  item: Pick<PatientHomePractitionerItemDto, "displaySessionPrice30" | "displaySessionPrice60">,
-  currencyCode: string,
-  locale: string,
-) {
-  const value = item.displaySessionPrice30 ?? item.displaySessionPrice60;
-  if (value == null) {
-    return "";
-  }
-
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currencyCode,
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `${currencyCode} ${value}`;
-  }
-}
 
 const styles = StyleSheet.create({
   card: {

@@ -7,6 +7,8 @@ describe('HandleStripeWebhookUseCase', () => {
     providerEventRef: 'stripe:event_1',
     providerPaymentRef: 'pi_1',
     outcome: 'SUCCEEDED' as const,
+    amountMinor: 1000,
+    currencyCode: 'USD',
     payload: { ok: true },
   };
 
@@ -19,7 +21,12 @@ describe('HandleStripeWebhookUseCase', () => {
       payload: Record<string, unknown>;
     };
     duplicate?: { paymentId: string } | null;
-    payment?: { id: string; status: PaymentStatus } | null;
+    payment?: {
+      id: string;
+      status: PaymentStatus;
+      amountTotal?: string;
+      currencyCode?: string;
+    } | null;
   }) {
     const registry = {
       get: jest.fn().mockReturnValue({
@@ -35,7 +42,11 @@ describe('HandleStripeWebhookUseCase', () => {
         .mockResolvedValue(input?.duplicate ?? null),
       findByProviderReference: jest
         .fn()
-        .mockResolvedValue(input?.payment ?? null),
+        .mockResolvedValue(
+          input?.payment
+            ? { amountTotal: '10.00', currencyCode: 'USD', ...input.payment }
+            : null,
+        ),
       createEvent: jest.fn().mockResolvedValue({}),
     };
 
@@ -164,5 +175,43 @@ describe('HandleStripeWebhookUseCase', () => {
     });
 
     expect(setup.registry.get).toHaveBeenCalledWith(PaymentProvider.STRIPE);
+  });
+
+  it('rejects a success webhook with a mismatched amount or currency', async () => {
+    const setup = buildUseCase({
+      payment: {
+        id: 'payment_1',
+        status: PaymentStatus.PENDING,
+        amountTotal: '20.00',
+        currencyCode: 'USD',
+      },
+    });
+    const result = await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+      query: {},
+    });
+    expect(result).toEqual({
+      received: true,
+      handled: false,
+      paymentId: 'payment_1',
+    });
+    expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
+    expect(setup.paymentRepository.createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: 'FINANCIAL_MISMATCH_AMOUNT_OR_CURRENCY',
+      }),
+    );
+  });
+
+  it('does not fulfill a success webhook with an unknown provider reference', async () => {
+    const setup = buildUseCase({ payment: null });
+    const result = await setup.useCase.execute({
+      rawBody: Buffer.from('{}'),
+      headers: {},
+      query: {},
+    });
+    expect(result).toEqual({ received: true, handled: false, paymentId: null });
+    expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
   });
 });

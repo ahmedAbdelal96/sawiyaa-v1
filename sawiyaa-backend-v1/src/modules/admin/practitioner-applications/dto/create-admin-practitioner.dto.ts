@@ -62,6 +62,17 @@ export class CreateAdminPractitionerDto {
   @IsEmail()
   email!: string;
 
+  @ApiProperty({ example: 'EG' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(3)
+  phoneCountryCode!: string;
+
+  @ApiProperty({ example: '01012345678' })
+  @IsString()
+  @MinLength(1)
+  phone!: string;
+
   @ApiProperty({
     minLength: 8,
     maxLength: 72,

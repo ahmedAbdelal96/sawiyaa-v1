@@ -27,6 +27,7 @@ import {
   getLocalizedSpecialtyName,
 } from "@/features/specialties/utils/localized-specialty";
 import AuthSplitCard from "./AuthSplitCard";
+import { PractitionerPhoneField } from "@/components/form/group-input/PractitionerPhoneField";
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const [pathname, existingQuery = ""] = basePath.split("?");
@@ -44,11 +45,20 @@ export type SignUpMode = (typeof SIGN_UP_MODES)[number];
 const staticSignUpSchema = z.object({
   displayName: z.string(),
   email: z.string(),
-  otpEmail: z.string().optional(),
+  phoneCountryCode: z.string().optional(),
+  phone: z.string().optional(),
   password: z.string(),
   primarySpecialtyCategoryId: z.string().optional(),
   specialtyIds: z.array(z.string()).optional(),
 });
+
+const PRACTITIONER_PHONE_COUNTRIES = [
+  { value: "EG", label: "Egypt (EG)", phoneCode: "+20", searchText: "Egypt EG +20" },
+  { value: "SA", label: "Saudi Arabia (SA)", phoneCode: "+966", searchText: "Saudi Arabia SA +966" },
+  { value: "AE", label: "United Arab Emirates (AE)", phoneCode: "+971", searchText: "United Arab Emirates UAE AE +971" },
+  { value: "KW", label: "Kuwait (KW)", phoneCode: "+965", searchText: "Kuwait KW +965" },
+  { value: "QA", label: "Qatar (QA)", phoneCode: "+974", searchText: "Qatar QA +974" },
+];
 
 type SignUpFormData = z.infer<typeof staticSignUpSchema>;
 
@@ -77,19 +87,21 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     return z.object({
       displayName: z.string().min(1, t("signUpForm.validation.nameRequired")),
       email: z.string().email(t("signUpForm.validation.emailInvalid")),
-      otpEmail: z.string().email(t("signUpForm.validation.emailInvalid")).optional().or(z.literal("")),
+      phoneCountryCode: mode === "practitioner" ? z.string().min(1, t("phoneCountryRequired")) : z.string().optional(),
+      phone: mode === "practitioner" ? z.string().min(1, t("phoneRequired")) : z.string().optional(),
       password: z.string().min(8, t("signUpForm.validation.passwordTooShort")),
       primarySpecialtyCategoryId: z.string().optional(),
       specialtyIds: z.array(z.string()).optional(),
     });
-  }, [t]);
+  }, [mode, t]);
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       displayName: "",
       email: "",
-      otpEmail: "",
+      phoneCountryCode: "",
+      phone: "",
       password: "",
       primarySpecialtyCategoryId: "",
       specialtyIds: [],
@@ -104,6 +116,21 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       err.messageKey === "auth.errors.emailAlreadyRegistered"
     ) {
       return t("errors.emailAlreadyRegistered");
+    }
+
+    if (typeof err.code === "string" && err.code.startsWith("PHONE_")) {
+      const phoneKey: Record<string, string> = {
+        PHONE_ALREADY_REGISTERED: "errors.phoneAlreadyRegistered",
+        PHONE_INVALID: "errors.phoneInvalid",
+        PHONE_INCOMPLETE: "errors.phoneIncomplete",
+        PHONE_TOO_LONG: "errors.phoneTooLong",
+        PHONE_COUNTRY_MISMATCH: "errors.phoneCountryMismatch",
+        PHONE_UNSUPPORTED_FORMAT: "errors.phoneUnsupportedFormat",
+        PHONE_REQUIRED: "phoneRequired",
+        PHONE_COUNTRY_REQUIRED: "phoneCountryRequired",
+      };
+      const key = phoneKey[err.code];
+      if (key) return t(key as never);
     }
 
     if (Array.isArray(err.errors) && err.errors.length > 0) {
@@ -154,6 +181,8 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       control: form.control,
       name: "specialtyIds",
     }) ?? [];
+  const selectedPhoneCountryCode = useWatch({ control: form.control, name: "phoneCountryCode" }) ?? "";
+  const enteredPhone = useWatch({ control: form.control, name: "phone" }) ?? "";
   const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((category) => ({
     value: category.id,
     label: getLocalizedSpecialtyCategoryName(category, locale),
@@ -200,7 +229,8 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       await practitionerRegister.mutateAsync({
         displayName: data.displayName,
         email: data.email,
-        otpEmail: data.otpEmail?.trim() ? data.otpEmail.trim() : undefined,
+        phoneCountryCode: data.phoneCountryCode ?? "",
+        phone: data.phone ?? "",
         password: data.password,
         primarySpecialtyCategoryId: selectedCategory,
         specialtyIds: selectedSpecialties,
@@ -255,6 +285,8 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       </div>
 
       {/* Form */}
+      {/* react-hook-form requires handleSubmit to be passed from the form instance. */}
+      {/* eslint-disable-next-line react-hooks/refs */}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -311,26 +343,27 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
             )}
           </div>
 
-          {mode === "practitioner" && (
-            <div>
-              <Label>{t("otpEmail")}</Label>
-              <Input
-                type="email"
-                placeholder={t("emailPlaceholder")}
-                error={!!form.formState.errors.otpEmail}
-                {...form.register("otpEmail")}
-                dir="ltr"
+          {mode === "practitioner" ? (
+            <div className="sm:col-span-2">
+              <PractitionerPhoneField
+                countryCode={selectedPhoneCountryCode}
+                phone={enteredPhone}
+                countries={PRACTITIONER_PHONE_COUNTRIES}
+                onCountryChange={(value) => form.setValue("phoneCountryCode", value, { shouldValidate: true })}
+                onPhoneChange={(value) => form.setValue("phone", value, { shouldValidate: true })}
+                countryLabel={t("phoneCountry")}
+                phoneLabel={t("phone")}
+                countryPlaceholder={t("phoneCountryPlaceholder")}
+                searchPlaceholder={t("phoneCountrySearchPlaceholder")}
+                phonePlaceholder={t("phonePlaceholder")}
+                helperText={t("phoneHelper")}
+                savedAsLabel={t("phoneSavedAs")}
+                countryError={form.formState.errors.phoneCountryCode?.message}
+                phoneError={form.formState.errors.phone?.message}
               />
-              {form.formState.errors.otpEmail && (
-                <p className="mt-1.5 text-xs text-error-500">
-                  {form.formState.errors.otpEmail.message}
-                </p>
-              )}
-              <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
-                {t("otpEmailHint")}
-              </p>
             </div>
-          )}
+          ) : null}
+
         </div>
 
         {mode === "practitioner" && (

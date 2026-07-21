@@ -27,6 +27,7 @@ import { RequireAccountStates } from '@common/decorators/account-state.decorator
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AdminGuard } from '@common/guards/authorization/admin.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
@@ -40,6 +41,17 @@ import { RemoveAdminPractitionerAvatarUseCase } from '../use-cases/remove-admin-
 import { ListAdminPractitionersDirectoryUseCase } from '../use-cases/list-admin-practitioners-directory.use-case';
 import { UpdateAdminPractitionerAvatarUseCase } from '../use-cases/update-admin-practitioner-avatar.use-case';
 import { GetAdminPractitionerAvatarFileUseCase } from '../use-cases/get-admin-practitioner-avatar-file.use-case';
+import { ManagePractitionerPublicationUseCase } from '../use-cases/manage-practitioner-publication.use-case';
+import { UpdatePractitionerPublicationDto } from '../dto/update-practitioner-publication.dto';
+import {
+  PractitionerPublicationSuccessResponseDto,
+  PractitionerPublicationResponseDto,
+} from '../dto/practitioner-publication-response.dto';
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { RequireStepUp } from '@common/decorators/step-up.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 
 /**
  * Admin practitioner directory controller.
@@ -47,7 +59,7 @@ import { GetAdminPractitionerAvatarFileUseCase } from '../use-cases/get-admin-pr
  */
 @ApiTags('Admin - Practitioners')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, AdminGuard)
+@UseGuards(JwtAccessAuthGuard, AdminGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/practitioners')
 export class AdminPractitionersController {
@@ -57,7 +69,38 @@ export class AdminPractitionersController {
     private readonly removeAdminPractitionerAvatarUseCase: RemoveAdminPractitionerAvatarUseCase,
     private readonly clearPractitionerAuthLockoutUseCase: ClearPractitionerAuthLockoutUseCase,
     private readonly getAdminPractitionerAvatarFileUseCase: GetAdminPractitionerAvatarFileUseCase,
+    private readonly managePractitionerPublicationUseCase: ManagePractitionerPublicationUseCase,
   ) {}
+
+  @Get(':id/publication')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
+  @ApiOperation({ summary: 'Get practitioner publication state and readiness' })
+  @ApiResponse({ status: 200, type: PractitionerPublicationResponseDto })
+  getPublication(@Param('id') id: string) {
+    return this.managePractitionerPublicationUseCase.get({
+      practitionerId: id,
+    });
+  }
+
+  @Patch(':id/publication')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @RequireStepUp('security.practitioner.publication.update')
+  @ApiOperation({ summary: 'Publish or unpublish a practitioner profile' })
+  @ApiResponse({ status: 200, type: PractitionerPublicationSuccessResponseDto })
+  updatePublication(
+    @Param('id') id: string,
+    @Body() body: UpdatePractitionerPublicationDto,
+    @CurrentLocale() locale: SupportedLocale,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.managePractitionerPublicationUseCase.update({
+      practitionerId: id,
+      actorUserId: user.id,
+      locale,
+      isPublished: body.isPublished,
+      reason: body.reason,
+    });
+  }
 
   @Get()
   @ApiOperation({
@@ -102,7 +145,8 @@ export class AdminPractitionersController {
   @Get(':id/avatar')
   @ApiOperation({
     summary: 'Get practitioner avatar from admin scope',
-    description: 'Returns only the stored avatar image for an admin-visible practitioner.',
+    description:
+      'Returns only the stored avatar image for an admin-visible practitioner.',
   })
   @ApiResponse({ status: 200, description: 'Avatar image stream' })
   @ApiNotFoundResponse({ description: 'Practitioner or avatar not found' })

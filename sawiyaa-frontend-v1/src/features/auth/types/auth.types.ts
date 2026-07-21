@@ -130,7 +130,8 @@ export interface PatientLoginRequest {
 
 export interface PractitionerRegisterRequest {
   email: string;
-  otpEmail?: string;
+  phoneCountryCode: string;
+  phone: string;
   password: string;
   displayName?: string;
   practitionerType?:

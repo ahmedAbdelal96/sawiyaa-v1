@@ -1,4 +1,6 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Req } from '@nestjs/common';
+import { Request } from 'express';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { ListPublicFeaturedPractitionersUseCase } from '../use-cases/list-public-featured-practitioners.use-case';
@@ -41,7 +43,13 @@ export class PublicFeaturedPractitionersController {
       },
     },
   })
-  async list(@Query('locale') locale: SupportedLocale): Promise<FeaturedPractitionerHomeCard[]> {
-    return this.listPublicFeaturedPractitionersUseCase.execute({ locale: locale ?? 'en' });
+  async list(
+    @Query('locale') locale: SupportedLocale,
+    @Req() request: Request,
+  ): Promise<FeaturedPractitionerHomeCard[]> {
+    return this.listPublicFeaturedPractitionersUseCase.execute({
+      locale: locale ?? 'en',
+      requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
+    });
   }
 }

@@ -4,10 +4,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ArrowRight, BadgeCheck, Briefcase, Star } from "lucide-react";
 import {
-  formatPublicMoney,
   getPublicSessionPrices,
   isPublicSessionPriceInActiveFeeRange,
 } from "../lib/public-pricing";
+import { MoneyText } from "@/components/money/MoneyText";
+import { mapPractitionerDurationMoney } from "../lib/practitioner-price";
 import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 
@@ -175,9 +176,7 @@ export default function PractitionerCard({
                       </span>
                     ) : null}
                   </span>
-                  <span className="font-bold text-text-primary dark:text-white/95">
-                    {formatPublicMoney(locale, price.amount, practitioner.currencyCode)}
-                  </span>
+                  <span className="font-bold text-text-primary dark:text-white/95">{(() => { const money = mapPractitionerDurationMoney({ amount: price.amount, currencyCode: practitioner.currencyCode }); return money ? <MoneyText money={money} /> : null; })()}</span>
                 </div>
               ))}
             </div>

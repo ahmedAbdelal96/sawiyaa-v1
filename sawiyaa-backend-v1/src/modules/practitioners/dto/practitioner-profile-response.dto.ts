@@ -182,3 +182,17 @@ export class PractitionerSpecialtiesSuccessResponseDto {
   @ApiProperty({ type: PractitionerSpecialtyResponseDto, isArray: true })
   specialties!: PractitionerSpecialtyResponseDto[];
 }
+
+export class PractitionerCountryOptionDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  isoCode!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty({ nullable: true })
+  nativeName!: string | null;
+}

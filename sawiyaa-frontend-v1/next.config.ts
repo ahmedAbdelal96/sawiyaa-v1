@@ -7,6 +7,22 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   /* config options here */
+  webpack(config) {
+    const assetRule = config.module.rules.find(
+      (rule: { test?: RegExp }) => rule?.test instanceof RegExp && rule.test.test(".svg"),
+    ) as { exclude?: RegExp | RegExp[] } | undefined;
+
+    if (assetRule) {
+      assetRule.exclude = /\.svg$/i;
+    }
+
+    config.module.rules.push({
+      test: /\.svg$/i,
+      use: ["@svgr/webpack"],
+    });
+
+    return config;
+  },
   turbopack: {
     rules: {
       "*.svg": {

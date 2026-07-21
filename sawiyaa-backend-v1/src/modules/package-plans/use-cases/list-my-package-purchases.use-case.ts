@@ -37,6 +37,8 @@ export class ListMyPackagePurchasesUseCase {
     const [purchases, totalItems] =
       await this.packagePurchaseRepository.listByPatient({
         patientId: patient.id,
+        status: input.query.status,
+        search: input.query.search,
         skip,
         take: limit,
       });

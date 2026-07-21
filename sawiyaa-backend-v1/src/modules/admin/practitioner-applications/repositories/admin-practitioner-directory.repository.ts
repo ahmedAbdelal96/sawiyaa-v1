@@ -140,13 +140,19 @@ export class AdminPractitionerDirectoryRepository {
     };
   }
 
-  private buildOrderBy(sort?: AdminPractitionerSortByDto): Prisma.PractitionerProfileOrderByWithRelationInput[] {
+  private buildOrderBy(
+    sort?: AdminPractitionerSortByDto,
+  ): Prisma.PractitionerProfileOrderByWithRelationInput[] {
     if (sort === AdminPractitionerSortByDto.OLDEST) {
       return [{ createdAt: 'asc' }, { id: 'asc' }];
     }
 
     if (sort === AdminPractitionerSortByDto.EXPERIENCE) {
-      return [{ yearsOfExperience: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }];
+      return [
+        { yearsOfExperience: 'desc' },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ];
     }
 
     // Rating is decorated after the profile query, so keep its database order
@@ -173,20 +179,27 @@ export class AdminPractitionerDirectoryRepository {
         id: true,
         publicSlug: true,
         professionalTitle: true,
+        bio: true,
         practitionerType: true,
         status: true,
+        isPublicProfilePublished: true,
         yearsOfExperience: true,
         createdAt: true,
         avatarUrl: true,
         user: {
           select: {
             displayName: true,
+            status: true,
             emails: {
               select: {
                 email: true,
               },
             },
           },
+        },
+        specialties: {
+          where: { specialty: { isActive: true } },
+          select: { id: true },
         },
         country: {
           select: {
@@ -209,33 +222,36 @@ export class AdminPractitionerDirectoryRepository {
 
     const decoratedRows = rows.map((row) => ({
       ...row,
-      ratingSummary: this.toLegacyRatingSummary(ratingSummaries.get(row.id) ?? null),
+      ratingSummary: this.toLegacyRatingSummary(
+        ratingSummaries.get(row.id) ?? null,
+      ),
     }));
 
-    const filteredRows = input.minRating === undefined
-      ? decoratedRows
-      : decoratedRows.filter((row) => {
-          const rating = row.ratingSummary.averageRating;
-          return rating !== null && rating >= input.minRating!;
-        });
+    const filteredRows =
+      input.minRating === undefined
+        ? decoratedRows
+        : decoratedRows.filter((row) => {
+            const rating = row.ratingSummary.averageRating;
+            return rating !== null && rating >= input.minRating!;
+          });
 
     const sortMode = input.sort ?? AdminPractitionerSortByDto.NEWEST;
     filteredRows.sort((left, right) => {
-      if (sortMode === 'newest') {
+      if (sortMode === AdminPractitionerSortByDto.NEWEST) {
         return (
           right.createdAt.getTime() - left.createdAt.getTime() ||
           right.id.localeCompare(left.id)
         );
       }
 
-      if (sortMode === 'oldest') {
+      if (sortMode === AdminPractitionerSortByDto.OLDEST) {
         return (
           left.createdAt.getTime() - right.createdAt.getTime() ||
           left.id.localeCompare(right.id)
         );
       }
 
-      if (sortMode === 'experience') {
+      if (sortMode === AdminPractitionerSortByDto.EXPERIENCE) {
         if ((right.yearsOfExperience ?? 0) !== (left.yearsOfExperience ?? 0)) {
           return (right.yearsOfExperience ?? 0) - (left.yearsOfExperience ?? 0);
         }
@@ -267,7 +283,9 @@ export class AdminPractitionerDirectoryRepository {
     return { rows: pagedRows, total };
   }
 
-  private toLegacyRatingSummary(ratingSummary: SessionReviewRatingSummary | null) {
+  private toLegacyRatingSummary(
+    ratingSummary: SessionReviewRatingSummary | null,
+  ) {
     return {
       averageRating:
         ratingSummary?.averageRating === null ||

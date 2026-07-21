@@ -2,28 +2,69 @@ import { PaymentProvider } from '@prisma/client';
 import { resolvePaymentRegionalResolution } from './payment-region.resolver';
 
 describe('resolvePaymentRegionalResolution', () => {
-  it('does not fallback unknown patient country to operating country', () => {
-    const result = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: null,
-      accountCountryIsoCode: null,
-      checkoutCountryIsoCode: null,
-      operatingCountryIsoCode: 'EGY',
-    });
+  it.each([
+    ['EG', 'EG', 'EGP', 'EGYPT_LOCAL'],
+    ['EGY', 'EG', 'EGP', 'EGYPT_LOCAL'],
+    ['US', 'US', 'USD', 'INTERNATIONAL'],
+    ['SA', 'SA', 'USD', 'INTERNATIONAL'],
+  ] as const)(
+    'resolves request country %s to %s',
+    (requestCountryIsoCode, resolvedCountryIsoCode, currencyCode, mode) => {
+      expect(
+        resolvePaymentRegionalResolution({ requestCountryIsoCode }),
+      ).toMatchObject({
+        status: 'RESOLVED',
+        resolvedCountryIsoCode,
+        currencyCode,
+        regionalPricingMode: mode,
+        provider: PaymentProvider.PAYMOB,
+      });
+    },
+  );
 
-    expect(result.resolvedCountryIsoCode).toBeNull();
-    expect(result.regionalPricingMode).toBe('INTERNATIONAL');
-    expect(result.currencyCode).toBe('USD');
-    expect(result.provider).toBe(PaymentProvider.PAYMOB);
+  it('uses current request country even when the account country differs', () => {
+    expect(
+      resolvePaymentRegionalResolution({
+        requestCountryIsoCode: 'US',
+        patientCountryIsoCode: 'EG',
+        accountCountryIsoCode: 'EG',
+        currencyCode: 'EGP',
+      }).currencyCode,
+    ).toBe('USD');
+
+    expect(
+      resolvePaymentRegionalResolution({
+        requestCountryIsoCode: 'EG',
+        patientCountryIsoCode: 'US',
+      }).currencyCode,
+    ).toBe('EGP');
   });
 
-  it('routes egypt only when patient/checkout country is explicitly egypt', () => {
-    const result = resolvePaymentRegionalResolution({
-      patientCountryIsoCode: 'EGY',
-      operatingCountryIsoCode: 'USA',
+  it('defaults missing request country to USD without guessing a country', () => {
+    expect(resolvePaymentRegionalResolution({})).toMatchObject({
+      status: 'RESOLVED',
+      resolvedCountryIsoCode: null,
+      currencyCode: 'USD',
+      regionalPricingMode: 'INTERNATIONAL',
+      provider: PaymentProvider.PAYMOB,
+      resolutionSource: 'DEFAULT_USD',
+      fallbackReasonCode: 'COUNTRY_UNAVAILABLE',
     });
-
-    expect(result.resolvedCountryIsoCode).toBe('EGY');
-    expect(result.currencyCode).toBe('EGP');
-    expect(result.provider).toBe(PaymentProvider.PAYMOB);
   });
+
+  it.each(['', 'XX', 'ZZ', 'T1', 'UN', 'UNKNOWN', 'not-a-country'])(
+    'defaults unresolved country %s to USD',
+    (requestCountryIsoCode) => {
+      expect(
+        resolvePaymentRegionalResolution({ requestCountryIsoCode }),
+      ).toMatchObject({
+        status: 'RESOLVED',
+        currencyCode: 'USD',
+        regionalPricingMode: 'INTERNATIONAL',
+        provider: PaymentProvider.PAYMOB,
+        resolutionSource: 'DEFAULT_USD',
+        fallbackReasonCode: 'COUNTRY_UNAVAILABLE',
+      });
+    },
+  );
 });

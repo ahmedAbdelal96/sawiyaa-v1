@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AcademyProgramEnrollmentStatus, PaymentStatus } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -11,7 +17,10 @@ import { AcademyProgramEnrollmentRepository } from '../repositories/academy-prog
 import { AcademyProgramRepository } from '../repositories/academy-program.repository';
 import { AcademyProgramTargetLearnerAlertService } from '../services/academy-program-target-learner-alert.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { SecurityAuditOutcome } from '@prisma/client';
 
 @Injectable()
@@ -31,8 +40,11 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
     locale: SupportedLocale;
     actorUserId: string;
     payload: CreateAdminAcademyProgramEnrollmentDto;
+    requestCountryIsoCode: string | null;
   }) {
-    const program = await this.academyProgramRepository.findProgramById(input.programId);
+    const program = await this.academyProgramRepository.findProgramById(
+      input.programId,
+    );
 
     if (!program) {
       throw new NotFoundException({
@@ -67,10 +79,11 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
       }
     }
 
-    const countryResolution = await this.paymentGeoContextService.resolveCountryResolution({
-      phoneNumber,
-      existingCountryCode: existingLearner?.countryCode ?? null,
-    });
+    const countryResolution =
+      await this.paymentGeoContextService.resolveCountryResolution({
+        phoneNumber,
+        existingCountryCode: existingLearner?.countryCode ?? null,
+      });
     const previousActiveLearnerCount =
       await this.academyProgramEnrollmentRepository.countActiveLearnersByProgramId(
         program.id,
@@ -133,11 +146,17 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
         priceAmountUsd: program.priceUsd,
         priceAmount: null,
         currencyCode: null,
-        resolvedCountryCode: countryResolution.resolvedCountryCode,
+        resolvedCountryCode: input.requestCountryIsoCode,
       });
 
-      const selectedCurrencyCode =
-        pricing.currencyCode ?? (countryResolution.resolvedCountryCode === 'EG' ? 'EGP' : 'USD');
+      if (!pricing.currencyCode || !pricing.amount) {
+        throw new BadRequestException({
+          messageKey: 'payments.errors.paymentRoutingAmbiguous',
+          error: 'PAYMENT_ROUTING_AMBIGUOUS',
+        });
+      }
+
+      const selectedCurrencyCode = pricing.currencyCode;
       const selectedAmountSnapshot = pricing.amount ?? '0';
       const now = new Date();
       const enrollmentData = {
@@ -174,7 +193,11 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
         userId: null,
       };
       const enrollment = await this.prisma.$transaction(async (tx) => {
-        const created = await this.academyProgramEnrollmentRepository.createEnrollment(enrollmentData, tx);
+        const created =
+          await this.academyProgramEnrollmentRepository.createEnrollment(
+            enrollmentData,
+            tx,
+          );
         await this.securityAuditService?.recordRequired(tx, {
           action: 'academy.programEnrollment.manualCreate',
           outcome: SecurityAuditOutcome.SUCCESS,
@@ -200,11 +223,13 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
           new Date(),
         );
 
-      await this.academyProgramTargetLearnerAlertService.notifyIfTargetExceeded({
-        program,
-        previousActiveLearnerCount,
-        currentActiveLearnerCount,
-      });
+      await this.academyProgramTargetLearnerAlertService.notifyIfTargetExceeded(
+        {
+          program,
+          previousActiveLearnerCount,
+          currentActiveLearnerCount,
+        },
+      );
 
       return {
         item: this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
@@ -214,16 +239,22 @@ export class CreateAdminAcademyProgramEnrollmentUseCase {
       };
     } catch (error) {
       if ((error as { code?: string } | null | undefined)?.code === 'P2002') {
-        const target = (error as { meta?: { target?: string[] | string } } | null | undefined)?.meta?.target;
-        const targetText = Array.isArray(target) ? target.join(',') : `${target ?? ''}`;
+        const target = (
+          error as { meta?: { target?: string[] | string } } | null | undefined
+        )?.meta?.target;
+        const targetText = Array.isArray(target)
+          ? target.join(',')
+          : `${target ?? ''}`;
 
         throw new ConflictException({
           messageKey:
-            targetText.includes('academyProgramId') && targetText.includes('academyLearnerId')
+            targetText.includes('academyProgramId') &&
+            targetText.includes('academyLearnerId')
               ? 'academyProgram.errors.enrollmentAlreadyExists'
               : 'academyProgram.errors.learnerContactAlreadyExists',
           error:
-            targetText.includes('academyProgramId') && targetText.includes('academyLearnerId')
+            targetText.includes('academyProgramId') &&
+            targetText.includes('academyLearnerId')
               ? 'ACADEMY_PROGRAM_ENROLLMENT_ALREADY_EXISTS'
               : 'ACADEMY_PROGRAM_LEARNER_CONTACT_ALREADY_EXISTS',
         });

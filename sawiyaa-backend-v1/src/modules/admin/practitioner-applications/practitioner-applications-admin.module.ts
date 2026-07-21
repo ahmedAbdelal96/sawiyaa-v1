@@ -22,6 +22,7 @@ import { AdminPractitionerApplicationNotificationService } from './services/admi
 import { PractitionerApplicationSnapshotService } from '@modules/practitioners/services/practitioner-application-snapshot.service';
 import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerPayoutDestinationValidationService } from '@modules/practitioners/services/practitioner-payout-destination-validation.service';
+import { IbanValidationService } from '@modules/practitioners/services/iban-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { ApprovePractitionerApplicationUseCase } from './use-cases/approve-practitioner-application.use-case';
 import { CreateAdminPractitionerUseCase } from './use-cases/create-admin-practitioner.use-case';
@@ -44,6 +45,10 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { AuthModule } from '@modules/auth/auth.module';
 import { ClearPractitionerAuthLockoutUseCase } from './use-cases/clear-practitioner-auth-lockout.use-case';
 import { GetAdminPractitionerAvatarFileUseCase } from './use-cases/get-admin-practitioner-avatar-file.use-case';
+import { AdminPractitionerPublicationRepository } from './repositories/admin-practitioner-publication.repository';
+import { ManagePractitionerPublicationUseCase } from './use-cases/manage-practitioner-publication.use-case';
+import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -76,6 +81,7 @@ import { GetAdminPractitionerAvatarFileUseCase } from './use-cases/get-admin-pra
     AdminPractitionerApplicationNotificationService,
     PractitionerSpecialtyIntegrityService,
     PractitionerPayoutDestinationValidationService,
+    IbanValidationService,
     PractitionerApplicationSnapshotService,
     PractitionerApplicationCompletionService,
     PractitionerAvatarStorageService,
@@ -86,6 +92,9 @@ import { GetAdminPractitionerAvatarFileUseCase } from './use-cases/get-admin-pra
     RemoveAdminPractitionerAvatarUseCase,
     ClearPractitionerAuthLockoutUseCase,
     GetAdminPractitionerAvatarFileUseCase,
+    AdminPractitionerPublicationRepository,
+    ManagePractitionerPublicationUseCase,
+    PublicPractitionerVisibilityPolicy,
     GetPractitionerApplicationDetailsUseCase,
     GetPractitionerApplicationAvatarFileUseCase,
     GetPractitionerApplicationCredentialFileUseCase,
@@ -97,6 +106,7 @@ import { GetAdminPractitionerAvatarFileUseCase } from './use-cases/get-admin-pra
     ApprovePractitionerApplicationUseCase,
     RejectPractitionerApplicationUseCase,
     RequestPractitionerApplicationChangesUseCase,
+    PhoneNumberValidationService,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

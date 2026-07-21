@@ -20,18 +20,10 @@ import StripePaymentForm from "@/features/payments/components/StripePaymentForm"
 import RefundPolicyAcceptanceCard from "@/features/refund-policies/components/RefundPolicyAcceptanceCard";
 import { REFUND_POLICY_ERROR_CODES } from "@/features/refund-policies/lib/refund-policy-errors";
 import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-policies";
-import { resolvePatientCurrencyCode } from "@/features/payments/lib/patient-currency";
 import type { PractitionerProfile } from "@/features/practitioner-profile/types/profile";
-import {
-  formatDurationLabel,
-  formatMoney,
-  formatPercent,
-  getSupportedCurrencies,
-  resolveDefaultCurrency,
-  resolveDefaultDuration,
-  resolvePricingMatrix,
-  type CurrencyCode,
-} from "../lib/package-plan-pricing";
+import { formatDurationLabel, formatPercent } from "../lib/package-plan-display";
+import { MoneyText } from "@/components/money/MoneyText";
+import { mapPackageQuoteMoney } from "../lib/package-money";
 import {
   formatDayLabel,
   formatTimeLabel,
@@ -60,6 +52,11 @@ type PurchaseStep = "choose-package" | "choose-times" | "review" | "pay";
 
 function sortPlans(plans: PackagePlanQuotedItem[]) {
   return [...plans].sort((a, b) => a.item.sortOrder - b.item.sortOrder);
+}
+
+function QuoteMoney({ amount, currencyCode }: { amount: string; currencyCode: string | null }) {
+  const money = mapPackageQuoteMoney({ amount, selectedCurrencyCode: currencyCode });
+  return money ? <MoneyText money={money} /> : <>Price unavailable</>;
 }
 
 function StepBadge({
@@ -101,16 +98,7 @@ export default function PackagePurchaseFlowModal({
   const { user } = useAuthStore();
   const isPatient = user?.role === "PATIENT";
 
-  const pricing = useMemo(() => resolvePricingMatrix(profile), [profile]);
-  const availableDurations = useMemo(
-    () =>
-      ([30, 60] as const).filter(
-        (duration) =>
-          pricing[duration === 30 ? "session30" : "session60"].egp !== null ||
-          pricing[duration === 30 ? "session30" : "session60"].usd !== null,
-      ),
-    [pricing],
-  );
+  const availableDurations = [30, 60] as const;
 
   const packageOptions = useMemo(() => sortPlans(plans), [plans]);
   const initialPlan = useMemo(() => {
@@ -122,12 +110,7 @@ export default function PackagePurchaseFlowModal({
 
   const [step, setStep] = useState<PurchaseStep>("choose-package");
   const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(initialPlan?.item.code ?? null);
-  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(
-    () => resolveDefaultDuration(pricing),
-  );
-  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(() =>
-    resolveDefaultCurrency(pricing, resolveDefaultDuration(pricing)),
-  );
+  const [selectedDuration, setSelectedDuration] = useState<30 | 60>(60);
   const [selectedSlots, setSelectedSlots] = useState<SelectableSlot[]>([]);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [initiateError, setInitiateError] = useState<string | null>(null);
@@ -141,16 +124,10 @@ export default function PackagePurchaseFlowModal({
   const createPurchase = useCreatePackagePurchase();
   const initiatePayment = useInitiatePackagePurchasePayment();
 
-  const defaultDuration = useMemo(() => resolveDefaultDuration(pricing), [pricing]);
+  const defaultDuration = 60;
   const effectiveDuration: 30 | 60 = availableDurations.includes(selectedDuration)
     ? selectedDuration
     : defaultDuration;
-  const effectiveCurrency = useMemo<CurrencyCode>(() => {
-    const supportedCurrencies = getSupportedCurrencies(pricing, effectiveDuration);
-    return supportedCurrencies.includes(selectedCurrency)
-      ? selectedCurrency
-      : resolveDefaultCurrency(pricing, effectiveDuration);
-  }, [effectiveDuration, pricing, selectedCurrency]);
   const effectivePlanCode =
     (selectedPlanCode && packageOptions.some((item) => item.item.code === selectedPlanCode)
       ? selectedPlanCode
@@ -162,28 +139,18 @@ export default function PackagePurchaseFlowModal({
 
   const quoteInput = useMemo(() => {
     if (!selectedPlan) return null;
-    const supportedCurrencies = getSupportedCurrencies(pricing, effectiveDuration);
-    if (!supportedCurrencies.includes(effectiveCurrency)) return null;
-
     return {
       packagePlanCode: selectedPlan.item.code,
       practitionerSlug: slug,
       durationMinutes: effectiveDuration,
       sessionMode: "VIDEO" as const,
-      currencyCode: effectiveCurrency,
     };
-  }, [effectiveCurrency, effectiveDuration, pricing, selectedPlan, slug]);
+  }, [effectiveDuration, selectedPlan, slug]);
 
   const quoteQuery = usePatientPackagePlanQuoteQuery(quoteInput);
   const quoteItem = quoteQuery.data?.item ?? null;
   const quote = quoteItem?.quote ?? null;
-  const quoteCurrency =
-    resolvePatientCurrencyCode({
-      currencyCode: quote?.selectedCurrencyCode ?? null,
-      regionalPricingMode: quote?.regionalPricingMode ?? null,
-      resolvedCountryIsoCode: quote?.resolvedCountryIsoCode ?? null,
-    }) ??
-    selectedCurrency;
+  const quoteCurrency = quote?.selectedCurrencyCode ?? null;
   const requiredCount = quote?.sessionCount ?? selectedPlan?.item.sessionCount ?? 0;
   const quoteError = quoteQuery.error ? toAppError(quoteQuery.error) : null;
   const currencyUnavailable = quoteError?.code === "PACKAGE_PLAN_CURRENCY_PRICE_UNAVAILABLE";
@@ -248,15 +215,6 @@ export default function PackagePurchaseFlowModal({
   function handleDurationChange(duration: 30 | 60) {
     if (!availableDurations.includes(duration)) return;
     setSelectedDuration(duration);
-    const supportedCurrencies = getSupportedCurrencies(pricing, duration);
-    setSelectedCurrency((current) => supportedCurrencies.includes(current) ? current : supportedCurrencies[0] ?? "EGP");
-    setStep("choose-package");
-  }
-
-  function handleCurrencyChange(currency: CurrencyCode) {
-    const supportedCurrencies = getSupportedCurrencies(pricing, selectedDuration);
-    if (!supportedCurrencies.includes(currency)) return;
-    setSelectedCurrency(currency);
     setStep("choose-package");
   }
 
@@ -300,7 +258,6 @@ export default function PackagePurchaseFlowModal({
 
     let purchaseId: string | null = null;
     const purchaseDuration = effectiveDuration;
-    const purchaseCurrency = effectiveCurrency;
 
     try {
       const purchaseResponse = await createPurchase.mutateAsync({
@@ -308,7 +265,6 @@ export default function PackagePurchaseFlowModal({
         practitionerSlug: slug,
         durationMinutes: purchaseDuration,
         sessionMode: "VIDEO",
-        selectedCurrencyCode: purchaseCurrency,
         selectedSessionSlots: selectedSlots.map((slot) => ({
           scheduledStartAt: normalizeUtcIso(slot.startsAt),
         })),
@@ -520,33 +476,6 @@ export default function PackagePurchaseFlowModal({
 
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                    {t("packages.flow.currency")}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(["EGP", "USD"] as const).map((currency) => {
-                      const enabled = getSupportedCurrencies(pricing, selectedDuration).includes(currency);
-                      const active = currency === selectedCurrency;
-                      return (
-                        <button
-                          key={currency}
-                          type="button"
-                          disabled={!enabled}
-                          onClick={() => handleCurrencyChange(currency)}
-                          className={`inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                            active
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border-light bg-white text-text-secondary hover:border-primary/40 hover:text-primary dark:bg-white/5"
-                          } ${enabled ? "" : "cursor-not-allowed opacity-45"}`}
-                        >
-                          {t(`packages.currency.${currency}`)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
                     {t("packages.flow.sessionMode")}
                   </p>
                   <Badge variant="light" color="info" size="sm" startIcon={<Sparkles size={14} />}>
@@ -583,7 +512,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.baseSessionPrice")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.selectedBaseSessionPrice)}
+                        <QuoteMoney amount={quote.selectedBaseSessionPrice} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -591,7 +520,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.regularTotal")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.undiscountedTotal)}
+                        <QuoteMoney amount={quote.undiscountedTotal} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -599,7 +528,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.discountAmount")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.discountAmount)}
+                        <QuoteMoney amount={quote.discountAmount} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -607,7 +536,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.payableTotal")}
                       </p>
                       <p className="mt-1 text-lg font-bold text-primary">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
+                        <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                   </div>
@@ -665,7 +594,7 @@ export default function PackagePurchaseFlowModal({
                     {t("packages.flow.selectedCurrency")}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-                    {selectedCurrency}
+                    {quoteCurrency ?? t("packages.errors.currencyUnavailable")}
                   </p>
                 </div>
               </div>
@@ -728,7 +657,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.flow.selectedCurrency")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {t(`packages.currency.${selectedCurrency}`)}
+                        {quoteCurrency ? t(`packages.currency.${quoteCurrency}`) : t("packages.errors.currencyUnavailable")}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -806,7 +735,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.baseSessionPrice")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.selectedBaseSessionPrice)}
+                        <QuoteMoney amount={quote.selectedBaseSessionPrice} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -814,7 +743,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.regularTotal")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-text-primary dark:text-white/90">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.undiscountedTotal)}
+                        <QuoteMoney amount={quote.undiscountedTotal} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-surface px-4 py-3 dark:bg-white/5">
@@ -822,7 +751,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.discountAmount")}
                       </p>
                       <p className="mt-1 text-base font-semibold text-success-700 dark:text-success-300">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.discountAmount)}
+                        <QuoteMoney amount={quote.discountAmount} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                     <div className="rounded-2xl bg-primary-light px-4 py-3 dark:bg-primary/10">
@@ -830,7 +759,7 @@ export default function PackagePurchaseFlowModal({
                         {t("packages.quote.payableTotal")}
                       </p>
                       <p className="mt-1 text-lg font-bold text-primary">
-                        {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
+                        <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
                       </p>
                     </div>
                   </div>
@@ -863,7 +792,7 @@ export default function PackagePurchaseFlowModal({
                     {t("packages.quote.payableTotal")}
                   </p>
                   <p className="mt-2 text-3xl font-bold text-primary">
-                    {formatMoney(numLocale, quoteCurrency as CurrencyCode, quote.patientPayableTotal)}
+                    <QuoteMoney amount={quote.patientPayableTotal} currencyCode={quoteCurrency} />
                   </p>
                   <p className="mt-2 text-sm text-text-secondary">
                     {t("packages.flow.slotProgress", {
@@ -910,7 +839,7 @@ export default function PackagePurchaseFlowModal({
               <StripePaymentForm
                 clientSecret={paymentClientSecret}
                 netPaidAmount={purchaseNetAmount}
-                currency={quoteCurrency.toUpperCase()}
+                currency={quoteCurrency!.toUpperCase()}
                 returnUrl={paymentReturnUrl || (typeof window !== "undefined" ? window.location.href : "")}
               />
             </section>

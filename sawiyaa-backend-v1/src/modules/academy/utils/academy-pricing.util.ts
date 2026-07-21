@@ -1,6 +1,17 @@
+import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
+
 type AcademyPriceLike = {
   toString(): string;
 };
+
+export function isPositiveAcademyPriceAmount(value: string | null) {
+  if (value === null) {
+    return false;
+  }
+
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0;
+}
 
 export type AcademyCoursePricingState = {
   priceAmountEgp: string | null;
@@ -85,103 +96,30 @@ export function resolveAcademyCheckoutPricing(input: {
   currencyCode: string | null;
   resolvedCountryCode: string | null;
 }) {
-  const resolvedCountryCode =
-    input.resolvedCountryCode?.trim().toUpperCase() ?? null;
-  const isEgypt =
-    resolvedCountryCode === 'EG' ||
-    resolvedCountryCode === 'EGY' ||
-    resolvedCountryCode?.startsWith('EG') === true;
-  const regionalPricingMode = isEgypt
-    ? 'EGYPT_LOCAL'
-    : resolvedCountryCode
-      ? 'INTERNATIONAL'
-      : null;
+  const regionalResolution = resolvePaymentRegionalResolution({
+    requestCountryIsoCode: input.resolvedCountryCode,
+  });
+  const isEgypt = regionalResolution.regionalPricingMode === 'EGYPT_LOCAL';
+  const regionalPricingMode = regionalResolution.regionalPricingMode;
 
   const egpAmount = input.priceAmountEgp?.toString() ?? null;
   const usdAmount = input.priceAmountUsd?.toString() ?? null;
-  const legacyAmount = input.priceAmount?.toString() ?? null;
-  const legacyCurrencyCode = input.currencyCode?.trim().toUpperCase() ?? null;
 
   if (isEgypt) {
-    if (egpAmount) {
+    if (isPositiveAcademyPriceAmount(egpAmount)) {
       return {
         amount: egpAmount,
         currencyCode: 'EGP' as const,
         regionalPricingMode,
-        resolvedCountryCode,
+        resolvedCountryCode: regionalResolution.resolvedCountryIsoCode,
       };
     }
-
-    if (legacyCurrencyCode === 'EGP' && legacyAmount) {
-      return {
-        amount: legacyAmount,
-        currencyCode: 'EGP' as const,
-        regionalPricingMode,
-        resolvedCountryCode,
-      };
-    }
-
-    if (usdAmount) {
-      return {
-        amount: usdAmount,
-        currencyCode: 'USD' as const,
-        regionalPricingMode,
-        resolvedCountryCode,
-      };
-    }
-  } else {
-    if (usdAmount) {
-      return {
-        amount: usdAmount,
-        currencyCode: 'USD' as const,
-        regionalPricingMode,
-        resolvedCountryCode,
-      };
-    }
-
-    if (legacyCurrencyCode === 'USD' && legacyAmount) {
-      return {
-        amount: legacyAmount,
-        currencyCode: 'USD' as const,
-        regionalPricingMode,
-        resolvedCountryCode,
-      };
-    }
-
-    if (egpAmount) {
-      return {
-        amount: egpAmount,
-        currencyCode: 'EGP' as const,
-        regionalPricingMode,
-        resolvedCountryCode,
-      };
-    }
-  }
-
-  if (legacyAmount && legacyCurrencyCode) {
-    return {
-      amount: legacyAmount,
-      currencyCode: legacyCurrencyCode,
-      regionalPricingMode,
-      resolvedCountryCode,
-    };
-  }
-
-  if (egpAmount) {
-    return {
-      amount: egpAmount,
-      currencyCode: 'EGP' as const,
-      regionalPricingMode,
-      resolvedCountryCode,
-    };
-  }
-
-  if (usdAmount) {
+  } else if (isPositiveAcademyPriceAmount(usdAmount)) {
     return {
       amount: usdAmount,
       currencyCode: 'USD' as const,
       regionalPricingMode,
-      resolvedCountryCode,
+      resolvedCountryCode: regionalResolution.resolvedCountryIsoCode,
     };
   }
 
@@ -189,7 +127,7 @@ export function resolveAcademyCheckoutPricing(input: {
     amount: null,
     currencyCode: null,
     regionalPricingMode,
-    resolvedCountryCode,
+    resolvedCountryCode: regionalResolution.resolvedCountryIsoCode,
   };
 }
 

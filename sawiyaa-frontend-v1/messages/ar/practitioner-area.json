@@ -476,6 +476,7 @@
         "emptyState": "لا توجد خيارات متاحة لهذه الدولة حاليًا. تواصل مع الإدارة لإضافة البنك أو شركة المحفظة."
       },
       "payoutIban": {
+        "helper": "Enter the IBAN exactly as shown in your banking app or bank statement.",
         "label": "رقم IBAN",
         "placeholder": "اكتب رقم IBAN"
       },
@@ -488,9 +489,16 @@
         "placeholder": "اختر النوع"
       },
       "payoutAccountHolderName": {
+        "warning": "اكتب اسم صاحب الحساب كما هو مسجل تماماً. قد يؤدي عدم التطابق إلى فشل التحويل الخارجي.",
         "label": "اسم صاحب الحساب",
         "placeholder": "اكتب اسم صاحب الحساب"
       }
+    },
+    "countryStates": {
+      "loading": "جارٍ تحميل الدول...",
+      "empty": "لا توجد دول مفعلة في النظام.",
+      "loadError": "تعذر تحميل خيارات الدول. يرجى إعادة المحاولة.",
+      "staleSelection": "غير متاح حاليًا"
     },
     "practitionerType": {
       "PSYCHOLOGIST": "طبيب نفسي",

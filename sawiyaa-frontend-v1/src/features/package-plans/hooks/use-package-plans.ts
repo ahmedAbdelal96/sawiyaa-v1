@@ -36,7 +36,9 @@ export function usePublicPractitionerPackagePlans(
     ),
     queryFn: () => fetchPublicPractitionerPackagePlans(practitionerSlug, params),
     enabled: Boolean(practitionerSlug) && (options?.enabled ?? true),
-    staleTime: 30_000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 }
 

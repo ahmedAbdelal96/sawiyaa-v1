@@ -23,7 +23,11 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
     private readonly customerWalletAccountingService: CustomerWalletAccountingService,
   ) {}
 
-  async execute(input: { userId: string; sessionId: string }) {
+  async execute(input: {
+    userId: string;
+    sessionId: string;
+    requestCountryIsoCode?: string | null;
+  }) {
     const session = await this.paymentSessionRepository.findPatientOwnedSession(
       input.sessionId,
       input.userId,
@@ -38,16 +42,11 @@ export class GetPatientSessionPaymentCapabilitiesUseCase {
 
     const pricing = await this.resolveSessionPaymentPricingService.resolve({
       session,
+      requestCountryIsoCode: input.requestCountryIsoCode,
       couponCode: null,
     });
 
-    const checkoutCountryIsoCode = session.patient.country?.isoCode ?? null;
-    if (!checkoutCountryIsoCode) {
-      throw new BadRequestException({
-        messageKey: 'payments.errors.paymentRoutingAmbiguous',
-        error: 'PAYMENT_ROUTING_AMBIGUOUS',
-      });
-    }
+    const checkoutCountryIsoCode = input.requestCountryIsoCode ?? null;
 
     const context = {
       currencyCode: pricing.currencyCode,

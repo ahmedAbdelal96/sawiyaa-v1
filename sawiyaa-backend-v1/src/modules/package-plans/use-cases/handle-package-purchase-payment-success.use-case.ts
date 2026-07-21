@@ -84,7 +84,10 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
         session.status !== SessionStatus.UPCOMING,
     );
 
-    if (unrepairableSessions.length > 0) {
+    if (
+      purchase.status !== PatientPackagePurchaseStatus.ACTIVE &&
+      unrepairableSessions.length > 0
+    ) {
       throw new ConflictException({
         messageKey: 'packagePurchases.errors.linkedSessionsNotPending',
         error: 'PACKAGE_PURCHASE_LINKED_SESSIONS_NOT_PENDING',

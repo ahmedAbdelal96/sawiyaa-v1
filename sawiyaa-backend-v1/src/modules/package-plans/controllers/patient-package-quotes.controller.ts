@@ -1,4 +1,5 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -21,6 +22,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { PackagePlanQuoteRequestDto } from '../dto/package-plan-quote-request.dto';
 import { PackagePlanQuotedItemSuccessResponseDto } from '../dto/package-plan-quote-response.dto';
 import { QuotePackagePlanUseCase } from '../use-cases/quote-package-plan.use-case';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 
 @ApiTags('Patients - Package Plans')
 @ApiBearerAuth()
@@ -48,6 +50,7 @@ export class PatientPackageQuotesController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: PackagePlanQuoteRequestDto,
+    @Req() request: Request,
   ) {
     return this.quotePackagePlanUseCase
       .execute({
@@ -57,7 +60,7 @@ export class PatientPackageQuotesController {
         practitionerSlug: body.practitionerSlug,
         durationMinutes: body.durationMinutes,
         sessionMode: body.sessionMode,
-        requestedCurrencyCode: body.currencyCode,
+        requestCountryIsoCode: resolveCountryFromRequest(request).countryCode,
       })
       .then((data) => ({ success: true as const, data }));
   }

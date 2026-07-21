@@ -63,6 +63,7 @@ import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
 import { CountryRepository } from '../patients/repositories/country.repository';
 import { PractitionerLoginOtpConfigurationWarningService } from './services/practitioner-login-otp-configuration-warning.service';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 @Module({
   imports: [JwtModule.register({}), VerificationModule, PresenceModule],
@@ -125,6 +126,7 @@ import { PractitionerLoginOtpConfigurationWarningService } from './services/prac
     LogoutAdminUseCase,
     VerifyAdminStepUpUseCase,
     PractitionerLoginOtpConfigurationWarningService,
+    PhoneNumberValidationService,
   ],
   exports: [
     JwtAccessAuthGuard,
@@ -133,6 +135,9 @@ import { PractitionerLoginOtpConfigurationWarningService } from './services/prac
     AuthLockoutService,
     AuthRequestContextService,
     StepUpService,
+    UserPhoneRepository,
+    AuthIdentityRepository,
+    VerifyPasswordUseCase,
   ],
 })
 export class AuthModule implements NestModule {
