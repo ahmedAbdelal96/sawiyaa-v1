@@ -7,7 +7,7 @@ describe('canonical permission definitions', () => {
   it('contains unique permission keys and the direct-create permission', () => {
     const keys = permissionDefinitions.map((permission) => permission.key);
 
-    expect(keys).toHaveLength(50);
+    expect(keys).toHaveLength(59);
     expect(new Set(keys).size).toBe(keys.length);
     expect(keys).toContain('practitionerApplications.approve');
   });

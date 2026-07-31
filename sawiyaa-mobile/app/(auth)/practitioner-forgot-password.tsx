@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { AuthScaffold } from "../../src/components/auth/AuthScaffold";
-import { Button, Input, Text } from "../../src/components/ui";
+import { Button, Input, Text, OtpInput } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
@@ -322,12 +322,12 @@ export default function PractitionerForgotPasswordScreen() {
               {email}
             </Text>
           </View>
-          <Input
-            keyboardType="number-pad"
-            label={t("auth.fields.resetCode")}
-            onChangeText={setCode}
-            placeholder={t("auth.placeholders.resetCode")}
+          <OtpInput
             value={code}
+            onChangeText={setCode}
+            length={6}
+            disabled={isSubmitting}
+            label={t("auth.fields.resetCode")}
           />
         </>
       ) : null}
@@ -401,7 +401,7 @@ export default function PractitionerForgotPasswordScreen() {
               : t("auth.practitionerForgotPassword.verifyOtp")
           }
           onPress={() => void submitVerifyOtp()}
-          disabled={isSubmitting || !code}
+          disabled={isSubmitting || code.trim().length < 6}
         />
       ) : null}
 

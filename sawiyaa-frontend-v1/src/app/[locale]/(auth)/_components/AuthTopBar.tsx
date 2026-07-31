@@ -2,14 +2,17 @@
 
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { preservePathAndQuery } from "@/i18n/locale-navigation";
 
 export default function AuthTopBar() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const handleChange = (newLocale: string) => {
-    router.replace(pathname, { locale: newLocale as "ar" | "en" });
+    router.replace(preservePathAndQuery(pathname, searchParams), { locale: newLocale as "ar" | "en" });
   };
 
   const isAr = locale === "ar";

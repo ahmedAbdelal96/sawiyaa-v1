@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { sessionCodeSearchFilter } from '../../sessions/utils/session-code-search.util';
 import {
   Prisma,
   SessionEarningReviewDecision,
@@ -114,7 +115,9 @@ export class ListAdminSessionEarningReviewsUseCase {
           ? this.presenter.presentSessionSummary(sessionRow)
           : {
               sessionId: row.sessionId,
-              sessionCode: row.sessionId,
+              // A missing relation is not a missing code. Never expose the UUID
+              // as a public session reference when the Session row is absent.
+              sessionCode: null,
               status: SessionStatus.DRAFT,
               paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
               scheduledStartAt: null,
@@ -601,10 +604,7 @@ export class ListAdminSessionEarningReviewsUseCase {
               ]
             : []),
           {
-            sessionCode: {
-              contains: search,
-              mode: 'insensitive',
-            },
+            sessionCode: sessionCodeSearchFilter(search),
           },
         ],
       },

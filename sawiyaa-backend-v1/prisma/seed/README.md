@@ -115,3 +115,16 @@ Or after reset:
 npm run db:reset
 ```
 
+Financial fixture safety:
+
+- Legacy financial seed modules are disabled and cannot run.
+- The canonical settlement QA fixture is opt-in in non-production only:
+
+```powershell
+$env:APP_ENV='development'
+$env:ALLOW_FINANCIAL_FIXTURE_SEED='true'
+npm run qa:settlement:fixture
+```
+
+Financial fixture execution is always blocked when `APP_ENV` or `NODE_ENV` is
+`production`.

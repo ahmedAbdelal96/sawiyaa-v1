@@ -31,6 +31,12 @@ export class ModerateSessionEarningReviewDto {
   @MaxLength(3)
   finalCurrencyCode?: string;
 
+  @ApiPropertyOptional({ maxLength: 32, description: 'Required for cross-currency settlement approval.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  exchangeRate?: string;
+
   @ApiPropertyOptional({ maxLength: 1000 })
   @IsOptional()
   @IsString()

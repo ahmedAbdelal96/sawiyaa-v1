@@ -31,6 +31,7 @@ import {
 } from "../hooks/use-care-chat";
 import { useCareChatRealtime, type CareChatRealtimeMessage } from "../hooks/use-care-chat-realtime";
 import type { SendCareChatMessageInput } from "../types/care-chat.types";
+import ChatModerationReportAction from "@/features/moderation/components/ChatModerationReportAction";
 
 type Props = {
   conversationId: string;
@@ -188,6 +189,7 @@ export default function CareChatConversationPanel({
             online={false}
             actions={
               <div className="flex items-center gap-2">
+                <ChatModerationReportAction targetType="CARE_CHAT_CONVERSATION" targetId={conversationId} />
                 <CareChatActivityChip activityState={conversation.activityState} />
                 <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 font-sans">
                   {t(`common.conversationStatuses.${conversation.status}` as Parameters<typeof t>[0])}
@@ -236,6 +238,7 @@ export default function CareChatConversationPanel({
             return (
               <ChatMessageBubble
                 key={entry.id}
+                onReport={<ChatModerationReportAction compact targetType="CARE_CHAT_MESSAGE" targetId={entry.id} />}
                 message={{
                   id: entry.id,
                   body: entry.message,

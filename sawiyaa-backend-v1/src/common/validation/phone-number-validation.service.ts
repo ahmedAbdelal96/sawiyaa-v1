@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CountryCode, parsePhoneNumberWithError } from 'libphonenumber-js/max';
+import {
+  CountryCode,
+  parsePhoneNumberWithError,
+  PhoneNumber,
+} from 'libphonenumber-js/max';
 
 export type PhoneValidationErrorCode =
   | 'PHONE_REQUIRED'
@@ -11,10 +15,24 @@ export type PhoneValidationErrorCode =
   | 'PHONE_UNSUPPORTED_FORMAT';
 
 export type PhoneValidationResult =
-  | { valid: true; e164: string; countryCode: string }
+  | {
+      valid: true;
+      e164: string;
+      countryCode: string;
+      countryCallingCode: string;
+      nationalNumber: string;
+      isPossible: true;
+      isValid: true;
+    }
   | { valid: false; code: PhoneValidationErrorCode };
 
 const EXTENSION_PATTERN = /(?:ext\.?|extension|x|#)\s*\d+$/i;
+
+function normalizeDigits(value: string) {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0));
+}
 
 @Injectable()
 export class PhoneNumberValidationService {
@@ -22,7 +40,7 @@ export class PhoneNumberValidationService {
     phone: string | null | undefined,
     countryCode: string | null | undefined,
   ): PhoneValidationResult {
-    const rawPhone = phone?.trim() ?? '';
+    const rawPhone = normalizeDigits(phone?.trim() ?? '');
     const normalizedCountry = countryCode?.trim().toUpperCase() ?? '';
 
     if (!rawPhone) return { valid: false, code: 'PHONE_REQUIRED' };
@@ -34,8 +52,10 @@ export class PhoneNumberValidationService {
     if (EXTENSION_PATTERN.test(rawPhone)) {
       return { valid: false, code: 'PHONE_UNSUPPORTED_FORMAT' };
     }
+    if (/[A-Za-z]/.test(rawPhone))
+      return { valid: false, code: 'PHONE_INVALID' };
 
-    let parsed;
+    let parsed: PhoneNumber;
     try {
       const parseInput = rawPhone.startsWith('00')
         ? `+${rawPhone.slice(2).replace(/\D/g, '')}`
@@ -73,6 +93,10 @@ export class PhoneNumberValidationService {
       valid: true,
       e164: parsed.number,
       countryCode: parsed.country ?? normalizedCountry,
+      countryCallingCode: parsed.countryCallingCode,
+      nationalNumber: parsed.nationalNumber,
+      isPossible: true,
+      isValid: true,
     };
   }
 

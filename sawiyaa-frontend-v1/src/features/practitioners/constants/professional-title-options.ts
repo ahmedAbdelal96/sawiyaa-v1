@@ -1,45 +1,27 @@
-export type ProfessionalTitleOption = {
-  value: string;
-  label: {
-    ar: string;
-    en: string;
-  };
-};
+import {
+  getLocalizedProfessionalTitleOptions,
+  PROFESSIONAL_TITLE_OPTIONS,
+  type ProfessionalTitle,
+} from "@/constants/reference-data";
 
-export const PROFESSIONAL_TITLE_OPTIONS: ProfessionalTitleOption[] = [
-  { value: "Psychologist", label: { ar: "أخصائي نفسي", en: "Psychologist" } },
-  { value: "Psychotherapist", label: { ar: "معالج نفسي", en: "Psychotherapist" } },
-  {
-    value: "Mental Health Consultant",
-    label: { ar: "استشاري نفسي", en: "Mental Health Consultant" },
-  },
-  { value: "Family Counselor", label: { ar: "أخصائي إرشاد أسري", en: "Family Counselor" } },
-  { value: "Behavioral Specialist", label: { ar: "أخصائي تعديل سلوك", en: "Behavioral Specialist" } },
-  { value: "Speech Therapist", label: { ar: "أخصائي تخاطب", en: "Speech Therapist" } },
-  { value: "Nutrition Specialist", label: { ar: "أخصائي تغذية", en: "Nutrition Specialist" } },
-  { value: "Life Coach", label: { ar: "كوتش حياة", en: "Life Coach" } },
-];
+export { PROFESSIONAL_TITLE_OPTIONS };
+export type ProfessionalTitleOption = (typeof PROFESSIONAL_TITLE_OPTIONS)[number];
 
-export function getLocalizedProfessionalTitleOptions(locale: string): Array<{ value: string; label: string }> {
-  const normalized = locale === "ar" ? "ar" : "en";
-  return PROFESSIONAL_TITLE_OPTIONS.map((option) => ({
-    value: option.value,
-    label: option.label[normalized],
-  }));
-}
+export { getLocalizedProfessionalTitleOptions };
 
 export function normalizeProfessionalTitle(input: string) {
   const trimmed = input.trim();
   if (!trimmed) return "";
-  const lowered = trimmed.toLowerCase();
 
-  const matched = PROFESSIONAL_TITLE_OPTIONS.find(
-    (option) =>
-      option.value.toLowerCase() === lowered ||
-      option.label.en.toLowerCase() === lowered ||
-      option.label.ar.toLowerCase() === lowered,
-  );
+  const aliases: Record<string, ProfessionalTitle> = {
+    psychologist: "PSYCHOLOGIST",
+    psychotherapist: "PSYCHOTHERAPIST",
+    "clinical psychologist": "CLINICAL_PSYCHOLOGIST",
+    "counseling psychologist": "COUNSELING_PSYCHOLOGIST",
+    "mental health counselor": "MENTAL_HEALTH_COUNSELOR",
+    "family and marriage therapist": "FAMILY_THERAPIST",
+  };
 
-  return matched?.value ?? "";
+  return aliases[trimmed.toLowerCase()] ??
+    (PROFESSIONAL_TITLE_OPTIONS.some((option) => option.value === trimmed) ? trimmed : "");
 }
-

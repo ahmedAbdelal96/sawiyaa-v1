@@ -51,9 +51,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
           <div className="flex min-w-0 items-center gap-3">
             <BrandMark
               compact
-              onClick={(e) => {
+              asButton
+              onClick={() => {
                 if (window.innerWidth >= 1024) {
-                  e.preventDefault();
                   toggleSidebar();
                 }
               }}

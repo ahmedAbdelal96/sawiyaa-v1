@@ -17,13 +17,54 @@ export type AdminRefundStatus =
   | "FAILED"
   | "CANCELLED";
 
+export type AdminPaymentRefundSummaryStatus = "NONE" | "PENDING" | "REFUNDED" | "PARTIALLY_REFUNDED" | "FAILED";
+
+export type AdminIncomingPaymentsQuery = {
+  page?: number;
+  limit?: number;
+  query?: string;
+  provider?: string;
+  status?: PaymentStatus;
+  refundStatus?: AdminPaymentRefundSummaryStatus;
+  currency?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  sortBy?: "createdAt" | "amountTotal";
+  sortDirection?: "asc" | "desc";
+};
+
+export type AdminIncomingPaymentItem = {
+  id: string;
+  customer: string | null;
+  paymentReference: string | null;
+  provider: PaymentProvider;
+  amount: string;
+  currency: string;
+  paymentStatus: PaymentStatus;
+  refundStatus: AdminPaymentRefundSummaryStatus;
+  paidAt: string | null;
+  lastUpdated: string;
+  createdAt: string;
+  initiatedAt: string;
+  failedAt: string | null;
+  paymentPurpose: AdminPaymentPurpose;
+  refundCount: number;
+  refundedAmount: string;
+  session: { id: string; sessionCode: string | null; reference?: string | null; status?: string | null } | null;
+  settlement: { id: string; reference?: string | null; status: string } | null;
+};
+
+export type AdminIncomingPaymentsResponseData = {
+  items: AdminIncomingPaymentItem[];
+  pagination: { page: number; limit: number; totalItems: number; totalPages: number };
+};
+
 export type AdminPaymentSessionMode = "VIDEO" | "AUDIO" | "CHAT";
 export type AdminPaymentSessionProvider = "NONE" | "DAILY" | "ZOOM";
 export type AdminPaymentSessionStatus =
   | "DRAFT"
   | "PENDING_PAYMENT"
   | "PENDING_PRACTITIONER_CONFIRMATION"
-  | "UPCOMING"
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
@@ -54,6 +95,7 @@ export type AdminPaymentOpsPaymentSummary = {
 
 export type AdminPaymentOpsSessionContext = {
   id: string;
+  sessionCode: string;
   status: AdminPaymentSessionStatus;
   sessionMode: AdminPaymentSessionMode;
   scheduledStartAt: string | null;
@@ -78,6 +120,7 @@ export type AdminPaymentRefundItem = {
   id: string;
   paymentId: string;
   sessionId: string | null;
+  sessionCode: string | null;
   refundType: AdminRefundType;
   status: AdminRefundStatus;
   amount: string;
@@ -97,12 +140,24 @@ export type AdminPaymentEventItem = {
   createdAt: string;
 };
 
+export type AdminPaymentOpsRelatedSettlement = {
+  id: string;
+  reference: string | null;
+  status: string;
+  practitionerName: string;
+  originalAmount: string;
+  originalCurrency: string;
+  finalAmount: string;
+  walletCurrency: string;
+};
+
 export type AdminPaymentOpsItem = {
   payment: AdminPaymentOpsPaymentSummary;
   session: AdminPaymentOpsSessionContext;
   refundSummary: AdminPaymentRefundSummary;
   refunds: AdminPaymentRefundItem[];
   recentEvents: AdminPaymentEventItem[];
+  relatedSettlement?: AdminPaymentOpsRelatedSettlement | null;
 };
 
 export type AdminPaymentOpsResponseData = {

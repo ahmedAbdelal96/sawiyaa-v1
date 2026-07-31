@@ -42,7 +42,11 @@ export type ModerationCaseActionType =
   | "ENFORCE_REVIEW_REJECT"
   | "ENFORCE_REVIEW_RESTORE"
   | "ENFORCE_ARTICLE_ARCHIVE"
-  | "ENFORCE_SUPPORT_ESCALATE";
+  | "ENFORCE_SUPPORT_ESCALATE"
+  | "ENFORCE_USER_WARNING"
+  | "ENFORCE_USER_RESTRICTION"
+  | "ENFORCE_USER_SUSPENSION";
+  
 
 export type ModerationReportsSortBy = "CREATED_AT";
 export type ModerationReportsSortOrder = "ASC" | "DESC";
@@ -75,6 +79,71 @@ export interface ModerationCaseDetail extends ModerationQueueItem {
     patientProfileId: string | null;
     practitionerProfileId: string | null;
   } | null;
+  targetUser: ModerationCaseDetail["reporter"];
+  investigation: {
+    chatType: "SESSION_CHAT" | "CARE_CHAT" | "GENERAL_CHAT" | null;
+    conversationId: string;
+    reportedMessageId: string | null;
+    conversation?: {
+      name: string | null;
+      type: string;
+      sessionId: string | null;
+      sessionCode: string | null;
+      participants: Array<{
+        userId: string;
+        displayName: string | null;
+        role: string;
+      }>;
+    } | null;
+    messages?: Array<{
+      id: string;
+      senderUserId: string | null;
+      senderName: string | null;
+      senderRole: string;
+      body: string;
+      sentAt: string;
+      attachments: Array<{ fileId: string; mimeType: string; originalName: string | null }>;
+      isReported: boolean;
+    }>;
+  } | null;
+  history: {
+    reporterPreviousReports: ModerationHistoryItem[];
+    targetPreviousReports: ModerationHistoryItem[];
+    targetEnforcements: Array<{
+      id: string;
+      type: string;
+      reason: string | null;
+      note: string | null;
+      createdAt: string;
+    }>;
+    actions: Array<{
+      id: string;
+      actionType: ModerationCaseActionType;
+      previousStatus: ModerationCaseStatus;
+      nextStatus: ModerationCaseStatus;
+      reason: string | null;
+      note: string | null;
+      actedByUserId: string | null;
+      createdAt: string;
+    }>;
+    auditEvents: Array<{
+      id: string;
+      eventType: string;
+      actorUserId: string | null;
+      actorRole: ModerationReporterRole;
+      metadataJson: unknown;
+      createdAt: string;
+    }>;
+  };
+}
+
+export interface ModerationHistoryItem {
+  id: string;
+  status: ModerationCaseStatus;
+  reason: ModerationReportReason;
+  targetType: ModerationReportTargetType;
+  createdAt: string;
+  lastActionAt: string | null;
 }
 
 export interface ModerationPagination {

@@ -67,3 +67,10 @@ export function ensureUnifiedMessagesSocketConnected() {
 
   return socket;
 }
+
+export function disconnectUnifiedMessagesSocket() {
+  if (!socketInstance) return;
+  socketInstance.disconnect();
+  socketInstance.removeAllListeners();
+  socketInstance = null;
+}

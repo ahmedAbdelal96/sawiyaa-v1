@@ -10,18 +10,15 @@ import Button from "@/components/ui/button/Button";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { useAdminLedgerJournalEntry } from "../hooks/use-admin-accounting";
+import { formatAdminMoney } from "@/features/admin/finance/lib/finance-formatters";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
 }
 
 function formatMoney(locale: string, value: string, currencyCode: string) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency: currencyCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value || "0"));
+  return formatAdminMoney(value, currencyCode, locale);
 }
 
 function formatDateTime(locale: string, value: string) {
@@ -168,6 +165,9 @@ export default function AdminLedgerJournalEntryScreen({
                   {t("journal.table.direction")}
                 </th>
                 <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  {t("ledger.columns.sessionCode")}
+                </th>
+                <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                   {t("journal.table.amount")}
                 </th>
                 <th className="px-4 py-3 text-start text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
@@ -197,6 +197,19 @@ export default function AdminLedgerJournalEntryScreen({
                     >
                       {t(`common.direction.${line.direction}`)}
                     </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm">
+                    {line.sessionId ? (
+                      <AdminSessionReference
+                        sessionId={line.sessionId}
+                        sessionCode={line.sessionCode}
+                        href={`/admin/sessions/runtime-inspection?sessionId=${line.sessionId}`}
+                        variant="table"
+                        copyable
+                      />
+                    ) : (
+                      <span className="text-xs text-text-muted">{t("ledger.common.notLinkedToSession")}</span>
+                    )}
                   </td>
                   <td className="px-4 py-4 text-sm font-semibold text-text-primary dark:text-white/95">
                     {formatMoney(locale, line.amount, line.currencyCode)}

@@ -13,6 +13,7 @@ type PaymentWithRefundsAndSession = Payment & {
   refunds?: Array<Pick<Refund, 'processedAt'>>;
   session?: {
     id: string;
+    sessionCode: string;
     status: SessionStatus;
     expiresAt: Date | null;
   } | null;
@@ -138,6 +139,7 @@ export class PaymentMapper {
     return {
       id: payment.id,
       sessionId: payment.sessionId ?? null,
+      sessionCode: payment.session?.sessionCode ?? null,
       provider: payment.provider,
       status: payment.status,
       amountSubtotal: payment.amountSubtotal.toString(),
@@ -177,11 +179,15 @@ export class PaymentMapper {
     };
   }
 
-  toRefundViewModel(refund: Refund): RefundViewModel {
+  toRefundViewModel(
+    refund: Refund & { session?: { sessionCode: string } | null },
+    sessionCode: string | null = null,
+  ): RefundViewModel {
     return {
       id: refund.id,
       paymentId: refund.paymentId,
       sessionId: refund.sessionId ?? null,
+      sessionCode: sessionCode ?? refund.session?.sessionCode ?? null,
       refundType: refund.refundType,
       destination: refund.destination,
       status: refund.status,
@@ -219,6 +225,7 @@ export class PaymentMapper {
     metadataJson?: Prisma.JsonValue | null;
     session: {
       id: string;
+      sessionCode: string;
       status: string;
       sessionMode: string;
       scheduledStartAt: Date | null;
@@ -237,7 +244,7 @@ export class PaymentMapper {
   }): AdminPaymentOpsViewModel {
     const metadata = (payment.metadataJson ?? {}) as Record<string, unknown>;
     const refunds = payment.refunds.map((refund) =>
-      this.toRefundViewModel(refund),
+      this.toRefundViewModel(refund, payment.session?.sessionCode ?? null),
     );
     const totalRefundedAmount = payment.refunds
       .filter((refund) => refund.status === RefundStatus.SUCCEEDED)
@@ -284,8 +291,9 @@ export class PaymentMapper {
         expiredAt: payment.expiredAt?.toISOString() ?? null,
       },
       session: payment.session
-        ? {
+          ? {
             id: payment.session.id,
+            sessionCode: payment.session.sessionCode,
             status: payment.session.status,
             sessionMode: payment.session.sessionMode,
             scheduledStartAt:

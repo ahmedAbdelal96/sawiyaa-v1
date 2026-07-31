@@ -11,6 +11,7 @@ import {
   Res,
   StreamableFile,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -42,6 +43,8 @@ import { ListAdminPractitionersDirectoryUseCase } from '../use-cases/list-admin-
 import { UpdateAdminPractitionerAvatarUseCase } from '../use-cases/update-admin-practitioner-avatar.use-case';
 import { GetAdminPractitionerAvatarFileUseCase } from '../use-cases/get-admin-practitioner-avatar-file.use-case';
 import { ManagePractitionerPublicationUseCase } from '../use-cases/manage-practitioner-publication.use-case';
+import { GetAdminPractitionerDetailsUseCase } from '../use-cases/get-admin-practitioner-details.use-case';
+import { AdminPractitionerDetailsSuccessResponseDto } from '../dto/admin-practitioner-details-response.dto';
 import { UpdatePractitionerPublicationDto } from '../dto/update-practitioner-publication.dto';
 import {
   PractitionerPublicationSuccessResponseDto,
@@ -70,7 +73,27 @@ export class AdminPractitionersController {
     private readonly clearPractitionerAuthLockoutUseCase: ClearPractitionerAuthLockoutUseCase,
     private readonly getAdminPractitionerAvatarFileUseCase: GetAdminPractitionerAvatarFileUseCase,
     private readonly managePractitionerPublicationUseCase: ManagePractitionerPublicationUseCase,
+    private readonly getAdminPractitionerDetailsUseCase: GetAdminPractitionerDetailsUseCase,
   ) {}
+
+  @Get(':id')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
+  @ApiOperation({
+    summary: 'Get practitioner details for admin view',
+    description:
+      'Admin-only details endpoint returning identity, profile, credentials, applications, payout details, operational metrics, and audit history.',
+  })
+  @ApiResponse({ status: 200, type: AdminPractitionerDetailsSuccessResponseDto })
+  @ApiNotFoundResponse({ description: 'Practitioner profile not found' })
+  details(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.getAdminPractitionerDetailsUseCase.execute({
+      id,
+      locale,
+    });
+  }
 
   @Get(':id/publication')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)

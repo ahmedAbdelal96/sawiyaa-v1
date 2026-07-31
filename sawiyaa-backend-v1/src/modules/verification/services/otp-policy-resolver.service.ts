@@ -55,6 +55,7 @@ export class OtpPolicyResolverService {
       case OtpPurpose.EMAIL_VERIFICATION:
       // Legacy value kept for backward compatibility.
       case OtpPurpose.VERIFY_EMAIL:
+      case OtpPurpose.PRACTITIONER_SIGNUP_EMAIL_VERIFICATION:
         return {
           purpose,
           codeLength,

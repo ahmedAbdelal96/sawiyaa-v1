@@ -20,6 +20,8 @@ import {
   practitionerLogout,
   practitionerRefresh,
   practitionerRegister,
+  practitionerVerifyRegistrationOtp,
+  practitionerResendRegistrationOtp,
   practitionerResetPassword,
   practitionerVerifyOtp,
 } from "../api/auth.api";
@@ -142,6 +144,14 @@ export function usePractitionerRegister() {
     mutationFn: practitionerRegister,
     retry: false,
   });
+}
+
+export function usePractitionerVerifyRegistrationOtp() {
+  return useMutation({ mutationFn: practitionerVerifyRegistrationOtp, retry: false });
+}
+
+export function usePractitionerResendRegistrationOtp() {
+  return useMutation({ mutationFn: practitionerResendRegistrationOtp, retry: false });
 }
 
 export function usePractitionerLogin() {

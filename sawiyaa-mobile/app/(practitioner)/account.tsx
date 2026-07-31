@@ -33,6 +33,7 @@ import {
   profileTone,
 } from "../../src/features/practitioner/profile/utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
+import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
 
 export default function PractitionerAccountScreen() {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function PractitionerAccountScreen() {
   const application = applicationQuery.data?.application ?? null;
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const isArabic = i18n.language?.startsWith("ar") ?? false;
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   const displayName = useMemo(
@@ -59,7 +61,7 @@ export default function PractitionerAccountScreen() {
       t("practitioner.account.fallbackName"),
     [profile?.displayName, t, user?.displayName],
   );
-  const professionalTitle = profile?.professionalTitle?.trim() || t("practitioner.account.fallbackTitle");
+  const professionalTitle = getProfessionalTitleLabel(profile?.professionalTitle, isArabic) || t("practitioner.account.fallbackTitle");
   const initials = getInitials(displayName);
   const primarySpecialty =
     profile?.specialties.find((item) => item.isPrimary) ?? profile?.specialties[0] ?? null;
@@ -218,7 +220,7 @@ export default function PractitionerAccountScreen() {
             />
             <CompactField
               label={t("practitioner.account.fields.professionalTitle")}
-              value={profile.professionalTitle?.trim() || t("practitioner.account.unknown")}
+              value={getProfessionalTitleLabel(profile.professionalTitle, isArabic) || t("practitioner.account.unknown")}
             />
             <CompactField
               label={t("practitioner.account.fields.specialty")}

@@ -93,6 +93,10 @@ export class RecordAdminPractitionerManualPayoutDto {
   @IsUUID()
   practitionerId!: string;
 
+  @ApiProperty({ description: 'Approved practitioner settlement funding this payout.' })
+  @IsUUID()
+  settlementId!: string;
+
   @ApiProperty({ example: 'EGP' })
   @IsString()
   @MaxLength(3)

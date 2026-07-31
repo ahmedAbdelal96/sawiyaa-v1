@@ -15,6 +15,7 @@ import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagin
 import { usePractitionerCareChatRequests } from "../hooks/use-care-chat";
 import type { CareChatListParams, CareChatRequestItem, CareChatRequestStatus } from "../types/care-chat.types";
 import { CARE_CHAT_REQUEST_STATUS_STYLES, formatCareChatDateTime } from "../lib/care-chat-ui";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 const PRACTITIONER_FILTERS: Array<CareChatRequestStatus | "ALL"> = [
   "ALL",
@@ -25,12 +26,6 @@ const PRACTITIONER_FILTERS: Array<CareChatRequestStatus | "ALL"> = [
   "REVOKED",
   "CANCELLED",
 ];
-
-function shortId(value: string | null) {
-  if (!value) return "-";
-  if (value.length <= 12) return value;
-  return `${value.slice(0, 8)}...${value.slice(-4)}`;
-}
 
 export default function PractitionerCareChatHomeScreen() {
   const t = useTranslations("care-chat");
@@ -111,7 +106,7 @@ export default function PractitionerCareChatHomeScreen() {
         accessor: (row) => row.relatedSessionId ?? "",
         cell: (row) =>
           row.relatedSessionId ? (
-            <span className="font-mono text-xs text-text-secondary">{shortId(row.relatedSessionId)}</span>
+            <SessionCodeReference sessionId={row.relatedSessionId} sessionCode={row.relatedSessionCode} copyable />
           ) : (
             <span className="text-xs text-text-muted">-</span>
           ),

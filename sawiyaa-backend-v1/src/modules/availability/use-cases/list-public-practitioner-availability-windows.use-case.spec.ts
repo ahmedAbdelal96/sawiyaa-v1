@@ -113,6 +113,7 @@ describe('ListPublicPractitionerAvailabilityWindowsUseCase', () => {
       professionalTitle: 'Therapist',
       bio: 'Bio',
       specialties: [{ id: 'spec-1' }],
+      acceptsNormalBookings: true,
     });
     practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts.mockResolvedValue([
       currentWeek,
@@ -187,6 +188,7 @@ describe('ListPublicPractitionerAvailabilityWindowsUseCase', () => {
       }),
     );
     expect(result).toEqual({
+      acceptsNormalBookings: true,
       timezone: 'UTC',
       range: {
         from: '2026-06-20T00:00:00.000Z',
@@ -215,6 +217,36 @@ describe('ListPublicPractitionerAvailabilityWindowsUseCase', () => {
     });
   });
 
+  it('returns no normal bookable windows while intake is paused', async () => {
+    availabilityPractitionerRepository.findByPublicSlug.mockResolvedValue({
+      id: 'practitioner-1',
+      status: 'APPROVED',
+      user: { status: 'ACTIVE', displayName: 'Dr. Example', timezone: 'UTC' },
+      isPublicProfilePublished: true,
+      publicSlug: 'dr-example',
+      professionalTitle: 'Therapist',
+      bio: 'Bio',
+      specialties: [{ id: 'spec-1' }],
+      acceptsNormalBookings: false,
+    });
+
+    const result = await useCase.execute({
+      slug: 'dr-example',
+      fromUtc: new Date('2026-06-20T00:00:00.000Z'),
+      toUtc: new Date('2026-07-10T00:00:00.000Z'),
+      includeBooked: true,
+    });
+
+    expect(result).toMatchObject({
+      acceptsNormalBookings: false,
+      reasonCode: 'NORMAL_BOOKINGS_PAUSED',
+      windows: [],
+      bookedSlots: [],
+    });
+    expect(prisma.session.findMany).not.toHaveBeenCalled();
+    expect(buildPublishedWeekAvailabilityWindowsService.buildForRange).not.toHaveBeenCalled();
+  });
+
   it('returns an empty public window list when no published current or next week exists', async () => {
     availabilityPractitionerRepository.findByPublicSlug.mockResolvedValue({
       id: 'practitioner-1',
@@ -229,6 +261,7 @@ describe('ListPublicPractitionerAvailabilityWindowsUseCase', () => {
       professionalTitle: 'Therapist',
       bio: 'Bio',
       specialties: [{ id: 'spec-1' }],
+      acceptsNormalBookings: true,
     });
     practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts.mockResolvedValue([]);
     availabilityExceptionRepository.listActiveForRange.mockResolvedValue([]);

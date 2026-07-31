@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { ChatWorkspaceShell } from "@/components/shared/chat/ChatKit";
 import {
   listCanonicalConversations,
-  getCanonicalUnreadSummary,
   updateSupportTicketStatus,
   getAdminSupportTicket,
 } from "@/features/messages-shell/api/messages-shell.api";
@@ -87,21 +86,6 @@ export default function MessagesWorkspace({ role }: Props) {
     enabled: role === "admin" && Boolean(selectedId),
     staleTime: 30000,
   });
-
-  // 2. Fetch unread summary for header/badges
-  const unreadSummaryQuery = useQuery({
-    queryKey: ["canonical-unread-summary", role],
-    queryFn: () => getUnifiedMessagingUnreadSummaryWrapper(),
-    staleTime: 10000,
-  });
-
-  async function getUnifiedMessagingUnreadSummaryWrapper() {
-    try {
-      return await getCanonicalUnreadSummary();
-    } catch {
-      return { unreadCount: 0, needsSupportReplyCount: 0, hasUnread: false };
-    }
-  }
 
   const conversations = useMemo(() => {
     if (role === "admin") {
@@ -208,6 +192,17 @@ export default function MessagesWorkspace({ role }: Props) {
     );
   }, [conversations, selectedId, role, resolvedTicketQuery.data, isAr]);
 
+  const activeSupportConversation = useMemo(
+    () =>
+      conversations.find(
+        (conversation) =>
+          conversation.type === "SUPPORT" &&
+          !conversation.isResolved &&
+          conversation.status !== "CLOSED",
+      ) ?? null,
+    [conversations],
+  );
+
   const updateActiveConversationUrl = useCallback((id: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
     if (id) {
@@ -254,6 +249,18 @@ export default function MessagesWorkspace({ role }: Props) {
     router.replace(`${pathname}?${params.toString()}`);
   };
 
+  const handleStartSupport = () => {
+    if (activeSupportConversation) {
+      updateActiveConversationUrl(activeSupportConversation.conversationId);
+      return;
+    }
+    setIsSupportModalOpen(true);
+  };
+
+  const supportActionLabel = isAr
+    ? "\u0631\u0633\u0627\u0644\u0629 \u062c\u062f\u064a\u062f\u0629 \u0644\u0644\u062f\u0639\u0645"
+    : "New support message";
+
   // Support ticket resolution handler
   const handleResolveSupport = async () => {
     if (!activeConversation?.supportTicketId || isResolving) return;
@@ -263,7 +270,9 @@ export default function MessagesWorkspace({ role }: Props) {
       await updateSupportTicketStatus(activeConversation.supportTicketId, "RESOLVED");
       void queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-canonical-conversations"] });
-      void queryClient.invalidateQueries({ queryKey: ["canonical-unread-summary"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["unified-messages-shell", role, "unread-summary"],
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -296,12 +305,12 @@ export default function MessagesWorkspace({ role }: Props) {
                 </h2>
                 {role !== "admin" && (
                   <button
-                    onClick={() => setIsSupportModalOpen(true)}
+                    onClick={handleStartSupport}
                     className="inline-flex items-center gap-1 text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline"
-                    aria-label={isAr ? "طلب دعم جديد" : "New support request"}
+                    aria-label={supportActionLabel}
                   >
                     <PlusCircle className="h-4 w-4" />
-                    <span>{isAr ? "تواصل مع الدعم" : "Contact Support"}</span>
+                    <span>{supportActionLabel}</span>
                   </button>
                 )}
               </div>
@@ -360,8 +369,18 @@ export default function MessagesWorkspace({ role }: Props) {
                   </p>
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="p-8 text-center text-xs text-text-muted font-medium">
-                  {isAr ? "لا توجد محادثات مطابقة لبحثك." : "No conversations match your search."}
+                <div className="flex flex-col items-center gap-3 p-8 text-center text-xs text-text-muted font-medium">
+                  <span>{isAr ? "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u062d\u0627\u062f\u062b\u0627\u062a \u062d\u062a\u0649 \u0627\u0644\u0622\u0646" : "No conversations yet"}</span>
+                  {role !== "admin" && !searchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleStartSupport}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-3 py-2 text-xs font-bold text-white hover:bg-teal-700"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      {isAr ? "\u0627\u0628\u062f\u0623 \u0645\u062d\u0627\u062f\u062b\u0629 \u0645\u0639 \u0627\u0644\u062f\u0639\u0645" : "Start a conversation with support"}
+                    </button>
+                  )}
                 </div>
               ) : (
                 filteredConversations.map((c) => {

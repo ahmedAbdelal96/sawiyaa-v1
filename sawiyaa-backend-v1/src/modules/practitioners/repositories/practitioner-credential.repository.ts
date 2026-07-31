@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CredentialReviewStatus, CredentialType, Prisma } from '@prisma/client';
+import { CredentialLifecycleState, CredentialReviewStatus, CredentialType, Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -22,6 +22,7 @@ export class PractitionerCredentialRepository {
       credentialType: CredentialType;
       fileUrl: string;
       expiresAt?: Date | null;
+      lifecycleState?: CredentialLifecycleState;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -55,6 +56,29 @@ export class PractitionerCredentialRepository {
       where: { practitionerId },
       orderBy: [{ createdAt: 'desc' }],
     });
+  }
+
+  findExistingByType(
+    input: { practitionerId: string; credentialType: CredentialType },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerCredential.findFirst({
+      where: {
+        practitionerId: input.practitionerId,
+        credentialType: input.credentialType,
+      },
+      select: { id: true, reviewStatus: true },
+    });
+  }
+
+  findByIdForPractitioner(id: string, practitionerId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.findFirst({
+      where: { id, practitionerId },
+    });
+  }
+
+  deleteById(id: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).practitionerCredential.delete({ where: { id } });
   }
 
   async listTypesByPractitionerId(

@@ -9,7 +9,6 @@ export class PractitionerCredentialMapper {
   toViewModel(input: {
     id: string;
     credentialType: PractitionerCredentialViewModel['credentialType'];
-    fileUrl: string;
     reviewStatus: PractitionerCredentialViewModel['reviewStatus'];
     expiresAt: Date | null;
     createdAt: Date;
@@ -18,7 +17,6 @@ export class PractitionerCredentialMapper {
     return {
       credentialId: input.id,
       credentialType: input.credentialType,
-      fileUrl: input.fileUrl,
       reviewStatus: input.reviewStatus,
       expiresAt: input.expiresAt,
       uploadedAt: input.createdAt,

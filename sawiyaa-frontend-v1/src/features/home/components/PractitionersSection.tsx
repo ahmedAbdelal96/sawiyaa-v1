@@ -5,6 +5,7 @@ import { fetchPublicFeaturedPractitioners } from "@/features/home/api/featured-p
 import type { FeaturedPractitionerHomeCard } from "@/features/home/api/featured-practitioners.api";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 
 const TRUST_INDICATORS = [
   { key: "isVerified", icon: BadgeCheck, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
@@ -31,9 +32,7 @@ interface PractitionerCardProps {
 
 function FeaturedPractitionerCard({ practitioner, locale, t, eyebrow }: PractitionerCardProps) {
   const initials = getInitials(practitioner.displayName);
-  const displayTitle = locale === "ar"
-    ? practitioner.professionalTitle
-    : practitioner.professionalTitle;
+  const displayTitle = getProfessionalTitleLabel(practitioner.professionalTitle, locale);
 
   return (
     <div className="app-panel app-lift group overflow-hidden rounded-[28px] hover:-translate-y-1">

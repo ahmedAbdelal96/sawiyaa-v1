@@ -34,6 +34,10 @@ import { PractitionerPayoutDestinationValidationService } from './services/pract
 import { IbanValidationService } from './services/iban-validation.service';
 import { PublicPractitionerPricingContextService } from './services/public-practitioner-pricing-context.service';
 import { PractitionerSpecialtyIntegrityService } from './services/practitioner-specialty-integrity.service';
+import { PractitionerChangeReviewPolicy } from './policies/practitioner-change-review.policy';
+import { PractitionerChangeReviewService } from './services/practitioner-change-review.service';
+import { PractitionerReviewCaseService } from './services/practitioner-review-case.service';
+import { PractitionerCredentialComplianceSweeperService } from './services/practitioner-credential-compliance-sweeper.service';
 import { CreatePractitionerProfileUseCase } from './use-cases/create-practitioner-profile.use-case';
 import { GetPublicPractitionerDetailsUseCase } from './use-cases/get-public-practitioner-details.use-case';
 import { GetPublicPractitionerAvatarFileUseCase } from './use-cases/get-public-practitioner-avatar-file.use-case';
@@ -51,13 +55,19 @@ import { RemovePractitionerAvatarUseCase } from './use-cases/remove-practitioner
 import { UpdatePractitionerAvatarUseCase } from './use-cases/update-practitioner-avatar.use-case';
 import { UploadPractitionerCredentialMetadataUseCase } from './use-cases/upload-practitioner-credential-metadata.use-case';
 import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-practitioner-credential-file.use-case';
+import { DeletePractitionerCredentialUseCase } from './use-cases/delete-practitioner-credential.use-case';
+import { GetPractitionerCredentialFileUseCase } from './use-cases/get-practitioner-credential-file.use-case';
+import { PractitionerRequiredDocumentsService } from './services/practitioner-required-documents.service';
+import { GetMyBookingSettingsUseCase } from './use-cases/get-my-booking-settings.use-case';
+import { UpdateMyBookingSettingsUseCase } from './use-cases/update-my-booking-settings.use-case';
+import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 
 /**
  * Practitioners Module owns practitioner baseline profile/readiness/specialties/credentials/application self-submission.
  * It does not include auth flows, admin review workflows, or session/payment concerns.
  */
 @Module({
-  imports: [ConfigModule, PatientsModule, ReviewsModule],
+  imports: [ConfigModule, PatientsModule, ReviewsModule, FinancialOperationsModule],
   controllers: [PractitionerProfileController, PublicPractitionerController],
   providers: [
     JwtAccessAuthGuard,
@@ -83,6 +93,10 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     LanguageRepository,
     PractitionerLanguageRepository,
     PractitionerSpecialtyIntegrityService,
+    PractitionerChangeReviewPolicy,
+    PractitionerChangeReviewService,
+    PractitionerReviewCaseService,
+    PractitionerCredentialComplianceSweeperService,
     PractitionerPayoutDestinationValidationService,
     IbanValidationService,
     PublicPractitionerPricingContextService,
@@ -99,6 +113,11 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     ListPractitionerSpecialtiesUseCase,
     UploadPractitionerCredentialMetadataUseCase,
     UploadPractitionerCredentialFileUseCase,
+    DeletePractitionerCredentialUseCase,
+    GetPractitionerCredentialFileUseCase,
+    PractitionerRequiredDocumentsService,
+    GetMyBookingSettingsUseCase,
+    UpdateMyBookingSettingsUseCase,
     ListPractitionerCredentialsUseCase,
     SubmitPractitionerApplicationUseCase,
     GetPractitionerApplicationStatusUseCase,
@@ -112,6 +131,8 @@ import { UploadPractitionerCredentialFileUseCase } from './use-cases/upload-prac
     PublicPractitionerReadRepository,
     PublicPractitionerVisibilityPolicy,
     PublicPractitionerMapper,
+    PractitionerChangeReviewService,
+    PractitionerReviewCaseService,
   ],
 })
 export class PractitionersModule {}

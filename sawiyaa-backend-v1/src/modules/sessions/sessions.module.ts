@@ -62,6 +62,7 @@ import { ListAdminSessionManualDecisionsUseCase } from './use-cases/list-admin-s
 import { ResolvePatientSessionActionsService } from './services/resolve-patient-session-actions.service';
 import { SessionLifecycleService } from './services/session-lifecycle.service';
 import { SessionCompletionConfirmationSweeperService } from './services/session-completion-confirmation-sweeper.service';
+import { SessionCodeGeneratorService } from './services/session-code-generator.service';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -91,6 +92,7 @@ import { SessionCompletionConfirmationSweeperService } from './services/session-
     PublicPractitionerVisibilityPolicy,
     SessionMapper,
     SessionRepository,
+    SessionCodeGeneratorService,
     SessionCancellationPolicyRepository,
     SessionPatientRepository,
     SessionPractitionerRepository,

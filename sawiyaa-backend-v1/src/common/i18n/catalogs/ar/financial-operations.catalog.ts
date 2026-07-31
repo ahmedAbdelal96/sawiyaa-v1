@@ -15,6 +15,8 @@ export const arFinancialOperationsCatalog = {
       'تم تسجيل عملية الصرف لهذه التسوية بالفعل.',
     invalidSettlementPayoutState: 'حالة التسوية غير صالحة لتسجيل عملية الصرف.',
     invalidPayoutAmount: 'المبلغ المدفوع غير صالح.',
+    payoutOverrideReasonRequired: 'يجب إدخال سبب عندما يختلف المبلغ الفعلي بشكل ملحوظ عن المبلغ المحسوب.',
+    exchangeRateRequired: 'يجب إدخال سعر صرف للتحويل بين عملتين.',
     payoutAmountExceedsDue: 'المبلغ المدفوع أكبر من المبلغ المستحق المتبقي.',
     partialPayoutNotSupported: 'الصرف الجزئي غير مدعوم في هذا المسار.',
     payoutProofFileRequired: 'ملف إثبات الصرف مطلوب.',

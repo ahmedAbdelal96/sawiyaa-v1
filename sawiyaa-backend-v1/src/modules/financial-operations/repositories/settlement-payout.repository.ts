@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   SettlementPayoutMethod,
   SettlementPayoutSource,
@@ -140,6 +140,56 @@ export class SettlementPayoutRepository {
       }),
       db.practitionerSettlementPayout.count({ where }),
     ]);
+  }
+
+  async summarizeSettlementPayouts(
+    input: {
+      practitionerId?: string;
+      payoutMethod?: SettlementPayoutMethod;
+      payoutSource?: SettlementPayoutSource;
+      currencyCode?: string;
+      batchId?: string;
+      settlementId?: string;
+      createdFrom?: Date;
+      createdTo?: Date;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = this.getDb(tx);
+    const where: Prisma.PractitionerSettlementPayoutWhereInput = {
+      practitionerId: input.practitionerId,
+      payoutMethod: input.payoutMethod,
+      payoutSource: input.payoutSource,
+      currencyCode: input.currencyCode,
+      batchId: input.batchId,
+      settlementId: input.settlementId,
+      ...(input.createdFrom || input.createdTo
+        ? {
+            createdAt: {
+              ...(input.createdFrom ? { gte: input.createdFrom } : {}),
+              ...(input.createdTo ? { lte: input.createdTo } : {}),
+            },
+          }
+        : {}),
+    };
+
+    const [payoutCount, egpAgg, usdAgg] = await Promise.all([
+      db.practitionerSettlementPayout.count({ where }),
+      db.practitionerSettlementPayout.aggregate({
+        where: { ...where, currencyCode: 'EGP' },
+        _sum: { amountPaid: true },
+      }),
+      db.practitionerSettlementPayout.aggregate({
+        where: { ...where, currencyCode: 'USD' },
+        _sum: { amountPaid: true },
+      }),
+    ]);
+
+    return {
+      payoutCount,
+      egpAmountPaid: (egpAgg._sum.amountPaid ?? new Prisma.Decimal(0)).toFixed(2),
+      usdAmountPaid: (usdAgg._sum.amountPaid ?? new Prisma.Decimal(0)).toFixed(2),
+    };
   }
 
   listPractitionerStatementPayouts(input: {

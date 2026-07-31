@@ -36,9 +36,9 @@ export default async function PublicFooter() {
     {
       title: t("sectionAccount"),
       links: [
-        { label: t("linkLogin"), href: "/signin" },
-        { label: t("linkSignup"), href: "/signup" },
-        { label: t("linkJoinPractitioner"), href: "/signin?mode=practitioner" },
+        { label: t("linkLogin"), href: "/signin/patient" },
+        { label: t("linkSignup"), href: "/signup/patient" },
+        { label: t("linkJoinPractitioner"), href: "/signup/practitioner" },
       ],
     },
   ];

@@ -32,6 +32,8 @@ import {
   practitionerRegister,
   practitionerResetPassword,
   practitionerVerifyOtp,
+  practitionerVerifyRegistrationOtp,
+  practitionerResendRegistrationOtp,
 } from "../features/auth/api";
 import type {
   AuthSuccessResponse,
@@ -53,6 +55,7 @@ import type {
   PractitionerRegisterRequest,
   PractitionerResetPasswordRequest,
   PractitionerVerifyOtpRequest,
+  PractitionerRegistrationOtpRequest,
 } from "../features/auth/contracts";
 import {
   clearStoredAuthSession,
@@ -73,11 +76,14 @@ import {
 import type { PushRegistrationStatus } from "../features/push/types";
 import { configureApiAuthSessionHandlers, setApiAccessToken } from "../lib/api";
 import { disconnectUnifiedMessagesSocket } from "../features/messages/realtime-socket";
+import { getSignInRouteForRole } from "../features/auth/routes";
 
 interface AuthContextValue {
   user: AuthenticatedUser | null;
   role: MobileSupportedRole | null;
   isLoading: boolean;
+  patientRegistrationNotice: "phone-not-saved" | null;
+  clearPatientRegistrationNotice: () => void;
   pushRegistrationStatus: PushRegistrationStatus;
   isPushRegistrationPending: boolean;
   enablePushNotifications: () => Promise<void>;
@@ -88,16 +94,20 @@ interface AuthContextValue {
   signInPatientWithGoogle: (idToken: string) => Promise<void>;
   signUpPatient: (
     payload: Omit<PatientRegisterRequest, "deviceId">,
-  ) => Promise<void>;
+  ) => Promise<AuthSuccessResponse>;
   startPractitionerLogin: (
     payload: PractitionerLoginRequest,
   ) => Promise<PractitionerLoginResponse>;
   verifyPractitionerOtp: (
     payload: Omit<PractitionerVerifyOtpRequest, "deviceId">,
   ) => Promise<void>;
-  signUpPractitioner: (
+  startPractitionerRegistration: (
     payload: PractitionerRegisterRequest,
   ) => ReturnType<typeof practitionerRegister>;
+  verifyPractitionerRegistrationOtp: (
+    payload: PractitionerRegistrationOtpRequest,
+  ) => ReturnType<typeof practitionerVerifyRegistrationOtp>;
+  resendPractitionerRegistrationOtp: (challengeId: string) => ReturnType<typeof practitionerResendRegistrationOtp>;
   requestPatientPasswordReset: (
     payload: PatientForgotPasswordRequest,
   ) => ReturnType<typeof patientForgotPassword>;
@@ -186,6 +196,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useState<PushRegistrationStatus>("checking");
   const [isPushRegistrationPending, setIsPushRegistrationPending] =
     useState(false);
+  const [patientRegistrationNotice, setPatientRegistrationNotice] = useState<
+    "phone-not-saved" | null
+  >(null);
   const sessionRef = useRef<PersistedAuthSession | null>(null);
   const lastHandledNotificationIdentifierRef = useRef<string | null>(null);
 
@@ -273,7 +286,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       await persistSession(nextSession);
     },
-    [persistSession],
+    [clearAuthenticatedState, persistSession],
   );
 
   const restoreSession = useCallback(async () => {
@@ -319,6 +332,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!refreshed) {
         await clearAuthenticatedState();
+        router.replace(getSignInRouteForRole(stored.role));
         return;
       }
 
@@ -328,7 +342,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsBootstrapping(false);
     }
-  }, [clearAuthenticatedState, consumeAuthSuccess, persistSession]);
+  }, [clearAuthenticatedState, consumeAuthSuccess, persistSession, router]);
 
   useEffect(() => {
     sessionRef.current = session;
@@ -489,8 +503,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return refreshed.tokens.accessToken;
       },
       onAuthFailure: async () => {
+        const failedRole = sessionRef.current?.role;
         await clearAuthenticatedState();
-        router.replace("/(auth)");
+        router.replace(getSignInRouteForRole(failedRole));
       },
     });
 
@@ -505,13 +520,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const group = segments[0];
+    if (!group) {
+      return; // Still at the root route (index.tsx), let index.tsx handle bootstrap routing!
+    }
+
     const inAuthGroup = group === "(auth)";
+    const inOnboardingGroup = group === "(onboarding)";
+    const inPublicGroup = group === "(public)";
     const inPatientGroup = group === "(patient)";
     const inPractitionerGroup = group === "(practitioner)";
 
     if (!session) {
-      if (!inAuthGroup) {
-        router.replace("/(auth)");
+      if (!inAuthGroup && !inOnboardingGroup && !inPublicGroup) {
+        router.replace("/(public)");
       }
       return;
     }
@@ -549,7 +570,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         router.replace("/(practitioner)");
       }
     }
-  }, [isBootstrapping, router, segments, session]);
+  }, [clearAuthenticatedState, isBootstrapping, router, segments, session]);
 
   const signInPatient = useCallback(
     async (payload: Omit<PatientLoginRequest, "deviceId">) => {
@@ -564,7 +585,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     async (payload: Omit<PatientRegisterRequest, "deviceId">) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientRegister({ ...payload, deviceId });
+      if (payload.phone && response.phone?.status !== "SAVED") {
+        setPatientRegistrationNotice("phone-not-saved");
+      }
       await consumeAuthSuccess(response, "patient");
+      return response;
     },
     [consumeAuthSuccess],
   );
@@ -599,8 +624,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     [consumeAuthSuccess],
   );
 
+  const startPractitionerRegistration = useCallback(
+    (payload: PractitionerRegisterRequest) => practitionerRegister(payload),
+    [],
+  );
+
+  const verifyPractitionerRegistrationOtp = useCallback(
+    (payload: PractitionerRegistrationOtpRequest) =>
+      practitionerVerifyRegistrationOtp(payload),
+    [],
+  );
+
+  const resendPractitionerRegistrationOtp = useCallback(
+    (challengeId: string) => practitionerResendRegistrationOtp(challengeId),
+    [],
+  );
+
   const signOut = useCallback(async () => {
-    const current = session;
+    const current = sessionRef.current;
 
     try {
       await revokeCurrentPushRegistration();
@@ -614,15 +655,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Ignore logout transport errors and always clear local session.
     } finally {
       await clearAuthenticatedState();
-      router.replace("/(auth)");
+      router.replace("/(public)");
     }
-  }, [clearAuthenticatedState, router, session]);
+  }, [clearAuthenticatedState, router]);
+
+  const clearPatientRegistrationNotice = useCallback(() => {
+    setPatientRegistrationNotice(null);
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user: session?.user ?? null,
       role: session?.role ?? null,
       isLoading: isBootstrapping,
+      patientRegistrationNotice,
+      clearPatientRegistrationNotice,
       pushRegistrationStatus,
       isPushRegistrationPending,
       enablePushNotifications,
@@ -632,7 +679,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUpPatient,
       startPractitionerLogin,
       verifyPractitionerOtp,
-      signUpPractitioner: practitionerRegister,
+      startPractitionerRegistration,
+      verifyPractitionerRegistrationOtp,
+      resendPractitionerRegistrationOtp,
       requestPatientPasswordReset: patientForgotPassword,
       resetPatientPassword: patientResetPassword,
       verifyPatientPasswordResetOtp: patientVerifyPasswordResetOtp,
@@ -656,6 +705,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signUpPatient,
       startPractitionerLogin,
       verifyPractitionerOtp,
+      startPractitionerRegistration,
+      verifyPractitionerRegistrationOtp,
+      resendPractitionerRegistrationOtp,
     ],
   );
 

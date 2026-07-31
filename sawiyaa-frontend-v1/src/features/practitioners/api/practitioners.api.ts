@@ -190,3 +190,18 @@ export async function listPractitionerCountries() {
   );
   return extractData(response.data);
 }
+
+export async function deletePractitionerCredential(credentialId: string) {
+  const response = await httpClient.delete<ApiPayload<{ credentialId: string }>>(
+    `/practitioners/me/credentials/${credentialId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function viewPractitionerCredential(credentialId: string) {
+  const response = await httpClient.get<Blob>(
+    `/practitioners/me/credentials/${credentialId}/view`,
+    { responseType: "blob" },
+  );
+  return response.data;
+}

@@ -12,6 +12,17 @@ import { AdminUserRepository } from '../repositories/admin-user.repository';
 import type { AdminSpecialtyCategorySummaryViewModel } from '../types/practitioner-applications-admin.types';
 import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
+import { PrismaService } from '@common/prisma/prisma.service';
+
+function sanitizeReviewSnapshot(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeReviewSnapshot);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== 'fileUrl' && key !== 'storagePath')
+      .map(([key, child]) => [key, sanitizeReviewSnapshot(child)]),
+  );
+}
 
 /**
  * Builds one aggregated admin-facing details view for a practitioner application.
@@ -31,6 +42,7 @@ export class GetPractitionerApplicationDetailsUseCase {
     private readonly userRepository: AdminUserRepository,
     private readonly completionService: PractitionerApplicationCompletionService,
     private readonly avatarStorage: PractitionerAvatarStorageService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(input: { id: string; locale: SupportedLocale }) {
@@ -42,6 +54,18 @@ export class GetPractitionerApplicationDetailsUseCase {
         error: 'ADMIN_PRACTITIONER_APPLICATION_NOT_FOUND',
       });
     }
+
+    const reviewCase = await this.prisma.practitionerReviewCase.findFirst({
+      where: {
+        practitionerId: application.practitionerId,
+        status: { not: 'CANCELLED' },
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        sections: true,
+        requirements: { orderBy: { createdAt: 'asc' } },
+      },
+    });
 
     const [profile, user, specialtyLinks, credentials] = await Promise.all([
       this.profileRepository.findById(application.practitionerId),
@@ -370,7 +394,6 @@ export class GetPractitionerApplicationDetailsUseCase {
         snapshotCredentials?.map((credential) => ({
           credentialId: credential.credentialId ?? '',
           credentialType: credential.credentialType,
-          fileUrl: credential.fileUrl,
           reviewStatus: credential.reviewStatus,
           expiresAt: credential.expiresAt
             ? new Date(credential.expiresAt)
@@ -387,7 +410,6 @@ export class GetPractitionerApplicationDetailsUseCase {
         credentials.map((credential) => ({
           credentialId: credential.id,
           credentialType: credential.credentialType,
-          fileUrl: credential.fileUrl,
           reviewStatus: credential.reviewStatus,
           expiresAt: credential.expiresAt,
           uploadedAt: credential.createdAt,
@@ -457,6 +479,38 @@ export class GetPractitionerApplicationDetailsUseCase {
         input.locale,
       ),
       details,
+      reviewCase: reviewCase
+        ? {
+            id: reviewCase.id,
+            type: reviewCase.caseType,
+            status: reviewCase.status,
+            submittedAt: reviewCase.submittedAt,
+            dueAt: reviewCase.dueAt,
+            proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot),
+            sections: reviewCase.sections.map((section) => ({
+              section: section.section,
+              status: section.status,
+              beforeSnapshot: sanitizeReviewSnapshot(section.beforeSnapshot),
+              proposedSnapshot: sanitizeReviewSnapshot(section.proposedSnapshot),
+              decisionReason: section.decisionReason,
+            })),
+            requirements: reviewCase.requirements.map((requirement) => ({
+              id: requirement.id,
+              section: requirement.section,
+              fieldPath: requirement.fieldPath,
+              credentialType: requirement.credentialType,
+              title: requirement.title,
+              reason: requirement.reason,
+              instructions: requirement.instructions,
+              dueAt: requirement.dueAt,
+              severity: requirement.severity,
+              operationalImpact: requirement.operationalImpact,
+              status: requirement.status,
+              createdByUserId: requirement.createdByUserId,
+              resolvedAt: requirement.resolvedAt,
+            })),
+          }
+        : null,
     };
   }
 }

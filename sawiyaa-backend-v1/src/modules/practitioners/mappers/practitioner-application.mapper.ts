@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PractitionerApplicationStatusViewModel } from '../types/practitioner.types';
+import { PractitionerReviewCaseViewModel } from '../services/practitioner-review-case.service';
 
 /**
  * Application mapper keeps response output stable whether an application exists or not.
@@ -16,6 +17,7 @@ export class PractitionerApplicationMapper {
     reviewNotes: string | null;
     submissionSnapshot: Record<string, unknown> | null;
     completion: PractitionerApplicationStatusViewModel['completion'];
+    reviewCase?: PractitionerReviewCaseViewModel | null;
   }): PractitionerApplicationStatusViewModel {
     return {
       applicationId: input.id,
@@ -27,6 +29,20 @@ export class PractitionerApplicationMapper {
       reviewNotes: input.reviewNotes,
       submissionSnapshot: input.submissionSnapshot,
       completion: input.completion,
+      reviewCase: input.reviewCase
+        ? {
+            id: input.reviewCase.id,
+            status: input.reviewCase.status,
+            proposedSnapshot:
+              input.reviewCase.proposedSnapshot &&
+              typeof input.reviewCase.proposedSnapshot === 'object' &&
+              !Array.isArray(input.reviewCase.proposedSnapshot)
+                ? (input.reviewCase.proposedSnapshot as Record<string, unknown>)
+                : null,
+            sections: input.reviewCase.sections,
+            requirements: input.reviewCase.requirements,
+          }
+        : null,
     };
   }
 
@@ -47,6 +63,7 @@ export class PractitionerApplicationMapper {
         warnings: [],
         steps: [],
       },
+      reviewCase: null,
     };
   }
 }

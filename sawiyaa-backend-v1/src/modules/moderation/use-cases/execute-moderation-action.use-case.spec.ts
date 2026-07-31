@@ -1,4 +1,5 @@
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import {
   ModerationCaseActionType,
@@ -32,6 +33,9 @@ describe('ExecuteModerationActionUseCase', () => {
   const logger = {
     info: jest.fn(),
   } as unknown as AppLoggerService;
+  const permissionResolverService = {
+    hasPermissions: jest.fn(),
+  } as unknown as PermissionResolverService;
 
   const useCase = new ExecuteModerationActionUseCase(
     moderationRepository,
@@ -39,10 +43,14 @@ describe('ExecuteModerationActionUseCase', () => {
     validateModerationActionTransitionService,
     executeModerationSurfaceEnforcementService,
     logger,
+    permissionResolverService,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (permissionResolverService.hasPermissions as jest.Mock).mockResolvedValue(
+      true,
+    );
   });
 
   it('executes valid moderation action and returns action execution payload', async () => {
@@ -202,5 +210,44 @@ describe('ExecuteModerationActionUseCase', () => {
       executeModerationSurfaceEnforcementService.execute,
     ).toHaveBeenCalledTimes(1);
     expect(moderationRepository.executeCaseAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks user enforcement without the backend permission', async () => {
+    (moderationRepository.findCaseById as jest.Mock).mockResolvedValue({
+      id: 'report_3',
+      targetType: ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+      targetId: 'conversation_3',
+      targetUserId: 'practitioner_3',
+      reason: ModerationReportReason.ABUSE,
+      note: null,
+      status: ModerationCaseStatus.READY_FOR_ENFORCEMENT,
+      reportedByUserId: 'patient_1',
+      reportedByRole: ModerationReporterRole.PATIENT,
+      createdAt: new Date('2026-03-31T20:00:00.000Z'),
+      targetSnapshot: null,
+    });
+    (
+      validateModerationActionTransitionService.validate as jest.Mock
+    ).mockReturnValue({ nextStatus: ModerationCaseStatus.RESOLVED });
+    (permissionResolverService.hasPermissions as jest.Mock).mockResolvedValue(
+      false,
+    );
+
+    await expect(
+      useCase.execute({
+        currentUser: { id: 'reviewer_3', roles: [AppRole.CONTENT_REVIEWER] },
+        reportId: 'report_3',
+        payload: {
+          action: ModerationCaseActionType.ENFORCE_USER_WARNING,
+          reason: 'Policy warning',
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'MODERATION_ENFORCEMENT_PERMISSION_REQUIRED' },
+    });
+    expect(
+      executeModerationSurfaceEnforcementService.execute,
+    ).not.toHaveBeenCalled();
+    expect(moderationRepository.executeCaseAction).not.toHaveBeenCalled();
   });
 });

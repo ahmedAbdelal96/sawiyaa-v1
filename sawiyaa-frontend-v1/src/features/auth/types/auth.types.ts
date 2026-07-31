@@ -86,8 +86,15 @@ export type PractitionerOtpChallengeResponse = Omit<
 
 export interface PractitionerRegistrationResponse {
   message: string;
-  userId: string;
-  requiresOtpOnLogin: boolean;
+  userId?: string;
+  requiresOtpOnLogin?: boolean;
+  challengeId?: string;
+  channel?: string;
+  maskedTarget?: string;
+  expiresAt?: string;
+  requiresOtpVerification?: boolean;
+  nextStep?: 'OTP_REQUIRED';
+  phone?: { status: 'NOT_PROVIDED' | 'NOT_SAVED_INVALID' | 'SAVED' | 'NOT_SAVED' };
 }
 
 export interface CurrentAuthUserResponse {
@@ -120,6 +127,7 @@ export interface PatientRegisterRequest {
   displayName?: string;
   deviceId?: string;
   phone?: string;
+  phoneCountryCode?: string;
 }
 
 export interface PatientLoginRequest {
@@ -130,8 +138,8 @@ export interface PatientLoginRequest {
 
 export interface PractitionerRegisterRequest {
   email: string;
-  phoneCountryCode: string;
-  phone: string;
+  phoneCountryCode?: string;
+  phone?: string;
   password: string;
   displayName?: string;
   practitionerType?:

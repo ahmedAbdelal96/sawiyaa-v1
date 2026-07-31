@@ -12,6 +12,8 @@ import {
   updatePractitionerAvatar,
   updatePractitionerProfile,
   uploadPractitionerCredentialFile,
+  deletePractitionerCredential,
+  viewPractitionerCredential,
 } from "../api/practitioners.api";
 import { practitionersQueryKeys } from "../constants/query-keys";
 import type { SubmitPractitionerApplicationRequest } from "../types/practitioners.types";
@@ -30,14 +32,17 @@ export function usePractitionerProfile(enabled = true) {
 }
 
 /**
- * Updates profile and refreshes all practitioner dependent queries.
+ * Updates profile and refreshes the read models affected by profile review.
  */
 export function useUpdatePractitionerProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updatePractitionerProfile,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.me() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meReadiness() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meApplication() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meSpecialties() });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
@@ -157,6 +162,23 @@ export function useUploadPractitionerCredential() {
       });
     },
   });
+}
+
+export function useDeletePractitionerCredential() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePractitionerCredential,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meCredentials() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meReadiness() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.me() });
+      queryClient.invalidateQueries({ queryKey: practitionersQueryKeys.meApplication() });
+    },
+  });
+}
+
+export function useViewPractitionerCredential() {
+  return useMutation({ mutationFn: viewPractitionerCredential });
 }
 
 /**

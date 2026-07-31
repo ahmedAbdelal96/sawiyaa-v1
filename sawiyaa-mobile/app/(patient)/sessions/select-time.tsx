@@ -26,6 +26,7 @@ import {
   type SelectTimeDateColumn,
 } from "../../../src/features/patient/sessions/components/SelectTimePanels";
 import { formatViewerDateTime } from "../../../src/lib/time-formatting";
+import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 
 const VISIBLE_DATE_COLUMNS = 5;
 type ScheduleSlot = {
@@ -304,8 +305,8 @@ export default function SelectSessionTimeScreen() {
     t("patientSessionsFlow.common.practitionerFallback");
   const practitionerTitle =
     params.practitionerTitle ??
-    practitioner?.professionalTitle ??
-    t("patientSessionsFlow.common.professionalFallback");
+    (getProfessionalTitleLabel(practitioner?.professionalTitle, isArabicUi) ||
+      t("patientSessionsFlow.common.professionalFallback"));
   const practitionerAvatarUrl = params.practitionerAvatarUrl ?? practitioner?.avatarUrl ?? "";
 
   const selectedAppointmentLabel = selectedAppointmentSlot

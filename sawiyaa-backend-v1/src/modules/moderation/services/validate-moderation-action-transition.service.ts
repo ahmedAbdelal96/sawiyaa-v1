@@ -26,6 +26,9 @@ export class ValidateModerationActionTransitionService {
       ModerationCaseActionType.ENFORCE_REVIEW_RESTORE,
       ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE,
       ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE,
+      ModerationCaseActionType.ENFORCE_USER_WARNING,
+      ModerationCaseActionType.ENFORCE_USER_RESTRICTION,
+      ModerationCaseActionType.ENFORCE_USER_SUSPENSION,
     ],
     [AppRole.SUPPORT_AGENT]: [
       ModerationCaseActionType.REVIEW_CASE,
@@ -35,6 +38,7 @@ export class ValidateModerationActionTransitionService {
       ModerationCaseActionType.ENFORCE_CARE_CHAT_MESSAGE_HIDE,
       ModerationCaseActionType.ENFORCE_REVIEW_HIDE,
       ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE,
+      ModerationCaseActionType.ENFORCE_USER_WARNING,
     ],
     [AppRole.CONTENT_REVIEWER]: [
       ModerationCaseActionType.REVIEW_CASE,
@@ -45,6 +49,7 @@ export class ValidateModerationActionTransitionService {
       ModerationCaseActionType.ENFORCE_REVIEW_REJECT,
       ModerationCaseActionType.ENFORCE_REVIEW_RESTORE,
       ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE,
+      ModerationCaseActionType.ENFORCE_USER_WARNING,
     ],
   };
 
@@ -108,6 +113,28 @@ export class ValidateModerationActionTransitionService {
         ModerationReportTargetType.ARTICLE,
         ModerationReportTargetType.SUPPORT_TICKET,
         ModerationReportTargetType.SUPPORT_MESSAGE,
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+        ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+        ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_USER_WARNING]: [
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+        ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+        ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_USER_RESTRICTION]: [
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+        ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+        ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      ],
+      [ModerationCaseActionType.ENFORCE_USER_SUSPENSION]: [
+        ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+        ModerationReportTargetType.CARE_CHAT_MESSAGE,
+        ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+        ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
       ],
       [ModerationCaseActionType.ENFORCE_CARE_CHAT_REVOKE]: [
         ModerationReportTargetType.CARE_CHAT_CONVERSATION,
@@ -157,6 +184,9 @@ export class ValidateModerationActionTransitionService {
       ModerationCaseActionType.ENFORCE_REVIEW_RESTORE,
       ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE,
       ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE,
+      ModerationCaseActionType.ENFORCE_USER_WARNING,
+      ModerationCaseActionType.ENFORCE_USER_RESTRICTION,
+      ModerationCaseActionType.ENFORCE_USER_SUSPENSION,
     ];
     if (reasonRequiredActions.includes(action) && !reason) {
       throw new BadRequestException({
@@ -197,6 +227,9 @@ export class ValidateModerationActionTransitionService {
       case ModerationCaseActionType.ENFORCE_REVIEW_RESTORE:
       case ModerationCaseActionType.ENFORCE_ARTICLE_ARCHIVE:
       case ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE:
+      case ModerationCaseActionType.ENFORCE_USER_WARNING:
+      case ModerationCaseActionType.ENFORCE_USER_RESTRICTION:
+      case ModerationCaseActionType.ENFORCE_USER_SUSPENSION:
         return current === ModerationCaseStatus.READY_FOR_ENFORCEMENT
           ? ModerationCaseStatus.RESOLVED
           : null;

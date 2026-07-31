@@ -48,7 +48,7 @@ describe('RecordPractitionerSettlementPayoutUseCase', () => {
     ).mockResolvedValue({
       id: 'settlement_1',
       practitionerId: 'pract_1',
-      status: 'PAID',
+      status: 'PAID_OUT',
       amountNet: new Prisma.Decimal('100.00'),
       amountPaidTotal: new Prisma.Decimal('100.00'),
       batchId: 'batch_1',
@@ -85,7 +85,7 @@ describe('RecordPractitionerSettlementPayoutUseCase', () => {
       .mockResolvedValueOnce({
         id: 'settlement_1',
         practitionerId: 'pract_1',
-        status: 'READY',
+        status: 'CREDITED',
         amountNet: new Prisma.Decimal('100.00'),
         amountPaidTotal: new Prisma.Decimal('0.00'),
         batchId: 'batch_1',
@@ -97,7 +97,7 @@ describe('RecordPractitionerSettlementPayoutUseCase', () => {
       .mockResolvedValueOnce({
         id: 'settlement_1',
         practitionerId: 'pract_1',
-        status: 'PAID',
+        status: 'PAID_OUT',
         amountNet: new Prisma.Decimal('100.00'),
         amountPaidTotal: new Prisma.Decimal('100.00'),
         batchId: 'batch_1',
@@ -110,11 +110,11 @@ describe('RecordPractitionerSettlementPayoutUseCase', () => {
       payoutRecord: { id: 'payout_new' },
       settlement: {
         id: 'settlement_1',
-        status: 'PAID',
+        status: 'PAID_OUT',
       },
     });
     (settlementRepository.listBatchSettlements as jest.Mock).mockResolvedValue([
-      { status: 'PAID' },
+      { status: 'PAID_OUT' },
     ]);
     (prisma.$transaction as jest.Mock).mockImplementation(async (fn) => fn({}));
 

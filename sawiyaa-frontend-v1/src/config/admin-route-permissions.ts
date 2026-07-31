@@ -69,19 +69,27 @@ export const ADMIN_ROUTE_PERMISSIONS: AdminRoutePermissionConfig[] = [
   },
   {
     path: "/finance",
-    requiresAny: [PK.FINANCE_EVENTS_READ, PK.ACCOUNTING_READ],
+    requiresAny: [PK.FINANCE_EVENTS_READ, PK.ACCOUNTING_READ, PK.FINANCIAL_SETTLEMENT_VIEW],
   },
   {
     path: "/package-settlements",
     requiresAny: [PK.SETTLEMENTS_READ, PK.SETTLEMENTS_WRITE],
   },
   {
+    path: "/settlements",
+    requiresAny: [PK.FINANCIAL_SETTLEMENT_VIEW],
+  },
+  {
     path: "/practitioner-payouts",
-    requiresAny: [PK.PRACTITIONER_PAYOUTS_READ, PK.PRACTITIONER_PAYOUTS_WRITE],
+    requiresAny: [PK.PRACTITIONER_PAYOUTS_READ],
   },
   {
     path: "/payments",
     requiresAny: [PK.FINANCE_EVENTS_READ, PK.REFUNDS_APPROVE, PK.REFUNDS_RETRY],
+  },
+  {
+    path: "/payments/gateway-control",
+    requiresAny: [PK.FINANCE_EVENTS_READ],
   },
   { path: "/audit", requiresAny: [PK.AUDIT_LOG_READ] },
   { path: "/users", requiresAny: [PK.ADMIN_USERS_READ] },

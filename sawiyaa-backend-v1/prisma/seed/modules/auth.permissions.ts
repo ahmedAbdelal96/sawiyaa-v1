@@ -25,6 +25,11 @@ export const permissionDefinitions: Array<{
     key: 'settlements.write',
     description: 'Mutate settlement state and record settlement payouts',
   },
+  { key: 'financial.settlement.view', description: 'View accountant settlement queue and details' },
+  { key: 'financial.settlement.review', description: 'Review and reject accountant settlements' },
+  { key: 'financial.settlement.approve', description: 'Approve accountant settlements and credit wallets' },
+  { key: 'financial.settlement.adjust', description: 'Add append-only settlement adjustments before approval' },
+  { key: 'financial.payout.execute', description: 'Execute external payout preparation for credited settlements' },
   {
     key: 'practitioner-payouts.read',
     description: 'Read practitioner payout dues/history/details/proofs',
@@ -96,6 +101,22 @@ export const permissionDefinitions: Array<{
   {
     key: 'chat.attachments.read',
     description: 'Read session chat attachments in admin/support context',
+  },
+  {
+    key: 'moderation.reports.view',
+    description: 'View moderation report queue and report metadata',
+  },
+  {
+    key: 'moderation.evidence.view',
+    description: 'View moderation evidence including conversation content',
+  },
+  {
+    key: 'moderation.actions.execute',
+    description: 'Execute moderation investigation actions and decisions',
+  },
+  {
+    key: 'moderation.enforcement.execute',
+    description: 'Execute elevated moderation enforcement actions',
   },
   {
     key: 'patients.read.admin',
@@ -245,6 +266,11 @@ export const rolePermissionBundles: Array<{
       'finance.accounting.write',
       'settlements.read',
       'settlements.write',
+      'financial.settlement.view',
+      'financial.settlement.review',
+      'financial.settlement.approve',
+      'financial.settlement.adjust',
+      'financial.payout.execute',
       'practitioner-payouts.read',
       'practitioner-payouts.write',
       'practitioner-statements.read',
@@ -282,7 +308,13 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.CONTENT_REVIEWER,
-    permissions: ['audit-log.read'],
+    permissions: [
+      'audit-log.read',
+      'moderation.reports.view',
+      'moderation.evidence.view',
+      'moderation.actions.execute',
+      'moderation.enforcement.execute',
+    ],
   },
   {
     role: UserRoleType.SUPPORT,
@@ -293,6 +325,10 @@ export const rolePermissionBundles: Array<{
       'careChat.conversation.read.admin',
       'chat.conversations.read',
       'chat.attachments.read',
+      'moderation.reports.view',
+      'moderation.evidence.view',
+      'moderation.actions.execute',
+      'moderation.enforcement.execute',
       'support.ticket.assign',
       'corporate.organizations.read',
       'corporate.reports.read',

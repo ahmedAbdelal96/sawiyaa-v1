@@ -6,6 +6,7 @@ export const enAvailabilityCatalog = {
     exceptionUpdated: 'Availability exception updated successfully',
     exceptionDeleted: 'Availability exception deleted successfully',
     weeksFetched: 'Availability schedule loaded successfully',
+    weekDetailsFetched: 'Session schedule details loaded successfully',
     weekUpdated: 'Changes saved successfully',
     weekCreated: 'Schedule created successfully',
     weekPublished: 'Schedule approved and now available for booking',
@@ -21,6 +22,9 @@ export const enAvailabilityCatalog = {
   errors: {
     practitionerNotFound: 'Practitioner profile was not found',
     invalidTimezone: 'Timezone is invalid',
+    timezoneRequired: 'Set your timezone before configuring your session schedule',
+    weekOutsideActiveWindow: 'This week is outside your active scheduling window',
+    invalidLocalTime: 'The selected local time is invalid for {{date}} at {{time}} in {{timezone}}',
     invalidWeeklySlotRange: 'Weekly availability slot range is invalid',
     invalidWeeklySlotDuration:
       'Weekly availability slot duration must match the selected duration',
@@ -37,7 +41,7 @@ export const enAvailabilityCatalog = {
     publicAvailabilityNotFound:
       'Public practitioner availability was not found',
     weekNotFound: 'Availability week was not found',
-    weekNotDraft: 'This schedule is not a draft and cannot be edited in this way',
+    weekNotDraft: 'This schedule is already published and cannot be published again',
     weekNotEditable: 'This schedule cannot be edited',
     slotInPast: 'Cannot modify a time slot that has already passed',
     slotBooked: 'Cannot modify this time slot because it has an active booking',

@@ -33,10 +33,8 @@ import RelatedPractitioners from "@/features/practitioner-profile/components/Rel
 import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
 import ProfileTrustSection from "@/features/practitioner-profile/components/ProfileTrustSection";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
-import {
-  LANGUAGE_CODES,
-  type PublicPractitioner,
-} from "@/features/practitioners-discovery/types/practitioner";
+import { type PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
+import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 
@@ -120,10 +118,7 @@ export default async function PractitionerProfilePage({ params }: Props) {
 
   const { item: profile } = data;
 
-  const [tLanguages, tProfile] = await Promise.all([
-    getTranslations("practitioners-listing.languages"),
-    getTranslations("practitioner-profile"),
-  ]);
+  const tProfile = await getTranslations("practitioner-profile");
 
   let specialtyLabels: Record<string, string> = {};
   try {
@@ -138,7 +133,7 @@ export default async function PractitionerProfilePage({ params }: Props) {
   }
 
   const languageLabels = Object.fromEntries(
-    LANGUAGE_CODES.map((code) => [code, tLanguages(code)]),
+    SUPPORTED_LANGUAGE_CODES.map((code) => [code, getLocalizedLanguageLabel(code, locale)]),
   );
 
   const countryLabel =

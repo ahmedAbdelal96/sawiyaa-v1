@@ -7,12 +7,14 @@ import { ListPractitionerSettlementsUseCase } from './list-practitioner-settleme
 describe('ListPractitionerSettlementsUseCase', () => {
   const practitionerRepository = {
     findByUserId: jest.fn(),
+    findSessionsByIds: jest.fn().mockResolvedValue([]),
   } as unknown as FinancialOperationsPractitionerRepository;
   const settlementRepository = {
     listPractitionerSettlements: jest.fn(),
   } as unknown as SettlementRepository;
   const mapper = {
     toPractitionerSettlement: jest.fn((input) => input),
+    toPractitionerSafeSettlement: jest.fn((input) => input),
   } as unknown as FinancialOperationsMapper;
 
   const useCase = new ListPractitionerSettlementsUseCase(

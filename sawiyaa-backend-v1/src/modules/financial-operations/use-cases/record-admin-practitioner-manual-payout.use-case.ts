@@ -31,6 +31,7 @@ export class RecordAdminPractitionerManualPayoutUseCase {
     const result = await this.prisma.$transaction(async (tx) =>
       this.payoutService.record({
         practitionerId: practitioner.id,
+        settlementId: input.body.settlementId,
         currencyCode: input.body.currencyCode,
         amountPaid: input.body.amountPaid,
         paidAt: input.body.paidAt ? new Date(input.body.paidAt) : undefined,

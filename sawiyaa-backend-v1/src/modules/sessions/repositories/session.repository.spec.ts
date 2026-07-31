@@ -13,7 +13,8 @@ describe('SessionRepository', () => {
     },
   } as unknown as PrismaService;
 
-  const repository = new SessionRepository(prisma);
+  const sessionCodeGenerator = {} as any;
+  const repository = new SessionRepository(prisma, sessionCodeGenerator);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -171,7 +172,7 @@ describe('SessionRepository', () => {
         }),
         expect.objectContaining({
           sessionCode: {
-            contains: 'SES-2026',
+            startsWith: 'SES-2026',
             mode: 'insensitive',
           },
         }),

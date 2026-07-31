@@ -40,6 +40,7 @@ import { ConfirmPasswordResetDto } from '../dto/confirm-password-reset.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { PractitionerLoginDto } from '../dto/practitioner-login.dto';
 import { PractitionerRegisterDto } from '../dto/practitioner-register.dto';
+import { PractitionerRegistrationOtpDto } from '../dto/practitioner-registration-otp.dto';
 import { PractitionerVerifyOtpDto } from '../dto/practitioner-verify-otp.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
@@ -49,6 +50,11 @@ import { LoginPractitionerPasswordUseCase } from '../use-cases/login-practitione
 import { LogoutPractitionerUseCase } from '../use-cases/logout-practitioner.use-case';
 import { RefreshPractitionerTokenUseCase } from '../use-cases/refresh-practitioner-token.use-case';
 import { RegisterPractitionerAccountUseCase } from '../use-cases/register-practitioner-account.use-case';
+import { StartPractitionerRegistrationUseCase } from '../use-cases/start-practitioner-registration.use-case';
+import { VerifyPractitionerRegistrationEmailUseCase } from '../use-cases/verify-practitioner-registration-email.use-case';
+import { ResendOtpChallengeUseCase } from '../../verification/use-cases/resend-otp-challenge.use-case';
+import { OtpChallengeRepository } from '../../verification/repositories/otp-challenge.repository';
+import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { RequestPractitionerPasswordResetUseCase } from '../use-cases/request-practitioner-password-reset.use-case';
 import { ResetPractitionerPasswordUseCase } from '../use-cases/reset-practitioner-password.use-case';
 import { VerifyPractitionerPasswordResetOtpUseCase } from '../use-cases/verify-practitioner-password-reset-otp.use-case';
@@ -62,6 +68,10 @@ export class PractitionerAuthController {
   constructor(
     private readonly i18nService: I18nService,
     private readonly registerPractitionerAccountUseCase: RegisterPractitionerAccountUseCase,
+    private readonly startPractitionerRegistrationUseCase: StartPractitionerRegistrationUseCase,
+    private readonly verifyPractitionerRegistrationEmailUseCase: VerifyPractitionerRegistrationEmailUseCase,
+    private readonly resendOtpChallengeUseCase: ResendOtpChallengeUseCase,
+    private readonly otpChallengeRepository: OtpChallengeRepository,
     private readonly loginPractitionerPasswordUseCase: LoginPractitionerPasswordUseCase,
     private readonly verifyPractitionerLoginOtpUseCase: VerifyPractitionerLoginOtpUseCase,
     private readonly refreshPractitionerTokenUseCase: RefreshPractitionerTokenUseCase,
@@ -92,7 +102,7 @@ export class PractitionerAuthController {
     @Body() dto: PractitionerRegisterDto,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    const result = await this.registerPractitionerAccountUseCase.execute({
+    const result = await this.startPractitionerRegistrationUseCase.execute({
       email: dto.email,
       phone: dto.phone,
       phoneCountryCode: dto.phoneCountryCode,
@@ -106,14 +116,76 @@ export class PractitionerAuthController {
       primarySpecialtyCategoryId: dto.primarySpecialtyCategoryId,
       specialtyIds: dto.specialtyIds,
       initialCredential: dto.initialCredential,
+      locale,
     });
 
+    return {
+      message: this.i18nService.t('auth.success.practitionerOtpSent', locale),
+      ...result,
+    };
+  }
+
+  @Public()
+  @Post('register/verify-otp')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-otp-verify')
+  async verifyRegistrationOtp(
+    @Body() dto: PractitionerRegistrationOtpDto,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    const result =
+      await this.verifyPractitionerRegistrationEmailUseCase.execute({
+        ...dto,
+        locale,
+      });
     return {
       message: this.i18nService.t(
         'auth.success.practitionerRegistered',
         locale,
       ),
       ...result,
+    };
+  }
+
+  @Public()
+  @Post('register/resend-otp')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-practitioner-otp-verify')
+  async resendRegistrationOtp(
+    @Body() dto: Pick<PractitionerRegistrationOtpDto, 'challengeId'>,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    const current = await this.otpChallengeRepository.findById(dto.challengeId);
+    if (
+      !current ||
+      current.purpose !== OtpPurpose.PRACTITIONER_SIGNUP_EMAIL_VERIFICATION
+    ) {
+      throw new BadRequestException({
+        messageKey: 'auth.errors.otpChallengeInvalid',
+        error: 'OTP_CHALLENGE_INVALID',
+      });
+    }
+    const result = await this.resendOtpChallengeUseCase.execute({
+      userId: null,
+      purpose: current.purpose,
+      channel: OtpChannel.EMAIL,
+      target: current.target,
+      locale,
+      metadata:
+        current.metadata &&
+        typeof current.metadata === 'object' &&
+        !Array.isArray(current.metadata)
+          ? (current.metadata as Record<string, unknown>)
+          : undefined,
+    });
+    return {
+      message: this.i18nService.t('auth.success.practitionerOtpSent', locale),
+      challengeId: result.challengeId,
+      channel: result.channel,
+      maskedTarget: result.maskedTarget,
+      expiresAt: result.expiresAt,
+      requiresOtpVerification: true,
+      nextStep: 'OTP_REQUIRED' as const,
     };
   }
 

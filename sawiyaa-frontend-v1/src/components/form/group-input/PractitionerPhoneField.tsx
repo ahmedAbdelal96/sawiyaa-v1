@@ -1,9 +1,8 @@
 "use client";
 
-import InputField from "@/components/form/input/InputField";
-import Label from "@/components/form/Label";
-import { SearchableCombobox } from "@/components/form/SearchableCombobox";
-import { previewPhoneE164, compactPhoneInput } from "@/features/auth/utils/phone-input";
+import { InternationalPhoneField } from "./InternationalPhoneField";
+import type { PhoneCountryOption } from "@/features/auth/phone/phone.types";
+import { PHONE_COUNTRIES } from "@/features/auth/phone/phone-countries";
 
 export type PractitionerPhoneCountry = {
   value: string;
@@ -24,10 +23,10 @@ export function PractitionerPhoneField({
   searchPlaceholder,
   phonePlaceholder,
   helperText,
-  savedAsLabel,
   countryError,
   phoneError,
   disabled = false,
+  required = false,
 }: {
   countryCode: string;
   phone: string;
@@ -39,50 +38,21 @@ export function PractitionerPhoneField({
   countryPlaceholder: string;
   searchPlaceholder: string;
   phonePlaceholder: string;
-  helperText: string;
-  savedAsLabel: string;
+  helperText?: string;
   countryError?: string;
   phoneError?: string;
   disabled?: boolean;
+  required?: boolean;
 }) {
-  const selected = countries.find((item) => item.value === countryCode);
-  const preview = previewPhoneE164(phone, selected?.phoneCode);
-  return (
-    <div className="space-y-3">
-      <div>
-        <Label>{countryLabel}</Label>
-        <SearchableCombobox
-          options={countries.map((country) => ({
-            value: country.value,
-            label: `${country.label} ${country.phoneCode ?? ""}`.trim(),
-            searchText: country.searchText,
-          }))}
-          value={countryCode || null}
-          onChange={onCountryChange}
-          placeholder={countryPlaceholder}
-          searchPlaceholder={searchPlaceholder}
-          error={Boolean(countryError)}
-          disabled={disabled}
-        />
-        {countryError ? <p className="mt-1 text-xs text-error-500">{countryError}</p> : null}
-      </div>
-      <div>
-        <Label>{phoneLabel}</Label>
-        <InputField
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel-national"
-          dir="ltr"
-          value={phone}
-          onChange={(event) => onPhoneChange(compactPhoneInput(event.target.value))}
-          placeholder={phonePlaceholder}
-          error={Boolean(phoneError)}
-          disabled={disabled}
-        />
-        {phoneError ? <p className="mt-1 text-xs text-error-500">{phoneError}</p> : null}
-        <p className="mt-1 text-xs text-text-secondary">{helperText}</p>
-        {preview ? <p className="mt-1 text-xs text-primary" dir="ltr">{savedAsLabel.replace("{phone}", preview)}</p> : null}
-      </div>
-    </div>
-  );
+  const normalizedCountries: PhoneCountryOption[] = countries.map((country) => {
+    const found = PHONE_COUNTRIES.find((c) => c.isoCode === country.value);
+    return {
+      isoCode: country.value,
+      name: found?.name ?? country.label.replace(/\s*\([^)]*\)\s*$/, ""),
+      nativeName: found?.nativeName,
+      callingCode: found?.callingCode ?? country.phoneCode ?? "",
+    };
+  });
+
+  return <InternationalPhoneField countries={normalizedCountries} countryIso2={countryCode} value={phone} onCountryChange={onCountryChange} onValueChange={onPhoneChange} label={phoneLabel} countryLabel={countryLabel} countryPlaceholder={countryPlaceholder} searchPlaceholder={searchPlaceholder} phonePlaceholder={phonePlaceholder} helperText={helperText} countryError={countryError} phoneError={phoneError} disabled={disabled} required={required} />;
 }

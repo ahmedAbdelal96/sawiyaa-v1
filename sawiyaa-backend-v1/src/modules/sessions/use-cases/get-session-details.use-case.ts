@@ -28,7 +28,9 @@ export class GetSessionDetailsUseCase {
     sessionId: string;
     actorType: 'PATIENT' | 'PRACTITIONER';
   }) {
-    const session = await this.sessionRepository.findById(input.sessionId);
+    const session = input.actorType === 'PRACTITIONER'
+      ? await this.sessionRepository.findByIdWithRichDetails(input.sessionId)
+      : await this.sessionRepository.findById(input.sessionId);
 
     if (!session) {
       throw new NotFoundException({

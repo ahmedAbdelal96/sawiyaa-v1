@@ -1,1060 +1,220 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  AlertTriangle,
-  CalendarDays,
-  CheckCircle2,
-  Copy,
-  Lock,
-  Save,
-  Sparkles,
-  Clock3,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Clock3, Eye, Pencil, Repeat2, Send } from "lucide-react";
+import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import {
-  useCopyAvailabilityWeekToNext,
+  useConfirmAvailabilityWeekRepeat,
   useCreateAvailabilityWeek,
+  useAvailabilityWeekDetails,
+  usePreviewAvailabilityWeekRepeat,
   usePublishAvailabilityWeek,
   useUpdateAvailabilityWeek,
 } from "../hooks/use-availability";
 import type {
+  AvailabilityRepeatPreview,
+  AvailabilityRepeatConfirmation,
+  AvailabilityRollingWindowData,
   AvailabilityWeek,
-  AvailabilityWeekOverview,
+  AvailabilityWeekSlot,
+  AvailabilityWeekWindowEntry,
   AvailabilityWorkspaceData,
 } from "../types/availability.types";
+import { canFitAvailabilityDuration } from "../utils/availability-time-grid";
+import AvailabilityTimeGrid from "./AvailabilityTimeGrid";
 
-type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-type SessionBlockDuration = 30 | 60;
-type WeekKind = "current" | "next";
+type DialogState =
+  | { type: "editor"; week: AvailabilityWeekWindowEntry }
+  | { type: "publish"; week: AvailabilityWeekWindowEntry }
+  | { type: "repeat"; week: AvailabilityWeekWindowEntry }
+  | null;
 
-type MinuteRange = {
-  startMinuteOfDay: number;
-  endMinuteOfDay: number;
-};
-
-type DraftSchedule = Record<DayOfWeek, Record<SessionBlockDuration, number[]>>;
-
-const DAY_ORDER: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
+type Day = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+type Duration = 30 | 60;
+const DAYS: Day[] = [0, 1, 2, 3, 4, 5, 6];
 const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
-const DURATIONS: SessionBlockDuration[] = [30, 60];
-const DAY_END_MINUTE = 24 * 60;
 
-function dayKeyFor(dayOfWeek: number): (typeof DAY_KEYS)[number] {
-  return DAY_KEYS[dayOfWeek as DayOfWeek] ?? "monday";
+type SelectedTimes = Record<Day, Record<Duration, number[]>>;
+type SelectedTimesInitialization = { selected: SelectedTimes; invalidLegacy60Starts: number[] };
+
+function emptySelectedTimes(): SelectedTimes {
+  return { 0: { 30: [], 60: [] }, 1: { 30: [], 60: [] }, 2: { 30: [], 60: [] }, 3: { 30: [], 60: [] }, 4: { 30: [], 60: [] }, 5: { 30: [], 60: [] }, 6: { 30: [], 60: [] } };
 }
 
-function normalizeStarts(minutes: number[]): number[] {
-  return Array.from(new Set(minutes.filter((minute) => minute >= 0 && minute < DAY_END_MINUTE))).sort(
-    (left, right) => left - right,
-  );
-}
-
-function createEmptyDraftSchedule(): DraftSchedule {
-  return {
-    0: { 30: [], 60: [] },
-    1: { 30: [], 60: [] },
-    2: { 30: [], 60: [] },
-    3: { 30: [], 60: [] },
-    4: { 30: [], 60: [] },
-    5: { 30: [], 60: [] },
-    6: { 30: [], 60: [] },
-  };
-}
-
-function slotsToDraftSchedule(slots: AvailabilityWeek["slots"]): DraftSchedule {
-  const output = createEmptyDraftSchedule();
-
+function slotsToSelectedTimes(slots: AvailabilityWeekSlot[]): SelectedTimesInitialization {
+  const selected = emptySelectedTimes();
+  const invalidLegacy60Starts: number[] = [];
   for (const slot of slots) {
-    const day = slot.dayOfWeek as DayOfWeek;
+    const day = slot.dayOfWeek as Day;
     const duration = slot.durationMinutes === 60 ? 60 : 30;
-    output[day][duration].push(slot.startMinuteOfDay);
-    output[day][duration] = normalizeStarts(output[day][duration]);
-  }
-
-  return output;
-}
-
-function draftScheduleToSlots(draft: DraftSchedule) {
-  const slots: Array<{
-    dayOfWeek: number;
-    durationMinutes: SessionBlockDuration;
-    startMinuteOfDay: number;
-    endMinuteOfDay: number;
-  }> = [];
-
-  for (const day of DAY_ORDER) {
-    for (const duration of DURATIONS) {
-      for (const startMinuteOfDay of normalizeStarts(draft[day][duration])) {
-        slots.push({
-          dayOfWeek: day,
-          durationMinutes: duration,
-          startMinuteOfDay,
-          endMinuteOfDay: startMinuteOfDay + duration,
-        });
-      }
+    if (duration === 60 && slot.startMinuteOfDay % 60 !== 0) {
+      invalidLegacy60Starts.push(slot.startMinuteOfDay);
+      continue;
     }
+    selected[day][duration].push(slot.startMinuteOfDay);
   }
-
-  return slots;
+  return { selected, invalidLegacy60Starts };
 }
 
-function slotRangesFromStarts(starts: number[], duration: SessionBlockDuration): MinuteRange[] {
-  return normalizeStarts(starts).map((startMinuteOfDay) => ({
-    startMinuteOfDay,
-    endMinuteOfDay: startMinuteOfDay + duration,
-  }));
+function formatDateRange(start: string, end: string, locale: string) {
+  const format = new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" });
+  return `${format.format(new Date(`${start}T12:00:00`))} - ${format.format(new Date(`${end}T12:00:00`))}`;
 }
 
-function formatTimeLabel(minutes: number, locale: string): string {
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  const date = new Date(Date.UTC(1970, 0, 1, hours, remainder));
-
-  return new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-    timeZone: "UTC",
-  }).format(date);
+function statusKey(status: AvailabilityWeekWindowEntry["status"]) {
+  return status === "DRAFT" ? "notPublished" : status === "NOT_SET" ? "noSessionTimes" : status.toLowerCase();
 }
 
-function formatRangeLabel(range: MinuteRange, locale: string): string {
-  return `${formatTimeLabel(range.startMinuteOfDay, locale)} - ${formatTimeLabel(
-    range.endMinuteOfDay,
-    locale,
-  )}`;
+function newIdempotencyKey(prefix: string) {
+  const uuid = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `${prefix}-${uuid}`;
 }
 
-function formatWeekRange(week: AvailabilityWeek, locale: string): string {
-  const start = new Date(`${week.weekStartDate}T12:00:00`);
-  const end = new Date(`${week.weekEndDate}T12:00:00`);
-
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-  }).format(start) +
-    " - " +
-    new Intl.DateTimeFormat(locale, {
-      month: "short",
-      day: "numeric",
-    }).format(end);
+function getErrorCode(error: unknown) {
+  if (!error || typeof error !== "object") return null;
+  const candidate = error as { code?: unknown; response?: { data?: { errorCode?: unknown } } };
+  return typeof candidate.code === "string" ? candidate.code : typeof candidate.response?.data?.errorCode === "string" ? candidate.response.data.errorCode : null;
 }
 
-function getDefaultSelectedKind(overview: AvailabilityWeekOverview): WeekKind {
-  if (overview.currentWeek.status === "DRAFT" || overview.currentWeek.status === "PUBLISHED") {
-    return "current";
-  }
-
-  if (overview.nextWeek.status === "DRAFT" || overview.nextWeek.status === "PUBLISHED") {
-    return "next";
-  }
-
-  return "current";
+function repeatErrorKey(error: unknown) {
+  const code = getErrorCode(error);
+  const known = new Set(["SOURCE_HAS_NO_SESSION_TIMES", "REPEAT_PREVIEW_EXPIRED", "SOURCE_CHANGED_SINCE_PREVIEW", "INVALID_TIMEZONE", "REPEAT_IN_PROGRESS", "IDEMPOTENCY_CONFLICT"]);
+  return code && known.has(code) ? code : "UNKNOWN";
 }
 
-function statusTone(status: AvailabilityWeek["status"]) {
-  switch (status) {
-    case "PUBLISHED":
-      return "success" as const;
-    case "DRAFT":
-      return "warning" as const;
-    case "ARCHIVED":
-      return "neutral" as const;
-    default:
-      return "neutral" as const;
-  }
+function StatusBadge({ status }: { status: AvailabilityWeekWindowEntry["status"] }) {
+  const t = useTranslations("practitioner-area.availability");
+  const styles = status === "PUBLISHED" ? "border-success-500/25 bg-success-50 text-success-700" : status === "DRAFT" ? "border-warning-200 bg-warning-50 text-warning-700" : "border-border-light bg-surface-tertiary text-text-muted";
+  return <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold", styles)}>{t(`statusLabels.${statusKey(status)}`)}</span>;
 }
 
-function statusClass(status: AvailabilityWeek["status"]) {
-  switch (status) {
-    case "PUBLISHED":
-      return "border-success-500/20 bg-success-50 text-success-700 dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-300";
-    case "DRAFT":
-      return "border-warning-200 bg-warning-50 text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300";
-    case "ARCHIVED":
-      return "border-border-light bg-surface-tertiary text-text-muted";
-    default:
-      return "border-border-light bg-surface-tertiary text-text-muted";
-  }
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-2xl border border-border-light bg-white px-4 py-3 dark:bg-surface-secondary"><p className="text-xs text-text-muted">{label}</p><p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">{value}</p></div>;
 }
 
-function statusLabel(
-  t: ReturnType<typeof useTranslations>,
-  status: AvailabilityWeek["status"],
-) {
-  if (status === "NOT_SET") return t("weeks.status.notSet");
-  if (status === "DRAFT") return t("weeks.status.draft");
-  if (status === "PUBLISHED") return t("weeks.status.published");
-  return t("weeks.status.archived");
-}
-
-function weekActionLabel(
-  t: ReturnType<typeof useTranslations>,
-  week: AvailabilityWeek,
-  kind: WeekKind,
-) {
-  if (week.status === "DRAFT") return t("weeks.actions.editDraft");
-  if (week.status === "PUBLISHED") return t("weeks.actions.viewPublished");
-  if (kind === "current") return t("weeks.actions.createCurrentDraft");
-  return t("weeks.actions.copyCurrentToNextDraft");
-}
-
-function WeekSummaryCard({
-  week,
-  kind,
-  selected,
-  onSelect,
-  onAction,
-  actionLabel,
-  actionDisabled,
-  actionDisabledReason,
-}: {
-  week: AvailabilityWeek;
-  kind: WeekKind;
-  selected: boolean;
-  onSelect: () => void;
-  onAction: () => void;
-  actionLabel: string;
-  actionDisabled?: boolean;
-  actionDisabledReason?: string;
-}) {
+export function ScheduleEditorModal({ week, timezone, onClose }: { week: AvailabilityWeekWindowEntry; timezone: string; onClose: () => void }) {
   const t = useTranslations("practitioner-area.availability");
   const locale = useLocale();
-  const isPublished = week.status === "PUBLISHED";
-  const isDraft = week.status === "DRAFT";
-  const isNotSet = week.status === "NOT_SET";
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect();
-        }
-      }}
-      className={cn(
-        "group flex h-full w-full flex-col rounded-[24px] border p-4 text-start transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-        selected
-          ? "border-primary/30 bg-primary-light/20 shadow-[0_16px_30px_-22px_rgba(68,161,148,0.35)]"
-          : "border-border-light bg-white hover:border-primary/20 hover:bg-surface-tertiary dark:bg-surface-secondary",
-      )}
-      aria-pressed={selected}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {kind === "current" ? t("weeks.currentLabel") : t("weeks.nextLabel")}
-          </p>
-          <h3 className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
-            {formatWeekRange(week, locale)}
-          </h3>
-          <p className="mt-1 text-xs leading-6 text-text-secondary">
-            {isPublished
-              ? t("weeks.notes.published")
-              : isDraft
-                ? t("weeks.notes.draft")
-                : isNotSet
-                  ? t("weeks.notes.notSet")
-                  : t("weeks.notes.archived")}
-          </p>
-        </div>
-
-        <span className={cn("shrink-0 rounded-full border px-3 py-1 text-xs font-semibold", statusClass(week.status))}>
-          {statusLabel(t, week.status)}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-2 text-xs text-text-secondary">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          <span>{week.weekStartDate}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock3 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          <span>{week.timezone}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          <span>
-            {week.hasSlots ? t("weeks.card.hasSlots") : t("weeks.card.noSlots")}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-1 flex-col justify-end gap-2">
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            if (!actionDisabled) {
-              onAction();
-            }
-          }}
-          disabled={actionDisabled}
-          className={cn(
-            "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50",
-            isPublished
-              ? "bg-surface-secondary text-text-secondary border border-border-light"
-              : isDraft
-                ? "bg-primary text-white hover:bg-primary-hover"
-                : "bg-primary text-white hover:bg-primary-hover",
-          )}
-        >
-          {isPublished ? <Lock className="h-4 w-4" aria-hidden="true" /> : isDraft ? <Save className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-          {actionLabel}
-        </button>
-        {actionDisabledReason ? (
-          <p className="text-xs leading-5 text-text-muted">{actionDisabledReason}</p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function WeekDraftEditor({
-  week,
-  selectedKind,
-}: {
-  week: AvailabilityWeek;
-  selectedKind: WeekKind;
-}) {
-  const t = useTranslations("practitioner-area.availability");
-  const locale = useLocale();
-  const updateWeek = useUpdateAvailabilityWeek();
-  const publishWeek = usePublishAvailabilityWeek();
   const createWeek = useCreateAvailabilityWeek();
-
-  const initialDraft = useMemo(() => slotsToDraftSchedule(week.slots), [week.slots]);
-  const [selectedDay, setSelectedDay] = useState<DayOfWeek>(() => {
-    const firstExisting = DAY_ORDER.find((day) => week.slots.some((slot) => slot.dayOfWeek === day));
-    return firstExisting ?? 1;
-  });
-  const [selectedDuration, setSelectedDuration] = useState<SessionBlockDuration>(30);
-  const [draft, setDraft] = useState<DraftSchedule>(() => initialDraft);
-
-  useEffect(() => {
-    setDraft(initialDraft);
-  }, [initialDraft]);
+  const updateWeek = useUpdateAvailabilityWeek();
+  const detailsQuery = useAvailabilityWeekDetails(week.weekId);
+  const details = detailsQuery.data?.week;
+  const [day, setDay] = useState<Day>(1);
+  const [duration, setDuration] = useState<Duration>(30);
+  const [starts, setStarts] = useState<SelectedTimes>(emptySelectedTimes);
+  const [invalidLegacy60Starts, setInvalidLegacy60Starts] = useState<number[]>([]);
+  const isCreate = !week.weekId;
+  const canEditExisting = isCreate || Boolean(details && details.isEditable && week.canEdit);
+  const pending = createWeek.isPending || updateWeek.isPending;
 
   useEffect(() => {
-    if (!DAY_ORDER.includes(selectedDay)) {
-      const firstExisting = DAY_ORDER.find((day) => week.slots.some((slot) => slot.dayOfWeek === day));
-      setSelectedDay(firstExisting ?? 1);
-    }
-  }, [selectedDay, week.slots]);
+    if (!details) return;
+    const timer = window.setTimeout(() => {
+      const initialized = slotsToSelectedTimes(details.slots);
+      setStarts(initialized.selected);
+      setInvalidLegacy60Starts(initialized.invalidLegacy60Starts);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [details]);
 
-  const isEditable = week.status === "DRAFT" || week.status === "PUBLISHED";
-  const isPublished = week.status === "PUBLISHED";
-  const isNotSet = week.status === "NOT_SET";
-
-  const isSlotInPast = useCallback(
-    (dayOfWeek: number, duration: number, startMinute: number) => {
-      try {
-        const [year, month, day] = week.weekStartDate.split("-").map(Number);
-        const weekStartUtc = new Date(Date.UTC(year, month - 1, day));
-        const targetDate = new Date(weekStartUtc.getTime() + dayOfWeek * 24 * 60 * 60 * 1000);
-
-        const formatter = new Intl.DateTimeFormat("en-US", {
-          timeZone: week.timezone,
-          year: "numeric",
-          month: "numeric",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-          second: "numeric",
-          hour12: false,
-        });
-        const nowParts = formatter.formatToParts(new Date());
-        const getPart = (type: string) => Number(nowParts.find((p) => p.type === type)?.value);
-        const tzNow = new Date(
-          Date.UTC(
-            getPart("year"),
-            getPart("month") - 1,
-            getPart("day"),
-            getPart("hour"),
-            getPart("minute"),
-            getPart("second"),
-          ),
-        );
-
-        const slotHour = Math.floor(startMinute / 60);
-        const slotMinute = startMinute % 60;
-        const slotDateInTz = new Date(
-          Date.UTC(
-            targetDate.getUTCFullYear(),
-            targetDate.getUTCMonth(),
-            targetDate.getUTCDate(),
-            slotHour,
-            slotMinute,
-          ),
-        );
-
-        return slotDateInTz.getTime() < tzNow.getTime();
-      } catch (e) {
-        return false;
-      }
-    },
-    [week.weekStartDate, week.timezone],
-  );
-
-  const selectedDaySlots = draft[selectedDay];
-  const selectedDayRanges30 = useMemo(
-    () => slotRangesFromStarts(selectedDaySlots[30], 30),
-    [selectedDaySlots],
-  );
-  const selectedDayRanges60 = useMemo(
-    () => slotRangesFromStarts(selectedDaySlots[60], 60),
-    [selectedDaySlots],
-  );
-
-  const totalWeeklySlots30 = useMemo(
-    () => DAY_ORDER.reduce<number>((total, day) => total + normalizeStarts(draft[day][30]).length, 0),
-    [draft],
-  );
-  const totalWeeklySlots60 = useMemo(
-    () => DAY_ORDER.reduce<number>((total, day) => total + normalizeStarts(draft[day][60]).length, 0),
-    [draft],
-  );
-
-  const selectedDayLabel = t(`weeks.days.${dayKeyFor(selectedDay)}`);
-  const selectedDurationLabel = selectedDuration === 60 ? t("weeks.duration60") : t("weeks.duration30");
-  const timeSteps = useMemo(
-    () => Array.from({ length: selectedDuration === 60 ? 24 : 48 }, (_, index) => index * selectedDuration),
-    [selectedDuration],
-  );
-  const timeGridColumnsClass =
-    selectedDuration === 60
-      ? "[grid-template-columns:repeat(auto-fit,minmax(7rem,1fr))]"
-      : "[grid-template-columns:repeat(auto-fit,minmax(5.75rem,1fr))]";
-  const isDirty = useMemo(
-    () => JSON.stringify(draft) !== JSON.stringify(initialDraft),
-    [draft, initialDraft],
-  );
-
-  function updateDurationStarts(day: DayOfWeek, duration: SessionBlockDuration, nextStarts: number[]) {
-    setDraft((current) => ({
-      ...current,
-      [day]: {
-        ...current[day],
-        [duration]: normalizeStarts(nextStarts),
-      },
-    }));
+  function toggle(minute: number) {
+    if (!canFitAvailabilityDuration(minute, duration)) return;
+    if (duration === 60 && minute % 60 !== 0) return;
+    const existingSlot = details?.slots.find((slot) => slot.dayOfWeek === day && slot.durationMinutes === duration && slot.startMinuteOfDay === minute);
+    if (existingSlot && (existingSlot.canEdit === false || existingSlot.canRemove === false)) return;
+    setStarts((current) => ({ ...current, [day]: { ...current[day], [duration]: current[day][duration].includes(minute) ? current[day][duration].filter((value) => value !== minute) : [...current[day][duration], minute].sort((a, b) => a - b) } }));
   }
 
-  function toggleSlotStart(day: DayOfWeek, minute: number) {
-    const duration = selectedDuration;
-    if (minute + duration > DAY_END_MINUTE) {
-      return;
-    }
-
-    const originalSlot = week.slots.find(
-      (s) =>
-        s.dayOfWeek === day &&
-        s.durationMinutes === duration &&
-        s.startMinuteOfDay === minute,
-    );
-    if (originalSlot && originalSlot.canEdit === false) {
-      return;
-    }
-
-    if (isSlotInPast(day, duration, minute)) {
-      return;
-    }
-
-    setDraft((current) => {
-      const currentStarts = current[day][duration];
-      const exists = currentStarts.includes(minute);
-      return {
-        ...current,
-        [day]: {
-          ...current[day],
-          [duration]: exists
-            ? currentStarts.filter((entry) => entry !== minute)
-            : normalizeStarts([...currentStarts, minute]),
-        },
-      };
-    });
-  }
-
-  function clearDuration(day: DayOfWeek, duration: SessionBlockDuration) {
-    const lockedStarts = week.slots
-      .filter((s) => s.dayOfWeek === day && s.durationMinutes === duration && s.canEdit === false)
-      .map((s) => s.startMinuteOfDay);
-    updateDurationStarts(day, duration, lockedStarts);
-  }
-
-  function clearSelectedDay() {
-    const lockedStarts30 = week.slots
-      .filter((s) => s.dayOfWeek === selectedDay && s.durationMinutes === 30 && s.canEdit === false)
-      .map((s) => s.startMinuteOfDay);
-    const lockedStarts60 = week.slots
-      .filter((s) => s.dayOfWeek === selectedDay && s.durationMinutes === 60 && s.canEdit === false)
-      .map((s) => s.startMinuteOfDay);
-
-    setDraft((current) => ({
-      ...current,
-      [selectedDay]: { 30: lockedStarts30, 60: lockedStarts60 },
-    }));
-  }
-
-  function handleSave() {
-    const slots = draftScheduleToSlots(draft);
-
-    if (isNotSet) {
-      createWeek.mutate({
-        weekStartDate: week.weekStartDate,
-        timezone: week.timezone,
-        slots,
-      });
-      return;
-    }
-
-    if (!week.id) {
-      return;
-    }
-
-    updateWeek.mutate({
-      weekId: week.id,
-      timezone: week.timezone,
-      slots,
-    });
-  }
-
-  function handlePublish() {
-    if (!week.id) return;
-    publishWeek.mutate(week.id);
-  }
-
-  function renderDurationRanges(duration: SessionBlockDuration) {
-    const ranges = duration === 30 ? selectedDayRanges30 : selectedDayRanges60;
-
-    return (
-      <div
-        className={cn(
-          "rounded-[22px] border px-4 py-4",
-          selectedDuration === duration
-            ? "border-primary/25 bg-primary-light/20"
-            : "border-border-light bg-surface-secondary/35",
-        )}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {duration === 30 ? t("weeks.duration30") : t("weeks.duration60")}
-            </p>
-            <p className="mt-1 text-xs text-text-muted">{t("weeks.slotCount", { count: ranges.length })}</p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => clearDuration(selectedDay, duration)}
-            disabled={!isEditable || ranges.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-white px-3 py-2 text-xs font-semibold text-text-secondary transition hover:border-error-200 hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary dark:hover:bg-error-500/10 dark:hover:text-error-300"
-          >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {t("weeks.clearDuration")}
-          </button>
-        </div>
-
-        {ranges.length === 0 ? (
-          <div className="mt-4 rounded-[18px] border border-dashed border-border-light bg-white px-4 py-4 text-sm text-text-muted dark:bg-surface-secondary">
-            {t("weeks.emptySelectedDay")}
-          </div>
-        ) : (
-          <div className="mt-4 space-y-2">
-            {ranges.map((range) => (
-              <div
-                key={`${range.startMinuteOfDay}-${range.endMinuteOfDay}-${duration}`}
-                className="flex items-center justify-between gap-3 rounded-[18px] border border-border-light bg-white px-4 py-3 dark:bg-surface-secondary"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-                    {formatRangeLabel(range, locale)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-text-muted">{selectedDayLabel}</p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateDurationStarts(
-                      selectedDay,
-                      duration,
-                      draft[selectedDay][duration].filter((start) => start !== range.startMinuteOfDay),
-                    )
-                  }
-                  disabled={!isEditable}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-border-light bg-white px-3 py-2 text-xs font-semibold text-text-secondary transition hover:border-error-200 hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary dark:hover:bg-error-500/10 dark:hover:text-error-300"
-                >
-                  {t("weeks.removeSlot")}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (isNotSet) {
-    return (
-      <SurfaceCard as="section" variant="section" className="space-y-4">
-        <SurfaceHeader
-          eyebrow={selectedKind === "current" ? t("weeks.currentLabel") : t("weeks.nextLabel")}
-          title={t("weeks.empty.title")}
-          description={selectedKind === "current" ? t("weeks.empty.current") : t("weeks.empty.next")}
-        />
-
-        <div className="rounded-[22px] border border-warning-200 bg-warning-50/75 px-4 py-4 text-sm leading-6 text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
-          <p className="font-semibold text-text-primary dark:text-white/95">{t("weeks.empty.noteTitle")}</p>
-          <p className="mt-1">{t("weeks.empty.noteBody")}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={createWeek.isPending}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_30px_-20px_rgba(68,161,148,0.42)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {createWeek.isPending ? t("weeks.actions.creatingDraft") : t("weeks.actions.createCurrentDraft")}
-          </button>
-        </div>
-      </SurfaceCard>
-    );
-  }
-
-  if (isPublished) {
-    return (
-      <SurfaceCard as="section" variant="section" className="space-y-4">
-        <SurfaceHeader
-          eyebrow={selectedKind === "current" ? t("weeks.currentLabel") : t("weeks.nextLabel")}
-          title={t("weeks.published.title")}
-          description={t("weeks.published.description")}
-          meta={<span className={cn("rounded-full border px-3 py-1 text-xs font-semibold", statusClass(week.status))}>{statusLabel(t, week.status)}</span>}
-        />
-
-        <div className="rounded-[22px] border border-success-200 bg-success-50/80 px-4 py-4 text-sm leading-6 text-success-700 dark:border-success-500/20 dark:bg-success-500/10 dark:text-success-300">
-          <p className="font-semibold text-text-primary dark:text-white/95">{t("weeks.published.safeTitle")}</p>
-          <p className="mt-1">{t("weeks.published.safeBody")}</p>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.weekRange")}</p>
-            <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{formatWeekRange(week, locale)}</p>
-          </div>
-          <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.status")}</p>
-            <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{statusLabel(t, week.status)}</p>
-          </div>
-          <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.patients")}</p>
-            <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{t("weeks.published.patientVisible")}</p>
-          </div>
-        </div>
-      </SurfaceCard>
-    );
+  function save() {
+    const slots = DAYS.flatMap((dayOfWeek) => ([30, 60] as Duration[]).flatMap((slotDuration) => starts[dayOfWeek][slotDuration].filter((startMinuteOfDay) => startMinuteOfDay % slotDuration === 0).map((startMinuteOfDay) => ({ dayOfWeek, durationMinutes: slotDuration, startMinuteOfDay, endMinuteOfDay: startMinuteOfDay + slotDuration }))));
+    if (isCreate) createWeek.mutate({ weekStartDate: week.weekStartDate, timezone, slots }, { onSuccess: onClose });
+    else if (week.weekId && details && canEditExisting) updateWeek.mutate({ weekId: week.weekId, timezone, slots }, { onSuccess: onClose });
   }
 
   return (
-    <SurfaceCard as="section" variant="section" className="space-y-6 overflow-hidden">
-      <SurfaceHeader
-        eyebrow={selectedKind === "current" ? t("weeks.currentLabel") : t("weeks.nextLabel")}
-        title={t("weeks.editor.title")}
-        description={t("weeks.editor.description")}
-        meta={<span className={cn("rounded-full border px-3 py-1 text-xs font-semibold", statusClass(week.status))}>{statusLabel(t, week.status)}</span>}
-      />
-
-      <div className="rounded-[22px] border border-primary/15 bg-primary-light/20 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
-        <p className="font-semibold text-text-primary dark:text-white/95">{t("weeks.editor.safetyTitle")}</p>
-        <ul className="mt-2 list-disc space-y-1 ps-5">
-          <li>{t("weeks.editor.safeOne")}</li>
-          <li>{t("weeks.editor.safeTwo")}</li>
-          <li>{t("weeks.editor.safeThree")}</li>
-          <li>{t("weeks.editor.safeFour")}</li>
-        </ul>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.weekRange")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{formatWeekRange(week, locale)}</p>
+    <Modal isOpen onClose={onClose} size="xl" ariaLabel={isCreate ? t("dialogs.editor.createTitle") : t("dialogs.editor.editTitle")}>
+      <ModalHeader eyebrow={t("dialogs.editor.eyebrow")} title={isCreate ? t("dialogs.editor.createTitle") : t("dialogs.editor.editTitle")} description={formatDateRange(week.weekStartDate, week.weekEndDate, locale)} />
+      <ModalBody className="space-y-5">
+        {detailsQuery.isLoading ? <p className="text-sm text-text-muted">{t("dialogs.loading")}</p> : null}
+        {detailsQuery.isError ? <p className="rounded-2xl border border-error-200 bg-error-50 px-4 py-3 text-sm leading-6 text-error-700">{t("dialogs.loadError")}</p> : null}
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("dialogs.editor.daysLabel")}>
+          {DAYS.map((dayValue) => <button key={dayValue} type="button" role="tab" aria-selected={day === dayValue} onClick={() => setDay(dayValue)} className={cn("rounded-xl border px-3 py-2 text-sm font-semibold", day === dayValue ? "border-primary bg-primary text-white" : "border-border-light bg-white text-text-secondary dark:bg-surface-secondary")}>{t(`editorLabels.${DAY_KEYS[dayValue]}`)}</button>)}
         </div>
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.status")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{statusLabel(t, week.status)}</p>
+        <div className="flex gap-2" role="tablist" aria-label={t("dialogs.editor.durationLabel")}>
+          {[30, 60].map((value) => <button key={value} type="button" role="tab" aria-selected={duration === value} onClick={() => setDuration(value as Duration)} className={cn("rounded-xl border px-3 py-2 text-sm font-semibold", duration === value ? "border-primary bg-primary text-white" : "border-border-light bg-white text-text-secondary dark:bg-surface-secondary")}>{t(`editorLabels.duration${value}`)}</button>)}
         </div>
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.card.patients")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{t("weeks.editor.patientOnlyPublished")}</p>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.stats.day")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{t(`weeks.days.${dayKeyFor(selectedDay)}`)}</p>
-        </div>
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.stats.count30")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{totalWeeklySlots30}</p>
-        </div>
-        <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm text-text-secondary dark:bg-surface-secondary">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">{t("weeks.stats.count60")}</p>
-          <p className="mt-1 font-semibold text-text-primary dark:text-white/95">{totalWeeklySlots60}</p>
-        </div>
-      </div>
-
-      <div className="rounded-[22px] border border-primary/15 bg-primary-light/20 px-4 py-4 text-sm text-text-secondary dark:border-primary/20 dark:bg-primary/10">
-        <p className="font-semibold text-text-primary dark:text-white/95">{t("weeks.schedule.heading")}</p>
-        <p className="mt-1 text-xs leading-6 text-text-secondary">{t("weeks.schedule.description", { duration: selectedDurationLabel })}</p>
-        <p className="mt-2 text-xs leading-6 text-text-muted">{t("weeks.schedule.independenceNote")}</p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-border-light bg-white px-4 py-3 text-xs text-text-secondary dark:bg-surface-secondary">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-25 px-3 py-1.5 font-semibold text-text-primary">
-          <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-          {t("weeks.stats.currentDay")}: <span className="text-primary">{selectedDayLabel}</span>
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-tertiary px-3 py-1.5 font-medium">
-          <Clock3 className="h-3.5 w-3.5 text-text-secondary" aria-hidden="true" />
-          {t("weeks.duration30")}: {totalWeeklySlots30}
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-tertiary px-3 py-1.5 font-medium">
-          <Clock3 className="h-3.5 w-3.5 text-text-secondary" aria-hidden="true" />
-          {t("weeks.duration60")}: {totalWeeklySlots60}
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium",
-            isDirty
-              ? "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-300"
-              : "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300",
-          )}
-        >
-          <Save className="h-3.5 w-3.5" aria-hidden="true" />
-          {isDirty ? t("weeks.stats.unsaved") : t("weeks.stats.saved")}
-        </span>
-      </div>
-
-      <div className="space-y-6">
-        <div className="rounded-[26px] border border-border-light bg-white px-5 py-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">{t("weeks.daySelectorHeading")}</h2>
-              <p className="mt-1 text-xs leading-6 text-text-secondary">{t("weeks.daySelectorHint")}</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={clearSelectedDay}
-              disabled={!isEditable}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-white px-3 py-2 text-xs font-semibold text-text-secondary transition hover:border-error-200 hover:bg-error-50 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary dark:hover:bg-error-500/10 dark:hover:text-error-300"
-            >
-              {t("weeks.clearDay")}
-            </button>
-          </div>
-
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-            {DAY_ORDER.map((day) => {
-              const isActive = day === selectedDay;
-              return (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => setSelectedDay(day)}
-                  className={cn(
-                    "shrink-0 rounded-2xl border px-4 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                    isActive
-                      ? "border-primary/35 bg-primary-light text-text-brand shadow-[0_12px_24px_-18px_rgba(68,161,148,0.4)]"
-                      : "border-border-light bg-white text-text-secondary hover:border-primary/25 hover:bg-brand-25 dark:bg-surface-secondary dark:hover:bg-white/5",
-                  )}
-                >
-                  {t(`weeks.days.${dayKeyFor(day)}`)}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.95fr)]">
-          <div className="space-y-6">
-            <div className="rounded-[26px] border border-border-light bg-white px-5 py-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">{t("weeks.timeGridHeading")}</h2>
-                  <p className="mt-1 text-xs leading-6 text-text-secondary">{t("weeks.timeGridHint")}</p>
-                </div>
-                <div className="inline-flex rounded-2xl border border-border-light bg-surface-secondary/60 p-1 dark:bg-white/5">
-                  {DURATIONS.map((duration) => {
-                    const isActive = selectedDuration === duration;
-                    return (
-                      <button
-                        key={duration}
-                        type="button"
-                        onClick={() => setSelectedDuration(duration)}
-                        className={cn(
-                          "rounded-xl px-4 py-2 text-sm font-semibold transition",
-                          isActive
-                            ? "bg-primary text-white shadow-[0_12px_24px_-18px_rgba(68,161,148,0.42)]"
-                            : "text-text-secondary hover:bg-white hover:text-text-primary dark:hover:bg-surface-secondary",
-                        )}
-                      >
-                        {duration === 30 ? t("weeks.duration30") : t("weeks.duration60")}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <p className="mt-3 text-xs text-text-muted">
-                {t("weeks.schedule.description", { duration: selectedDurationLabel })}
-              </p>
-
-              <div className={cn("mt-4 grid gap-2", timeGridColumnsClass)}>
-                {timeSteps.map((minute) => {
-                  const isActive = (draft[selectedDay][selectedDuration] ?? []).includes(minute);
-                  const originalSlot = week.slots.find(
-                    (s) =>
-                      s.dayOfWeek === selectedDay &&
-                      s.durationMinutes === selectedDuration &&
-                      s.startMinuteOfDay === minute,
-                  );
-                  const isLocked = originalSlot && originalSlot.canEdit === false;
-                  const isPast = isSlotInPast(selectedDay, selectedDuration, minute);
-                  const isDisabled = minute + selectedDuration > DAY_END_MINUTE || !isEditable || isLocked || isPast;
-                  return (
-                    <button
-                      key={minute}
-                      type="button"
-                      onClick={() => toggleSlotStart(selectedDay, minute)}
-                      disabled={isDisabled}
-                      aria-pressed={isActive}
-                      aria-label={`${selectedDurationLabel} ${formatTimeLabel(minute, locale)}`}
-                      title={
-                        isLocked
-                          ? originalSlot?.reasonCode === "PAST"
-                            ? "الوقت انتهى بالفعل"
-                            : "الوقت محجوز أو مرتبط بجلسة نشطة"
-                          : isPast
-                            ? "الوقت انتهى بالفعل"
-                            : undefined
-                      }
-                      className={cn(
-                        "w-full min-h-[3rem] rounded-2xl border px-2 py-2 text-[11px] font-semibold transition sm:text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
-                        isActive
-                          ? isLocked
-                            ? "border-primary/20 bg-primary-light/40 text-primary-dark/65"
-                            : "border-primary/35 bg-primary-light text-text-brand shadow-[0_12px_24px_-18px_rgba(68,161,148,0.36)]"
-                          : "border-border-light bg-white text-text-secondary hover:border-primary/25 hover:bg-brand-25 dark:bg-surface-secondary dark:hover:bg-white/5",
-                        isDisabled && "cursor-not-allowed opacity-40 hover:border-border-light hover:bg-white",
-                        isPast && !isLocked && "bg-gray-50 text-gray-400 dark:bg-neutral-800/30 dark:text-neutral-500",
-                      )}
-                    >
-                      {formatTimeLabel(minute, locale)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-[26px] border border-border-light bg-white px-5 py-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">{t("weeks.save.heading")}</h2>
-                  <p className="mt-1 text-xs leading-6 text-text-secondary">{t("weeks.save.hint")}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-[18px] border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
-                <p className="font-semibold text-text-primary dark:text-white/95">{t("weeks.save.noticeTitle")}</p>
-                <p className="mt-1">{t("weeks.save.noticeBody")}</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!isEditable || updateWeek.isPending || createWeek.isPending}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_30px_-20px_rgba(68,161,148,0.42)] transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" aria-hidden="true" />
-                {createWeek.isPending || updateWeek.isPending ? t("weeks.actions.savingDraft") : t("weeks.actions.saveDraft")}
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePublish}
-                disabled={!isEditable || publishWeek.isPending || !week.id}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-3 text-sm font-semibold text-text-primary transition hover:border-success-200 hover:bg-success-50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface-secondary dark:hover:bg-success-500/10"
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                {publishWeek.isPending ? t("weeks.actions.publishing") : t("weeks.actions.publishDraft")}
-              </button>
-
-              {!isEditable ? (
-                <p className="mt-3 text-xs leading-5 text-text-muted">{t("weeks.save.readOnlyNote")}</p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-[26px] border border-border-light bg-white px-5 py-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">{t("weeks.selectedRangesHeading")}</h2>
-                  <p className="mt-1 text-xs leading-6 text-text-secondary">{t("weeks.selectedRangesHint")}</p>
-                </div>
-                <span className="rounded-full border border-border-light bg-white px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-surface-secondary">
-                  {selectedDayLabel}
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-4">
-                {renderDurationRanges(30)}
-                {renderDurationRanges(60)}
-              </div>
-            </div>
-
-            <div className="rounded-[26px] border border-border-light bg-white px-5 py-5 shadow-sm dark:border-border-light dark:bg-surface-secondary">
-              <div className="flex items-start gap-3 rounded-[18px] border border-primary/15 bg-primary-light/20 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-                <p>{t("weeks.editor.bookedSessionsNote")}</p>
-              </div>
-              <p className="mt-3 text-xs leading-6 text-text-muted">{t("weeks.editor.patientBookingNote")}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </SurfaceCard>
+        <AvailabilityTimeGrid
+          duration={duration}
+          selectedStarts={starts[day][duration]}
+          protectedStarts={details?.slots.filter((slot) => slot.dayOfWeek === day && slot.durationMinutes === duration && (slot.canEdit === false || slot.canRemove === false)).map((slot) => slot.startMinuteOfDay) ?? []}
+          disabled={!canEditExisting}
+          locale={locale}
+          durationLabel={t(`editorLabels.duration${duration}`)}
+          fromLabel={t("timeRange.from")}
+          toLabel={t("timeRange.to")}
+          protectedLabel={t("dialogs.editor.protectedTime")}
+          endOfDayLabel={t("dialogs.editor.endOfDay")}
+          onToggle={toggle}
+        />
+        {invalidLegacy60Starts.length > 0 ? <p role="alert" className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-700">{t("dialogs.editor.invalidLegacy60", { count: invalidLegacy60Starts.length })}</p> : null}
+        <p className="text-xs leading-5 text-text-muted">{t("dialogs.editor.saveHint")}</p>
+      </ModalBody>
+      <ModalFooter><button type="button" onClick={onClose} className="rounded-xl border border-border-light px-4 py-2.5 text-sm font-semibold text-text-secondary">{t("actions.cancel")}</button><button type="button" onClick={save} disabled={!canEditExisting || pending} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{pending ? t("actions.saving") : t("actions.save")}</button></ModalFooter>
+    </Modal>
   );
+}
+
+export function PublishModal({ week, onClose }: { week: AvailabilityWeekWindowEntry; onClose: () => void }) {
+  const t = useTranslations("practitioner-area.availability");
+  const publish = usePublishAvailabilityWeek();
+  return <Modal isOpen onClose={onClose} size="sm" ariaLabel={t("dialogs.publish.title")}><ModalHeader title={t("dialogs.publish.title")} description={t("dialogs.publish.body")} /><ModalBody><div className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-700">{t("dialogs.publish.notice")}</div>{publish.error ? <p className="mt-3 text-sm text-error-600">{t("dialogs.publish.error")}</p> : null}</ModalBody><ModalFooter><button type="button" onClick={onClose} className="rounded-xl border border-border-light px-4 py-2.5 text-sm font-semibold text-text-secondary">{t("actions.cancel")}</button><button type="button" disabled={publish.isPending || !week.weekId} onClick={() => week.weekId && publish.mutate(week.weekId, { onSuccess: onClose })} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"><Send className="h-4 w-4" aria-hidden="true" />{publish.isPending ? t("actions.publishing") : t("actions.publish")}</button></ModalFooter></Modal>;
+}
+
+export function RepeatModal({ week, data, onClose }: { week: AvailabilityWeekWindowEntry; data: AvailabilityRollingWindowData; onClose: () => void }) {
+  const t = useTranslations("practitioner-area.availability");
+  const locale = useLocale();
+  const previewMutation = usePreviewAvailabilityWeekRepeat();
+  const confirmMutation = useConfirmAvailabilityWeekRepeat();
+  const [targets, setTargets] = useState<string[]>([]);
+  const [preview, setPreview] = useState<AvailabilityRepeatPreview | null>(null);
+  const [confirmation, setConfirmation] = useState<AvailabilityRepeatConfirmation | null>(null);
+  const key = useMemo(() => newIdempotencyKey("availability-repeat"), []);
+  const candidates = data.weeks.filter((entry) => entry.relativeWeekIndex > week.relativeWeekIndex);
+  const toggle = (date: string) => { setPreview(null); setTargets((current) => current.includes(date) ? current.filter((value) => value !== date) : [...current, date]); };
+  function previewRepeat() { if (!week.weekId || targets.length === 0) return; previewMutation.mutate({ sourceWeekId: week.weekId, targetWeekStartDates: targets, idempotencyKey: key }, { onSuccess: setPreview }); }
+  function confirmRepeat() { if (!week.weekId || !preview) return; confirmMutation.mutate({ sourceWeekId: week.weekId, operationId: preview.operationId, idempotencyKey: key }, { onSuccess: setConfirmation }); }
+  return <Modal isOpen onClose={onClose} size="lg" ariaLabel={t("dialogs.repeat.title")}><ModalHeader eyebrow={t("dialogs.repeat.eyebrow")} title={t("dialogs.repeat.title")} description={t("dialogs.repeat.sourceDescription", { range: formatDateRange(week.weekStartDate, week.weekEndDate, locale) })} /><ModalBody className="space-y-4"><div className="space-y-2">{candidates.map((candidate) => <label key={candidate.weekStartDate} className={cn("flex items-start gap-3 rounded-2xl border border-border-light bg-white px-4 py-3 dark:bg-surface-secondary", candidate.weekId ? "cursor-not-allowed opacity-70" : "cursor-pointer")}><input type="checkbox" checked={targets.includes(candidate.weekStartDate)} disabled={Boolean(candidate.weekId)} onChange={() => toggle(candidate.weekStartDate)} className="mt-0.5 h-4 w-4 accent-primary disabled:cursor-not-allowed" /><span className="flex-1 text-sm font-semibold text-text-primary dark:text-white/95"><span className="block">{formatDateRange(candidate.weekStartDate, candidate.weekEndDate, locale)}</span>{candidate.weekId ? <span className="mt-1 block text-xs font-normal text-text-muted">{t("dialogs.repeat.reasons.TARGET_ALREADY_EXISTS")}</span> : null}</span><StatusBadge status={candidate.status} /></label>)}</div>{preview ? <div className="rounded-2xl border border-primary/20 bg-primary-light/20 px-4 py-3 text-sm leading-6 text-text-secondary"><p className="font-semibold text-text-primary">{t("dialogs.repeat.previewTitle")}</p><div className="mt-2 grid gap-2 sm:grid-cols-2"><InfoItem label={t("dialogs.repeat.sessions30")} value={String(preview.sourceSlotCount30Minutes)} /><InfoItem label={t("dialogs.repeat.sessions60")} value={String(preview.sourceSlotCount60Minutes)} /></div>{preview.targets.map((target) => <div key={target.weekStartDate} className="mt-3 flex items-center justify-between gap-3"><span>{target.weekStartDate}</span><span>{t(`dialogs.repeat.reasons.${target.reasonCode}`, { count: target.copiedSlotCount })}</span></div>)}</div> : null}{confirmation ? <div className="rounded-2xl border border-success-500/20 bg-success-50 px-4 py-3 text-sm leading-6 text-success-700"><p className="font-semibold">{t("dialogs.repeat.confirmationTitle")}</p><div className="mt-2 grid gap-2 sm:grid-cols-2"><InfoItem label={t("dialogs.repeat.createdSchedules")} value={String(confirmation.targets.filter((target) => target.classification === "ELIGIBLE").length)} /><InfoItem label={t("dialogs.repeat.skippedSchedules")} value={String(confirmation.targets.filter((target) => target.classification !== "ELIGIBLE").length)} /></div></div> : null}{previewMutation.error || confirmMutation.error ? <p className="text-sm text-error-600">{t(`dialogs.repeat.errors.${repeatErrorKey(previewMutation.error || confirmMutation.error)}`)}</p> : null}</ModalBody><ModalFooter><button type="button" onClick={onClose} className="rounded-xl border border-border-light px-4 py-2.5 text-sm font-semibold text-text-secondary">{confirmation ? t("actions.close") : t("actions.cancel")}</button>{confirmation ? null : preview ? <button type="button" disabled={!preview.confirmationAllowed || confirmMutation.isPending} onClick={confirmRepeat} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{confirmMutation.isPending ? t("actions.confirming") : t("actions.confirm")}</button> : <button type="button" disabled={targets.length === 0 || previewMutation.isPending} onClick={previewRepeat} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{previewMutation.isPending ? t("actions.previewing") : t("actions.preview")}</button>}</ModalFooter></Modal>;
+}
+
+function WeekRow({ week, data, onOpen }: { week: AvailabilityWeekWindowEntry; data: AvailabilityRollingWindowData; onOpen: (state: Exclude<DialogState, null>) => void }) {
+  const t = useTranslations("practitioner-area.availability");
+  const locale = useLocale();
+  const canRepeat = Boolean(week.weekId && week.slotCount > 0);
+  const hasEmptyFutureWeek = data.weeks.some((entry) => entry.relativeWeekIndex > week.relativeWeekIndex && !entry.weekId);
+  return <div className="grid items-center gap-3 border-b border-border-light px-4 py-4 last:border-0 lg:grid-cols-[1.45fr_0.75fr_0.8fr_0.8fr_0.8fr_0.75fr_1.6fr]"><div><div className="flex flex-wrap items-center gap-2"><span className="font-semibold text-text-primary dark:text-white/95">{formatDateRange(week.weekStartDate, week.weekEndDate, locale)}</span>{week.isCurrentWeek ? <span className="rounded-full bg-primary-light px-2 py-1 text-[11px] font-semibold text-text-brand">{t("weekMeta.currentLabel")}</span> : null}</div></div><StatusBadge status={week.status} /><span className="text-sm text-text-secondary">{week.slotCount30Minutes || t("weekMeta.none")}</span><span className="text-sm text-text-secondary">{week.slotCount60Minutes || t("weekMeta.none")}</span><span className="text-sm text-text-secondary">{week.containsBookings ? t("weekMeta.bookings") : t("weekMeta.noBookings")}</span><span className="text-sm text-text-muted">{week.copiedFromWeekId ? t("weekMeta.copied") : t("weekMeta.original")}</span><div className="flex flex-wrap gap-2"><Link href={week.weekId ? `/practitioner/availability/weeks/${week.weekId}` : "/practitioner/availability"} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-2.5 py-2 text-xs font-semibold text-white"><Eye className="h-3.5 w-3.5" />{week.status === "NOT_SET" ? t("actions.setup") : t("actions.details")}</Link><ActionButton icon={<Pencil className="h-3.5 w-3.5" />} label={t("actions.edit")} disabled={!week.canCreate && !week.canEdit} onClick={() => onOpen({ type: "editor", week })} /><ActionButton icon={<Send className="h-3.5 w-3.5" />} label={t("actions.publish")} disabled={!week.canPublish} onClick={() => onOpen({ type: "publish", week })} />{canRepeat ? <ActionButton icon={<Repeat2 className="h-3.5 w-3.5" />} label={t("actions.repeat")} disabled={!hasEmptyFutureWeek} title={!hasEmptyFutureWeek ? t("dialogs.repeat.reasons.NO_EMPTY_FUTURE_WEEKS") : undefined} onClick={() => onOpen({ type: "repeat", week })} /> : null}</div></div>;
+}
+
+function ActionButton({ icon, label, onClick, disabled, title }: { icon: ReactNode; label: string; onClick: () => void; disabled?: boolean; title?: string }) {
+  return <button type="button" onClick={onClick} disabled={disabled} title={title} className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-white px-2.5 py-2 text-xs font-semibold text-text-secondary hover:border-primary/30 hover:text-text-brand disabled:cursor-not-allowed disabled:opacity-40 dark:bg-surface-secondary">{icon}{label}</button>;
 }
 
 export default function AvailabilityWeeksWorkspace({ data }: { data: AvailabilityWorkspaceData }) {
   const t = useTranslations("practitioner-area.availability");
-  const [selectedKind, setSelectedKind] = useState<WeekKind>(() => getDefaultSelectedKind(data.weeks));
   const locale = useLocale();
-  const copyWeek = useCopyAvailabilityWeekToNext();
-  const createCurrentWeek = useCreateAvailabilityWeek();
-
-  useEffect(() => {
-    setSelectedKind(getDefaultSelectedKind(data.weeks));
-  }, [data.weeks.currentWeek.status, data.weeks.nextWeek.status]);
-
-  const selectedWeek = selectedKind === "current" ? data.weeks.currentWeek : data.weeks.nextWeek;
-  const currentWeek = data.weeks.currentWeek;
-  const nextWeek = data.weeks.nextWeek;
-  const hasCurrentWeek = Boolean(currentWeek.id);
-  const canCopyToNext = hasCurrentWeek && currentWeek.status !== "ARCHIVED";
-
-  function handleCreateCurrentDraft() {
-    createCurrentWeek.mutate({
-      weekStartDate: currentWeek.weekStartDate,
-      timezone: data.weeks.timezone,
-      slots: [],
-    });
-  }
-
-  function handleCopyCurrentToNext() {
-    if (!currentWeek.id) return;
-    copyWeek.mutate(currentWeek.id);
-  }
-
-  const reminderMessage =
-    data.weeks.reminderState === "CURRENT_WEEK_MISSING"
-      ? t("weeks.reminder.currentMissing")
-      : data.weeks.reminderState === "NEXT_WEEK_MISSING"
-        ? t("weeks.reminder.nextMissing")
-        : data.weeks.reminderState === "DRAFT_EXISTS"
-          ? t("weeks.reminder.draftExists")
-          : t("weeks.reminder.none");
-
-  return (
-    <div className="space-y-6">
-      <SurfaceCard variant="section" className="space-y-5">
-        <SurfaceHeader
-          eyebrow={t("workflow.eyebrow")}
-          title={t("workflow.title")}
-          description={t("workflow.description")}
-        />
-
-        <div className="rounded-[22px] border border-primary/15 bg-primary-light/20 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
-          <p className="font-semibold text-text-primary dark:text-white/95">{t("workflow.bannerTitle")}</p>
-          <ul className="mt-2 list-disc space-y-1 ps-5">
-            <li>{t("workflow.bullets.thisWeekOnly")}</li>
-            <li>{t("workflow.bullets.publishedOnly")}</li>
-            <li>{t("workflow.bullets.nextWeekHidden")}</li>
-            <li>{t("workflow.bullets.bookedSessionsStay")}</li>
-          </ul>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 rounded-[22px] border border-border-light bg-white px-4 py-3 text-xs text-text-secondary dark:bg-surface-secondary">
-          <span className="rounded-full border border-border-light bg-surface-tertiary px-3 py-1.5 font-semibold text-text-primary">
-            {t("workflow.timezone")}: {data.weeks.timezone}
-          </span>
-          <span className="rounded-full border border-border-light bg-surface-tertiary px-3 py-1.5 font-medium">
-            {reminderMessage}
-          </span>
-        </div>
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          <WeekSummaryCard
-            week={currentWeek}
-            kind="current"
-            selected={selectedKind === "current"}
-            onSelect={() => setSelectedKind("current")}
-            onAction={() => {
-              setSelectedKind("current");
-              if (currentWeek.status === "NOT_SET") {
-                handleCreateCurrentDraft();
-              }
-            }}
-            actionLabel={weekActionLabel(t, currentWeek, "current")}
-            actionDisabled={createCurrentWeek.isPending}
-            actionDisabledReason={
-              currentWeek.status === "NOT_SET"
-                ? t("weeks.actions.createDraftHint")
-                : undefined
-            }
-          />
-
-          <WeekSummaryCard
-            week={nextWeek}
-            kind="next"
-            selected={selectedKind === "next"}
-            onSelect={() => setSelectedKind("next")}
-            onAction={() => {
-              setSelectedKind("next");
-              if (nextWeek.status === "NOT_SET" && canCopyToNext) {
-                handleCopyCurrentToNext();
-              }
-            }}
-            actionLabel={weekActionLabel(t, nextWeek, "next")}
-            actionDisabled={copyWeek.isPending || (nextWeek.status === "NOT_SET" && !canCopyToNext)}
-            actionDisabledReason={
-              nextWeek.status === "NOT_SET" && !canCopyToNext
-                ? t("weeks.actions.copyRequiresCurrent")
-                : nextWeek.status === "NOT_SET"
-                  ? t("weeks.actions.copyCurrentToNextHint")
-                  : undefined
-            }
-          />
-        </div>
-
-        <div className="rounded-[22px] border border-warning-200 bg-warning-50/75 px-4 py-4 text-sm leading-6 text-warning-700 dark:border-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300">
-          <p className="font-semibold text-text-primary dark:text-white/95">{t("workflow.protectedTitle")}</p>
-          <p className="mt-1">{t("workflow.protectedBody")}</p>
-        </div>
-      </SurfaceCard>
-
-      <WeekDraftEditor week={selectedWeek} selectedKind={selectedKind} />
-    </div>
-  );
+  const [dialog, setDialog] = useState<DialogState>(null);
+  const timezoneMissing = !data.timezone;
+  const currentEntry = data.weeks.find((week) => week.isCurrentWeek);
+  const upcomingEntry = data.weeks.find((week) => week.relativeWeekIndex === 1);
+  const reminder = currentEntry?.status === "NOT_SET" ? t("reminders.currentMissing") : upcomingEntry?.status === "NOT_SET" ? t("weekMeta.nextMissing") : null;
+  if (timezoneMissing) return <div className="rounded-[26px] border border-warning-200 bg-warning-50 px-5 py-6 text-sm leading-6 text-warning-700"><div className="flex items-start gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" /><div><p className="font-semibold">{t("timezone.requiredTitle")}</p><p className="mt-1">{t("timezone.requiredBody")}</p></div></div></div>;
+  return <div className="space-y-5">
+    <div className="rounded-[26px] border border-border-light bg-white p-5 shadow-sm dark:bg-surface-secondary sm:p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{t("workspace.eyebrow")}</p><h2 className="mt-2 text-xl font-semibold text-text-primary dark:text-white/95">{t("workspace.title")}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">{t("workspace.description")}</p></div><div className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-tertiary px-3 py-2 text-xs font-semibold text-text-secondary"><Clock3 className="h-4 w-4 text-primary" aria-hidden="true" />{data.timezone}</div></div><div className="mt-5 grid gap-3 sm:grid-cols-3"><InfoItem label={t("range.activeLabel")} value={formatDateRange(data.activeRange.startWeekDate, data.activeRange.endWeekDate, locale)} /><InfoItem label={t("range.futureWeeksLabel")} value={t("range.futureWeeksValue", { count: data.futureWeeksAllowed })} /><InfoItem label={t("range.weekStartsLabel")} value={t("range.sunday")} /></div></div>
+    {reminder ? <div role="alert" className="flex items-start gap-3 rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-700"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{reminder}</span></div> : null}
+    <div className="hidden overflow-hidden rounded-[26px] border border-border-light bg-white shadow-sm dark:bg-surface-secondary md:block"><div className="grid gap-3 border-b border-border-light bg-surface-tertiary px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted lg:grid-cols-[1.45fr_0.75fr_0.8fr_0.8fr_0.8fr_0.75fr_1.6fr]"><span>{t("table.week")}</span><span>{t("table.status")}</span><span>{t("table.sessions30")}</span><span>{t("table.sessions60")}</span><span>{t("table.bookings")}</span><span>{t("table.source")}</span><span>{t("table.actions")}</span></div>{data.weeks.map((week) => <WeekRow key={week.weekStartDate} week={week} data={data} onOpen={setDialog} />)}</div>
+    <div className="space-y-3 md:hidden">{data.weeks.map((week) => <div key={week.weekStartDate} className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:bg-surface-secondary"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-text-primary dark:text-white/95">{formatDateRange(week.weekStartDate, week.weekEndDate, locale)}</p><p className="mt-1 text-xs text-text-muted">{week.isCurrentWeek ? t("weekMeta.currentLabel") : week.weekStartDate}</p></div><StatusBadge status={week.status} /></div><div className="mt-4 grid grid-cols-2 gap-2 text-xs text-text-secondary"><span>{week.slotCount30Minutes || t("weekMeta.none")}</span><span>{week.slotCount60Minutes || t("weekMeta.none")}</span><span>{week.containsBookings ? t("weekMeta.bookings") : t("weekMeta.noBookings")}</span></div><div className="mt-4 flex flex-wrap gap-2">{week.weekId ? <Link href={`/practitioner/availability/weeks/${week.weekId}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-2.5 py-2 text-xs font-semibold text-white"><Eye className="h-3.5 w-3.5" />{week.status === "NOT_SET" ? t("actions.setup") : t("actions.details")}</Link> : null}<ActionButton icon={<Pencil className="h-3.5 w-3.5" />} label={week.status === "NOT_SET" ? t("actions.setup") : t("actions.edit")} disabled={!week.canCreate && !week.canEdit} onClick={() => setDialog({ type: "editor", week })} />{week.canPublish ? <ActionButton icon={<Send className="h-3.5 w-3.5" />} label={t("actions.publish")} onClick={() => setDialog({ type: "publish", week })} /> : null}{week.weekId && week.slotCount > 0 ? <ActionButton icon={<Repeat2 className="h-3.5 w-3.5" />} label={t("actions.repeat")} onClick={() => setDialog({ type: "repeat", week })} /> : null}</div></div>)}</div>
+    {dialog?.type === "editor" ? <ScheduleEditorModal week={dialog.week} timezone={data.timezone} onClose={() => setDialog(null)} /> : null}{dialog?.type === "publish" ? <PublishModal week={dialog.week} onClose={() => setDialog(null)} /> : null}{dialog?.type === "repeat" ? <RepeatModal week={dialog.week} data={data} onClose={() => setDialog(null)} /> : null}
+  </div>;
 }

@@ -47,6 +47,12 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.SYSTEM,
       },
       {
+        slug: 'admin.practitioner-application-changes-requested',
+        displayName: 'Practitioner Application Changes Requested',
+        description: 'Admin review requirements sent back to the practitioner',
+        category: NotificationCategory.SYSTEM,
+      },
+      {
         slug: 'payments.payment-succeeded',
         displayName: 'Payment Succeeded',
         description: 'Operational notification for successful payment capture',
@@ -261,6 +267,26 @@ export const notificationsSeedModule: SeedModule = {
         supportsPush: true,
         supportsInApp: false,
       },
+      {
+        slug: 'moderation.report-created',
+        displayName: 'Moderation Report Created',
+        description: 'Notification for authorized moderation reviewers',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
+      {
+        slug: 'moderation.report-reviewed',
+        displayName: 'Moderation Report Reviewed',
+        description: 'Safe notification to the report creator after review',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: true,
+      },
     ];
 
     for (const type of typeSeed) {
@@ -356,6 +382,24 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: null,
             titleTemplate: 'تم رفض الطلب',
             bodyTemplate: 'تم رفض طلب انضمامك كمعالج. السبب: {{reason}}',
+          },
+        },
+      },
+      {
+        typeSlug: 'admin.practitioner-application-changes-requested',
+        channel: NotificationChannel.IN_APP,
+        slug: 'admin.practitioner-application-changes-requested.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Changes requested',
+            bodyTemplate:
+              'Please review and complete the requested changes: {{reason}}',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'مطلوب تعديلات',
+            bodyTemplate: 'يرجى مراجعة واستكمال التعديلات المطلوبة: {{reason}}',
           },
         },
       },
@@ -926,6 +970,41 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: null,
             titleTemplate: 'انشر إتاحة الأسبوع القادم',
             bodyTemplate: 'انشر إتاحة الأسبوع القادم ليستمر المرضى في الحجز.',
+          },
+        },
+      },
+      {
+        typeSlug: 'moderation.report-created',
+        channel: NotificationChannel.IN_APP,
+        slug: 'moderation.report-created.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'New moderation report',
+            bodyTemplate: 'A new report is ready for authorized review.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'بلاغ إشراف جديد',
+            bodyTemplate: 'يوجد بلاغ جديد يحتاج إلى مراجعة من الفريق المختص.',
+          },
+        },
+      },
+      {
+        typeSlug: 'moderation.report-reviewed',
+        channel: NotificationChannel.IN_APP,
+        slug: 'moderation.report-reviewed.in-app.v1',
+        translations: {
+          en: {
+            subjectTemplate: null,
+            titleTemplate: 'Report reviewed',
+            bodyTemplate:
+              'Your report has been reviewed by the moderation team.',
+          },
+          ar: {
+            subjectTemplate: null,
+            titleTemplate: 'تمت مراجعة البلاغ',
+            bodyTemplate: 'تمت مراجعة البلاغ من فريق الإشراف.',
           },
         },
       },

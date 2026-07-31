@@ -9,6 +9,7 @@
  * profile API can extend the same shape without duplicating the mapping logic.
  */
 import { serverGet } from "@/lib/api/server-http-client";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import type {
   PublicPractitioner,
   PractitionerFiltersMetadata,
@@ -78,15 +79,16 @@ function buildInitials(displayName: string | null): string {
 
 export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem): PublicPractitioner {
   const displayName = item.displayName ?? "";
-  const title = item.professionalTitle ?? "";
+  const titleAr = getProfessionalTitleLabel(item.professionalTitle, "ar");
+  const titleEn = getProfessionalTitleLabel(item.professionalTitle, "en");
 
   return {
     id: item.slug,
     slug: item.slug,
     nameAr: displayName,
     nameEn: displayName,
-    titleAr: title,
-    titleEn: title,
+    titleAr,
+    titleEn,
     specialties: item.specialties.map((s) => s.slug),
     languages: item.languages ?? [],
     country: (item.countryCode ?? "").toLowerCase(),
@@ -150,6 +152,7 @@ export async function fetchPublicPractitioners(
       specialtySlug: params?.specialtySlug,
       specialtyCategorySlug: params?.specialtyCategorySlug,
       language: params?.language,
+      languageCodes: params?.languageCodes?.length ? params.languageCodes.join(",") : undefined,
       country: params?.country,
       practitionerKind: params?.practitionerKind,
       gender: params?.gender,

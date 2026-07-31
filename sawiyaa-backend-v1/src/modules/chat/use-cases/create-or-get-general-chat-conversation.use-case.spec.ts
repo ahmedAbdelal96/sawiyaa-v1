@@ -12,6 +12,7 @@ import { CreateOrGetGeneralChatConversationUseCase } from './create-or-get-gener
 describe('CreateOrGetGeneralChatConversationUseCase', () => {
   const generalChatRepository = {
     findByConversationRef: jest.fn(),
+    findConversationsBySessionId: jest.fn().mockResolvedValue([]),
     createConversation: jest.fn(),
   } as unknown as GeneralChatRepository;
 

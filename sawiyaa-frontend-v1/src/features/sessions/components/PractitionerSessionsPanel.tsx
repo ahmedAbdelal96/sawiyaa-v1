@@ -23,6 +23,7 @@ import { usePractitionerProfile } from "@/features/practitioners/hooks/use-pract
 import { formatPractitionerOrViewerDateTime, formatTimeZoneLabel } from "@/lib/time-formatting";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type { SessionListItem } from "../types/sessions.types";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 type PractitionerPresentationFilter =
   | "all"
@@ -111,9 +112,7 @@ export default function PractitionerSessionsPanel() {
         accessor: (row) => row.sessionCode,
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate font-mono text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.sessionCode}
-            </p>
+            <SessionCodeReference sessionId={row.id} sessionCode={row.sessionCode} href={`/practitioner/sessions/${row.id}`} copyable />
           </div>
         ),
       },

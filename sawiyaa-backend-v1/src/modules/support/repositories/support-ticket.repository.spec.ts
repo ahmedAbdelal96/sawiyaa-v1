@@ -41,4 +41,38 @@ describe('SupportTicketRepository internal notes', () => {
     });
     expect(messageCreate).not.toHaveBeenCalled();
   });
+
+  it('reuses an existing open self-service ticket without creating a conversation', async () => {
+    const existingTicket = { id: 'ticket-open', conversationId: 'conversation-open' };
+    const queryRaw = jest.fn().mockResolvedValue([]);
+    const findFirst = jest.fn().mockResolvedValue(existingTicket);
+    const conversationCreate = jest.fn();
+    const supportTicketCreate = jest.fn();
+    const prisma = {
+      $transaction: jest.fn(async (callback: (tx: unknown) => unknown) =>
+        callback({
+          $queryRaw: queryRaw,
+          supportTicket: { findFirst, create: supportTicketCreate },
+          conversation: { create: conversationCreate },
+        }),
+      ),
+    } as unknown as PrismaService;
+
+    const result = await new SupportTicketRepository(prisma).createTicket({
+      openedByUserId: 'user-1',
+      createdByRole: 'PATIENT',
+      actorKind: 'PATIENT',
+      patientProfileId: 'patient-1',
+      category: 'GENERAL',
+      subject: 'Need help',
+      description: 'Please help',
+      priority: SupportTicketPriority.NORMAL,
+    });
+
+    expect(result).toBe(existingTicket);
+    expect(queryRaw).toHaveBeenCalledTimes(1);
+    expect(findFirst).toHaveBeenCalledTimes(1);
+    expect(conversationCreate).not.toHaveBeenCalled();
+    expect(supportTicketCreate).not.toHaveBeenCalled();
+  });
 });

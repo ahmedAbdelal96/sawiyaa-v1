@@ -1,4 +1,4 @@
-﻿export type FinanceMoneyFormatOptions = {
+export type FinanceMoneyFormatOptions = {
   fallbackText?: string;
   minimumFractionDigits?: number;
   maximumFractionDigits?: number;
@@ -34,9 +34,13 @@ export function formatLocalizedMoney(input: LocalizedMoneyInput): string | null 
     return null;
   }
 
+  const isInteger = numeric % 1 === 0;
+  const minDecimals = isInteger ? 0 : (input.minimumFractionDigits ?? 0);
+  const maxDecimals = isInteger ? 0 : (input.maximumFractionDigits ?? 2);
+
   const formattedAmount = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: input.minimumFractionDigits ?? 0,
-    maximumFractionDigits: input.maximumFractionDigits ?? 2,
+    minimumFractionDigits: minDecimals,
+    maximumFractionDigits: maxDecimals,
   }).format(numeric);
   const isArabic = input.locale.toLowerCase().startsWith("ar");
 

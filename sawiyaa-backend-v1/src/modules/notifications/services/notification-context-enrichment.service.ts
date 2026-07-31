@@ -222,6 +222,7 @@ export class NotificationContextEnrichmentService {
               where: { id: { in: Array.from(sessionIds) } },
               select: {
                 id: true,
+                sessionCode: true,
                 status: true,
                 scheduledStartAt: true,
                 patient: {
@@ -334,6 +335,7 @@ export class NotificationContextEnrichmentService {
               context.practitionerName =
                 buildPractitionerName(session.practitioner) ?? context.practitionerName;
               context.sessionStartAt = session.scheduledStartAt?.toISOString();
+              context.sessionCode = session.sessionCode;
               context.sessionStatus = session.status;
             }
 
@@ -368,6 +370,7 @@ export class NotificationContextEnrichmentService {
               asString(session.patient?.user?.displayName);
             context.practitionerName = buildPractitionerName(session.practitioner);
             context.sessionStartAt = session.scheduledStartAt?.toISOString();
+            context.sessionCode = session.sessionCode;
             context.sessionStatus = session.status;
 
             primaryAction.kind = 'session';
@@ -403,6 +406,7 @@ export class NotificationContextEnrichmentService {
               asString(session.patient?.user?.displayName);
             context.practitionerName = buildPractitionerName(session.practitioner);
             context.sessionStartAt = session.scheduledStartAt?.toISOString();
+            context.sessionCode = session.sessionCode;
             context.sessionStatus = session.status;
 
             primaryAction.kind = 'session';

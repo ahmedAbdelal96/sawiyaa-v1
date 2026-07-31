@@ -23,8 +23,8 @@ export class ListAdminPayoutsUseCase {
       ? new Date(input.query.createdTo)
       : undefined;
 
-    const [items, totalItems] =
-      await this.settlementPayoutRepository.listSettlementPayouts({
+    const [itemsResult, summary] = await Promise.all([
+      this.settlementPayoutRepository.listSettlementPayouts({
         practitionerId: input.query.practitionerId,
         payoutMethod: input.query.payoutMethod,
         currencyCode: input.query.currencyCode,
@@ -32,13 +32,24 @@ export class ListAdminPayoutsUseCase {
         createdTo,
         skip,
         take: limit,
-      });
+      }),
+      this.settlementPayoutRepository.summarizeSettlementPayouts({
+        practitionerId: input.query.practitionerId,
+        payoutMethod: input.query.payoutMethod,
+        currencyCode: input.query.currencyCode,
+        createdFrom,
+        createdTo,
+      }),
+    ]);
+
+    const [items, totalItems] = itemsResult;
 
     return {
       success: true as const,
       data: {
         items: items.map((item) => this.mapper.toAdminPayoutHistory(item)),
         pagination: buildPagination({ page, limit, totalItems }),
+        summary,
       },
     };
   }

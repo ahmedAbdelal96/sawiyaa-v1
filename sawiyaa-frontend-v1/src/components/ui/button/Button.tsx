@@ -6,6 +6,7 @@ type ButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "children
   variant?: "primary" | "outline" | "secondary" | "ghost" | "danger";
   startIcon?: ReactNode;
   endIcon?: ReactNode;
+  loading?: boolean;
   "data-testid"?: string;
 };
 
@@ -18,6 +19,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = "",
   disabled = false,
+  loading = false,
   type = "button",
   ...props
 }) => {
@@ -52,7 +54,7 @@ const Button: React.FC<ButtonProps> = ({
           : `${variantClasses[variant]} hover:-translate-y-0.5`
       }`}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || loading}
       {...props}
     >
       {startIcon && <span className="flex items-center">{startIcon}</span>}

@@ -14,6 +14,9 @@ import {
 } from '../repositories/practitioner-availability-week.repository';
 import { AvailabilityWeekMapper } from '../mappers/availability-week.mapper';
 import { AvailabilityWeekOverviewService } from '../services/availability-week-overview.service';
+import { assertIanaTimeZoneInput } from '@common/utils/timezone.util';
+import { AvailabilityWeekCalendarService } from '../services/availability-week-calendar.service';
+import { assertWeeklySlotsHaveValidLocalTimes } from '../utils/availability-local-time.util';
 
 @Injectable()
 export class PublishPractitionerAvailabilityWeekUseCase {
@@ -23,6 +26,7 @@ export class PublishPractitionerAvailabilityWeekUseCase {
     private readonly availabilityWeekOverviewService: AvailabilityWeekOverviewService,
     private readonly availabilityWeekMapper: AvailabilityWeekMapper,
     private readonly i18nService: I18nService,
+    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
   ) {}
 
   async execute(input: {
@@ -52,6 +56,19 @@ export class PublishPractitionerAvailabilityWeekUseCase {
       });
     }
 
+    const practitionerTimezone = assertIanaTimeZoneInput(practitioner.user.timezone, {
+      messageKey: 'availability.errors.timezoneRequired',
+      error: 'AVAILABILITY_TIMEZONE_REQUIRED',
+    });
+    assertIanaTimeZoneInput(week.timezone, {
+      messageKey: 'availability.errors.invalidTimezone',
+      error: 'AVAILABILITY_INVALID_TIMEZONE',
+    });
+    this.availabilityWeekCalendarService.assertWeekInsideActiveWindow({
+      weekStartDate: week.weekStartDate,
+      timezone: practitionerTimezone,
+    });
+
     if (week.status !== AvailabilityWeekStatus.DRAFT) {
       throw new ConflictException({
         messageKey: 'availability.errors.weekNotDraft',
@@ -65,6 +82,16 @@ export class PublishPractitionerAvailabilityWeekUseCase {
         errorCode: 'AVAILABILITY_WEEK_NOT_PUBLISHABLE',
       });
     }
+
+    assertWeeklySlotsHaveValidLocalTimes({
+      weekStartDate: week.weekStartDate,
+      timezone: week.timezone,
+      slots: week.slots.map((slot) => ({
+        dayOfWeek: this.toDayOfWeek(slot.weekday),
+        startMinuteOfDay: slot.startMinuteOfDay,
+        endMinuteOfDay: slot.endMinuteOfDay,
+      })),
+    });
 
     const published = await this.availabilityWeekRepository.publishWeek(week.id);
     const overview = await this.availabilityWeekOverviewService.buildForPractitioner(
@@ -85,7 +112,22 @@ export class PublishPractitionerAvailabilityWeekUseCase {
         weekEndDate: week.weekEndDate,
         timezone: week.timezone,
       }),
-      ...overview,
+      weekStartsOn: overview.weekStartsOn,
+      futureWeeksAllowed: overview.futureWeeksAllowed,
+      activeRange: overview.activeRange,
+      weeks: overview.weeks,
     };
+  }
+
+  private toDayOfWeek(weekday: import('@prisma/client').AvailabilityWeekday): number {
+    return [
+      'SUNDAY',
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+    ].indexOf(weekday);
   }
 }

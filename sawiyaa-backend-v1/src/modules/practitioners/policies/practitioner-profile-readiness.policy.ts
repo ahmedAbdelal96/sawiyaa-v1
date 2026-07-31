@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PractitionerReadinessViewModel } from '../types/practitioner.types';
+import { PractitionerBaselineReadinessViewModel } from '../types/practitioner.types';
 
 /**
  * Readiness policy defines deterministic baseline completion requirements.
@@ -19,11 +19,12 @@ export class PractitionerProfileReadinessPolicy {
     credentialCount: number;
     hasIdentityEvidence: boolean;
     hasAcademicCertificate: boolean;
+    hasProfessionalAuthorization?: boolean;
     hasPayoutDestination: boolean;
     hasPayoutAccountHolderName: boolean;
     isAccountActive: boolean;
     isPractitionerOtpVerified: boolean;
-  }): PractitionerReadinessViewModel {
+  }): PractitionerBaselineReadinessViewModel {
     const checks = {
       hasDisplayName: Boolean(input.displayName?.trim()),
       hasProfessionalTitle: Boolean(input.professionalTitle?.trim()),
@@ -37,6 +38,7 @@ export class PractitionerProfileReadinessPolicy {
       hasCredential: input.credentialCount > 0,
       hasIdentityEvidence: input.hasIdentityEvidence,
       hasAcademicCertificate: input.hasAcademicCertificate,
+      hasProfessionalAuthorization: input.hasProfessionalAuthorization ?? true,
       hasPayoutDestination: input.hasPayoutDestination,
       hasPayoutAccountHolderName: input.hasPayoutAccountHolderName,
       isAccountActive: input.isAccountActive,
@@ -78,6 +80,9 @@ export class PractitionerProfileReadinessPolicy {
     if (!checks.hasAcademicCertificate) {
       missingRequirements.push('academicCertificate');
     }
+    if (!checks.hasProfessionalAuthorization) {
+      missingRequirements.push('professionalAuthorization');
+    }
     if (!checks.hasPayoutDestination) {
       missingRequirements.push('payoutDestination');
     }
@@ -103,6 +108,7 @@ export class PractitionerProfileReadinessPolicy {
       checks.hasCredential &&
       checks.hasIdentityEvidence &&
       checks.hasAcademicCertificate &&
+      checks.hasProfessionalAuthorization &&
       checks.hasPayoutDestination &&
       checks.hasPayoutAccountHolderName;
 

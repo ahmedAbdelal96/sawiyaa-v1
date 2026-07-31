@@ -14,6 +14,10 @@ import { useTranslation } from "react-i18next";
 import { LoadingState, ErrorState } from "../../../src/components/ui";
 import { listSpecialties } from "../../../src/features/specialties/api";
 import { getLocalizedSpecialtyName } from "../../../src/features/specialties/localized";
+import {
+  getLocalizedLanguageOptions,
+  normalizeSupportedLanguageCodes,
+} from "../../../src/features/languages/reference-data";
 
 type ParamsShape = Record<string, string | string[]>;
 
@@ -50,7 +54,12 @@ export default function DiscoveryFiltersScreen() {
   const [specialtySlug, setSpecialtySlug] = useState(
     baseParams.specialtySlug || "",
   );
-  const [language, setLanguage] = useState(baseParams.language || "");
+  const [languageCodes, setLanguageCodes] = useState(() =>
+    normalizeSupportedLanguageCodes([
+      ...(baseParams.languageCodes || "").split(","),
+      ...(baseParams.language ? [baseParams.language] : []),
+    ]),
+  );
   const [gender, setGender] = useState(baseParams.gender || "");
   const [onlineNow, setOnlineNow] = useState(baseParams.onlineNow || "");
   const [availableToday, setAvailableToday] = useState(
@@ -99,15 +108,7 @@ export default function DiscoveryFiltersScreen() {
       }));
   }, [i18n.language, specialtiesQuery.data?.specialties]);
 
-  const languageChoices = useMemo(
-    () => [
-      { id: "", label: t("discovery.filters.any") },
-      { id: "ar", label: t("matching.question.language.ar") },
-      { id: "en", label: t("matching.question.language.en") },
-      { id: "fr", label: t("matching.question.language.fr") },
-    ],
-    [t],
-  );
+  const languageChoices = useMemo(() => getLocalizedLanguageOptions(t), [t]);
 
   const sortChoices = [
     { id: "", labelKey: "discovery.filters.sortNone" },
@@ -123,7 +124,8 @@ export default function DiscoveryFiltersScreen() {
         ...baseParams,
         page: "1",
         specialtySlug: specialtySlug || undefined,
-        language: language || undefined,
+        languageCodes: languageCodes.length > 0 ? languageCodes.join(",") : undefined,
+        language: languageCodes.length === 1 ? languageCodes[0] : undefined,
         gender: gender || undefined,
         onlineNow: onlineNow || undefined,
         availableToday: availableToday || undefined,
@@ -140,7 +142,7 @@ export default function DiscoveryFiltersScreen() {
 
   const clearFilters = () => {
     setSpecialtySlug("");
-    setLanguage("");
+    setLanguageCodes([]);
     setGender("");
     setOnlineNow("");
     setAvailableToday("");
@@ -192,10 +194,11 @@ export default function DiscoveryFiltersScreen() {
         </FilterSection>
 
         <FilterSection title={t("discovery.filters.language")}>
-          <ChoiceRow
-            value={language}
-            onChange={setLanguage}
+          <MultiChoiceRow
+            values={languageCodes}
+            onChange={(values) => setLanguageCodes(normalizeSupportedLanguageCodes(values))}
             choices={languageChoices}
+            anyLabel={t("discovery.filters.any")}
           />
         </FilterSection>
 
@@ -408,6 +411,75 @@ function ChoiceRow({
               color={
                 selected ? theme.colors.primary : theme.colors.textSecondary
               }
+              weight={selected ? "600" : "normal"}
+              style={styles.choiceText}
+            >
+              {choice.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function MultiChoiceRow({
+  values,
+  onChange,
+  choices,
+  anyLabel,
+}: {
+  values: string[];
+  onChange: (values: string[]) => void;
+  choices: Array<{ id: string; label: string }>;
+  anyLabel: string;
+}) {
+  const { theme } = useTheme();
+
+  return (
+    <View style={styles.choiceWrap}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => onChange([])}
+        style={[
+          styles.choice,
+          {
+            borderColor: values.length === 0 ? theme.colors.primary : theme.colors.borderStrong,
+            backgroundColor: values.length === 0 ? theme.colors.primaryLight : theme.colors.surface,
+          },
+        ]}
+      >
+        <Text
+          color={values.length === 0 ? theme.colors.primary : theme.colors.textSecondary}
+          weight={values.length === 0 ? "600" : "normal"}
+          style={styles.choiceText}
+        >
+          {anyLabel}
+        </Text>
+      </TouchableOpacity>
+      {choices.map((choice) => {
+        const selected = values.includes(choice.id);
+        return (
+          <TouchableOpacity
+            key={choice.id}
+            activeOpacity={0.8}
+            onPress={() =>
+              onChange(
+                selected
+                  ? values.filter((value) => value !== choice.id)
+                  : [...values, choice.id],
+              )
+            }
+            style={[
+              styles.choice,
+              {
+                borderColor: selected ? theme.colors.primary : theme.colors.borderStrong,
+                backgroundColor: selected ? theme.colors.primaryLight : theme.colors.surface,
+              },
+            ]}
+          >
+            <Text
+              color={selected ? theme.colors.primary : theme.colors.textSecondary}
               weight={selected ? "600" : "normal"}
               style={styles.choiceText}
             >

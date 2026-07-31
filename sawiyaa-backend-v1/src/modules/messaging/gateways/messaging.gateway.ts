@@ -133,14 +133,18 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayInit {
     @MessageBody() payload: { conversationId: string; lastReadMessageId: string },
   ) {
     try {
+      const actor = this.actor(client);
       const result = await this.messaging.markRead(
-        this.actor(client),
+        actor,
         payload.conversationId,
         payload.lastReadMessageId,
       );
       this.server
         .to(this.room(payload.conversationId))
-        .emit('messages:read', result.item);
+        .emit('messages:read', {
+          ...result.item,
+          readerUserId: actor.id,
+        });
       return { ok: true, ...result };
     } catch (error) {
       return this.failure(error);

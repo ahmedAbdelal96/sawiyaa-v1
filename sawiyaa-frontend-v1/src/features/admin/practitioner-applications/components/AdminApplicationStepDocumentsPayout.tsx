@@ -12,7 +12,7 @@ type CredentialRow = {
   expiresAtLabel: string;
   notesLabel: string;
   notesValue: string;
-  fileUrl: string | null;
+  viewUrl: string | null;
   reviewNoteDraft: string;
   reviewNotePlaceholder: string;
   reviewActionHint?: string | null;
@@ -196,9 +196,9 @@ export default function AdminApplicationStepDocumentsPayout({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {cred.fileUrl ? (
+                      {cred.viewUrl ? (
                         <a
-                          href={cred.fileUrl}
+                          href={cred.viewUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"

@@ -24,6 +24,8 @@ export class AccountingReconciliationRepository {
     const paymentSearchFilters: Prisma.PaymentWhereInput[] = query
       ? [
           ...(isUuid(query) ? [{ id: query }] : []),
+          { session: { sessionCode: { equals: query, mode: queryMode } } },
+          { session: { sessionCode: { startsWith: query, mode: queryMode } } },
           { providerPaymentRef: { contains: query, mode: queryMode } },
           { providerOrderRef: { contains: query, mode: queryMode } },
           { providerCustomerRef: { contains: query, mode: queryMode } },
@@ -52,6 +54,8 @@ export class AccountingReconciliationRepository {
       },
       select: {
         id: true,
+        sessionId: true,
+        session: { select: { id: true, sessionCode: true } },
         practitionerId: true,
         currencyCode: true,
         amountTotal: true,
@@ -84,6 +88,8 @@ export class AccountingReconciliationRepository {
     const refundSearchFilters: Prisma.RefundWhereInput[] = query
       ? [
           ...(isUuid(query) ? [{ id: query }, { paymentId: query }] : []),
+          { session: { sessionCode: { equals: query, mode: queryMode } } },
+          { session: { sessionCode: { startsWith: query, mode: queryMode } } },
           { providerRefundRef: { contains: query, mode: queryMode } },
           { refundReason: { contains: query, mode: queryMode } },
         ]
@@ -106,6 +112,7 @@ export class AccountingReconciliationRepository {
         id: true,
         paymentId: true,
         sessionId: true,
+        session: { select: { id: true, sessionCode: true } },
         currencyCode: true,
         amount: true,
         processedAt: true,
@@ -129,7 +136,7 @@ export class AccountingReconciliationRepository {
     });
   }
 
-  listRecordedPayouts(input: {
+  async listRecordedPayouts(input: {
     from: Date;
     to: Date;
     currencyCode?: string;
@@ -138,16 +145,26 @@ export class AccountingReconciliationRepository {
   }) {
     const query = input.query?.trim();
     const queryMode: Prisma.QueryMode = 'insensitive';
+    const sessionCodeMatches = query
+      ? await this.prisma.session.findMany({
+          where: { sessionCode: { startsWith: query, mode: queryMode } },
+          select: { id: true },
+        })
+      : [];
+    const sessionCodeMatchIds = sessionCodeMatches.map((session) => session.id);
     const payoutSearchFilters: Prisma.PractitionerSettlementPayoutWhereInput[] =
       query
         ? [
             ...(isUuid(query) ? [{ id: query }, { settlementId: query }] : []),
+            ...(sessionCodeMatchIds.length > 0
+              ? [{ settlement: { sourceReview: { sessionId: { in: sessionCodeMatchIds } } } }]
+              : []),
             { externalPayoutRef: { contains: query, mode: queryMode } },
             { notes: { contains: query, mode: queryMode } },
           ]
         : [];
 
-    return this.prisma.practitionerSettlementPayout.findMany({
+    const payouts = await this.prisma.practitionerSettlementPayout.findMany({
       where: {
         effectiveAt: {
           gte: input.from,
@@ -161,6 +178,11 @@ export class AccountingReconciliationRepository {
         id: true,
         practitionerId: true,
         settlementId: true,
+        settlement: {
+          select: {
+            sourceReview: { select: { sessionId: true } },
+          },
+        },
         amountPaid: true,
         currencyCode: true,
         effectiveAt: true,
@@ -172,6 +194,26 @@ export class AccountingReconciliationRepository {
           },
         },
       },
+    });
+    const sessionIds = payouts
+      .map((payout) => payout.settlement.sourceReview?.sessionId)
+      .filter((id): id is string => Boolean(id));
+    const sessions = sessionIds.length === 0
+      ? []
+      : await this.prisma.session.findMany({
+          where: { id: { in: sessionIds } },
+          select: { id: true, sessionCode: true },
+        });
+    const sessionById = new Map(sessions.map((session) => [session.id, session]));
+    return payouts.map((payout) => {
+      const sessionId = payout.settlement.sourceReview?.sessionId;
+      return {
+        ...payout,
+        settlement: {
+          ...payout.settlement,
+          session: sessionId ? sessionById.get(sessionId) ?? null : null,
+        },
+      };
     });
   }
 

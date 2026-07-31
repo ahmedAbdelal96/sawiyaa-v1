@@ -7,6 +7,7 @@ import { PractitionerApplicationEligibilityPolicy } from '../policies/practition
 import { PractitionerApplicationRepository } from '../repositories/practitioner-application.repository';
 import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
+import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
 
 /**
  * Returns current practitioner's latest application status summary with readiness/eligibility context.
@@ -21,6 +22,7 @@ export class GetPractitionerApplicationStatusUseCase {
     private readonly practitionerApplicationMapper: PractitionerApplicationMapper,
     private readonly practitionerApplicationEligibilityPolicy: PractitionerApplicationEligibilityPolicy,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
+    private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
   ) {}
 
   async execute(input: {
@@ -39,7 +41,7 @@ export class GetPractitionerApplicationStatusUseCase {
       });
     }
 
-    const [readiness, latestApplication] = await Promise.all([
+    const [readiness, latestApplication, reviewCase] = await Promise.all([
       this.getPractitionerProfileReadinessUseCase.evaluate({
         userId: input.userId,
         currentUser: input.currentUser,
@@ -47,6 +49,7 @@ export class GetPractitionerApplicationStatusUseCase {
       this.practitionerApplicationRepository.findLatestByPractitionerId(
         profile.id,
       ),
+      this.practitionerReviewCaseService.findActiveChangeCase(profile.id),
     ]);
 
     const eligibility = this.practitionerApplicationEligibilityPolicy.evaluate({
@@ -76,6 +79,7 @@ export class GetPractitionerApplicationStatusUseCase {
                   unknown
                 > | null) ?? null,
               completion: readiness.completion,
+              reviewCase,
             })
           : this.practitionerApplicationMapper.empty()),
         isProfileCompleted: readiness.isProfileCompleted,

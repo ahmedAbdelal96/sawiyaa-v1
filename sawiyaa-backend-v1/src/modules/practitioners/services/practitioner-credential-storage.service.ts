@@ -99,6 +99,16 @@ export class PractitionerCredentialStorageService {
     }
   }
 
+  resolveDirectCreateCredentialFileUrl(
+    credentialId: string,
+    mimeType: string,
+  ): string | null {
+    if (!/^[a-f0-9]{32}$/i.test(credentialId)) return null;
+    const extension = MIME_TO_EXTENSION[mimeType];
+    if (!extension) return null;
+    return `/uploads/practitioners/admin-direct-create/credentials/${credentialId}${extension}`;
+  }
+
   private sanitizeSegment(value: string): string {
     return value.replace(/[^a-zA-Z0-9_-]/g, '');
   }

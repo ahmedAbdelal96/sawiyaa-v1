@@ -59,10 +59,11 @@ export class ListPractitionerSettlementsUseCase {
         take: limit,
       });
 
+    const sessionIds = items.map((item) => item.sourceReview?.sessionId).filter((id): id is string => Boolean(id));
+    const sessions = await this.practitionerRepository.findSessionsByIds(sessionIds);
+    const sessionsById = new Map(sessions.map((session) => [session.id, session]));
     return {
-      items: items.map((item) =>
-        this.financialOperationsMapper.toPractitionerSettlement(item),
-      ),
+      items: items.map((item) => this.financialOperationsMapper.toPractitionerSafeSettlement(item, item.sourceReview?.sessionId ? sessionsById.get(item.sourceReview.sessionId) ?? null : null)),
       pagination: {
         page,
         limit,

@@ -175,6 +175,8 @@ export class GetAdminAccountingDashboardUseCase {
         journalEntryId: entry.id,
         sourceType: entry.sourceType,
         sourceId: entry.sourceId,
+        sessionId: null,
+        sessionCode: null,
         occurredAt: entry.occurredAt.toISOString(),
         currencyCode: entry.currencyCode,
         amount: amount.toFixed(2),

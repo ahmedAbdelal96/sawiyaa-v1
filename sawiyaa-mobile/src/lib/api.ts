@@ -84,6 +84,8 @@ function shouldSkipAuthRefresh(url?: string) {
     "/auth/patient/logout",
     "/auth/practitioner/login",
     "/auth/practitioner/register",
+    "/auth/practitioner/register/verify-otp",
+    "/auth/practitioner/register/resend-otp",
     "/auth/practitioner/login/verify-otp",
     "/auth/practitioner/refresh",
     "/auth/practitioner/logout",

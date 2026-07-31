@@ -49,8 +49,9 @@ import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/pa
 import type { SessionJoinItem, SessionRuntimeItem } from "../types/sessions.types";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { Skeleton } from "@/components/shared/LoadingStates";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import { PatientSectionCard } from "@/components/patient/PatientChrome";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import PatientSessionReviewCard from "./PatientSessionReviewCard";
 
 function formatDatetime(isoString: string | null, numLocale: string): string {
@@ -613,9 +614,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
                 {t("detail.summary.sessionCode")}
               </span>
-              <p className="font-mono text-sm sm:text-base font-bold text-text-primary dark:text-white/90">
-                {session.sessionCode}
-              </p>
+              <SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} copyable variant="detail" />
             </div>
 
             <div className="space-y-1 col-span-2 md:col-span-1">
@@ -978,7 +977,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   <h3 className="mt-2 break-words text-lg font-semibold text-text-primary dark:text-white/95">
                     {practitionerDisplayName}
                   </h3>
-                  <p className="mt-1 text-sm text-text-secondary">{session.sessionCode}</p>
+                  <SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} copyable />
                 </div>
               </div>
 

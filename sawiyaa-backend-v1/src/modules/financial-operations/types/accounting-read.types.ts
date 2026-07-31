@@ -23,6 +23,8 @@ export type AccountingRecentEventViewModel = {
   journalEntryId: string;
   sourceType: JournalEntrySourceType;
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   occurredAt: string;
   currencyCode: string;
   amount: string;
@@ -56,6 +58,8 @@ export type LedgerExplorerRowViewModel = {
   journalEntryId: string;
   sourceType: JournalEntrySourceType;
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   occurredAt: string;
   createdAt: string;
   currencyCode: string;

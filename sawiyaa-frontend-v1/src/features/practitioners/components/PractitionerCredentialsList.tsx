@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Edit3, ExternalLink, FilePlus2, Loader2, TriangleAlert } from "lucide-react";
+import { Edit3, Eye, FilePlus2, Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
-import { API_BASE_URL } from "@/config/api";
 import Button from "@/components/ui/button/Button";
 import { Modal, ModalBody, ModalHeader } from "@/components/ui/modal";
 import DateField from "@/components/form/input/DateField";
@@ -13,7 +12,7 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { usePractitionerProfile } from "../hooks/use-practitioners";
 import { formatPractitionerOrViewerDate } from "@/lib/time-formatting";
 import { toAppError } from "@/lib/api/errors";
-import { usePractitionerCredentials, useUploadPractitionerCredential } from "../hooks/use-practitioners";
+import { useDeletePractitionerCredential, usePractitionerCredentials, useUploadPractitionerCredential, useViewPractitionerCredential } from "../hooks/use-practitioners";
 import type { CredentialReviewStatus, CredentialType, PractitionerCredential } from "../types/practitioners.types";
 
 const statusClasses: Record<CredentialReviewStatus, string> = {
@@ -26,7 +25,6 @@ const statusClasses: Record<CredentialReviewStatus, string> = {
 const credentialTypes: CredentialType[] = [
   "LICENSE",
   "DEGREE",
-  "CERTIFICATION",
   "NATIONAL_ID_FRONT",
   "NATIONAL_ID_BACK",
   "PASSPORT",
@@ -53,11 +51,6 @@ type PractitionerCredentialsListProps = {
   compact?: boolean;
 };
 
-function resolveFileLink(fileUrl: string) {
-  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
-  return `${API_BASE_URL}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
-}
-
 function getCredentialTypeLabel(type: CredentialType, locale: string) {
   const isAr = locale === "ar";
   const labels: Record<CredentialType, string> = {
@@ -68,7 +61,7 @@ function getCredentialTypeLabel(type: CredentialType, locale: string) {
     NATIONAL_ID_BACK: isAr ? "بطاقة الهوية - الوجه الخلفي" : "National ID - Back",
     NATIONAL_ID: isAr ? "بطاقة الهوية الوطنية" : "National ID",
     PASSPORT: isAr ? "جواز سفر" : "Passport",
-    MEMBERSHIP: isAr ? "عضوية" : "Membership",
+    MEMBERSHIP: isAr ? "كارنيه النقابة" : "Syndicate card",
     OTHER: isAr ? "أخرى" : "Other",
   };
   return labels[type];
@@ -87,14 +80,26 @@ export default function PractitionerCredentialsList({
 
   const query = usePractitionerCredentials();
   const uploadCredential = useUploadPractitionerCredential();
+  const deleteCredential = useDeletePractitionerCredential();
+  const viewCredential = useViewPractitionerCredential();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PractitionerCredential | null>(null);
   const [form, setForm] = useState<FormState>(initialFormState);
   const [uploadError, setUploadError] = useState("");
+  const [viewingCredentialId, setViewingCredentialId] = useState<string | null>(null);
 
   const rows = useMemo(() => query.data?.credentials ?? [], [query.data?.credentials]);
 
+  const profileStatus = profileQuery.data?.profile.profileStatus;
+  const canDelete = isEditable &&
+    (profileStatus === "DRAFT" || profileStatus === "REJECTED");
+
   const copy = {
+    viewError: isArabic ? "تعذر فتح المستند. حاول مرة أخرى." : "Could not open the document. Try again.",
+    delete: isArabic ? "حذف" : "Delete",
+    deleteConfirm: isArabic ? "هل تريد حذف هذا المستند؟" : "Delete this document?",
+    deleteSuccess: isArabic ? "تم حذف المستند." : "Document deleted.",
+    deleteError: isArabic ? "تعذر حذف المستند. حاول مرة أخرى." : "Could not delete the document. Try again.",
     title: isArabic ? "المستندات" : "Documents",
     add: isArabic ? "رفع مستند" : "Upload document",
     edit: isArabic ? "تعديل" : "Edit",
@@ -124,6 +129,34 @@ export default function PractitionerCredentialsList({
     cancel: isArabic ? "إلغاء" : "Cancel",
   };
 
+  const handleView = async (credentialId: string) => {
+    if (viewCredential.isPending) return;
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    setViewingCredentialId(credentialId);
+    try {
+      const blob = await viewCredential.mutateAsync(credentialId);
+      const url = URL.createObjectURL(blob);
+      if (popup) popup.location.href = url;
+      else window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      popup?.close();
+      toast.error(copy.viewError);
+    } finally {
+      setViewingCredentialId(null);
+    }
+  };
+
+  const handleDelete = async (credentialId: string) => {
+    if (!canDelete || deleteCredential.isPending || !window.confirm(copy.deleteConfirm)) return;
+    try {
+      await deleteCredential.mutateAsync(credentialId);
+      toast.success(copy.deleteSuccess);
+    } catch {
+      toast.error(copy.deleteError);
+    }
+  };
+
   const openAddModal = () => {
     setEditingItem(null);
     setForm(initialFormState);
@@ -144,6 +177,11 @@ export default function PractitionerCredentialsList({
   };
 
   const handleSave = async () => {
+    if (form.credentialType !== "OTHER" && rows.some((item) => item.credentialType === form.credentialType)) {
+      setUploadError(t("credentials.feedback.duplicateError"));
+      return;
+    }
+
     if (!form.selectedFile) {
       setUploadError(copy.fileRequired);
       return;
@@ -222,17 +260,12 @@ export default function PractitionerCredentialsList({
           <div className="divide-y divide-border-light">
             {rows.map((item) => (
               <div key={item.credentialId} className="grid grid-cols-12 items-center gap-2 px-4 py-3 text-sm">
-                <div className="col-span-3 text-text-primary">{getCredentialTypeLabel(item.credentialType, locale)}</div>
+                <div className="col-span-3 text-text-primary">{t(`credentials.type.${item.credentialType}` as Parameters<typeof t>[0])}</div>
                 <div className="col-span-3">
-                  <a
-                    href={resolveFileLink(item.fileUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                  <button type="button" onClick={() => void handleView(item.credentialId)} disabled={viewCredential.isPending} className="inline-flex items-center gap-1 text-primary hover:underline">
+                    {viewingCredentialId === item.credentialId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
                     {copy.openFile}
-                  </a>
+                  </button>
                 </div>
                 <div className="col-span-2">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClasses[item.reviewStatus]}`}>
@@ -247,7 +280,7 @@ export default function PractitionerCredentialsList({
                       })
                     : t("credentials.noExpiry")}
                 </div>
-                <div className="col-span-1">
+                <div className="col-span-1 flex gap-1">
                   <button
                     type="button"
                     onClick={() => openEditModal(item)}
@@ -258,6 +291,11 @@ export default function PractitionerCredentialsList({
                   >
                     <Edit3 className="h-3.5 w-3.5" />
                   </button>
+                  {canDelete ? (
+                    <button type="button" onClick={() => void handleDelete(item.credentialId)} disabled={deleteCredential.isPending} className="inline-flex items-center rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50" aria-label={copy.delete} title={copy.delete}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -278,8 +316,8 @@ export default function PractitionerCredentialsList({
               className="app-control h-11 w-full appearance-none px-4 py-2.5 text-sm"
             >
               {credentialTypes.map((type) => (
-                <option key={type} value={type}>
-                  {getCredentialTypeLabel(type, locale)}
+                <option key={type} value={type} disabled={type !== "OTHER" && rows.some((item) => item.credentialType === type)}>
+                  {t(`credentials.type.${type}` as Parameters<typeof t>[0])}
                 </option>
               ))}
             </select>

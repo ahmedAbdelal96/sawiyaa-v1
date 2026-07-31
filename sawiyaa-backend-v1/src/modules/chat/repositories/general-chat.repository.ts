@@ -124,6 +124,16 @@ export class GeneralChatRepository {
     });
   }
 
+  findConversationsBySessionId(sessionId: string) {
+    return this.prisma.conversation.findMany({
+      where: {
+        ...this.generalBoundaryWhere(),
+        sessionId,
+      },
+      select: generalConversationReadSelect,
+    });
+  }
+
   listOwnedConversations(input: {
     userId: string;
     page: number;

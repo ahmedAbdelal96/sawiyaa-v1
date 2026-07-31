@@ -7,6 +7,8 @@ import {
   LedgerDirection,
   LedgerEntryType,
   Prisma,
+  PractitionerSettlementStatus,
+  SecurityAuditActorType,
   SettlementPayoutMethod,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -54,6 +56,7 @@ export class PractitionerManualPayoutService {
 
   async record(input: {
     practitionerId: string;
+    settlementId: string;
     currencyCode: string;
     amountPaid: string;
     paidAt?: Date;
@@ -79,6 +82,47 @@ export class PractitionerManualPayoutService {
     }
 
     const db = this.getDb(input.tx);
+
+    if (!input.settlementId?.trim()) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.payoutSettlementRequired',
+        error: 'FINANCIAL_OPERATIONS_PAYOUT_SETTLEMENT_REQUIRED',
+      });
+    }
+
+    const settlement = await db.practitionerSettlement.findUnique({
+      where: { id: input.settlementId },
+      select: {
+        id: true,
+        practitionerId: true,
+        currencyCode: true,
+        amountNet: true,
+        amountPaidTotal: true,
+        status: true,
+      },
+    });
+
+    if (
+      !settlement ||
+      settlement.practitionerId !== input.practitionerId ||
+      settlement.currencyCode !== currencyCode ||
+      settlement.status !== PractitionerSettlementStatus.CREDITED
+    ) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.payoutSettlementInvalid',
+        error: 'FINANCIAL_OPERATIONS_PAYOUT_SETTLEMENT_INVALID',
+      });
+    }
+
+    const settlementRemaining = new Prisma.Decimal(settlement.amountNet).sub(
+      settlement.amountPaidTotal,
+    );
+    if (amountPaid.gt(settlementRemaining)) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.payoutAmountExceedsSettlement',
+        error: 'FINANCIAL_OPERATIONS_PAYOUT_AMOUNT_EXCEEDS_SETTLEMENT',
+      });
+    }
 
     if (transferReference) {
       const existing =
@@ -174,6 +218,7 @@ export class PractitionerManualPayoutService {
     const payoutRecord = await this.manualPayoutRepository.create(
       {
         practitionerId: input.practitionerId,
+        settlementId: input.settlementId,
         currencyCode,
         amountPaid,
         normalSessionAppliedAmount,
@@ -192,6 +237,9 @@ export class PractitionerManualPayoutService {
     await this.ledgerRepository.createLedgerEntry(
       {
         practitionerId: input.practitionerId,
+        settlementId: input.settlementId,
+        actorUserId: input.recordedByUserId ?? null,
+        actorType: input.recordedByUserId ? SecurityAuditActorType.USER : null,
         entryType: LedgerEntryType.SETTLEMENT_PAYOUT,
         direction: LedgerDirection.DEBIT,
         amount: amountPaid,
@@ -218,6 +266,17 @@ export class PractitionerManualPayoutService {
       input.tx,
     );
 
+    await db.practitionerSettlement.update({
+      where: { id: input.settlementId },
+      data: {
+        amountPaidTotal: { increment: amountPaid },
+        status: amountPaid.eq(settlementRemaining)
+          ? PractitionerSettlementStatus.PAID_OUT
+          : PractitionerSettlementStatus.CREDITED,
+        paidAt: amountPaid.eq(settlementRemaining) ? effectiveAt : null,
+      },
+    });
+
     await this.practitionerRecoveryService.applyOpenRecoveriesToPayout({
       practitionerId: input.practitionerId,
       currencyCode,
@@ -235,7 +294,7 @@ export class PractitionerManualPayoutService {
     await this.accountingJournalPostingService.postPractitionerPayout({
       payout: {
         payoutId: payoutRecord.id,
-        settlementId: null,
+        settlementId: input.settlementId,
         practitionerId: input.practitionerId,
         amountPaid,
         settlementAppliedAmount: amountPaid,

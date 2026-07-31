@@ -21,7 +21,7 @@ export type SendEmailInput = {
    * SECURITY: never log this value — it may contain an OTP code.
    */
   html?: string;
-  notificationId: string;
+  notificationId?: string;
   isOtp: boolean;
 };
 
@@ -185,9 +185,10 @@ export class NotificationEmailService {
     });
 
     if (result.delivered) {
-      const redirectedFrom = input.isOtp && normalizedTarget !== deliveryTarget
-        ? ` (redirected from ${this.maskTarget(normalizedTarget)})`
-        : '';
+      const redirectedFrom =
+        input.isOtp && normalizedTarget !== deliveryTarget
+          ? ` (redirected from ${this.maskTarget(normalizedTarget)})`
+          : '';
       this.logger.log(
         `${purposeLabel} email delivered to ${this.maskTarget(result.deliveryTarget)}${redirectedFrom} (notification ${input.notificationId}, provider=${this.emailProvider.name})`,
       );

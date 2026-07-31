@@ -12,10 +12,10 @@ import {
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useIsFocused } from "@react-navigation/native";
 import {
   ErrorState,
   Header,
-  LoadingState,
   Screen,
   Text,
 } from "../../../components/ui";
@@ -98,13 +98,13 @@ export function MessageThreadScreen({
   const { isRtl } = useAppDirection();
   const locale = i18n.language || "en";
   const currentUserId = user?.id || null;
+  const isThreadFocused = useIsFocused();
 
   const conversationQuery = useCanonicalConversation(role, conversationId);
   const conversation = conversationQuery.data?.item ?? null;
 
   const {
     messages,
-    isLoading,
     isError,
     loadMore,
     hasMore,
@@ -112,7 +112,7 @@ export function MessageThreadScreen({
     sendMessage,
     retryMessage,
     markRead,
-  } = useUnifiedMessages({ conversationId, currentUserId });
+  } = useUnifiedMessages({ conversationId, currentUserId, isThreadFocused });
 
   const listRef = useRef<FlatList<ThreadMessageRow> | null>(null);
   const didInitialScrollRef = useRef(false);
@@ -143,8 +143,8 @@ export function MessageThreadScreen({
         subtitle: m.sender.publicRoleLabel === "Support team" || m.sender.publicRoleLabel === "Admin"
           ? t("messages.thread.supportRoleLabel")
           : (m.sender.publicRoleLabel === "Patient"
-              ? (isRtl ? "المريض" : "Patient")
-              : (isRtl ? "المختص" : "Practitioner")),
+               ? (isRtl ? "المريض" : "Patient")
+               : (isRtl ? "المختص" : "Practitioner")),
         status: null,
         verificationStatus: null,
       },
@@ -251,9 +251,6 @@ export function MessageThreadScreen({
   const headerTitle = headerPresentation.title;
   const headerSubtitle = headerPresentation.subtitle;
 
-  const isInitialLoading =
-    (conversationQuery.isLoading && !conversationQuery.data) ||
-    (isLoading && legacyMessages.length === 0);
   const isInitialError =
     (conversationQuery.isError && !conversationQuery.data) ||
     (isError && legacyMessages.length === 0);
@@ -289,10 +286,10 @@ export function MessageThreadScreen({
   }, [legacyMessages, currentUserId]);
 
   useEffect(() => {
-    if (lastIncomingMessage?.messageId) {
+    if (isThreadFocused && lastIncomingMessage?.messageId) {
       void markRead(lastIncomingMessage.messageId);
     }
-  }, [lastIncomingMessage?.messageId, markRead]);
+  }, [isThreadFocused, lastIncomingMessage?.messageId, markRead]);
 
   useEffect(() => {
     if (didInitialScrollRef.current || legacyMessages.length === 0) {
@@ -447,8 +444,6 @@ export function MessageThreadScreen({
             </View>
           }
           ListEmptyComponent={
-
-
             <ConversationEmptyState
               title={t("messages.thread.emptyTitle", "No messages yet")}
             />
@@ -467,11 +462,7 @@ export function MessageThreadScreen({
               <MessageBubble
                 message={item.message}
                 locale={locale}
-                isMine={
-                  item.message.senderUserId === user?.id ||
-                  (role === "patient" && item.message.senderIdentity?.role === "PATIENT") ||
-                  (role === "practitioner" && item.message.senderIdentity?.role === "PRACTITIONER")
-                }
+                isMine={Boolean(user?.id && item.message.senderUserId === user.id)}
                 showIdentity={item.isGroupStart}
                 senderLabel={item.senderLabel}
                 senderRoleLabel={item.senderRoleLabel}

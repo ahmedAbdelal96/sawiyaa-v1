@@ -3,6 +3,8 @@
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { preservePathAndQuery } from "@/i18n/locale-navigation";
 import { Globe } from "lucide-react";
 
 const localeData: Record<string, { name: string; nativeName: string; flag: string }> = {
@@ -14,11 +16,12 @@ export function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (newLocale: string) => {
-    router.replace(pathname, { locale: newLocale as "ar" | "en" });
+    router.replace(preservePathAndQuery(pathname, searchParams), { locale: newLocale as "ar" | "en" });
     setIsOpen(false);
   };
 
@@ -72,10 +75,11 @@ export function LanguageSwitcherCompact() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const toggleLocale = () => {
     const newLocale = locale === "ar" ? "en" : "ar";
-    router.replace(pathname, { locale: newLocale });
+    router.replace(preservePathAndQuery(pathname, searchParams), { locale: newLocale });
   };
 
   const otherLocale = localeData[locale === "ar" ? "en" : "ar"];

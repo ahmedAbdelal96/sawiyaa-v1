@@ -613,6 +613,51 @@
           "title": "No-show",
           "note": "This session was marked as no-show.",
           "closeout": "This session was closed as no-show."
+        },
+        "READY_TO_JOIN": {
+          "title": "Ready to join",
+          "note": "The join window is open. You can enter the session now.",
+          "closeout": "You can record the session outcome after it ends."
+        },
+        "AWAITING_COMPLETION_CONFIRMATION": {
+          "title": "Awaiting completion confirmation",
+          "note": "The session has ended and is awaiting final confirmation.",
+          "closeout": "Record the session closeout outcome now."
+        },
+        "PATIENT_NO_SHOW": {
+          "title": "Patient no-show",
+          "note": "This session was recorded as a patient no-show.",
+          "closeout": "This session was closed as a patient no-show."
+        },
+        "PRACTITIONER_NO_SHOW": {
+          "title": "Practitioner no-show",
+          "note": "This session was recorded as a practitioner no-show.",
+          "closeout": "This session was closed as a practitioner no-show."
+        },
+        "BOTH_NO_SHOW": {
+          "title": "Both no-show",
+          "note": "This session was recorded as no-show for both parties.",
+          "closeout": "This session was closed as no-show for both parties."
+        },
+        "EXPIRED": {
+          "title": "Expired",
+          "note": "This session expired before payment was completed.",
+          "closeout": "No closeout actions are available for an expired session."
+        },
+        "DRAFT": {
+          "title": "Draft",
+          "note": "This session is still being prepared.",
+          "closeout": "No action is required at this time."
+        },
+        "PENDING_PAYMENT": {
+          "title": "Pending payment",
+          "note": "This session is waiting for the patient to complete payment.",
+          "closeout": "The session cannot be closed before payment is completed."
+        },
+        "PENDING_PRACTITIONER_CONFIRMATION": {
+          "title": "Pending your confirmation",
+          "note": "This session is waiting for your confirmation.",
+          "closeout": "Respond to the session request first."
         }
       },
       "reviewCard": {
@@ -767,6 +812,30 @@
       },
       "REFUNDED": {
         "note": "This session has been refunded."
+      },
+      "roomClose": {
+        "action": "Close room",
+        "closing": "Closing room...",
+        "cancel": "Keep room open",
+        "modal": {
+          "beforeTitle": "Close the video room now?",
+          "beforeNote": "The session has started, but it has not reached the scheduled end yet. Please give a short reason before closing the room.",
+          "afterTitle": "Close the video room?",
+          "afterNote": "The scheduled end time has passed. You can close the room with a simple confirmation now."
+        },
+        "reasonLabel": "Reason for closing",
+        "reasonPlaceholder": "Example: The patient left early",
+        "reasonHelp": "A short reason is required before the scheduled end time.",
+        "afterEndHelper": "The scheduled end time has passed, so a simple confirmation is enough.",
+        "success": "The video room is now closed. No one can rejoin it.",
+        "alreadyClosed": "The video room was already closed.",
+        "errors": {
+          "onlyAfterStart": "You can close the room only after the session has started.",
+          "reasonRequired": "Please enter a short reason before closing the room.",
+          "notAllowed": "This session cannot be closed right now.",
+          "providerFailed": "We could not close the video room in the provider service. Please try again.",
+          "generic": "We could not close the video room right now. Please try again."
+        }
       },
       "runtime": {
         "heading": "Session access",

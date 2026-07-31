@@ -29,6 +29,8 @@ import { AdminPractitionerProfileRepository } from '../repositories/admin-practi
 import { AdminPractitionerSpecialtyRepository } from '../repositories/admin-practitioner-specialty.repository';
 import { AdminUserRepository } from '../repositories/admin-user.repository';
 import { AdminPractitionerApplicationNotificationService } from '../services/admin-practitioner-application-notification.service';
+import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
+import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
 
 type SubmissionSnapshot = {
   applicant?: {
@@ -88,6 +90,8 @@ export class ApprovePractitionerApplicationUseCase {
     private readonly userRepository: AdminUserRepository,
     private readonly notificationService: AdminPractitionerApplicationNotificationService,
     private readonly securityAuditService: SecurityAuditService,
+    private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
+    private readonly practitionerCurrencyLifecycleService: PractitionerCurrencyLifecycleService,
   ) {}
 
   async execute(input: {
@@ -191,7 +195,9 @@ export class ApprovePractitionerApplicationUseCase {
       hasRequiredSpecialties: requestedSpecialties.length > 0,
       hasRequiredCredentials:
         requestedCredentials.length > 0 &&
-        requestedCredentials.every((item) => item.reviewStatus === 'APPROVED'),
+        (profile.status === PractitionerStatus.APPROVED
+          ? requestedCredentials.every((item) => item.reviewStatus !== 'REJECTED')
+          : requestedCredentials.every((item) => item.reviewStatus === 'APPROVED')),
       hasPayoutDestination: Boolean(requestedPayoutDestination),
       status: existing.status,
     });
@@ -310,6 +316,13 @@ export class ApprovePractitionerApplicationUseCase {
             }
           }
 
+          await this.practitionerCurrencyLifecycleService.ensureForCountryChange({
+            practitionerId: latest.practitioner.id,
+            newCountryId: countryId ?? null,
+            actorUserId: input.adminUserId,
+            tx,
+          });
+
           await this.profileRepository.updateProfileDetails(
             latest.practitioner.id,
             {
@@ -370,6 +383,42 @@ export class ApprovePractitionerApplicationUseCase {
           );
         }
 
+        const requestedSpecialtySelection = (
+          latest.submissionSnapshot as SubmissionSnapshot | null
+        )?.specialtySelection;
+        if (Array.isArray(requestedSpecialtySelection?.specialties)) {
+          await this.practitionerSpecialtyRepository.replaceAll(
+            latest.practitioner.id,
+            requestedSpecialtySelection.specialties
+              .filter((item) => typeof item?.specialtyId === 'string')
+              .map((item) => ({
+                specialtyId: item.specialtyId as string,
+                isPrimary: item.isPrimary === true,
+              })),
+            tx,
+          );
+        }
+
+        const requestedCredentialIds = new Set(
+          requestedCredentials
+            .map((item) => item.credentialId)
+            .filter((id): id is string => typeof id === 'string'),
+        );
+        if (requestedCredentialIds.size > 0) {
+          await tx.practitionerCredential.updateMany({
+            where: {
+              practitionerId: latest.practitioner.id,
+              id: { in: [...requestedCredentialIds] },
+              reviewStatus: { not: 'REJECTED' },
+            },
+            data: {
+              reviewStatus: 'APPROVED',
+              reviewedAt,
+              reviewedByUserId: input.adminUserId,
+            },
+          });
+        }
+
         const decision = await this.applicationRepository.updateDecision(
           input.id,
           {
@@ -388,6 +437,62 @@ export class ApprovePractitionerApplicationUseCase {
           PractitionerStatus.APPROVED,
           tx,
         );
+
+        const reviewCase = await tx.practitionerReviewCase.findFirst({
+          where: {
+            practitionerId: decision.practitioner.id,
+            status: { in: ['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED'] },
+          },
+          orderBy: { updatedAt: 'desc' },
+          include: { requirements: true },
+        });
+        if (reviewCase) {
+          const blockingOpen = reviewCase.requirements.some(
+            (requirement) =>
+              requirement.status === 'OPEN' && requirement.severity === 'BLOCKING',
+          );
+          if (blockingOpen) {
+            throw new BadRequestException({
+              messageKey: 'admin.practitionerApplications.errors.requirementsOpen',
+              error: 'PRACTITIONER_REVIEW_REQUIREMENTS_OPEN',
+            });
+          }
+          this.practitionerReviewCaseService.assertTransition(
+            reviewCase.status,
+            'APPROVED',
+          );
+          await tx.practitionerReviewCase.update({
+            where: { id: reviewCase.id },
+            data: {
+              status: 'APPROVED',
+              reviewedAt,
+              reviewedByUserId: input.adminUserId,
+              decisionReason: reviewDecisionReason,
+            },
+          });
+          await tx.practitionerReviewSection.updateMany({
+            where: {
+              caseId: reviewCase.id,
+              status: { in: ['PENDING', 'CHANGES_REQUESTED'] },
+            },
+            data: {
+              status: 'APPROVED',
+              reviewedAt,
+              reviewedByUserId: input.adminUserId,
+            },
+          });
+          await tx.practitionerReviewRequirement.updateMany({
+            where: {
+              caseId: reviewCase.id,
+              status: { in: ['OPEN', 'SUBMITTED'] },
+            },
+            data: {
+              status: 'SATISFIED',
+              resolvedAt: reviewedAt,
+              resolvedByUserId: input.adminUserId,
+            },
+          });
+        }
 
         await this.securityAuditService.recordRequired(tx, {
           action: 'security.practitioner.application.approve',

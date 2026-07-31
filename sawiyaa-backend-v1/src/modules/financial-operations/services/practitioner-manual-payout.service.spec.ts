@@ -75,6 +75,17 @@ describe('PractitionerManualPayoutService', () => {
 
     const prisma = {
       $executeRaw: jest.fn().mockResolvedValue(undefined),
+      practitionerSettlement: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'settlement-1',
+          practitionerId: 'practitioner-1',
+          currencyCode: 'EGP',
+          amountNet: new Prisma.Decimal('150.00'),
+          amountPaidTotal: new Prisma.Decimal('0.00'),
+          status: 'CREDITED',
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
     };
 
     const service = new PractitionerManualPayoutService(
@@ -104,6 +115,7 @@ describe('PractitionerManualPayoutService', () => {
 
     const result = await setup.service.record({
       practitionerId: 'practitioner-1',
+      settlementId: 'settlement-1',
       currencyCode: 'egp',
       amountPaid: '120',
       paidAt: new Date('2026-05-05T10:00:00.000Z'),
@@ -156,6 +168,7 @@ describe('PractitionerManualPayoutService', () => {
     await expect(
       setup.service.record({
         practitionerId: 'practitioner-1',
+        settlementId: 'settlement-1',
         currencyCode: 'EGP',
         amountPaid: '151',
       }),
@@ -194,6 +207,7 @@ describe('PractitionerManualPayoutService', () => {
 
     const result = await setup.service.record({
       practitionerId: 'practitioner-1',
+      settlementId: 'settlement-1',
       currencyCode: 'EGP',
       amountPaid: '10',
       transferReference: 'BANK-001',

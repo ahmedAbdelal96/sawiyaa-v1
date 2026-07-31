@@ -4,7 +4,7 @@
 Availability Module owns practitioner availability-week management and temporary schedule overrides.
 
 This module is responsible for:
-- Sunday-based current/next availability week management
+- Sunday-based rolling weekly session schedule management
 - draft and published week lifecycle
 - recurring weekly slot storage inside each availability week
 - temporary availability exceptions (`BLOCK`, `OPEN_EXTRA`)
@@ -22,10 +22,12 @@ This module explicitly does **not** own:
 ## Endpoints
 
 ### Practitioner self-service
-- `GET /api/v1/practitioners/me/availability/weeks/current-next`
+- `GET /api/v1/practitioners/me/availability/weeks` (the only rolling active-window contract)
+- `GET /api/v1/practitioners/me/availability/weeks/:weekId` (owned lazy details for one week)
 - `POST /api/v1/practitioners/me/availability/weeks`
 - `PATCH /api/v1/practitioners/me/availability/weeks/:weekId`
-- `POST /api/v1/practitioners/me/availability/weeks/:weekId/copy-to-next`
+- `POST /api/v1/practitioners/me/availability/weeks/:sourceWeekId/repeat/preview`
+- `POST /api/v1/practitioners/me/availability/weeks/:sourceWeekId/repeat/confirm`
 - `POST /api/v1/practitioners/me/availability/weeks/:weekId/publish`
 
 ### Public read
@@ -46,22 +48,26 @@ This module explicitly does **not** own:
 ## Main DTOs
 - `CreateAvailabilityWeekDto`
 - `UpdateAvailabilityWeekDto`
-- `AvailabilityWeekOverviewSuccessResponseDto`
+- `AvailabilityRollingWindowSuccessResponseDto`
 - `AvailabilityWeekMutationSuccessResponseDto`
+- `RepeatAvailabilityWeekPreviewRequestDto`
+- `RepeatAvailabilityWeekConfirmRequestDto`
 - `ListPublicPractitionerAvailabilityWindowsDto`
 
 ## Main Use Cases
 - `GetMyAvailabilityWeeksUseCase`
 - `CreatePractitionerAvailabilityWeekUseCase`
 - `UpdatePractitionerAvailabilityWeekUseCase`
-- `CopyPractitionerAvailabilityWeekToNextUseCase`
+- `AvailabilityScheduleRepeatService`
 - `PublishPractitionerAvailabilityWeekUseCase`
 - `ListPublicPractitionerAvailabilityWindowsUseCase`
 
 ## Business Rules
 - each practitioner week is Sunday-based and stored with explicit `weekStartDate` / `weekEndDate`
+- the active self-service window is controlled by Backend configuration and returns the current week plus the configured future weeks
 - only `PUBLISHED` availability weeks are used by public availability, practitioner discovery, and matching readiness
-- draft weeks can be created, updated, and copied; published weeks are immutable in normal practitioner flows
+- unpublished weeks can be created and updated; published weeks are protected by booking rules
+- repeat preview persists a short-lived operation; confirmation creates independent unpublished weeks only
 - recurring weekly slots must not overlap on the same day when they share the same duration
 - weekly slot granularity remains enforced at 30 minutes in V1
 - each recurring weekly slot declares an explicit booking duration of `30` or `60` minutes
@@ -72,7 +78,9 @@ This module explicitly does **not** own:
 - public reads require the practitioner to satisfy existing public visibility rules
 
 ## Response Notes
-- self-service `GET /weeks/current-next` returns the current and next availability weeks in practitioner timezone, including overview/reminder state
+- self-service `GET /weeks` returns only metadata, `activeRange`, and dynamic `weeks[]`; it has no compatibility `currentWeek` or `nextWeek` fields
+- repeat confirmation never overwrites an existing target and records source provenance only
+- repeat operations use `updatedAt` as a short processing lease; a stale `PROCESSING` operation can be safely reclaimed by a later confirmation request, while a live operation returns `REPEAT_IN_PROGRESS`
 - week mutation endpoints return the mutated week plus refreshed overview data
 - public `/availability/windows` returns derived UTC windows for the requested range, including the slot duration that produced each window
 - public `/availability/windows` can optionally return public-safe `bookedSlots` when `includeBooked=true`
@@ -81,6 +89,7 @@ This module explicitly does **not** own:
 ## Localization Notes
 - business success/error messages use `availability.*` message keys in the shared i18n catalogs
 - public read errors reuse localized not-found/range-validation messages
+- reminder notifications may still reason about the upcoming week internally; that is not a public schedule-window contract
 
 ## Out Of Scope
 - presence / live availability

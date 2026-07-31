@@ -192,6 +192,7 @@
       "delete": "Delete"
     },
     "empty": {
+      "heading": "No clauses yet",
       "note": "No clauses have been added yet."
     },
     "modal": {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -18,6 +18,9 @@ import {
 import Button from "@/components/ui/button/Button";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
+import { ApplicationStepCard } from "./ApplicationStepCard";
+import { ApplicationIssuePanel } from "./ApplicationIssuePanel";
+import { PricingDurationRow } from "./PricingDurationRow";
 import Label from "@/components/form/Label";
 import MultiSelect from "@/components/form/MultiSelect";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
@@ -175,7 +178,16 @@ function getInitials(name: string | null | undefined): string {
     .join("");
 }
 
-function createInitialState(profile: NonNullable<ReturnType<typeof usePractitionerProfile>["data"]>["profile"]): WizardState {
+function getProposedProfessionalTitle(application: any): string {
+  const snapshot = application?.reviewCase?.proposedSnapshot ?? application?.submissionSnapshot;
+  const value = snapshot?.profile?.professionalTitle;
+  return typeof value === "string" ? normalizeProfessionalTitle(value) : "";
+}
+
+function createInitialState(
+  profile: NonNullable<ReturnType<typeof usePractitionerProfile>["data"]>["profile"],
+  proposedProfessionalTitle = "",
+): WizardState {
   return {
     displayName: profile.displayName ?? "",
     countryCode: profile.countryCode ?? "",
@@ -183,7 +195,8 @@ function createInitialState(profile: NonNullable<ReturnType<typeof usePractition
     timezone: profile.timezone ?? "",
     practitionerGender: profile.practitionerGender ?? "",
     practitionerType: profile.practitionerType ?? "",
-    professionalTitle: normalizeProfessionalTitle(profile.professionalTitle ?? ""),
+    professionalTitle:
+      proposedProfessionalTitle || normalizeProfessionalTitle(profile.professionalTitle ?? ""),
     bio: profile.bio ?? "",
     yearsOfExperience: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "",
     languageCodes: profile.languages ?? [],
@@ -404,53 +417,8 @@ function StepIssueStrip({
   issues: PractitionerApplicationCompletionIssue[];
   t: ReturnType<typeof useTranslations>;
 }) {
-  if (issues.length === 0) return null;
-
-  return (
-    <div className="rounded-2xl border border-warning-200 bg-warning-50/75 p-4">
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="mt-0.5 h-5 w-5 text-warning-700" />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-warning-900">{t("application.wizard.stepIssuesTitle")}</p>
-          <p className="mt-1 text-sm leading-6 text-warning-900/90">{t("application.wizard.stepIssuesBody")}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        {[...issues]
-          .sort((a, b) => {
-            const rank = (value: string) =>
-              value === "BLOCKER" ? 0 : value === "WARNING" ? 1 : 2;
-            return rank(a.severity) - rank(b.severity);
-          })
-          .slice(0, 6)
-          .map((issue) => {
-          const copy = getPractitionerApplicationIssueCopy(issue.code);
-          return (
-            <div key={`${issue.stepKey}-${issue.code}-${issue.field ?? "all"}`} className="rounded-2xl border border-warning-200 bg-white/70 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text-primary">{t(copy.titleKey as Parameters<typeof t>[0])}</p>
-                  <p className="mt-1 text-xs text-text-secondary">{t(copy.descriptionKey as Parameters<typeof t>[0])}</p>
-                </div>
-                <StepTone
-                  tone={
-                    issue.severity === "BLOCKER"
-                      ? "danger"
-                      : issue.severity === "WARNING"
-                        ? "warning"
-                        : "neutral"
-                  }
-                >
-                  {t(`application.completion.severity.${issue.severity}` as Parameters<typeof t>[0])}
-                </StepTone>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  const locale = useLocale();
+  return <ApplicationIssuePanel issues={issues as any} t={t as any} locale={locale} />;
 }
 
 function UiStepCircle({
@@ -541,15 +509,18 @@ export default function PractitionerApplicationWizardThreeStep() {
     );
   }
   const credentialRows = credentialsQuery.data?.credentials ?? [];
-  const credentialTypeSet = useMemo(
-    () => new Set(credentialRows.map((item) => item.credentialType)),
+  const validCredentialTypeSet = useMemo(
+    () =>
+      new Set(
+        credentialRows
+          .filter((item) => item.reviewStatus === "PENDING" || item.reviewStatus === "APPROVED")
+          .map((item) => item.credentialType),
+      ),
     [credentialRows],
   );
-  const hasNationalIdFront =
-    credentialTypeSet.has("NATIONAL_ID_FRONT") || credentialTypeSet.has("NATIONAL_ID");
-  const hasNationalIdBack =
-    credentialTypeSet.has("NATIONAL_ID_BACK") || credentialTypeSet.has("NATIONAL_ID");
-  const hasPassport = credentialTypeSet.has("PASSPORT");
+  const hasNationalIdFront = validCredentialTypeSet.has("NATIONAL_ID_FRONT");
+  const hasNationalIdBack = validCredentialTypeSet.has("NATIONAL_ID_BACK");
+  const hasPassport = validCredentialTypeSet.has("PASSPORT");
   const hasIdentityEvidence = hasPassport || (hasNationalIdFront && hasNationalIdBack);
   const status = application?.status ?? profile?.applicationStatusSummary.status ?? null;
   const statusTone = getStatusTone(status);
@@ -558,7 +529,11 @@ export default function PractitionerApplicationWizardThreeStep() {
   const isReadonly = status === "SUBMITTED" || status === "UNDER_REVIEW" || status === "ARCHIVED";
   const canEdit = !isLocked || status === "REJECTED" || status === "CHANGES_REQUESTED" || status === "DRAFT";
 
-  const initialState = useMemo(() => (profile ? createInitialState(profile) : null), [profile]);
+  const proposedProfessionalTitle = getProposedProfessionalTitle(application);
+  const initialState = useMemo(
+    () => (profile ? createInitialState(profile, proposedProfessionalTitle) : null),
+    [profile, proposedProfessionalTitle],
+  );
   const effectiveState = draftState ?? initialState;
   const selectedAvatarPreview = avatarDraft.previewUrl ?? effectiveState?.avatarUrl ?? null;
   const payoutCountryCode = effectiveState?.payoutCountryCode.trim().toUpperCase() ?? "";
@@ -1411,6 +1386,11 @@ export default function PractitionerApplicationWizardThreeStep() {
                   </option>
                 ))}
               </select>
+              {proposedProfessionalTitle && proposedProfessionalTitle !== normalizeProfessionalTitle(profile?.professionalTitle ?? "") ? (
+                <div className="mt-2">
+                  <StepTone tone="warning">{t("application.wizard.pendingTitle")}</StepTone>
+                </div>
+              ) : null}
               <p className="mt-1.5 text-xs text-text-secondary">
                 {locale === "ar"
                   ? "اللقب المهني من قائمة موحدة لتحسين جودة البحث والمراجعة."
@@ -1614,6 +1594,23 @@ export default function PractitionerApplicationWizardThreeStep() {
             ) : null}
           </div>
 
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-border-light bg-white/80 p-4">
+              <p className="text-sm font-semibold text-text-primary">{t("application.documentRules.academicTitle")}</p>
+              <p className="mt-1 text-xs text-text-secondary">{t("application.documentRules.academicHint")}</p>
+              <p className={`mt-2 text-sm font-semibold ${validCredentialTypeSet.has("DEGREE") ? "text-success-700" : "text-warning-700"}`}>
+                {validCredentialTypeSet.has("DEGREE") ? t("application.documentRules.complete") : t("application.documentRules.incomplete")}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border-light bg-white/80 p-4">
+              <p className="text-sm font-semibold text-text-primary">{t("application.documentRules.professionalTitle")}</p>
+              <p className="mt-1 text-xs text-text-secondary">{t("application.documentRules.professionalHint")}</p>
+              <p className={`mt-2 text-sm font-semibold ${validCredentialTypeSet.has("LICENSE") || validCredentialTypeSet.has("MEMBERSHIP") ? "text-success-700" : "text-warning-700"}`}>
+                {validCredentialTypeSet.has("LICENSE") || validCredentialTypeSet.has("MEMBERSHIP") ? t("application.documentRules.complete") : t("application.documentRules.incomplete")}
+              </p>
+            </div>
+          </div>
+
           <div className="rounded-2xl border border-border-light bg-surface-tertiary/60 p-4">
             <p className="mb-3 text-sm font-semibold text-text-primary">
               {locale === "ar" ? "إدارة المؤهلات والمستندات" : "Qualifications and documents"}
@@ -1641,51 +1638,33 @@ export default function PractitionerApplicationWizardThreeStep() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="price30egp">{t("profile.fields.sessionPrice30Egp.label")}</Label>
-              <InputField
-                id="price30egp"
-                inputMode="decimal"
-                value={effectiveState.sessionPrice30Egp}
-                onChange={(event) => patchState({ sessionPrice30Egp: event.target.value })}
-                placeholder={t("profile.fields.sessionPrice30Egp.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="price30usd">{t("profile.fields.sessionPrice30Usd.label")}</Label>
-              <InputField
-                id="price30usd"
-                inputMode="decimal"
-                value={effectiveState.sessionPrice30Usd}
-                onChange={(event) => patchState({ sessionPrice30Usd: event.target.value })}
-                placeholder={t("profile.fields.sessionPrice30Usd.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="price60egp">{t("profile.fields.sessionPrice60Egp.label")}</Label>
-              <InputField
-                id="price60egp"
-                inputMode="decimal"
-                value={effectiveState.sessionPrice60Egp}
-                onChange={(event) => patchState({ sessionPrice60Egp: event.target.value })}
-                placeholder={t("profile.fields.sessionPrice60Egp.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="price60usd">{t("profile.fields.sessionPrice60Usd.label")}</Label>
-              <InputField
-                id="price60usd"
-                inputMode="decimal"
-                value={effectiveState.sessionPrice60Usd}
-                onChange={(event) => patchState({ sessionPrice60Usd: event.target.value })}
-                placeholder={t("profile.fields.sessionPrice60Usd.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
+          <div className="mt-4 space-y-4">
+            <PricingDurationRow
+              durationLabel={locale === "ar" ? "جلسة 30 دقيقة" : "30-Minute Session"}
+              egpId="price30egp"
+              usdId="price30usd"
+              egpLabel={t("profile.fields.sessionPrice30Egp.label")}
+              usdLabel={t("profile.fields.sessionPrice30Usd.label")}
+              egpValue={effectiveState.sessionPrice30Egp}
+              usdValue={effectiveState.sessionPrice30Usd}
+              onEgpChange={(val: string) => patchState({ sessionPrice30Egp: val })}
+              onUsdChange={(val: string) => patchState({ sessionPrice30Usd: val })}
+              disabled={!canEdit}
+              locale={locale}
+            />
+            <PricingDurationRow
+              durationLabel={locale === "ar" ? "جلسة 60 دقيقة" : "60-Minute Session"}
+              egpId="price60egp"
+              usdId="price60usd"
+              egpLabel={t("profile.fields.sessionPrice60Egp.label")}
+              usdLabel={t("profile.fields.sessionPrice60Usd.label")}
+              egpValue={effectiveState.sessionPrice60Egp}
+              usdValue={effectiveState.sessionPrice60Usd}
+              onEgpChange={(val: string) => patchState({ sessionPrice60Egp: val })}
+              onUsdChange={(val: string) => patchState({ sessionPrice60Usd: val })}
+              disabled={!canEdit}
+              locale={locale}
+            />
           </div>
         </section>
 
@@ -1698,51 +1677,33 @@ export default function PractitionerApplicationWizardThreeStep() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="instant-price30egp">{t("profile.fields.instantBookingPrice30Egp.label")}</Label>
-              <InputField
-                id="instant-price30egp"
-                inputMode="decimal"
-                value={effectiveState.instantBookingPrice30Egp}
-                onChange={(event) => patchState({ instantBookingPrice30Egp: event.target.value })}
-                placeholder={t("profile.fields.instantBookingPrice30Egp.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instant-price30usd">{t("profile.fields.instantBookingPrice30Usd.label")}</Label>
-              <InputField
-                id="instant-price30usd"
-                inputMode="decimal"
-                value={effectiveState.instantBookingPrice30Usd}
-                onChange={(event) => patchState({ instantBookingPrice30Usd: event.target.value })}
-                placeholder={t("profile.fields.instantBookingPrice30Usd.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instant-price60egp">{t("profile.fields.instantBookingPrice60Egp.label")}</Label>
-              <InputField
-                id="instant-price60egp"
-                inputMode="decimal"
-                value={effectiveState.instantBookingPrice60Egp}
-                onChange={(event) => patchState({ instantBookingPrice60Egp: event.target.value })}
-                placeholder={t("profile.fields.instantBookingPrice60Egp.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
-            <div>
-              <Label htmlFor="instant-price60usd">{t("profile.fields.instantBookingPrice60Usd.label")}</Label>
-              <InputField
-                id="instant-price60usd"
-                inputMode="decimal"
-                value={effectiveState.instantBookingPrice60Usd}
-                onChange={(event) => patchState({ instantBookingPrice60Usd: event.target.value })}
-                placeholder={t("profile.fields.instantBookingPrice60Usd.placeholder")}
-                disabled={!canEdit}
-              />
-            </div>
+          <div className="mt-4 space-y-4">
+            <PricingDurationRow
+              durationLabel={locale === "ar" ? "حجز فوري 30 دقيقة" : "30-Minute Instant Booking"}
+              egpId="instant-price30egp"
+              usdId="instant-price30usd"
+              egpLabel={t("profile.fields.instantBookingPrice30Egp.label")}
+              usdLabel={t("profile.fields.instantBookingPrice30Usd.label")}
+              egpValue={effectiveState.instantBookingPrice30Egp}
+              usdValue={effectiveState.instantBookingPrice30Usd}
+              onEgpChange={(val: string) => patchState({ instantBookingPrice30Egp: val })}
+              onUsdChange={(val: string) => patchState({ instantBookingPrice30Usd: val })}
+              disabled={!canEdit}
+              locale={locale}
+            />
+            <PricingDurationRow
+              durationLabel={locale === "ar" ? "حجز فوري 60 دقيقة" : "60-Minute Instant Booking"}
+              egpId="instant-price60egp"
+              usdId="instant-price60usd"
+              egpLabel={t("profile.fields.instantBookingPrice60Egp.label")}
+              usdLabel={t("profile.fields.instantBookingPrice60Usd.label")}
+              egpValue={effectiveState.instantBookingPrice60Egp}
+              usdValue={effectiveState.instantBookingPrice60Usd}
+              onEgpChange={(val: string) => patchState({ instantBookingPrice60Egp: val })}
+              onUsdChange={(val: string) => patchState({ instantBookingPrice60Usd: val })}
+              disabled={!canEdit}
+              locale={locale}
+            />
           </div>
         </section>
 
@@ -1949,9 +1910,9 @@ export default function PractitionerApplicationWizardThreeStep() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] w-full bg-[radial-gradient(circle_at_top,_rgba(68,161,148,0.08),_rgba(237,241,245,0.92)_46%,_rgba(230,236,241,1)_100%)]">
-      <div className="w-full px-4 py-6 pb-10 sm:px-6 lg:px-8 lg:pb-12">
-        <div className="space-y-8">
-          <header className="space-y-4">
+      <div className="w-full px-4 py-4.5 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+        <div className="space-y-5">
+          <header className="space-y-2.5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
@@ -2004,58 +1965,30 @@ export default function PractitionerApplicationWizardThreeStep() {
             ) : null}
           </header>
 
-          <nav className="grid gap-4 lg:grid-cols-4" aria-label={t("application.wizard.eyebrow")}>
+          <nav className="grid gap-3 lg:grid-cols-4" aria-label={t("application.wizard.eyebrow")}>
             {uiSteps.map((step, index) => {
               const active = step.key === currentStep;
-              const completed = step.status === "complete";
               const stepStatusLabel = !completionReady
-                ? locale === "ar"
-                  ? "جاري التحقق..."
-                  : "Checking..."
+                ? (locale === "ar" ? "جاري التحقق..." : "Checking...")
                 : step.status === "complete"
                   ? t("application.completion.stepStatus.complete")
                   : step.status === "warning"
-                    ? t("application.completion.stepStatus.warning")
-                    : t("application.completion.stepStatus.incomplete");
+                    ? t("application.completion.stepStatus.needsAttention")
+                    : step.status === "incomplete" && step.blockerTitles.length === 0
+                      ? t("application.completion.stepStatus.notStarted")
+                      : t("application.completion.stepStatus.incomplete");
 
               return (
-                <button
+                <ApplicationStepCard
                   key={step.key}
-                  type="button"
+                  stepNumber={index + 1}
+                  label={step.label}
+                  status={step.status as any}
+                  active={active}
                   onClick={() => setSelectedStep(step.key)}
-                  data-testid={`practitioner-application-step-${step.key}`}
-                  aria-current={active ? "step" : undefined}
-                  className={`flex min-w-0 items-center gap-4 rounded-3xl border px-5 py-4 text-start transition ${
-                    active
-                      ? "border-primary/35 bg-white shadow-[0_12px_30px_-24px_rgba(68,161,148,0.34)]"
-                      : "border-border-light bg-white/70 hover:bg-white"
-                  }`}
-                >
-                  <UiStepCircle stepNumber={index + 1} active={active} completed={completed} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-semibold text-text-primary">{step.label}</span>
-                      <span className="shrink-0 text-xs font-semibold text-text-secondary">{stepStatusLabel}</span>
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-surface-tertiary">
-                      <div
-                        className="h-1.5 rounded-full bg-primary transition-all duration-300"
-                        style={{ width: `${Math.max(4, Math.min(100, step.percent || 4))}%` }}
-                      />
-                    </div>
-                    {step.blockerTitles.length > 0 ? (
-                      <p className="mt-2 line-clamp-2 text-xs text-warning-800">
-                        {t("application.wizard.missingPrefix")} {step.blockerTitles.join("، ")}
-                      </p>
-                    ) : step.pendingAdminTitles.length > 0 ? (
-                      <p className="mt-2 line-clamp-2 text-xs text-text-muted">
-                        {locale === "ar"
-                          ? "مرفوعة — بانتظار مراجعة الإدارة"
-                          : "Uploaded — pending admin review"}
-                      </p>
-                    ) : null}
-                  </div>
-                </button>
+                  statusLabel={stepStatusLabel}
+                  issueCount={step.blockerTitles.length}
+                />
               );
             })}
           </nav>
@@ -2183,20 +2116,27 @@ export default function PractitionerApplicationWizardThreeStep() {
                 </Button>
 
                 {currentStep === "paymentSubmit" ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={submitApplication}
-                    disabled={!canSubmit || submitMutation.isPending}
-                    startIcon={<CheckCircle2 className="h-4 w-4" />}
-                  >
-                    {submitMutation.isPending
-                      ? t("application.wizard.actions.submitting")
-                      : status === "CHANGES_REQUESTED" || status === "REJECTED"
-                        ? t("application.wizard.actions.resubmit")
-                        : t("application.wizard.actions.submit")}
-                  </Button>
+                  <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={submitApplication}
+                      disabled={!canSubmit || submitMutation.isPending}
+                      startIcon={<CheckCircle2 className="h-4 w-4" />}
+                    >
+                      {submitMutation.isPending
+                        ? t("application.wizard.actions.submitting")
+                        : status === "CHANGES_REQUESTED" || status === "REJECTED"
+                          ? t("application.wizard.actions.resubmit")
+                          : t("application.wizard.actions.submit")}
+                    </Button>
+                    {!canSubmit && (
+                      <span className="text-[11px] text-status-danger font-semibold text-end">
+                        {t("application.wizard.submitHelperText")}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <Button type="button" variant="primary" size="sm" onClick={goNext} endIcon={<NextIcon className="h-4 w-4" />}>
                     {t("application.wizard.actions.next")}

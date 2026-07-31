@@ -395,32 +395,6 @@ export class PackageSettlementService {
 
             const releaseEntries = [
               {
-                practitionerId: currentSettlement.practitionerId,
-                paymentId: currentSettlement.purchase.paymentId ?? null,
-                sessionId: null,
-                entryType: LedgerEntryType.PRACTITIONER_EARNING,
-                direction: LedgerDirection.CREDIT,
-                amount: practitionerAmount,
-                currencyCode: currentSettlement.currencyCode,
-                balanceBucket: WalletBalanceBucket.AVAILABLE,
-                referenceType,
-                referenceId,
-                description: 'Package settlement release practitioner earning.',
-                metadataJson: {
-                  source: 'package-settlement-release',
-                  packageSettlementId: currentSettlement.id,
-                  packagePurchaseId: currentSettlement.purchaseId,
-                  practitionerId: currentSettlement.practitionerId,
-                  patientId: currentSettlement.patientId,
-                  currencyCode: currentSettlement.currencyCode,
-                  sessionCount: currentSettlement.sessionCount,
-                  completedSessionsCount:
-                    currentSettlement.completedSessionsCount,
-                  releaseType: 'FULL_COMPLETION_ADMIN_RELEASE',
-                  releasedByAdminId: input.releasedByAdminId,
-                },
-              },
-              {
                 practitionerId: null,
                 paymentId: currentSettlement.purchase.paymentId ?? null,
                 sessionId: null,

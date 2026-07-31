@@ -16,7 +16,7 @@ export interface ThrottlePolicyLimit {
 export const THROTTLE_POLICIES: Record<string, ThrottlePolicyLimit> = {
   // ── Patient auth ──────────────────────────────────────────────
   'auth-patient-google': { limit: 10, windowMs: 15 * 60_000 },
-  'auth-patient-register': { limit: 5, windowMs: 60 * 60_000 },
+  'auth-patient-register': { limit: 5, windowMs: 15 * 60_000 },
   'auth-patient-login': { limit: 10, windowMs: 15 * 60_000 },
   'auth-patient-refresh': { limit: 30, windowMs: 15 * 60_000 },
   'auth-patient-forgot-password': { limit: 5, windowMs: 60 * 60_000 },

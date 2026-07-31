@@ -46,6 +46,8 @@ export const enSessionsCatalog = {
     practitionerNotFound: 'Practitioner profile was not found',
     practitionerNotBookable:
       'Practitioner is not available for scheduled booking',
+    normalBookingsPaused:
+      'This practitioner is not accepting new scheduled bookings right now',
     sessionNotFound: 'Session was not found',
     sessionAccessDenied: 'You do not have access to this session',
     invalidDuration: 'Session duration must be 30 or 60 minutes',

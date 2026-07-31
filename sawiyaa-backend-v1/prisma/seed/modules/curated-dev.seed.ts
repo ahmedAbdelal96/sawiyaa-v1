@@ -45,6 +45,7 @@ import { createHash } from 'crypto';
 import { seedCredentials, seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo, daysFromNow, hashPassword } from '../shared/seed.utils';
+import { reserveSeedSessionCode } from '../session-code-fixture';
 
 function uuid(seed: string): string {
   const h = createHash('md5').update(seed).digest('hex');
@@ -67,11 +68,6 @@ function addHours(base: Date, hours: number): Date {
   return new Date(base.getTime() + hours * 60 * 60 * 1000);
 }
 
-function buildSessionCode(seed: string): string {
-  const digest = createHash('sha1').update(seed).digest('hex').slice(0, 10).toUpperCase();
-  return `QA-${digest}`;
-}
-
 function practiceRegionCurrency(countryIsoCode: string | null): {
   currencyCode: 'EGP' | 'USD';
   provider: PaymentProvider;
@@ -83,7 +79,6 @@ function practiceRegionCurrency(countryIsoCode: string | null): {
 
 type CuratedSessionSeed = {
   id: string;
-  sessionCode: string;
   patientId: string;
   practitionerId: string;
   flowType: SessionFlowType;
@@ -754,7 +749,6 @@ export const curatedDevSeedModule: SeedModule = {
     const sessions: CuratedSessionSeed[] = [
       {
         id: uuid('curated-session-eg-upcoming'),
-        sessionCode: buildSessionCode('curated-session-eg-upcoming'),
         patientId: seedIds.patientProfiles.patientA,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         flowType: SessionFlowType.SCHEDULED,
@@ -778,7 +772,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-eg-active'),
-        sessionCode: buildSessionCode('curated-session-eg-active'),
         patientId: seedIds.patientProfiles.patientA,
         practitionerId: seedIds.practitionerProfiles.practitionerE,
         flowType: SessionFlowType.SCHEDULED,
@@ -802,7 +795,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-intl-ready'),
-        sessionCode: buildSessionCode('curated-session-intl-ready'),
         patientId: seedIds.patientProfiles.patientB,
         practitionerId: seedIds.practitionerProfiles.practitionerF,
         flowType: SessionFlowType.SCHEDULED,
@@ -826,7 +818,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-intl-completed'),
-        sessionCode: buildSessionCode('curated-session-intl-completed'),
         patientId: seedIds.patientProfiles.patientB,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         flowType: SessionFlowType.SCHEDULED,
@@ -851,7 +842,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('qa-manual-decision-eligible'),
-        sessionCode: buildSessionCode('qa-manual-decision-eligible'),
         patientId: seedIds.patientProfiles.patientA,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         flowType: SessionFlowType.SCHEDULED,
@@ -876,7 +866,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-cancelled'),
-        sessionCode: buildSessionCode('curated-session-cancelled'),
         patientId: seedIds.patientProfiles.patientB,
         practitionerId: seedIds.practitionerProfiles.practitionerD,
         flowType: SessionFlowType.SCHEDULED,
@@ -900,7 +889,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-package-1'),
-        sessionCode: buildSessionCode('curated-session-package-1'),
         patientId: seedIds.patientProfiles.patientA,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         flowType: SessionFlowType.SCHEDULED,
@@ -925,7 +913,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-package-2'),
-        sessionCode: buildSessionCode('curated-session-package-2'),
         patientId: seedIds.patientProfiles.patientA,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         flowType: SessionFlowType.SCHEDULED,
@@ -949,7 +936,6 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-pending-payment'),
-        sessionCode: buildSessionCode('curated-session-pending-payment'),
         patientId: seedIds.patientProfiles.patientB,
         practitionerId: seedIds.practitionerProfiles.practitionerE,
         flowType: SessionFlowType.SCHEDULED,
@@ -973,13 +959,12 @@ export const curatedDevSeedModule: SeedModule = {
       },
       {
         id: uuid('curated-session-refunded'),
-        sessionCode: buildSessionCode('curated-session-refunded'),
         patientId: seedIds.patientProfiles.patientB,
         practitionerId: seedIds.practitionerProfiles.practitionerF,
         flowType: SessionFlowType.SCHEDULED,
         sessionMode: SessionMode.VIDEO,
         durationMinutes: 60,
-        status: SessionStatus.REFUNDED,
+        status: SessionStatus.CANCELLED,
         requestedStartAt: daysAgo(18),
         scheduledStartAt: daysAgo(18),
         scheduledEndAt: addMinutes(daysAgo(18), 60),
@@ -998,6 +983,15 @@ export const curatedDevSeedModule: SeedModule = {
       },
     ] as const;
 
+    const sessionCodeById = new Map<string, string>();
+    const codeForSeed = (seed: string): string => {
+      const code = sessionCodeById.get(uuid(seed));
+      if (!code) {
+        throw new Error(`Missing canonical session code for curated seed ${seed}`);
+      }
+      return code;
+    };
+
     for (const session of sessions) {
       const resolvedPackagePurchaseId = session.packagePurchaseId
         ? (
@@ -1008,14 +1002,25 @@ export const curatedDevSeedModule: SeedModule = {
           )?.id ?? null
         : null;
 
+      const existingSession = await prisma.session.findUnique({
+        where: { id: session.id },
+        select: { sessionCode: true, createdAt: true },
+      });
+      const createdAt = existingSession?.createdAt ?? new Date();
+      const sessionCode =
+        existingSession?.sessionCode ??
+        (await reserveSeedSessionCode(prisma, createdAt, 'curated_dev'));
+      sessionCodeById.set(session.id, sessionCode);
+
       await prisma.session.upsert({
         where: { id: session.id },
         create: {
           ...session,
+          sessionCode,
+          createdAt,
           packagePurchaseId: resolvedPackagePurchaseId,
         },
         update: {
-          sessionCode: session.sessionCode,
           patientId: session.patientId,
           practitionerId: session.practitionerId,
           flowType: session.flowType,
@@ -1760,7 +1765,7 @@ export const curatedDevSeedModule: SeedModule = {
         channel: NotificationChannel.IN_APP,
         status: NotificationStatus.READ,
         locale: 'ar',
-        payloadJson: { sessionCode: buildSessionCode('curated-session-eg-upcoming') },
+        payloadJson: { sessionCode: codeForSeed('curated-session-eg-upcoming') },
         titleSnapshot: 'Payment completed',
         subjectSnapshot: null,
         bodySnapshot: 'Your booking payment has been completed successfully.',
@@ -1782,7 +1787,7 @@ export const curatedDevSeedModule: SeedModule = {
         channel: NotificationChannel.IN_APP,
         status: NotificationStatus.SENT,
         locale: 'ar',
-        payloadJson: { sessionCode: buildSessionCode('curated-session-eg-active') },
+        payloadJson: { sessionCode: codeForSeed('curated-session-eg-active') },
         titleSnapshot: 'Session ready to join',
         subjectSnapshot: null,
         bodySnapshot: 'Your session will start soon. Open the session page to join securely.',
@@ -1826,7 +1831,7 @@ export const curatedDevSeedModule: SeedModule = {
         channel: NotificationChannel.IN_APP,
         status: NotificationStatus.SENT,
         locale: 'ar',
-        payloadJson: { sessionCode: buildSessionCode('curated-session-eg-upcoming') },
+        payloadJson: { sessionCode: codeForSeed('curated-session-eg-upcoming') },
         titleSnapshot: 'New confirmed session',
         subjectSnapshot: null,
         bodySnapshot: 'A session has been confirmed with your patient.',

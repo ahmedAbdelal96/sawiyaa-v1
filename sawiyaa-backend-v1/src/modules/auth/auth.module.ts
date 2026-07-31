@@ -47,6 +47,9 @@ import { RefreshPractitionerTokenUseCase } from './use-cases/refresh-practitione
 import { RegisterPatientWithEmailPasswordUseCase } from './use-cases/register-patient-with-email-password.use-case';
 import { RegisterPatientWithGoogleUseCase } from './use-cases/register-patient-with-google.use-case';
 import { RegisterPractitionerAccountUseCase } from './use-cases/register-practitioner-account.use-case';
+import { StartPractitionerRegistrationUseCase } from './use-cases/start-practitioner-registration.use-case';
+import { VerifyPractitionerRegistrationEmailUseCase } from './use-cases/verify-practitioner-registration-email.use-case';
+import { OtpChallengeRepository } from '../verification/repositories/otp-challenge.repository';
 import { RequestPractitionerPasswordResetUseCase } from './use-cases/request-practitioner-password-reset.use-case';
 import { ResetPractitionerPasswordUseCase } from './use-cases/reset-practitioner-password.use-case';
 import { RequestPatientPasswordResetUseCase } from './use-cases/request-patient-password-reset.use-case';
@@ -64,6 +67,7 @@ import { VerificationModule } from '../verification/verification.module';
 import { CountryRepository } from '../patients/repositories/country.repository';
 import { PractitionerLoginOtpConfigurationWarningService } from './services/practitioner-login-otp-configuration-warning.service';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 
 @Module({
   imports: [JwtModule.register({}), VerificationModule, PresenceModule],
@@ -113,6 +117,9 @@ import { PhoneNumberValidationService } from '@common/validation/phone-number-va
     ConfirmPatientPasswordResetUseCase,
     ResetPatientPasswordUseCase,
     RegisterPractitionerAccountUseCase,
+    StartPractitionerRegistrationUseCase,
+    VerifyPractitionerRegistrationEmailUseCase,
+    OtpChallengeRepository,
     LoginPractitionerPasswordUseCase,
     VerifyPractitionerLoginOtpUseCase,
     RequestPractitionerPasswordResetUseCase,
@@ -127,6 +134,7 @@ import { PhoneNumberValidationService } from '@common/validation/phone-number-va
     VerifyAdminStepUpUseCase,
     PractitionerLoginOtpConfigurationWarningService,
     PhoneNumberValidationService,
+    PractitionerSpecialtyIntegrityService,
   ],
   exports: [
     JwtAccessAuthGuard,

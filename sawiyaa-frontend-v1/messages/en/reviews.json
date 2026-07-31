@@ -74,15 +74,15 @@
       "success": "Moderation decision updated successfully.",
       "error": "Could not update the moderation decision. Please try again.",
       "decisions": {
-        "APPROVE_AS_IS": {
+        "APPROVED_AS_IS": {
           "title": "Approve as-is",
           "description": "Publish the original patient rating without changing it."
         },
-        "EDIT_AND_APPROVE": {
+        "EDITED_AND_APPROVED": {
           "title": "Edit and approve",
           "description": "Keep the original patient rating internally, then publish the public rating you choose."
         },
-        "REJECT_PUBLISHING": {
+        "REJECTED_PUBLISHING": {
           "title": "Reject publishing",
           "description": "Keep the review internal and do not include it in the public average."
         },
@@ -90,7 +90,7 @@
           "title": "Internal note only",
           "description": "Keep this decision internal only and do not show it publicly."
         },
-        "EXCLUDE_FROM_PUBLIC_AVERAGE": {
+        "EXCLUDED_FROM_PUBLIC_AVERAGE": {
           "title": "Exclude from public average",
           "description": "Keep the review internal but do not count it in the practitioner average."
         }
@@ -105,11 +105,11 @@
     "decisions": {
       "pending": "Pending moderation",
       "AUTO_APPROVED_POSITIVE": "Auto-published",
-      "APPROVE_AS_IS": "Approved as-is",
-      "EDIT_AND_APPROVE": "Edited and approved",
+      "APPROVED_AS_IS": "Approved as-is",
+      "EDITED_AND_APPROVED": "Edited and approved",
       "REJECT_PUBLISHING": "Rejected publishing",
       "INTERNAL_NOTE_ONLY": "Internal note only",
-      "EXCLUDE_FROM_PUBLIC_AVERAGE": "Excluded from practitioner average"
+      "EXCLUDED_FROM_PUBLIC_AVERAGE": "Excluded from practitioner average"
     },
     "validation": {
       "decisionRequired": "Choose a moderation decision.",
@@ -150,7 +150,13 @@
       "session": "Session",
       "status": "Status",
       "rating": "Rating",
-      "submitted": "Submitted"
+      "submitted": "Submitted",
+      "patientRating": "Patient Rating",
+      "publicRating": "Public Rating",
+      "averageInclusion": "Counts in Average",
+      "comment": "Comment",
+      "publicationStatus": "Publication Status",
+      "moderationDecision": "Moderation Decision"
     },
     "summary": {
       "average": "Avg"
@@ -236,7 +242,7 @@
       },
       "fields": {
         "practitioner": "Practitioner",
-        "sessionId": "Session ID",
+        "sessionCode": "Session Code",
         "submittedAt": "Submitted",
         "publishedAt": "Published",
         "moderatedAt": "Last moderation update"

@@ -48,7 +48,7 @@ export type SessionEarningReviewListRow = {
 
 export type SessionEarningReviewSessionRow = {
   id: string;
-  sessionCode: string;
+  sessionCode: string | null;
   status: SessionEarningReviewSessionSummaryDto['status'];
   paymentCoverageType: SessionEarningReviewSessionSummaryDto['paymentCoverageType'];
   scheduledStartAt: Date | null;

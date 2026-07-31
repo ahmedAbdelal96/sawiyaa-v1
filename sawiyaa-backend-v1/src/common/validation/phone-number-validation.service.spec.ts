@@ -9,11 +9,21 @@ describe('PhoneNumberValidationService', () => {
     ['+20 101 234 5678', 'EG', '+201012345678'],
     ['0020-101-234-5678', 'EG', '+201012345678'],
   ])('normalizes %s to %s', (input, country, expected) => {
-    expect(service.validate(input, country)).toEqual({
+    expect(service.validate(input, country)).toMatchObject({
       valid: true,
       e164: expected,
       countryCode: 'EG',
     });
+  });
+
+  it.each([
+    ['1012345678', 'EG', '+201012345678'],
+    ['٠١٠١٢٣٤٥٦٧٨', 'EG', '+201012345678'],
+    ['0551234567', 'SA', '+966551234567'],
+    ['551234567', 'SA', '+966551234567'],
+  ])('normalizes country-aware input %s to %s', (input, country, expected) => {
+    const result = service.validate(input, country);
+    expect(result.valid && result.e164).toBe(expected);
   });
 
   it.each([
@@ -29,7 +39,9 @@ describe('PhoneNumberValidationService', () => {
   });
 
   it('raises a structured error for invalid input', () => {
-    expect(() => service.assertValid('010123', 'EG')).toThrow(BadRequestException);
+    expect(() => service.assertValid('010123', 'EG')).toThrow(
+      BadRequestException,
+    );
     try {
       service.assertValid('010123', 'EG');
       throw new Error('expected validation to fail');

@@ -45,6 +45,7 @@ export class ListMyPractitionerCouponRedemptionsUseCase {
       items: items.map((item) => ({
         id: item.id,
         sessionId: item.sessionId,
+        sessionCode: item.session?.sessionCode ?? null,
         paymentId: item.paymentId,
         patientDisplayName:
           item.patient.displayName ?? item.patient.user.displayName ?? null,

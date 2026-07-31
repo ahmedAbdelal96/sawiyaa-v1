@@ -4,7 +4,7 @@ import {
   BadRequestException,
   Optional,
 } from '@nestjs/common';
-import { PractitionerApplicationStatus, Prisma, SecurityAuditOutcome } from '@prisma/client';
+import { PractitionerApplicationStatus, Prisma, ReviewCaseStatus, ReviewRequirementSeverity, SecurityAuditOutcome } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -14,6 +14,7 @@ import { AdminPractitionerApplicationRepository } from '../repositories/admin-pr
 import { AdminPractitionerApplicationNotificationService } from '../services/admin-practitioner-application-notification.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
 
 /**
  * Requests changes for a practitioner application.
@@ -28,6 +29,7 @@ export class RequestPractitionerApplicationChangesUseCase {
     private readonly transitionPolicy: PractitionerApplicationTransitionPolicy,
     private readonly applicationRepository: AdminPractitionerApplicationRepository,
     private readonly notificationService: AdminPractitionerApplicationNotificationService,
+    private readonly reviewCaseService: PractitionerReviewCaseService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
@@ -37,6 +39,17 @@ export class RequestPractitionerApplicationChangesUseCase {
     adminUserId: string;
     reason: string;
     note?: string;
+    requirements?: Array<{
+      section: any;
+      fieldPath?: string;
+      credentialType?: any;
+      title: string;
+      reason: string;
+      instructions?: string;
+      dueAt?: string;
+      severity?: any;
+      operationalImpact?: any[];
+    }>;
   }) {
     const existing = await this.applicationRepository.findById(input.id);
 
@@ -87,6 +100,41 @@ export class RequestPractitionerApplicationChangesUseCase {
           },
           tx,
         );
+
+        const reviewCase = await tx.practitionerReviewCase.findFirst({
+          where: {
+            practitionerId: latest.practitioner.id,
+            status: {
+              in: [
+                ReviewCaseStatus.PENDING_REVIEW,
+                ReviewCaseStatus.UNDER_REVIEW,
+                ReviewCaseStatus.CHANGES_REQUESTED,
+                ReviewCaseStatus.RESUBMITTED,
+              ],
+            },
+          },
+          orderBy: { updatedAt: 'desc' },
+        });
+        const requirements = input.requirements ?? [
+          {
+            section: 'COMPLIANCE',
+            title: reason,
+            reason,
+            severity: ReviewRequirementSeverity.BLOCKING,
+          },
+        ];
+        if (reviewCase) {
+          await this.reviewCaseService.requestChanges({
+            caseId: reviewCase.id,
+            adminUserId: input.adminUserId,
+            reason,
+            requirements: requirements.map((item) => ({
+              ...item,
+              dueAt: item.dueAt ? new Date(item.dueAt) : undefined,
+            })),
+            tx,
+          });
+        }
         await this.securityAuditService?.recordRequired(tx, {
           action: 'security.practitioner.application.request-changes',
           outcome: SecurityAuditOutcome.SUCCESS,

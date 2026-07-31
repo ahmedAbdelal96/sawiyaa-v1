@@ -108,12 +108,12 @@ export async function getCanonicalUnreadSummary() {
   return extractApiData<CanonicalUnreadSummaryResponse>(response);
 }
 
-export async function createPatientSupportTicket(payload: { description: string }) {
+export async function createPatientSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
   const response = await apiClient.post("/patients/me/support/tickets", payload);
   return extractApiData<any>(response);
 }
 
-export async function createPractitionerSupportTicket(payload: { description: string }) {
+export async function createPractitionerSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
   const response = await apiClient.post("/practitioners/me/support/tickets", payload);
   return extractApiData<any>(response);
 }

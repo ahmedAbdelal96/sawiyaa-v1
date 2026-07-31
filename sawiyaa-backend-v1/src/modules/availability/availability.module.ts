@@ -15,9 +15,10 @@ import { ResolvePractitionerTimezoneService } from './services/resolve-practitio
 import { ValidateAvailabilitySessionConflictsService } from './services/validate-availability-session-conflicts.service';
 import { ValidateAvailabilityOverlapService } from './services/validate-availability-overlap.service';
 import { AvailabilitySlotEditabilityService } from './services/availability-slot-editability.service';
-import { CopyPractitionerAvailabilityWeekToNextUseCase } from './use-cases/copy-practitioner-availability-week-to-next.use-case';
+import { AvailabilityScheduleRepeatService } from './services/availability-schedule-repeat.service';
 import { CreatePractitionerAvailabilityWeekUseCase } from './use-cases/create-practitioner-availability-week.use-case';
 import { GetMyAvailabilityWeeksUseCase } from './use-cases/get-my-availability-weeks.use-case';
+import { GetPractitionerAvailabilityWeekDetailsUseCase } from './use-cases/get-practitioner-availability-week-details.use-case';
 import { ListPublicPractitionerAvailabilityWindowsUseCase } from './use-cases/list-public-practitioner-availability-windows.use-case';
 import { PublishPractitionerAvailabilityWeekUseCase } from './use-cases/publish-practitioner-availability-week.use-case';
 import { UpdatePractitionerAvailabilityWeekUseCase } from './use-cases/update-practitioner-availability-week.use-case';
@@ -47,9 +48,10 @@ import { UpdatePractitionerAvailabilityWeekUseCase } from './use-cases/update-pr
     AvailabilityWeekCalendarService,
     AvailabilityWeekOverviewService,
     GetMyAvailabilityWeeksUseCase,
+    GetPractitionerAvailabilityWeekDetailsUseCase,
     CreatePractitionerAvailabilityWeekUseCase,
     UpdatePractitionerAvailabilityWeekUseCase,
-    CopyPractitionerAvailabilityWeekToNextUseCase,
+    AvailabilityScheduleRepeatService,
     PublishPractitionerAvailabilityWeekUseCase,
     ListPublicPractitionerAvailabilityWindowsUseCase,
   ],

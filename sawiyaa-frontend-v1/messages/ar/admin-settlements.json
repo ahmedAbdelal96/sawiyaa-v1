@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "title": "تسويات المختصين",
+    "description": "مراجعة مستحقات المختصين قبل إضافة الرصيد إلى المحفظة.",
+    "detailTitle": "تفاصيل التسوية",
+    "detailDescription": "راجع التسوية والتعديلات والاعتماد وسجل التدقيق."
+  },
+  "eyebrow": "قائمة التسويات المحاسبية",
+  "title": "تسويات المختصين",
+  "description": "راجع مستحقات المختصين الناتجة عن الجلسات المكتملة، وأضف التعديلات ثم اعتمد المبلغ النهائي لإضافته إلى محفظة المنصة. لا يتم التحويل البنكي من هذه الصفحة.",
+  "system": "النظام",
+  "tabs": {
+    "label": "حالة التسوية",
+    "UNDER_REVIEW": "تحتاج مراجعة",
+    "CREDITED": "أضيفت للمحفظة",
+    "PAID_OUT": "تم التحويل للمختص",
+    "REJECTED": "مرفوضة",
+    "ALL": "كل التسويات"
+  },
+  "filters": {
+    "practitioner": "ابحث باسم المختص",
+    "search": "بحث",
+    "searchPlaceholder": "كود الجلسة أو التسوية أو المختص أو المريض",
+    "currency": "العملة",
+    "fromDate": "تاريخ الإنشاء من",
+    "toDate": "تاريخ الإنشاء إلى",
+    "sort": "ترتيب",
+    "allStatuses": "كل الحالات",
+    "allCurrencies": "كل العملات",
+    "sortOptions": {
+      "createdAt_desc": "الأحدث أولاً",
+      "createdAt_asc": "الأقدم أولاً",
+      "amount_desc": "أعلى مستحق للمختص",
+      "amount_asc": "أقل مستحق للمختص",
+      "practitionerName_asc": "اسم المختص"
+    }
+  },
+  "table": {
+    "practitioner": "المختص",
+    "sessionCode": "كود الجلسة",
+    "patient": "المريض",
+    "sessionEndedAt": "انتهت الجلسة",
+    "customerPayment": "دفع العميل",
+    "practitionerAmount": "مستحق المختص",
+    "lastUpdated": "آخر تحديث",
+    "session": "الجلسة / المريض",
+    "date": "تاريخ الجلسة",
+    "original": "الدفع الأصلي",
+    "gross": "المستحق الإجمالي",
+    "adjustments": "التعديلات",
+    "finalCredit": "الإضافة النهائية للمحفظة",
+    "status": "الحالة",
+    "createdAt": "تاريخ الإنشاء",
+    "actions": "الإجراءات"
+  },
+  "actions": {
+    "reviewSettlement": "مراجعة التسوية",
+    "viewDetails": "عرض التفاصيل",
+    "retry": "حاول مرة أخرى",
+    "back": "العودة إلى التسويات",
+    "addAdjustment": "إضافة تعديل",
+    "saveAdjustment": "حفظ التعديل",
+    "cancel": "إلغاء",
+    "approve": "اعتماد وإضافة للمحفظة",
+    "reject": "رفض",
+    "confirmApprove": "اعتماد وإضافة للمحفظة",
+    "confirmApproveWithCurrency": "اعتماد وإضافة {amount} إلى المحفظة",
+    "confirmReject": "رفض التسوية",
+    "recordTransfer": "تسجيل تحويل للمختص"
+  },
+  "integrity": {
+    "walletCurrencyMismatch": "تعذر فتح الاعتماد بسبب عدم تطابق عملة المستحق النهائي مع عملة محفظة المختص. حدّث البيانات أو تواصل مع الدعم التقني.",
+    "refresh": "تحديث البيانات المالية"
+  },
+  "feedback": {
+    "adjustmentAdded": "تمت إضافة التعديل.",
+    "approved": "تم اعتماد التسوية وإضافة الرصيد للمحفظة.",
+    "rejected": "تم رفض التسوية."
+  },
+  "states": {
+    "error": "تعذر تحميل التسويات.",
+    "empty": "لا توجد تسويات",
+    "emptyDescription": "تظهر التسويات هنا عند دخول جلسة مكتملة مرحلة المراجعة المحاسبية.",
+    "emptyNeedsReview": {
+      "title": "لا توجد تسويات تحتاج مراجعة",
+      "description": "ستظهر هنا التسويات الجديدة للجلسات المكتملة."
+    },
+    "emptyCredited": {
+      "title": "لا توجد تسويات مضافة للمحفظة",
+      "description": "ستظهر هنا التسويات التي أضيفت إلى محافظ المختصين."
+    },
+    "emptyTransferred": {
+      "title": "لا توجد تسويات محولة",
+      "description": "ستظهر هنا التسويات المسجلة كمحولة إلى المختصين."
+    },
+    "emptyRejected": {
+      "title": "لا توجد تسويات مرفوضة",
+      "description": "ستظهر هنا التسويات المرفوضة."
+    },
+    "emptyAll": {
+      "title": "لا توجد تسويات",
+      "description": "جرّب تغيير الفلاتر أو عبارة البحث."
+    },
+    "actionError": "تعذر تنفيذ الإجراء.",
+    "noAdjustments": "لم تتم إضافة تعديلات.",
+    "noAudit": "لا توجد أحداث تدقيق متاحة."
+  },
+  "statuses": {
+    "DRAFT": "مسودة",
+    "UNDER_REVIEW": "تحتاج مراجعة",
+    "APPROVED": "معتمدة",
+    "REJECTED": "مرفوضة",
+    "CREDITED": "أضيفت للمحفظة",
+    "PAID_OUT": "تم التحويل للمختص",
+    "READY": "جاهزة",
+    "PROCESSING": "قيد التنفيذ",
+    "PAID": "مدفوعة",
+    "FAILED": "فشلت",
+    "CANCELLED": "ملغاة"
+  },
+  "adjustmentTypes": {
+    "PLATFORM_FEE": "رسوم المنصة",
+    "ADMINISTRATIVE_FEE": "رسوم إدارية",
+    "TAX": "ضريبة",
+    "MANUAL_CORRECTION": "تصحيح يدوي"
+  },
+  "detail": {
+    "eyebrow": "مراجعة التسوية",
+    "title": "تفاصيل التسوية",
+    "session": "الجلسة والأطراف",
+    "financial": "الحساب المالي",
+    "conversion": "لقطة تحويل العملة",
+    "adjustments": "التعديلات",
+    "appendOnly": "يتم حفظ التعديلات ضمن السجل المالي.",
+    "decision": "قرار المحاسب",
+    "decisionNote": "راجع الجلسة والمبلغ والتعديلات قبل اعتماد مستحق المختص. الاعتماد يضيف المبلغ النهائي إلى محفظة المختص داخل المنصة فقط.",
+    "readOnly": "هذه التسوية للقراءة فقط لأن قرارها المحاسبي اكتمل.",
+    "audit": "سجل التدقيق",
+    "externalTransfer": "التحويل الخارجي للمختص",
+    "externalTransferNote": "استخدم هذا الإجراء بعد تنفيذ التحويل الفعلي إلى الحساب البنكي أو وسيلة الدفع الخارجية للمختص. يؤكد الإجراء تسجيل التحويل وخصم المبلغ من رصيد المختص داخل المنصة.",
+    "transferRecorded": "تم تسجيل التحويل الخارجي بالفعل."
+  },
+  "fields": {
+    "patient": "المريض",
+    "practitioner": "المختص",
+    "sessionId": "الجلسة",
+    "sessionDate": "تاريخ الجلسة",
+    "sessionStatus": "حالة الجلسة",
+    "sessionType": "نوع الجلسة",
+    "originalPayment": "الدفع الأصلي",
+    "gross": "المستحق الإجمالي للمختص",
+    "adjustments": "إجمالي التعديلات",
+    "finalCredit": "الإضافة النهائية للمحفظة",
+    "exchangeRate": "سعر الصرف",
+    "exchangeSource": "مصدر السعر",
+    "converted": "المبلغ بعد التحويل",
+    "walletCurrency": "عملة المحفظة",
+    "patientPayment": "مدفوعات المريض",
+    "practitionerEntitlement": "مستحق المختص",
+    "entitlementCurrency": "عملة المستحق",
+    "calculatedWalletCredit": "المبلغ المحسوب للمحفظة",
+    "approvedWalletCredit": "المبلغ المعتمد للإضافة إلى المحفظة",
+    "difference": "الفرق",
+    "walletCreditOverrideReason": "سبب اختلاف مبلغ المحفظة"
+  },
+  "modals": {
+    "adjustmentTitle": "إضافة تعديل للتسوية",
+    "adjustmentDescription": "أضف تعديلاً بعد مراجعته. لا يضيف هذا الإجراء الرصيد للمحفظة بمفرده.",
+    "amount": "المبلغ",
+    "reason": "السبب",
+    "approveTitle": "اعتماد المستحق وإضافته إلى المحفظة",
+    "approveDescription": "سيتم اعتماد المبلغ النهائي وإضافته إلى محفظة المختص داخل المنصة. لن يتم تنفيذ أي تحويل بنكي أو خارجي في هذه الخطوة.",
+    "rejectTitle": "رفض التسوية",
+    "rejectDescription": "يجب إدخال السبب ولن تتم إضافة الرصيد للمحفظة.",
+    "rejectionReason": "سبب الرفض",
+    "payoutTitle": "تسجيل تحويل للمختص",
+    "payoutDescription": "يسجل هذا الإجراء تحويلاً خارجياً تم تنفيذه بالفعل، ولا يرسل الأموال تلقائياً.",
+    "transferMethod": "طريقة التحويل",
+    "externalReference": "مرجع التحويل الخارجي",
+    "transferDate": "تاريخ ووقت التحويل",
+    "notes": "ملاحظات",
+    "paymentMethod": "طريقة الدفع",
+    "approvedEntitlement": "المستحق المعتمد",
+    "payoutCurrency": "عملة التحويل",
+    "exchangeRate": "سعر الصرف (1 USD = X EGP)",
+    "calculatedAmount": "المبلغ المحسوب",
+    "actualAmount": "المبلغ الفعلي المحول",
+    "difference": "الفرق",
+    "overrideReason": "سبب اختلاف المبلغ",
+    "overrideReasonPlaceholder": "اشرح سبب اختلاف المبلغ الفعلي",
+    "useCalculated": "استخدام المبلغ المحسوب",
+    "noConversion": "لا يلزم تحويل العملة",
+    "legacyFxUnavailable": "لقطة سعر الصرف غير متاحة لهذا التحويل القديم",
+    "payoutWarning": "يسجل هذا الإجراء تحويلاً خارجياً تم تنفيذه بالفعل، ولا يرسل الأموال تلقائياً.",
+    "adjustmentType": "نوع التعديل",
+    "notApplied": "غير مطبق",
+    "noExternalTransfer": "سيتم اعتماد المستحق وإضافة المبلغ إلى المحفظة. لا يتم تنفيذ تحويل خارجي في هذه الخطوة."
+  },
+  "payout": {
+    "walletCurrency": "عملة المحفظة",
+    "walletDebit": "المبلغ المخصوم من المحفظة",
+    "transferFee": "رسوم التحويل",
+    "feeBearer": "من يتحمل رسوم التحويل؟",
+    "practitioner": "المختص",
+    "platform": "المنصة",
+    "netReceived": "صافي المبلغ المستلم",
+    "platformOutflow": "إجمالي ما خرج من المنصة"
+  }
+}

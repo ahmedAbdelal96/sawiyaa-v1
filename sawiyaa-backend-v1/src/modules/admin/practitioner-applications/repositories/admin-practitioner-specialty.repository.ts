@@ -26,4 +26,16 @@ export class AdminPractitionerSpecialtyRepository {
       },
     });
   }
+
+  replaceAll(
+    practitionerId: string,
+    specialties: Array<{ specialtyId: string; isPrimary: boolean }>,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.practitionerSpecialty.deleteMany({ where: { practitionerId } }).then(() =>
+      tx.practitionerSpecialty.createMany({
+        data: specialties.map((item) => ({ ...item, practitionerId })),
+      }),
+    );
+  }
 }

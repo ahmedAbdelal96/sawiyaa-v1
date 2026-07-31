@@ -134,6 +134,7 @@
     },
     "fields": {
       "sessionCount": "Session count",
+      "sessionCode": "Session Code",
       "discountPercent": "Discount rate",
       "duration": "Session duration",
       "paymentExpiresAt": "Payment expiration date",

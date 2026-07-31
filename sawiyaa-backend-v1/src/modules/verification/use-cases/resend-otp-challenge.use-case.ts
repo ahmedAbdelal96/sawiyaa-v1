@@ -68,17 +68,10 @@ export class ResendOtpChallengeUseCase {
       skipCooldown: true,
     });
 
-    if (!input.userId) {
-      throw new BadRequestException({
-        messageKey: 'auth.errors.otpDeliveryFailed',
-        error: 'OTP_USER_REQUIRED',
-      });
-    }
-
     this.logger.log(`OTP resend initiated (${input.purpose})`);
 
     await this.sendOtpChallengeUseCase.execute({
-      userId: input.userId,
+      userId: input.userId ?? null,
       purpose: input.purpose,
       channel: challenge.channel,
       target: challenge.target,

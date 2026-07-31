@@ -37,6 +37,7 @@ import { getMessagesPath } from "../utils/messages-routes";
 import PractitionerLaneThread from "./PractitionerLaneThread";
 import SessionLaneThread from "./SessionLaneThread";
 import SupportLaneThread from "./SupportLaneThread";
+import NewSupportMessageAction from "./NewSupportMessageAction";
 
 type Props = {
   role: UnifiedMessagingRole;
@@ -235,6 +236,7 @@ export default function UnifiedMessagesLauncher({
   );
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSupportTicketId, setSelectedSupportTicketId] = useState<string | null>(null);
+  const [isSupportComposeOpen, setIsSupportComposeOpen] = useState(false);
   const [selectedPractitionerRequestId, setSelectedPractitionerRequestId] = useState<string | null>(null);
   const [localSessionReads, setLocalSessionReads] = useState<SessionReadState>({});
   const [dismissedPrioritySessionId, setDismissedPrioritySessionId] = useState<string | null>(
@@ -363,6 +365,7 @@ export default function UnifiedMessagesLauncher({
   useEffect(() => {
     if (!continuityReady) return;
     if (activeLane !== "support") return;
+    if (isSupportComposeOpen) return;
     if (supportLane.items.length === 0) {
       const clear = window.setTimeout(() => setSelectedSupportTicketId(null), 0);
       return () => window.clearTimeout(clear);
@@ -372,7 +375,7 @@ export default function UnifiedMessagesLauncher({
     }
     const pick = window.setTimeout(() => setSelectedSupportTicketId(supportLane.items[0].id), 0);
     return () => window.clearTimeout(pick);
-  }, [activeLane, continuityReady, selectedSupportTicketId, supportLane.items]);
+  }, [activeLane, continuityReady, isSupportComposeOpen, selectedSupportTicketId, supportLane.items]);
 
   useEffect(() => {
     if (!continuityReady) return;
@@ -569,6 +572,15 @@ export default function UnifiedMessagesLauncher({
   const badgeValue = adjustedUnreadLikeCount > 99 ? "99+" : String(adjustedUnreadLikeCount);
   const activeLaneItems = laneMeta[activeLane].lane.items;
 
+  const handleNewSupportMessage = useCallback(() => {
+    if (role === "admin") return;
+
+    setActiveLane("support");
+    setIsSupportComposeOpen(true);
+    setSelectedSupportTicketId(null);
+    setIsHistoryOpen(false);
+  }, [role]);
+
   const footerHref = useMemo(() => {
     const laneParam = activeLane === "practitioner" ? "care" : activeLane;
     return getMessagesPath(null, role, {
@@ -705,6 +717,7 @@ export default function UnifiedMessagesLauncher({
                       type="button"
                       onClick={() => {
                         setActiveLane(lane);
+                        if (lane !== "support") setIsSupportComposeOpen(false);
                         setIsHistoryOpen(false);
                       }}
                       className={`relative inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2 py-2.5 text-xs font-semibold transition-all duration-150 ${
@@ -727,6 +740,15 @@ export default function UnifiedMessagesLauncher({
                 })}
             </div>
           </div>
+
+          {activeLane === "support" ? (
+            <NewSupportMessageAction
+              role={role}
+              locale={locale}
+              onClick={handleNewSupportMessage}
+              disabled={supportLane.loading}
+            />
+          ) : null}
 
           {/* ── Conversation switcher strip ── */}
           <div className="relative shrink-0 border-b border-border-light/60 bg-white/50 px-3 py-2 dark:border-white/8 dark:bg-transparent">
@@ -804,7 +826,10 @@ export default function UnifiedMessagesLauncher({
                           }
                           onSelect={() => {
                             if (activeLane === "session") setSelectedSessionId(item.id);
-                            if (activeLane === "support") setSelectedSupportTicketId(item.id);
+                            if (activeLane === "support") {
+                              setIsSupportComposeOpen(false);
+                              setSelectedSupportTicketId(item.id);
+                            }
                             if (activeLane === "practitioner") {
                               setSelectedPractitionerRequestId(item.id);
                             }
@@ -844,6 +869,7 @@ export default function UnifiedMessagesLauncher({
                   error: copy.error,
                 }}
                 onOpenFullChat={() => setIsOpen(false)}
+                isVisible={isPanelVisible}
                 onThreadActive={() =>
                   markSessionAsLocallyRead(
                     selectedSessionItem.id,
@@ -876,7 +902,9 @@ export default function UnifiedMessagesLauncher({
                   openFull: copy.supportOpenFull,
                 }}
                 onOpenFull={() => setIsOpen(false)}
+                isVisible={isPanelVisible}
                 onCreatedTicket={(ticketId) => {
+                  setIsSupportComposeOpen(false);
                   setSelectedSupportTicketId(ticketId);
                   laneMeta.support.lane.refetch();
                 }}
@@ -903,6 +931,7 @@ export default function UnifiedMessagesLauncher({
                   openFull: copy.practitionerOpenFull,
                 }}
                 onOpenFull={() => setIsOpen(false)}
+                isVisible={isPanelVisible}
               />
             ) : null}
           </main>

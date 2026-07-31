@@ -10,6 +10,7 @@ import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { RegisterPatientWithEmailPasswordUseCase } from './register-patient-with-email-password.use-case';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 describe('RegisterPatientWithEmailPasswordUseCase', () => {
   const prisma = {
@@ -49,6 +50,8 @@ describe('RegisterPatientWithEmailPasswordUseCase', () => {
     execute: jest.fn(),
   } as unknown as IssueAuthTokensUseCase;
 
+  const phoneNumberValidationService = new PhoneNumberValidationService();
+
   const useCase = new RegisterPatientWithEmailPasswordUseCase(
     prisma,
     userRepository,
@@ -58,6 +61,7 @@ describe('RegisterPatientWithEmailPasswordUseCase', () => {
     countryRepository,
     hashPasswordUseCase,
     issueAuthTokensUseCase,
+    phoneNumberValidationService,
   );
 
   beforeEach(() => {
@@ -74,15 +78,15 @@ describe('RegisterPatientWithEmailPasswordUseCase', () => {
       status: UserStatus.ACTIVE,
     });
     (userRepository.ensureRole as jest.Mock).mockResolvedValue(undefined);
-    (userRepository.createPatientProfileIfMissing as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      userRepository.createPatientProfileIfMissing as jest.Mock
+    ).mockResolvedValue(undefined);
     (userEmailRepository.upsertPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (authIdentityRepository.createPasswordIdentity as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      authIdentityRepository.createPasswordIdentity as jest.Mock
+    ).mockResolvedValue(undefined);
     (issueAuthTokensUseCase.execute as jest.Mock).mockResolvedValue({
       tokens: {
         accessToken: 'access-token',
@@ -183,13 +187,15 @@ describe('RegisterPatientWithEmailPasswordUseCase', () => {
       status: UserStatus.ACTIVE,
     });
     (userRepository.ensureRole as jest.Mock).mockResolvedValue(undefined);
-    (userRepository.createPatientProfileIfMissing as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      userRepository.createPatientProfileIfMissing as jest.Mock
+    ).mockResolvedValue(undefined);
     (userEmailRepository.upsertPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (authIdentityRepository.createPasswordIdentity as jest.Mock).mockRejectedValue(
+    (
+      authIdentityRepository.createPasswordIdentity as jest.Mock
+    ).mockRejectedValue(
       new PrismaClientKnownRequestError('Unique constraint', {
         code: 'P2002',
         clientVersion: 'test',

@@ -11,6 +11,7 @@ import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import type { ReactNode } from "react";
 import Avatar from "@/components/ui/avatar/Avatar";
+import { getSignInRouteForRole } from "@/config/route-access";
 
 type UserDropdownProps = {
   compact?: boolean;
@@ -70,7 +71,7 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   const handleLogout = async () => {
     setIsOpen(false);
     await logout();
-    router.push("/signin");
+    router.push(getSignInRouteForRole(user?.role));
     router.refresh();
   };
 

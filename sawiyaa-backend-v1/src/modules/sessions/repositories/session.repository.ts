@@ -9,9 +9,14 @@ import {
   SessionStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { sessionCodeSearchFilter } from '../utils/session-code-search.util';
 import { AdminSessionsSortDto } from '../dto/list-admin-sessions.dto';
 import { SessionPresentationFilter } from '../types/session-video.types';
 import { buildSessionPresentationFilterWhere } from '../utils/session-join-policy.util';
+import {
+  SessionCodeGenerationError,
+  SessionCodeGeneratorService,
+} from '../services/session-code-generator.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -127,26 +132,109 @@ export type SessionSummaryCandidate = Prisma.SessionGetPayload<{
 
 @Injectable()
 export class SessionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessionCodeGenerator: SessionCodeGeneratorService,
+  ) {}
 
   private getDb(tx?: Prisma.TransactionClient): DbClient {
     return tx ?? this.prisma;
   }
 
-  createSession(
-    data: Prisma.SessionUncheckedCreateInput,
+  async createSession(
+    data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'>,
     tx?: Prisma.TransactionClient,
+    creationFlow = 'unknown',
   ) {
-    return this.getDb(tx).session.create({
-      data,
-      include: this.sessionInclude,
-    });
+    if (!tx) {
+      return this.prisma.$transaction((transaction) =>
+        this.createSession(data, transaction, creationFlow),
+      );
+    }
+
+    const createdAt =
+      data.createdAt instanceof Date
+        ? data.createdAt
+        : data.createdAt
+          ? new Date(data.createdAt)
+          : new Date();
+    const savepoint = 'session_code_generation_retry';
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      await tx.$executeRawUnsafe(`SAVEPOINT ${savepoint}`);
+      let allocation: Awaited<
+        ReturnType<SessionCodeGeneratorService['reserveNextSessionCode']>
+      > | null = null;
+
+      try {
+        allocation = await this.sessionCodeGenerator.reserveNextSessionCode(
+          tx,
+          createdAt,
+          { creationFlow },
+        );
+        const session = await tx.session.create({
+          data: {
+            ...data,
+            createdAt,
+            sessionCode: allocation.code,
+          },
+          include: this.sessionInclude,
+        });
+        await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepoint}`);
+        return session;
+      } catch (error) {
+        await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+        await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepoint}`);
+
+        if (!this.isSessionCodeUniqueConflict(error) || !allocation) {
+          throw error;
+        }
+
+        this.sessionCodeGenerator.logCollision({
+          dateKey: allocation.dateKey,
+          sequence: allocation.sequence,
+          retryAttempt: attempt,
+          context: { creationFlow },
+        });
+        if (attempt === 3) {
+          throw new SessionCodeGenerationError(
+            'SESSION_CODE_GENERATION_FAILED',
+            'The session-code generator exhausted its collision retries.',
+            { dateKey: allocation.dateKey, retryAttempt: attempt, creationFlow },
+          );
+        }
+        await this.sessionCodeGenerator.advanceAfterCollision(tx, allocation.dateKey);
+      }
+    }
+
+    throw new SessionCodeGenerationError(
+      'SESSION_CODE_GENERATION_FAILED',
+      'The session-code generator failed unexpectedly.',
+      { creationFlow },
+    );
+  }
+
+  private isSessionCodeUniqueConflict(error: unknown): boolean {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+      return false;
+    }
+    const target = error.meta?.target;
+    return Array.isArray(target)
+      ? target.includes('sessionCode')
+      : String(target ?? '').toLowerCase().includes('sessioncode');
   }
 
   findById(sessionId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).session.findUnique({
       where: { id: sessionId },
       include: this.sessionInclude,
+    });
+  }
+
+  findByIdWithRichDetails(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).session.findUnique({
+      where: { id: sessionId },
+      include: this.richDetailsInclude,
     });
   }
 
@@ -499,8 +587,7 @@ export class SessionRepository {
     if (input.query?.trim()) {
       andFilters.push({
         sessionCode: {
-          contains: input.query.trim(),
-          mode: 'insensitive',
+          ...sessionCodeSearchFilter(input.query),
         },
       });
     }
@@ -568,8 +655,7 @@ export class SessionRepository {
     if (input.query?.trim()) {
       andFilters.push({
         sessionCode: {
-          contains: input.query.trim(),
-          mode: 'insensitive',
+          ...sessionCodeSearchFilter(input.query),
         },
       });
     }
@@ -894,36 +980,6 @@ export class SessionRepository {
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).sessionAttendanceEvent.create({ data });
-  }
-
-  async reserveNextSessionCode(
-    referenceDate: Date,
-    tx?: Prisma.TransactionClient,
-  ): Promise<string> {
-    const db = this.getDb(tx);
-    const year = referenceDate.getUTCFullYear();
-    const prefix = `SES-${year}-`;
-
-    await db.$executeRaw`SELECT pg_advisory_xact_lock(${year}::bigint)`;
-
-    const latest = await db.session.findFirst({
-      where: {
-        sessionCode: {
-          startsWith: prefix,
-        },
-      },
-      orderBy: [{ sessionCode: 'desc' }],
-      select: {
-        sessionCode: true,
-      },
-    });
-
-    const lastSequence = latest
-      ? Number.parseInt(latest.sessionCode.slice(prefix.length), 10)
-      : 0;
-    const nextSequence = Number.isFinite(lastSequence) ? lastSequence + 1 : 1;
-
-    return `${prefix}${nextSequence.toString().padStart(6, '0')}`;
   }
 
   listAttendanceEventsBySessionId(sessionId: string) {
@@ -1310,6 +1366,132 @@ export class SessionRepository {
             discountPercent: true,
           },
         },
+      },
+    },
+  } satisfies Prisma.SessionInclude;
+
+  private readonly richDetailsInclude = {
+    practitioner: {
+      select: {
+        id: true,
+        publicSlug: true,
+        professionalTitle: true,
+        avatarUrl: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+          },
+        },
+        specialties: {
+          select: {
+            isPrimary: true,
+            specialty: {
+              select: {
+                id: true,
+                nameAr: true,
+                nameEn: true,
+              },
+            },
+          },
+        },
+      },
+    },
+    patient: {
+      select: {
+        id: true,
+        dateOfBirth: true,
+        gender: true,
+        user: {
+          select: {
+            id: true,
+            displayName: true,
+            defaultLocale: true,
+          },
+        },
+        country: {
+          select: {
+            id: true,
+            isoCode: true,
+            name: true,
+            nativeName: true,
+          },
+        },
+      },
+    },
+    packagePurchase: {
+      select: {
+        id: true,
+        packagePlanId: true,
+        packagePlan: {
+          select: {
+            id: true,
+            code: true,
+            title: true,
+            discountPercent: true,
+          },
+        },
+      },
+    },
+    payments: {
+      select: {
+        id: true,
+        paymentPurpose: true,
+        status: true,
+        amountTotal: true,
+        currencyCode: true,
+        provider: true,
+        initiatedAt: true,
+      },
+    },
+    conversations: {
+      select: {
+        id: true,
+        status: true,
+        conversationRef: true,
+      },
+    },
+    events: {
+      select: {
+        id: true,
+        eventType: true,
+        actorType: true,
+        reason: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    },
+    corporateSponsorship: {
+      select: {
+        id: true,
+        coverageType: true,
+        originalAmount: true,
+        coveredAmount: true,
+        patientPayAmount: true,
+        currency: true,
+        benefitPlan: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    },
+    reviews: {
+      select: {
+        id: true,
+        ratingValue: true,
+        reviewTitle: true,
+        reviewText: true,
+        submittedAt: true,
       },
     },
   } satisfies Prisma.SessionInclude;

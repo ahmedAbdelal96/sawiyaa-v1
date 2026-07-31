@@ -160,7 +160,19 @@ export class MessagingUseCase {
     const conversation = await this.requireConversation(conversationId);
     await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
-    const result = await this.repository.markRead({ conversationId, userId: actor.id, messageId });
+    const participantRole = actor.roles.some((role) =>
+      [AppRole.ADMIN, AppRole.SUPER_ADMIN].includes(role),
+    )
+      ? ConversationParticipantRole.ADMIN
+      : actor.roles.includes(AppRole.SUPPORT_AGENT)
+        ? ConversationParticipantRole.SUPPORT_AGENT
+        : undefined;
+    const result = await this.repository.markRead({
+      conversationId,
+      userId: actor.id,
+      messageId,
+      participantRole,
+    });
     const unreadCount = await this.repository.countUnread(conversationId, actor.id, result.lastReadAt, result.lastReadMessageId);
     return { item: { conversationId, ...result, lastReadAt: result.lastReadAt?.toISOString() ?? null, unreadCount, hasUnread: unreadCount > 0 } };
   }

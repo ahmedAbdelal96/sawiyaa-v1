@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useSidebar, useSidebarStore } from "@/stores";
 import { useLocale, useTranslations } from "next-intl";
@@ -170,6 +170,9 @@ function SidebarRow({
   );
 }
 
+// ---------------------------------------------------------------------------
+// SidebarSubItem
+// ---------------------------------------------------------------------------
 function SidebarSubItem({
   active,
   href,
@@ -230,12 +233,38 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
 
   const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
 
+  const allPaths = useMemo(() => {
+    const paths: string[] = [];
+    navigation.forEach((section) => {
+      section.items.forEach((item) => {
+        if (item.path) {
+          paths.push(basePathPrefix + item.path);
+        }
+        item.subItems?.forEach((sub) => {
+          if (sub.path) {
+            paths.push(basePathPrefix + sub.path);
+          }
+        });
+      });
+    });
+    return paths;
+  }, [navigation, basePathPrefix]);
+
   const isActive = (path: string) => {
     const fullPath = basePathPrefix + path;
     if (fullPath === "/") {
-      return pathWithoutLocale === fullPath;
+      return pathWithoutLocale === "/";
     }
-    return pathWithoutLocale === fullPath || pathWithoutLocale.startsWith(`${fullPath}/`);
+
+    const isMatch = pathWithoutLocale === fullPath || pathWithoutLocale.startsWith(`${fullPath}/`);
+    if (!isMatch) return false;
+
+    const hasLongerMatch = allPaths.some((otherPath) => {
+      if (otherPath === fullPath || otherPath.length <= fullPath.length) return false;
+      return pathWithoutLocale === otherPath || pathWithoutLocale.startsWith(`${otherPath}/`);
+    });
+
+    return !hasLongerMatch;
   };
 
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
@@ -460,12 +489,10 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
         <BrandMark 
           compact={!isVisible} 
           href={basePathPrefix + "/"} 
-          onClick={(e) => {
-            if (!isExpanded) {
-              e.preventDefault();
-              setIsHovered(false);
-              useSidebarStore.getState().toggleSidebar();
-            }
+          asButton
+          onClick={() => {
+            setIsHovered(false);
+            useSidebarStore.getState().toggleSidebar();
           }}
         />
       </div>

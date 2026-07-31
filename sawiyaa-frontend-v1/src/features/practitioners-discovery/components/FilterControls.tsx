@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
 import { Drawer, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
+import MultiSelect from "@/components/form/MultiSelect";
 import { MoneyText } from "@/components/money/MoneyText";
 import { mapPractitionerFilterMoney } from "../lib/practitioner-filter-money";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
@@ -232,7 +233,17 @@ export default function FilterControls({
   const currentSearch = searchParams.get("search") ?? "";
   const currentSpecialtyCategorySlug = searchParams.get("specialtyCategorySlug") ?? "";
   const currentSpecialtySlug = searchParams.get("specialtySlug") ?? "";
-  const currentLanguage = searchParams.get("language") ?? "";
+  const currentLanguageCodes = Array.from(
+    new Set(
+      [
+        ...searchParams.getAll("languageCodes"),
+        ...(searchParams.get("language") ? [searchParams.get("language") ?? ""] : []),
+      ]
+        .flatMap((value) => value.split(","))
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
   const currentCountry = searchParams.get("country") ?? "";
   const currentSort = searchParams.get("sort") ?? "recommended";
   const currentLimit = searchParams.get("limit") ?? "12";
@@ -281,7 +292,7 @@ export default function FilterControls({
     currentSearch.trim(),
     currentSpecialtyCategorySlug,
     currentSpecialtySlug,
-    currentLanguage,
+    currentLanguageCodes.join(","),
     currentCountry,
     currentPractitionerKind,
     currentGender,
@@ -351,10 +362,11 @@ export default function FilterControls({
         ),
       })),
   ];
-  const languageOptions = [
-    { value: "", label: t("filter.allLanguages") },
-    ...filters.languages.map((item) => ({ value: item.value, label: item.label })),
-  ];
+  const languageOptions = filters.languages.map((item) => ({
+    value: item.value,
+    text: item.label,
+    selected: currentLanguageCodes.includes(item.value),
+  }));
   const countryOptions = [
     { value: "", label: t("filter.allCountries") },
     ...filters.countries.map((item) => ({
@@ -469,10 +481,12 @@ export default function FilterControls({
         {filters.languages.length > 0 ? (
           <div>
             <FilterSectionTitle title={t("filter.language")} />
-            <FilterSelect
-              value={currentLanguage}
-              onChange={(value) => updateParam("language", value)}
+            <MultiSelect
+              label=""
+              placeholder={t("filter.allLanguages")}
               options={languageOptions}
+              defaultSelected={currentLanguageCodes}
+              onChange={(values) => updateParam("languageCodes", values.join(","))}
             />
           </div>
         ) : null}

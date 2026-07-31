@@ -33,8 +33,8 @@
       "label": "البريد الإلكتروني"
     },
     "displayName": {
-      "label": "الاسم الظاهر",
-      "placeholder": "اكتب الاسم الظاهر"
+      "label": "الإسم",
+      "placeholder": "اكتب الإسم"
     },
     "dateOfBirth": {
       "label": "تاريخ الميلاد",
@@ -99,7 +99,7 @@
     "retry": "إعادة المحاولة"
   },
   "validation": {
-    "displayNameMax": "الاسم الظاهر يجب ألا يتجاوز 80 حرفًا.",
+    "displayNameMax": "الإسم يجب ألا يتجاوز 80 حرفًا.",
     "timezoneMax": "المنطقة الزمنية يجب ألا تتجاوز 60 حرفًا."
   },
   "feedback": {

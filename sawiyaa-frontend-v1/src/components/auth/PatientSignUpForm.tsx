@@ -1,69 +1,31 @@
 "use client";
 
-import { useMemo, useEffect, useRef } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { parsePhoneNumberFromString } from "libphonenumber-js/max";
 import Input from "@/components/form/input/InputField";
 import AuthPasswordField from "./AuthPasswordField";
 import Label from "@/components/form/Label";
-import PhoneInput from "@/components/form/group-input/PhoneInput";
+import { InternationalPhoneField } from "@/components/form/group-input/InternationalPhoneField";
+import { PHONE_COUNTRIES } from "@/features/auth/phone/phone-countries";
 import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import { usePatientRegister } from "@/features/auth/hooks/use-auth";
-import { ChevronLeftIcon } from "@/icons";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
+import { toAppError } from "@/lib/api/errors";
 import AuthSplitCard from "./AuthSplitCard";
 
-const DIAL_CODE_LOCAL_DIGITS: Record<string, { min: number; max: number }> = {
-  "+20": { min: 10, max: 10 },
-  "+966": { min: 9, max: 9 },
-  "+971": { min: 9, max: 9 },
-  "+965": { min: 8, max: 8 },
-  "+974": { min: 8, max: 8 },
-};
-
-const DIAL_CODES = [
-  { code: "+20", label: "Egypt" },
-  { code: "+966", label: "Saudi Arabia" },
-  { code: "+971", label: "UAE" },
-  { code: "+965", label: "Kuwait" },
-  { code: "+974", label: "Qatar" },
-];
-
-type Step1FormData = {
+type SignUpFormData = {
+  displayName: string;
   email: string;
+  phone: string;
+  phoneCountryCode: string;
   password: string;
   confirmPassword: string;
 };
-
-type Step2FormData = {
-  displayName: string;
-  phoneNumber: string;
-  dialCode: string;
-};
-
-function normalizeFullPhone(dialCode: string, phoneNumber: string): string {
-  const digits = phoneNumber.replace(/\D/g, "");
-  return `${dialCode}${digits}`;
-}
-
-function validatePhoneE164(dialCode: string, phoneNumber: string): boolean {
-  const digits = phoneNumber.replace(/\D/g, "");
-  if (digits.length < 7 || digits.length > 12) return false;
-
-  const spec = DIAL_CODE_LOCAL_DIGITS[dialCode];
-  if (spec) {
-    if (digits.length < spec.min || digits.length > spec.max) return false;
-  }
-
-  const fullDigits = `${dialCode}${digits}`.replace(/^\+/, "");
-  if (fullDigits.length < 8 || fullDigits.length > 15) return false;
-
-  return true;
-}
 
 export default function PatientSignUpForm({
   callbackUrl,
@@ -76,246 +38,300 @@ export default function PatientSignUpForm({
   const router = useRouter();
   const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
 
-  const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState<string | null>(null);
-
-  const [step1Data, setStep1Data] = useState<{
-    email: string;
-    password: string;
-  } | null>(null);
 
   const patientRegister = usePatientRegister();
   const isSubmitting = patientRegister.isPending;
 
-  const step1Schema = useMemo(() => {
+  const signUpSchema = useMemo(() => {
     return z
       .object({
+        displayName: z
+          .string()
+          .trim()
+          .min(1, isRtl ? "أدخل اسمك." : "Enter your name."),
         email: z
           .string()
           .trim()
-          .min(1, t("patientSignUp.validation.emailRequired"))
-          .email(t("patientSignUp.validation.emailInvalid")),
+          .min(1, isRtl ? "أدخل بريدك الإلكتروني." : "Enter your email.")
+          .email(isRtl ? "تحقق من البريد الإلكتروني." : "Check your email."),
+        phone: z.string().trim().optional(),
+        phoneCountryCode: z.string().optional(),
         password: z
           .string()
-          .min(1, t("patientSignUp.validation.passwordRequired"))
-          .min(8, t("patientSignUp.validation.passwordTooShort")),
-        confirmPassword: z.string().min(
-          1,
-          t("patientSignUp.validation.confirmPasswordRequired")
-        ),
+          .min(8, isRtl ? "استخدم 8 أحرف على الأقل." : "Use at least 8 characters."),
+        confirmPassword: z.string().min(1, isRtl ? "كلمتا المرور غير متطابقتين." : "Passwords do not match."),
       })
       .refine((data) => data.password === data.confirmPassword, {
-        message: t("patientSignUp.validation.passwordsMismatch"),
+        message: isRtl ? "كلمتا المرور غير متطابقتين." : "Passwords do not match.",
         path: ["confirmPassword"],
+      })
+      .superRefine((data, ctx) => {
+        if (data.phone) {
+          try {
+            const parsed = parsePhoneNumberFromString(data.phone, data.phoneCountryCode as any);
+            if (!parsed) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: isRtl ? "تأكّد من رقم الهاتف والدولة المختارة." : "Check your phone number and selected country.",
+                path: ["phone"],
+              });
+            } else if (!parsed.isValid()) {
+              const isPossible = parsed.isPossible();
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: isPossible
+                  ? (isRtl ? "تأكّد من رقم الهاتف والدولة المختارة." : "Check your phone number and selected country.")
+                  : (isRtl ? "رقم الهاتف غير مكتمل." : "Incomplete phone number."),
+                path: ["phone"],
+              });
+            }
+          } catch (e) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: isRtl ? "تأكّد من رقم الهاتف والدولة المختارة." : "Check your phone number and selected country.",
+              path: ["phone"],
+            });
+          }
+        }
       });
-  }, [t]);
+  }, [isRtl]);
 
-  const step2Schema = useMemo(() => {
-    return z.object({
-      displayName: z
-        .string()
-        .trim()
-        .min(1, t("patientSignUp.validation.nameRequired"))
-        .min(2, t("patientSignUp.validation.nameTooShort")),
-      phoneNumber: z.string().min(1, t("patientSignUp.validation.phoneRequired")),
-      dialCode: z.string().min(1),
-    });
-  }, [t]);
-
-  const form1 = useForm<Step1FormData>({
-    resolver: zodResolver(step1Schema),
-    mode: "onChange",
+  const form = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    mode: "onBlur",
     defaultValues: {
+      displayName: "",
       email: "",
+      phone: "",
+      phoneCountryCode: "EG",
       password: "",
       confirmPassword: "",
     },
   });
 
-  const form2 = useForm<Step2FormData>({
-    resolver: zodResolver(step2Schema),
-    mode: "onChange",
-    defaultValues: {
-      displayName: "",
-      phoneNumber: "",
-      dialCode: DIAL_CODES[0].code,
-    },
-  });
+  const watchedFields = useWatch({ control: form.control });
+  const isFormValid = form.formState.isValid;
 
-  const watchedStep1 = useWatch({ control: form1.control });
-  const watchedStep2 = useWatch({ control: form2.control });
+  const passwordVal = watchedFields.password || "";
+  const passwordStrength = useMemo(() => {
+    if (!passwordVal) return { score: 0, text: "", color: "" };
+    let score = 0;
+    if (passwordVal.length >= 8) score++;
+    if (/[a-z]/.test(passwordVal)) score++;
+    if (/[A-Z]/.test(passwordVal)) score++;
+    if (/[0-9]/.test(passwordVal) || /[^A-Za-z0-9]/.test(passwordVal)) score++;
 
-  const watchedStep2PhoneValid = validatePhoneE164(
-    watchedStep2.dialCode ?? DIAL_CODES[0].code,
-    watchedStep2.phoneNumber ?? ""
-  );
-
-  const isStep1Valid =
-    step === 1 && step1Schema.safeParse(watchedStep1).success;
-
-  const isStep2Valid =
-    step === 2 &&
-    step2Schema.safeParse(watchedStep2).success &&
-    watchedStep2PhoneValid;
-
-  const prevPhoneValidRef = useRef<boolean>(false);
-  useEffect(() => {
-    if (prevPhoneValidRef.current === false && watchedStep2PhoneValid) {
-      form2.clearErrors("phoneNumber");
+    let text = "";
+    let color = "";
+    if (score <= 1) {
+      text = isRtl ? "ضعيفة" : "Weak";
+      color = "bg-error-500";
+    } else if (score === 2) {
+      text = isRtl ? "متوسطة" : "Medium";
+      color = "bg-warning-500";
+    } else if (score >= 3) {
+      text = isRtl ? "قوية" : "Strong";
+      color = "bg-success-500";
     }
-    prevPhoneValidRef.current = watchedStep2PhoneValid;
-  }, [watchedStep2PhoneValid, form2]);
+    return { score, text, color };
+  }, [passwordVal, isRtl]);
 
-  function handlePhoneDialChange(dialLabel: string) {
-    const entry = DIAL_CODES.find((d) => d.label === dialLabel);
-    if (entry) {
-      form2.setValue("dialCode", entry.code, { shouldValidate: true });
+  const getFriendlyErrorMessage = (err: any) => {
+    if (!err) return "";
+
+    const appError = toAppError(err);
+    if (appError.statusCode === 429) {
+      const retryAfterSeconds = appError.retryAfterSeconds;
+      if (typeof retryAfterSeconds === "number" && retryAfterSeconds >= 60) {
+        return t("registrationRateLimitedMinutes", {
+          minutes: Math.ceil(retryAfterSeconds / 60),
+        });
+      }
+      if (typeof retryAfterSeconds === "number" && retryAfterSeconds > 0) {
+        return t("registrationRateLimitedSeconds", {
+          seconds: Math.ceil(retryAfterSeconds),
+        });
+      }
+      return t("registrationRateLimitedFallback");
     }
-  }
 
-  function handleNext(data: Step1FormData) {
-    setError(null);
-    setStep1Data({
-      email: data.email.trim().toLowerCase(),
-      password: data.password,
-    });
-    setStep(2);
-  }
+    const message = typeof err === "string" ? err : err.message || "";
+    const isEmailRegistered =
+      err.code === "EMAIL_ALREADY_REGISTERED" ||
+      err.messageKey === "auth.errors.emailAlreadyRegistered" ||
+      message.includes("EMAIL_ALREADY_REGISTERED") ||
+      message.includes("emailAlreadyRegistered");
+      
+    const isPhoneRegistered =
+      err.code === "PHONE_ALREADY_REGISTERED" ||
+      err.messageKey === "auth.errors.phoneAlreadyRegistered" ||
+      message.includes("PHONE_ALREADY_REGISTERED") ||
+      message.includes("phoneAlreadyRegistered");
 
-  function handleBack() {
-    setError(null);
-    setStep(1);
-  }
-
-  async function handleSubmit(data: Step2FormData) {
-    if (!step1Data) return;
-    setError(null);
-    if (!validatePhoneE164(data.dialCode, data.phoneNumber)) {
-      form2.setError("phoneNumber", {
-        message: t("patientSignUp.validation.phoneInvalid"),
-      });
-      return;
+    if (isEmailRegistered) {
+      return isRtl
+        ? "هذا البريد الإلكتروني مستخدم بالفعل. جرّب تسجيل الدخول."
+        : "This email is already registered. Try signing in.";
     }
+
+    if (isPhoneRegistered) {
+      return isRtl
+        ? "رقم الهاتف مستخدم بالفعل. جرّب تسجيل الدخول."
+        : "This phone number is already registered. Try signing in.";
+    }
+
+    if (err.status === 409 || err.statusCode === 409 || message.includes("409") || message.toLowerCase().includes("conflict")) {
+      return isRtl
+        ? "يوجد حساب بهذه البيانات بالفعل. جرّب تسجيل الدخول."
+        : "An account with these details already exists. Try signing in.";
+    }
+
+    return isRtl
+      ? "تعذر إنشاء الحساب الآن. حاول مرة أخرى."
+      : "Could not create the account now. Please try again.";
+  };
+
+  async function onSubmit(data: SignUpFormData) {
+    setError(null);
     try {
       await patientRegister.mutateAsync({
         displayName: data.displayName.trim(),
-        email: step1Data.email,
-        phone: normalizeFullPhone(data.dialCode, data.phoneNumber),
-        password: step1Data.password,
+        email: data.email.trim().toLowerCase(),
+        ...(data.phone?.trim() ? { phone: data.phone, phoneCountryCode: data.phoneCountryCode } : {}),
+        password: data.password,
       });
       router.replace(normalizedCallbackUrl ?? "/patient");
       router.refresh();
     } catch (submissionError) {
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : t("registrationError")
-      );
+      setError(getFriendlyErrorMessage(submissionError));
     }
   }
 
-  const modeLabels = {
-    patient: isRtl ? "بوابة تسجيل الدخول" : "Client Portal",
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors);
+    if (errorKeys.length > 0) {
+      const firstErrorKey = errorKeys[0];
+      if (firstErrorKey === "phone") {
+        const phoneInput = document.querySelector('input[type="tel"]') as HTMLInputElement | null;
+        phoneInput?.focus();
+      } else {
+        const input = document.getElementsByName(firstErrorKey)[0] as HTMLInputElement | null;
+        input?.focus();
+      }
+    }
   };
 
-  const getDynamicTitle = () => {
-    return isRtl ? "إنشاء حساب مراجع" : "Create a patient account";
-  };
-  const getDynamicSubtitle = () => {
-    return isRtl ? "أنشئ حسابك وابدأ حجز جلساتك بسهولة." : "Create your account and start booking sessions easily.";
+  const labels = {
+    title: isRtl ? "إنشاء حساب مستخدم" : "Create user account",
+    subtitle: isRtl ? "ابدأ بخطوات بسيطة." : "Start with simple steps.",
+    displayName: isRtl ? "الاسم" : "Name",
+    email: isRtl ? "البريد الإلكتروني" : "Email",
+    phone: isRtl ? "رقم الهاتف" : "Phone number",
+    password: isRtl ? "كلمة المرور" : "Password",
+    confirmPassword: isRtl ? "تأكيد كلمة المرور" : "Confirm password",
+    submit: isRtl ? "إنشاء الحساب" : "Create account",
+    alreadyHaveAccount: isRtl ? "لديك حساب بالفعل؟" : "Already have an account?",
+    signIn: isRtl ? "تسجيل الدخول" : "Sign In",
+    or: isRtl ? "أو" : "Or",
   };
 
   return (
     <AuthSplitCard
-      title={getDynamicTitle()}
-      subtitle={getDynamicSubtitle()}
+      title={labels.title}
+      subtitle={labels.subtitle}
       mode="patient"
       activeTab="signup"
     >
-      {/* Portal Indicator Badge */}
-      <div className="mb-6 flex select-none">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide border border-primary/15 bg-primary-light/40 text-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light">
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span>{modeLabels.patient}</span>
-        </div>
-      </div>
-
-      {/* Step progress bar */}
-      <div className="mb-6 space-y-1.5 select-none">
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                step === 1 ? "bg-primary" : "bg-primary/20 dark:bg-white/10"
-              }`}
-            />
-            <div
-              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                step === 2 ? "bg-primary" : "bg-primary/20 dark:bg-white/10"
-              }`}
-            />
-          </div>
-          <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">
-            {step === 1
-              ? t("patientSignUp.step1Label")
-              : t("patientSignUp.step2Label")}
-          </p>
-      </div>
-
-      {/* ─── STEP 1 ─── */}
-      {step === 1 && (
-        <form
-          onSubmit={form1.handleSubmit(handleNext)}
-          className="space-y-5"
-        >
-          {/* Email */}
+      <form
+        onSubmit={form.handleSubmit(onSubmit, onError)}
+        className="space-y-4"
+      >
+        {/* Name and Email in one row on desktop */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Name */}
           <div>
             <Label>
-              {t("patientSignUp.email")}{" "}
+              {labels.displayName}{" "}
               <span className="text-error-500">*</span>
             </Label>
             <Input
-              type="email"
-              placeholder={t("patientSignUp.emailPlaceholder")}
-              dir="ltr"
-              error={!!form1.formState.errors.email}
-              {...form1.register("email")}
+              type="text"
+              placeholder={t("patientSignUp.namePlaceholder")}
+              dir={isRtl ? "rtl" : "ltr"}
+              error={!!form.formState.errors.displayName}
+              aria-required="true"
+              aria-describedby={form.formState.errors.displayName ? "name-error" : undefined}
+              {...form.register("displayName")}
             />
-            {form1.formState.errors.email && (
-              <p className="mt-1.5 text-xs text-error-500">
-                {form1.formState.errors.email.message}
+            {form.formState.errors.displayName && (
+              <p id="name-error" className="mt-1 text-xs text-error-500" role="alert">
+                {form.formState.errors.displayName.message}
               </p>
             )}
           </div>
 
+          {/* Email */}
+          <div>
+            <Label>
+              {labels.email}{" "}
+              <span className="text-error-500">*</span>
+            </Label>
+            <Input
+              type="email"
+              inputMode="email"
+              placeholder={t("patientSignUp.emailPlaceholder")}
+              dir="ltr"
+              error={!!form.formState.errors.email}
+              aria-required="true"
+              aria-describedby={form.formState.errors.email ? "email-error" : undefined}
+              {...form.register("email")}
+            />
+            {form.formState.errors.email && (
+              <p id="email-error" className="mt-1 text-xs text-error-500" role="alert">
+                {form.formState.errors.email.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Phone */}
+        <div>
+          <InternationalPhoneField
+            countries={PHONE_COUNTRIES}
+            countryIso2={watchedFields.phoneCountryCode ?? "EG"}
+            value={watchedFields.phone ?? ""}
+            onCountryChange={(value) => form.setValue("phoneCountryCode", value, { shouldValidate: true })}
+            onValueChange={(value) => form.setValue("phone", value, { shouldValidate: true })}
+            label={labels.phone}
+            countryLabel={t("phoneCountry")}
+            countryPlaceholder={t("phoneCountryPlaceholder")}
+            searchPlaceholder={t("phoneCountrySearchPlaceholder")}
+            phonePlaceholder="01012345678"
+            countryError={form.formState.errors.phoneCountryCode?.message}
+            phoneError={form.formState.errors.phone?.message}
+            helperText={undefined}
+          />
+        </div>
+
+        {/* Password and Confirm Password in one row on desktop */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Password */}
           <div>
             <Label>
-              {t("patientSignUp.password")}{" "}
+              {labels.password}{" "}
               <span className="text-error-500">*</span>
             </Label>
             <AuthPasswordField
               placeholder={t("patientSignUp.passwordPlaceholder")}
-              error={!!form1.formState.errors.password}
-              {...form1.register("password")}
+              error={!!form.formState.errors.password}
+              aria-required="true"
+              aria-describedby={form.formState.errors.password ? "password-error" : undefined}
+              {...form.register("password")}
             />
-            {form1.formState.errors.password ? (
-              <p className="mt-1.5 text-xs text-error-500">
-                {form1.formState.errors.password.message}
-              </p>
-            ) : (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
-                {t("patientSignUp.passwordHint")}
+            {form.formState.errors.password && (
+              <p id="password-error" className="mt-1 text-xs text-error-500" role="alert">
+                {form.formState.errors.password.message}
               </p>
             )}
           </div>
@@ -323,152 +339,68 @@ export default function PatientSignUpForm({
           {/* Confirm Password */}
           <div>
             <Label>
-              {t("patientSignUp.confirmPassword")}{" "}
+              {labels.confirmPassword}{" "}
               <span className="text-error-500">*</span>
             </Label>
             <AuthPasswordField
               placeholder={t("patientSignUp.confirmPasswordPlaceholder")}
-              error={!!form1.formState.errors.confirmPassword}
-              {...form1.register("confirmPassword")}
+              error={!!form.formState.errors.confirmPassword}
+              aria-required="true"
+              aria-describedby={form.formState.errors.confirmPassword ? "confirmPassword-error" : undefined}
+              {...form.register("confirmPassword")}
             />
-            {form1.formState.errors.confirmPassword && (
-              <p className="mt-1.5 text-xs text-error-500">
-                {form1.formState.errors.confirmPassword.message}
+            {form.formState.errors.confirmPassword && (
+              <p id="confirmPassword-error" className="mt-1 text-xs text-error-500" role="alert">
+                {form.formState.errors.confirmPassword.message}
               </p>
             )}
           </div>
+        </div>
 
-          {error && (
-            <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
-              {error}
+        {/* Password Strength Indicator */}
+        {passwordVal && passwordVal.length > 0 && (
+          <div className="mt-1 space-y-1.5 select-none">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-text-secondary dark:text-text-secondary">
+                {isRtl ? "قوة كلمة المرور:" : "Password strength:"}{" "}
+                <span className="font-semibold">{passwordStrength.text}</span>
+              </span>
+              <span className="text-text-muted">
+                {isRtl ? "8 أحرف على الأقل" : "At least 8 characters"}
+              </span>
             </div>
-          )}
+            <div className="flex gap-1 h-1.5">
+              <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 1 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+              <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 2.5 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+              <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 4 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+            </div>
+          </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={!isStep1Valid}
-            className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t("patientSignUp.next")}
-          </button>
-        </form>
-      )}
+        {error && (
+          <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10" role="alert">
+            {error}
+          </div>
+        )}
 
-      {/* ─── STEP 2 ─── */}
-      {step === 2 && (
-        <form
-          onSubmit={form2.handleSubmit(handleSubmit)}
-          className="space-y-5"
+        <button
+          type="submit"
+          disabled={isSubmitting || !isFormValid}
+          className="flex w-full items-center justify-center rounded-2xl bg-[#24564F] hover:bg-[#1E4B45] px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {/* Name */}
-          <div>
-            <Label>
-              {t("patientSignUp.name")}{" "}
-              <span className="text-error-500">*</span>
-            </Label>
-            <Input
-              type="text"
-              placeholder={t("patientSignUp.namePlaceholder")}
-              dir={isRtl ? "rtl" : "ltr"}
-              error={!!form2.formState.errors.displayName}
-              {...form2.register("displayName")}
-            />
-            {form2.formState.errors.displayName ? (
-              <p className="mt-1.5 text-xs text-error-500">
-                {form2.formState.errors.displayName.message}
-              </p>
-            ) : (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
-                {t("patientSignUp.nameHint")}
-              </p>
-            )}
-          </div>
+          {isSubmitting
+            ? (isRtl ? "جاري إنشاء الحساب..." : "Creating account...")
+            : labels.submit}
+        </button>
+      </form>
 
-          {/* Phone */}
-          <div>
-            <Label>
-              {t("patientSignUp.phone")}{" "}
-              <span className="text-error-500">*</span>
-            </Label>
-            <div className="flex gap-2">
-              <div className="w-[110px] shrink-0">
-                <PhoneInput
-                  countries={DIAL_CODES}
-                  placeholder="+20"
-                  selectPosition="start"
-                  onChange={handlePhoneDialChange}
-                />
-              </div>
-              <div className="flex-1">
-                <Input
-                  type="tel"
-                  placeholder={t("patientSignUp.phonePlaceholder")}
-                  dir="ltr"
-                  error={!!form2.formState.errors.phoneNumber}
-                  {...form2.register("phoneNumber")}
-                />
-              </div>
-            </div>
-            {form2.formState.errors.phoneNumber && (
-              <p className="mt-1.5 text-xs text-error-500">
-                {form2.formState.errors.phoneNumber.message}
-              </p>
-            )}
-          </div>
-
-          {/* Pricing/reassurance note */}
-          <div className="flex items-start gap-2.5 rounded-2xl border border-primary/10 bg-primary-light/30 px-4 py-3 text-xs leading-5 text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
-            <svg
-              className="mt-0.5 shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>{t("patientSignUp.pricingNote")}</span>
-          </div>
-
-          {error && (
-            <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSubmitting || !isStep2Valid}
-            className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting
-              ? t("creatingAccount")
-              : t("patientSignUp.submit")}
-          </button>
-
-          {/* Back Button */}
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex w-full items-center justify-center gap-2 text-xs font-semibold text-text-secondary transition hover:text-text-primary dark:text-text-secondary dark:hover:text-text-primary"
-          >
-            <ChevronLeftIcon className={isRtl ? "rotate-180" : ""} />
-            {t("patientSignUp.back")}
-          </button>
-        </form>
-      )}
-
-      {/* Google auth in step 1 only */}
-      {step === 1 && (
-        <div className="mt-5">
-          <div className="relative flex items-center justify-center my-4">
+      {/* Google Auth rendering checks configuration status */}
+      {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <div className="mt-4">
+          <div className="relative flex items-center justify-center my-3">
             <div className="absolute w-full border-t border-border-light dark:border-white/5" />
             <span className="relative bg-white px-3 text-xs text-text-muted dark:bg-surface-secondary dark:text-text-muted uppercase tracking-wider">
-              {t("orContinueWith")}
+              {labels.or}
             </span>
           </div>
           <PatientGoogleAuthButton
@@ -479,14 +411,14 @@ export default function PatientSignUpForm({
       )}
 
       {/* Card Footer Link */}
-      <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">
+      <div className="mt-6 border-t border-border-light pt-4 dark:border-white/5">
         <p className="text-sm text-text-secondary dark:text-text-secondary">
-          {t("alreadyHaveAccount")}{" "}
+          {labels.alreadyHaveAccount}{" "}
           <Link
-            href="/signin?mode=patient"
+            href="/signin/patient"
             className="font-semibold text-primary hover:text-primary-hover transition-colors"
           >
-            {t("signIn")}
+            {labels.signIn}
           </Link>
         </p>
       </div>

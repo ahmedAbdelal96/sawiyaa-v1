@@ -3,6 +3,8 @@
 import React, { type ReactNode } from "react";
 import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
+import { PractitionerFinancialStatCard } from "./PractitionerFinancialStatCard";
+import type { PractitionerFinancialStatCardProps } from "./PractitionerFinancialStatCard";
 import {
   Clock3,
   Activity,
@@ -305,52 +307,11 @@ export function PractitionerStatsGrid({
 
 // ─── PractitionerStatCard ────────────────────────────────────────────────────
 
-export type PractitionerStatCardProps = {
-  label: ReactNode;
-  value: ReactNode;
-  hint?: ReactNode;
-  icon?: ReactNode;
-  tone?: Tone;
-  className?: string;
-  metricKey?: string;
-  semantic?: string;
-};
+export { PractitionerFinancialStatCard };
+export type { PractitionerFinancialStatCardProps };
 
-export function PractitionerStatCard({
-  label,
-  value,
-  hint,
-  icon,
-  tone = "neutral",
-  className,
-  metricKey,
-  semantic,
-}: PractitionerStatCardProps) {
-  const styles = TONE_STYLES[tone] || TONE_STYLES.neutral;
-  const resolvedIcon = icon ?? getFallbackIcon({ metricKey, semantic, tone, label });
-
-  return (
-    <div
-      className={cn(
-        "relative flex items-center justify-between rounded-xl border p-4 transition-all hover:shadow-sm",
-        styles.shell,
-        className
-      )}
-    >
-      <div className="min-w-0 space-y-1">
-        <p className={cn("text-xs font-medium", styles.label)}>{label}</p>
-        <p className={cn("text-2xl font-bold tracking-tight sm:text-3xl", styles.value)}>{value}</p>
-        {hint ? <p className={cn("text-xs", styles.hint)}>{hint}</p> : null}
-      </div>
-
-      {resolvedIcon ? (
-        <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", styles.iconShell)}>
-          {resolvedIcon}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+export const PractitionerStatCard = PractitionerFinancialStatCard;
+export type PractitionerStatCardProps = PractitionerFinancialStatCardProps;
 
 // ─── PractitionerFilterCard ──────────────────────────────────────────────────
 

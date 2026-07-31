@@ -2,8 +2,6 @@
 
 import { useLocale, useTranslations } from "next-intl";
 
-type StepKey = "c1" | "c2" | "c3" | "p1" | "p2" | "p3";
-
 type AuthVisualPanelProps = {
   mode: "patient" | "practitioner" | "admin" | "forgot";
   tab?: "signin" | "signup" | "otp" | "forgot";
@@ -12,19 +10,21 @@ type AuthVisualPanelProps = {
 export default function AuthVisualPanel({ mode, tab = "signin" }: AuthVisualPanelProps) {
   const t = useTranslations("auth");
   const locale = useLocale();
-  const isRtl = locale === "ar";
+  const isRtl = locale.startsWith("ar");
 
   const isSignUp = tab === "signup";
-  const showSteps = isSignUp && (mode === "patient" || mode === "practitioner");
+  
+  // Patient signup panel is simplified to not show steps, only practitioner signup retains them
+  const showSteps = isSignUp && mode === "practitioner";
 
-  // Determine what steps to show
-  const stepKeys: StepKey[] = mode === "practitioner" 
-    ? ["p1", "p2", "p3"] 
-    : ["c1", "c2", "c3"];
+  const stepKeys = ["p1", "p2", "p3"] as const;
 
-  // Custom text for Sign In / Forgot Password
+  // Custom text for Sign In / Forgot Password / Patient Sign Up
   const getTagline = () => {
     if (mode === "patient") {
+      if (isSignUp) {
+        return isRtl ? "بداية بسيطة نحو الدعم المناسب" : "A simple start to the right support";
+      }
       return isRtl ? "رعايتك النفسية والجسدية تبدأ هنا" : "Your mental & physical care starts here";
     }
     if (mode === "practitioner") {
@@ -38,6 +38,11 @@ export default function AuthVisualPanel({ mode, tab = "signin" }: AuthVisualPane
 
   const getSubtext = () => {
     if (mode === "patient") {
+      if (isSignUp) {
+        return isRtl 
+          ? "أنشئ حسابك وابدأ في استكشاف المختصين المناسبين لك."
+          : "Create your account and start exploring the right specialists for you.";
+      }
       return isRtl 
         ? "احجز جلساتك العلاجية مع أفضل المعالجين والمختصين بسرية تامة وأمان."
         : "Book therapeutic sessions with top vetted specialists in full privacy and safety.";
@@ -57,8 +62,15 @@ export default function AuthVisualPanel({ mode, tab = "signin" }: AuthVisualPane
       : "Recover your account access to continue your wellness journey in private security.";
   };
 
+  const bgClass =
+    mode === "patient"
+      ? "bg-[#24564F]"
+      : mode === "practitioner"
+      ? "bg-[#1A365D]"
+      : "bg-[#2D3748]";
+
   return (
-    <div className="relative flex flex-col justify-between h-full p-10 bg-[#24564F] text-white select-none">
+    <div className={`relative flex flex-col justify-between h-full p-6 sm:p-8 ${bgClass} text-white select-none`}>
       {/* Decorative Brand SVG background shapes */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_50%)]" />
       <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-3xl pointer-events-none" />
@@ -70,8 +82,8 @@ export default function AuthVisualPanel({ mode, tab = "signin" }: AuthVisualPane
           {isSignUp ? t("signUpGuidance.eyebrow") : t("authShell.badge")}
         </p>
         <h2 className="text-2xl font-bold leading-tight tracking-tight">
-          {isSignUp 
-            ? (mode === "practitioner" ? t("signUpGuidance.practitionerTitle") : t("signUpGuidance.patientTitle"))
+          {isSignUp && mode === "practitioner"
+            ? t("signUpGuidance.practitionerTitle")
             : getTagline()
           }
         </h2>
@@ -128,9 +140,9 @@ export default function AuthVisualPanel({ mode, tab = "signin" }: AuthVisualPane
 
       {/* Bottom Guidance Note */}
       <div className="relative z-10 rounded-2xl bg-white/5 border border-white/10 p-4 text-xs leading-relaxed text-emerald-100/90">
-        {isSignUp 
-          ? (mode === "practitioner" ? t("signUpGuidance.practitionerNext") : t("signUpGuidance.patientNext"))
-          : (isRtl ? "سويّة رعاية متكاملة متوازنة" : "Sawiyaa: Balanced integrated care")
+        {isSignUp && mode === "practitioner"
+          ? t("signUpGuidance.practitionerNext")
+          : (isRtl ? "سويّة: رعاية متكاملة متوازنة" : "Sawiyaa: Balanced integrated care")
         }
       </div>
     </div>

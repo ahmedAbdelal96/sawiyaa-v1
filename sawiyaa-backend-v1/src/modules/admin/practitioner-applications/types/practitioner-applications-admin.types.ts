@@ -33,6 +33,7 @@ export interface AdminPractitionerApplicationListItemViewModel {
   practitionerType: PractitionerType;
   countryCode: string | null;
   applicationKind: AdminPractitionerApplicationKind;
+  changedSections: string[];
   mainSpecialty: {
     specialtyId: string;
     slug: string;
@@ -160,7 +161,6 @@ export interface AdminPractitionerApplicationDetailsViewModel {
   credentials: Array<{
     credentialId: string;
     credentialType: CredentialType;
-    fileUrl: string;
     reviewStatus: CredentialReviewStatus;
     expiresAt: Date | null;
     uploadedAt: Date;

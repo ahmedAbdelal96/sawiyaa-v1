@@ -99,10 +99,10 @@
         },
         "confirm": {
           "title": "Confirm",
-          "note": "We bring you back here and update the session status automatically."
+          "note": "After payment, your session details will appear here."
         }
       },
-      "hostedNote": "If a separate payment page opens, finish the card details there and we will bring you back automatically.",
+      "hostedNote": "Complete the payment on the page that opens.",
       "inlineNote": "Your payment can be completed directly on this page when the gateway supports an embedded card form."
     },
     "REFUND_PENDING": {
@@ -149,7 +149,7 @@
     "pendingTimeout": {
       "heading": "Payment is Processing",
       "note": "Your payment was submitted and is being finalized.",
-      "checkNote": "Your booking will be confirmed automatically. Check your sessions page for the latest status."
+      "checkNote": "Check your sessions page for the latest status."
     },
     "failed": {
       "heading": "Payment Failed",

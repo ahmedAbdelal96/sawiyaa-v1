@@ -26,6 +26,8 @@ export type AppRole =
   | "PRACTITIONER"
   | "SUPER_ADMIN";
 
+export type AccountRole = "PATIENT" | "PRACTITIONER" | "ADMIN";
+
 // RawRole covers legacy aliases that may still appear in JWT payloads or cookies
 // from older sessions. The resolveRole function normalizes them to AppRole.
 type RawRole = AppRole | "SUPPORT";
@@ -134,6 +136,21 @@ export function getDefaultRouteByRole(role: AppRole): string {
   if (role === "PATIENT") return PATIENT_CANONICAL_PREFIX;
   if (role === "PRACTITIONER") return `${PRACTITIONER_CANONICAL_PREFIX}/dashboard`;
   return `${ADMIN_CANONICAL_PREFIX}/dashboard`;
+}
+
+export function getAccountRole(role?: string | null): AccountRole | null {
+  const resolvedRole = resolveRole(role);
+  if (resolvedRole === "PATIENT") return "PATIENT";
+  if (resolvedRole === "PRACTITIONER") return "PRACTITIONER";
+  if (resolvedRole && ADMIN_CLASS_ROLE_SET.has(resolvedRole)) return "ADMIN";
+  return null;
+}
+
+export function getSignInRouteForRole(role?: string | null): string {
+  const accountRole = getAccountRole(role);
+  if (accountRole === "PRACTITIONER") return "/signin/practitioner";
+  if (accountRole === "ADMIN") return "/signin/admin";
+  return "/signin/patient";
 }
 
 export function isRoleAllowedInArea(

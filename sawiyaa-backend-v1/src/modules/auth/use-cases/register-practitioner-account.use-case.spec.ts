@@ -9,9 +9,12 @@ import { UserEmailRepository } from '../repositories/user-email.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { RegisterPractitionerAccountUseCase } from './register-practitioner-account.use-case';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 
 describe('RegisterPractitionerAccountUseCase', () => {
   const prisma = {
+    specialtyCategory: { findFirst: jest.fn() },
+    specialty: { count: jest.fn() },
     $transaction: jest.fn((callback: (tx: never) => unknown) =>
       callback({} as never),
     ),
@@ -36,8 +39,15 @@ describe('RegisterPractitionerAccountUseCase', () => {
     upsertPrimaryPhone: jest.fn(),
   } as any;
   const phoneNumberValidationService = {
-    assertValid: jest.fn().mockReturnValue({ e164: '+201012345678' }),
+    validate: jest.fn().mockReturnValue({
+      valid: true,
+      e164: '+201012345678',
+      countryCode: 'EG',
+    }),
   } as unknown as PhoneNumberValidationService;
+  const specialtyIntegrityService = {
+    validateSelection: jest.fn().mockResolvedValue(undefined),
+  } as unknown as PractitionerSpecialtyIntegrityService;
 
   const twoFactorSettingRepository = {
     upsertPractitionerDefault: jest.fn(),
@@ -56,6 +66,7 @@ describe('RegisterPractitionerAccountUseCase', () => {
     twoFactorSettingRepository,
     hashPasswordUseCase,
     phoneNumberValidationService,
+    specialtyIntegrityService,
   );
 
   beforeEach(() => {
@@ -96,42 +107,60 @@ describe('RegisterPractitionerAccountUseCase', () => {
       status: UserStatus.ACTIVE,
     });
     (userRepository.ensureRole as jest.Mock).mockResolvedValue(undefined);
-    (userRepository.createPractitionerProfileIfMissing as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      userRepository.createPractitionerProfileIfMissing as jest.Mock
+    ).mockResolvedValue(undefined);
     (userEmailRepository.createPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (authIdentityRepository.createPasswordIdentity as jest.Mock).mockResolvedValue(
-      undefined,
-    );
-    (twoFactorSettingRepository.upsertPractitionerDefault as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      authIdentityRepository.createPasswordIdentity as jest.Mock
+    ).mockResolvedValue(undefined);
+    (
+      twoFactorSettingRepository.upsertPractitionerDefault as jest.Mock
+    ).mockResolvedValue(undefined);
 
     const result = await useCase.execute({
       email: 'practitioner.new@example.com',
       phone: '01012345678',
       phoneCountryCode: 'EG',
       password: 'Password123!',
-        displayName: 'Practitioner New',
-        practitionerType: PractitionerType.OTHER,
-        primarySpecialtyCategoryId: 'category-1',
-        specialtyIds: ['specialty-1'],
-        initialCredential: {
+      displayName: 'Practitioner New',
+      practitionerType: PractitionerType.OTHER,
+      primarySpecialtyCategoryId: 'category-1',
+      specialtyIds: ['specialty-1'],
+      initialCredential: {
         credentialType: CredentialType.LICENSE,
-          fileUrl: 'https://example.com/license.pdf',
-        },
-      });
+        fileUrl: 'https://example.com/license.pdf',
+      },
+    });
 
     expect(result).toEqual({
       userId: 'user-1',
       requiresOtpOnLogin: true,
+      phone: { status: 'SAVED' },
     });
-    expect(twoFactorSettingRepository.upsertPractitionerDefault).toHaveBeenCalledWith(
-      'user-1',
-      'EMAIL',
+    expect(tx.practitionerProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          primarySpecialtyCategoryId: 'category-1',
+        }),
+      }),
     );
+    expect(tx.practitionerSpecialty.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          {
+            practitionerId: 'practitioner-profile-1',
+            specialtyId: 'specialty-1',
+            isPrimary: true,
+          },
+        ],
+      }),
+    );
+    expect(
+      twoFactorSettingRepository.upsertPractitionerDefault,
+    ).toHaveBeenCalledWith('user-1', 'EMAIL');
   });
 
   it('returns a friendly conflict for an existing email with different casing', async () => {
@@ -189,13 +218,15 @@ describe('RegisterPractitionerAccountUseCase', () => {
       status: UserStatus.ACTIVE,
     });
     (userRepository.ensureRole as jest.Mock).mockResolvedValue(undefined);
-    (userRepository.createPractitionerProfileIfMissing as jest.Mock).mockResolvedValue(
-      undefined,
-    );
+    (
+      userRepository.createPractitionerProfileIfMissing as jest.Mock
+    ).mockResolvedValue(undefined);
     (userEmailRepository.createPrimaryEmail as jest.Mock).mockResolvedValue(
       undefined,
     );
-    (authIdentityRepository.createPasswordIdentity as jest.Mock).mockRejectedValue(
+    (
+      authIdentityRepository.createPasswordIdentity as jest.Mock
+    ).mockRejectedValue(
       new PrismaClientKnownRequestError('Unique constraint', {
         code: 'P2002',
         clientVersion: 'test',

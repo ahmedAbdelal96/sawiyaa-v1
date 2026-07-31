@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  NotFoundException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -32,15 +33,21 @@ import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
   AvailabilityWeekMutationSuccessResponseDto,
-  AvailabilityWeekOverviewSuccessResponseDto,
+  AvailabilityRollingWindowSuccessResponseDto,
+  AvailabilityWeekDetailsResponseDto,
   CreateAvailabilityWeekDto,
+  RepeatAvailabilityWeekConfirmRequestDto,
+  RepeatAvailabilityWeekConfirmResponseDto,
+  RepeatAvailabilityWeekPreviewRequestDto,
+  RepeatAvailabilityWeekPreviewResponseDto,
   UpdateAvailabilityWeekDto,
 } from '../dto/availability-week.dto';
-import { CopyPractitionerAvailabilityWeekToNextUseCase } from '../use-cases/copy-practitioner-availability-week-to-next.use-case';
 import { CreatePractitionerAvailabilityWeekUseCase } from '../use-cases/create-practitioner-availability-week.use-case';
 import { GetMyAvailabilityWeeksUseCase } from '../use-cases/get-my-availability-weeks.use-case';
 import { PublishPractitionerAvailabilityWeekUseCase } from '../use-cases/publish-practitioner-availability-week.use-case';
 import { UpdatePractitionerAvailabilityWeekUseCase } from '../use-cases/update-practitioner-availability-week.use-case';
+import { AvailabilityScheduleRepeatService } from '../services/availability-schedule-repeat.service';
+import { GetPractitionerAvailabilityWeekDetailsUseCase } from '../use-cases/get-practitioner-availability-week-details.use-case';
 
 @ApiTags('Availability')
 @ApiBearerAuth()
@@ -57,24 +64,25 @@ export class PractitionerAvailabilityWeeksController {
     private readonly getMyAvailabilityWeeksUseCase: GetMyAvailabilityWeeksUseCase,
     private readonly createPractitionerAvailabilityWeekUseCase: CreatePractitionerAvailabilityWeekUseCase,
     private readonly updatePractitionerAvailabilityWeekUseCase: UpdatePractitionerAvailabilityWeekUseCase,
-    private readonly copyPractitionerAvailabilityWeekToNextUseCase: CopyPractitionerAvailabilityWeekToNextUseCase,
     private readonly publishPractitionerAvailabilityWeekUseCase: PublishPractitionerAvailabilityWeekUseCase,
+    private readonly availabilityScheduleRepeatService: AvailabilityScheduleRepeatService,
+    private readonly getPractitionerAvailabilityWeekDetailsUseCase: GetPractitionerAvailabilityWeekDetailsUseCase,
   ) {}
 
-  @Get('current-next')
+  @Get()
   @ApiOperation({
-    summary: 'Get practitioner current and next availability weeks',
+    summary: 'Get practitioner active weekly schedule window',
     description:
-      'Returns the current and next Sunday-based availability weeks in the practitioner timezone, including the UI reminder state.',
+      'Returns the current week and the configured future scheduling window using practitioner-local Sunday boundaries.',
   })
-  @ApiResponse({ status: 200, type: AvailabilityWeekOverviewSuccessResponseDto })
+  @ApiResponse({ status: 200, type: AvailabilityRollingWindowSuccessResponseDto })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
     description:
       'Route requires practitioner role, active account, and OTP-verified practitioner access',
   })
   @ApiNotFoundResponse({ description: 'Practitioner profile was not found' })
-  getCurrentAndNextWeeks(
+  getActiveWeeks(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
   ) {
@@ -84,11 +92,27 @@ export class PractitionerAvailabilityWeeksController {
     });
   }
 
+  @Get(':weekId')
+  @ApiOperation({ summary: 'Get one practitioner weekly schedule with session details' })
+  @ApiParam({ name: 'weekId', description: 'Availability week id' })
+  @ApiResponse({ status: 200, type: AvailabilityWeekDetailsResponseDto })
+  @ApiNotFoundResponse({ description: 'Availability week was not found' })
+  getWeekDetails(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('weekId') weekId: string,
+  ) {
+    if (weekId === 'current-next') {
+      throw new NotFoundException({ messageKey: 'availability.errors.weekNotFound', errorCode: 'AVAILABILITY_WEEK_NOT_FOUND' });
+    }
+    return this.getPractitionerAvailabilityWeekDetailsUseCase.execute({ userId: currentUser.id, weekId, locale });
+  }
+
   @Post()
   @ApiOperation({
-    summary: 'Create a draft availability week',
+    summary: 'Create a weekly session schedule',
     description:
-      'Creates a Sunday-based draft week in the practitioner timezone. Drafts are not published automatically.',
+      'Creates a Sunday-based weekly schedule in the practitioner timezone. It is not published automatically.',
   })
   @ApiBody({ type: CreateAvailabilityWeekDto })
   @ApiResponse({ status: 201, type: AvailabilityWeekMutationSuccessResponseDto })
@@ -120,9 +144,9 @@ export class PractitionerAvailabilityWeeksController {
 
   @Patch(':weekId')
   @ApiOperation({
-    summary: 'Update a draft availability week',
+    summary: 'Update a weekly session schedule',
     description:
-      'Updates a draft week only. Published weeks remain immutable in normal practitioner flows.',
+      'Updates an unpublished schedule or an editable published schedule according to booking protection rules.',
   })
   @ApiParam({ name: 'weekId', description: 'Availability week id' })
   @ApiBody({ type: UpdateAvailabilityWeekDto })
@@ -131,7 +155,7 @@ export class PractitionerAvailabilityWeeksController {
     description: 'Timezone is invalid or weekly slots are invalid',
   })
   @ApiConflictResponse({
-    description: 'Week is not editable because it is not a draft',
+    description: 'The schedule is not editable in its current state',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
@@ -154,41 +178,45 @@ export class PractitionerAvailabilityWeeksController {
     });
   }
 
-  @Post(':weekId/copy-to-next')
-  @ApiOperation({
-    summary: 'Copy a week to the next week as a draft',
-    description:
-      'Copies the selected week into the next Sunday-based week as a draft without publishing it automatically.',
-  })
-  @ApiParam({ name: 'weekId', description: 'Availability week id' })
-  @ApiResponse({ status: 201, type: AvailabilityWeekMutationSuccessResponseDto })
-  @ApiConflictResponse({
-    description:
-      'The next week already exists and cannot be overwritten by an automatic copy',
-  })
-  @ApiUnauthorizedResponse({ description: 'Access token is required' })
-  @ApiForbiddenResponse({
-    description:
-      'Route requires practitioner role, active account, and OTP-verified practitioner access',
-  })
-  @ApiNotFoundResponse({ description: 'Availability week was not found' })
-  copyToNext(
+  @Post(':sourceWeekId/repeat/preview')
+  @ApiOperation({ summary: 'Preview repeating a weekly schedule into selected future weeks' })
+  @ApiBody({ type: RepeatAvailabilityWeekPreviewRequestDto })
+  @ApiResponse({ status: 201, type: RepeatAvailabilityWeekPreviewResponseDto })
+  previewRepeat(
     @CurrentUser() currentUser: AuthenticatedUser,
-    @CurrentLocale() locale: SupportedLocale,
-    @Param('weekId') weekId: string,
+    @Param('sourceWeekId') sourceWeekId: string,
+    @Body() body: RepeatAvailabilityWeekPreviewRequestDto,
   ) {
-    return this.copyPractitionerAvailabilityWeekToNextUseCase.execute({
+    return this.availabilityScheduleRepeatService.preview({
       userId: currentUser.id,
-      locale,
-      weekId,
+      sourceWeekId,
+      targetWeekStartDates: body.targetWeekStartDates,
+      idempotencyKey: body.idempotencyKey,
+    });
+  }
+
+  @Post(':sourceWeekId/repeat/confirm')
+  @ApiOperation({ summary: 'Confirm a previously previewed weekly schedule repeat' })
+  @ApiBody({ type: RepeatAvailabilityWeekConfirmRequestDto })
+  @ApiResponse({ status: 201, type: RepeatAvailabilityWeekConfirmResponseDto })
+  confirmRepeat(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('sourceWeekId') sourceWeekId: string,
+    @Body() body: RepeatAvailabilityWeekConfirmRequestDto,
+  ) {
+    return this.availabilityScheduleRepeatService.confirm({
+      userId: currentUser.id,
+      sourceWeekId,
+      operationId: body.operationId,
+      idempotencyKey: body.idempotencyKey,
     });
   }
 
   @Post(':weekId/publish')
   @ApiOperation({
-    summary: 'Publish a draft availability week',
+    summary: 'Publish a weekly session schedule',
     description:
-      'Publishes a draft week after validating that it has at least one valid slot.',
+      'Publishes a schedule after validating that it has at least one valid session time.',
   })
   @ApiParam({ name: 'weekId', description: 'Availability week id' })
   @ApiResponse({ status: 200, type: AvailabilityWeekMutationSuccessResponseDto })
@@ -196,7 +224,7 @@ export class PractitionerAvailabilityWeeksController {
     description: 'Week is not publishable or payload is invalid',
   })
   @ApiConflictResponse({
-    description: 'Week is not editable because it is not a draft',
+    description: 'The schedule is not eligible for publication',
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({

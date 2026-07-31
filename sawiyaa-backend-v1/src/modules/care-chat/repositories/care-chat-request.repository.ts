@@ -204,6 +204,7 @@ export class CareChatRequestRepository {
           },
         },
       },
+      session: { select: { sessionCode: true } },
       linkedConversation: {
         select: {
           id: true,

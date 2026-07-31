@@ -24,6 +24,7 @@ export default function NewSupportChatScreen() {
   const queryClient = useQueryClient();
 
   const [message, setMessage] = useState("");
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -41,7 +42,11 @@ export default function NewSupportChatScreen() {
 
     setIsPending(true);
     try {
-      const res = await createPatientSupportTicket({ description: trimmed });
+      const res = await createPatientSupportTicket({
+        description: trimmed,
+        newConversation: true,
+        idempotencyKey,
+      });
       // Invalidate canonical conversations to fetch new support ticket
       await queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
 

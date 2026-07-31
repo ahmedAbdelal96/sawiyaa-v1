@@ -38,7 +38,7 @@ export default async function GuidedEntrySection() {
                   pathKey === "notSure" ? "/specialties" :
                   pathKey === "knowSpecialty" ? "/specialties" :
                   pathKey === "chooseDirectly" ? "/practitioners" :
-                  "/signin?mode=practitioner"
+                  "/signup/practitioner"
                 }
                 className={`app-lift group rounded-[28px] border p-6 transition hover:-translate-y-1 ${
                   isHighlight

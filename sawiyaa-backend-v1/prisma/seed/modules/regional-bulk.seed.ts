@@ -52,6 +52,8 @@ import {
 import { createHash } from 'crypto';
 import { SeedModule } from '../shared/seed.types';
 import { hashPassword } from '../shared/seed.utils';
+import { assertLegacyFinancialFixtureSeedDisabled } from '../shared/financial-fixture-gate';
+import { reserveSeedSessionCode } from '../session-code-fixture';
 
 type SeedScale = 'small' | 'medium' | 'large';
 type ScaleConfig = {
@@ -190,6 +192,7 @@ const BULK_AVAILABILITY_WEEKDAYS = [
 export const regionalBulkSeedModule: SeedModule = {
   name: 'regional-bulk',
   async run(prisma: PrismaClient): Promise<void> {
+    assertLegacyFinancialFixtureSeedDisabled('regional-bulk');
     const scale = parseScale(process.env.SEED_SCALE);
     const cfg = SCALE_CONFIG[scale];
     const passwordHash = await hashPassword('Seed@123456');
@@ -663,7 +666,7 @@ export const regionalBulkSeedModule: SeedModule = {
       const status = pick(
         [
           SessionStatus.COMPLETED,
-          SessionStatus.CONFIRMED,
+          SessionStatus.UPCOMING,
           SessionStatus.CANCELLED,
           SessionStatus.UPCOMING,
           SessionStatus.READY_TO_JOIN,
@@ -672,13 +675,21 @@ export const regionalBulkSeedModule: SeedModule = {
         i,
       );
 
-      const seededSessionCode = `SES-${startAt.getUTCFullYear()}-${String(500000 + i).padStart(6, '0')}`;
+      const existingSession = await prisma.session.findUnique({
+        where: { id: sessionId },
+        select: { sessionCode: true },
+      });
+      const createdAt = new Date();
+      const seededSessionCode =
+        existingSession?.sessionCode ??
+        (await reserveSeedSessionCode(prisma, createdAt, 'regional_bulk'));
 
       await prisma.session.upsert({
         where: { id: sessionId },
         create: {
           id: sessionId,
           sessionCode: seededSessionCode,
+          createdAt,
           patientId: patient.profileId,
           practitionerId: practitioner.profileId,
           flowType:
@@ -701,7 +712,6 @@ export const regionalBulkSeedModule: SeedModule = {
           providerSessionRef: `bulk-provider-session-${i}`,
         },
         update: {
-          sessionCode: seededSessionCode,
           patientId: patient.profileId,
           practitionerId: practitioner.profileId,
           status,

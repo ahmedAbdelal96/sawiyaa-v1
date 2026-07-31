@@ -5,6 +5,8 @@ import { CreateAdminPractitionerDto } from './create-admin-practitioner.dto';
 describe('CreateAdminPractitionerDto', () => {
   const basePayload = {
     email: 'new.practitioner@example.com',
+    phoneCountryCode: '20',
+    phone: '1000000000',
     password: 'StrongP@ssw0rd',
     displayName: 'Dr. Nour',
     practitionerType: 'PSYCHOLOGIST',
@@ -19,6 +21,7 @@ describe('CreateAdminPractitionerDto', () => {
     },
     payoutDestination: {
       methodType: 'BANK_ACCOUNT',
+      countryCode: 'EG',
       accountHolderName: 'Dr. Nour',
       bankName: 'Bank',
       bankAccountNumber: '123456789',
@@ -26,8 +29,8 @@ describe('CreateAdminPractitionerDto', () => {
     credentials: [
       {
         credentialType: 'DEGREE',
-        fileUrl:
-          '/uploads/practitioners/admin-direct-create/credentials/degree.pdf',
+        credentialId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        mimeType: 'application/pdf',
       },
     ],
   };
@@ -69,14 +72,15 @@ describe('CreateAdminPractitionerDto', () => {
     );
   });
 
-  it('rejects weak passwords and unmanaged credential file paths', () => {
+  it('rejects weak passwords and invalid credential ids', () => {
     const dto = plainToInstance(CreateAdminPractitionerDto, {
       ...basePayload,
       password: 'password',
       credentials: [
         {
           credentialType: 'DEGREE',
-          fileUrl: 'https://files.example.com/degree.pdf',
+          credentialId: 'not-a-storage-path',
+          mimeType: 'application/pdf',
         },
       ],
     });

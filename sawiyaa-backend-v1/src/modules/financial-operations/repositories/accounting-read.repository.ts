@@ -45,6 +45,41 @@ export class AccountingReadRepository {
   async listLedgerLines(input: LedgerLineListInput) {
     const normalizedQuery = input.query?.trim() ?? '';
     const queryIsUuid = this.isUuid(normalizedQuery);
+    const matchingSessions = normalizedQuery
+      ? await this.prisma.session.findMany({
+          where: { sessionCode: { startsWith: normalizedQuery, mode: 'insensitive' } },
+          select: { id: true },
+        })
+      : [];
+    const matchingSessionIds = matchingSessions.map((session) => session.id);
+    const sessionSourceMatches = normalizedQuery
+      ? await Promise.all([
+          this.prisma.payment.findMany({
+            where: {
+              session: {
+                sessionCode: { startsWith: normalizedQuery, mode: 'insensitive' },
+              },
+            },
+            select: { id: true },
+          }),
+          this.prisma.refund.findMany({
+            where: {
+              session: {
+                sessionCode: { startsWith: normalizedQuery, mode: 'insensitive' },
+              },
+            },
+            select: { id: true },
+          }),
+          this.prisma.practitionerSettlementPayout.findMany({
+            where: {
+              settlement: { sourceReview: { sessionId: { in: matchingSessionIds } } },
+            },
+            select: { id: true },
+          }),
+        ])
+      : [[], [], []];
+    const [paymentSessionMatches, refundSessionMatches, payoutSessionMatches] =
+      sessionSourceMatches;
 
     const where: Prisma.JournalLineWhereInput = {
       ledgerAccountId: input.ledgerAccountId,
@@ -69,6 +104,30 @@ export class AccountingReadRepository {
             OR: [
               ...(queryIsUuid ? [{ id: normalizedQuery }] : []),
               ...(queryIsUuid ? [{ journalEntryId: normalizedQuery }] : []),
+              ...(paymentSessionMatches.length > 0
+                ? [{
+                    journalEntry: {
+                      sourceType: JournalEntrySourceType.PAYMENT_CAPTURED,
+                      sourceId: { in: paymentSessionMatches.map((item) => item.id) },
+                    },
+                  }]
+                : []),
+              ...(refundSessionMatches.length > 0
+                ? [{
+                    journalEntry: {
+                      sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
+                      sourceId: { in: refundSessionMatches.map((item) => item.id) },
+                    },
+                  }]
+                : []),
+              ...(payoutSessionMatches.length > 0
+                ? [{
+                    journalEntry: {
+                      sourceType: JournalEntrySourceType.PRACTITIONER_PAYOUT,
+                      sourceId: { in: payoutSessionMatches.map((item) => item.id) },
+                    },
+                  }]
+                : []),
               {
                 referenceId: {
                   contains: normalizedQuery,
@@ -118,7 +177,7 @@ export class AccountingReadRepository {
 
     const skip = (input.page - 1) * input.limit;
 
-    return this.prisma.$transaction([
+    const [lines, totalItems] = await this.prisma.$transaction([
       this.prisma.journalLine.findMany({
         where,
         include: {
@@ -136,10 +195,15 @@ export class AccountingReadRepository {
       }),
       this.prisma.journalLine.count({ where }),
     ]);
+
+    return [
+      await this.attachSessionReferences(lines),
+      totalItems,
+    ] as const;
   }
 
-  getJournalEntryWithLines(journalEntryId: string) {
-    return this.prisma.journalEntry.findUnique({
+  async getJournalEntryWithLines(journalEntryId: string) {
+    const journal = await this.prisma.journalEntry.findUnique({
       where: { id: journalEntryId },
       include: {
         lines: {
@@ -150,6 +214,79 @@ export class AccountingReadRepository {
           orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         },
       },
+    });
+
+    if (!journal) {
+      return null;
+    }
+
+    return {
+      ...journal,
+      lines: await this.attachSessionReferences(journal.lines),
+    };
+  }
+
+  private async attachSessionReferences<
+    T extends { journalEntry: { sourceType: JournalEntrySourceType; sourceId: string } },
+  >(rows: T[]) {
+    const paymentIds = rows
+      .filter((row) => row.journalEntry.sourceType === JournalEntrySourceType.PAYMENT_CAPTURED)
+      .map((row) => row.journalEntry.sourceId);
+    const refundIds = rows
+      .filter((row) => row.journalEntry.sourceType === JournalEntrySourceType.REFUND_SUCCEEDED)
+      .map((row) => row.journalEntry.sourceId);
+    const payoutIds = rows
+      .filter((row) => row.journalEntry.sourceType === JournalEntrySourceType.PRACTITIONER_PAYOUT)
+      .map((row) => row.journalEntry.sourceId);
+
+    const [payments, refunds, payouts] = await Promise.all([
+      this.prisma.payment.findMany({
+        where: { id: { in: paymentIds } },
+        select: { id: true, session: { select: { id: true, sessionCode: true } } },
+      }),
+      this.prisma.refund.findMany({
+        where: { id: { in: refundIds } },
+        select: { id: true, session: { select: { id: true, sessionCode: true } } },
+      }),
+      this.prisma.practitionerSettlementPayout.findMany({
+        where: { id: { in: payoutIds } },
+        select: {
+          id: true,
+          settlement: { select: { sourceReview: { select: { sessionId: true } } } },
+        },
+      }),
+    ]);
+
+    const sessionBySourceId = new Map<string, { id: string; sessionCode: string }>();
+    payments.forEach((item) => {
+      if (item.session) sessionBySourceId.set(item.id, item.session);
+    });
+    refunds.forEach((item) => {
+      if (item.session) sessionBySourceId.set(item.id, item.session);
+    });
+    const payoutSessionIds = payouts
+      .map((item) => item.settlement.sourceReview?.sessionId)
+      .filter((id): id is string => Boolean(id));
+    const payoutSessions = payoutSessionIds.length === 0
+      ? []
+      : await this.prisma.session.findMany({
+          where: { id: { in: payoutSessionIds } },
+          select: { id: true, sessionCode: true },
+        });
+    const payoutSessionById = new Map(payoutSessions.map((session) => [session.id, session]));
+    payouts.forEach((item) => {
+      const sessionId = item.settlement.sourceReview?.sessionId;
+      const session = sessionId ? payoutSessionById.get(sessionId) : undefined;
+      if (session) sessionBySourceId.set(item.id, session);
+    });
+
+    return rows.map((row) => {
+      const session = sessionBySourceId.get(row.journalEntry.sourceId) ?? null;
+      return {
+        ...row,
+        sessionId: session?.id ?? null,
+        sessionCode: session?.sessionCode ?? null,
+      };
     });
   }
 

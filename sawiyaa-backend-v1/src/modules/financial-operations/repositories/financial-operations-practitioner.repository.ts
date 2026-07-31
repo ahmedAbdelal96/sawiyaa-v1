@@ -23,6 +23,13 @@ export class FinancialOperationsPractitionerRepository {
     });
   }
 
+  findSessionsByIds(sessionIds: string[]) {
+    return this.prisma.session.findMany({
+      where: { id: { in: sessionIds } },
+      select: { id: true, sessionCode: true, scheduledStartAt: true, completedAt: true, flowType: true },
+    });
+  }
+
   private readonly practitionerSelect = {
     id: true,
     publicSlug: true,

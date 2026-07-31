@@ -3,6 +3,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerProfileReadinessPolicy } from '../policies/practitioner-profile-readiness.policy';
+import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
 import { PractitionerApplicationCompletionService } from '../services/practitioner-application-completion.service';
 import { PractitionerCredentialRepository } from '../repositories/practitioner-credential.repository';
 import { PractitionerLanguageRepository } from '../repositories/practitioner-language.repository';
@@ -12,6 +13,7 @@ import { PractitionerProfileRepository } from '../repositories/practitioner-prof
 import { PractitionerSpecialtyRepository } from '../repositories/practitioner-specialty.repository';
 import { PractitionerUserRepository } from '../repositories/practitioner-user.repository';
 import { PractitionerPayoutDestinationInput } from '../types/practitioner.types';
+import { PractitionerRequiredDocumentsService } from '../services/practitioner-required-documents.service';
 
 /**
  * Readiness use case centralizes completion/readiness evaluation logic so other use cases can reuse one deterministic decision source.
@@ -28,7 +30,9 @@ export class GetPractitionerProfileReadinessUseCase {
     private readonly practitionerPayoutDestinationRepository: PractitionerPayoutDestinationRepository,
     private readonly practitionerApplicationRepository: PractitionerApplicationRepository,
     private readonly practitionerProfileReadinessPolicy: PractitionerProfileReadinessPolicy,
+    private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
     private readonly practitionerApplicationCompletionService: PractitionerApplicationCompletionService,
+    private readonly practitionerRequiredDocumentsService: PractitionerRequiredDocumentsService,
   ) {}
 
   async evaluate(input: {
@@ -62,6 +66,7 @@ export class GetPractitionerProfileReadinessUseCase {
       specialtyCount,
       credentialSummary,
       credentialTypes,
+      credentials,
       payoutDestination,
       latestApplication,
     ] = await Promise.all([
@@ -71,6 +76,7 @@ export class GetPractitionerProfileReadinessUseCase {
       this.practitionerCredentialRepository.listTypesByPractitionerId(
         profile.id,
       ),
+      this.practitionerCredentialRepository.listByPractitionerId(profile.id),
       this.practitionerPayoutDestinationRepository.findByPractitionerId(
         profile.id,
       ),
@@ -118,14 +124,33 @@ export class GetPractitionerProfileReadinessUseCase {
           otherDetails: resolvedPayoutDestination.otherDetails ?? null,
         }
       : null;
-    const credentialTypeSet = new Set(credentialTypes as string[]);
-    const hasIdentityEvidence =
-      credentialTypeSet.has('PASSPORT') ||
-      credentialTypeSet.has('NATIONAL_ID') ||
-      (credentialTypeSet.has('NATIONAL_ID_FRONT') &&
-        credentialTypeSet.has('NATIONAL_ID_BACK'));
-    const hasAcademicCertificate = credentialTypeSet.has('DEGREE');
+    const requiredDocuments = this.practitionerRequiredDocumentsService.evaluate(
+      credentials.map((credential) => ({
+        credentialType: credential.credentialType,
+        reviewStatus: credential.reviewStatus,
+        expiresAt: credential.expiresAt,
+        fileUrl: credential.fileUrl,
+      })),
+    );
+    const hasIdentityEvidence = requiredDocuments.groups.identity.complete;
+    const hasAcademicCertificate = requiredDocuments.groups.academic.complete;
+    const hasProfessionalAuthorization = requiredDocuments.groups.professionalAuthorization.complete;
 
+    const activeChangeCase = await this.practitionerReviewCaseService.findActiveChangeCase(profile.id);
+    const proposedProfile = activeChangeCase?.proposedSnapshot &&
+      typeof activeChangeCase.proposedSnapshot === 'object' &&
+      !Array.isArray(activeChangeCase.proposedSnapshot)
+      ? (activeChangeCase.proposedSnapshot as Record<string, any>).profile
+      : null;
+    const proposedProfessionalTitle =
+      proposedProfile && typeof proposedProfile.professionalTitle === 'string'
+        ? proposedProfile.professionalTitle
+        : null;
+    const titleRequirement = activeChangeCase?.requirements.find(
+      (requirement) =>
+        requirement.section === 'PROFILE' &&
+        requirement.fieldPath === 'professionalTitle',
+    );
     const readiness = this.practitionerProfileReadinessPolicy.evaluate({
       displayName:
         input.draft?.displayName !== undefined
@@ -150,6 +175,41 @@ export class GetPractitionerProfileReadinessUseCase {
       credentialCount: credentialSummary.totalCredentials,
       hasIdentityEvidence,
       hasAcademicCertificate,
+      hasProfessionalAuthorization,
+      hasPayoutDestination:
+        input.draft?.hasPayoutDestination ?? resolvedHasPayoutDestination,
+      hasPayoutAccountHolderName:
+        input.draft?.hasPayoutAccountHolderName ??
+        resolvedHasPayoutAccountHolderName,
+      isAccountActive: input.currentUser.isActive === true,
+      isPractitionerOtpVerified:
+        input.currentUser.isPractitionerOtpVerified === true,
+    });
+    const remediationReadiness = this.practitionerProfileReadinessPolicy.evaluate({
+      displayName:
+        input.draft?.displayName !== undefined
+          ? input.draft.displayName
+          : user.displayName,
+      professionalTitle:
+        input.draft?.professionalTitle !== undefined
+          ? input.draft.professionalTitle
+          : (proposedProfessionalTitle ?? profile.professionalTitle),
+      bio: input.draft?.bio !== undefined ? input.draft.bio : profile.bio,
+      countryCode:
+        input.draft?.countryCode !== undefined
+          ? input.draft.countryCode
+          : (profile.country?.isoCode ?? null),
+      yearsOfExperience:
+        input.draft?.yearsOfExperience !== undefined
+          ? input.draft.yearsOfExperience
+          : profile.yearsOfExperience,
+      languageCount,
+      specialtyCount,
+      primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
+      credentialCount: credentialSummary.totalCredentials,
+      hasIdentityEvidence,
+      hasAcademicCertificate,
+      hasProfessionalAuthorization,
       hasPayoutDestination:
         input.draft?.hasPayoutDestination ?? resolvedHasPayoutDestination,
       hasPayoutAccountHolderName:
@@ -162,6 +222,15 @@ export class GetPractitionerProfileReadinessUseCase {
 
     return {
       ...readiness,
+      remediationMissingRequirements: remediationReadiness.missingRequirements,
+      professionalTitle: {
+        approvedValue: profile.professionalTitle,
+        proposedValue: proposedProfessionalTitle,
+        requirementStatus: titleRequirement?.status ?? null,
+        reviewStatus: activeChangeCase?.status ?? null,
+        publiclyComplete: Boolean(profile.professionalTitle?.trim()),
+        remediationComplete: remediationReadiness.checks.hasProfessionalTitle,
+      },
       completion: this.practitionerApplicationCompletionService.build({
         displayName:
           input.draft?.displayName !== undefined
@@ -176,7 +245,7 @@ export class GetPractitionerProfileReadinessUseCase {
         professionalTitle:
           input.draft?.professionalTitle !== undefined
             ? input.draft.professionalTitle
-            : profile.professionalTitle,
+            : (proposedProfessionalTitle ?? profile.professionalTitle),
         bio: input.draft?.bio !== undefined ? input.draft.bio : profile.bio,
         yearsOfExperience:
           input.draft?.yearsOfExperience !== undefined
@@ -187,6 +256,12 @@ export class GetPractitionerProfileReadinessUseCase {
         primarySpecialtyCategoryId: profile.primarySpecialtyCategoryId ?? null,
         credentialSummary,
         credentialTypes,
+        credentialRecords: credentials.map((credential) => ({
+          credentialType: credential.credentialType,
+          reviewStatus: credential.reviewStatus,
+          expiresAt: credential.expiresAt,
+          fileUrl: credential.fileUrl,
+        })),
         payoutDestination: completionPayoutDestination,
         isAccountActive: input.currentUser.isActive === true,
         isPractitionerOtpVerified:

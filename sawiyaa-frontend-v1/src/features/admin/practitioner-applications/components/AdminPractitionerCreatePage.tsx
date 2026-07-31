@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Eye, Loader2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import InputField from "@/components/form/input/InputField";
@@ -13,6 +14,7 @@ import { SearchableCombobox } from "@/components/form/SearchableCombobox";
 import {
   useCreateAdminPractitionerDirect,
   useUploadAdminDirectPractitionerCredentialFile,
+  useViewAdminDirectPractitionerCredentialFile,
 } from "../hooks/use-practitioner-applications";
 import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
 import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
@@ -44,6 +46,11 @@ import {
   validateAccountHolderName,
   validateIban,
 } from "@/lib/catalogs/payout";
+import {
+  getLocalizedLanguageOptions,
+  getLocalizedProfessionalTitleOptions,
+  getProfessionalTitleLabel,
+} from "@/constants/reference-data";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
 import { normalizeFormError } from "@/lib/form-errors";
 import {
@@ -92,7 +99,8 @@ type StepId = "account" | "professional" | "payout" | "credentials" | "review";
 type UploadedCredential = {
   id: string;
   credentialType: CredentialType;
-  fileUrl: string;
+  credentialId: string;
+  mimeType: string;
   expiresAt?: string;
   fileName: string;
   sizeBytes: number;
@@ -305,6 +313,7 @@ export default function AdminPractitionerCreatePage() {
   const isRtl = locale.startsWith("ar");
   const createMutation = useCreateAdminPractitionerDirect();
   const uploadMutation = useUploadAdminDirectPractitionerCredentialFile();
+  const viewMutation = useViewAdminDirectPractitionerCredentialFile();
   const stepUp = useAdminStepUp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -312,6 +321,7 @@ export default function AdminPractitionerCreatePage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [uploadDraft, setUploadDraft] = useState<UploadDraft>(INITIAL_UPLOAD);
   const [credentials, setCredentials] = useState<UploadedCredential[]>([]);
+  const [viewingCredentialId, setViewingCredentialId] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [serverDetails, setServerDetails] = useState<string[]>([]);
@@ -356,19 +366,12 @@ export default function AdminPractitionerCreatePage() {
   );
 
   const languageOptions = useMemo(
-    () => [
-      {
-        value: "ar",
-        text: t("applications.directCreate.languageOptions.ar"),
-        selected: form.languageCodes.includes("ar"),
-      },
-      {
-        value: "en",
-        text: t("applications.directCreate.languageOptions.en"),
-        selected: form.languageCodes.includes("en"),
-      },
-    ],
-    [form.languageCodes, t]
+    () =>
+      getLocalizedLanguageOptions(locale).map((option) => ({
+        ...option,
+        selected: form.languageCodes.includes(option.value),
+      })),
+    [form.languageCodes, locale]
   );
 
   const countryOptions = useMemo(
@@ -414,6 +417,9 @@ export default function AdminPractitionerCreatePage() {
     (item) => item.credentialType === "NATIONAL_ID_BACK"
   );
   const hasIdentityEvidence = hasPassport || (hasNationalIdFront && hasNationalIdBack);
+  const hasProfessionalAuthorization = credentials.some(
+    (item) => item.credentialType === "MEMBERSHIP" || item.credentialType === "LICENSE"
+  );
 
   const normalizedPayload = useMemo<CreateAdminPractitionerRequest | null>(() => {
     const yearsOfExperience = Number(form.yearsOfExperience);
@@ -445,10 +451,15 @@ export default function AdminPractitionerCreatePage() {
 
     const payoutDestination = buildCompactPayoutDestination(form);
 
+    const optionalPhone = form.phone.trim();
+    const optionalPhoneCountryCode = form.phoneCountryCode.trim().toUpperCase();
+
     return {
-    email: form.email.trim().toLowerCase(),
-      phoneCountryCode: form.phoneCountryCode.trim().toUpperCase(),
-      phone: form.phone.trim(),
+      email: form.email.trim().toLowerCase(),
+      ...(optionalPhone ? { phone: optionalPhone } : {}),
+      ...(optionalPhone && optionalPhoneCountryCode
+        ? { phoneCountryCode: optionalPhoneCountryCode }
+        : {}),
       password: form.password.trim(),
       displayName: form.displayName.trim(),
       practitionerType: form.practitionerType,
@@ -473,7 +484,8 @@ export default function AdminPractitionerCreatePage() {
       payoutDestination,
       credentials: credentials.map((item) => ({
         credentialType: item.credentialType,
-        fileUrl: item.fileUrl,
+        credentialId: item.credentialId,
+        mimeType: item.mimeType,
         expiresAt: item.expiresAt
           ? `${item.expiresAt}T00:00:00.000Z`
           : undefined,
@@ -595,13 +607,6 @@ export default function AdminPractitionerCreatePage() {
       nextErrors.accountHolderName = t("applications.directCreate.validation.accountHolderInvalid");
     }
 
-    if (!form.phoneCountryCode.trim()) {
-      nextErrors.phoneCountryCode = t("applications.directCreate.validation.phoneCountryRequired");
-    }
-    if (!form.phone.trim()) {
-      nextErrors.phone = t("applications.directCreate.validation.phoneRequired");
-    }
-
     if (form.payoutMethodType === "BANK_ACCOUNT") {
       if (!form.bankName.trim()) {
         nextErrors.bankName = t("applications.directCreate.validation.bankNameRequired");
@@ -662,6 +667,10 @@ export default function AdminPractitionerCreatePage() {
       nextErrors.credentials = t("applications.directCreate.validation.degreeRequired");
     } else if (!hasIdentityEvidence) {
       nextErrors.credentials = t("applications.directCreate.validation.identityRequired");
+    } else if (!hasProfessionalAuthorization) {
+      nextErrors.credentials = t(
+        "applications.directCreate.validation.professionalAuthorizationRequired"
+      );
     }
 
     return nextErrors;
@@ -714,8 +723,33 @@ export default function AdminPractitionerCreatePage() {
     setStep(STEP_ORDER[Math.max(currentIndex - 1, 0)]);
   };
 
+  const handleViewCredential = async (credential: UploadedCredential) => {
+    if (viewMutation.isPending) return;
+    const popup = window.open("", "_blank", "noopener,noreferrer");
+    setViewingCredentialId(credential.credentialId);
+    try {
+      const blob = await viewMutation.mutateAsync({
+        credentialId: credential.credentialId,
+        mimeType: credential.mimeType,
+      });
+      const url = URL.createObjectURL(blob);
+      if (popup) popup.location.href = url;
+      else window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      popup?.close();
+      setGlobalError(t("applications.directCreate.upload.submitError"));
+    } finally {
+      setViewingCredentialId(null);
+    }
+  };
+
   const handleUploadCredential = () => {
     const nextErrors: FieldErrors = {};
+
+    if (uploadDraft.credentialType !== "OTHER" && credentials.some((item) => item.credentialType === uploadDraft.credentialType)) {
+      nextErrors.credentials = t("applications.directCreate.validation.duplicateCredentialType");
+    }
 
     if (!uploadDraft.file) {
       nextErrors.uploadFile = t("applications.directCreate.validation.uploadFileRequired");
@@ -741,9 +775,10 @@ export default function AdminPractitionerCreatePage() {
         setCredentials((current) => [
           ...current,
           {
-            id: `${response.credential.credentialType}-${response.credential.fileUrl}`,
+            id: response.credential.credentialId,
             credentialType: response.credential.credentialType,
-            fileUrl: response.credential.fileUrl,
+            credentialId: response.credential.credentialId,
+            mimeType: response.credential.mimeType,
             expiresAt: uploadDraft.expiresAt || undefined,
             fileName: file.name,
             sizeBytes: response.credential.sizeBytes,
@@ -872,6 +907,33 @@ export default function AdminPractitionerCreatePage() {
 
         const friendlyDetails: string[] = [];
 
+        const completionRequirementMessages: Record<string, string> = {
+          QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED: t(
+            "applications.directCreate.requirements.degreeMissing"
+          ),
+          DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED: t(
+            "applications.directCreate.requirements.identityMissing"
+          ),
+          DOCUMENTS_NATIONAL_ID_FRONT_MISSING: t(
+            "applications.directCreate.requirements.identityFrontMissing"
+          ),
+          DOCUMENTS_NATIONAL_ID_BACK_MISSING: t(
+            "applications.directCreate.requirements.identityBackMissing"
+          ),
+          DOCUMENTS_PROFESSIONAL_AUTHORIZATION_REQUIRED: t(
+            "applications.directCreate.requirements.professionalAuthorizationMissing"
+          ),
+        };
+        const completionDetails = Array.isArray(appError.details)
+          ? appError.details
+          : [];
+        for (const detail of completionDetails) {
+          if (!detail || typeof detail !== "object") continue;
+          const code = "code" in detail && typeof detail.code === "string" ? detail.code : "";
+          const message = completionRequirementMessages[code];
+          if (message) friendlyDetails.push(message);
+        }
+
         if (isWalletValidationIssue(payoutHintCorpus)) {
           nextErrors.walletProvider = t(
             "applications.directCreate.validation.walletProviderRequired"
@@ -938,6 +1000,13 @@ export default function AdminPractitionerCreatePage() {
           ) {
             setStep("payout");
           }
+        }
+        if (normalizedCode === "ADMIN_DIRECT_CREATE_MISSING_REQUIREMENTS") {
+          nextErrors.credentials = t(
+            "applications.directCreate.validation.fixStepErrors"
+          );
+          setErrors((current) => ({ ...current, ...nextErrors }));
+          setStep("credentials");
         }
 
         if (knownMessage) {
@@ -1183,8 +1252,6 @@ export default function AdminPractitionerCreatePage() {
                   countryPlaceholder={t("applications.directCreate.placeholders.phoneCountry")}
                   searchPlaceholder={t("applications.directCreate.placeholders.phoneCountrySearch")}
                   phonePlaceholder={t("applications.directCreate.placeholders.phone")}
-                  helperText={t("applications.directCreate.phoneHelper")}
-                  savedAsLabel={t("applications.directCreate.phoneSavedAs")}
                   countryError={fieldError("phoneCountryCode")}
                   phoneError={fieldError("phone")}
                   disabled={countriesLoading || countriesEmpty || countriesLoadFailed}
@@ -1286,15 +1353,13 @@ export default function AdminPractitionerCreatePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label>{t("applications.directCreate.fields.professionalTitle")}</Label>
-                <InputField
-                  type="text"
+                <Select
+                  options={getLocalizedProfessionalTitleOptions(locale)}
                   placeholder={t("applications.directCreate.placeholders.professionalTitle")}
-                  value={form.professionalTitle}
+                  defaultValue={form.professionalTitle}
                   error={Boolean(fieldError("professionalTitle"))}
                   hint={fieldError("professionalTitle")}
-                  onChange={(event) =>
-                    setField("professionalTitle", event.target.value)
-                  }
+                  onChange={(value) => setField("professionalTitle", value)}
                 />
               </div>
               <div>
@@ -1660,6 +1725,11 @@ export default function AdminPractitionerCreatePage() {
                       ? t("applications.directCreate.requirements.identityReady")
                       : t("applications.directCreate.requirements.identityMissing")}
                   </div>
+                  <div className="rounded-2xl bg-surface-secondary px-4 py-3 text-sm text-text-secondary">
+                    {hasProfessionalAuthorization
+                      ? t("applications.directCreate.requirements.professionalAuthorizationReady")
+                      : t("applications.directCreate.requirements.professionalAuthorizationMissing")}
+                  </div>
                 </div>
               </div>
 
@@ -1756,17 +1826,28 @@ export default function AdminPractitionerCreatePage() {
                           </p>
                         ) : null}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setCredentials((current) =>
-                            current.filter((credential) => credential.id !== item.id)
-                          )
-                        }
-                      >
-                        {t("applications.directCreate.removeCredential")}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={viewMutation.isPending}
+                          onClick={() => void handleViewCredential(item)}
+                        >
+                          {viewingCredentialId === item.credentialId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                          {t("applicationDetails.credentials.openFile")}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setCredentials((current) =>
+                              current.filter((credential) => credential.id !== item.id)
+                            )
+                          }
+                        >
+                          {t("applications.directCreate.removeCredential")}
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -1817,7 +1898,7 @@ export default function AdminPractitionerCreatePage() {
                   <dl className="mt-3 space-y-2 text-sm text-text-secondary">
                     <div className="flex justify-between gap-3">
                       <dt>{t("applications.directCreate.fields.professionalTitle")}</dt>
-                      <dd>{form.professionalTitle || "—"}</dd>
+                      <dd>{getProfessionalTitleLabel(form.professionalTitle, locale) || "—"}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
                       <dt>{t("applications.directCreate.fields.yearsOfExperience")}</dt>

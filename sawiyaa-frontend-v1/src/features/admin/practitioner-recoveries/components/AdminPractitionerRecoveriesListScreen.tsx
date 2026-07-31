@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Download, RotateCcw, Search, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import AdminOperationalListShell from "@/components/shared/admin/AdminOperationalListShell";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
@@ -48,7 +49,7 @@ function getRecoveryContextLabel(
   t: ReturnType<typeof useTranslations>,
 ) {
   if (row.session?.sessionCode) {
-    return `${t("practitionerRecoveries.list.columns.session")}: ${shortId(row.session.sessionCode)}`;
+    return `${t("practitionerRecoveries.list.columns.session")}: ${row.session.sessionCode}`;
   }
 
   if (row.payoutId) {
@@ -192,10 +193,19 @@ export default function AdminPractitionerRecoveriesListScreen() {
           <p className="text-xs leading-5 text-text-secondary">
             {row.practitioner.displayName ?? row.practitioner.publicSlug ?? shortId(row.practitioner.practitionerId)}
           </p>
-          <p className="text-xs text-text-muted">
-            {row.session?.sessionCode ? `${t("practitionerRecoveries.list.columns.session")} ` : ""}
-            {row.session?.sessionCode ? shortId(row.session.sessionCode) : shortId(row.payoutId)}
-          </p>
+          <div className="text-xs text-text-muted">
+            {row.session ? (
+              <AdminSessionReference
+                sessionId={row.session.sessionId}
+                sessionCode={row.session.sessionCode}
+                href={`/admin/sessions/runtime-inspection?sessionId=${row.session.sessionId}`}
+                variant="inline"
+                copyable
+              />
+            ) : (
+              t("practitionerRecoveries.list.columns.noSession")
+            )}
+          </div>
         </div>
       ),
     },

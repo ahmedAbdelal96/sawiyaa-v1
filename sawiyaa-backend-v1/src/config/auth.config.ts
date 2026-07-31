@@ -61,6 +61,10 @@ export default registerAs('auth', () => ({
   },
   practitionerOtpQaCaptureEnabled:
     process.env.PRACTITIONER_OTP_QA_CAPTURE_ENABLED === 'true',
+  practitionerOtpQaCaptureAccounts: (process.env.PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS ?? '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean),
   // Primary feature toggle for practitioner login OTP.
   // Exposed as a tri-state string so the use-case can distinguish
   // "unset" (legacy fallback) from "explicitly true/false":

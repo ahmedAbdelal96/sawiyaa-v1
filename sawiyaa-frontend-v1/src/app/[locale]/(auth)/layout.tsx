@@ -53,7 +53,7 @@ export default async function AuthLayout({ children, params }: Props) {
 
       {/* 2. Auth Page Content */}
       <main className="relative z-10 flex-1 flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-5xl mx-auto flex items-center justify-center">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-center">
           {children}
         </div>
       </main>

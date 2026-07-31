@@ -57,6 +57,8 @@
     "instantDisabled": "الحجز الفوري غير مفعّل بعد"
   },
   "availability": {
+    "normalBookingsPaused": "المختص لا يستقبل حجوزات جديدة حاليًا.",
+    "normalBookingsPausedHint": "لن تتأثر الحجوزات الحالية. يمكنك المحاولة لاحقًا.",
     "heading": "الأوقات المتاحة",
     "prevWeek": "الأسبوع السابق",
     "nextWeek": "الأسبوع التالي",

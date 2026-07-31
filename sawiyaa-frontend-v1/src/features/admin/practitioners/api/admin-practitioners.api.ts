@@ -64,3 +64,10 @@ export async function updateAdminPractitionerPublication(
   );
   return extractData(response.data);
 }
+
+export async function getAdminPractitionerDetails(practitionerId: string) {
+  const response = await httpClient.get<ApiPayload<{ details: any }>>(
+    `/admin/practitioners/${practitionerId}`,
+  );
+  return extractData(response.data);
+}

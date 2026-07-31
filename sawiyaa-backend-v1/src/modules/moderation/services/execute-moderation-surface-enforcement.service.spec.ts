@@ -22,7 +22,11 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
   const prisma = {
     conversation: { findFirst: jest.fn() },
     message: { findFirst: jest.fn(), update: jest.fn() },
+    $transaction: jest.fn(),
   } as unknown as PrismaService;
+  const enforcementCreate = jest.fn();
+  const userUpdate = jest.fn();
+  const practitionerProfileUpdateMany = jest.fn();
   const careChatRequestRepository = {
     findById: jest.fn(),
     withTransaction: jest.fn(),
@@ -78,6 +82,13 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.$transaction as jest.Mock).mockImplementation(async (callback) =>
+      callback({
+        moderationUserEnforcement: { create: enforcementCreate },
+        user: { update: userUpdate },
+        practitionerProfile: { updateMany: practitionerProfileUpdateMany },
+      }),
+    );
   });
 
   it('enforces review hide through review moderation path', async () => {
@@ -154,5 +165,63 @@ describe('ExecuteModerationSurfaceEnforcementService', () => {
         status: SupportTicketStatus.ESCALATED,
       }),
     );
+  });
+
+  it('moves a practitioner into remediation when suspended by moderation', async () => {
+    await service.execute({
+      action: ModerationCaseActionType.ENFORCE_USER_SUSPENSION,
+      targetType: ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      targetId: 'message_1',
+      targetUserId: 'practitioner_1',
+      reportId: 'report_1',
+      actorUserId: 'admin_1',
+      actorRoles: [AppRole.ADMIN],
+      reason: 'Repeated safety violation',
+      note: 'Compliance review required',
+    });
+
+    expect(enforcementCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        targetUserId: 'practitioner_1',
+        moderationReportId: 'report_1',
+        type: 'SUSPENSION',
+      }),
+    });
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: 'practitioner_1' },
+      data: { status: 'SUSPENDED' },
+    });
+    expect(practitionerProfileUpdateMany).toHaveBeenCalledWith({
+      where: { userId: 'practitioner_1' },
+      data: {
+        status: 'SUSPENDED',
+        operationalStatus: 'SUSPENDED',
+        complianceState: 'REMEDIATION_REQUIRED',
+      },
+    });
+  });
+
+  it('records a warning without changing practitioner approval or visibility state', async () => {
+    await service.execute({
+      action: ModerationCaseActionType.ENFORCE_USER_WARNING,
+      targetType: ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      targetId: 'message_1',
+      targetUserId: 'practitioner_1',
+      reportId: 'report_1',
+      actorUserId: 'admin_1',
+      actorRoles: [AppRole.ADMIN],
+      reason: 'First policy violation',
+      note: 'Warning only',
+    });
+
+    expect(enforcementCreate).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        targetUserId: 'practitioner_1',
+        moderationReportId: 'report_1',
+        type: 'WARNING',
+      }),
+    });
+    expect(userUpdate).not.toHaveBeenCalled();
+    expect(practitionerProfileUpdateMany).not.toHaveBeenCalled();
   });
 });

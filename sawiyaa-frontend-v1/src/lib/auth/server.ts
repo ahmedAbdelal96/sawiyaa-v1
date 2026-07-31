@@ -171,7 +171,7 @@ export async function clearAuthCookies(): Promise<void> {
   cookieStore.delete(USER_ROLE_COOKIE);
 }
 
-async function getSessionRole(): Promise<string | null> {
+export async function getSessionRole(): Promise<string | null> {
   const cookieStore = await cookies();
   const roleFromCookie = cookieStore.get(USER_ROLE_COOKIE)?.value;
   if (roleFromCookie) {

@@ -30,3 +30,11 @@ export function getDialCodeLabel(dialCode: string, locale: string): string {
   if (!entry) return dialCode;
   return locale.startsWith("ar") ? entry.labelAr : entry.labelEn;
 }
+
+export function getCountryFlag(countryCode: string): string {
+  return countryCode
+    .toUpperCase()
+    .replace(/[A-Z]/g, (letter) =>
+      String.fromCodePoint(127397 + letter.charCodeAt(0)),
+    );
+}

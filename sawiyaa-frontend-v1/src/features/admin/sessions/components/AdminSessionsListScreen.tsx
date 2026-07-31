@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CalendarClock,
@@ -53,6 +53,7 @@ import {
 } from "@/features/admin/session-runtime/hooks/use-admin-session-runtime";
 import AdminSessionRoomCloseEvidencePanel from "@/features/admin/session-runtime/components/AdminSessionRoomCloseEvidencePanel";
 import AdminSessionPackageEntitlementPanel from "@/features/admin/session-runtime/components/AdminSessionPackageEntitlementPanel";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 const STATUS_FILTERS: Array<SessionStatus | "ALL"> = [
   "ALL",
@@ -182,14 +183,14 @@ export default function AdminSessionsListScreen() {
     Boolean(scheduledTo);
 
   const params = useMemo<ListAdminSessionsParams>(() => {
-    const next: ListAdminSessionsParams = { page, limit };
+    const next: ListAdminSessionsParams = { page, limit, query: query || undefined };
     if (status !== "ALL") next.status = status;
     if (lateOnly) next.late = true;
     if (missingAttendanceOnly) next.missingAttendance = true;
     if (scheduledFrom) next.scheduledFrom = new Date(scheduledFrom).toISOString();
     if (scheduledTo) next.scheduledTo = new Date(scheduledTo).toISOString();
     return next;
-  }, [lateOnly, limit, missingAttendanceOnly, page, scheduledFrom, scheduledTo, status]);
+  }, [lateOnly, limit, missingAttendanceOnly, page, query, scheduledFrom, scheduledTo, status]);
 
   const sessions = useAdminSessions(params);
   const data = sessions.data;
@@ -307,9 +308,13 @@ export default function AdminSessionsListScreen() {
     },
   ];
 
-  const searchTerm = query.trim().toLowerCase();
-  const searchMode = searchTerm.length > 0;
-
+  const searchTerm = query.trim();
+  const searchMode = false;
+  /*
+   * Session Code search is handled by the backend. Do not fetch every session
+   * page and filter UUIDs in the browser.
+   */
+  /*
   const allSessionsQuery = useQuery({
     queryKey: [
       "admin-sessions-search-all",
@@ -348,25 +353,10 @@ export default function AdminSessionsListScreen() {
     enabled: searchMode,
     staleTime: 30_000,
   });
+  */
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
-  const displayedItems = useMemo(() => {
-    const baseItems = searchMode ? allSessionsQuery.data ?? [] : items;
-    if (!searchTerm) return baseItems;
-
-    return baseItems.filter((row) => {
-      const values = [
-        getSafeText(row.sessionCode),
-        getSafeText(row.patient?.displayName),
-        getSafeText(row.practitioner.displayName),
-        getSafeText(row.practitioner.slug),
-        getSafeText(row.patient?.id),
-        getSafeText(row.practitioner.id),
-      ];
-
-      return values.some((value) => value?.toLowerCase().includes(searchTerm));
-    });
-  }, [allSessionsQuery.data, items, searchMode, searchTerm]);
+  const displayedItems = items;
   const selectedSession = useMemo(
     () => items.find((item) => item.id === selectedSessionId) ?? null,
     [items, selectedSessionId],
@@ -376,15 +366,9 @@ export default function AdminSessionsListScreen() {
 
   const activePage = page;
   const activeLimit = limit;
-  const searchPaginationTotal = displayedItems.length;
-  const searchPaginationPages = Math.max(1, Math.ceil(searchPaginationTotal / activeLimit));
-  const pagedDisplayedItems = searchMode
-    ? displayedItems.slice((activePage - 1) * activeLimit, activePage * activeLimit)
-    : displayedItems;
-  const paginationTotal = searchMode ? searchPaginationTotal : data?.pagination.totalItems ?? 0;
-  const paginationTotalPages = searchMode
-    ? searchPaginationPages
-    : data?.pagination.totalPages ?? 1;
+  const pagedDisplayedItems = displayedItems;
+  const paginationTotal = data?.pagination.totalItems ?? 0;
+  const paginationTotalPages = data?.pagination.totalPages ?? 1;
   const summaryStart = paginationTotal
     ? Math.min((activePage - 1) * activeLimit + 1, paginationTotal)
     : 0;
@@ -468,7 +452,7 @@ export default function AdminSessionsListScreen() {
                     placeholder={
                       locale === "ar"
                         ? "ابحث باسم المريض أو المعالج أو رقم الجلسة..."
-                        : "Search by beneficiary name, practitioner name, or session ID..."
+                        : "Search by session code, patient name, or practitioner name..."
                     }
                     aria-label={locale === "ar" ? "بحث الجلسات" : "Search sessions"}
                   />
@@ -580,7 +564,7 @@ export default function AdminSessionsListScreen() {
         }
         flushContent
       >
-            {sessions.isLoading || (searchMode && allSessionsQuery.isLoading) ? (
+            {sessions.isLoading ? (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1040px]">
                   <thead className="border-b border-border-light bg-surface-secondary/80">
@@ -619,7 +603,7 @@ export default function AdminSessionsListScreen() {
                   </tbody>
                 </table>
               </div>
-            ) : sessions.isError || (searchMode && allSessionsQuery.isError) ? (
+            ) : sessions.isError ? (
               <div className="flex min-h-[18rem] items-center justify-center px-6 py-10">
                 <div className="max-w-md text-center">
                   <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-error-50 text-error-700">
@@ -637,9 +621,6 @@ export default function AdminSessionsListScreen() {
                     type="button"
                     onClick={() => {
                       sessions.refetch();
-                      if (searchMode) {
-                        allSessionsQuery.refetch();
-                      }
                     }}
                     className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
                   >
@@ -710,7 +691,7 @@ export default function AdminSessionsListScreen() {
                             <p className="text-sm text-text-secondary">
                               {formatTimeOnly(row.scheduledStartAt, locale)}
                             </p>
-                            <p className="text-xs font-medium text-text-muted">{getSafeText(row.sessionCode)}</p>
+                            <AdminSessionReference sessionId={row.id} sessionCode={row.sessionCode} variant="table" copyable />
                           </div>
                         </td>
 
@@ -792,7 +773,7 @@ export default function AdminSessionsListScreen() {
               </div>
             )}
 
-            {!sessions.isLoading && !sessions.isError && (data || searchMode) ? (
+            {!sessions.isLoading && !sessions.isError && data ? (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-light px-4 py-4 sm:px-6">
                 <p className="text-sm text-text-secondary">
                   {locale === "ar"

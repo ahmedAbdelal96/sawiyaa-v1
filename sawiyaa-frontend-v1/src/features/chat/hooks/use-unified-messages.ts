@@ -18,13 +18,25 @@ import {
   reconcileCanonicalMessage,
 } from "../lib/message-identity";
 
+function notifyUnreadSummaryDirty() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("unified-messages:unread-summary:dirty"));
+  }
+}
+
 interface UseUnifiedMessagesProps {
   conversationId: string | null;
   currentUserId: string | null;
   currentUserRole?: "Patient" | "Practitioner" | "Support team" | "Admin";
+  isThreadVisible?: boolean;
 }
 
-export function useUnifiedMessages({ conversationId, currentUserId, currentUserRole = "Admin" }: UseUnifiedMessagesProps) {
+export function useUnifiedMessages({
+  conversationId,
+  currentUserId,
+  currentUserRole = "Admin",
+  isThreadVisible = true,
+}: UseUnifiedMessagesProps) {
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<MessagingMessage[]>([]);
   const [page, setPage] = useState(1);
@@ -36,6 +48,27 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
   const messagesMap = useRef<Record<string, boolean>>({});
   const pendingMessagesRef = useRef<Record<string, { descriptor: ReturnType<typeof createMessageSendDescriptor> }>>({});
   const lastSubmittedCursorRef = useRef<string | null>(null);
+  const [isPageVisible, setIsPageVisible] = useState(() =>
+    typeof document === "undefined" || document.visibilityState === "visible",
+  );
+  const [isWindowFocused, setIsWindowFocused] = useState(() =>
+    typeof document === "undefined" || document.hasFocus(),
+  );
+  const canAcknowledgeRead = isThreadVisible && isPageVisible && isWindowFocused;
+
+  useEffect(() => {
+    const handleVisibilityChange = () => setIsPageVisible(document.visibilityState === "visible");
+    const handleFocus = () => setIsWindowFocused(true);
+    const handleBlur = () => setIsWindowFocused(false);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
 
   // 1. Fetch initial page of messages when conversation changes
   const messagesQuery = useQuery({
@@ -130,6 +163,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
       // Invalidate queries to resync after reconnect
       void queryClient.invalidateQueries({ queryKey: ["canonical-messages", conversationId] });
       void queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+      notifyUnreadSummaryDirty();
     };
 
     const handleDisconnect = () => {
@@ -160,19 +194,36 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
       });
       // Invalidate conversation query to update lastMessage in sidebar list
       void queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+      notifyUnreadSummaryDirty();
     };
 
-    const handleReadUpdate = (data: { conversationId: string; lastReadMessageId: string; unreadCount: number }) => {
+    const handleReadUpdate = (data: {
+      conversationId: string;
+      lastReadMessageId: string;
+      lastReadAt?: string | null;
+      readAt?: string | null;
+      readerUserId?: string;
+      unreadCount: number;
+    }) => {
       if (data.conversationId !== conversationId) return;
+      // A read receipt belongs to the reader. Only the sender's own bubbles
+      // should change when another participant advances their cursor.
+      if (!data.readerUserId || data.readerUserId === currentUserId) return;
+      const cursorAt = data.lastReadAt ?? data.readAt ?? null;
       setMessages((prev) =>
         prev.map((msg) => {
-          if (msg.id === data.lastReadMessageId) {
+          if (
+            msg.sender.userId === currentUserId &&
+            (cursorAt ? msg.sentAt <= cursorAt : msg.id === data.lastReadMessageId)
+          ) {
             return { ...msg, readAt: new Date().toISOString() };
           }
           return msg;
         }),
       );
       void queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+      void queryClient.invalidateQueries({ queryKey: ["canonical-messages", conversationId] });
+      notifyUnreadSummaryDirty();
     };
 
     const handleTypingStart = (data: { conversationId: string }) => {
@@ -203,11 +254,11 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
       socket.off("messages:typing:start", handleTypingStart);
       socket.off("messages:typing:stop", handleTypingStop);
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId, currentUserId, queryClient]);
 
   // 4. Mark Read action
   const markRead = useCallback(async (lastReadMessageId: string) => {
-    if (!conversationId || !lastReadMessageId) return;
+    if (!canAcknowledgeRead || !conversationId || !lastReadMessageId) return;
     if (lastSubmittedCursorRef.current === lastReadMessageId) return;
     
     lastSubmittedCursorRef.current = lastReadMessageId;
@@ -219,13 +270,14 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
         socket.emit("messages:markRead", { conversationId, lastReadMessageId });
       }
       void queryClient.invalidateQueries({ queryKey: ["canonical-conversations"] });
+      notifyUnreadSummaryDirty();
     } catch (err) {
       console.error("Failed to mark conversation as read", err);
       if (lastSubmittedCursorRef.current === lastReadMessageId) {
         lastSubmittedCursorRef.current = null;
       }
     }
-  }, [conversationId, queryClient]);
+  }, [canAcknowledgeRead, conversationId, queryClient]);
 
   const sendWithDescriptor = useCallback(async (descriptor: ReturnType<typeof createMessageSendDescriptor>) => {
     const { clientMessageId } = descriptor;
@@ -362,6 +414,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, currentUserR
     sendMessage,
     retryMessage,
     markRead,
+    canAcknowledgeRead,
     sendTypingNotification,
   };
 }

@@ -77,7 +77,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
           type="button"
           onClick={toggleDropdown}
           disabled={disabled}
-          className={`app-control flex min-h-11 w-full items-center gap-2 rounded-xl border bg-surface-tertiary px-3 py-2 text-start transition-colors ${
+          className={`app-control flex min-h-11 w-full items-center gap-2 rounded-xl border bg-surface-tertiary px-4 py-2.5 text-start transition-colors ${
             error
               ? "border-status-danger focus-visible:border-status-danger"
               : "border-border-light focus-visible:border-border-focus"

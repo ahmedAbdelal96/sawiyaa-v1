@@ -7,6 +7,7 @@ import {
   updateAdminPractitionerAvatar,
   getAdminPractitionerPublication,
   updateAdminPractitionerPublication,
+  getAdminPractitionerDetails,
 } from "../api/admin-practitioners.api";
 import type { ListAdminPractitionersParams } from "../types/admin-practitioners.types";
 
@@ -66,5 +67,14 @@ export function useUpdateAdminPractitionerPublication() {
       queryClient.invalidateQueries({ queryKey: ["admin", "practitioners"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "practitioner-publication", variables.practitionerId] });
     },
+  });
+}
+
+export function useAdminPractitionerDetails(practitionerId: string) {
+  return useQuery({
+    queryKey: ["admin", "practitioner-details", practitionerId],
+    queryFn: () => getAdminPractitionerDetails(practitionerId),
+    enabled: Boolean(practitionerId),
+    staleTime: 30_000,
   });
 }

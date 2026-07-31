@@ -11,7 +11,6 @@ import { ValidateAvailabilityOverlapService } from '../services/validate-availab
 import { AvailabilitySlotEditabilityService } from '../services/availability-slot-editability.service';
 import { CreatePractitionerAvailabilityWeekUseCase } from './create-practitioner-availability-week.use-case';
 import { UpdatePractitionerAvailabilityWeekUseCase } from './update-practitioner-availability-week.use-case';
-import { CopyPractitionerAvailabilityWeekToNextUseCase } from './copy-practitioner-availability-week-to-next.use-case';
 import { PublishPractitionerAvailabilityWeekUseCase } from './publish-practitioner-availability-week.use-case';
 
 describe('Availability week management use-cases', () => {
@@ -74,24 +73,22 @@ describe('Availability week management use-cases', () => {
     i18nService,
   );
 
-  const copyUseCase = new CopyPractitionerAvailabilityWeekToNextUseCase(
-    prisma,
-    weekRepository,
-    practitionerRepository,
-    calendarService,
-    overviewService,
-    mapper,
-    overlapService,
-    i18nService,
-  );
-
   const publishUseCase = new PublishPractitionerAvailabilityWeekUseCase(
     weekRepository,
     practitionerRepository,
     overviewService,
     mapper,
     i18nService,
+    calendarService,
   );
+
+  beforeAll(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-24T10:00:00.000Z'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -128,6 +125,63 @@ describe('Availability week management use-cases', () => {
     expect(result.message).toBe('availability.success.weekCreated');
     expect(result.week.status).toBe(AvailabilityWeekStatus.DRAFT);
     expect(weekRepository.createDraftWeek).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a create payload with a half-hour 60-minute start', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({ id: 'practitioner-1', user: { timezone: 'Africa/Cairo' } });
+    (weekRepository.findByPractitionerAndWeekStartDate as jest.Mock).mockResolvedValue(null);
+
+    await expect(createUseCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      weekStartDate: '2026-06-21',
+      timezone: 'Africa/Cairo',
+      slots: [{ dayOfWeek: 0, durationMinutes: 60, startMinuteOfDay: 630, endMinuteOfDay: 690 }],
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(weekRepository.createDraftWeek).not.toHaveBeenCalled();
+  });
+
+  it('creates and publishes the fourth future week', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
+      id: 'practitioner-1',
+      user: { timezone: 'Africa/Cairo' },
+    });
+    (weekRepository.findByPractitionerAndWeekStartDate as jest.Mock).mockResolvedValue(null);
+    (weekRepository.createDraftWeek as jest.Mock).mockResolvedValue(
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.DRAFT),
+    );
+    (overviewService.buildForPractitioner as jest.Mock).mockResolvedValue(buildOverview());
+
+    const created = await createUseCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      weekStartDate: '2026-07-19',
+      timezone: 'Africa/Cairo',
+      slots: [
+        {
+          dayOfWeek: 0,
+          durationMinutes: 30,
+          startMinuteOfDay: 600,
+          endMinuteOfDay: 630,
+        },
+      ],
+    });
+
+    expect(created.week.weekStartDate).toBe('2026-07-19');
+
+    (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.DRAFT),
+    );
+    (weekRepository.publishWeek as jest.Mock).mockResolvedValue(
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.PUBLISHED),
+    );
+    const published = await publishUseCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      weekId: 'week-5',
+    });
+
+    expect(published.week.status).toBe(AvailabilityWeekStatus.PUBLISHED);
   });
 
   it('rejects duplicate weeks with a friendly conflict', async () => {
@@ -187,30 +241,53 @@ describe('Availability week management use-cases', () => {
     expect(weekRepository.updateDraftWeekSlots).toHaveBeenCalledTimes(1);
   });
 
-  it('copies a week to the next week as a draft', async () => {
+  it('updates the fourth future week without changing other weeks', async () => {
     (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'practitioner-1',
       user: { timezone: 'Africa/Cairo' },
     });
     (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(
-      buildWeek('week-1', '2026-06-21', AvailabilityWeekStatus.PUBLISHED),
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.DRAFT),
     );
-    (weekRepository.findByPractitionerAndWeekStartDate as jest.Mock).mockResolvedValue(null);
-    (weekRepository.createDraftWeek as jest.Mock).mockResolvedValue(
-      buildWeek('week-2', '2026-06-28', AvailabilityWeekStatus.DRAFT),
+    (weekRepository.updateWeek as jest.Mock).mockResolvedValue(
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.DRAFT),
     );
-    (overviewService.buildForPractitioner as jest.Mock).mockResolvedValue(
-      buildOverview(),
+    (weekRepository.updateDraftWeekSlots as jest.Mock).mockResolvedValue(
+      buildWeek('week-5', '2026-07-19', AvailabilityWeekStatus.DRAFT),
     );
+    (overviewService.buildForPractitioner as jest.Mock).mockResolvedValue(buildOverview());
 
-    const result = await copyUseCase.execute({
+    const result = await updateUseCase.execute({
+      userId: 'user-1',
+      locale: 'en',
+      weekId: 'week-5',
+      timezone: 'Africa/Cairo',
+      slots: [
+        {
+          dayOfWeek: 2,
+          durationMinutes: 30,
+          startMinuteOfDay: 720,
+          endMinuteOfDay: 750,
+        },
+      ],
+    });
+
+    expect(result.week.weekStartDate).toBe('2026-07-19');
+    expect(weekRepository.updateDraftWeekSlots).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an update payload with a half-hour 60-minute start', async () => {
+    (practitionerRepository.findByUserId as jest.Mock).mockResolvedValue({ id: 'practitioner-1', user: { timezone: 'Africa/Cairo' } });
+    (weekRepository.findByIdForPractitioner as jest.Mock).mockResolvedValue(buildWeek('week-1', '2026-06-21', AvailabilityWeekStatus.DRAFT));
+
+    await expect(updateUseCase.execute({
       userId: 'user-1',
       locale: 'en',
       weekId: 'week-1',
-    });
-
-    expect(result.week.id).toBe('week-2');
-    expect(weekRepository.createDraftWeek).toHaveBeenCalledTimes(1);
+      timezone: 'Africa/Cairo',
+      slots: [{ dayOfWeek: 0, durationMinutes: 60, startMinuteOfDay: 630, endMinuteOfDay: 690 }],
+    })).rejects.toBeInstanceOf(BadRequestException);
+    expect(weekRepository.updateDraftWeekSlots).not.toHaveBeenCalled();
   });
 
   it('rejects publishing an empty draft week', async () => {

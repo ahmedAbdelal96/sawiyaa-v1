@@ -22,6 +22,8 @@ import {
   useAdminLedgerEntries,
   useDownloadAdminLedgerEntriesCsv,
 } from "../hooks/use-admin-accounting";
+import { formatAdminMoney } from "@/features/admin/finance/lib/finance-formatters";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
@@ -35,12 +37,7 @@ function formatDateTime(locale: string, value: string) {
 }
 
 function formatMoney(locale: string, value: string, currencyCode: string) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency: currencyCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value || "0"));
+  return formatAdminMoney(value, currencyCode, locale);
 }
 
 function shortId(value: string) {
@@ -179,6 +176,24 @@ export default function AdminLedgerExplorerScreen() {
             {t(`common.direction.${row.direction}`)}
           </span>
         ),
+      },
+      {
+        id: "sessionCode",
+        header: t("ledger.columns.sessionCode"),
+        accessor: (row) => row.sessionCode ?? "",
+        cell: (row) =>
+          row.sessionId ? (
+            <AdminSessionReference
+              sessionId={row.sessionId}
+              sessionCode={row.sessionCode}
+              href={`/admin/sessions/runtime-inspection?sessionId=${row.sessionId}`}
+              variant="table"
+              copyable
+            />
+          ) : (
+            <span className="text-xs text-text-muted">{t("ledger.common.notLinkedToSession")}</span>
+          ),
+        hideOnMobile: true,
       },
       {
         id: "amount",

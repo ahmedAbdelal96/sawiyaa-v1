@@ -42,6 +42,7 @@ export class PaymentRepository {
       where: { id: paymentId },
       select: {
         id: true,
+        sessionId: true,
         paymentPurpose: true,
         provider: true,
         status: true,
@@ -62,8 +63,10 @@ export class PaymentRepository {
         session: {
           select: {
             id: true,
+            sessionCode: true,
             status: true,
             sessionMode: true,
+            expiresAt: true,
             scheduledStartAt: true,
             scheduledEndAt: true,
             provider: true,
@@ -75,6 +78,8 @@ export class PaymentRepository {
           orderBy: [{ requestedAt: 'desc' }],
           select: {
             id: true,
+            paymentId: true,
+            sessionId: true,
             refundType: true,
             destination: true,
             status: true,
@@ -86,6 +91,7 @@ export class PaymentRepository {
             customerWalletCreditedAt: true,
             refundReason: true,
             providerRefundRef: true,
+            createdAt: true,
           },
         },
         events: {
@@ -162,6 +168,7 @@ export class PaymentRepository {
           session: {
             select: {
               id: true,
+              sessionCode: true,
               status: true,
               expiresAt: true,
             },
@@ -314,12 +321,14 @@ export class PaymentRepository {
   findRefundById(refundId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).refund.findUnique({
       where: { id: refundId },
+      include: { session: { select: { sessionCode: true } } },
     });
   }
 
   listRefundsByPaymentId(paymentId: string) {
     return this.prisma.refund.findMany({
       where: { paymentId },
+      include: { session: { select: { sessionCode: true } } },
       orderBy: [{ requestedAt: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -392,6 +401,14 @@ export class PaymentRepository {
   }
 
   private readonly paymentInclude = {
+    session: {
+      select: {
+        id: true,
+        sessionCode: true,
+        status: true,
+        expiresAt: true,
+      },
+    },
     refunds: {
       select: {
         processedAt: true,

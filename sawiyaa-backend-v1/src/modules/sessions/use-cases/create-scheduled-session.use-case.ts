@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   SessionEventType,
@@ -99,6 +99,13 @@ export class CreateScheduledSessionUseCase {
       });
     }
 
+    if (!practitioner.acceptsNormalBookings) {
+      throw new ForbiddenException({
+        messageKey: 'sessions.errors.normalBookingsPaused',
+        error: 'NORMAL_BOOKINGS_PAUSED',
+      });
+    }
+
     this.validateSessionDurationService.validate(input.durationMinutes);
 
     const scheduledStartAtUtc = new Date(input.scheduledStartAt);
@@ -145,14 +152,20 @@ export class CreateScheduledSessionUseCase {
 
     try {
       const session = await this.prisma.$transaction(async (tx) => {
-        const sessionCode = await this.sessionRepository.reserveNextSessionCode(
-          scheduledStartAtUtc,
-          tx,
-        );
+        const intake = await tx.practitionerProfile.findUnique({
+          where: { id: practitioner.id },
+          select: { acceptsNormalBookings: true },
+        });
+
+        if (!intake?.acceptsNormalBookings) {
+          throw new ForbiddenException({
+            messageKey: 'sessions.errors.normalBookingsPaused',
+            error: 'NORMAL_BOOKINGS_PAUSED',
+          });
+        }
 
         const createdSession = await this.sessionRepository.createSession(
           {
-            sessionCode,
             patientId: patient.id,
             practitionerId: practitioner.id,
             flowType: SessionFlowType.SCHEDULED,
@@ -166,6 +179,7 @@ export class CreateScheduledSessionUseCase {
             timezoneSnapshot: availabilityResult.timezone,
           },
           tx,
+          'scheduled',
         );
 
         await this.sessionRepository.createEvent(

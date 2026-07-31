@@ -60,7 +60,6 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
       financialOperationsPaymentRepository as never,
       ledgerRepository as never,
       extractPaymentLedgerBreakdownService as never,
-      refreshPractitionerWalletService as never,
       accountingJournalPostingService as never,
     );
 
@@ -82,8 +81,16 @@ describe('PostPaymentLedgerEntriesUseCase', () => {
       setup.ledgerRepository.createManyLedgerEntries,
     ).toHaveBeenCalledTimes(1);
     expect(
-      setup.refreshPractitionerWalletService.refresh,
-    ).toHaveBeenCalledTimes(1);
+      setup.ledgerRepository.createManyLedgerEntries.mock.calls[0][0],
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entryType: 'PRACTITIONER_EARNING',
+          direction: 'CREDIT',
+        }),
+      ]),
+    );
+    expect(setup.refreshPractitionerWalletService.refresh).not.toHaveBeenCalled();
     expect(
       setup.accountingJournalPostingService.postPaymentCaptured,
     ).toHaveBeenCalledTimes(1);

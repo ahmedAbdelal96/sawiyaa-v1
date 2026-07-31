@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
@@ -7,6 +7,7 @@ import { PractitionerSpecialtyRepository } from '../repositories/practitioner-sp
 import { ListPractitionerSpecialtiesUseCase } from './list-practitioner-specialties.use-case';
 import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 import { PractitionerSpecialtyIntegrityService } from '../services/practitioner-specialty-integrity.service';
+import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
 
 /**
  * Sets practitioner specialties deterministically in one replace operation.
@@ -22,6 +23,7 @@ export class SetPractitionerSpecialtiesUseCase {
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly listPractitionerSpecialtiesUseCase: ListPractitionerSpecialtiesUseCase,
     private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
+    @Optional() private readonly changeReviewService?: PractitionerChangeReviewService,
   ) {}
 
   async execute(input: {
@@ -51,6 +53,18 @@ export class SetPractitionerSpecialtiesUseCase {
         input.userId,
         tx,
       );
+
+      if (profile.status === 'APPROVED') {
+        await this.changeReviewService?.upsert({
+          practitionerId: profile.id,
+          specialtySelection: {
+            primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
+            specialtyIds: normalizedIds,
+          },
+          tx,
+        });
+        return;
+      }
 
       await this.practitionerProfileRepository.updateByUserId(
         input.userId,

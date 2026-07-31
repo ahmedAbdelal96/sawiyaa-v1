@@ -57,6 +57,25 @@ function formatDateTime(value: string | null | undefined, locale: string) {
   });
 }
 
+function formatDateTimeLines(value: string | null | undefined, locale: string) {
+  if (!value) return { date: "—", time: "" };
+  const dateObj = new Date(value);
+  if (Number.isNaN(dateObj.getTime())) return { date: "—", time: "" };
+
+  const dateStr = dateObj.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const timeStr = dateObj.toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: !locale.startsWith("ar"),
+  });
+
+  return { date: dateStr, time: timeStr };
+}
+
 function formatCurrency(
   amount: string | null | undefined,
   currency: string | null | undefined,
@@ -184,14 +203,18 @@ export default function AdminAcademyProgramsCatalogScreen() {
       header: t("programs.list.columns.title"),
       accessor: (row) => resolveAcademyProgramTitle(row, locale),
       cell: (row) => (
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary">
+        <div className="min-w-0 max-w-[280px]">
+          <p className="truncate text-xs font-semibold text-text-primary hover:text-primary transition-colors" title={resolveAcademyProgramTitle(row, locale)}>
             {resolveAcademyProgramTitle(row, locale)}
           </p>
-          <p className="mt-1 truncate text-xs text-text-muted">{row.slug}</p>
-          <p className="mt-2 line-clamp-2 text-xs leading-5 text-text-secondary">
-            {resolveAcademyProgramDescription(row, locale) ?? t("programs.list.noDescription")}
-          </p>
+          <div className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] text-text-muted">
+            <span className="font-mono bg-surface-tertiary px-1 rounded">{row.slug}</span>
+          </div>
+          {resolveAcademyProgramDescription(row, locale) && (
+            <p className="mt-1 line-clamp-1 text-[11px] text-text-secondary leading-normal" title={resolveAcademyProgramDescription(row, locale) ?? undefined}>
+              {resolveAcademyProgramDescription(row, locale)}
+            </p>
+          )}
         </div>
       ),
     },
@@ -200,13 +223,15 @@ export default function AdminAcademyProgramsCatalogScreen() {
       header: t("programs.list.columns.category"),
       accessor: (row) => row.category?.id ?? "",
       cell: (row) => (
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary">
+        <div className="min-w-0 max-w-[120px]">
+          <p className="truncate text-xs font-semibold text-text-primary">
             {resolveAcademyProgramCategoryTitle(row.category, locale) ?? t("programs.list.noCategory")}
           </p>
-          <p className="mt-1 truncate text-xs text-text-muted">
-            {row.category?.slug ?? t("programs.list.noCategorySlug")}
-          </p>
+          {row.category?.slug && (
+            <p className="mt-0.5 truncate text-[10px] text-text-muted font-mono bg-surface-tertiary px-1 py-0.5 rounded w-max">
+              {row.category.slug}
+            </p>
+          )}
         </div>
       ),
     },
@@ -214,32 +239,35 @@ export default function AdminAcademyProgramsCatalogScreen() {
       id: "status",
       header: t("programs.list.columns.status"),
       accessor: (row) => row.status,
-      cell: (row) => (
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusTone(row.status)}`}>
-          {t(`programs.statuses.${row.status}` as Parameters<typeof t>[0])}
-        </span>
-      ),
+      cell: (row) => {
+        const statusColor = row.status === "PUBLISHED" ? "success" : row.status === "ARCHIVED" ? "dark" : "warning";
+        return (
+          <div className="whitespace-nowrap">
+            <Badge variant="light" size="sm" color={statusColor}>
+              {t(`programs.statuses.${row.status}` as Parameters<typeof t>[0])}
+            </Badge>
+          </div>
+        );
+      },
     },
     {
       id: "registration",
       header: t("programs.list.columns.registration"),
       accessor: (row) => (row.registrationOpen ? 1 : 0),
       cell: (row) => (
-        <div className="flex flex-col items-start gap-1.5">
-          <span
-            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
-              row.registrationOpen
-                ? "border-status-success-border bg-status-success-soft text-status-success"
-                : "border-border-light bg-surface-tertiary text-text-muted"
-            }`}
+        <div className="flex flex-col items-start gap-1">
+          <Badge
+            variant="light"
+            size="sm"
+            color={row.registrationOpen ? "success" : "dark"}
           >
             {row.registrationOpen ? t("programs.registration.open") : t("programs.registration.closed")}
-          </span>
-          {row.isOverTargetLearners ? (
+          </Badge>
+          {row.isOverTargetLearners && (
             <Badge variant="light" color="warning" size="sm">
               {t("programs.list.targetExceededBadge")}
             </Badge>
-          ) : null}
+          )}
         </div>
       ),
     },
@@ -251,15 +279,28 @@ export default function AdminAcademyProgramsCatalogScreen() {
         const egp = formatCurrency(row.priceEgp, "EGP", locale);
         const usd = formatCurrency(row.priceUsd, "USD", locale);
         const fallback = t("programs.list.free");
+        const isFree = !row.priceEgp && !row.priceUsd;
 
         return (
-          <div className="text-sm text-text-primary">
-            <p className="font-semibold">{egp ?? usd ?? fallback}</p>
-            {egp && usd ? (
-              <p className="mt-1 text-xs text-text-secondary">
-                {t("programs.list.priceMarkets", { egp, usd })}
-              </p>
-            ) : null}
+          <div className="text-xs text-text-primary leading-tight whitespace-nowrap">
+            {isFree ? (
+              <span className="text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-500/10 px-2 py-0.5 rounded text-[11px] font-semibold">
+                {fallback}
+              </span>
+            ) : (
+              <div className="space-y-0.5">
+                {row.priceEgp && (
+                  <div className="font-semibold text-text-primary">
+                    {egp}
+                  </div>
+                )}
+                {row.priceUsd && (
+                  <div className="text-[10px] text-text-secondary font-medium">
+                    {usd}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       },
@@ -268,25 +309,57 @@ export default function AdminAcademyProgramsCatalogScreen() {
       id: "schedule",
       header: t("programs.list.columns.schedule"),
       accessor: (row) => row.startAt ?? row.endAt ?? "",
-      cell: (row) => (
-        <div className="text-sm text-text-primary">
-          <p className="font-semibold">{formatDateRange(row.startAt, row.endAt, locale)}</p>
-          <p className="mt-1 text-xs text-text-secondary">
-            {row.targetLearnerCount ?? row.maxSeats
-              ? t("programs.list.targetLearners", {
-                  count: row.targetLearnerCount ?? row.maxSeats ?? 0,
-                })
-              : t("programs.list.noTargetLearners")}
-          </p>
-        </div>
-      ),
+      cell: (row) => {
+        const start = formatDateTime(row.startAt, locale);
+        const end = formatDateTime(row.endAt, locale);
+        const targetCount = row.targetLearnerCount ?? row.maxSeats;
+        return (
+          <div className="text-xs text-text-primary leading-normal whitespace-nowrap">
+            {row.startAt || row.endAt ? (
+              <div className="space-y-0.5">
+                {row.startAt && (
+                  <div>
+                    <span className="text-text-muted text-[10px] me-1">{locale === "ar" ? "بدء:" : "Start:"}</span>
+                    <span className="font-medium">{start}</span>
+                  </div>
+                )}
+                {row.endAt && (
+                  <div>
+                    <span className="text-text-muted text-[10px] me-1">{locale === "ar" ? "نهاية:" : "End:"}</span>
+                    <span className="font-medium">{end}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-text-muted italic">—</span>
+            )}
+            {targetCount ? (
+              <p className="mt-1 text-[10px] text-text-secondary bg-surface-tertiary px-1.5 py-0.5 rounded w-max">
+                {t("programs.list.targetLearners", { count: targetCount })}
+              </p>
+            ) : (
+              <p className="mt-1 text-[10px] text-text-muted italic">
+                {t("programs.list.noTargetLearners")}
+              </p>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "updatedAt",
       header: t("programs.list.columns.updatedAt"),
       accessor: (row) => new Date(row.updatedAt).getTime(),
       hideOnMobile: true,
-      cell: (row) => formatDateTime(row.updatedAt, locale),
+      cell: (row) => {
+        const { date, time } = formatDateTimeLines(row.updatedAt, locale);
+        return (
+          <div className="text-xs leading-normal whitespace-nowrap">
+            <div className="font-medium text-text-primary dark:text-white">{date}</div>
+            <div className="text-[10px] text-text-muted">{time}</div>
+          </div>
+        );
+      },
     },
   ];
 
@@ -403,6 +476,9 @@ export default function AdminAcademyProgramsCatalogScreen() {
           data={items}
           columns={columns}
           getRowId={(row) => row.id}
+          tableClassName="w-max table-auto"
+          className="w-full max-w-full overflow-hidden always-visible-scrollbar"
+          size="sm"
           loading={programsQuery.isLoading}
           error={programsQuery.isError ? t("programs.states.error.note") : null}
           errorState={{

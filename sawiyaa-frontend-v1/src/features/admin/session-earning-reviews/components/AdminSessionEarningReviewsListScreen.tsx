@@ -4,6 +4,7 @@ import { useDeferredValue, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { Clock3, Search, Sparkles, Users } from "lucide-react";
 import {
   DataTable,
@@ -194,7 +195,7 @@ export default function AdminSessionEarningReviewsListScreen() {
             <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
               {renderName(row.practitioner.displayName, row.practitioner.publicSlug)}
             </p>
-            <p className="mt-1 text-xs text-text-secondary">{row.practitioner.professionalTitle ?? row.practitioner.publicSlug ?? row.practitioner.practitionerId}</p>
+            <p className="mt-1 text-xs text-text-secondary">{getProfessionalTitleLabel(row.practitioner.professionalTitle, locale) || row.practitioner.publicSlug || row.practitioner.practitionerId}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.14em] text-text-muted">

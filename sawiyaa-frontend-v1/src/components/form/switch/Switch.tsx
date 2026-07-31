@@ -3,6 +3,7 @@ import React, { useState } from "react";
 
 interface SwitchProps {
   label: string;
+  checked?: boolean;
   defaultChecked?: boolean;
   disabled?: boolean;
   onChange?: (checked: boolean) => void;
@@ -11,17 +12,19 @@ interface SwitchProps {
 
 const Switch: React.FC<SwitchProps> = ({
   label,
+  checked,
   defaultChecked = false,
   disabled = false,
   onChange,
   color = "blue", // Default to blue color
 }) => {
-  const [isChecked, setIsChecked] = useState(defaultChecked);
+  const [internalChecked, setInternalChecked] = useState(defaultChecked);
+  const isChecked = checked ?? internalChecked;
 
   const handleToggle = () => {
     if (disabled) return;
     const newCheckedState = !isChecked;
-    setIsChecked(newCheckedState);
+    if (checked === undefined) setInternalChecked(newCheckedState);
     if (onChange) {
       onChange(newCheckedState);
     }
@@ -52,6 +55,8 @@ const Switch: React.FC<SwitchProps> = ({
         disabled ? "text-text-muted" : "text-text-primary"
       }`}
       onClick={handleToggle} // Toggle when the label itself is clicked
+      role="switch"
+      aria-checked={isChecked}
     >
       <div className="relative">
         <div

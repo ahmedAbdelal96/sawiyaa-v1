@@ -64,10 +64,12 @@ export class CreateSupportTicketUseCase {
       relatedMatchingSessionId: input.payload.relatedMatchingSessionId,
       relatedAssessmentSubmissionId:
         input.payload.relatedAssessmentSubmissionId,
+      forceNew: input.payload.newConversation === true,
+      idempotencyKey: input.payload.idempotencyKey,
     });
 
     this.logger.log(
-      `Support ticket created (ticket=${created.id}, actorKind=${input.actorKind}, user=${input.userId})`,
+      `Support ticket returned for self-service request (ticket=${created.id}, actorKind=${input.actorKind}, user=${input.userId})`,
     );
 
     return {

@@ -247,6 +247,9 @@ export interface DataTableProps<T = any> {
   
   /** Custom CSS classes for the table wrapper */
   className?: string;
+
+  /** Custom CSS classes for the internal table element */
+  tableClassName?: string;
   
   /** Enable striped rows */
   striped?: boolean;

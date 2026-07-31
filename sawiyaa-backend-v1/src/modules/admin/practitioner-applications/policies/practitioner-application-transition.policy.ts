@@ -101,15 +101,8 @@ export class PractitionerApplicationTransitionPolicy {
       });
     }
 
-    if (status === PractitionerApplicationStatus.CHANGES_REQUESTED) {
-      throw new ConflictException({
-        messageKey:
-          'admin.practitionerApplications.errors.applicationNotReviewable',
-        error: 'PRACTITIONER_APPLICATION_ALREADY_CHANGES_REQUESTED',
-      });
-    }
-
     if (!this.decisionAllowedStatuses.includes(status)) {
+      if (status === PractitionerApplicationStatus.CHANGES_REQUESTED) return;
       throw new BadRequestException({
         messageKey:
           'admin.practitionerApplications.errors.applicationNotReviewable',

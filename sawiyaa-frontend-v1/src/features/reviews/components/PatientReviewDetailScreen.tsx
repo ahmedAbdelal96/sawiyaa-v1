@@ -6,6 +6,8 @@ import { CalendarDays, ClipboardList, MessageSquareText, Star } from "lucide-rea
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { usePatientReview } from "../hooks/use-reviews";
+import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import { getPatientReviewErrorKey } from "../lib/reviews-errors";
 import type { SessionReviewStatus } from "../types/reviews.types";
 
@@ -98,6 +100,7 @@ export default function PatientReviewDetailScreen({ reviewId }: Props) {
   }
 
   const item = review.data.item;
+  const session = usePatientSession(item.sessionId);
   const statusClass =
     STATUS_TONE[item.status] ?? "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/70";
   const practitionerName = item.practitioner.displayName ?? item.practitioner.slug;
@@ -145,7 +148,10 @@ export default function PatientReviewDetailScreen({ reviewId }: Props) {
         </h2>
         <div className="mt-4 rounded-[22px] border border-border-light px-4 dark:border-white/8">
           <DetailRow label={t("patient.detail.fields.practitioner")} value={practitionerName} />
-          <DetailRow label={t("patient.detail.fields.sessionId")} value={item.sessionId} />
+          <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 dark:border-white/8">
+            <span className="text-xs font-medium text-text-muted">{t("patient.detail.fields.sessionCode")}</span>
+            <SessionCodeReference sessionId={item.sessionId} sessionCode={session.data?.sessionCode} copyable />
+          </div>
           <DetailRow
             label={t("patient.detail.fields.submittedAt")}
             value={formatDateTime(item.submittedAt, locale)}

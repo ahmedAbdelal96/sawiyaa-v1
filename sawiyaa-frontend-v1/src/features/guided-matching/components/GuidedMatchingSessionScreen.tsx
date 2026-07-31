@@ -19,6 +19,10 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import {
+  getLocalizedLanguageLabel,
+  getProfessionalTitleLabel,
+} from "@/constants/reference-data";
 
 type GuidedMatchingSessionScreenProps = {
   sessionId: string;
@@ -226,11 +230,7 @@ export default function GuidedMatchingSessionScreen({
                   {data.answers.preferredLanguage && (
                     <SummaryChip>
                       {t("result.summary.language", {
-                        value: t(
-                          `choices.language.${data.answers.preferredLanguage}` as Parameters<
-                            typeof t
-                          >[0],
-                        ),
+                        value: getLocalizedLanguageLabel(data.answers.preferredLanguage, locale),
                       })}
                     </SummaryChip>
                   )}
@@ -280,7 +280,7 @@ export default function GuidedMatchingSessionScreen({
                         </p>
                         {item.practitioner.professionalTitle && (
                           <p className="mt-1 line-clamp-2 text-sm leading-6 text-text-secondary">
-                            {item.practitioner.professionalTitle}
+                            {getProfessionalTitleLabel(item.practitioner.professionalTitle, locale)}
                           </p>
                         )}
                       </div>
@@ -312,7 +312,9 @@ export default function GuidedMatchingSessionScreen({
                       </div>
                       <p className="mt-2 text-sm font-medium text-text-primary dark:text-white/90">
                         {item.practitioner.languages.length > 0
-                          ? item.practitioner.languages.join(" · ")
+                          ? item.practitioner.languages
+                              .map((language) => getLocalizedLanguageLabel(language, locale))
+                              .join(" · ")
                           : t("result.card.none")}
                       </p>
                     </div>

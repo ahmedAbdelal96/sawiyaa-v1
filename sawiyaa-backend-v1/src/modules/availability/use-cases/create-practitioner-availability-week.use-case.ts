@@ -17,6 +17,7 @@ import {
   isAvailabilityWeekUniqueConstraintError,
   toAvailabilityWeekConflictException,
 } from '../utils/availability-week-conflict.util';
+import { assertWeeklySlotsHaveValidLocalTimes } from '../utils/availability-local-time.util';
 
 @Injectable()
 export class CreatePractitionerAvailabilityWeekUseCase {
@@ -52,15 +53,24 @@ export class CreatePractitionerAvailabilityWeekUseCase {
       });
     }
 
+    const practitionerTimezone = assertIanaTimeZoneInput(practitioner.user.timezone, {
+      messageKey: 'availability.errors.timezoneRequired',
+      error: 'AVAILABILITY_TIMEZONE_REQUIRED',
+    });
     const normalizedTimezone = assertIanaTimeZoneInput(input.timezone, {
       messageKey: 'availability.errors.invalidTimezone',
       error: 'AVAILABILITY_INVALID_TIMEZONE',
     });
-    const range = this.availabilityWeekCalendarService.resolveWeekWindowFromStartDate(
-      {
-        weekStartDate: input.weekStartDate,
-      },
-    );
+    if (normalizedTimezone !== practitionerTimezone) {
+      throw new ConflictException({
+        messageKey: 'availability.errors.invalidTimezone',
+        errorCode: 'AVAILABILITY_TIMEZONE_MISMATCH',
+      });
+    }
+    const range = this.availabilityWeekCalendarService.assertWeekInsideActiveWindow({
+      weekStartDate: input.weekStartDate,
+      timezone: practitionerTimezone,
+    });
 
     const normalizedSlots = this.validateAvailabilityOverlapService.validateWeeklySlots(
       (input.slots ?? []).map((slot) => ({
@@ -70,6 +80,11 @@ export class CreatePractitionerAvailabilityWeekUseCase {
         endMinuteOfDay: slot.endMinuteOfDay,
       })),
     );
+    assertWeeklySlotsHaveValidLocalTimes({
+      weekStartDate: range.startDate,
+      timezone: normalizedTimezone,
+      slots: normalizedSlots,
+    });
 
     const existing =
       await this.prismaWeekRepository.findByPractitionerAndWeekStartDate(
@@ -119,7 +134,10 @@ export class CreatePractitionerAvailabilityWeekUseCase {
           weekEndDate: range.endDate,
           timezone: normalizedTimezone,
         }),
-        ...overview,
+        weekStartsOn: overview.weekStartsOn,
+        futureWeeksAllowed: overview.futureWeeksAllowed,
+        activeRange: overview.activeRange,
+        weeks: overview.weeks,
       };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

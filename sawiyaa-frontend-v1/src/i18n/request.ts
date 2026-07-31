@@ -24,6 +24,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const namespaces = [
     "common",
     "navigation",
+    "finance",
     "auth",
     "moderation",
     "home",
@@ -56,6 +57,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
     "admin-package-plans",
     "admin-practitioner-payouts",
     "admin-package-settlements",
+    "admin-settlements",
     "admin-refund-policies",
     "admin-featured-practitioners",
     "admin-patients",

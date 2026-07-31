@@ -98,6 +98,29 @@ export class CreateOrGetGeneralChatConversationUseCase {
           errorCode: GENERAL_CHAT_ERROR_CODES.linkedSessionForbidden,
         });
       }
+
+      // Check existing canonical conversation by sessionId first
+      const sessionConversations =
+        await this.generalChatRepository.findConversationsBySessionId(
+          input.dto.linkedSessionId,
+        );
+
+      if (sessionConversations.length > 1) {
+        throw new BadRequestException(
+          `DATA_INTEGRITY_VIOLATION: Multiple canonical conversations exist for session ${input.dto.linkedSessionId}`,
+        );
+      }
+
+      if (sessionConversations.length === 1) {
+        const existing = sessionConversations[0];
+        this.assertGeneralConversationBoundary(
+          existing,
+          input.authenticatedUser.id,
+        );
+        return {
+          item: await this.toReadItem(existing, false),
+        };
+      }
     }
 
     const conversationRef = this.buildConversationRef({
@@ -137,6 +160,41 @@ export class CreateOrGetGeneralChatConversationUseCase {
         error instanceof PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
+        const target = error.meta?.target;
+        const isExpected = Array.isArray(target)
+          ? target.includes('conversationRef')
+          : typeof target === 'string'
+            ? target.includes('conversationRef')
+            : true;
+
+        if (!isExpected) {
+          throw error;
+        }
+
+        // Recovery: 1. find by sessionId
+        if (input.dto.linkedSessionId) {
+          const sessionConversations =
+            await this.generalChatRepository.findConversationsBySessionId(
+              input.dto.linkedSessionId,
+            );
+          if (sessionConversations.length > 1) {
+            throw new BadRequestException(
+              `DATA_INTEGRITY_VIOLATION: Multiple canonical conversations exist for session ${input.dto.linkedSessionId}`,
+            );
+          }
+          if (sessionConversations.length === 1) {
+            const converged = sessionConversations[0];
+            this.assertGeneralConversationBoundary(
+              converged,
+              input.authenticatedUser.id,
+            );
+            return {
+              item: await this.toReadItem(converged, false),
+            };
+          }
+        }
+
+        // Recovery: 2. fallback to conversationRef
         const converged =
           await this.generalChatRepository.findByConversationRef(
             conversationRef,

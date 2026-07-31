@@ -19,7 +19,7 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
   LedgerListSuccessResponseDto,
-  PractitionerSettlementListSuccessResponseDto,
+  PractitionerSafeSettlementListSuccessResponseDto,
   WalletItemSuccessResponseDto,
 } from '../dto/financial-operations-response.dto';
 import {
@@ -99,7 +99,7 @@ export class PractitionerFinancialOperationsController {
   })
   @ApiResponse({
     status: 200,
-    type: PractitionerSettlementListSuccessResponseDto,
+    type: PractitionerSafeSettlementListSuccessResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Invalid settlements filter semantics',

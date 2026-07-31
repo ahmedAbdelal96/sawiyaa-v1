@@ -71,7 +71,7 @@ export class SessionItemResponseDto {
   id!: string;
 
   @ApiProperty({
-    example: 'SES-2026-000123',
+    example: 'S-260729-0042',
     description: 'Human-readable session reference code.',
   })
   sessionCode!: string;
@@ -144,6 +144,27 @@ export class SessionDetailsResponseDto extends SessionItemResponseDto {
 
   @ApiProperty({ nullable: true })
   videoRoomCloseNote!: string | null;
+
+  @ApiProperty({ nullable: true })
+  conversationId!: string | null;
+
+  @ApiProperty({ nullable: true, type: Object })
+  patientDetails!: any;
+
+  @ApiProperty({ nullable: true, type: Object })
+  practitionerDetails!: any;
+
+  @ApiProperty({ nullable: true, type: Object })
+  paymentDetails!: any;
+
+  @ApiProperty({ nullable: true, type: Object })
+  corporateSponsorshipDetails!: any;
+
+  @ApiProperty({ nullable: true, type: Object })
+  reviewDetails!: any;
+
+  @ApiProperty({ type: Array, example: [] })
+  timeline!: any[];
 }
 
 export class SessionsPaginationResponseDto {

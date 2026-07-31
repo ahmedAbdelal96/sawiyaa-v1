@@ -14,7 +14,7 @@ import Button from "@/components/ui/button/Button";
 import Select from "@/components/form/Select";
 import InputField from "@/components/form/input/InputField";
 import { parseDownloadFilename, triggerBlobDownload } from "@/lib/downloads/file-download";
-import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import { formatAdminMoneyForLocale as formatFinanceMoney } from "@/features/admin/finance/lib/finance-formatters";
 import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { useAdminAccountingDashboard, useDownloadAdminAccountingDashboardCsv } from "../hooks/use-admin-accounting";
 import type { AccountingRecentEvent } from "../types/admin-accounting.types";

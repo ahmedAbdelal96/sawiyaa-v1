@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { normalizeProfessionalTitle } from '../constants/professional-title.constants';
 import {
   PractitionerApplicationStatus,
   PractitionerPayoutMethodType,
@@ -9,6 +10,10 @@ import {
   PractitionerApplicationCompletionStepKey,
   PractitionerApplicationCompletionViewModel,
 } from '../types/practitioner.types';
+import {
+  PractitionerRequiredDocumentsService,
+  RequiredDocumentRecord,
+} from './practitioner-required-documents.service';
 
 type IssueInput = Omit<PractitionerApplicationCompletionIssue, 'stepKey'> & {
   stepKey: PractitionerApplicationCompletionStepKey;
@@ -64,6 +69,10 @@ function buildStep(
  */
 @Injectable()
 export class PractitionerApplicationCompletionService {
+  constructor(
+    private readonly requiredDocuments: PractitionerRequiredDocumentsService =
+      new PractitionerRequiredDocumentsService(),
+  ) {}
   private issue(input: IssueInput): PractitionerApplicationCompletionIssue {
     return input;
   }
@@ -87,6 +96,7 @@ export class PractitionerApplicationCompletionService {
       expiredCount: number;
     };
     credentialTypes: string[];
+    credentialRecords?: RequiredDocumentRecord[];
     payoutDestination: {
       methodType: PractitionerPayoutMethodType | null;
       accountHolderName: string | null;
@@ -154,7 +164,7 @@ export class PractitionerApplicationCompletionService {
 
     const professionalDetailsIssues: PractitionerApplicationCompletionIssue[] =
       [];
-    if (!input.professionalTitle?.trim()) {
+    if (!normalizeProfessionalTitle(input.professionalTitle)) {
       professionalDetailsIssues.push(
         this.issue({
           code: 'PROFESSIONAL_DETAILS_TITLE_MISSING',
@@ -322,7 +332,15 @@ export class PractitionerApplicationCompletionService {
     });
 
     const qualificationIssues: PractitionerApplicationCompletionIssue[] = [];
-    if (input.credentialSummary.totalCredentials <= 0) {
+    const documentGroups = this.requiredDocuments.evaluate(
+      input.credentialRecords ??
+        input.credentialTypes.map((credentialType) => ({
+          credentialType,
+          reviewStatus: 'PENDING',
+          fileUrl: 'legacy-metadata-present',
+        })),
+    );
+    if (documentGroups.groups.academic.count <= 0) {
       qualificationIssues.push(
         this.issue({
           code: 'QUALIFICATIONS_CREDENTIAL_REQUIRED',
@@ -336,10 +354,7 @@ export class PractitionerApplicationCompletionService {
       );
     }
     // Academic certificate (degree) is required for practitioner submission: presence is enough; admin verifies authenticity later.
-    const hasAcademicCertificate = input.credentialTypes.some(
-      (type) => String(type) === 'DEGREE',
-    );
-    if (!hasAcademicCertificate) {
+    if (!documentGroups.groups.academic.complete) {
       qualificationIssues.push(
         this.issue({
           code: 'QUALIFICATIONS_ACADEMIC_CERTIFICATE_REQUIRED',
@@ -354,15 +369,6 @@ export class PractitionerApplicationCompletionService {
     }
 
     const documentIssues: PractitionerApplicationCompletionIssue[] = [];
-    const credentialTypeSet = new Set(input.credentialTypes as string[]);
-    const hasNationalIdFront = credentialTypeSet.has('NATIONAL_ID_FRONT');
-    const hasNationalIdBack = credentialTypeSet.has('NATIONAL_ID_BACK');
-    const hasLegacyNationalId = credentialTypeSet.has('NATIONAL_ID');
-    const hasPassport = credentialTypeSet.has('PASSPORT');
-    const hasNationalIdPair = hasNationalIdFront && hasNationalIdBack;
-    const hasIdentityEvidence =
-      hasPassport || hasNationalIdPair || hasLegacyNationalId;
-
     if (input.credentialSummary.totalCredentials <= 0) {
       documentIssues.push(
         this.issue({
@@ -370,14 +376,12 @@ export class PractitionerApplicationCompletionService {
           field: 'credentials',
           stepKey: 'documents',
           severity: 'BLOCKER',
-          requirementScope: 'APPROVAL',
-          messageKey:
-            'practitioners.application.completion.documents.credentialRequired',
+          requirementScope: 'SUBMISSION',
+          messageKey: 'practitioners.application.completion.documents.credentialRequired',
         }),
       );
     }
-
-    if (!hasIdentityEvidence) {
+    if (!documentGroups.groups.identity.complete) {
       documentIssues.push(
         this.issue({
           code: 'DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED',
@@ -389,8 +393,7 @@ export class PractitionerApplicationCompletionService {
             'practitioners.application.completion.documents.identityEvidenceRequired',
         }),
       );
-      if (!hasPassport && !hasLegacyNationalId) {
-        if (!hasNationalIdFront) {
+      if (documentGroups.groups.identity.missing.includes('NATIONAL_ID_FRONT')) {
           documentIssues.push(
             this.issue({
               code: 'DOCUMENTS_NATIONAL_ID_FRONT_MISSING',
@@ -403,7 +406,7 @@ export class PractitionerApplicationCompletionService {
             }),
           );
         }
-        if (!hasNationalIdBack) {
+        if (documentGroups.groups.identity.missing.includes('NATIONAL_ID_BACK')) {
           documentIssues.push(
             this.issue({
               code: 'DOCUMENTS_NATIONAL_ID_BACK_MISSING',
@@ -417,29 +420,17 @@ export class PractitionerApplicationCompletionService {
           );
         }
       }
-    }
 
-    if (
-      input.credentialSummary.totalCredentials > 0 &&
-      input.credentialSummary.approvedCount <
-        input.credentialSummary.totalCredentials
-    ) {
+    if (!documentGroups.groups.professionalAuthorization.complete) {
       documentIssues.push(
         this.issue({
-          code: 'DOCUMENTS_CREDENTIAL_NOT_APPROVED',
-          field: 'credentials',
+          code: 'DOCUMENTS_PROFESSIONAL_AUTHORIZATION_REQUIRED',
+          field: 'credentials.professionalAuthorization',
           stepKey: 'documents',
           severity: 'BLOCKER',
-          requirementScope: 'APPROVAL',
+          requirementScope: 'SUBMISSION',
           messageKey:
-            'practitioners.application.completion.documents.credentialApprovalRequired',
-          metadata: {
-            totalCredentials: input.credentialSummary.totalCredentials,
-            approvedCount: input.credentialSummary.approvedCount,
-            pendingCount: input.credentialSummary.pendingCount,
-            rejectedCount: input.credentialSummary.rejectedCount,
-            expiredCount: input.credentialSummary.expiredCount,
-          },
+            'practitioners.application.completion.documents.professionalAuthorizationRequired',
         }),
       );
     }
@@ -751,6 +742,7 @@ export class PractitionerApplicationCompletionService {
       blockers,
       warnings,
       steps,
+      documentGroups,
     };
   }
 }

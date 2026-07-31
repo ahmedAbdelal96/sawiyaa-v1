@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { CalendarDays, Clock, Package, Sparkles, Search } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { StateCard } from "@/components/shared/ContentStates";
 import {
   SurfaceCard,
-  SurfaceStatCard,
   SurfaceToolbar,
 } from "@/components/shared/SurfaceShell";
+import { PractitionerFinancialStatCard } from "@/components/shared/practitioner/PractitionerFinancialStatCard";
 import { DEFAULT_PAGE_LIMIT } from "@/constants/pagination";
 import { toAppError, isUnauthorizedError } from "@/lib/api/errors";
 import { useMyPackagePurchases } from "../hooks/use-package-purchases";
@@ -60,7 +61,7 @@ export default function PatientPackagePurchasesPanel() {
           label: t("errors.authAction"),
           href: (
             <Link
-              href="/signin?mode=patient"
+              href="/signin/patient"
               className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               {t("errors.authAction")}
@@ -123,7 +124,7 @@ export default function PatientPackagePurchasesPanel() {
             </p>
             {row.practitioner?.professionalTitle && (
               <p className="truncate text-xs text-text-muted">
-                {row.practitioner.professionalTitle}
+                {getProfessionalTitleLabel(row.practitioner.professionalTitle, locale)}
               </p>
             )}
           </div>
@@ -245,28 +246,28 @@ export default function PatientPackagePurchasesPanel() {
     <div className="space-y-6">
       {/* Compact Summary Metrics Bar */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SurfaceStatCard
+        <PractitionerFinancialStatCard
           label={t("list.summary.total")}
           value={String(totalCount)}
           hint={t("list.summary.totalHint")}
           tone="primary"
           icon={<Package className="h-4 w-4" />}
         />
-        <SurfaceStatCard
+        <PractitionerFinancialStatCard
           label={t("list.summary.pending")}
           value={String(pendingCount)}
           hint={t("list.summary.pendingHint")}
           tone="warning"
           icon={<Clock className="h-4 w-4" />}
         />
-        <SurfaceStatCard
+        <PractitionerFinancialStatCard
           label={t("list.summary.active")}
           value={String(activeCount)}
           hint={t("list.summary.activeHint")}
           tone="success"
           icon={<Sparkles className="h-4 w-4" />}
         />
-        <SurfaceStatCard
+        <PractitionerFinancialStatCard
           label={t("list.summary.completed")}
           value={String(completedCount)}
           hint={t("list.summary.completedHint")}

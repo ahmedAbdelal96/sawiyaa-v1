@@ -77,7 +77,7 @@ export default function PublicNavbar() {
                 {t("login")}
               </Link>
               <Link
-                href="/signup"
+                href="/signup/patient"
                 className="rounded-2xl bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_12px_24px_-14px_rgba(95,143,139,0.45)] transition-all hover:bg-primary-hover active:scale-95"
               >
                 {t("startJourney")}
@@ -133,7 +133,7 @@ export default function PublicNavbar() {
                 {t("login")}
               </Link>
               <Link
-                href="/signup"
+                href="/signup/patient"
                 className="rounded-xl bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white"
                 onClick={() => setMobileOpen(false)}
               >

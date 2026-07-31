@@ -101,6 +101,14 @@ export class NotificationPushExecutionService {
           data: {
             notificationId: notification.id,
             type: notification.notificationType.slug,
+            relatedEntityType: notification.relatedEntityType,
+            relatedEntityId: notification.relatedEntityId,
+            ...(typeof payload?.sessionId === 'string'
+              ? { sessionId: payload.sessionId }
+              : {}),
+            ...(typeof payload?.sessionCode === 'string'
+              ? { sessionCode: payload.sessionCode }
+              : {}),
             routePath:
               typeof payload?.routePath === 'string' ? payload.routePath : null,
             targetRole,

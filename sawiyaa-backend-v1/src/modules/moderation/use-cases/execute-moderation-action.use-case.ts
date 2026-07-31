@@ -3,8 +3,12 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
+import { PermissionKey } from '@common/enums/permission-key.enum';
+import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
+import { ModerationCaseActionType } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { ExecuteModerationActionDto } from '../dto/execute-moderation-action.dto';
 import { ModerationPresenter } from '../presenters/moderation.presenter';
@@ -12,6 +16,7 @@ import { ModerationRepository } from '../repositories/moderation.repository';
 import { ExecuteModerationSurfaceEnforcementService } from '../services/execute-moderation-surface-enforcement.service';
 import { ValidateModerationActionTransitionService } from '../services/validate-moderation-action-transition.service';
 import { mapAppRoleToModerationReporterRole } from '../types/moderation.types';
+import { ModerationNotificationService } from '../services/moderation-notification.service';
 
 @Injectable()
 export class ExecuteModerationActionUseCase {
@@ -21,6 +26,10 @@ export class ExecuteModerationActionUseCase {
     private readonly validateModerationActionTransitionService: ValidateModerationActionTransitionService,
     private readonly executeModerationSurfaceEnforcementService: ExecuteModerationSurfaceEnforcementService,
     private readonly logger: AppLoggerService,
+    @Optional()
+    private readonly permissionResolverService?: PermissionResolverService,
+    @Optional()
+    private readonly moderationNotificationService?: ModerationNotificationService,
   ) {}
 
   async execute(input: {
@@ -56,6 +65,30 @@ export class ExecuteModerationActionUseCase {
       reason: input.payload.reason?.trim() || null,
     });
 
+    if (
+      input.payload.action === ModerationCaseActionType.ENFORCE_USER_WARNING ||
+      input.payload.action === ModerationCaseActionType.ENFORCE_USER_RESTRICTION ||
+      input.payload.action === ModerationCaseActionType.ENFORCE_USER_SUSPENSION
+    ) {
+      if (!this.permissionResolverService) {
+        throw new ForbiddenException({
+          messageKey: 'moderation.errors.enforcementNotAllowed',
+          error: 'MODERATION_ENFORCEMENT_PERMISSION_REQUIRED',
+        });
+      }
+      const allowed = await this.permissionResolverService.hasPermissions({
+        userId: input.currentUser.id,
+        roles: input.currentUser.roles,
+        requiredPermissions: [PermissionKey.MODERATION_ENFORCEMENT_EXECUTE],
+      });
+      if (!allowed) {
+        throw new ForbiddenException({
+          messageKey: 'moderation.errors.enforcementNotAllowed',
+          error: 'MODERATION_ENFORCEMENT_PERMISSION_REQUIRED',
+        });
+      }
+    }
+
     if (String(input.payload.action).startsWith('ENFORCE_')) {
       await this.executeModerationSurfaceEnforcementService.execute({
         action: input.payload.action,
@@ -65,6 +98,8 @@ export class ExecuteModerationActionUseCase {
         actorRoles: input.currentUser.roles,
         reason: input.payload.reason?.trim() || null,
         note: input.payload.note?.trim() || null,
+        reportId: existing.id,
+        targetUserId: existing.targetUserId,
       });
     }
 
@@ -86,6 +121,12 @@ export class ExecuteModerationActionUseCase {
     }
 
     const latestAction = updated.actions[0];
+    if (updated.reportedByUserId) {
+      await this.moderationNotificationService?.notifyReportReviewed({
+        reportId: updated.id,
+        reporterUserId: updated.reportedByUserId,
+      });
+    }
     this.logger.info(
       {
         message: 'Moderation case action executed',
@@ -100,21 +141,27 @@ export class ExecuteModerationActionUseCase {
       'Moderation',
     );
 
+    const latestDetail = await this.moderationRepository.findCaseById(
+      updated.id,
+    );
+
     return {
-      item: this.moderationPresenter.presentCaseDetail({
-        id: updated.id,
-        targetType: updated.targetType,
-        targetId: updated.targetId,
-        reason: updated.reason,
-        note: updated.note,
-        status: updated.status,
-        reportedByUserId: updated.reportedByUserId,
-        reportedByRole: updated.reportedByRole,
-        createdAt: updated.createdAt,
-        lastActionAt: latestAction.createdAt,
-        reporter: null,
-        targetSnapshot: updated.targetSnapshot,
-      }),
+      item: this.moderationPresenter.presentCaseDetail(
+        latestDetail ?? {
+          id: updated.id,
+          targetType: updated.targetType,
+          targetId: updated.targetId,
+          reason: updated.reason,
+          note: updated.note,
+          status: updated.status,
+          reportedByUserId: updated.reportedByUserId,
+          reportedByRole: updated.reportedByRole,
+          createdAt: updated.createdAt,
+          lastActionAt: latestAction.createdAt,
+          reporter: null,
+          targetSnapshot: updated.targetSnapshot,
+        },
+      ),
       actionExecution: {
         ...this.moderationPresenter.presentActionExecution({
           actionId: latestAction.id,

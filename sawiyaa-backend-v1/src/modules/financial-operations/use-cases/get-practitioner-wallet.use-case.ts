@@ -3,6 +3,7 @@ import { FinancialOperationsMapper } from '../mappers/financial-operations.mappe
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { PractitionerManualPayoutBalanceService } from '../services/practitioner-manual-payout-balance.service';
 import { WalletRepository } from '../repositories/wallet.repository';
+import { FINANCIAL_OPS_ERROR_CODES } from '../types/financial-operations.types';
 
 @Injectable()
 export class GetPractitionerWalletUseCase {
@@ -28,8 +29,14 @@ export class GetPractitionerWalletUseCase {
     const wallets = await this.walletRepository.findByPractitionerId(
       practitioner.id,
     );
-    const primary = wallets[0];
-    const currencyCode = primary?.currencyCode ?? 'EGP';
+    const primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
+    if (!primary) {
+      throw new NotFoundException({
+        messageKey: 'financialOperations.errors.practitionerWalletNotFound',
+        error: FINANCIAL_OPS_ERROR_CODES.practitionerWalletNotFound,
+      });
+    }
+    const currencyCode = primary.currencyCode;
     const balance = await this.balanceService.getBalance({
       practitionerId: practitioner.id,
       currencyCode,

@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -35,6 +36,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { AdminPaymentOpsSuccessResponseDto } from '../dto/payment-response.dto';
+import { ListAdminPaymentsDto } from '../dto/list-admin-payments.dto';
 import {
   RefundListSuccessResponseDto,
   RefundItemSuccessResponseDto,
@@ -44,6 +46,7 @@ import { GetAdminPaymentOpsDetailsUseCase } from '../use-cases/get-admin-payment
 import { ListPaymentRefundsUseCase } from '../use-cases/list-payment-refunds.use-case';
 import { RequestPaymentRefundUseCase } from '../use-cases/request-payment-refund.use-case';
 import { RetryPaymentRefundUseCase } from '../use-cases/retry-payment-refund.use-case';
+import { ListAdminPaymentsUseCase } from '../use-cases/list-admin-payments.use-case';
 
 @ApiTags('Admin - Payment Refunds')
 @ApiBearerAuth()
@@ -58,7 +61,18 @@ export class AdminPaymentRefundsController {
     private readonly listPaymentRefundsUseCase: ListPaymentRefundsUseCase,
     private readonly getAdminPaymentOpsDetailsUseCase: GetAdminPaymentOpsDetailsUseCase,
     private readonly securityAuditService: SecurityAuditService,
+    private readonly listAdminPaymentsUseCase: ListAdminPaymentsUseCase,
   ) {}
+
+  @Get()
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
+  @ApiOperation({
+    summary: 'List incoming payments',
+    description: 'Returns one operational row per payment with summarized refund state.',
+  })
+  listPayments(@Query() query: ListAdminPaymentsDto) {
+    return this.listAdminPaymentsUseCase.execute(query);
+  }
 
   @Get(':id')
   @Permissions(PermissionKey.FINANCE_EVENTS_READ)

@@ -233,6 +233,7 @@ exports.Prisma.UserPhoneScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   phone: 'phone',
+  countryCode: 'countryCode',
   isPrimary: 'isPrimary',
   isVerified: 'isVerified',
   createdAt: 'createdAt',
@@ -434,8 +435,11 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   coverImageUrl: 'coverImageUrl',
   isPublicProfilePublished: 'isPublicProfilePublished',
   status: 'status',
+  operationalStatus: 'operationalStatus',
+  complianceState: 'complianceState',
   isOnlineToggleEnabled: 'isOnlineToggleEnabled',
   isInstantBookingEnabled: 'isInstantBookingEnabled',
+  acceptsNormalBookings: 'acceptsNormalBookings',
   acceptsPackages: 'acceptsPackages',
   preferredPayoutCurrencyCode: 'preferredPayoutCurrencyCode',
   createdAt: 'createdAt',
@@ -565,6 +569,7 @@ exports.Prisma.SessionEarningReviewScalarFieldEnum = {
   paymentId: 'paymentId',
   packagePurchaseId: 'packagePurchaseId',
   packageSettlementId: 'packageSettlementId',
+  settlementId: 'settlementId',
   practitionerId: 'practitionerId',
   patientId: 'patientId',
   sourceType: 'sourceType',
@@ -731,12 +736,63 @@ exports.Prisma.PractitionerApplicationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PractitionerReviewCaseScalarFieldEnum = {
+  id: 'id',
+  practitionerId: 'practitionerId',
+  caseType: 'caseType',
+  status: 'status',
+  proposedSnapshot: 'proposedSnapshot',
+  previousSnapshot: 'previousSnapshot',
+  submittedAt: 'submittedAt',
+  reviewedAt: 'reviewedAt',
+  reviewedByUserId: 'reviewedByUserId',
+  decisionReason: 'decisionReason',
+  dueAt: 'dueAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerReviewSectionScalarFieldEnum = {
+  id: 'id',
+  caseId: 'caseId',
+  section: 'section',
+  status: 'status',
+  beforeSnapshot: 'beforeSnapshot',
+  proposedSnapshot: 'proposedSnapshot',
+  reviewedAt: 'reviewedAt',
+  reviewedByUserId: 'reviewedByUserId',
+  decisionReason: 'decisionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerReviewRequirementScalarFieldEnum = {
+  id: 'id',
+  caseId: 'caseId',
+  section: 'section',
+  fieldPath: 'fieldPath',
+  credentialType: 'credentialType',
+  title: 'title',
+  reason: 'reason',
+  instructions: 'instructions',
+  dueAt: 'dueAt',
+  severity: 'severity',
+  operationalImpact: 'operationalImpact',
+  status: 'status',
+  createdByUserId: 'createdByUserId',
+  resolvedAt: 'resolvedAt',
+  resolvedByUserId: 'resolvedByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PractitionerCredentialScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
   credentialType: 'credentialType',
   fileUrl: 'fileUrl',
   reviewStatus: 'reviewStatus',
+  lifecycleState: 'lifecycleState',
   reviewedAt: 'reviewedAt',
   reviewedByUserId: 'reviewedByUserId',
   reviewNotes: 'reviewNotes',
@@ -845,6 +901,13 @@ exports.Prisma.SessionScalarFieldEnum = {
   packageSessionIndex: 'packageSessionIndex',
   packageSessionCount: 'packageSessionCount',
   paymentCoverageType: 'paymentCoverageType',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SessionCodeCounterScalarFieldEnum = {
+  dateKey: 'dateKey',
+  currentValue: 'currentValue',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -964,6 +1027,24 @@ exports.Prisma.SessionEventScalarFieldEnum = {
   occurredAt: 'occurredAt',
   metadataJson: 'metadataJson',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.AvailabilityScheduleRepeatOperationScalarFieldEnum = {
+  id: 'id',
+  practitionerId: 'practitionerId',
+  sourceWeekId: 'sourceWeekId',
+  idempotencyKey: 'idempotencyKey',
+  requestFingerprint: 'requestFingerprint',
+  sourceFingerprint: 'sourceFingerprint',
+  selectedTargetWeekDates: 'selectedTargetWeekDates',
+  previewPayload: 'previewPayload',
+  resultPayload: 'resultPayload',
+  safeErrorMetadata: 'safeErrorMetadata',
+  status: 'status',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  completedAt: 'completedAt'
 };
 
 exports.Prisma.RefundEventScalarFieldEnum = {
@@ -1184,6 +1265,8 @@ exports.Prisma.LedgerEntryScalarFieldEnum = {
   paymentId: 'paymentId',
   settlementId: 'settlementId',
   sessionEarningReviewId: 'sessionEarningReviewId',
+  actorUserId: 'actorUserId',
+  actorType: 'actorType',
   entryType: 'entryType',
   direction: 'direction',
   amount: 'amount',
@@ -1308,6 +1391,8 @@ exports.Prisma.PractitionerWalletScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
   currencyCode: 'currencyCode',
+  status: 'status',
+  closedAt: 'closedAt',
   availableBalance: 'availableBalance',
   pendingBalance: 'pendingBalance',
   reservedBalance: 'reservedBalance',
@@ -1335,18 +1420,32 @@ exports.Prisma.PractitionerSettlementScalarFieldEnum = {
   id: 'id',
   batchId: 'batchId',
   practitionerId: 'practitionerId',
+  sourceReviewId: 'sourceReviewId',
   walletId: 'walletId',
   amountGross: 'amountGross',
   amountAdjustments: 'amountAdjustments',
   amountNet: 'amountNet',
   amountPaidTotal: 'amountPaidTotal',
   currencyCode: 'currencyCode',
+  originalAmount: 'originalAmount',
+  originalCurrencyCode: 'originalCurrencyCode',
+  walletCurrencyCode: 'walletCurrencyCode',
+  exchangeRate: 'exchangeRate',
+  convertedAmount: 'convertedAmount',
+  finalWalletCredit: 'finalWalletCredit',
+  walletCreditDifferenceAmount: 'walletCreditDifferenceAmount',
+  walletCreditOverrideReason: 'walletCreditOverrideReason',
+  approvedByUserId: 'approvedByUserId',
+  approvedAt: 'approvedAt',
   payoutMethodSnapshot: 'payoutMethodSnapshot',
   externalPayoutRef: 'externalPayoutRef',
   status: 'status',
   paidAt: 'paidAt',
   failedAt: 'failedAt',
   notes: 'notes',
+  rejectionReason: 'rejectionReason',
+  rejectedByUserId: 'rejectedByUserId',
+  rejectedAt: 'rejectedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1358,11 +1457,22 @@ exports.Prisma.PractitionerSettlementPayoutScalarFieldEnum = {
   practitionerId: 'practitionerId',
   amountPaid: 'amountPaid',
   currencyCode: 'currencyCode',
+  sourceAmount: 'sourceAmount',
+  sourceCurrencyCode: 'sourceCurrencyCode',
+  payoutCurrencyCode: 'payoutCurrencyCode',
+  exchangeRateEgpPerUsd: 'exchangeRateEgpPerUsd',
+  calculatedPayoutAmount: 'calculatedPayoutAmount',
+  actualPayoutAmount: 'actualPayoutAmount',
+  differenceAmount: 'differenceAmount',
+  overrideReason: 'overrideReason',
   payoutMethod: 'payoutMethod',
   payoutSource: 'payoutSource',
   payoutMethodSnapshot: 'payoutMethodSnapshot',
   transferFeeAmount: 'transferFeeAmount',
   transferFeeTreatment: 'transferFeeTreatment',
+  transferFeeCurrencyCode: 'transferFeeCurrencyCode',
+  netAmountReceived: 'netAmountReceived',
+  totalPlatformOutflow: 'totalPlatformOutflow',
   externalPayoutRef: 'externalPayoutRef',
   notes: 'notes',
   actorType: 'actorType',
@@ -1421,9 +1531,24 @@ exports.Prisma.LedgerClassificationEventScalarFieldEnum = {
   occurredAt: 'occurredAt'
 };
 
+exports.Prisma.SettlementAdjustmentScalarFieldEnum = {
+  id: 'id',
+  settlementId: 'settlementId',
+  type: 'type',
+  amount: 'amount',
+  currencyCode: 'currencyCode',
+  reason: 'reason',
+  createdByUserId: 'createdByUserId',
+  approvedByUserId: 'approvedByUserId',
+  approvedAt: 'approvedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.PractitionerManualPayoutScalarFieldEnum = {
   id: 'id',
   practitionerId: 'practitionerId',
+  settlementId: 'settlementId',
   currencyCode: 'currencyCode',
   amountPaid: 'amountPaid',
   normalSessionAppliedAmount: 'normalSessionAppliedAmount',
@@ -1764,6 +1889,7 @@ exports.Prisma.SupportTicketScalarFieldEnum = {
   description: 'description',
   assignedToUserId: 'assignedToUserId',
   publicTicketRef: 'publicTicketRef',
+  idempotencyKey: 'idempotencyKey',
   relatedSessionId: 'relatedSessionId',
   relatedPaymentId: 'relatedPaymentId',
   relatedInstantBookingRequestId: 'relatedInstantBookingRequestId',
@@ -1896,8 +2022,23 @@ exports.Prisma.ModerationReportScalarFieldEnum = {
   status: 'status',
   reportedByUserId: 'reportedByUserId',
   reportedByRole: 'reportedByRole',
+  conversationId: 'conversationId',
+  reportedMessageId: 'reportedMessageId',
+  targetUserId: 'targetUserId',
+  chatType: 'chatType',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ModerationUserEnforcementScalarFieldEnum = {
+  id: 'id',
+  targetUserId: 'targetUserId',
+  moderationReportId: 'moderationReportId',
+  actedByUserId: 'actedByUserId',
+  type: 'type',
+  reason: 'reason',
+  note: 'note',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.ModerationReportAuditEventScalarFieldEnum = {
@@ -2584,7 +2725,8 @@ exports.OtpPurpose = exports.$Enums.OtpPurpose = {
   PHONE_VERIFICATION: 'PHONE_VERIFICATION',
   ADMIN_STEP_UP: 'ADMIN_STEP_UP',
   SENSITIVE_ACTION_CONFIRMATION: 'SENSITIVE_ACTION_CONFIRMATION',
-  SETTLEMENT_CONFIRMATION: 'SETTLEMENT_CONFIRMATION'
+  SETTLEMENT_CONFIRMATION: 'SETTLEMENT_CONFIRMATION',
+  PRACTITIONER_SIGNUP_EMAIL_VERIFICATION: 'PRACTITIONER_SIGNUP_EMAIL_VERIFICATION'
 };
 
 exports.OtpChannel = exports.$Enums.OtpChannel = {
@@ -2618,6 +2760,21 @@ exports.PractitionerStatus = exports.$Enums.PractitionerStatus = {
   REJECTED: 'REJECTED',
   SUSPENDED: 'SUSPENDED',
   INACTIVE: 'INACTIVE'
+};
+
+exports.PractitionerOperationalStatus = exports.$Enums.PractitionerOperationalStatus = {
+  ACTIVE: 'ACTIVE',
+  LIMITED: 'LIMITED',
+  SUSPENDED: 'SUSPENDED',
+  INACTIVE: 'INACTIVE'
+};
+
+exports.PractitionerComplianceState = exports.$Enums.PractitionerComplianceState = {
+  VERIFIED: 'VERIFIED',
+  REVIEW_REQUIRED: 'REVIEW_REQUIRED',
+  DOCUMENT_EXPIRING: 'DOCUMENT_EXPIRING',
+  DOCUMENT_EXPIRED: 'DOCUMENT_EXPIRED',
+  REMEDIATION_REQUIRED: 'REMEDIATION_REQUIRED'
 };
 
 exports.PractitionerMarketingPlacementSurface = exports.$Enums.PractitionerMarketingPlacementSurface = {
@@ -2756,6 +2913,43 @@ exports.PractitionerApplicationStatus = exports.$Enums.PractitionerApplicationSt
   ARCHIVED: 'ARCHIVED'
 };
 
+exports.ReviewCaseType = exports.$Enums.ReviewCaseType = {
+  ONBOARDING: 'ONBOARDING',
+  PRACTITIONER_CHANGE: 'PRACTITIONER_CHANGE',
+  ADMIN_REMEDIATION: 'ADMIN_REMEDIATION',
+  CREDENTIAL_RENEWAL: 'CREDENTIAL_RENEWAL',
+  PERIODIC_COMPLIANCE: 'PERIODIC_COMPLIANCE'
+};
+
+exports.ReviewCaseStatus = exports.$Enums.ReviewCaseStatus = {
+  DRAFT: 'DRAFT',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  CHANGES_REQUESTED: 'CHANGES_REQUESTED',
+  RESUBMITTED: 'RESUBMITTED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.ReviewSection = exports.$Enums.ReviewSection = {
+  PROFILE: 'PROFILE',
+  SPECIALTIES: 'SPECIALTIES',
+  IDENTITY: 'IDENTITY',
+  ACADEMIC_CREDENTIALS: 'ACADEMIC_CREDENTIALS',
+  PROFESSIONAL_CREDENTIALS: 'PROFESSIONAL_CREDENTIALS',
+  BANKING: 'BANKING',
+  COMPLIANCE: 'COMPLIANCE'
+};
+
+exports.ReviewSectionStatus = exports.$Enums.ReviewSectionStatus = {
+  UNCHANGED: 'UNCHANGED',
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  CHANGES_REQUESTED: 'CHANGES_REQUESTED',
+  REJECTED: 'REJECTED'
+};
+
 exports.CredentialType = exports.$Enums.CredentialType = {
   LICENSE: 'LICENSE',
   DEGREE: 'DEGREE',
@@ -2768,11 +2962,42 @@ exports.CredentialType = exports.$Enums.CredentialType = {
   OTHER: 'OTHER'
 };
 
+exports.ReviewRequirementSeverity = exports.$Enums.ReviewRequirementSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  BLOCKING: 'BLOCKING'
+};
+
+exports.ReviewRequirementStatus = exports.$Enums.ReviewRequirementStatus = {
+  OPEN: 'OPEN',
+  SUBMITTED: 'SUBMITTED',
+  SATISFIED: 'SATISFIED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.ReviewOperationalImpact = exports.$Enums.ReviewOperationalImpact = {
+  NONE: 'NONE',
+  BLOCK_PUBLIC_PROFILE: 'BLOCK_PUBLIC_PROFILE',
+  BLOCK_NEW_BOOKINGS: 'BLOCK_NEW_BOOKINGS',
+  BLOCK_SESSIONS: 'BLOCK_SESSIONS',
+  BLOCK_PAYOUTS: 'BLOCK_PAYOUTS',
+  SUSPEND_ACCOUNT: 'SUSPEND_ACCOUNT'
+};
+
 exports.CredentialReviewStatus = exports.$Enums.CredentialReviewStatus = {
   PENDING: 'PENDING',
   APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   EXPIRED: 'EXPIRED'
+};
+
+exports.CredentialLifecycleState = exports.$Enums.CredentialLifecycleState = {
+  ACTIVE: 'ACTIVE',
+  REPLACEMENT_PENDING: 'REPLACEMENT_PENDING',
+  REPLACED: 'REPLACED',
+  EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED'
 };
 
 exports.PractitionerPayoutMethodType = exports.$Enums.PractitionerPayoutMethodType = {
@@ -2917,6 +3142,14 @@ exports.SecurityAuditActorType = exports.$Enums.SecurityAuditActorType = {
   PAYMENT_WEBHOOK: 'PAYMENT_WEBHOOK',
   MIGRATION: 'MIGRATION',
   SEED_QA: 'SEED_QA'
+};
+
+exports.AvailabilityScheduleRepeatOperationStatus = exports.$Enums.AvailabilityScheduleRepeatOperationStatus = {
+  PREVIEWED: 'PREVIEWED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED'
 };
 
 exports.RefundEventType = exports.$Enums.RefundEventType = {
@@ -3119,6 +3352,11 @@ exports.AccountingReconciliationIssueStatus = exports.$Enums.AccountingReconcili
   IGNORED: 'IGNORED'
 };
 
+exports.PractitionerWalletStatus = exports.$Enums.PractitionerWalletStatus = {
+  ACTIVE: 'ACTIVE',
+  CLOSED: 'CLOSED'
+};
+
 exports.SettlementBatchStatus = exports.$Enums.SettlementBatchStatus = {
   DRAFT: 'DRAFT',
   GENERATED: 'GENERATED',
@@ -3131,6 +3369,11 @@ exports.SettlementBatchStatus = exports.$Enums.SettlementBatchStatus = {
 
 exports.PractitionerSettlementStatus = exports.$Enums.PractitionerSettlementStatus = {
   DRAFT: 'DRAFT',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CREDITED: 'CREDITED',
+  PAID_OUT: 'PAID_OUT',
   READY: 'READY',
   PROCESSING: 'PROCESSING',
   PAID: 'PAID',
@@ -3168,6 +3411,13 @@ exports.LedgerClassificationActionType = exports.$Enums.LedgerClassificationActi
   ASSIGNED_TO_SETTLEMENT: 'ASSIGNED_TO_SETTLEMENT',
   RELEASED_FROM_SETTLEMENT: 'RELEASED_FROM_SETTLEMENT',
   BALANCE_BUCKET_CHANGED: 'BALANCE_BUCKET_CHANGED'
+};
+
+exports.SettlementAdjustmentType = exports.$Enums.SettlementAdjustmentType = {
+  PLATFORM_FEE: 'PLATFORM_FEE',
+  ADMINISTRATIVE_FEE: 'ADMINISTRATIVE_FEE',
+  TAX: 'TAX',
+  MANUAL_CORRECTION: 'MANUAL_CORRECTION'
 };
 
 exports.PractitionerRecoveryStatus = exports.$Enums.PractitionerRecoveryStatus = {
@@ -3424,6 +3674,18 @@ exports.ModerationReporterRole = exports.$Enums.ModerationReporterRole = {
   CONTENT_REVIEWER: 'CONTENT_REVIEWER'
 };
 
+exports.ModerationChatType = exports.$Enums.ModerationChatType = {
+  SESSION_CHAT: 'SESSION_CHAT',
+  CARE_CHAT: 'CARE_CHAT',
+  GENERAL_CHAT: 'GENERAL_CHAT'
+};
+
+exports.ModerationUserEnforcementType = exports.$Enums.ModerationUserEnforcementType = {
+  WARNING: 'WARNING',
+  RESTRICTION: 'RESTRICTION',
+  SUSPENSION: 'SUSPENSION'
+};
+
 exports.ModerationAuditEventType = exports.$Enums.ModerationAuditEventType = {
   REPORT_CREATED: 'REPORT_CREATED',
   CASE_ACTION_EXECUTED: 'CASE_ACTION_EXECUTED'
@@ -3440,7 +3702,10 @@ exports.ModerationCaseActionType = exports.$Enums.ModerationCaseActionType = {
   ENFORCE_REVIEW_REJECT: 'ENFORCE_REVIEW_REJECT',
   ENFORCE_REVIEW_RESTORE: 'ENFORCE_REVIEW_RESTORE',
   ENFORCE_ARTICLE_ARCHIVE: 'ENFORCE_ARTICLE_ARCHIVE',
-  ENFORCE_SUPPORT_ESCALATE: 'ENFORCE_SUPPORT_ESCALATE'
+  ENFORCE_SUPPORT_ESCALATE: 'ENFORCE_SUPPORT_ESCALATE',
+  ENFORCE_USER_WARNING: 'ENFORCE_USER_WARNING',
+  ENFORCE_USER_RESTRICTION: 'ENFORCE_USER_RESTRICTION',
+  ENFORCE_USER_SUSPENSION: 'ENFORCE_USER_SUSPENSION'
 };
 
 exports.NotificationCategory = exports.$Enums.NotificationCategory = {
@@ -3728,6 +3993,9 @@ exports.Prisma.ModelName = {
   PractitionerProfileLanguage: 'PractitionerProfileLanguage',
   PractitionerSpecialty: 'PractitionerSpecialty',
   PractitionerApplication: 'PractitionerApplication',
+  PractitionerReviewCase: 'PractitionerReviewCase',
+  PractitionerReviewSection: 'PractitionerReviewSection',
+  PractitionerReviewRequirement: 'PractitionerReviewRequirement',
   PractitionerCredential: 'PractitionerCredential',
   PractitionerPayoutDestination: 'PractitionerPayoutDestination',
   AvailabilityException: 'AvailabilityException',
@@ -3735,6 +4003,7 @@ exports.Prisma.ModelName = {
   PractitionerAvailabilityWeekSlot: 'PractitionerAvailabilityWeekSlot',
   PractitionerPresence: 'PractitionerPresence',
   Session: 'Session',
+  SessionCodeCounter: 'SessionCodeCounter',
   SessionPackageEntitlementDecision: 'SessionPackageEntitlementDecision',
   SessionReminderQueue: 'SessionReminderQueue',
   SessionCancellationPolicy: 'SessionCancellationPolicy',
@@ -3742,6 +4011,7 @@ exports.Prisma.ModelName = {
   SessionCancellationRecord: 'SessionCancellationRecord',
   SessionAttendanceEvent: 'SessionAttendanceEvent',
   SessionEvent: 'SessionEvent',
+  AvailabilityScheduleRepeatOperation: 'AvailabilityScheduleRepeatOperation',
   RefundEvent: 'RefundEvent',
   SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
@@ -3764,6 +4034,7 @@ exports.Prisma.ModelName = {
   PractitionerSettlementPayout: 'PractitionerSettlementPayout',
   FinanceReconciliationAction: 'FinanceReconciliationAction',
   LedgerClassificationEvent: 'LedgerClassificationEvent',
+  SettlementAdjustment: 'SettlementAdjustment',
   PractitionerManualPayout: 'PractitionerManualPayout',
   PractitionerRecovery: 'PractitionerRecovery',
   PractitionerRecoveryAction: 'PractitionerRecoveryAction',
@@ -3796,6 +4067,7 @@ exports.Prisma.ModelName = {
   ChatModerationReport: 'ChatModerationReport',
   ChatModerationAction: 'ChatModerationAction',
   ModerationReport: 'ModerationReport',
+  ModerationUserEnforcement: 'ModerationUserEnforcement',
   ModerationReportAuditEvent: 'ModerationReportAuditEvent',
   ModerationReportAction: 'ModerationReportAction',
   NotificationType: 'NotificationType',

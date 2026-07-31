@@ -219,6 +219,7 @@ export class CouponRepository {
           id: true,
           couponId: true,
           sessionId: true,
+          session: { select: { sessionCode: true } },
           paymentId: true,
           patientId: true,
           practitionerId: true,

@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
@@ -10,6 +11,7 @@ import { CreateModerationReportDto } from '../dto/create-moderation-report.dto';
 import { ModerationPresenter } from '../presenters/moderation.presenter';
 import { ModerationRepository } from '../repositories/moderation.repository';
 import { ResolveModerationReporterRoleService } from '../services/resolve-moderation-reporter-role.service';
+import { ModerationNotificationService } from '../services/moderation-notification.service';
 import { MODERATION_SUPPORTED_TARGET_TYPES } from '../types/moderation.types';
 
 @Injectable()
@@ -19,6 +21,8 @@ export class CreateModerationReportUseCase {
     private readonly resolveModerationReporterRoleService: ResolveModerationReporterRoleService,
     private readonly moderationPresenter: ModerationPresenter,
     private readonly logger: AppLoggerService,
+    @Optional()
+    private readonly moderationNotificationService?: ModerationNotificationService,
   ) {}
 
   async execute(input: {
@@ -72,6 +76,11 @@ export class CreateModerationReportUseCase {
       note: input.payload.note?.trim() || null,
       reporterUserId: input.currentUser.id,
       reporterRole,
+    });
+
+    await this.moderationNotificationService?.notifyReportCreated({
+      reportId: created.id,
+      reporterUserId: input.currentUser.id,
     });
 
     this.logger.info(

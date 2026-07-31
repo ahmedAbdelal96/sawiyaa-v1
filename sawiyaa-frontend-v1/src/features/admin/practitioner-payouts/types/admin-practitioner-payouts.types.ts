@@ -116,6 +116,31 @@ export type ListAdminPractitionerPayoutSummariesParams = {
   search?: string;
 };
 
+export type AdminPractitionerWalletListItem = {
+  walletId: string;
+  practitionerId: string;
+  practitionerReference: string | null;
+  practitionerName: string | null;
+  practitionerEmail: string | null;
+  currencyCode: string;
+  availableBalance: string;
+  totalCredited: string;
+  totalExternallyTransferred: string;
+  latestActivityType: string | null;
+  latestActivityAt: string | null;
+  updatedAt: string;
+};
+export type AdminPractitionerWalletListResponseData = { items: AdminPractitionerWalletListItem[]; pagination: Pagination };
+export type ListAdminPractitionerWalletsParams = { page?: number; limit?: number; search?: string; currencyCode?: string; sortBy?: "latestActivity" | "balance" | "name"; sortDirection?: "asc" | "desc" };
+export type AdminPractitionerWalletDetail = {
+  practitioner: { id: string; reference: string | null; name: string | null; email: string | null };
+  wallet: { id: string; currencyCode: string; status: string; availableBalance: string; totalCredited: string; totalExternallyTransferred: string; latestActivityAt: string | null; updatedAt: string };
+  recentLedgerEntries: Array<{ id: string; type: string; amount: string; direction: "CREDIT" | "DEBIT"; currencyCode: string; settlementId: string | null; sessionId: string | null; sessionCode: string | null; sessionReference: string | null; effectiveAt: string; createdAt: string; createdBy: string | null }>;
+  recentSettlements: Array<{ id: string; settlementReference: string; sessionId: string | null; sessionCode: string | null; sessionReference: string | null; amountCredited: string; currencyCode: string; status: string; approvedAt: string | null }>;
+  recentTransfers: Array<{ id: string; transferReference: string; settlementId: string; settlementReference: string; sessionCode: string | null; sessionReference: string | null; amount: string; currencyCode: string; transferMethod: string; externalReference: string | null; transferredAt: string; executedBy: string | null; status: string }>;
+};
+export type AdminPractitionerWalletDetailResponseData = AdminPractitionerWalletDetail;
+
 export type RecordAdminPractitionerManualPayoutRequest = {
   practitionerId: string;
   currencyCode: string;

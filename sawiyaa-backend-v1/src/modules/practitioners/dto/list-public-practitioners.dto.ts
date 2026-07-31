@@ -2,10 +2,12 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { Transform } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsInt,
   IsNumber,
+  Matches,
   IsOptional,
   IsString,
   Max,
@@ -42,6 +44,21 @@ const toBoolean = (value: unknown): boolean | undefined => {
   if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
   if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
   return undefined;
+};
+
+const toLanguageCodeList = (value: unknown): string[] | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+
+  const rawValues = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : [];
+  const normalized = Array.from(
+    new Set(
+      rawValues
+        .map((item) => String(item).trim().toLowerCase())
+        .filter((item) => item.length > 0),
+    ),
+  );
+
+  return normalized.length > 0 ? normalized : undefined;
 };
 
 /**
@@ -84,8 +101,21 @@ export class ListPublicPractitionersDto {
   @Transform(({ value, obj }) => value ?? obj?.lang)
   @IsOptional()
   @IsString()
+  @Matches(/^(ar|en|fr|de|es|tr|ru)$/i)
   @MaxLength(10)
   language?: string;
+
+  @ApiPropertyOptional({
+    description: 'Language code filters (comma-separated or repeated query params)',
+    type: [String],
+  })
+  @Transform(({ value, obj }) => toLanguageCodeList(value ?? obj?.languages ?? obj?.langs ?? obj?.language ?? obj?.lang))
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(/^(ar|en|fr|de|es|tr|ru)$/i, { each: true })
+  @MaxLength(10, { each: true })
+  languageCodes?: string[];
 
   @ApiPropertyOptional({
     description: 'Country ISO code filter (for example: EG, SA, AE)',

@@ -1,5 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { UserRoleType, UserStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { CountryRepository } from '../../patients/repositories/country.repository';
@@ -11,6 +10,7 @@ import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { isAuthUniqueConstraintError } from '../utils/is-auth-unique-constraint-error';
+import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 
 /**
  * Patient email/password registration creates the patient account baseline and issues a session immediately.
@@ -18,6 +18,9 @@ import { isAuthUniqueConstraintError } from '../utils/is-auth-unique-constraint-
  */
 @Injectable()
 export class RegisterPatientWithEmailPasswordUseCase {
+  private readonly logger = new Logger(
+    RegisterPatientWithEmailPasswordUseCase.name,
+  );
   constructor(
     private readonly prisma: PrismaService,
     private readonly userRepository: UserRepository,
@@ -27,6 +30,7 @@ export class RegisterPatientWithEmailPasswordUseCase {
     private readonly countryRepository: CountryRepository,
     private readonly hashPasswordUseCase: HashPasswordUseCase,
     private readonly issueAuthTokensUseCase: IssueAuthTokensUseCase,
+    private readonly phoneNumberValidationService: PhoneNumberValidationService,
   ) {}
 
   async execute(input: {
@@ -34,9 +38,21 @@ export class RegisterPatientWithEmailPasswordUseCase {
     password: string;
     displayName?: string | null;
     phone?: string | null;
+    phoneCountryCode?: string | null;
     deviceContext: AuthSessionDeviceContext;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
+    const phoneValidation = input.phone?.trim()
+      ? typeof this.phoneNumberValidationService.validate === 'function'
+        ? this.phoneNumberValidationService.validate(
+            input.phone,
+            input.phoneCountryCode ?? input.deviceContext.countryCode,
+          )
+        : this.phoneNumberValidationService.assertValid(
+            input.phone,
+            input.phoneCountryCode ?? input.deviceContext.countryCode,
+          )
+      : null;
     const existingEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
@@ -85,29 +101,6 @@ export class RegisterPatientWithEmailPasswordUseCase {
           tx,
         );
 
-        if (input.phone) {
-          const normalizedPhone = input.phone.trim();
-          try {
-            await this.userPhoneRepository.upsertPrimaryPhone(
-              user.id,
-              normalizedPhone,
-              false,
-              tx,
-            );
-          } catch (error) {
-            if (
-              error instanceof PrismaClientKnownRequestError &&
-              error.code === 'P2002'
-            ) {
-              throw new ConflictException({
-                messageKey: 'auth.errors.phoneAlreadyRegistered',
-                error: 'PHONE_ALREADY_REGISTERED',
-              });
-            }
-            throw error;
-          }
-        }
-
         return user;
       })
       .catch((error: unknown) => {
@@ -121,10 +114,34 @@ export class RegisterPatientWithEmailPasswordUseCase {
         throw error;
       });
 
-    return this.issueAuthTokensUseCase.execute({
+    let phoneStatus:
+      | 'NOT_PROVIDED'
+      | 'NOT_SAVED_INVALID'
+      | 'SAVED'
+      | 'NOT_SAVED' = input.phone?.trim()
+      ? 'NOT_SAVED_INVALID'
+      : 'NOT_PROVIDED';
+    if (phoneValidation?.valid) {
+      try {
+        await this.userPhoneRepository.upsertPrimaryPhone(
+          createdUser.id,
+          phoneValidation.e164,
+          false,
+          undefined,
+          phoneValidation.countryCode,
+        );
+        phoneStatus = 'SAVED';
+      } catch {
+        phoneStatus = 'NOT_SAVED';
+        this.logger.warn('Optional patient phone was not saved');
+      }
+    }
+
+    const auth = await this.issueAuthTokensUseCase.execute({
       userId: createdUser.id,
       role: UserRoleType.PATIENT,
       deviceContext: input.deviceContext,
     });
+    return { ...auth, phone: { status: phoneStatus } };
   }
 }

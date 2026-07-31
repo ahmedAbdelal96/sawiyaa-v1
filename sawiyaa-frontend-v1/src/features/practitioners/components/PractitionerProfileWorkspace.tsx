@@ -53,6 +53,11 @@ import {
   normalizeWalletProviderValue,
 } from "@/lib/catalogs/payout";
 import {
+  getLocalizedLanguageLabel,
+  getLocalizedProfessionalTitleOptions,
+  getProfessionalTitleLabel,
+} from "@/constants/reference-data";
+import {
   usePractitionerProfile,
   usePractitionerReadiness,
   useSubmitPractitionerApplication,
@@ -270,7 +275,7 @@ function buildSnapshotChanges(
   );
   addChange(t("profile.fields.bio.label"), profile.bio, requestedProfile.bio);
   addChange(t("profile.fields.countryCode.label"), profile.countryCode, requestedProfile.countryCode);
-  addChange(t("profile.fields.locale.label"), profile.locale, applicant.locale);
+  addChange(locale === "ar" ? "لغة الواجهة" : "Interface language", profile.locale, applicant.locale);
   addChange(t("profile.fields.timezone.label"), profile.timezone, applicant.timezone);
   addChange(
     t("profile.fields.yearsOfExperience.label"),
@@ -816,6 +821,7 @@ export default function PractitionerProfileWorkspace() {
   };
 
   const watchedPayoutMethodType = useWatch({ control, name: "payoutMethodType" });
+  const watchedProfessionalTitle = useWatch({ control, name: "professionalTitle" });
   const watchedCountryCode = useWatch({ control, name: "countryCode" });
   const watchedPayoutAccountHolderName = useWatch({ control, name: "payoutAccountHolderName" });
   const watchedPayoutBankName = useWatch({ control, name: "payoutBankName" });
@@ -1101,17 +1107,11 @@ export default function PractitionerProfileWorkspace() {
   const payoutSummary = formatPayoutDestinationLabel(profileOrFallback.payoutDestination, t);
   const credentialSummary = profileOrFallback.credentialSummary;
   const formattedLanguages = useMemo(() => {
-    const languageLabels: Record<string, string> = {
-      ar: t("profile.locale.ar") || (locale === "ar" ? "العربية" : "Arabic"),
-      en: t("profile.locale.en") || (locale === "ar" ? "الإنجليزية" : "English"),
-      arabic: t("profile.locale.ar") || (locale === "ar" ? "العربية" : "Arabic"),
-      english: t("profile.locale.en") || (locale === "ar" ? "الإنجليزية" : "English"),
-    };
     if (!profileOrFallback.languages || profileOrFallback.languages.length === 0) return null;
     return profileOrFallback.languages
-      .map((l) => languageLabels[l.toLowerCase()] || l)
+      .map((l) => getLocalizedLanguageLabel(l, locale))
       .join(locale === "ar" ? "، " : ", ");
-  }, [profileOrFallback.languages, locale, t]);
+  }, [profileOrFallback.languages, locale]);
 
   const tabLabels = {
     ar: {
@@ -1209,7 +1209,7 @@ export default function PractitionerProfileWorkspace() {
               <div className="h-3.5 w-24 bg-slate-100/60 dark:bg-white/5 rounded animate-pulse mt-2 mx-auto" />
             ) : profileOrFallback.professionalTitle ? (
               <p className="mt-1 text-xs font-medium text-text-secondary dark:text-white/60">
-                {profileOrFallback.professionalTitle}
+                {getProfessionalTitleLabel(profileOrFallback.professionalTitle, locale)}
               </p>
             ) : null}
 
@@ -1500,7 +1500,7 @@ export default function PractitionerProfileWorkspace() {
                         icon={<Clock className="h-3.5 w-3.5" />}
                       />
                       <InfoRow
-                        label={t("profile.fields.locale.label")}
+                        label={locale === "ar" ? "لغة الواجهة" : "Interface language"}
                         value={profileOrFallback.locale ? t(`profile.locale.${profileOrFallback.locale}` as Parameters<typeof t>[0]) : null}
                         icon={<Globe className="h-3.5 w-3.5" />}
                       />
@@ -1934,9 +1934,9 @@ export default function PractitionerProfileWorkspace() {
                 </div>
 
                 <div>
-                  <Label htmlFor="locale">{t("profile.fields.locale.label")}</Label>
+                  <Label htmlFor="locale">{locale === "ar" ? "لغة الواجهة" : "Interface language"}</Label>
                   <select id="locale" className={selectClasses} {...register("locale")}>
-                    <option value="">{t("profile.fields.locale.placeholder")}</option>
+                    <option value="">{locale === "ar" ? "اختر لغة الواجهة" : "Choose interface language"}</option>
                     <option value="ar">{t("profile.locale.ar")}</option>
                     <option value="en">{t("profile.locale.en")}</option>
                   </select>
@@ -1955,7 +1955,21 @@ export default function PractitionerProfileWorkspace() {
               <div className="mt-3 space-y-3">
                 <div>
                   <Label htmlFor="professionalTitle">{t("profile.fields.professionalTitle.label")}</Label>
-                  <Input id="professionalTitle" type="text" placeholder={t("profile.fields.professionalTitle.placeholder")} error={!!errors.professionalTitle} {...register("professionalTitle")} />
+                  <select
+                    id="professionalTitle"
+                    className="h-11 w-full rounded-xl border border-border-light bg-surface-tertiary px-4 text-sm text-text-primary"
+                    {...register("professionalTitle")}
+                  >
+                    <option value="">{t("profile.fields.professionalTitle.placeholder")}</option>
+                    {watchedProfessionalTitle && !getLocalizedProfessionalTitleOptions(locale).some((option) => option.value === watchedProfessionalTitle) ? (
+                      <option value={watchedProfessionalTitle}>
+                        {getProfessionalTitleLabel(watchedProfessionalTitle, locale)}
+                      </option>
+                    ) : null}
+                    {getLocalizedProfessionalTitleOptions(locale).map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
                   {errors.professionalTitle ? <p className="mt-1.5 text-xs text-error-500">{errors.professionalTitle.message}</p> : null}
                 </div>
 

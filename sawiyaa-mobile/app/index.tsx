@@ -1,138 +1,95 @@
-import React, { useEffect, useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View } from "react-native";
 import { useRouter } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { Screen, Text, LoadingState } from "../src/components/ui";
+import * as SplashScreen from "expo-splash-screen";
 import { useAuth } from "../src/providers/AuthProvider";
-import { useTheme } from "../src/providers/ThemeProvider";
+import { getLanguageHydrationPromise } from "../src/i18n";
+import { isOnboardingCompleted } from "../src/features/onboarding/services/onboarding-preferences";
+import { resolveInitialRoute } from "../src/app-startup/resolve-initial-destination";
+import type { OnboardingPreferenceResult } from "../src/app-startup/resolve-initial-destination";
 
-export default function SplashScreen() {
+/**
+ * Bootstrap Coordinator
+ *
+ * This screen coordinates application launch and initial destination routing.
+ * It is completely visual-less (renders a blank view matching the native splash background),
+ * keeping the native OS splash screen visible until:
+ * 1. Authentication state is hydrated.
+ * 2. i18n localization state is hydrated.
+ * 3. Onboarding completion state is read.
+ *
+ * Once ready, it determines the initial route, performs a single replacement transition,
+ * and guarantees the native splash screen is hidden.
+ */
+export default function AppEntry() {
   const router = useRouter();
-  const { user, role, isLoading } = useAuth();
-  const { theme } = useTheme();
-  const { t, i18n } = useTranslation();
-  const [minSplashDone, setMinSplashDone] = useState(false);
-  const logoAccessibilityLabel = i18n.language?.startsWith("ar")
-    ? "شعار سويّـة"
-    : "Sawiyaa logo";
+  const { user, role, isLoading: isAuthLoading } = useAuth();
+  const [onboardingState, setOnboardingState] = useState<OnboardingPreferenceResult | null>(null);
+  const [isI18nReady, setIsI18nReady] = useState(false);
+  const navigationTriggered = useRef(false);
 
+  // 1. Wait for i18n language hydration
   useEffect(() => {
-    const timer = setTimeout(() => setMinSplashDone(true), 1500);
-    return () => clearTimeout(timer);
+    let active = true;
+    getLanguageHydrationPromise()
+      .then(() => {
+        if (active) setIsI18nReady(true);
+      })
+      .catch(() => {
+        if (active) setIsI18nReady(true); // Proceed anyway on hydration error
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
+  // 2. Read onboarding completion state
   useEffect(() => {
-    if (isLoading || !minSplashDone) return;
+    let active = true;
+    isOnboardingCompleted().then((res) => {
+      if (active) {
+        setOnboardingState(res);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-    if (!user) {
-      router.replace("/(auth)");
-    } else if (role === "patient") {
-      router.replace("/(patient)");
-    } else if (role === "practitioner") {
-      router.replace("/(practitioner)");
-    } else {
-      router.replace("/(auth)");
+  // 3. Resolve route when all boot tasks are ready
+  const authReady = !isAuthLoading && isI18nReady;
+  const initialRouteResult = resolveInitialRoute({
+    authReady,
+    user,
+    role,
+    onboardingState,
+  });
+
+  useEffect(() => {
+    if (initialRouteResult.type === "loading") {
+      return;
     }
-  }, [user, role, isLoading, minSplashDone, router]);
 
-  return (
-    <Screen safeArea bg="background" style={styles.container}>
-      <View style={[styles.blobTop, { backgroundColor: theme.colors.mintAccent }]} />
-      <View style={[styles.blobBottom, { backgroundColor: theme.colors.creamAccent }]} />
-      <View style={[styles.glowCenter, { backgroundColor: theme.colors.primaryLight }]} />
+    // Ensure we trigger navigation and splash hiding exactly once
+    if (navigationTriggered.current) {
+      return;
+    }
+    navigationTriggered.current = true;
 
-      <View style={styles.content}>
-        <View style={styles.brandMarkWrap}>
-          <Image
-            source={require("../assets/logo.png")}
-            style={styles.brandLogo}
-            resizeMode="contain"
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel={logoAccessibilityLabel}
-          />
-        </View>
+    const targetRoute = initialRouteResult.route;
 
-        <View style={styles.titleBlock}>
-          <Text variant="body" color={theme.colors.textSecondary} style={styles.subtitle}>
-            {t("brand.tagline")}
-          </Text>
-        </View>
+    async function navigateAndHideSplash() {
+      try {
+        router.replace(targetRoute as any);
+      } finally {
+        // Guarantee that the native splash screen is hidden, even if navigation fails
+        await SplashScreen.hideAsync().catch(() => {});
+      }
+    }
 
-        <View style={styles.loaderWrap}>
-          <LoadingState />
-        </View>
-      </View>
-    </Screen>
-  );
+    void navigateAndHideSplash();
+  }, [initialRouteResult, router]);
+
+  // Blank view matching the native splash background color to prevent flashes during routing
+  return <View style={{ flex: 1, backgroundColor: "#F7F4EE" }} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-  },
-  content: {
-    alignItems: "center",
-    width: "100%",
-    paddingHorizontal: 28,
-  },
-  blobTop: {
-    position: "absolute",
-    width: 340,
-    height: 340,
-    borderRadius: 170,
-    top: -150,
-    left: -120,
-    opacity: 0.72,
-  },
-  blobBottom: {
-    position: "absolute",
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    bottom: -190,
-    right: -150,
-    opacity: 0.5,
-  },
-  glowCenter: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    opacity: 0.18,
-  },
-  brandMarkWrap: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  brandLogo: {
-    width: 230,
-    height: 82,
-  },
-  titleBlock: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 30,
-    lineHeight: 36,
-    letterSpacing: 0.2,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "center",
-    maxWidth: 240,
-  },
-  loaderWrap: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

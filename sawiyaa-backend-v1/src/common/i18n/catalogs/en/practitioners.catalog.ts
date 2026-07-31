@@ -7,6 +7,7 @@ export const enPractitionersCatalog = {
     specialtiesFetched: 'Practitioner specialties fetched successfully',
     specialtiesUpdated: 'Practitioner specialties updated successfully',
     credentialUploaded: 'Practitioner credential uploaded successfully',
+    credentialDeleted: 'Practitioner credential deleted successfully',
     credentialsFetched: 'Practitioner credentials fetched successfully',
     applicationSubmitted: 'Practitioner application submitted successfully',
     applicationStatusFetched:
@@ -16,6 +17,9 @@ export const enPractitionersCatalog = {
     publicDetailsFetched: 'Public practitioner profile fetched successfully',
   },
   errors: {
+    professionalTitleRequired: 'Select a professional title',
+    invalidProfessionalTitle:
+      'Select a professional title from the approved list',
     userNotFound: 'Practitioner user was not found',
     profileNotFound: 'Practitioner profile was not found',
     countryNotFound: 'Country code is invalid or inactive',
@@ -47,8 +51,9 @@ export const enPractitionersCatalog = {
     applicationAlreadySubmitted:
       'Practitioner application is already submitted or under review',
     credentialAlreadyExists:
-      'A credential with the same type and file reference already exists',
+      'A document with this type has already been uploaded',
     credentialFileRequired: 'Please choose a credential file before uploading',
+    credentialsLocked: 'Credentials cannot be changed after submission',
     credentialInvalidType:
       'Unsupported credential file type. Use PDF, JPG, PNG, or WEBP',
     credentialFileTooLarge: 'Credential file exceeds the 5MB size limit',

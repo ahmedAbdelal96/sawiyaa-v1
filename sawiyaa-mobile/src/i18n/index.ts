@@ -19,7 +19,9 @@ const APP_LANGUAGE_STORAGE_KEY = "sawiyaa.app.language";
 const DEFAULT_LANGUAGE: AppLanguage = "ar";
 
 function normalizeLanguage(value: string | null | undefined): AppLanguage {
-  return value?.startsWith("ar") ? "ar" : "en";
+  if (!value) return "en";
+  const clean = value.replace(/"/g, "").trim();
+  return clean.startsWith("ar") ? "ar" : "en";
 }
 
 function applyRtlDirection(language: AppLanguage) {
@@ -121,6 +123,8 @@ i18n.t = ((key: unknown, options?: unknown) => {
   return originalTranslate(key as never, options as never);
 }) as typeof i18n.t;
 
+let languageHydrationPromise: Promise<void> | null = null;
+
 async function hydratePersistedLanguage() {
   try {
     const persistedLanguage = await AsyncStorage.getItem(
@@ -141,7 +145,11 @@ async function hydratePersistedLanguage() {
   }
 }
 
-void hydratePersistedLanguage();
+languageHydrationPromise = hydratePersistedLanguage();
+
+export function getLanguageHydrationPromise(): Promise<void> {
+  return languageHydrationPromise || Promise.resolve();
+}
 
 export async function setAppLanguage(language: AppLanguage) {
   const normalizedLanguage = normalizeLanguage(language);

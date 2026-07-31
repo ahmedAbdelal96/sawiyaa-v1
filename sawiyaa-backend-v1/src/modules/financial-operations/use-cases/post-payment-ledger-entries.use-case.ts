@@ -14,7 +14,6 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { FinancialOperationsPaymentRepository } from '../repositories/financial-operations-payment.repository';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { ExtractPaymentLedgerBreakdownService } from '../services/extract-payment-ledger-breakdown.service';
-import { RefreshPractitionerWalletService } from '../services/refresh-practitioner-wallet.service';
 import { AccountingJournalPostingService } from '../services/accounting-journal-posting.service';
 
 /**
@@ -29,7 +28,6 @@ export class PostPaymentLedgerEntriesUseCase {
     private readonly financialOperationsPaymentRepository: FinancialOperationsPaymentRepository,
     private readonly ledgerRepository: LedgerRepository,
     private readonly extractPaymentLedgerBreakdownService: ExtractPaymentLedgerBreakdownService,
-    private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
     private readonly accountingJournalPostingService: AccountingJournalPostingService,
   ) {}
 
@@ -80,23 +78,6 @@ export class PostPaymentLedgerEntriesUseCase {
       await this.ledgerRepository.createManyLedgerEntries(
         [
           {
-            practitionerId: payment.practitionerId,
-            sessionId: payment.sessionId,
-            paymentId: payment.id,
-            entryType: LedgerEntryType.PRACTITIONER_EARNING,
-            direction: LedgerDirection.CREDIT,
-            amount: breakdown.practitionerShareAmount,
-            currencyCode: breakdown.currencyCode,
-            balanceBucket: WalletBalanceBucket.AVAILABLE,
-            referenceType: 'payment',
-            referenceId: payment.id,
-            description: 'Practitioner earning from captured payment.',
-            metadataJson: {
-              source: 'payment-captured',
-              commissionRuleId: payment.commissionRuleId ?? null,
-            },
-          },
-          {
             practitionerId: null,
             sessionId: payment.sessionId,
             paymentId: payment.id,
@@ -104,7 +85,7 @@ export class PostPaymentLedgerEntriesUseCase {
             direction: LedgerDirection.CREDIT,
             amount: breakdown.platformCommissionAmount,
             currencyCode: breakdown.currencyCode,
-            balanceBucket: WalletBalanceBucket.AVAILABLE,
+            balanceBucket: WalletBalanceBucket.PENDING,
             referenceType: 'payment',
             referenceId: payment.id,
             description: 'Platform commission from captured payment.',
@@ -116,13 +97,6 @@ export class PostPaymentLedgerEntriesUseCase {
         ],
         tx,
       );
-
-      if (payment.practitionerId) {
-        await this.refreshPractitionerWalletService.refresh(
-          payment.practitionerId,
-          tx,
-        );
-      }
 
       return {
         items: await this.ledgerRepository.findByPaymentId(payment.id, tx),

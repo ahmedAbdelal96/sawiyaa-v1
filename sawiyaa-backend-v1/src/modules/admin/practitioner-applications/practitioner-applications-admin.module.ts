@@ -39,6 +39,7 @@ import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-pr
 import { GetPractitionerApplicationAvatarFileUseCase } from './use-cases/get-practitioner-application-avatar-file.use-case';
 import { GetPractitionerApplicationCredentialFileUseCase } from './use-cases/get-practitioner-application-credential-file.use-case';
 import { UploadAdminPractitionerCredentialFileUseCase } from './use-cases/upload-admin-practitioner-credential-file.use-case';
+import { GetAdminDirectCreateCredentialFileUseCase } from './use-cases/get-admin-direct-create-credential-file.use-case';
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
@@ -49,13 +50,17 @@ import { AdminPractitionerPublicationRepository } from './repositories/admin-pra
 import { ManagePractitionerPublicationUseCase } from './use-cases/manage-practitioner-publication.use-case';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { GetAdminPractitionerDetailsUseCase } from './use-cases/get-admin-practitioner-details.use-case';
+import { PractitionerRequiredDocumentsService } from '@modules/practitioners/services/practitioner-required-documents.service';
+import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
+import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
  * It intentionally does not expose practitioner self-service profile/update flows.
  */
 @Module({
-  imports: [ReviewsModule, AuthModule],
+  imports: [ReviewsModule, AuthModule, FinancialOperationsModule],
   controllers: [
     PractitionerApplicationsAdminController,
     AdminPractitionersController,
@@ -99,6 +104,7 @@ import { PhoneNumberValidationService } from '@common/validation/phone-number-va
     GetPractitionerApplicationAvatarFileUseCase,
     GetPractitionerApplicationCredentialFileUseCase,
     UploadAdminPractitionerCredentialFileUseCase,
+    GetAdminDirectCreateCredentialFileUseCase,
     CreateAdminPractitionerUseCase,
     UpdatePractitionerApplicationDraftUseCase,
     UpsertPractitionerApplicationCredentialUseCase,
@@ -107,6 +113,9 @@ import { PhoneNumberValidationService } from '@common/validation/phone-number-va
     RejectPractitionerApplicationUseCase,
     RequestPractitionerApplicationChangesUseCase,
     PhoneNumberValidationService,
+    GetAdminPractitionerDetailsUseCase,
+    PractitionerRequiredDocumentsService,
+    PractitionerReviewCaseService,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

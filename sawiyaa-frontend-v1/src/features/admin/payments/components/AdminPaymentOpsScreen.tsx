@@ -1,17 +1,34 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { ArrowRight, BadgeDollarSign, Clock3, Receipt, RefreshCcw, RotateCcw, Wallet, Radar } from "lucide-react";
+import { Link, useRouter } from "@/i18n/navigation";
+import {
+  ArrowLeft,
+  BadgeDollarSign,
+  Clock3,
+  Receipt,
+  RefreshCcw,
+  RotateCcw,
+  Wallet,
+  Radar,
+  ChevronDown,
+  User,
+  Calendar,
+  CheckCircle,
+  FileText,
+  AlertCircle
+} from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 import Button from "@/components/ui/button/Button";
 import { toAppError } from "@/lib/api/errors";
 import { getAdminPaymentErrorKey, ADMIN_PAYMENT_STATUS_STYLES, ADMIN_REFUND_STATUS_STYLES } from "../lib/admin-payment-status";
 import { useAdminPaymentOpsDetails, useRequestAdminPaymentRefund, useRetryAdminPaymentRefund } from "../hooks/use-admin-payments";
+import { formatAdminMoneyForLocale as formatMoney } from "@/features/admin/finance/lib/finance-formatters";
 import type {
   AdminPaymentEventItem,
   AdminPaymentOpsItem,
@@ -69,29 +86,14 @@ function getRefundControlState(item: AdminPaymentOpsItem) {
 function formatDateTime(value: string | null, locale: string) {
   if (!value) return "-";
 
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+  return new Date(value).toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
+    hour12: true,
   });
-}
-
-function formatMoney(value: string, currency: string, locale: string) {
-  const numeric = Number(value);
-
-  if (Number.isNaN(numeric)) {
-    return `${value} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numeric);
 }
 
 function DetailRow({
@@ -105,9 +107,9 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
+      <span className="text-sm text-text-muted">{label}</span>
       <span
-        className={`text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
+        className={`text-sm font-medium text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
       >
         {value}
       </span>
@@ -118,16 +120,21 @@ function DetailRow({
 function SectionCard({
   title,
   note,
+  icon,
   children,
 }: {
   title: string;
   note?: string;
-  children: ReactNode;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <section className="app-panel rounded-[28px] p-5 sm:p-6">
-      <h2 className="text-base font-semibold text-text-primary dark:text-white/95">{title}</h2>
-      {note ? <p className="mt-1 text-sm leading-6 text-text-secondary">{note}</p> : null}
+    <section className="app-panel rounded-[24px] border border-border-light/80 p-5 dark:border-white/8 dark:bg-white/[0.02]">
+      <div className="flex items-center gap-2.5">
+        {icon ? <span className="text-text-brand">{icon}</span> : null}
+        <h2 className="text-base font-semibold text-text-primary dark:text-white/95">{title}</h2>
+      </div>
+      {note ? <p className="mt-1 text-xs text-text-secondary leading-normal">{note}</p> : null}
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -162,9 +169,11 @@ function RefundStatusChip({ status }: { status: AdminRefundStatus }) {
 function RefundTimeline({
   paymentId,
   refunds,
+  currency,
 }: {
   paymentId: string;
   refunds: AdminPaymentRefundItem[];
+  currency: string;
 }) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
@@ -177,10 +186,9 @@ function RefundTimeline({
 
   if (refunds.length === 0) {
     return (
-      <StateCard
-        title={t("payments.states.noRefunds.heading")}
-        note={t("payments.states.noRefunds.note")}
-      />
+      <div className="rounded-xl border border-dashed border-border-light p-5 text-center text-sm text-text-muted">
+        {t("payments.states.noRefunds.note")}
+      </div>
     );
   }
 
@@ -209,14 +217,14 @@ function RefundTimeline({
         return (
           <div
             key={refund.id}
-            className="rounded-[24px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]"
+            className="rounded-2xl border border-border-light bg-surface-secondary/50 p-4 dark:border-white/8 dark:bg-white/[0.02]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <RefundStatusChip status={refund.status} />
                   <span className="text-sm font-semibold text-text-primary dark:text-white/95">
-                    {formatMoney(refund.amount, refund.currency, locale)}
+                    {formatMoney(locale, refund.amount, currency)}
                   </span>
                   <span className="text-xs text-text-muted">
                     {t(`payments.refundTypes.${refund.refundType}` as Parameters<typeof t>[0])}
@@ -305,44 +313,55 @@ function RefundTimeline({
   );
 }
 
-function EventsList({ events }: { events: AdminPaymentEventItem[] }) {
+function EventsTimeline({ events }: { events: AdminPaymentEventItem[] }) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
 
   if (events.length === 0) {
     return (
-      <StateCard
-        title={t("payments.states.noEvents.heading")}
-        note={t("payments.states.noEvents.note")}
-      />
+      <div className="rounded-xl border border-dashed border-border-light p-5 text-center text-sm text-text-muted">
+        {t("payments.states.noEvents.note")}
+      </div>
     );
   }
 
+  const translateEvent = (type: string) => {
+    if (locale === "ar") {
+      switch (type) {
+        case "PAYMENT_CREATED": return "تم إنشاء الدفعة";
+        case "PAYMENT_CAPTURED": return "تم التحصيل";
+        case "PAYMENT_FAILED": return "فشل الدفع";
+        case "REFUND_REQUESTED": return "تم طلب الاسترداد";
+        case "REFUND_PROCESSING": return "قيد معالجة الاسترداد";
+        case "REFUND_SUCCEEDED": return "تم الاسترداد بنجاح";
+        case "REFUND_FAILED": return "فشل الاسترداد";
+        default: return type;
+      }
+    }
+    return type;
+  };
+
   return (
-    <ul className="space-y-3">
+    <div className="relative border-s border-border-light pl-4 rtl:border-s-0 rtl:border-e rtl:pl-0 rtl:pr-4 dark:border-white/8 space-y-4">
       {events.map((event) => (
-        <li
-          key={event.id}
-          className="rounded-[22px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-mono text-xs font-semibold text-text-primary dark:text-white/95">
-                {event.eventType}
-              </p>
-              <p className="mt-1 text-xs text-text-muted">
-                {formatDateTime(event.createdAt, locale)}
-              </p>
-            </div>
+        <div key={event.id} className="relative">
+          <span className="absolute -left-[21px] rtl:-right-[21px] top-1 flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary ring-4 ring-white dark:ring-slate-900" />
+          <div className="rounded-xl border border-border-light bg-surface-secondary/40 p-3 dark:border-white/8 dark:bg-white/[0.01]">
+            <p className="text-xs font-semibold text-text-primary dark:text-white/95">
+              {translateEvent(event.eventType)}
+            </p>
+            <p className="mt-0.5 text-[10px] text-text-muted">
+              {formatDateTime(event.createdAt, locale)}
+            </p>
             {event.providerEventRef ? (
-              <span className="rounded-full bg-surface-tertiary px-3 py-1 font-mono text-[11px] text-text-muted dark:bg-white/10">
+              <span className="mt-1.5 inline-block rounded bg-surface-tertiary px-1.5 py-0.5 font-mono text-[9px] text-text-muted dark:bg-white/10">
                 {event.providerEventRef}
               </span>
             ) : null}
           </div>
-        </li>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -448,219 +467,12 @@ function RefundRequestPanel({ paymentId }: { paymentId: string }) {
   );
 }
 
-function PaymentDetails({ item }: { item: AdminPaymentOpsItem }) {
-  const t = useTranslations("admin-area");
-  const locale = useLocale();
-
-  return (
-    <SectionCard title={t("payments.sections.payment")}>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <PaymentStatusChip status={item.payment.status} />
-        <span className="rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/10 dark:text-white/70">
-          {t(`payments.purposes.${item.payment.purpose as AdminPaymentPurpose}` as Parameters<typeof t>[0])}
-        </span>
-      </div>
-
-      <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-        <DetailRow label={t("payments.paymentFields.id")} value={item.payment.id} mono />
-        <DetailRow
-          label={t("payments.paymentFields.provider")}
-          value={t(`payments.providers.${item.payment.provider}` as Parameters<typeof t>[0])}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.amountTotal")}
-          value={formatMoney(item.payment.amountTotal, item.payment.currency, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.subtotal")}
-          value={formatMoney(item.payment.amountSubtotal, item.payment.currency, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.discount")}
-          value={formatMoney(item.payment.amountDiscount, item.payment.currency, locale)}
-        />
-        <DetailRow label={t("payments.paymentFields.currency")} value={item.payment.currency} />
-        <DetailRow
-          label={t("payments.paymentFields.createdAt")}
-          value={formatDateTime(item.payment.createdAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.initiatedAt")}
-          value={formatDateTime(item.payment.initiatedAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.capturedAt")}
-          value={formatDateTime(item.payment.capturedAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.failedAt")}
-          value={formatDateTime(item.payment.failedAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.expiredAt")}
-          value={formatDateTime(item.payment.expiredAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.paymentFields.providerPaymentId")}
-          value={item.payment.providerPaymentId ?? "-"}
-          mono
-        />
-        <DetailRow
-          label={t("payments.paymentFields.providerReference")}
-          value={item.payment.providerReference ?? "-"}
-          mono
-        />
-      </div>
-    </SectionCard>
-  );
-}
-
-function OperationalSnapshot({ item }: { item: AdminPaymentOpsItem }) {
-  const t = useTranslations("admin-area");
-  const refundState = getOperationalRefundState(item);
-  const controlState = getRefundControlState(item);
-
-  return (
-    <SectionCard title={t("payments.sections.snapshot")}>
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-[24px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("payments.snapshotCards.paymentState.label")}
-          </p>
-          <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-            {t(
-              `payments.paymentStatuses.${item.payment.status}` as Parameters<typeof t>[0],
-            )}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-text-secondary">
-            {t(
-              `payments.snapshotCards.paymentState.notes.${item.payment.status}` as Parameters<
-                typeof t
-              >[0],
-            )}
-          </p>
-        </div>
-
-        <div className="rounded-[24px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("payments.snapshotCards.refundState.label")}
-          </p>
-          <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-            {t(
-              `payments.snapshotCards.refundState.states.${refundState}.title` as Parameters<
-                typeof t
-              >[0],
-            )}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-text-secondary">
-            {t(
-              `payments.snapshotCards.refundState.states.${refundState}.note` as Parameters<
-                typeof t
-              >[0],
-            )}
-          </p>
-        </div>
-
-        <div className="rounded-[24px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/8 dark:bg-white/[0.03]">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-            {t("payments.snapshotCards.controls.label")}
-          </p>
-          <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-            {t(
-              `payments.snapshotCards.controls.states.${controlState}.title` as Parameters<
-                typeof t
-              >[0],
-            )}
-          </p>
-          <p className="mt-1 text-xs leading-5 text-text-secondary">
-            {t(
-              `payments.snapshotCards.controls.states.${controlState}.note` as Parameters<
-                typeof t
-              >[0],
-            )}
-          </p>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function SessionDetails({ item }: { item: AdminPaymentOpsItem }) {
-  const t = useTranslations("admin-area");
-  const locale = useLocale();
-
-  if (!item.session) {
-    return (
-      <SectionCard title={t("payments.sections.session")}>
-        <StateCard
-          title={t("payments.states.noSession.heading")}
-          note={t("payments.states.noSession.note")}
-        />
-      </SectionCard>
-    );
-  }
-
-  return (
-    <SectionCard title={t("payments.sections.session")}>
-      <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-        <DetailRow label={t("payments.sessionFields.id")} value={item.session.id} mono />
-        <DetailRow
-          label={t("payments.sessionFields.status")}
-          value={t(`payments.sessionStatuses.${item.session.status}` as Parameters<typeof t>[0])}
-        />
-        <DetailRow
-          label={t("payments.sessionFields.mode")}
-          value={t(`payments.sessionModes.${item.session.sessionMode}` as Parameters<typeof t>[0])}
-        />
-        <DetailRow
-          label={t("payments.sessionFields.provider")}
-          value={t(`payments.sessionProviders.${item.session.provider}` as Parameters<typeof t>[0])}
-        />
-        <DetailRow
-          label={t("payments.sessionFields.scheduledStartAt")}
-          value={formatDateTime(item.session.scheduledStartAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.sessionFields.scheduledEndAt")}
-          value={formatDateTime(item.session.scheduledEndAt, locale)}
-        />
-        <DetailRow
-          label={t("payments.sessionFields.providerRoomId")}
-          value={item.session.providerRoomId ?? "-"}
-          mono
-        />
-        <DetailRow
-          label={t("payments.sessionFields.providerSessionRef")}
-          value={item.session.providerSessionRef ?? "-"}
-          mono
-        />
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border-light bg-surface-secondary/70 px-4 py-3 text-sm text-text-secondary dark:border-white/8 dark:bg-white/[0.03]">
-        <div>
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-            {t("payments.sessionRuntime.heading")}
-          </p>
-          <p className="mt-1 text-xs text-text-muted">
-            {t("payments.sessionRuntime.note")}
-          </p>
-        </div>
-        <Link
-          href={`/admin/sessions/runtime-inspection?sessionId=${item.session.id}` as never}
-          className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
-        >
-          <Radar className="h-3.5 w-3.5" />
-          {t("payments.sessionRuntime.action")}
-        </Link>
-      </div>
-    </SectionCard>
-  );
-}
-
 export default function AdminPaymentOpsScreen({ paymentId }: Props) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
+  const router = useRouter();
   const payment = useAdminPaymentOpsDetails(paymentId);
+  const [metadataOpen, setMetadataOpen] = useState(false);
 
   if (payment.isLoading) {
     return (
@@ -735,118 +547,202 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
   const refundControlState = getRefundControlState(item);
 
   return (
-    <div className="space-y-5">
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
+    <div className="space-y-6">
+      {/* ── HEADER SECTION ── */}
+      <section className="app-panel rounded-[28px] border border-border-light p-6 dark:border-white/8 dark:bg-white/[0.01]">
         <ActionIconLink
           href="/admin/payments"
           intent="view"
           label={locale.startsWith("ar") ? "العودة إلى مراجعة المدفوعات" : "Back to payments review"}
           icon={<DirectionalArrowIcon direction="back" className="h-4 w-4" />}
-          className="mb-3"
+          className="mb-4"
         />
 
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-          {t("payments.detail.eyebrow")}
-        </p>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {t("payments.detail.title")}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+              {locale === "ar" ? "تفاصيل الدفعة" : "Payment Details"}
             </h1>
-            <p className="mt-2 font-mono text-sm text-text-secondary">{item.payment.id}</p>
+            <p className="text-sm text-text-secondary max-w-2xl leading-relaxed">
+              {locale === "ar"
+                ? "راجع بيانات عملية الدفع وحالة التحصيل والاسترداد والجلسة أو التسوية المرتبطة بها."
+                : "Review payment collection status, refund status, and related session or settlement."}
+            </p>
+            <div className="pt-1 font-mono text-xs text-text-muted select-all">
+              ID: {item.payment.id}
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap items-center gap-2.5">
             <PaymentStatusChip status={item.payment.status} />
-            <span className="inline-flex items-center gap-2 rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/10 dark:text-white/70">
-              <BadgeDollarSign className="h-3.5 w-3.5" />
-              {formatMoney(item.payment.amountTotal, item.payment.currency, locale)}
+            {item.refundSummary.totalCount > 0 ? (
+              <span className="rounded-full bg-amber-50 dark:bg-amber-950/20 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 border border-amber-200/55 dark:border-amber-900/30">
+                {locale === "ar" ? "تم الاسترداد جزئيًا" : "Refunded"}
+              </span>
+            ) : null}
+            <span className="rounded-full bg-slate-100 dark:bg-white/10 px-2.5 py-1 text-xs font-semibold text-text-secondary">
+              {t(`payments.providers.${item.payment.provider}` as Parameters<typeof t>[0])}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3.5 py-1 text-sm font-bold text-text-brand border border-primary/10">
+              <BadgeDollarSign className="h-4 w-4" />
+              {formatMoney(locale, item.payment.amountTotal, item.payment.currency)}
             </span>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(360px,0.9fr)]">
-        <div className="space-y-5">
-          <PaymentDetails item={item} />
-          <OperationalSnapshot item={item} />
-          <SessionDetails item={item} />
-
-          <SectionCard title={t("payments.sections.events")}>
-            <EventsList events={item.recentEvents} />
-          </SectionCard>
-        </div>
-
-        <div className="space-y-5">
-          <SectionCard
-            title={t("payments.sections.refundSummary")}
-          >
-            <div className="space-y-3 rounded-[24px] border border-border-light px-4 py-1 dark:border-white/8">
-              <DetailRow
-                label={t("payments.refundSummaryFields.totalCount")}
-                value={String(item.refundSummary.totalCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.requestedCount")}
-                value={String(item.refundSummary.requestedCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.processingCount")}
-                value={String(item.refundSummary.processingCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.succeededCount")}
-                value={String(item.refundSummary.succeededCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.failedCount")}
-                value={String(item.refundSummary.failedCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.cancelledCount")}
-                value={String(item.refundSummary.cancelledCount)}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.totalRefundedAmount")}
-                value={formatMoney(
-                  item.refundSummary.totalRefundedAmount,
-                  item.payment.currency,
-                  locale,
-                )}
-              />
-              <DetailRow
-                label={t("payments.refundSummaryFields.lastRefundAt")}
-                value={formatDateTime(item.refundSummary.lastRefundAt, locale)}
-              />
+      {/* ── TWO COLUMN MAIN LAYOUT ── */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(350px,0.85fr)]">
+        
+        {/* LEFT COLUMN: PRIMARY DETAILS */}
+        <div className="space-y-6">
+          
+          {/* Section 1: Payment Summary */}
+          <SectionCard title={t("payments.sections.payment")} icon={<Receipt className="h-5 w-5" />}>
+            <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-border-light bg-surface-secondary/35 p-5 dark:border-white/8 dark:bg-white/[0.005]">
+              <DetailRow label={t("payments.paymentFields.providerPaymentId")} value={item.payment.providerPaymentId ?? "-"} mono />
+              <DetailRow label={t("payments.paymentFields.providerReference")} value={item.payment.providerReference ?? "-"} mono />
+              <DetailRow label={t("payments.paymentFields.amountTotal")} value={formatMoney(locale, item.payment.amountTotal, item.payment.currency)} />
+              <DetailRow label={t("payments.paymentFields.subtotal")} value={formatMoney(locale, item.payment.amountSubtotal, item.payment.currency)} />
+              <DetailRow label={t("payments.paymentFields.discount")} value={formatMoney(locale, item.payment.amountDiscount, item.payment.currency)} />
+              <DetailRow label={t("payments.paymentFields.currency")} value={item.payment.currency} />
+              <DetailRow label={t("payments.paymentFields.createdAt")} value={formatDateTime(item.payment.createdAt, locale)} />
+              <DetailRow label={t("payments.paymentFields.initiatedAt")} value={formatDateTime(item.payment.initiatedAt, locale)} />
+              <DetailRow label={t("payments.paymentFields.capturedAt")} value={formatDateTime(item.payment.capturedAt, locale)} />
+              <DetailRow label={t("payments.paymentFields.failedAt")} value={formatDateTime(item.payment.failedAt, locale)} />
+              <DetailRow label={t("payments.paymentFields.expiredAt")} value={formatDateTime(item.payment.expiredAt, locale)} />
             </div>
           </SectionCard>
 
+          {/* Section 2: Related Customer & Session */}
+          <SectionCard title={t("payments.sections.session")} icon={<Calendar className="h-5 w-5" />}>
+            {!item.session ? (
+              <div className="rounded-xl border border-dashed border-border-light p-6 text-center text-sm text-text-muted">
+                {locale === "ar" ? "لا توجد جلسة مرتبطة بهذه الدفعة" : "No session is associated with this payment."}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-border-light bg-surface-secondary/35 p-5 dark:border-white/8 dark:bg-white/[0.005]">
+                  <div className="flex items-center justify-between gap-4 border-b border-border-light py-3"><span className="text-sm text-text-muted">{locale === "ar" ? "كود الجلسة" : "Session Code"}</span><AdminSessionReference sessionId={item.session.id} sessionCode={item.session.sessionCode} href={`/admin/sessions/runtime-inspection?sessionId=${item.session.id}`} variant="detail" copyable /></div>
+                  <DetailRow label={t("payments.sessionFields.status")} value={t(`payments.sessionStatuses.${item.session.status}` as Parameters<typeof t>[0])} />
+                  <DetailRow label={t("payments.sessionFields.mode")} value={t(`payments.sessionModes.${item.session.sessionMode}` as Parameters<typeof t>[0])} />
+                  <DetailRow label={t("payments.sessionFields.provider")} value={t(`payments.sessionProviders.${item.session.provider}` as Parameters<typeof t>[0])} />
+                  <DetailRow label={t("payments.sessionFields.scheduledStartAt")} value={formatDateTime(item.session.scheduledStartAt, locale)} />
+                  <DetailRow label={t("payments.sessionFields.scheduledEndAt")} value={formatDateTime(item.session.scheduledEndAt, locale)} />
+                </div>
+                
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-primary-light/40 border border-primary/10 p-4">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-semibold text-text-brand">
+                      {t("payments.sessionRuntime.heading")}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      {t("payments.sessionRuntime.note")}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/admin/sessions/runtime-inspection?sessionId=${item.session.id}`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-white dark:bg-slate-900 border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary hover:shadow-sm"
+                  >
+                    <Radar className="h-3.5 w-3.5 text-primary" />
+                    {t("payments.sessionRuntime.action")}
+                  </Link>
+                </div>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Section 3: Related Settlement */}
+          <SectionCard title={t("payments.settlementFields.title")} icon={<FileText className="h-5 w-5" />}>
+            {!item.relatedSettlement ? (
+              <div className="rounded-xl border border-dashed border-border-light p-6 text-center text-sm text-text-muted">
+                {t("payments.settlementFields.noSettlement")}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-border-light bg-surface-secondary/35 p-5 dark:border-white/8 dark:bg-white/[0.005]">
+                  <DetailRow label={locale === "ar" ? "رقم التسوية" : "Settlement ID"} value={item.relatedSettlement.id} mono />
+                  <DetailRow label={t("payments.settlementFields.status")} value={item.relatedSettlement.status} />
+                  <DetailRow label={t("payments.settlementFields.practitioner")} value={item.relatedSettlement.practitionerName} />
+                  <DetailRow label={locale === "ar" ? "المبلغ الأصلي للجلسة" : "Session amount"} value={formatMoney(locale, item.relatedSettlement.originalAmount, item.relatedSettlement.originalCurrency)} />
+                  <DetailRow label={t("payments.settlementFields.finalAmount")} value={formatMoney(locale, item.relatedSettlement.finalAmount, item.relatedSettlement.walletCurrency)} />
+                  <DetailRow label={t("payments.settlementFields.walletCurrency")} value={item.relatedSettlement.walletCurrency} />
+                </div>
+                
+                <div className="flex justify-end">
+                  <Link
+                    href={`/admin/settlements/${item.relatedSettlement.id}`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
+                  >
+                    <CheckCircle className="h-3.5 w-3.5 text-white/90" />
+                    {t("payments.settlementFields.openSettlement")}
+                  </Link>
+                </div>
+              </div>
+            )}
+          </SectionCard>
+        </div>
+
+        {/* RIGHT COLUMN: REFUNDS & TIMELINE */}
+        <div className="space-y-6">
+          
+          {/* Section 4: Refund Management Summary */}
+          <SectionCard title={t("payments.sections.refundSummary")} icon={<Wallet className="h-5 w-5" />}>
+            <div className="space-y-1.5 rounded-[20px] border border-border-light bg-surface-secondary/35 p-4 dark:border-white/8 dark:bg-white/[0.005]">
+              <DetailRow label={t("payments.refundSummaryFields.totalCount")} value={String(item.refundSummary.totalCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.requestedCount")} value={String(item.refundSummary.requestedCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.processingCount")} value={String(item.refundSummary.processingCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.succeededCount")} value={String(item.refundSummary.succeededCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.failedCount")} value={String(item.refundSummary.failedCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.cancelledCount")} value={String(item.refundSummary.cancelledCount)} />
+              <DetailRow label={t("payments.refundSummaryFields.totalRefundedAmount")} value={formatMoney(locale, item.refundSummary.totalRefundedAmount, item.payment.currency)} />
+              <DetailRow label={t("payments.refundSummaryFields.lastRefundAt")} value={formatDateTime(item.refundSummary.lastRefundAt, locale)} />
+            </div>
+          </SectionCard>
+
+          {/* Refund request controls */}
           {refundControlState === "requestAvailable" ? (
             <RefundRequestPanel paymentId={paymentId} />
           ) : (
-            <SectionCard
-              title={t("payments.refundForm.heading")}
-            >
+            <SectionCard title={t("payments.refundForm.heading")} icon={<AlertCircle className="h-5 w-5" />}>
               <StateCard
-                title={t(
-                  `payments.refundForm.states.${refundControlState}.heading` as Parameters<
-                    typeof t
-                  >[0],
-                )}
-                note={t(
-                  `payments.refundForm.states.${refundControlState}.note` as Parameters<
-                    typeof t
-                  >[0],
-                )}
+                title={t(`payments.refundForm.states.${refundControlState}.heading` as Parameters<typeof t>[0])}
+                note={t(`payments.refundForm.states.${refundControlState}.note` as Parameters<typeof t>[0])}
               />
             </SectionCard>
           )}
 
-          <SectionCard
-            title={t("payments.sections.refunds")}
-          >
-            <RefundTimeline paymentId={paymentId} refunds={item.refunds} />
+          {/* Refund activity timeline */}
+          <SectionCard title={t("payments.sections.refunds")} icon={<RotateCcw className="h-5 w-5" />}>
+            <RefundTimeline paymentId={paymentId} refunds={item.refunds} currency={item.payment.currency} />
           </SectionCard>
+
+          {/* Section 5: Events Timeline */}
+          <SectionCard title={t("payments.sections.events")} icon={<Clock3 className="h-5 w-5" />}>
+            <EventsTimeline events={item.recentEvents} />
+          </SectionCard>
+
+          {/* Section 6: Provider Metadata (Collapsed) */}
+          <div className="rounded-2xl border border-border-light bg-surface-secondary/40 overflow-hidden dark:border-white/8 dark:bg-white/[0.005]">
+            <button
+              onClick={() => setMetadataOpen(!metadataOpen)}
+              className="flex w-full items-center justify-between px-5 py-4 text-sm font-semibold text-text-primary dark:text-white/95"
+            >
+              <span>{locale === "ar" ? "بيانات المزود الفنية" : "Technical Provider Metadata"}</span>
+              <ChevronDown className={`h-4 w-4 text-text-muted transition-transform duration-200 ${metadataOpen ? "rotate-180" : ""}`} />
+            </button>
+            
+            {metadataOpen && (
+              <div className="px-5 pb-5 border-t border-border-light/75 dark:border-white/8 space-y-1 text-xs">
+                <DetailRow label="Transaction ID" value={item.payment.providerPaymentId ?? "-"} mono />
+                <DetailRow label="Order Reference" value={item.payment.providerReference ?? "-"} mono />
+                <DetailRow label="Gateway Provider" value={item.payment.provider} />
+                <DetailRow label="Payment Status Raw" value={item.payment.status} mono />
+              </div>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );

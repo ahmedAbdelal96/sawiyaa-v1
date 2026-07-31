@@ -80,6 +80,7 @@ export class LoggingInterceptor implements NestInterceptor {
           ...baseMeta,
           statusCode,
           durationMs,
+          ...this.safeHttpExceptionMeta(error),
           error: sanitizeForLogging({
             name: error instanceof Error ? error.name : 'UnknownError',
             message:
@@ -112,6 +113,29 @@ export class LoggingInterceptor implements NestInterceptor {
         return throwError(() => error);
       }),
     );
+  }
+
+  private safeHttpExceptionMeta(error: unknown): Record<string, unknown> {
+    if (!(error instanceof HttpException)) {
+      return {};
+    }
+
+    const response = error.getResponse();
+    if (typeof response !== 'object' || response === null) {
+      return {};
+    }
+
+    const value = response as Record<string, unknown>;
+    return sanitizeForLogging({
+      errorCode:
+        typeof value.errorCode === 'string'
+          ? value.errorCode
+          : typeof value.error === 'string'
+            ? value.error
+            : undefined,
+      messageKey:
+        typeof value.messageKey === 'string' ? value.messageKey : undefined,
+    });
   }
 
   private buildBaseMeta(
@@ -151,4 +175,3 @@ export class LoggingInterceptor implements NestInterceptor {
     return role ?? null;
   }
 }
-

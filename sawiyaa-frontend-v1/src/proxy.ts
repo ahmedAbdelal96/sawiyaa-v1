@@ -4,6 +4,7 @@ import { routing } from "./i18n/routing";
 import {
   classifyRouteArea,
   getDefaultRouteByRole,
+  getSignInRouteForRole,
   isRoleAllowedInArea,
   resolveRole,
   normalizeToCanonicalPath,
@@ -25,7 +26,6 @@ type AuthenticatedUser = {
   role: AppRole | null;
 };
 
-const LOGIN_PAGE = "/signin";
 const intlMiddleware = createIntlMiddleware(routing);
 const TOKEN_REFRESH_LEEWAY_SECONDS = 45;
 
@@ -278,6 +278,9 @@ export default async function middleware(request: NextRequest): Promise<NextResp
   }
 
   const user = getUserFromRequest(request);
+  // Reuse the role carried by the authenticated session context for both
+  // refresh and expired-session redirects. Query parameters are never trusted.
+  const sessionRole = user?.role ?? getRoleFromRequest(request);
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const hasFreshAccessToken = isAccessTokenFreshEnough(accessToken);
   const isAuthenticated = Boolean(user && hasFreshAccessToken);
@@ -289,12 +292,11 @@ export default async function middleware(request: NextRequest): Promise<NextResp
 
   if (isProtectedArea && !hasFreshAccessToken) {
     const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
-    const role = getRoleFromRequest(request);
-    if (refreshToken && role) {
-      const refreshedTokens = await requestRefreshedTokens(request, refreshToken, role);
+    if (refreshToken && sessionRole) {
+      const refreshedTokens = await requestRefreshedTokens(request, refreshToken, sessionRole);
       if (refreshedTokens) {
         const retryResponse = NextResponse.redirect(request.nextUrl);
-        setRefreshedAuthCookies(retryResponse, refreshedTokens, role);
+        setRefreshedAuthCookies(retryResponse, refreshedTokens, sessionRole);
         return retryResponse;
       }
     }
@@ -320,7 +322,16 @@ export default async function middleware(request: NextRequest): Promise<NextResp
 
   if (isProtectedArea && !isAuthenticated) {
     const callbackUrl = `${canonicalPath}${search || ""}`;
-    const loginUrl = new URL(localizedPath(locale, LOGIN_PAGE), request.url);
+    const fallbackRole =
+      routeArea === "patient"
+        ? "PATIENT"
+        : routeArea === "practitioner"
+          ? "PRACTITIONER"
+          : "ADMIN";
+    const loginUrl = new URL(
+      localizedPath(locale, getSignInRouteForRole(sessionRole ?? fallbackRole)),
+      request.url,
+    );
     loginUrl.searchParams.set("callbackUrl", callbackUrl);
     const signinResponse = NextResponse.redirect(loginUrl);
     clearAuthCookiesOnResponse(signinResponse);

@@ -15,14 +15,12 @@ import SpecialtyDetailHero from "@/features/specialties-public/components/Specia
 import SpecialtyPractitionersTeaser from "@/features/specialties-public/components/SpecialtyPractitionersTeaser";
 import { fetchPublicSpecialtyBySlug } from "@/features/specialties-public/api/specialties-ssr.api";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
-import {
-  LANGUAGE_CODES,
-  type PublicPractitioner,
-} from "@/features/practitioners-discovery/types/practitioner";
+import { type PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 import {
   getLocalizedSpecialtyCategoryName,
   getLocalizedSpecialtyName,
 } from "@/features/specialties/utils/localized-specialty";
+import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -103,9 +101,8 @@ export default async function SpecialtyDetailPage({ params }: Props) {
 
   const { specialty } = data;
 
-  const [tDetail, tLanguages, practitionersData] = await Promise.all([
+  const [tDetail, practitionersData] = await Promise.all([
     getTranslations("specialties-public.detail"),
-    getTranslations("practitioners-listing.languages"),
     fetchPublicPractitioners(locale, {
       specialtySlug: specialty.slug,
       sort: "recommended",
@@ -127,7 +124,7 @@ export default async function SpecialtyDetailPage({ params }: Props) {
   };
 
   const languageLabels = Object.fromEntries(
-    LANGUAGE_CODES.map((code) => [code, tLanguages(code)]),
+    SUPPORTED_LANGUAGE_CODES.map((code) => [code, getLocalizedLanguageLabel(code, locale)]),
   );
 
   const metaItems = [

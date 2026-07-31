@@ -138,6 +138,7 @@ export class PublicPractitionerReadRepository {
     specialtySlug?: string;
     specialtyCategorySlug?: string;
     language?: string;
+    languageCodes?: string[];
     country?: string;
     currencyCode?: 'EGP' | 'USD' | null;
     practitionerKind?: PublicPractitionerKind;
@@ -158,7 +159,17 @@ export class PublicPractitionerReadRepository {
     const specialtyCategorySlug = input.specialtyCategorySlug
       ?.trim()
       .toLowerCase();
-    const languageCode = input.language?.trim().toLowerCase();
+    const languageCodes = Array.from(
+      new Set(
+        [
+          ...(Array.isArray(input.languageCodes) ? input.languageCodes : []),
+          ...(input.language ? [input.language] : []),
+        ]
+          .map((code) => code.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    );
+    const hasLanguageCodes = languageCodes.length > 0;
     const countryCode = input.country?.trim().toUpperCase();
     const minSessionFee = input.minSessionFee;
     const maxSessionFee = input.maxSessionFee;
@@ -310,11 +321,13 @@ export class PublicPractitionerReadRepository {
           }
         : undefined,
       specialties: specialtyWhere,
-      languages: languageCode
+      languages: hasLanguageCodes
         ? {
             some: {
               language: {
-                code: languageCode,
+                code: {
+                  in: languageCodes,
+                },
                 isActive: true,
               },
             },
@@ -439,6 +452,7 @@ export class PublicPractitionerReadRepository {
     specialtySlug?: string;
     specialtyCategorySlug?: string;
     language?: string;
+    languageCodes?: string[];
     country?: string;
     currencyCode?: 'EGP' | 'USD' | null;
     practitionerKind?: PublicPractitionerKind;

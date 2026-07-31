@@ -41,6 +41,12 @@ describe('AvailabilityWeekOverviewService', () => {
     expect(result.nextWeekPublished).toBe(false);
     expect(result.currentWeek.status).toBe('NOT_SET');
     expect(result.nextWeek.status).toBe('NOT_SET');
+    expect(result.weeks).toHaveLength(5);
+    expect(result.weeks.map((week) => week.relativeWeekIndex)).toEqual([0, 1, 2, 3, 4]);
+    expect(result.weeks.every((week) => week.weekId === null)).toBe(true);
+    expect(result.weeks.every((week) => week.status === 'NOT_SET')).toBe(true);
+    expect(result.weeks.every((week) => week.canCreate)).toBe(true);
+    expect(result.weeks.every((week) => !week.canEdit && !week.canPublish)).toBe(true);
   });
 
   it('returns current and next week records when they exist', async () => {

@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   LedgerEntry,
   PackageSettlement,
@@ -23,6 +23,7 @@ import {
   PractitionerPayoutBalanceViewModel,
   PractitionerStatementRowViewModel,
   PractitionerSettlementViewModel,
+  PractitionerSafeSettlementViewModel,
   SettlementPayoutProofViewModel,
   SettlementPayoutViewModel,
   SettlementBatchDetailsViewModel,
@@ -175,7 +176,7 @@ export class FinancialOperationsMapper {
     return input;
   }
 
-  toLedgerEntry(entry: LedgerEntry): LedgerEntryViewModel {
+  toLedgerEntry(entry: LedgerEntry & { session?: { sessionCode: string } | null }): LedgerEntryViewModel {
     return {
       id: entry.id,
       entryType: entry.entryType,
@@ -185,6 +186,7 @@ export class FinancialOperationsMapper {
       balanceBucket: entry.balanceBucket,
       paymentId: entry.paymentId ?? null,
       sessionId: entry.sessionId ?? null,
+      sessionCode: entry.session?.sessionCode ?? null,
       settlementId: entry.settlementId ?? null,
       referenceType: entry.referenceType ?? null,
       referenceId: entry.referenceId ?? null,
@@ -221,6 +223,27 @@ export class FinancialOperationsMapper {
     };
   }
 
+  toPractitionerSafeSettlement(
+    settlement: PractitionerSettlementWithBatch & { sourceReview?: { sessionId: string } | null },
+    session?: { id: string; sessionCode: string; scheduledStartAt: Date | null; completedAt: Date | null; flowType: string } | null,
+  ): PractitionerSafeSettlementViewModel {
+    const payoutStatus = settlement.status === 'PAID_OUT'
+      ? 'PAID'
+      : settlement.status === 'REJECTED'
+        ? 'NOT_ELIGIBLE'
+        : 'PENDING';
+    return {
+      sessionId: session?.id ?? settlement.sourceReview?.sessionId ?? null,
+      sessionCode: session?.sessionCode ?? null,
+      date: (session?.completedAt ?? session?.scheduledStartAt)?.toISOString() ?? null,
+      sessionType: session?.flowType ?? null,
+      amountAdded: settlement.finalWalletCredit.toString(),
+      currency: settlement.walletCurrencyCode,
+      status: settlement.status,
+      payoutStatus,
+    };
+  }
+
   toSettlementPayout(
     payout: SettlementPayoutWithRelations,
   ): SettlementPayoutViewModel {
@@ -235,6 +258,19 @@ export class FinancialOperationsMapper {
       practitionerId: payout.practitionerId,
       amountNet: payout.amountPaid.toString(),
       currency: payout.currencyCode,
+      sourceAmount: payout.sourceAmount?.toString() ?? null,
+      sourceCurrency: payout.sourceCurrencyCode ?? null,
+      payoutCurrency: payout.payoutCurrencyCode ?? null,
+      exchangeRateEgpPerUsd: payout.exchangeRateEgpPerUsd?.toString() ?? null,
+      calculatedPayoutAmount: payout.calculatedPayoutAmount?.toString() ?? null,
+      actualPayoutAmount: payout.actualPayoutAmount?.toString() ?? null,
+      differenceAmount: payout.differenceAmount?.toString() ?? null,
+      overrideReason: payout.overrideReason ?? null,
+      transferFeeAmount: payout.transferFeeAmount?.toString() ?? null,
+      transferFeeCurrency: payout.transferFeeCurrencyCode ?? payout.currencyCode,
+      feeBearer: payout.transferFeeTreatment,
+      netAmountReceived: payout.netAmountReceived?.toString() ?? payout.amountPaid.toString(),
+      totalPlatformOutflow: payout.totalPlatformOutflow?.toString() ?? payout.amountPaid.toString(),
       payoutMethod: payout.payoutMethod,
       payoutSource: payout.payoutSource,
       externalPayoutRef: payout.externalPayoutRef ?? null,
@@ -248,7 +284,7 @@ export class FinancialOperationsMapper {
   }
 
   toPractitionerStatementLedgerRow(
-    entry: LedgerEntry,
+    entry: LedgerEntry & { session?: { sessionCode: string } | null },
   ): PractitionerStatementRowViewModel {
     return {
       id: entry.id,
@@ -260,6 +296,7 @@ export class FinancialOperationsMapper {
       amount: entry.amount.toString(),
       paymentId: entry.paymentId ?? null,
       sessionId: entry.sessionId ?? null,
+      sessionCode: entry.session?.sessionCode ?? null,
       settlementId: entry.settlementId ?? null,
       referenceType: entry.referenceType ?? null,
       referenceId: entry.referenceId ?? null,
@@ -287,6 +324,7 @@ export class FinancialOperationsMapper {
       amount: payout.amountPaid.toString(),
       paymentId: null,
       sessionId: null,
+      sessionCode: null,
       settlementId: payout.settlementId,
       referenceType: 'settlement_payout',
       referenceId: payout.id,
@@ -373,6 +411,14 @@ export class FinancialOperationsMapper {
       settlementId: payout.settlementId,
       amountPaid: payout.amountPaid.toString(),
       currency: payout.currencyCode,
+      sourceAmount: payout.sourceAmount?.toString() ?? null,
+      sourceCurrency: payout.sourceCurrencyCode ?? null,
+      payoutCurrency: payout.payoutCurrencyCode ?? null,
+      exchangeRateEgpPerUsd: payout.exchangeRateEgpPerUsd?.toString() ?? null,
+      calculatedPayoutAmount: payout.calculatedPayoutAmount?.toString() ?? null,
+      actualPayoutAmount: payout.actualPayoutAmount?.toString() ?? null,
+      differenceAmount: payout.differenceAmount?.toString() ?? null,
+      overrideReason: payout.overrideReason ?? null,
       payoutMethod: payout.payoutMethod,
       payoutSource: payout.payoutSource,
       payoutDate: payout.effectiveAt.toISOString(),
@@ -382,6 +428,7 @@ export class FinancialOperationsMapper {
       processedByDisplayName: payout.processedByUser?.displayName ?? null,
       proof: payout.proof ? this.toSettlementPayoutProof(payout.proof) : null,
       createdAt: payout.createdAt.toISOString(),
+      status: payout.newStatus ?? payout.settlement?.status ?? null,
     };
   }
 

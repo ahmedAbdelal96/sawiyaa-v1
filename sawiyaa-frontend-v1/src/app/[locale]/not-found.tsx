@@ -63,7 +63,7 @@ export default function LocalizedNotFound() {
           </Link>
 
           <Link
-            href="/signin"
+            href="/signin/patient"
             className="flex w-full items-center justify-center rounded-xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm font-semibold text-[#374151] transition-colors hover:bg-gray-50 active:scale-[0.98] dark:border-white/10 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/50"
           >
             {t("signIn")}

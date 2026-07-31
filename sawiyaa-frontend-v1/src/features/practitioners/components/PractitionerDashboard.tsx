@@ -36,6 +36,7 @@ import {
   formatTimeZoneLabel,
 } from "@/lib/time-formatting";
 import type { SessionListItem } from "@/features/sessions/types/sessions.types";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 type LocaleCopy = {
   pageTitle: string;
@@ -409,12 +410,12 @@ export default function PractitionerDashboard() {
   const pendingBalance = wallet?.pendingBalance ?? "0";
 
   const settlements = [...(settlementsQuery.data?.items ?? [])].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    (a, b) => new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime(),
   );
   const settlementCategories = settlements.map((item) =>
-    formatShortDate(locale, item.createdAt, profileTimeZone),
+    formatShortDate(locale, item.date, profileTimeZone),
   );
-  const settlementValues = settlements.map((item) => Number(item.amountNet) || 0);
+  const settlementValues = settlements.map((item) => Number(item.amountAdded) || 0);
   const settlementCurrency = settlements[0]?.currency ?? wallet?.currency ?? null;
   const latestSettlementAmount = settlementValues.at(-1) ?? 0;
 
@@ -586,7 +587,7 @@ export default function PractitionerDashboard() {
             items={upcomingSessions.map((session) => ({
               id: session.id,
               title: safeText(session.patient?.displayName, copy.common.unknown),
-              subtitle: `${formatDateTime(locale, session.scheduledStartAt, profileTimeZone)} · ${session.durationMinutes}m`,
+              subtitle: <span className="inline-flex flex-wrap items-center gap-2"><SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} copyable /> <span>{formatDateTime(locale, session.scheduledStartAt, profileTimeZone)} · {session.durationMinutes}m</span></span>,
               href: `/practitioner/sessions/${session.id}`,
               badge: (() => {
                 const statusLabel = formatSessionStatus(session.status, locale);

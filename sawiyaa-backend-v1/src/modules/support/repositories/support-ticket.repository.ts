@@ -36,8 +36,33 @@ export class SupportTicketRepository {
     relatedMatchingSessionId?: string;
     relatedAssessmentSubmissionId?: string;
     seedInitialMessage?: boolean;
+    forceNew?: boolean;
+    idempotencyKey?: string;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      // Serialize self-service support creation per user before checking open tickets.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${input.openedByUserId}::uuid FOR UPDATE`;
+
+      if (input.idempotencyKey) {
+        const existingRequest = await tx.supportTicket.findUnique({
+          where: { idempotencyKey: input.idempotencyKey },
+          include: this.detailsInclude(),
+        });
+        if (existingRequest) return existingRequest;
+      }
+
+      if (!input.forceNew) {
+        const existingOpenTicket = await tx.supportTicket.findFirst({
+          where: {
+            openedByUserId: input.openedByUserId,
+            status: { notIn: [SupportTicketStatus.CLOSED, SupportTicketStatus.RESOLVED] },
+          },
+          orderBy: { lastMessageAt: 'desc' },
+          include: this.detailsInclude(),
+        });
+        if (existingOpenTicket) return existingOpenTicket;
+      }
+
       const seedInitialMessage = input.seedInitialMessage ?? true;
       const subject = (input.subject || input.description)
         .replace(/\s+/g, ' ')
@@ -71,6 +96,7 @@ export class SupportTicketRepository {
           priority: input.priority,
           subject,
           description: input.description,
+          idempotencyKey: input.idempotencyKey ?? null,
           lastMessageAt: seedInitialMessage ? new Date() : null,
           relatedSessionId: input.relatedSessionId ?? null,
           relatedPaymentId: input.relatedPaymentId ?? null,
@@ -396,49 +422,36 @@ export class SupportTicketRepository {
   }
 
   async countUnreadForUser(input: { userId: string; adminLike: boolean }) {
-    const accessScope = input.adminLike
-      ? {}
-      : {
-          participants: {
-            some: {
-              userId: input.userId,
-              isActive: true,
-            },
-          },
-        };
-
-    const unreadWhere: Prisma.MessageWhereInput = {
-      senderUserId: {
-        not: input.userId,
-      },
-      status: {
-        in: [MessageStatus.SENT, MessageStatus.DELIVERED],
-      },
-      deletedAt: null,
-      visibility: MessageVisibility.NORMAL,
-      conversation: {
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
         conversationType: ConversationType.SUPPORT,
-        ...accessScope,
+        ...(input.adminLike
+          ? {}
+          : { participants: { some: { userId: input.userId, isActive: true } } }),
       },
-    };
-
-    const [unreadMessages, unreadConversationRows] =
-      await this.prisma.$transaction([
-        this.prisma.message.count({
-          where: unreadWhere,
-        }),
-        this.prisma.message.findMany({
-          where: unreadWhere,
-          select: {
-            conversationId: true,
-          },
-          distinct: ['conversationId'],
-        }),
-      ]);
+      select: {
+        id: true,
+        participants: {
+          where: { userId: input.userId, isActive: true },
+          select: { lastReadAt: true, lastReadMessageId: true },
+        },
+      },
+    });
+    const counts = await Promise.all(conversations.map(async (conversation) => {
+      const cursor = conversation.participants[0] ?? null;
+      const count = await this.countUnreadForCursor({
+        conversationId: conversation.id,
+        userId: input.userId,
+        lastReadAt: cursor?.lastReadAt ?? null,
+        lastReadMessageId: cursor?.lastReadMessageId ?? null,
+      });
+      return { conversationId: conversation.id, count };
+    }));
+    const unreadMessages = counts.reduce((total, item) => total + item.count, 0);
 
     return {
       unreadMessages,
-      unreadConversations: unreadConversationRows.length,
+      unreadConversations: counts.filter((item) => item.count > 0).length,
     };
   }
 
@@ -453,28 +466,55 @@ export class SupportTicketRepository {
       return new Map<string, number>();
     }
 
-    const rows = await this.prisma.message.groupBy({
-      by: ['conversationId'],
+    const conversations = await this.prisma.conversation.findMany({
       where: {
-        conversationId: { in: uniqueConversationIds },
-        senderUserId: {
-          not: input.userId,
-        },
-        status: {
-          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
-        },
-        deletedAt: null,
-        visibility: MessageVisibility.NORMAL,
-        conversation: {
-          conversationType: ConversationType.SUPPORT,
-        },
+        id: { in: uniqueConversationIds },
+        conversationType: ConversationType.SUPPORT,
       },
-      _count: {
-        _all: true,
+      select: {
+        id: true,
+        participants: {
+          where: { userId: input.userId, isActive: true },
+          select: { lastReadAt: true, lastReadMessageId: true },
+        },
       },
     });
+    const counts = await Promise.all(conversations.map(async (conversation) => {
+      const cursor = conversation.participants[0] ?? null;
+      const count = await this.countUnreadForCursor({
+        conversationId: conversation.id,
+        userId: input.userId,
+        lastReadAt: cursor?.lastReadAt ?? null,
+        lastReadMessageId: cursor?.lastReadMessageId ?? null,
+      });
+      return [conversation.id, count] as const;
+    }));
+    return new Map(counts);
+  }
 
-    return new Map(rows.map((row) => [row.conversationId, row._count._all]));
+  private countUnreadForCursor(input: {
+    conversationId: string;
+    userId: string;
+    lastReadAt: Date | null;
+    lastReadMessageId: string | null;
+  }) {
+    return this.prisma.message.count({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: { not: input.userId },
+        status: { in: [MessageStatus.SENT, MessageStatus.DELIVERED] },
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+        ...(input.lastReadAt
+          ? {
+              OR: [
+                { sentAt: { gt: input.lastReadAt } },
+                { sentAt: input.lastReadAt, id: { gt: input.lastReadMessageId ?? '' } },
+              ],
+            }
+          : {}),
+      },
+    });
   }
 
   private detailsInclude() {

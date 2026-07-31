@@ -11,11 +11,11 @@ import ProfileBookingPanel from "@/features/practitioner-profile/components/Prof
 import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
 import {
-  LANGUAGE_CODES,
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
 import { Link } from "@/i18n/navigation";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
+import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -110,10 +110,7 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
 
   const { item: profile } = data;
 
-  const [tLanguages, tProfile] = await Promise.all([
-    getTranslations("practitioners-listing.languages"),
-    getTranslations("practitioner-profile"),
-  ]);
+  const tProfile = await getTranslations("practitioner-profile");
 
   let specialtyLabels: Record<string, string> = {};
   try {
@@ -128,7 +125,7 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
   }
 
   const languageLabels = Object.fromEntries(
-    LANGUAGE_CODES.map((code) => [code, tLanguages(code)]),
+    SUPPORTED_LANGUAGE_CODES.map((code) => [code, getLocalizedLanguageLabel(code, locale)]),
   );
 
   const countryLabel =

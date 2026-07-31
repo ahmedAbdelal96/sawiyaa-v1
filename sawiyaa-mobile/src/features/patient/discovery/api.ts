@@ -6,6 +6,7 @@ import {
   PublicPractitionerPresenceResponse,
   PublicPractitionersListResponse,
 } from "./types";
+import { toPublicPractitionerQueryParams } from "./query";
 
 export const useGetPublicPractitioners = (
   filters: ListPublicPractitionersFilters,
@@ -16,7 +17,7 @@ export const useGetPublicPractitioners = (
       const response = await apiClient.get<PublicPractitionersListResponse>(
         "/public/practitioners",
         {
-          params: filters,
+          params: toPublicPractitionerQueryParams(filters),
         },
       );
       return response.data;
@@ -37,7 +38,7 @@ export const useGetPublicPractitionersInfinite = (
         "/public/practitioners",
         {
           params: {
-            ...filters,
+            ...toPublicPractitionerQueryParams(filters),
             page: pageParam,
             limit: filters.limit ?? 12,
           },

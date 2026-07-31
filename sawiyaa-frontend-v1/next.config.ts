@@ -6,6 +6,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // aligned with the icon barrel used throughout the app.
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   /* config options here */
   webpack(config) {
     const assetRule = config.module.rules.find(

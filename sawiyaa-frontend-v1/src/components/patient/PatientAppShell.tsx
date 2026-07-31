@@ -310,7 +310,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
               onClick={async () => {
                 setIsMobileNavOpen(false);
                 await logout();
-                router.push("/signin");
+                router.push("/signin/patient");
                 router.refresh();
               }}
             >

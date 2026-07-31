@@ -5,13 +5,14 @@ import { ExtractPaymentLedgerBreakdownService } from './extract-payment-ledger-b
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
 import { SessionEarningReviewService } from './session-earning-review.service';
+import { ApprovePractitionerSettlementService } from './approve-practitioner-settlement.service';
 
 describe('SessionEarningReviewService', () => {
   function buildService() {
     const tx = {
       sessionEarningReview: {
         findUnique: jest.fn(),
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         upsert: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
@@ -29,6 +30,10 @@ describe('SessionEarningReviewService', () => {
       patientPackagePurchase: {
         findUnique: jest.fn(),
       },
+      practitionerSettlement: {
+        findMany: jest.fn(),
+        updateMany: jest.fn(),
+      },
       $executeRaw: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -43,6 +48,9 @@ describe('SessionEarningReviewService', () => {
     const calculatePackageSessionAllocationService = {
       allocate: jest.fn(),
     } as unknown as CalculatePackageSessionAllocationService;
+    const approvePractitionerSettlementService = {
+      approveAndCredit: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
+    } as unknown as ApprovePractitionerSettlementService;
 
     const service = new SessionEarningReviewService(
       prisma,
@@ -50,6 +58,7 @@ describe('SessionEarningReviewService', () => {
       extractPaymentLedgerBreakdownService,
       calculatePackageSessionAllocationService,
       { refresh: jest.fn() } as unknown as RefreshPractitionerWalletService,
+      approvePractitionerSettlementService,
     );
 
     return {
@@ -58,8 +67,24 @@ describe('SessionEarningReviewService', () => {
       ledgerRepository,
       extractPaymentLedgerBreakdownService,
       calculatePackageSessionAllocationService,
+      approvePractitionerSettlementService,
     };
   }
+
+  it.each([
+    ['completed session without captured payment', 'COMPLETED', null],
+    ['cancelled session with captured payment', 'CANCELLED', { id: 'payment-1', status: 'CAPTURED' }],
+  ])('does not create an earning review for a %s', async (_label, status, payment) => {
+    const { service, tx } = buildService();
+    tx.session.findUnique.mockResolvedValue({
+      id: 'session-edge', status, patientId: 'patient-1', practitionerId: 'practitioner-1',
+      packagePurchaseId: null, packageSessionIndex: null, packageSessionCount: null,
+    });
+    tx.payment.findFirst.mockResolvedValue(payment);
+    const result = await service.syncForSessionCompletion({ sessionId: 'session-edge', tx: tx as never });
+    expect(result).toBeNull();
+    expect(tx.sessionEarningReview.upsert).not.toHaveBeenCalled();
+  });
 
   it('creates one pending direct-session review from a completed captured session', async () => {
     const {
@@ -525,7 +550,9 @@ describe('SessionEarningReviewService', () => {
 
   it('invalidates pending reviews when a payment is refunded before approval', async () => {
     const { service, tx } = buildService();
-    tx.sessionEarningReview.findMany.mockResolvedValue([{ id: 'review-1' }]);
+    tx.sessionEarningReview.findMany.mockResolvedValue([
+      { id: 'review-1', sessionId: 'session-1' },
+    ]);
     tx.sessionEarningReview.updateMany.mockResolvedValue({ count: 1 });
 
     const result = await service.invalidatePendingReviewsForPayment({
@@ -556,14 +583,112 @@ describe('SessionEarningReviewService', () => {
         }),
       }),
     );
+    expect(tx.practitionerSettlement.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          sourceReviewId: { in: ['review-1'] },
+          status: 'UNDER_REVIEW',
+        }),
+        data: expect.objectContaining({
+          status: 'REJECTED',
+          rejectionReason: 'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL',
+        }),
+      }),
+    );
     expect(result).toEqual({
       updatedCount: 1,
       reviewIds: ['review-1'],
     });
   });
 
+  it('records a system audit event when refund auto-rejects an under-review settlement', async () => {
+    const { tx } = buildService();
+    const audit = { recordRequired: jest.fn().mockResolvedValue(undefined) };
+    const service = new SessionEarningReviewService(
+      {} as PrismaService,
+      {} as LedgerRepository,
+      {} as ExtractPaymentLedgerBreakdownService,
+      {} as CalculatePackageSessionAllocationService,
+      {} as RefreshPractitionerWalletService,
+      {} as ApprovePractitionerSettlementService,
+      undefined,
+      audit as never,
+    );
+
+    tx.sessionEarningReview.findMany.mockResolvedValue([
+      { id: 'review-1', sessionId: 'session-1' },
+    ]);
+    tx.practitionerSettlement.findMany.mockResolvedValue([
+      {
+        id: 'settlement-1',
+        sourceReviewId: 'review-1',
+        status: 'UNDER_REVIEW',
+        finalWalletCredit: new Prisma.Decimal('650.00'),
+        walletCurrencyCode: 'EGP',
+      },
+    ]);
+
+    await service.invalidatePendingReviewsForPayment({
+      paymentId: 'payment-1',
+      internalReason: 'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL',
+      tx: tx as never,
+    });
+
+    expect(audit.recordRequired).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({
+        action: 'SETTLEMENT_AUTO_REJECTED_REFUND',
+        actorType: 'SYSTEM',
+        resourceType: 'PractitionerSettlement',
+        resourceId: 'settlement-1',
+        metadata: expect.objectContaining({
+          settlementId: 'settlement-1',
+          sessionId: 'session-1',
+          reviewId: 'review-1',
+          paymentId: 'payment-1',
+          previousSettlementStatus: 'UNDER_REVIEW',
+          newSettlementStatus: 'REJECTED',
+          previousReviewStatus: 'PENDING_REVIEW',
+          newReviewStatus: 'EXCLUDED_FROM_PAYOUT',
+          amount: '650',
+          currency: 'EGP',
+          referenceType: 'PAYMENT',
+          referenceId: 'payment-1',
+        }),
+      }),
+    );
+  });
+
+  it('does not create the auto-rejection event when no review is pending', async () => {
+    const { tx } = buildService();
+    const audit = { recordRequired: jest.fn().mockResolvedValue(undefined) };
+    const service = new SessionEarningReviewService(
+      {} as PrismaService,
+      {} as LedgerRepository,
+      {} as ExtractPaymentLedgerBreakdownService,
+      {} as CalculatePackageSessionAllocationService,
+      {} as RefreshPractitionerWalletService,
+      {} as ApprovePractitionerSettlementService,
+      undefined,
+      audit as never,
+    );
+
+    tx.sessionEarningReview.findMany.mockResolvedValue([]);
+
+    await service.invalidatePendingReviewsForPayment({
+      paymentId: 'payment-after-payout',
+      tx: tx as never,
+    });
+
+    expect(audit.recordRequired).not.toHaveBeenCalled();
+  });
+
   it('reconciles pending approvals from the posted ledger rows', async () => {
-    const { service, tx, ledgerRepository } = buildService();
+    const {
+      service,
+      tx,
+      approvePractitionerSettlementService,
+    } = buildService();
     tx.sessionEarningReview.findUnique.mockResolvedValue({
       id: 'review-1',
       reviewStatus: 'PENDING_REVIEW',
@@ -603,17 +728,13 @@ describe('SessionEarningReviewService', () => {
       tx: tx as never,
     });
 
-    expect(ledgerRepository.createManyLedgerEntries).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          sessionEarningReviewId: 'review-1',
-          entryType: LedgerEntryType.PRACTITIONER_EARNING,
-          direction: LedgerDirection.CREDIT,
-          balanceBucket: WalletBalanceBucket.AVAILABLE,
-        }),
-      ]),
-      tx,
-      true,
+    expect(approvePractitionerSettlementService.approveAndCredit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        db: tx,
+        sessionEarningReviewId: 'review-1',
+        actorUserId: 'admin-1',
+        finalWalletCredit: new Prisma.Decimal('1'),
+      }),
     );
     const updateArgs = tx.sessionEarningReview.update.mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: 'review-1' });
@@ -621,6 +742,7 @@ describe('SessionEarningReviewService', () => {
     expect(updateArgs.data.finalPractitionerAmount.toString()).toBe('70');
     expect(updateArgs.data.finalPlatformAmount.toString()).toBe('30');
     expect(updateArgs.data.finalCurrencyCode).toBe('USD');
+    expect(updateArgs.data.settlementId).toBe('settlement-1');
     expect(updateArgs.data.approvedByUserId).toBe('admin-1');
     expect(result.item.finalPractitionerAmount.toString()).toBe('70');
     expect(result.item.finalPlatformAmount.toString()).toBe('30');

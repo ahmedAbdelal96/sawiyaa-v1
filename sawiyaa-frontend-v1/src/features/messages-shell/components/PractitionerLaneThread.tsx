@@ -16,6 +16,7 @@ type Props = {
   copy: any;
   onOpenFull: () => void;
   onThreadActive?: () => void;
+  isVisible?: boolean;
 };
 
 export default function PractitionerLaneThread({
@@ -24,6 +25,7 @@ export default function PractitionerLaneThread({
   locale,
   onOpenFull,
   onThreadActive,
+  isVisible = true,
 }: Props) {
   const conversationQuery = useQuery({
     queryKey: ["canonical-conversation", conversationId],
@@ -32,10 +34,10 @@ export default function PractitionerLaneThread({
   });
 
   useEffect(() => {
-    if (conversationId && !conversationQuery.isLoading && onThreadActive) {
+    if (isVisible && conversationId && !conversationQuery.isLoading && onThreadActive) {
       onThreadActive();
     }
-  }, [conversationId, conversationQuery.isLoading, onThreadActive]);
+  }, [conversationId, conversationQuery.isLoading, isVisible, onThreadActive]);
 
   const conversation = conversationQuery.data?.item ?? null;
 
@@ -47,6 +49,7 @@ export default function PractitionerLaneThread({
           role={role}
           locale={locale}
           onOpenFullChat={onOpenFull}
+          isVisible={isVisible}
         />
       ) : (
         <div className="flex h-full items-center justify-center p-8 text-center text-text-muted">

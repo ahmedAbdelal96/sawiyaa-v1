@@ -20,6 +20,8 @@ import { createHash } from 'crypto';
 import { seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo } from '../shared/seed.utils';
+import { assertLegacyFinancialFixtureSeedDisabled } from '../shared/financial-fixture-gate';
+import { reserveSeedSessionCode } from '../session-code-fixture';
 
 type BalanceState = {
   available: number;
@@ -133,6 +135,7 @@ function applyLedgerState(
 export const settlementsLabSeedModule: SeedModule = {
   name: 'settlements-lab',
   async run(prisma: PrismaClient): Promise<void> {
+    assertLegacyFinancialFixtureSeedDisabled('settlements-lab');
     const currencyCode = 'USD';
     const now = new Date();
     const currentPeriod = monthKey(now);
@@ -531,12 +534,21 @@ export const settlementsLabSeedModule: SeedModule = {
           const settlementId = sessionPlan.settlementKey
             ? (settlementIdByKey.get(sessionPlan.settlementKey) ?? null)
             : null;
+          const existingSession = await tx.session.findUnique({
+            where: { id: sessionId },
+            select: { sessionCode: true },
+          });
+          const createdAt = new Date();
+          const sessionCode =
+            existingSession?.sessionCode ??
+            (await reserveSeedSessionCode(tx, createdAt, 'settlements_lab'));
 
           await tx.session.upsert({
             where: { id: sessionId },
             create: {
               id: sessionId,
-              sessionCode: `SES-LAB-${plan.practitionerId.slice(-4)}-${sessionPlan.sessionSuffix.toUpperCase()}`,
+              sessionCode,
+              createdAt,
               patientId: sessionPlan.patientId,
               practitionerId: plan.practitionerId,
               flowType: SessionFlowType.SCHEDULED,
@@ -555,7 +567,6 @@ export const settlementsLabSeedModule: SeedModule = {
               providerSessionRef: `lab-provider-session-${plan.practitionerId.slice(-6)}-${sessionPlan.sessionSuffix}`,
             },
             update: {
-              sessionCode: `SES-LAB-${plan.practitionerId.slice(-4)}-${sessionPlan.sessionSuffix.toUpperCase()}`,
               patientId: sessionPlan.patientId,
               practitionerId: plan.practitionerId,
               flowType: SessionFlowType.SCHEDULED,

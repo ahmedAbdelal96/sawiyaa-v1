@@ -172,7 +172,7 @@ export function MessagesInboxScreen({
         title={t("messages.inbox.title", "Messages")}
         showBack
         rightElement={
-          isPatient ? (
+          role === "patient" || role === "practitioner" ? (
             <TouchableOpacity
               onPress={handleStartSupport}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -273,7 +273,7 @@ export function MessagesInboxScreen({
         </View>
       ) : null}
 
-      {activeTab === "support" ? (
+      {role === "patient" || role === "practitioner" ? (
         <View
           style={[
             styles.supportActionRow,

@@ -23,7 +23,7 @@ export class SendOtpChallengeUseCase {
 
   async execute(input: {
     challengeId?: string;
-    userId: string;
+    userId?: string | null;
     purpose: OtpPurpose;
     channel: OtpChannel;
     target: string;

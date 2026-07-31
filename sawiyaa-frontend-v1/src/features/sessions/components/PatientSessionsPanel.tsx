@@ -30,6 +30,7 @@ import type {
   SessionStatus,
 } from "../types/sessions.types";
 import type { PatientReviewItem } from "@/features/reviews/types/reviews.types";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import { StateCard } from "@/components/shared/ContentStates";
 import {
   SurfaceCard,
@@ -518,9 +519,7 @@ export default function PatientSessionsPanel() {
         align: "start",
         header: copy.table.reference,
         cell: (row) => (
-          <span className="rounded bg-surface-tertiary/60 px-2 py-0.5 font-mono text-xs font-semibold text-text-muted">
-            {row.sessionCode}
-          </span>
+          <SessionCodeReference sessionId={row.id} sessionCode={row.sessionCode} href={`/patient/sessions/${row.id}`} copyable />
         ),
       },
       {

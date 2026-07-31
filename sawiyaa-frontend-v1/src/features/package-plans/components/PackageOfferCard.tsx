@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Avatar from "@/components/ui/avatar/Avatar";
+import { useLocale } from "next-intl";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import Badge from "@/components/ui/badge/Badge";
 import { MoneyText } from "@/components/money/MoneyText";
 import { mapPackagePurchaseSnapshotMoney } from "../lib/package-money";
@@ -12,6 +14,7 @@ import { Clock, Sparkles } from "lucide-react";
 
 export function PackageOfferCard({ offer }: { offer: PackageOfferItem }) {
   const t = useTranslations("package-purchases.discovery.card");
+  const locale = useLocale();
   const [selectedDuration, setSelectedDuration] = useState<number>(
     offer.selectedDurationMinutes,
   );
@@ -60,7 +63,7 @@ export function PackageOfferCard({ offer }: { offer: PackageOfferItem }) {
               {practitioner.displayName}
             </Link>
             <p className="truncate text-xs font-medium text-text-secondary mt-0.5">
-              {practitioner.professionalTitle ||
+              {getProfessionalTitleLabel(practitioner.professionalTitle, locale) ||
                 practitioner.specialties[0]?.name ||
                 ""}
             </p>

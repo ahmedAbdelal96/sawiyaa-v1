@@ -42,8 +42,12 @@ describe('GetAdminOperationalNotificationDetailsUseCase', () => {
         'payments.refund-succeeded',
         'sessions.session-confirmed',
         'sessions.session-confirmed-practitioner',
+        'sessions.session-reminder-60',
+        'sessions.session-reminder-15',
+        'availability.week-ending-reminder',
+        'dev.push-test',
       ],
-      ['auth.'],
+      ['auth.', 'dev.'],
     );
   });
 

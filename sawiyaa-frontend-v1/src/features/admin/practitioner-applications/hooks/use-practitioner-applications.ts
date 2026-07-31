@@ -9,6 +9,7 @@ import {
   rejectAdminPractitionerApplication,
   requestChangesAdminPractitionerApplication,
   uploadAdminDirectPractitionerCredentialFile,
+  viewAdminDirectPractitionerCredentialFile,
   updateAdminPractitionerApplicationCredential,
   updateAdminPractitionerApplicationDraft,
 } from "../api/practitioner-applications.api";
@@ -195,6 +196,13 @@ export function useUploadAdminDirectPractitionerCredentialFile() {
   return useMutation({
     mutationFn: (data: UploadAdminPractitionerCredentialFileRequest) =>
       uploadAdminDirectPractitionerCredentialFile(data),
+  });
+}
+
+export function useViewAdminDirectPractitionerCredentialFile() {
+  return useMutation({
+    mutationFn: ({ credentialId, mimeType }: { credentialId: string; mimeType: string }) =>
+      viewAdminDirectPractitionerCredentialFile(credentialId, mimeType),
   });
 }
 
