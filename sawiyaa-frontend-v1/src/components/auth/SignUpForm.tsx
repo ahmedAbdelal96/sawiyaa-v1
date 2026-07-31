@@ -118,7 +118,7 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
     defaultValues: {
       displayName: "",
       email: "",
-      phoneCountryCode: "",
+      phoneCountryCode: mode === "practitioner" ? "EG" : "",
       phone: "",
       password: "",
       confirmPassword: "",
@@ -149,6 +149,19 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
         PHONE_COUNTRY_REQUIRED: "phoneCountryRequired",
       };
       const key = phoneKey[err.code];
+      if (key) return t(key as never);
+    }
+
+    const registrationErrorMessages: Record<string, string> = {
+      INVALID_REGISTRATION_COUNTRY_CODE: "signUpForm.validation.countryInvalid",
+      INVALID_REGISTRATION_SPECIALTY_CATEGORY_ID: "signUpForm.validation.categoryInvalid",
+      INVALID_REGISTRATION_SPECIALTY_IDS: "signUpForm.validation.subSpecialtyInvalid",
+      INVALID_REGISTRATION_SPECIALTIES_FOR_CATEGORY: "signUpForm.validation.subSpecialtyCategoryMismatch",
+      PRACTITIONER_SPECIALTY_CATEGORY_NOT_FOUND: "signUpForm.validation.categoryInvalid",
+      PRACTITIONER_INVALID_SPECIALTIES_FOR_CATEGORY: "signUpForm.validation.subSpecialtyCategoryMismatch",
+    };
+    if (typeof err.code === "string") {
+      const key = registrationErrorMessages[err.code];
       if (key) return t(key as never);
     }
 
@@ -200,7 +213,9 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
       control: form.control,
       name: "specialtyIds",
     }) ?? [];
-  const selectedPhoneCountryCode = useWatch({ control: form.control, name: "phoneCountryCode" }) ?? "";
+  const selectedPhoneCountryCode =
+    useWatch({ control: form.control, name: "phoneCountryCode" }) ??
+    (mode === "practitioner" ? "EG" : "");
   const enteredPhone = useWatch({ control: form.control, name: "phone" }) ?? "";
   const passwordVal = useWatch({ control: form.control, name: "password" }) ?? "";
   const passwordStrength = useMemo(() => {
@@ -258,7 +273,12 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
       }
 
       const selectedCategory = data.primarySpecialtyCategoryId?.trim() ?? "";
-      const selectedSpecialties = (data.specialtyIds ?? []).filter(Boolean);
+      const availableSpecialtyIds = new Set(
+        specialtiesForSelectedCategory.map((specialty) => specialty.id),
+      );
+      const selectedSpecialties = (data.specialtyIds ?? []).filter(
+        (id) => Boolean(id) && availableSpecialtyIds.has(id),
+      );
       if (!selectedCategory) {
         setError(t("practitionerSpecialties.validation.categoryRequired"));
         return;
@@ -268,10 +288,19 @@ export default function SignUpForm({ accountType }: SignUpFormProps) {
         return;
       }
 
+      const normalizedPhone = data.phone?.trim() ?? "";
+      const normalizedPhoneCountryCode =
+        data.phoneCountryCode?.trim() || PRACTITIONER_PHONE_COUNTRIES[0].value;
+
        const registration = await practitionerRegister.mutateAsync({
-        displayName: data.displayName,
-        email: data.email,
-        ...(data.phone?.trim() ? { phoneCountryCode: data.phoneCountryCode, phone: data.phone } : {}),
+         displayName: data.displayName,
+         email: data.email,
+         ...(normalizedPhone
+           ? {
+               phoneCountryCode: normalizedPhoneCountryCode,
+               phone: normalizedPhone,
+             }
+           : {}),
         password: data.password,
         primarySpecialtyCategoryId: selectedCategory,
         specialtyIds: selectedSpecialties,
