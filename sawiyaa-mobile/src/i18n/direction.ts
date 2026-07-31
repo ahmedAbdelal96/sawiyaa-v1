@@ -16,13 +16,16 @@ export function getAppDirection(language?: string | null): AppDirection {
 }
 
 export interface AppDirectionInfo {
+  isRTL: boolean;
   isRtl: boolean;
   direction: AppDirection;
-  rowDirection: "row" | "row-reverse";
-  rowReverseDirection: "row-reverse" | "row";
-  textAlign: "left" | "right";
-  oppositeTextAlign: "right" | "left";
-  writingDirection: "ltr" | "rtl";
+  rowDirection: "row-reverse" | "row";
+  rowReverseDirection: "row" | "row-reverse";
+  textAlign: "right" | "left";
+  oppositeTextAlign: "left" | "right";
+  contentAlignment: "flex-end" | "flex-start";
+  iconDirection: "arrow-back" | "arrow-forward";
+  writingDirection: "rtl" | "ltr";
   chevronForward: "chevron-back" | "chevron-forward";
   chevronBack: "chevron-forward" | "chevron-back";
   arrowForward: "arrow-back" | "arrow-forward";
@@ -31,20 +34,23 @@ export interface AppDirectionInfo {
 
 export function useAppDirection(): AppDirectionInfo {
   const { i18n } = useTranslation();
-  const isRtl = isCurrentLanguageRtl(i18n.language);
-  const direction = isRtl ? "rtl" : "ltr";
+  const isRTL = isCurrentLanguageRtl(i18n.language);
+  const direction = isRTL ? "rtl" : "ltr";
 
   return {
-    isRtl,
+    isRTL,
+    isRtl: isRTL,
     direction,
-    rowDirection: isRtl ? "row-reverse" : "row",
-    rowReverseDirection: isRtl ? "row" : "row-reverse",
-    textAlign: isRtl ? "right" : "left",
-    oppositeTextAlign: isRtl ? "left" : "right",
-    writingDirection: isRtl ? "rtl" : "ltr",
-    chevronForward: isRtl ? "chevron-back" : "chevron-forward",
-    chevronBack: isRtl ? "chevron-forward" : "chevron-back",
-    arrowForward: isRtl ? "arrow-back" : "arrow-forward",
-    arrowBack: isRtl ? "arrow-forward" : "arrow-back",
+    rowDirection: isRTL ? "row-reverse" : "row",
+    rowReverseDirection: isRTL ? "row" : "row-reverse",
+    textAlign: isRTL ? "right" : "left",
+    oppositeTextAlign: isRTL ? "left" : "right",
+    contentAlignment: isRTL ? "flex-end" : "flex-start",
+    iconDirection: isRTL ? "arrow-back" : "arrow-forward",
+    writingDirection: isRTL ? "rtl" : "ltr",
+    chevronForward: isRTL ? "chevron-back" : "chevron-forward",
+    chevronBack: isRTL ? "chevron-forward" : "chevron-back",
+    arrowForward: isRTL ? "arrow-back" : "arrow-forward",
+    arrowBack: isRTL ? "arrow-forward" : "arrow-back",
   };
 }
