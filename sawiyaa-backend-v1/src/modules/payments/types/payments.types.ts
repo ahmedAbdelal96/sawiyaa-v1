@@ -27,6 +27,7 @@ export interface PaymentAction {
 export interface PaymentViewModel {
   id: string;
   sessionId: string | null;
+  sessionCode: string | null;
   provider: PaymentProvider;
   status: PaymentStatus;
   amountSubtotal: string;
@@ -55,6 +56,7 @@ export interface RefundViewModel {
   id: string;
   paymentId: string;
   sessionId: string | null;
+  sessionCode: string | null;
   refundType: RefundType;
   destination: RefundDestination;
   status: RefundStatus;
@@ -94,6 +96,7 @@ export interface AdminPaymentOpsViewModel {
   };
   session: {
     id: string;
+    sessionCode: string;
     status: string;
     sessionMode: string;
     scheduledStartAt: string | null;
@@ -119,4 +122,14 @@ export interface AdminPaymentOpsViewModel {
     providerEventRef: string | null;
     createdAt: string;
   }>;
+  relatedSettlement?: {
+    id: string;
+    reference: string | null;
+    status: string;
+    practitionerName: string;
+    originalAmount: string;
+    originalCurrency: string;
+    finalAmount: string;
+    walletCurrency: string;
+  } | null;
 }

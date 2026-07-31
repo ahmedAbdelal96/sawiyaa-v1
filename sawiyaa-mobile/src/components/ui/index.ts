@@ -17,3 +17,4 @@ export * from './PageScaffolds';
 export * from './SharedPrimitives';
 export * from './Primitives';
 export * from './ScreenHeading';
+export * from './OtpInput';

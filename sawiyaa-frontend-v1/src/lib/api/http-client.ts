@@ -12,6 +12,7 @@ import Cookies from "js-cookie";
 import { API_CONFIG, TOKEN_CONFIG } from "./config";
 import { isStepUpRequiredError, toAppError } from "./errors";
 import { USER_DATA_COOKIE, USER_ROLE_COOKIE } from "@/lib/auth/constants";
+import { getSignInRouteForRole } from "@/config/route-access";
 import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
 
 const AUTH_COOKIE_OPTIONS = {
@@ -332,11 +333,12 @@ httpClient.interceptors.response.use(
 );
 
 function handleLogout(): void {
+  const signInRoute = getSignInRouteForRole(Cookies.get(USER_ROLE_COOKIE));
   tokenManager.clearAll();
 
   if (typeof window !== "undefined") {
     const locale = window.location.pathname.split("/")[1] || "ar";
-    window.location.href = `/${locale}/signin`;
+    window.location.href = `/${locale}${signInRoute}`;
   }
 }
 

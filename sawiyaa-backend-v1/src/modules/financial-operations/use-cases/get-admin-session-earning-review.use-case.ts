@@ -121,7 +121,9 @@ export class GetAdminSessionEarningReviewUseCase {
               )
             : {
                 sessionId: review.sessionId,
-                sessionCode: review.sessionId,
+                // Keep the distinction between an absent Session and its UUID.
+                // The canonical public reference is unavailable in this case.
+                sessionCode: null,
                 status: SessionStatus.DRAFT,
                 paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
                 scheduledStartAt: null,

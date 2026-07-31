@@ -11,6 +11,7 @@ import {
 } from "./message-identity";
 import {
   createOrGetGeneralChatConversation,
+  getMyGeneralChatUnreadSummary,
   getMyGeneralChatConversationDetail,
   listMyGeneralChatConversations,
   listMyGeneralChatMessages,
@@ -56,15 +57,7 @@ export function useGeneralChatUnreadSummary(
 
   return useQuery({
     queryKey: generalChatQueryKeys.canonicalUnreadSummary(),
-    queryFn: async () => {
-      const res = await getCanonicalUnreadSummary();
-      return {
-        item: {
-          ...res.item,
-          totalUnreadMessages: res.item.unreadCount,
-        },
-      };
-    },
+    queryFn: getMyGeneralChatUnreadSummary,
     enabled: enabled && authEnabled,
     staleTime: 15_000,
     refetchInterval: options?.refetchInterval ?? false,
@@ -312,6 +305,7 @@ export function useSendCanonicalMessageMutation(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() }),
         queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversation(conversationId) }),
+        queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() }),
         queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalMessages(conversationId) }),
       ]);
     },
@@ -353,7 +347,7 @@ export function useCanonicalUnreadSummary(
   });
 }
 
-export function useUnifiedMessages({ conversationId, currentUserId }: UseUnifiedMessagesProps) {
+export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocused = true }: UseUnifiedMessagesProps) {
   const queryClient = useQueryClient();
   const [messages, setMessages] = useState<CanonicalMessage[]>([]);
   const [page, setPage] = useState(1);
@@ -361,10 +355,17 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isAppForeground, setIsAppForeground] = useState(AppState.currentState === "active");
+  const [readActivation, setReadActivation] = useState(false);
+  const canAcknowledgeRead = isThreadFocused && isAppForeground && readActivation;
 
   const messagesMap = useRef<Record<string, boolean>>({});
   const pendingMessagesRef = useRef<Record<string, { descriptor: ReturnType<typeof createMessageSendDescriptor> }>>({});
   const lastSubmittedCursorRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    setReadActivation(isThreadFocused);
+  }, [isThreadFocused]);
 
   // 1. Fetch initial page of messages when conversation changes
   const messagesQuery = useQuery({
@@ -453,6 +454,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
       // Invalidate queries to resync after reconnect
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalMessages(conversationId) });
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() });
     };
 
     const handleDisconnect = () => {
@@ -483,19 +485,34 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
       });
       // Invalidate conversations list query
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() });
     };
 
-    const handleReadUpdate = (data: { conversationId: string; lastReadMessageId: string; unreadCount: number }) => {
+    const handleReadUpdate = (data: {
+      conversationId: string;
+      lastReadMessageId: string;
+      lastReadAt?: string | null;
+      readAt?: string | null;
+      readerUserId?: string;
+      unreadCount: number;
+    }) => {
       if (data.conversationId !== conversationId) return;
+      if (!data.readerUserId || data.readerUserId === currentUserId) return;
+      const cursorAt = data.lastReadAt ?? data.readAt ?? null;
       setMessages((prev) =>
         prev.map((msg) => {
-          if (msg.id === data.lastReadMessageId) {
+          if (
+            msg.sender.userId === currentUserId &&
+            (cursorAt ? msg.sentAt <= cursorAt : msg.id === data.lastReadMessageId)
+          ) {
             return { ...msg, readAt: new Date().toISOString() };
           }
           return msg;
         }),
       );
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalMessages(conversationId) });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() });
     };
 
     const handleTypingStart = (data: { conversationId: string }) => {
@@ -526,7 +543,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
       socket.off("messages:typing:start", handleTypingStart);
       socket.off("messages:typing:stop", handleTypingStop);
     };
-  }, [conversationId, queryClient]);
+  }, [conversationId, currentUserId, queryClient]);
 
   // 6. Typing notifications
   const sendTypingNotification = useCallback((active: boolean) => {
@@ -541,6 +558,10 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
     if (!conversationId) return;
 
     const handleAppStateChange = (nextAppState: string) => {
+      setIsAppForeground(nextAppState === "active");
+      if (nextAppState !== "active") {
+        setReadActivation(false);
+      }
       if (nextAppState === "active") {
         const socket = ensureUnifiedMessagesSocketConnected();
         if (socket?.connected) {
@@ -562,7 +583,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
 
   // 4. Mark Read action
   const markRead = useCallback(async (lastReadMessageId: string) => {
-    if (!conversationId || !lastReadMessageId) return;
+    if (!canAcknowledgeRead || !conversationId || !lastReadMessageId) return;
     if (lastSubmittedCursorRef.current === lastReadMessageId) return;
 
     lastSubmittedCursorRef.current = lastReadMessageId;
@@ -574,13 +595,14 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
         socket.emit("messages:markRead", { conversationId, lastReadMessageId });
       }
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() });
     } catch (err) {
       console.error("Failed to mark conversation as read", err);
       if (lastSubmittedCursorRef.current === lastReadMessageId) {
         lastSubmittedCursorRef.current = null;
       }
     }
-  }, [conversationId, queryClient]);
+  }, [canAcknowledgeRead, conversationId, queryClient]);
 
   // 5. Send message action (uses Socket messages:send event)
   const sendWithDescriptor = useCallback(async (descriptor: ReturnType<typeof createMessageSendDescriptor>) => {
@@ -602,6 +624,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
       messagesMap.current[clientMessageId] = true;
       delete pendingMessagesRef.current[clientMessageId];
       void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalConversations() });
+      void queryClient.invalidateQueries({ queryKey: generalChatQueryKeys.canonicalUnreadSummary() });
     };
 
     const sendHttp = async () => {
@@ -707,6 +730,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
     sendMessage,
     retryMessage,
     markRead,
+    canAcknowledgeRead,
     sendTypingNotification,
   };
 }
@@ -714,6 +738,7 @@ export function useUnifiedMessages({ conversationId, currentUserId }: UseUnified
 interface UseUnifiedMessagesProps {
   conversationId: string | null;
   currentUserId?: string | null;
+  isThreadFocused?: boolean;
 }
 
 

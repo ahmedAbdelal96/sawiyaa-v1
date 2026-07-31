@@ -28,6 +28,7 @@ import { useTrackPractitionerView } from "../../../src/features/patient/journey/
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { PriceDisplay } from "../../../src/components/money";
 import { parsePrice } from "../../../src/lib/money";
+import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 
 const FALLBACK_AVATAR = require("../../../assets/user.avif");
 
@@ -205,7 +206,7 @@ export default function TherapistProfileScreen() {
         slug,
         practitionerName: practitioner.displayName || practitioner.slug,
         practitionerTitle:
-          practitioner.professionalTitle ||
+          getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
           t("discovery.profile.professionalFallback"),
         practitionerAvatarUrl: practitioner.avatarUrl || "",
       },
@@ -271,7 +272,8 @@ export default function TherapistProfileScreen() {
 
   const displayName = practitioner.displayName || practitioner.slug;
   const displayTitle =
-    practitioner.professionalTitle || t("discovery.profile.professionalFallback");
+    getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
+    t("discovery.profile.professionalFallback");
 
   const verified = Boolean(practitioner.isVerified);
 

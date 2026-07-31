@@ -247,15 +247,8 @@ export class CreatePackagePurchaseUseCase {
 
         const createdSessions: CreatedSessionRecord[] = [];
         for (const [index, slot] of validatedSlots.slots.entries()) {
-          const sessionCode =
-            await this.sessionRepository.reserveNextSessionCode(
-              slot.scheduledStartAt,
-              tx,
-            );
-
           const createdSession = await this.sessionRepository.createSession(
             {
-              sessionCode,
               patientId: patientProfile.id,
               practitionerId: practitioner.id,
               flowType: SessionFlowType.SCHEDULED,
@@ -273,6 +266,7 @@ export class CreatePackagePurchaseUseCase {
               paymentCoverageType: SessionPaymentCoverageType.PACKAGE,
             },
             tx,
+            'package_purchase',
           );
 
           createdSessions.push(createdSession);

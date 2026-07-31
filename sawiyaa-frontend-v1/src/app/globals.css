@@ -610,6 +610,30 @@ html:not(.dark) .bg-white {
   background-color: var(--border-strong);
 }
 
+@utility always-visible-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--primary) var(--scrollbar-track) !important;
+
+  & *::-webkit-scrollbar {
+    height: 10px !important;
+    display: block !important;
+  }
+
+  & *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track) !important;
+  }
+
+  & *::-webkit-scrollbar-thumb {
+    background: var(--primary) !important;
+    border-radius: 999px !important;
+    border: 2px solid var(--scrollbar-track) !important;
+  }
+
+  & *::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-hover) !important;
+  }
+}
+
 /* Drawer scrollbar: softer than default, visible in dark mode. */
 .app-drawer-scroll {
   scrollbar-width: thin;

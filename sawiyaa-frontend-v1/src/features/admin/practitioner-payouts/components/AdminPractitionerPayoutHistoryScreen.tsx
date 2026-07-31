@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeDollarSign, CalendarClock, Receipt, Search, WalletCards } from "lucide-react";
+import { BadgeDollarSign, Receipt, Search, WalletCards } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
@@ -16,10 +16,9 @@ import AdminOperationalListShell, {
 import { Link } from "@/i18n/navigation";
 import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import type { PayoutMethod } from "@/features/admin/finance/types/payout-method";
-import {
-  useAdminPractitionerManualPayoutHistory,
-} from "../hooks/use-admin-practitioner-payouts";
-import type { AdminPractitionerManualPayout } from "../types/admin-practitioner-payouts.types";
+import DateField from "@/components/form/input/DateField";
+import { useAdminPractitionerTransfers } from "../hooks/use-admin-practitioner-payouts";
+import type { AdminPractitionerTransferItem } from "../api/admin-practitioner-transfers.api";
 import AdminPractitionerPayoutHistoryDetailDrawer from "./AdminPractitionerPayoutHistoryDetailDrawer";
 
 const PAGE_SIZE = DEFAULT_PAGE_LIMIT;
@@ -35,12 +34,12 @@ export default function AdminPractitionerPayoutHistoryScreen() {
   const [createdTo, setCreatedTo] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(DEFAULT_PAGE_LIMIT);
-  const [selectedPayout, setSelectedPayout] = useState<AdminPractitionerManualPayout | null>(null);
+  const [selectedPayout, setSelectedPayout] = useState<AdminPractitionerTransferItem | null>(null);
   const deferredPractitioner = useDeferredValue(practitionerFilter);
   const deferredCurrency = useDeferredValue(currencyFilter);
   const deferredMethod = useDeferredValue(payoutMethodFilter);
 
-  const historyQuery = useAdminPractitionerManualPayoutHistory({
+  const transfersQuery = useAdminPractitionerTransfers({
     page,
     limit,
     currency: deferredCurrency || undefined,
@@ -50,9 +49,9 @@ export default function AdminPractitionerPayoutHistoryScreen() {
     createdTo: createdTo || undefined,
   });
 
-  const items = historyQuery.data?.items ?? [];
-  const pagination = historyQuery.data?.pagination;
-  const summary = historyQuery.data?.summary;
+  const items = transfersQuery.data?.items ?? [];
+  const pagination = transfersQuery.data?.pagination;
+  const summary = transfersQuery.data?.summary;
 
   const formatRecordedAmount = (amount: string | null | undefined, currency: string | null | undefined) => {
     if (!amount || !currency) {
@@ -74,7 +73,7 @@ export default function AdminPractitionerPayoutHistoryScreen() {
     createdTo ? { id: "to", label: `${t("history.filters.to")}: ${createdTo}` } : null,
   ].filter(Boolean) as Array<{ id: string; label: string }>;
 
-  const columns = useMemo<ColumnDef<AdminPractitionerManualPayout>[]>(() => [
+  const columns = useMemo<ColumnDef<AdminPractitionerTransferItem>[]>(() => [
     {
       id: "practitioner",
       header: t("history.columns.practitioner"),
@@ -84,53 +83,101 @@ export default function AdminPractitionerPayoutHistoryScreen() {
             href={`/admin/practitioner-payouts/${item.practitionerId}`}
             className="font-semibold text-text-primary transition hover:text-primary dark:text-white/95"
           >
-            {item.practitionerName ?? item.practitionerId}
+            {item.practitionerDisplayName ?? item.practitionerId}
           </Link>
           <p className="text-xs text-text-secondary">{item.practitionerId}</p>
         </div>
       ),
     },
     {
-      id: "currency",
-      header: t("history.columns.currency"),
-      cell: (item) => t(`currencies.${item.currencyCode}` as Parameters<typeof t>[0]),
+      id: "settlementReference",
+      header: t("history.columns.settlementReference" as Parameters<typeof t>[0]),
+      cell: (item) => (
+        item.settlementId ? (
+          <Link
+            href={`/admin/settlements/${item.settlementId}`}
+            className="font-mono text-xs text-primary hover:underline"
+          >
+            {item.settlementId.slice(0, 8)}...
+          </Link>
+        ) : "-"
+      ),
     },
     {
       id: "amount",
       header: t("history.columns.amount"),
       cell: (item) => (
         <span className="font-semibold text-text-primary dark:text-white/95">
-          {formatSettlementMoney(locale, item.amountPaid, item.currencyCode)}
+          {formatSettlementMoney(locale, item.amountPaid, item.currency)}
         </span>
       ),
     },
     {
-      id: "paidAt",
-      header: t("history.columns.paidAt"),
-      cell: (item) => formatSettlementDateTime(locale, item.paidAt),
+      id: "currency",
+      header: t("history.columns.currency"),
+      cell: (item) => t(`currencies.${item.currency}` as Parameters<typeof t>[0]),
     },
     {
-      id: "reference",
-      header: t("history.columns.reference"),
-      cell: (item) => item.transferReference ?? "-",
+      id: "transferMethod",
+      header: t("history.columns.transferMethod" as Parameters<typeof t>[0]),
+      cell: (item) => t(`paymentMethods.${item.payoutMethod}` as Parameters<typeof t>[0]),
     },
     {
-      id: "notes",
-      header: t("history.columns.notes"),
-      cell: (item) => item.notes ?? "-",
-      hideBelow: "xl",
+      id: "externalReference",
+      header: t("history.columns.externalReference" as Parameters<typeof t>[0]),
+      cell: (item) => item.externalReference ?? "-",
     },
     {
       id: "recordedBy",
       header: t("history.columns.recordedBy"),
-      cell: (item) => item.recordedByDisplayName ?? item.recordedByUserId ?? "-",
-      hideBelow: "xl",
+      cell: (item) => item.processedByDisplayName ?? item.processedByUserId ?? "-",
+    },
+    {
+      id: "paidAt",
+      header: t("history.columns.paidAt"),
+      cell: (item) => formatSettlementDateTime(locale, item.payoutDate),
+    },
+    {
+      id: "status",
+      header: t("history.columns.status" as Parameters<typeof t>[0]),
+      cell: (item) => (
+        <span className="inline-flex items-center rounded-full bg-success-light/20 px-2.5 py-0.5 text-xs font-medium text-success dark:bg-success/10">
+          {item.status ? t(`statuses.${item.status}` as Parameters<typeof t>[0]) : "-"}
+        </span>
+      ),
     },
   ], [locale, t]);
+
+  const selectedPayoutMapped = useMemo(() => {
+    if (!selectedPayout) return null;
+    return {
+      id: selectedPayout.id,
+      practitionerId: selectedPayout.practitionerId,
+      practitionerName: selectedPayout.practitionerDisplayName,
+      currencyCode: selectedPayout.currency,
+      amountPaid: selectedPayout.amountPaid,
+      normalSessionAppliedAmount: "0",
+      packageReleasedAppliedAmount: "0",
+      packageHeldAmountSnapshot: "0",
+      totalPayableSnapshot: "0",
+      payoutMethod: selectedPayout.payoutMethod,
+      transferReference: selectedPayout.externalReference,
+      paidAt: selectedPayout.payoutDate,
+      notes: selectedPayout.notes,
+      recordedByUserId: selectedPayout.processedByUserId,
+      recordedByDisplayName: selectedPayout.processedByDisplayName,
+      createdAt: selectedPayout.createdAt,
+      updatedAt: selectedPayout.createdAt,
+      settlementId: selectedPayout.settlementId,
+      proof: selectedPayout.proof,
+      status: selectedPayout.status,
+    };
+  }, [selectedPayout]);
 
   return (
     <>
       <AdminOperationalListShell
+        headerVariant="financial"
         eyebrow={t("history.eyebrow")}
         title={t("history.title")}
         description={t("history.description")}
@@ -226,40 +273,24 @@ export default function AdminPractitionerPayoutHistoryScreen() {
               </label>
 
               <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("history.filters.from")}
-                  </span>
-                  <div className="relative">
-                    <CalendarClock className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                    <input
-                      type="date"
-                      value={createdFrom}
-                      onChange={(event) => {
-                        setCreatedFrom(event.target.value);
-                        setPage(1);
-                      }}
-                      className="app-control w-full py-3 ps-11 pe-4"
-                    />
-                  </div>
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-                    {t("history.filters.to")}
-                  </span>
-                  <div className="relative">
-                    <CalendarClock className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                    <input
-                      type="date"
-                      value={createdTo}
-                      onChange={(event) => {
-                        setCreatedTo(event.target.value);
-                        setPage(1);
-                      }}
-                      className="app-control w-full py-3 ps-11 pe-4"
-                    />
-                  </div>
-                </label>
+                <DateField
+                  label={t("history.filters.from")}
+                  placeholder={locale === "ar" ? "من تاريخ" : "From"}
+                  value={createdFrom}
+                  onChange={(val) => {
+                    setCreatedFrom(val);
+                    setPage(1);
+                  }}
+                />
+                <DateField
+                  label={t("history.filters.to")}
+                  placeholder={locale === "ar" ? "إلى تاريخ" : "To"}
+                  value={createdTo}
+                  onChange={(val) => {
+                    setCreatedTo(val);
+                    setPage(1);
+                  }}
+                />
               </div>
             </div>
 
@@ -292,57 +323,57 @@ export default function AdminPractitionerPayoutHistoryScreen() {
           </div>
         }
       >
-          <DataTable
-            data={items}
-            columns={columns}
-            getRowId={(row) => row.id}
-            loading={historyQuery.isLoading}
-            error={historyQuery.error}
-            loadingRows={PAGE_SIZE}
-            errorState={{
-              title: t("history.errorTitle"),
-              description: t("history.errorDescription"),
-              action: {
-                label: t("history.errorRetry"),
-                onClick: () => historyQuery.refetch(),
-              },
-            }}
-            emptyState={{
-              title: t("history.emptyTitle"),
-              description: t("history.emptyDescription"),
-            }}
-            pagination={
-              pagination
-                ? {
-                    page: pagination.page,
-                    limit: pagination.limit,
-                    totalItems: pagination.totalItems,
-                    totalPages: pagination.totalPages,
-                  }
-                : undefined
-            }
-            onPageChange={(nextPage) => setPage(nextPage)}
-            onPageSizeChange={(nextLimit) => {
-              setLimit(nextLimit);
-              setPage(1);
-            }}
-            pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
-            rowActions={(item) => (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => setSelectedPayout(item)}>
-                  {t("history.actions.viewDetails")}
-                </Button>
-              </div>
-            )}
-            rowActionsHeader={t("history.columns.actions")}
-            ariaLabel={t("history.title")}
-            caption={t("history.description")}
-          />
+        <DataTable
+          data={items}
+          columns={columns}
+          getRowId={(row) => row.id}
+          loading={transfersQuery.isLoading}
+          error={transfersQuery.error}
+          loadingRows={PAGE_SIZE}
+          errorState={{
+            title: t("history.errorTitle"),
+            description: t("history.errorDescription"),
+            action: {
+              label: t("history.errorRetry"),
+              onClick: () => transfersQuery.refetch(),
+            },
+          }}
+          emptyState={{
+            title: t("history.emptyTitle"),
+            description: t("history.emptyDescription"),
+          }}
+          pagination={
+            pagination
+              ? {
+                  page: pagination.page,
+                  limit: pagination.limit,
+                  totalItems: pagination.totalItems,
+                  totalPages: pagination.totalPages,
+                }
+              : undefined
+          }
+          onPageChange={(nextPage) => setPage(nextPage)}
+          onPageSizeChange={(nextLimit) => {
+            setLimit(nextLimit);
+            setPage(1);
+          }}
+          pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
+          rowActions={(item) => (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setSelectedPayout(item)}>
+                {t("history.actions.viewDetails")}
+              </Button>
+            </div>
+          )}
+          rowActionsHeader={t("history.columns.actions")}
+          ariaLabel={t("history.title")}
+          caption={t("history.description")}
+        />
       </AdminOperationalListShell>
 
       <AdminPractitionerPayoutHistoryDetailDrawer
         isOpen={Boolean(selectedPayout)}
-        payout={selectedPayout}
+        payout={selectedPayoutMapped}
         onClose={() => setSelectedPayout(null)}
       />
     </>

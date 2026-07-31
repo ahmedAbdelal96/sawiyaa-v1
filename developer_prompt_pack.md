@@ -160,7 +160,7 @@ Return in this format:
 
 ---
 
-## 04_fix_bug
+## 4) Fix the Bug
 
 > Use this after identifying the issue and you want a clean, minimal, safe fix.
 
@@ -771,3 +771,5 @@ Then provide:
 ```
 
 **Comment:** Strong default choice when you want practical, clean, production-minded results without extra complexity.
+
+

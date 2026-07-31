@@ -390,7 +390,9 @@
       "subtitle": "Patient registration returns a real authenticated session, so you can enter the app immediately after success.",
       "submit": "Create patient account",
       "haveAccount": "Already have a patient account?",
-      "goToSignIn": "Sign in"
+      "goToSignIn": "Sign in",
+      "phoneOptional": "Phone number (optional)",
+      "phoneNotSavedNotice": "We could not add your phone number. You can add it later from your profile."
     },
     "patientForgotPassword": {
       "eyebrow": "Password recovery",
@@ -411,7 +413,25 @@
       "selectCategoryFirst": "Choose a category to load matching specialties.",
       "submit": "Submit practitioner registration",
       "haveAccount": "Already registered?",
-      "goToSignIn": "Go to sign in"
+      "goToSignIn": "Go to sign in",
+      "emailHint": "Use an email you can access. We’ll send you a verification code.",
+      "phoneOptional": "Phone number (optional)",
+      "category": "Primary specialty category",
+      "specialty": "Specialty",
+      "selectCategory": "Select a category",
+      "selectSpecialty": "Select a specialty",
+      "catalogError": "We could not load specialties right now. Try again.",
+      "otpTitle": "Check your email",
+      "otpBody": "We sent a verification code to {{email}}.",
+      "otpLabel": "Verification code",
+      "otpPlaceholder": "Enter the code",
+      "otpExpiry": "The code expires soon. You can request a new code if needed.",
+      "verify": "Verify email and continue",
+      "resend": "Resend code",
+      "editEmail": "Use a different email",
+      "successTitle": "Email confirmed and account created",
+      "pendingSuccess": "Your account was created successfully. You will be notified after your application is reviewed.",
+      "goToSignInNow": "Go to practitioner sign in"
     },
     "practitionerForgotPassword": {
       "eyebrow": "Practitioner password reset",
@@ -456,7 +476,11 @@
         "title": "Preferred session language",
         "ar": "Arabic",
         "en": "English",
-        "fr": "French"
+        "fr": "French",
+        "de": "German",
+        "es": "Spanish",
+        "tr": "Turkish",
+        "ru": "Russian"
       },
       "specialty": {
         "title": "Preferred specialty"
@@ -627,6 +651,14 @@
     "draft": "Draft",
     "lectureCount": "{{count}} modules/lessons",
     "viewDetails": "View details"
+  },
+  "sessionCode": {
+    "label": "Session Code",
+    "unavailable": "Session Code Unavailable",
+    "copySuccess": "Session code copied",
+    "copyLabel": "Copy Session Code {{sessionCode}}",
+    "copyHint": "Copies the public Session Code, not the internal identifier.",
+    "openLabel": "Open Session {{sessionCode}}"
   },
   "patientSessionsFlow": {
     "common": {
@@ -1223,7 +1255,9 @@
   "common": {
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "notSet": "Not set"
+    "notSet": "Not set",
+    "none": "None",
+    "notAvailable": "Not available"
   },
   "messages": {
     "common": {
@@ -1253,7 +1287,7 @@
       "newSupportCardDesc": "Your conversation with support will appear here.",
       "supportCtaTitle": "Message support",
       "supportCtaDesc": "Your conversation with support will appear here.",
-      "supportCtaBtn": "Message support",
+      "supportCtaBtn": "New support message",
       "statuses": {
         "session": {
           "OPEN": "Open",
@@ -1458,13 +1492,23 @@
         "presence": "Presence",
         "instantBooking": "Instant booking",
         "specialties": "Specialties",
-        "credentials": "Credentials"
+        "credentials": "Credentials",
+        "todaySessions": "Today's Sessions",
+        "nextSession": "Next Session"
       },
       "approvalNotice": {
         "title": "Full workspace access is not available yet",
         "body": "This account has not reached the fully approved web state yet. Mobile shows the real account state here without inventing onboarding routes that are not implemented yet."
       },
-      "onboarding": "Onboarding workspace"
+      "onboarding": "Onboarding workspace",
+      "todaySnapshot": "Today's Snapshot",
+      "todaySnapshotSub": "A quick summary of your status and schedule today",
+      "upcomingSession": {
+        "title": "Upcoming Session",
+        "subtitle": "The next session scheduled that requires your attention"
+      },
+      "noUpcomingTitle": "No upcoming sessions",
+      "noUpcomingBody": "Your current schedule is empty. You can open new slots in the availability schedule."
     },
     "onboarding": {
       "title": "Onboarding workspace",
@@ -1534,7 +1578,8 @@
         "rejected": "Rejected",
         "empty": "No credentials uploaded yet.",
         "addTitle": "Add credential metadata",
-        "addSubtitle": "Mobile stores the metadata record; file storage is handled elsewhere.",
+        "addSubtitle": "Upload a PDF, JPEG, or PNG document. Only active successful uploads count.",
+        "chooseFile": "Choose document",
         "type": "Credential type",
         "fileUrl": "File URL",
         "fileUrlHint": "Paste a secure https URL or storage reference.",
@@ -1560,11 +1605,25 @@
           "LICENSE": "License",
           "DEGREE": "Degree",
           "CERTIFICATION": "Certification",
-          "NATIONAL_ID": "National ID",
+          "NATIONAL_ID_FRONT": "National ID — Front side",
+          "NATIONAL_ID_BACK": "National ID — Back side",
           "PASSPORT": "Passport",
           "MEMBERSHIP": "Membership",
           "OTHER": "Other"
         }
+      },
+      "requiredDocuments": {
+        "title": "Required documents",
+        "subtitle": "Complete the three document groups before submitting.",
+        "idOrPassport": "Identity proof",
+        "idOrPassportHint": "Passport identity page, or both National ID sides.",
+        "pendingReview": "Pending review",
+        "degree": "Academic certificate",
+        "degreeHint": "At least one academic certificate is required.",
+        "professionalAuthorization": "Professional authorization",
+        "professionalAuthorizationHint": "Syndicate card or practice license.",
+        "pendingWarning": "One or more required document groups are incomplete.",
+        "catalogLoading": "Loading document requirements..."
       },
       "application": {
         "title": "Application review",
@@ -1986,7 +2045,7 @@
       "title": "Availability and presence",
       "presenceTitle": "Live presence",
       "overviewTitle": "At a glance",
-      "overviewBody": "Keep your live status, weekly hours, and temporary changes easy to understand.",
+      "overviewBody": "Manage normal booking intake separately from instant booking and review every week in the active range.",
       "presenceBody": "Choose how patients should see you right now. This does not change your weekly hours.",
       "currentStatus": "Your current status",
       "weeklyWindows": "Weekly windows",
@@ -2000,8 +2059,8 @@
       "timezone": "Current timezone: {{timezone}}",
       "timezoneLabel": "Timezone used for this schedule",
       "emptySchedule": "You have not set any weekly hours yet.",
-      "noSlots": "Closed",
-      "slotCount": "{{count}} slot",
+      "noSlots": "No times",
+      "slotCount": "{{count}} times",
       "slotRange": "{{start}} to {{end}}",
       "addSlot": "Add slot",
       "editSlot": "Edit",
@@ -2045,7 +2104,74 @@
       "exceptionType": {
         "BLOCK": "Temporary block",
         "OPEN_EXTRA": "Extra hours"
-      }
+      },
+      "loading": "Loading availability...",
+      "loadError": "Availability could not be loaded.",
+      "status": {
+        "NOT_SET": "Not set",
+        "DRAFT": "Not published",
+        "PUBLISHED": "Published",
+        "ARCHIVED": "Archived"
+      },
+      "normalBookings": "Normal bookings",
+      "normalBookingsBody": "Patients can request published weekly times through the normal booking flow.",
+      "pauseBookingsTitle": "Pause normal bookings?",
+      "pauseBookingsBody": "Published times stay visible, but new normal booking requests will be paused.",
+      "timezoneRequired": "Timezone is required",
+      "timezoneRequiredBody": "Set your profile timezone before creating or editing availability.",
+      "openTimezoneSettings": "Open timezone settings",
+      "weeksTitle": "Active week range",
+      "noWeeks": "No weeks are currently available.",
+      "currentWeek": "Current week",
+      "weekNumber": "Week {{count}}",
+      "protectedSlots": "Contains protected or booked times",
+      "viewDetails": "View details",
+      "createWeek": "Set up week",
+      "detailsTitle": "Week details",
+      "editorTitle": "Edit week",
+      "editorBody": "Choose independent 30- or 60-minute times for each day. Protected times cannot be changed.",
+      "duration": "{{count}} minutes",
+      "protectedSlot": "Protected",
+      "publishedNote": "Published times are available for normal bookings. Existing booked times remain protected.",
+      "publishedEditNote": "Changes apply only where the backend allows them; booked and past times remain protected.",
+      "unsavedChanges": "Unsaved changes",
+      "saveWeek": "Save week",
+      "discardTitle": "Discard changes?",
+      "discardBody": "Your unsaved changes will be lost.",
+      "editWeek": "Edit",
+      "publishWeek": "Publish",
+      "publishTitle": "Publish this week?",
+      "publishBody": "Patients will be able to book the published times.",
+      "repeatWeek": "Repeat to future weeks",
+      "repeatTitle": "Choose repeat weeks",
+      "repeatBody": "Select eligible future weeks. The server will validate conflicts and protected bookings in preview.",
+      "selectRepeatTarget": "Select at least one future week.",
+      "reviewRepeat": "Review repeat",
+      "repeatReviewTitle": "Review repeat",
+      "repeatReviewBody": "Review the server preview before confirming. Changing targets requires a new preview.",
+      "previewUnavailable": "The repeat preview is no longer available. Start again.",
+      "confirmRepeatTitle": "Confirm repeat?",
+      "confirmRepeatBody": "Eligible targets will be created using the previewed source times.",
+      "confirmRepeat": "Confirm repeat",
+      "repeatSuccess": "The repeat operation was completed.",
+      "repeatExpired": "The preview expired or changed. Generate a new preview.",
+      "repeatSlots": "{{count}} times will be copied",
+      "actionError": "This action could not be completed. Please try again.",
+      "repeat": {
+        "eligible": "Eligible",
+        "skipped": "Skipped",
+        "invalid": "Invalid"
+      },
+      "repeatReasons": {
+        "TARGET_ALREADY_EXISTS": "A week already exists",
+        "TARGET_PUBLISHED": "Already published",
+        "TARGET_HAS_BOOKINGS": "Has bookings",
+        "TARGET_OUT_OF_ACTIVE_RANGE": "Outside active range",
+        "TARGET_NOT_FUTURE": "Not a future week",
+        "TARGET_NOT_SUNDAY": "Must start on Sunday",
+        "SOURCE_HAS_NO_SESSION_TIMES": "Source has no times"
+      },
+      "presenceStatus": "Presence: {{status}}"
     },
     "promoCodes": {
       "title": "Promo Codes",
@@ -2171,5 +2297,123 @@
   "money": {
     "free": "Free",
     "unavailable": "Price unavailable"
+  },
+  "error_message": "We could not load this content. Please try again.",
+  "firstLaunchOnboarding": {
+    "slides": [
+      {
+        "title": "Find the right specialist",
+        "description": "Browse trusted specialists by expertise, language, and experience to find the right support for you.",
+        "chip": "Verified specialist",
+        "chip2": "Mental wellbeing"
+      },
+      {
+        "title": "Book with confidence",
+        "description": "Choose a suitable time and complete your booking through a simple and clear experience.",
+        "confirmed": "Available to book"
+      },
+      {
+        "title": "Your privacy and data security matter",
+        "description": "Your privacy is protected throughout your journey, from browsing to attending your session.",
+        "privacy": "Your privacy and data security matter"
+      }
+    ],
+    "actions": {
+      "skip": "Skip",
+      "next": "Next",
+      "getStarted": "Get Started",
+      "writeFailed": "Could not save onboarding completion state. Please try again."
+    }
+  },
+  "publicTabs": {
+    "home": "Home",
+    "practitioners": "Specialists",
+    "specialties": "Specialties",
+    "packages": "Packages"
+  },
+  "publicHome": {
+    "signIn": "Sign In",
+    "brandName": "Sawiyaa",
+    "header": { "signIn": "Sign In", "languageEnglish": "Switch to English", "languageArabic": "Switch to Arabic" },
+    "hero": {
+      "title": "Your space to find the right support",
+      "subtitle": "A platform that helps you find the right specialist, organise your sessions, and follow your bookings in one place.",
+      "directoryNote": "The public specialist directory is currently being prepared."
+    },
+    "sereneBadge": "Explore specialists across different areas",
+    "commitment": {
+      "eyebrow": "Our commitment",
+      "title": "Sawiyaa supports every step",
+      "desc": "A clear experience that helps you explore specialists, choose a time, and manage your bookings."
+    },
+    "features": {
+      "clearChoice": { "title": "Clearer choices", "desc": "Browse specialists by specialty, language, and your needs." },
+      "flexibleBooking": { "title": "More flexible booking", "desc": "Choose a suitable time and complete your booking easily." },
+      "privacyPriority": { "title": "A privacy-conscious experience", "desc": "A clear experience designed with your data and privacy in mind." }
+    },
+    "specialties": {
+      "title": "Explore specialties",
+      "anxiety": "Anxiety support",
+      "depression": "Depression support",
+      "family": "Family counseling",
+      "self": "Self-development",
+      "adolescent": "Adolescent mental health support"
+    },
+    "journey": {
+      "title": "How to begin",
+      "discover": { "title": "Explore", "desc": "Browse available specialists and specialties." },
+      "choose": { "title": "Choose", "desc": "Select the specialist and time that suit you." },
+      "start": { "title": "Begin", "desc": "Complete your booking and start your session." }
+    },
+    "teasers": {
+      "practitioners": { "title": "Find the right specialist", "desc": "Explore specialists based on your needs and preferences." },
+      "specialties": { "title": "Explore specialties", "desc": "Start with the area closest to your needs." }
+    },
+    "patientCta": {
+      "title": "Ready to begin your journey?",
+      "desc": "Create a patient account to save your bookings and follow your sessions easily.",
+      "button": "Create Patient Account",
+      "signIn": "Patient Sign In"
+    },
+    "practitioner": { "label": "Are you a practitioner?", "button": "Practitioner Sign In" },
+    "heroTitle": "The right support starts with the right specialist",
+    "heroSubtitle": "Explore specialists based on your needs and choose a time that works for you.",
+    "browseCta": "Browse Specialists",
+    "specialtiesTitle": "Browse by Specialty",
+    "viewAll": "View all",
+    "specialistsTitle": "Available Specialists",
+    "priceLabel": "Starts from",
+    "perSession30": "/ 30m session",
+    "howItWorks": {
+      "title": "How it works",
+      "step1Title": "Choose Specialist",
+      "step1Desc": "Find a verified therapist suited to your needs.",
+      "step2Title": "Book Time",
+      "step2Desc": "Pick an available slot and confirm instantly.",
+      "step3Title": "Start Session",
+      "step3Desc": "Join your private session safely on mobile."
+    },
+    "ctas": {
+      "patientTitle": "Ready to get started?",
+      "patientDesc": "Create an account to book sessions, chat with specialists, and buy discount packages.",
+      "patientButton": "Create Patient Account",
+      "practitionerTitle": "Are you a practitioner?",
+      "practitionerButton": "Join as a Practitioner"
+    },
+    "placeholders": {
+      "comingSoon": "Coming Soon",
+      "comingSoonDesc": "This feature will be available in the next phase. Stay tuned!",
+      "noSpecialists": "No specialists available right now.",
+      "noSpecialties": "No specialties found.",
+      "errorLoading": "Failed to load content",
+      "retry": "Retry"
+    }
+  },
+  "authGateway": {
+    "title": "Authentication Required",
+    "description": "Please sign in or create a patient account to continue with this action.",
+    "signIn": "Sign In",
+    "signUp": "Create Account",
+    "cancel": "Cancel"
   }
 }

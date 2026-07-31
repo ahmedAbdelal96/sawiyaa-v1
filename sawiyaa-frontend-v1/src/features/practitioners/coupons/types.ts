@@ -38,6 +38,7 @@ export type PractitionerCoupon = {
 export type PractitionerCouponRedemption = {
   id: string;
   sessionId: string;
+  sessionCode: string | null;
   paymentId: string;
   patientDisplayName: string | null;
   currencyCode: string;

@@ -4,6 +4,8 @@ import Image from "next/image";
 import { Globe } from "lucide-react";
 import { useLocale } from "next-intl";
 import { usePathname, useRouter, Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { preservePathAndQuery } from "@/i18n/locale-navigation";
 
 import AuthThemeToggle from "./AuthThemeToggle";
 
@@ -11,18 +13,19 @@ export default function AuthAppHeader() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const isRtl = locale === "ar";
   const otherLocale = isRtl ? "en" : "ar";
   const otherLocaleLabel = isRtl ? "English" : "العربية";
 
   const toggleLanguage = () => {
-    router.replace(pathname, { locale: otherLocale });
+    router.replace(preservePathAndQuery(pathname, searchParams), { locale: otherLocale });
   };
 
   return (
     <header className="relative z-10 w-full select-none border-b border-border-light/50 bg-white/95 shadow-[0_10px_30px_rgba(17,24,39,0.08)] backdrop-blur-sm dark:border-white/10 dark:bg-surface/95 dark:shadow-[0_10px_30px_rgba(0,0,0,0.22)]">
-      <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
         <Link
           href="/"
           className="group flex items-center gap-2.5 transition-transform duration-200 active:scale-[0.98]"

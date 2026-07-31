@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   RefreshCw,
 } from "lucide-react";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { toast } from "sonner";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { AdminSectionCard, AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
@@ -366,7 +367,7 @@ function SessionAndPeopleCard({
             {humanizeDisplayName(item.practitioner.displayName, item.practitioner.publicSlug ?? item.practitioner.practitionerId)}
           </p>
           <p className="mt-1 text-xs text-text-secondary">
-            {readOnlyValue(item.practitioner.professionalTitle ?? item.practitioner.publicSlug)}
+            {readOnlyValue(getProfessionalTitleLabel(item.practitioner.professionalTitle, locale) || item.practitioner.publicSlug)}
           </p>
         </div>
 

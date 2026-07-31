@@ -10,6 +10,8 @@ export const enModerationCatalog = {
     caseNotFound: 'Moderation case was not found',
     actionNotAllowedForRole:
       'Current actor role is not allowed to execute this moderation action',
+    enforcementNotAllowed:
+      'Elevated moderation enforcement permission is required for this action',
     invalidActionTargetCombination:
       'Moderation action is not valid for the selected target type',
     actionReasonRequired: 'This moderation action requires an explicit reason',

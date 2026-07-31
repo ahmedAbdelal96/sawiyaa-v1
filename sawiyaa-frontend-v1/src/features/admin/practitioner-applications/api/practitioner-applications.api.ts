@@ -164,7 +164,7 @@ export async function createAdminPractitionerDirectly(
 }
 
 /**
- * Uploads a credential file for direct practitioner creation and returns a managed fileUrl.
+ * Uploads a credential file for direct practitioner creation and returns an opaque credential id.
  */
 export async function uploadAdminDirectPractitionerCredentialFile(
   data: UploadAdminPractitionerCredentialFileRequest
@@ -182,4 +182,15 @@ export async function uploadAdminDirectPractitionerCredentialFile(
       formData
     );
   return extractData(response.data);
+}
+
+export async function viewAdminDirectPractitionerCredentialFile(
+  credentialId: string,
+  mimeType: string,
+) {
+  const response = await httpClient.get<Blob>(
+    `/admin/practitioner-applications/direct-create/credentials/${credentialId}/file`,
+    { params: { mimeType }, responseType: "blob" },
+  );
+  return response.data;
 }

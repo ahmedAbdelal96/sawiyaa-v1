@@ -2,31 +2,26 @@
   "hero": {
     "eyebrow": "Instant booking",
     "title": "Book a session today with an available practitioner",
-    "note": "This path shows only practitioners who are available now, with live pricing from the backend.",
     "secondaryAction": "Browse practitioners",
     "chips": {
       "onlineNow": "Available now",
-      "durationOptions": "30 or 60 minute options",
-      "backendPricing": "Live pricing from the backend"
+      "durationOptions": "30 or 60 minute options"
     }
   },
   "entry": {
     "eyebrow": "Start here",
     "title": "Open instant booking",
-    "note": "This path only shows practitioners who are available now, with duration and pricing confirmed by the backend.",
     "cta": "Start instant booking",
     "chips": {
       "availableNow": "Practitioners available now",
       "duration": "Session length",
       "durationNote": "Choose 30 or 60 minutes when supported",
-      "pricing": "Pricing",
-      "pricingNote": "Prices come directly from the backend"
+      "pricing": "Pricing"
     }
   },
   "list": {
     "eyebrow": "Available now",
-    "title": "Practitioners available for instant booking",
-    "note": "We show only practitioners who are ready right now, with durations and live prices from the system."
+    "title": "Practitioners available for instant booking"
   },
   "card": {
     "availableNow": "Available now",
@@ -59,7 +54,7 @@
       "CANCELLED": "Your request was cancelled"
     },
     "notes": {
-      "PENDING": "We are waiting for the practitioner to respond. The status refreshes automatically.",
+      "PENDING": "Waiting for the practitioner to respond.",
       "ACCEPTED": "The request was accepted, and you can continue to payment to complete the session.",
       "REJECTED": "The request was rejected. You can start again and choose another practitioner.",
       "EXPIRED": "The response window expired. You can create a new request now.",

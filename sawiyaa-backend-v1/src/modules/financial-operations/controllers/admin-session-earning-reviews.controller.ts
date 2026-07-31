@@ -97,7 +97,9 @@ export class AdminSessionEarningReviewsController {
 
   @Patch(':reviewId/moderation')
   @RequireStepUp('finance.session-earning-reviews.moderation')
-  @Permissions(PermissionKey.ACCOUNTING_WRITE)
+  // Legacy review route delegates to the same settlement-credit path; require
+  // the dedicated settlement approval permission so it cannot bypass Phase 2A.
+  @Permissions(PermissionKey.FINANCIAL_SETTLEMENT_APPROVE)
   @ApiOperation({
     summary: 'Apply moderation to one session earning review',
     description:
@@ -145,6 +147,7 @@ export class AdminSessionEarningReviewsController {
       finalPractitionerAmount: body.finalPractitionerAmount ?? null,
       finalPlatformAmount: body.finalPlatformAmount ?? null,
       finalCurrencyCode: body.finalCurrencyCode ?? null,
+      exchangeRate: body.exchangeRate ?? null,
       internalReason: body.internalReason ?? null,
       practitionerFacingNote: body.practitionerFacingNote ?? null,
     });

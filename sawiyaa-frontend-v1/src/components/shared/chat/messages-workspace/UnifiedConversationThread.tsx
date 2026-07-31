@@ -6,6 +6,7 @@ import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { useUnifiedMessages } from "@/features/chat/hooks/use-unified-messages";
 import type { CanonicalConversation } from "@/features/messages-shell/types/messages-shell.types";
 import { useAuthState } from "@/stores";
+import ChatModerationReportAction from "@/features/moderation/components/ChatModerationReportAction";
 
 interface Props {
   conversation: CanonicalConversation | null;
@@ -13,6 +14,7 @@ interface Props {
   locale: string;
   onOpenFullChat?: () => void;
   onNewSupportClick?: () => void;
+  isVisible?: boolean;
 }
 
 function formatTime(iso: string, locale: string) {
@@ -32,6 +34,7 @@ export default function UnifiedConversationThread({
   locale,
   onOpenFullChat,
   onNewSupportClick,
+  isVisible = true,
 }: Props) {
   const { user: authUser } = useAuthState();
   const meQuery = useCurrentUser(true);
@@ -56,11 +59,13 @@ export default function UnifiedConversationThread({
     sendMessage,
     retryMessage,
     markRead,
+    canAcknowledgeRead,
     sendTypingNotification,
   } = useUnifiedMessages({
     conversationId,
     currentUserId: myUserId,
     currentUserRole: role === "patient" ? "Patient" : role === "practitioner" ? "Practitioner" : "Admin",
+    isThreadVisible: isVisible,
   });
 
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -74,14 +79,14 @@ export default function UnifiedConversationThread({
 
   // Mark conversation as read when messages load or active message changes
   useEffect(() => {
-    if (conversationId && messages.length > 0) {
+    if (canAcknowledgeRead && conversationId && messages.length > 0) {
       // Find the latest visible incoming message (sender.userId !== myUserId)
       const latestIncomingMessage = [...messages].reverse().find((msg) => msg.sender.userId !== myUserId);
       if (latestIncomingMessage) {
         void markRead(latestIncomingMessage.id);
       }
     }
-  }, [conversationId, messages, myUserId, markRead]);
+  }, [canAcknowledgeRead, conversationId, messages, myUserId, markRead]);
 
   // Typing start/stop handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -192,6 +197,12 @@ export default function UnifiedConversationThread({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {(conversation.type === "SESSION" || conversation.type === "CARE") && (
+            <ChatModerationReportAction
+              targetType="GENERAL_CHAT_CONVERSATION"
+              targetId={conversationId}
+            />
+          )}
           {onOpenFullChat && (
             <button
               onClick={onOpenFullChat}
@@ -292,6 +303,15 @@ export default function UnifiedConversationThread({
                         </p>
                         <div className="flex items-center justify-end gap-1 text-[11px] opacity-75 mt-1 select-none">
                           <span>{formatTime(msg.sentAt, locale)}</span>
+                          {(conversation.type === "SESSION" || conversation.type === "CARE") && (
+                            <span className="ms-1 inline-flex">
+                              <ChatModerationReportAction
+                                compact
+                                targetType="GENERAL_CHAT_MESSAGE"
+                                targetId={msg.id}
+                              />
+                            </span>
+                          )}
                           {isMe && isMessageSending ? (
                             <>
                               <Loader2 className="h-3 w-3 animate-spin" />

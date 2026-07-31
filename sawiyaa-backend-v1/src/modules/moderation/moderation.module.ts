@@ -19,12 +19,15 @@ import { ModerationRepository } from './repositories/moderation.repository';
 import { ExecuteModerationSurfaceEnforcementService } from './services/execute-moderation-surface-enforcement.service';
 import { ResolveModerationReporterRoleService } from './services/resolve-moderation-reporter-role.service';
 import { ValidateModerationActionTransitionService } from './services/validate-moderation-action-transition.service';
+import { ModerationNotificationService } from './services/moderation-notification.service';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { CreateModerationReportUseCase } from './use-cases/create-moderation-report.use-case';
 import { ExecuteModerationActionUseCase } from './use-cases/execute-moderation-action.use-case';
 import { GetModerationCaseUseCase } from './use-cases/get-moderation-case.use-case';
 import { ListModerationCasesUseCase } from './use-cases/list-moderation-cases.use-case';
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [ModerationReportsController, AdminModerationReportsController],
   providers: [
     JwtAccessAuthGuard,
@@ -49,6 +52,7 @@ import { ListModerationCasesUseCase } from './use-cases/list-moderation-cases.us
     ListModerationCasesUseCase,
     GetModerationCaseUseCase,
     ExecuteModerationActionUseCase,
+    ModerationNotificationService,
   ],
   exports: [CreateModerationReportUseCase],
 })

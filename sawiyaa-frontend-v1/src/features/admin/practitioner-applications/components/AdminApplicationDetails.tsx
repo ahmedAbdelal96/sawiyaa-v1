@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { cn } from "@/lib/utils";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { isAppError } from "@/lib/api/errors";
 import { API_BASE_URL } from "@/config/api";
 import { getLocalizedCountryOptions } from "@/features/practitioners/constants/country-options";
+import { getLocalizedLanguageLabel } from "@/constants/reference-data";
 import {
   getLocalizedSpecialtyCategoryName,
   getLocalizedSpecialtyName,
@@ -38,6 +42,7 @@ import AdminApplicationStepIdentity from "./AdminApplicationStepIdentity";
 import AdminApplicationStepProfessional from "./AdminApplicationStepProfessional";
 import AdminApplicationStepDocumentsPayout from "./AdminApplicationStepDocumentsPayout";
 import AdminApplicationStepDecision from "./AdminApplicationStepDecision";
+import AdminApplicationDecisionSummary from "./AdminApplicationDecisionSummary";
 import { deriveAdminReviewDecision } from "../utils/admin-review-decision";
 
 type ReviewReasonItem = {
@@ -117,9 +122,27 @@ function getLocalizedStatusLabel(locale: string, status?: string | null) {
 function formatLanguageLabel(locale: string, value: string) {
   const normalized = value.trim().toLowerCase();
   if (!normalized) return "-";
-  if (normalized === "ar") return locale === "ar" ? "العربية" : "Arabic";
-  if (normalized === "en") return locale === "ar" ? "الإنجليزية" : "English";
-  return value;
+  return getLocalizedLanguageLabel(normalized, locale);
+}
+
+function formatReviewToken(locale: string, value: string) {
+  const labels: Record<string, { ar: string; en: string }> = {
+    PROFILE: { ar: "الملف المهني", en: "Profile" },
+    SPECIALTIES: { ar: "التخصصات", en: "Specialties" },
+    IDENTITY: { ar: "الهوية", en: "Identity" },
+    ACADEMIC_CREDENTIALS: { ar: "المؤهلات الأكاديمية", en: "Academic credentials" },
+    PROFESSIONAL_CREDENTIALS: { ar: "المستندات المهنية", en: "Professional credentials" },
+    BANKING: { ar: "البيانات البنكية", en: "Banking" },
+    COMPLIANCE: { ar: "الالتزام", en: "Compliance" },
+    PENDING: { ar: "قيد المراجعة", en: "Pending" },
+    CHANGES_REQUESTED: { ar: "مطلوب تعديلات", en: "Changes requested" },
+    OPEN: { ar: "مفتوح", en: "Open" },
+    SUBMITTED: { ar: "تم الإرسال", en: "Submitted" },
+    SATISFIED: { ar: "تم الاستيفاء", en: "Satisfied" },
+    APPROVED: { ar: "معتمد", en: "Approved" },
+    REJECTED: { ar: "مرفوض", en: "Rejected" },
+  };
+  return labels[value]?.[locale === "ar" ? "ar" : "en"] ?? value;
 }
 
 function formatLanguageList(locale: string, values: string[]) {
@@ -162,7 +185,7 @@ function getCredentialTypeLabel(locale: string, type: CredentialType) {
     NATIONAL_ID_BACK: isAr ? "بطاقة الهوية - الوجه الخلفي" : "National ID - Back",
     NATIONAL_ID: isAr ? "بطاقة رقم قومي" : "National ID",
     PASSPORT: isAr ? "جواز سفر" : "Passport",
-    MEMBERSHIP: isAr ? "عضوية" : "Membership",
+    MEMBERSHIP: isAr ? "كارنيه النقابة" : "Syndicate card",
     OTHER: isAr ? "أخرى" : "Other",
   };
   return labels[type];
@@ -319,6 +342,7 @@ function getCredentialPresenceState(
 export default function AdminApplicationDetails({ applicationId }: Props) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
+  const router = useRouter();
   const { data, isLoading, isError, refetch } = useAdminPractitionerApplicationDetails(applicationId);
   const { mutate: approve, isPending: isApproving } = useApprovePractitionerApplication();
   const { mutate: reject, isPending: isRejecting } = useRejectPractitionerApplication();
@@ -443,7 +467,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     );
   }
 
-  const { applicant, profile, liveApplicant, liveProfile, credentials, payoutDestination, livePayoutDestination, application, readinessSnapshot, completion } = data.details;
+  const { applicant, profile, liveApplicant, liveProfile, credentials, payoutDestination, livePayoutDestination, application, readinessSnapshot, completion, reviewCase } = data.details;
   const directoryPractitioner = directoryPractitionersQuery.data?.items.find((item) => item.id === liveApplicant.practitionerProfileId);
 
   const requestedAvatarUrl = normalizeAvatarUrl(applicant.avatarUrl ?? profile.avatarUrl ?? null);
@@ -590,8 +614,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     {
       key: "professionalTitle",
       label: t("applicationDetails.profile.title"),
-      current: getReadableValue(liveProfile.professionalTitle),
-      requested: getReadableValue(profile.professionalTitle),
+      current: getProfessionalTitleLabel(liveProfile.professionalTitle, locale) || getReadableValue(liveProfile.professionalTitle),
+      requested: getProfessionalTitleLabel(profile.professionalTitle, locale) || getReadableValue(profile.professionalTitle),
     },
     {
       key: "sessionPrice30Egp",
@@ -685,10 +709,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     approve(
       { id: applicationId, data: { note: approveNote || undefined } },
       {
-        onSuccess: async () => {
-          await refetch();
-          setApproveAttemptedBlocked(false);
-          setApproveResult("success");
+        onSuccess: () => {
+          toast.success(t("applicationDetails.decision.approve.success"));
+          router.replace("/admin/practitioner-applications?view=HISTORY" as never);
         },
         onError: (error) => {
           setApproveResult("error");
@@ -715,10 +738,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     reject(
       { id: applicationId, data: { reason: normalizedRejectReasons.join("\n"), note: rejectNote || undefined } },
       {
-        onSuccess: async () => {
-          await refetch();
-          setApproveAttemptedBlocked(false);
-          setRejectResult("success");
+        onSuccess: () => {
+          toast.success(t("applicationDetails.decision.reject.success"));
+          router.replace("/admin/practitioner-applications?view=HISTORY" as never);
         },
         onError: () => setRejectResult("error"),
       },
@@ -732,10 +754,23 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     }
     setRequestChangesResult(null);
     requestChanges(
-      { id: applicationId, data: { reason: normalizedRequestChangeReasons.join("\n"), note: requestChangesNote || undefined } },
+      {
+        id: applicationId,
+        data: {
+          reason: normalizedRequestChangeReasons.join("\n"),
+          note: requestChangesNote || undefined,
+          requirements: normalizedRequestChangeReasons.map((reason) => ({
+            section: "COMPLIANCE",
+            title: locale === "ar" ? "متطلب مراجعة" : "Review requirement",
+            reason,
+            severity: "BLOCKING" as const,
+          })),
+        },
+      },
       {
         onSuccess: async () => {
           await refetch();
+          toast.success(t("applicationDetails.decision.requestChanges.success"));
           setApproveAttemptedBlocked(false);
           setRequestChangesResult("success");
         },
@@ -808,6 +843,40 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
         previewPhotoLabel={t("applicationDetails.review.previewPhoto")}
       />
 
+      {reviewCase ? (
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                {locale === "ar" ? "حالة المراجعة والمتطلبات" : "Review case and requirements"}
+              </h2>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {locale === "ar" ? "المعلومات المعتمدة تظل منفصلة عن التعديلات المقترحة." : "Approved live data remains separate from proposed changes."}
+              </p>
+            </div>
+            <span className="rounded-full bg-primary-light px-3 py-1 text-xs font-medium text-text-brand dark:bg-primary/20 dark:text-primary-light">
+              {formatReviewToken(locale, reviewCase.status)}
+            </span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {reviewCase.sections.map((section) => (
+              <div key={section.section} className="rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-950">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white">{formatReviewToken(locale, section.section)}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{formatReviewToken(locale, section.status)}</p>
+              </div>
+            ))}
+          </div>
+          {reviewCase.requirements.length > 0 ? (
+            <div className="mt-4 overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+              <table className="min-w-full text-start text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-950"><tr><th className="px-3 py-2">{locale === "ar" ? "المتطلب" : "Requirement"}</th><th className="px-3 py-2">{locale === "ar" ? "القسم" : "Section"}</th><th className="px-3 py-2">{locale === "ar" ? "الحالة" : "Status"}</th></tr></thead>
+                <tbody>{reviewCase.requirements.map((requirement) => <tr key={requirement.id} className="border-t border-gray-100 dark:border-gray-800"><td className="px-3 py-2"><p className="font-medium">{requirement.title}</p><p className="text-gray-500">{requirement.reason}</p></td><td className="px-3 py-2">{formatReviewToken(locale, requirement.section)}</td><td className="px-3 py-2">{formatReviewToken(locale, requirement.status)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <AdminApplicationReviewWizard
         steps={reviewSteps}
         activeStep={activeStep}
@@ -850,7 +919,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
           <AdminApplicationStepProfessional
             profileRows={[
               { label: t("applicationDetails.profile.type"), value: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-" },
-              { label: t("applicationDetails.profile.title"), value: getReadableValue(profile.professionalTitle) },
+              { label: t("applicationDetails.profile.title"), value: getProfessionalTitleLabel(profile.professionalTitle, locale) || getReadableValue(profile.professionalTitle) },
               { label: t("applicationDetails.profile.years"), value: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "-" },
               {
                 label: t("applicationDetails.profile.primarySpecialtyCategory"),
@@ -910,8 +979,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
                 : t("applicationDetails.review.notVerifiedYet"),
               notesLabel: t("applicationDetails.credentials.reviewNotes"),
               notesValue: cred.reviewNotes || t("applicationDetails.application.noNotes"),
-              // Credentials are sensitive; open via admin-authenticated endpoint (not raw /uploads).
-              fileUrl: cred.fileUrl ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/credentials/${cred.credentialId}/file` : null,
+              // Credentials are sensitive; open only through the authorized admin endpoint.
+              viewUrl: `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/credentials/${cred.credentialId}/file`,
               reviewNoteDraft: credentialReviewNotes[cred.credentialId] ?? cred.reviewNotes ?? "",
               reviewNotePlaceholder: t("applicationDetails.credentials.reviewNotesPlaceholder"),
               reviewActionHint:
@@ -1001,6 +1070,23 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
         ) : null}
 
         {activeStep === 3 ? (
+          application.status === "APPROVED" || application.status === "REJECTED" ? (
+            <AdminApplicationDecisionSummary
+              status={application.status}
+              statusLabel={formatApplicationStatusLabel(t, application.status)}
+              title={t("applicationDetails.decision.finalSummary.title")}
+              dateLabel={t("applicationDetails.decision.finalSummary.date")}
+              reviewedAt={application.reviewedAt}
+              reviewedByLabel={t("applicationDetails.decision.finalSummary.reviewedBy")}
+              reviewedByUserId={application.reviewedByUserId}
+              sectionsLabel={t("applicationDetails.decision.finalSummary.sections")}
+              sections={reviewCase?.sections.map((section) => ({
+                label: formatReviewToken(locale, section.section),
+                status: formatReviewToken(locale, section.status),
+              })) ?? []}
+              readOnlyNote={t("applicationDetails.decision.finalSummary.readOnlyNote")}
+            />
+          ) : (
           <div className="space-y-4">
             <AdminApplicationStepDecision
               statusLabel={derivedDecision.statusLabel}
@@ -1116,15 +1202,9 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               }
             />
 
-            {(approveResult === "success" && application.status === "APPROVED") ||
-            (rejectResult === "success" && application.status === "REJECTED") ||
-            (requestChangesResult === "success" && application.status === "CHANGES_REQUESTED") ? (
+            {requestChangesResult === "success" && application.status === "CHANGES_REQUESTED" ? (
               <p className="text-sm font-medium text-success-600 dark:text-success-400">
-                {approveResult === "success" && application.status === "APPROVED"
-                  ? t("applicationDetails.decision.approve.success")
-                  : rejectResult === "success" && application.status === "REJECTED"
-                    ? t("applicationDetails.decision.reject.success")
-                    : t("applicationDetails.decision.requestChanges.success")}
+                {t("applicationDetails.decision.requestChanges.success")}
               </p>
             ) : null}
             {credentialActionMessage ? (
@@ -1143,6 +1223,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               <p className="text-xs text-error-500">{t("applicationDetails.decision.reject.error")}</p>
             ) : null}
           </div>
+          )
         ) : null}
       </AdminApplicationReviewWizard>
     </div>

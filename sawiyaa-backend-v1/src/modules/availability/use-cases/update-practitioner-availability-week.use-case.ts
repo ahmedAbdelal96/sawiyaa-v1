@@ -21,6 +21,7 @@ import {
   zonedDateTimeToUtc,
 } from '../utils/availability-timezone.util';
 import { WEEKDAY_ENUM_TO_INDEX } from '../utils/availability-weekday.util';
+import { assertWeeklySlotsHaveValidLocalTimes } from '../utils/availability-local-time.util';
 
 @Injectable()
 export class UpdatePractitionerAvailabilityWeekUseCase {
@@ -70,6 +71,15 @@ export class UpdatePractitionerAvailabilityWeekUseCase {
       });
     }
 
+    const practitionerTimezone = assertIanaTimeZoneInput(practitioner.user.timezone, {
+      messageKey: 'availability.errors.timezoneRequired',
+      error: 'AVAILABILITY_TIMEZONE_REQUIRED',
+    });
+    this.availabilityWeekCalendarService.assertWeekInsideActiveWindow({
+      weekStartDate: existing.weekStartDate,
+      timezone: practitionerTimezone,
+    });
+
     if (
       existing.status !== AvailabilityWeekStatus.DRAFT &&
       existing.status !== AvailabilityWeekStatus.PUBLISHED
@@ -116,14 +126,15 @@ export class UpdatePractitionerAvailabilityWeekUseCase {
             })),
           );
 
-    const { currentWeek, nextWeek } =
-      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
-        timezone: existing.timezone,
-      });
+    assertWeeklySlotsHaveValidLocalTimes({
+      weekStartDate: existing.weekStartDate,
+      timezone,
+      slots: normalizedSlots,
+    });
 
-    const isCurrentWeek =
-      existing.weekStartDate.getTime() === currentWeek.startDate.getTime();
-    const weekWindow = isCurrentWeek ? currentWeek : nextWeek;
+    const weekWindow = this.availabilityWeekCalendarService.getWeekRangeByStartDate({
+      weekStartDate: existing.weekStartDate.toISOString().slice(0, 10),
+    });
 
     const now = new Date();
 
@@ -308,7 +319,10 @@ export class UpdatePractitionerAvailabilityWeekUseCase {
         timezone,
         editabilityMap: updatedEditabilityMap,
       }),
-      ...overview,
+      weekStartsOn: overview.weekStartsOn,
+      futureWeeksAllowed: overview.futureWeeksAllowed,
+      activeRange: overview.activeRange,
+      weeks: overview.weeks,
     };
   }
 

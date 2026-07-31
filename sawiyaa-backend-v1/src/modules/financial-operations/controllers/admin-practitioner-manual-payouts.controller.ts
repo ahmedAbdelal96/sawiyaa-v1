@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  GoneException,
   Get,
   Param,
   ParseUUIDPipe,
@@ -24,6 +25,9 @@ import { AccountStateRequirement } from '@common/enums/account-state-requirement
 import { AppRole } from '@common/enums/app-role.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
+import { Permissions } from '@common/decorators/permissions.decorator';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import {
   PractitionerManualPayoutBalanceSuccessResponseDto,
   PractitionerManualPayoutItemSuccessResponseDto,
@@ -47,7 +51,7 @@ import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Practitioner Manual Payouts')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN)
 @Controller('admin/practitioner-payouts')
@@ -144,6 +148,7 @@ export class AdminPractitionerManualPayoutsController {
   }
 
   @Post()
+  @Permissions(PermissionKey.FINANCIAL_PAYOUT_EXECUTE)
   @ApiOperation({
     summary: 'Record practitioner manual payout',
     description:
@@ -160,27 +165,9 @@ export class AdminPractitionerManualPayoutsController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: RecordAdminPractitionerManualPayoutDto,
   ) {
-    return this.recordPayoutUseCase
-      .execute({
-        body,
-        operatorUserId: currentUser.id,
-      })
-      .then((result) => {
-        this.securityAuditService.logAsync({
-          action: 'finance.practitioner_payout.record',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorUserId: currentUser.id,
-          actorRoles: currentUser.roles,
-          resourceType: 'PractitionerPayout',
-          resourceId: (result as { item?: { id?: string } }).item?.id ?? null,
-          targetUserId: body.practitionerId,
-          metadata: {
-            amountPaid: body.amountPaid,
-            currencyCode: body.currencyCode,
-            notes: body.notes ?? null,
-          },
-        });
-        return result;
-      });
+    throw new GoneException({
+      messageKey: 'financialOperations.errors.legacyPayoutPathBlocked',
+      error: 'FINANCIAL_OPERATIONS_LEGACY_PAYOUT_PATH_BLOCKED',
+    });
   }
 }

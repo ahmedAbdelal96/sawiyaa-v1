@@ -7,6 +7,7 @@ import { useRouter } from "@/i18n/navigation";
 import { AlertTriangle, ArrowLeft, ArrowDown, ArrowUp, Plus, Pencil, Trash2 } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
+import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@/components/ui/modal";
 import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
@@ -328,15 +329,46 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
 
   if (!policy) {
     return (
-      <div className="mx-auto max-w-2xl">
-        <StateCard
-          icon={<AlertTriangle className="h-8 w-8 text-text-muted" />}
-          title={t("detail.notFound.heading")}
-          note={t("detail.notFound.note")}
-          action={{
-            label: t("actions.back"),
-            onClick: () => router.push("/admin/refund-policies" as never),
-          }}
+      <div className="space-y-5">
+        <SurfaceCard as="section" variant="page">
+          <SurfaceHeader
+            eyebrow={t("detail.eyebrow")}
+            title={titleLabel}
+            actions={
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => router.push("/admin/refund-policies" as never)}
+                startIcon={<ArrowLeft className="h-4 w-4" />}
+              >
+                {t("detail.back")}
+              </Button>
+            }
+          />
+        </SurfaceCard>
+
+        <SurfaceCard as="section" variant="section">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-tertiary">
+              <Plus className="h-6 w-6 text-text-muted" />
+            </div>
+            <h3 className="mb-1 text-base font-semibold text-text-primary">{t("clauses.empty.heading")}</h3>
+            <p className="mb-5 max-w-sm text-sm text-text-secondary">{t("clauses.empty.note")}</p>
+            <Button type="button" size="sm" onClick={openNewClause} startIcon={<Plus className="h-4 w-4" />}>
+              {t("actions.addClause")}
+            </Button>
+          </div>
+        </SurfaceCard>
+
+        <ClauseModal
+          isOpen={editingClause !== null}
+          title={t("clauses.modal.create")}
+          draft={editingClause ?? emptyClauseDraft(1)}
+          onChange={(value) => setEditingClause(value)}
+          onClose={() => setEditingClause(null)}
+          onSave={() => void saveClause()}
+          isSaving={createClauseMutation.isPending || updateClauseMutation.isPending}
         />
       </div>
     );
@@ -400,12 +432,9 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
         </p>
       ) : null}
 
-      <SurfaceToolbar className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-text-primary">{t("detail.preview.toggleLabel")}</p>
-          <p className="text-sm text-text-secondary">{t("detail.preview.toggleNote")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <SurfaceToolbar className="flex flex-wrap items-center justify-between gap-2 py-2">
+        <p className="text-xs font-medium text-text-secondary">{t("detail.preview.toggleLabel")}</p>
+        <div className="flex gap-1.5">
           <Button
             type="button"
             size="sm"
@@ -463,74 +492,66 @@ export default function AdminRefundPolicyDetailScreen({ policyType }: Props) {
               <p className="text-sm text-text-secondary">{t("clauses.note")}</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {sortedClauses.map((clause) => (
-                <div key={clause.id} className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
+                <div key={clause.id} className="rounded-xl border border-border-light bg-surface-secondary px-3 py-2.5">
+                  <div className="flex items-start gap-3">
+                    {/* Left: content */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
                         <Badge variant="light" color="primary" size="sm">
                           {t("clauses.rowNumber", { index: clause.sortOrder })}
                         </Badge>
                         <Badge variant="solid" color={clause.isActive ? "success" : "warning"} size="sm">
                           {clause.isActive ? t("badges.active") : t("badges.inactive")}
                         </Badge>
+                        {(clause.titleAr || clause.titleEn) && (
+                          <span className="text-xs font-semibold text-text-primary">
+                            {clause.titleAr || clause.titleEn}
+                          </span>
+                        )}
                       </div>
-                      {clause.titleAr || clause.titleEn ? (
-                        <p className="text-sm font-semibold text-text-primary">
-                          {clause.titleAr || clause.titleEn}
-                        </p>
-                      ) : null}
-                      <p className="text-sm leading-6 text-text-primary">{clause.bodyAr}</p>
-                      <p className="text-sm leading-6 text-text-secondary">{clause.bodyEn}</p>
+                      <p className="text-sm leading-5 text-text-primary">{clause.bodyAr}</p>
+                      {clause.bodyEn && (
+                        <p className="mt-0.5 text-xs leading-4 text-text-muted italic">{clause.bodyEn}</p>
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
+                    {/* Right: compact icon actions */}
+                    <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                      <ActionIconButton
+                        label={t("clauses.actions.up")}
+                        icon={<ArrowUp className="h-4 w-4" />}
+                        intent="neutral"
                         onClick={() => void moveClause(clause.id, -1)}
                         disabled={clause.sortOrder <= 1}
-                        startIcon={<ArrowUp className="h-4 w-4" />}
-                      >
-                        {t("clauses.actions.up")}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
+                      />
+                      <ActionIconButton
+                        label={t("clauses.actions.down")}
+                        icon={<ArrowDown className="h-4 w-4" />}
+                        intent="neutral"
                         onClick={() => void moveClause(clause.id, 1)}
                         disabled={clause.sortOrder >= sortedClauses.length}
-                        startIcon={<ArrowDown className="h-4 w-4" />}
-                      >
-                        {t("clauses.actions.down")}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
+                      />
+                      <ActionIconButton
+                        label={t("clauses.actions.edit")}
+                        icon={<Pencil className="h-4 w-4" />}
+                        intent="edit"
                         onClick={() => openEditClause(clause)}
-                        startIcon={<Pencil className="h-4 w-4" />}
-                      >
-                        {t("clauses.actions.edit")}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
+                      />
+                      <ActionIconButton
+                        label={t("clauses.actions.delete")}
+                        icon={<Trash2 className="h-4 w-4" />}
+                        intent="delete"
                         onClick={() => void removeClause(clause.id)}
-                        startIcon={<Trash2 className="h-4 w-4" />}
-                      >
-                        {t("clauses.actions.delete")}
-                      </Button>
+                      />
                     </div>
                   </div>
                 </div>
               ))}
 
               {sortedClauses.length === 0 ? (
-                <p className="rounded-2xl border border-dashed border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary">
+                <p className="rounded-xl border border-dashed border-border-light bg-surface-tertiary px-4 py-4 text-sm text-text-secondary">
                   {t("clauses.empty.note")}
                 </p>
               ) : null}

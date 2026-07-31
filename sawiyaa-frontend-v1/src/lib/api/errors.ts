@@ -278,6 +278,10 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
     const statusCode = responseData?.statusCode ?? error.response?.status ?? 500;
     const requestId = readFirstStringField(responseData, "requestId") ?? undefined;
     const lockoutMetadata = readAuthLockoutMetadata(responseData);
+    const retryAfterHeader = error.response?.headers?.["retry-after"];
+    const retryAfterSeconds =
+      lockoutMetadata.retryAfterSeconds ??
+      toFiniteNumber(Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader);
     const message = normalizeMessage(
       responseData?.message,
       error.message || "Unexpected API error",
@@ -299,7 +303,7 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
       remainingAttempts: lockoutMetadata.remainingAttempts,
       maxAttempts: lockoutMetadata.maxAttempts,
       lockedUntil: lockoutMetadata.lockedUntil,
-      retryAfterSeconds: lockoutMetadata.retryAfterSeconds,
+      retryAfterSeconds,
       diagnostics: {
         axiosCode: error.code,
         hasResponse: Boolean(error.response),

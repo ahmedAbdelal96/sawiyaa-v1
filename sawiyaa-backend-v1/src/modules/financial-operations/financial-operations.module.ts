@@ -5,6 +5,8 @@ import { PermissionsGuard } from '@common/guards/authorization/permissions.guard
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AdminFinanceOperationsController } from './controllers/admin-finance-operations.controller';
 import { AdminAccountingReconciliationOperationsController } from './controllers/admin-accounting-reconciliation-operations.controller';
+import { AdminSettlementsController } from './controllers/admin-settlements.controller';
+import { AdminPractitionerWalletsController } from './controllers/admin-practitioner-wallets.controller';
 import { AdminPractitionerManualPayoutsController } from './controllers/admin-practitioner-manual-payouts.controller';
 import { AdminPayoutsController } from './controllers/admin-payouts.controller';
 import { AdminPackageSettlementsController } from './controllers/admin-package-settlements.controller';
@@ -46,6 +48,8 @@ import { SettlementPayoutProofStorageService } from './services/settlement-payou
 import { RecordSettlementPayoutService } from './services/record-settlement-payout.service';
 import { PackageSettlementService } from './services/package-settlement.service';
 import { SessionEarningReviewService } from './services/session-earning-review.service';
+import { ApprovePractitionerSettlementService } from './services/approve-practitioner-settlement.service';
+import { SettlementAdjustmentService } from './services/settlement-adjustment.service';
 import { PractitionerManualPayoutBalanceService } from './services/practitioner-manual-payout-balance.service';
 import { PractitionerManualPayoutService } from './services/practitioner-manual-payout.service';
 import { PractitionerRecoveryService } from './services/practitioner-recovery.service';
@@ -96,6 +100,10 @@ import { UploadPractitionerPayoutProofUseCase } from './use-cases/upload-practit
 import { ListSettlementDuesDirectoryUseCase } from './use-cases/list-settlement-dues-directory.use-case';
 import { ReleasePackageSettlementUseCase } from './use-cases/release-package-settlement.use-case';
 import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/update-admin-accounting-reconciliation-review.use-case';
+import { AdminSettlementWorkflowUseCase } from './use-cases/admin-settlement-workflow.use-case';
+import { PractitionerCurrencyLifecycleService } from './services/practitioner-currency-lifecycle.service';
+import { AdminPractitionerWalletReadService } from './services/admin-practitioner-wallet-read.service';
+import { CalculatePractitionerPayoutConversionService } from './services/calculate-practitioner-payout-conversion.service';
 
 /**
  * Financial Operations Module owns the internal accounting layer:
@@ -115,6 +123,8 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     AdminSessionEarningReviewsController,
     AdminAccountingController,
     AdminAccountingReconciliationOperationsController,
+    AdminSettlementsController,
+    AdminPractitionerWalletsController,
   ],
   providers: [
     JwtAccessAuthGuard,
@@ -153,6 +163,8 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     RecordSettlementPayoutService,
     PackageSettlementService,
     SessionEarningReviewService,
+    ApprovePractitionerSettlementService,
+    SettlementAdjustmentService,
     PractitionerManualPayoutBalanceService,
     PractitionerManualPayoutService,
     PractitionerRecoveryService,
@@ -203,6 +215,10 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     ReleasePackageSettlementUseCase,
     MarkAdminPractitionerRecoveryCollectedUseCase,
     WaiveAdminPractitionerRecoveryUseCase,
+    AdminSettlementWorkflowUseCase,
+    PractitionerCurrencyLifecycleService,
+    AdminPractitionerWalletReadService,
+    CalculatePractitionerPayoutConversionService,
   ],
   exports: [
     PostPaymentLedgerEntriesUseCase,
@@ -210,6 +226,8 @@ import { UpdateAdminAccountingReconciliationReviewUseCase } from './use-cases/up
     PostRefundLedgerEntriesUseCase,
     PackageSettlementService,
     SessionEarningReviewService,
+    WalletRepository,
+    PractitionerCurrencyLifecycleService,
   ],
 })
 export class FinancialOperationsModule {}

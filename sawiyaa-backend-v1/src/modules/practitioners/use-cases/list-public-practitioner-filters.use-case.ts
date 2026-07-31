@@ -404,11 +404,19 @@ export class ListPublicPractitionerFiltersUseCase {
         ar: 'العربية',
         en: 'الإنجليزية',
         fr: 'الفرنسية',
+        de: 'الألمانية',
+        es: 'الإسبانية',
+        tr: 'التركية',
+        ru: 'الروسية',
       },
       en: {
         ar: 'Arabic',
         en: 'English',
         fr: 'French',
+        de: 'German',
+        es: 'Spanish',
+        tr: 'Turkish',
+        ru: 'Russian',
       },
     };
 

@@ -44,6 +44,7 @@ import { HandlePaymobWebhookUseCase } from './use-cases/handle-paymob-webhook.us
 import { HandleStripeWebhookUseCase } from './use-cases/handle-stripe-webhook.use-case';
 import { InitiateSessionPaymentUseCase } from './use-cases/initiate-session-payment.use-case';
 import { ListAdminPatientPaymentsUseCase } from './use-cases/list-admin-patient-payments.use-case';
+import { ListAdminPaymentsUseCase } from './use-cases/list-admin-payments.use-case';
 import { ListPaymentRefundsUseCase } from './use-cases/list-payment-refunds.use-case';
 import { ListPatientPaymentsUseCase } from './use-cases/list-patient-payments.use-case';
 import { MarkPaymentFailedUseCase } from './use-cases/mark-payment-failed.use-case';
@@ -106,6 +107,7 @@ import { RetryPaymentRefundUseCase } from './use-cases/retry-payment-refund.use-
     GetPatientSessionPaymentCapabilitiesUseCase,
     ListPatientPaymentsUseCase,
     ListAdminPatientPaymentsUseCase,
+    ListAdminPaymentsUseCase,
     HandleStripeWebhookUseCase,
     HandlePaymobWebhookUseCase,
     MarkPaymentSucceededUseCase,

@@ -319,7 +319,7 @@ export default function RegisterBusinessForm() {
             <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
               {t("alreadyHaveAccount")}{" "}
               <Link
-                href="/signin"
+                href="/signin/patient"
                 className="text-text-brand hover:text-primary-hover"
               >
                 {t("signIn")}

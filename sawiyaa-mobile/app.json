@@ -9,7 +9,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/logo.png",
+      "image": "./assets/logo_transparent.png",
       "resizeMode": "contain",
       "backgroundColor": "#F7F4EE"
     },

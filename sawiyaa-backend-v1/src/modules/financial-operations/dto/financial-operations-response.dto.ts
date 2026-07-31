@@ -1,4 +1,4 @@
-﻿import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -264,6 +264,30 @@ export class SettlementPayoutRecordItemDto {
   @ApiProperty()
   amountNet!: string;
 
+  @ApiProperty({ nullable: true })
+  sourceAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  sourceCurrency!: string | null;
+
+  @ApiProperty({ nullable: true })
+  payoutCurrency!: string | null;
+
+  @ApiProperty({ nullable: true })
+  exchangeRateEgpPerUsd!: string | null;
+
+  @ApiProperty({ nullable: true })
+  calculatedPayoutAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  actualPayoutAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  differenceAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  overrideReason!: string | null;
+
   @ApiProperty()
   currency!: string;
 
@@ -513,6 +537,9 @@ export class PractitionerPayoutHistoryItemDto {
 
   @ApiProperty()
   createdAt!: string;
+
+  @ApiProperty({ enum: PractitionerSettlementStatus, nullable: true })
+  status!: PractitionerSettlementStatus | null;
 }
 
 export class AdminPayoutHistoryItemDto extends PractitionerPayoutHistoryItemDto {
@@ -523,12 +550,26 @@ export class AdminPayoutHistoryItemDto extends PractitionerPayoutHistoryItemDto 
   practitionerSlug!: string | null;
 }
 
+export class PractitionerTransferSummaryDto {
+  @ApiProperty()
+  payoutCount!: number;
+
+  @ApiProperty()
+  egpAmountPaid!: string;
+
+  @ApiProperty()
+  usdAmountPaid!: string;
+}
+
 export class AdminPayoutHistoryListDataResponseDto {
   @ApiProperty({ type: AdminPayoutHistoryItemDto, isArray: true })
   items!: AdminPayoutHistoryItemDto[];
 
   @ApiProperty({ type: PaginationDto })
   pagination!: PaginationDto;
+
+  @ApiProperty({ type: PractitionerTransferSummaryDto })
+  summary!: PractitionerTransferSummaryDto;
 }
 
 export class AdminPayoutHistoryListSuccessResponseDto {
@@ -1016,6 +1057,48 @@ export class PractitionerManualPayoutSummaryItemDto {
 
   @ApiProperty({ nullable: true })
   lastPayoutAt!: string | null;
+}
+
+export class PractitionerSafeSettlementItemDto {
+  @ApiProperty({ nullable: true })
+  sessionId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  sessionCode!: string | null;
+
+  @ApiProperty({ nullable: true })
+  date!: string | null;
+
+  @ApiProperty({ nullable: true })
+  sessionType!: string | null;
+
+  @ApiProperty()
+  amountAdded!: string;
+
+  @ApiProperty()
+  currency!: string;
+
+  @ApiProperty({ enum: PractitionerSettlementStatus })
+  status!: PractitionerSettlementStatus;
+
+  @ApiProperty({ enum: ['PENDING', 'PAID', 'NOT_ELIGIBLE'] })
+  payoutStatus!: 'PENDING' | 'PAID' | 'NOT_ELIGIBLE';
+}
+
+export class PractitionerSafeSettlementListDataResponseDto {
+  @ApiProperty({ type: PractitionerSafeSettlementItemDto, isArray: true })
+  items!: PractitionerSafeSettlementItemDto[];
+
+  @ApiProperty({ type: PaginationDto })
+  pagination!: PaginationDto;
+}
+
+export class PractitionerSafeSettlementListSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: PractitionerSafeSettlementListDataResponseDto })
+  data!: PractitionerSafeSettlementListDataResponseDto;
 }
 
 export class PractitionerManualPayoutSummaryStatsDto {

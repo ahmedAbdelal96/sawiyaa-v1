@@ -30,7 +30,7 @@ export class ListSessionsDto {
 
   @ApiPropertyOptional({
     description:
-      'Optional human-readable session reference search (for example: SES-2026-000123).',
+      'Optional canonical Session Code exact or prefix search (for example: S-260729-0042).',
   })
   @IsOptional()
   @Transform(({ value }) =>

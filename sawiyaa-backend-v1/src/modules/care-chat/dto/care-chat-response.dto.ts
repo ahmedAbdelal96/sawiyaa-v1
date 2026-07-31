@@ -34,6 +34,9 @@ export class CareChatRequestItemDto {
   relatedSessionId!: string | null;
 
   @ApiProperty({ nullable: true })
+  relatedSessionCode!: string | null;
+
+  @ApiProperty({ nullable: true })
   linkedConversationId!: string | null;
 
   @ApiProperty()

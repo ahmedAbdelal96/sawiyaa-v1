@@ -16,6 +16,7 @@ type Props = {
   copy: any;
   onOpenFullChat: () => void;
   onThreadActive?: () => void;
+  isVisible?: boolean;
 };
 
 export default function SessionLaneThread({
@@ -24,6 +25,7 @@ export default function SessionLaneThread({
   locale,
   onOpenFullChat,
   onThreadActive,
+  isVisible = true,
 }: Props) {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const openMutation = useOpenSessionGeneralChat(sessionId);
@@ -55,10 +57,10 @@ export default function SessionLaneThread({
   });
 
   useEffect(() => {
-    if (conversationId && !conversationQuery.isLoading && onThreadActive) {
+    if (isVisible && conversationId && !conversationQuery.isLoading && onThreadActive) {
       onThreadActive();
     }
-  }, [conversationId, conversationQuery.isLoading, onThreadActive]);
+  }, [conversationId, conversationQuery.isLoading, isVisible, onThreadActive]);
 
   const conversation = conversationQuery.data?.item ?? null;
 
@@ -70,6 +72,7 @@ export default function SessionLaneThread({
           role={role}
           locale={locale}
           onOpenFullChat={onOpenFullChat}
+          isVisible={isVisible}
         />
       ) : (
         <div className="flex h-full items-center justify-center p-8 text-center text-text-muted animate-pulse">
@@ -86,4 +89,3 @@ export default function SessionLaneThread({
 // showComposer
 // chatAvailability?.canSend === true
 // chatAvailability?.readOnly !== true
-

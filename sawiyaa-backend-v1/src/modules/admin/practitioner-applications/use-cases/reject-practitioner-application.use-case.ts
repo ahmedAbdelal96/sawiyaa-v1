@@ -104,11 +104,62 @@ export class RejectPractitionerApplicationUseCase {
           tx,
         );
 
-        await this.profileRepository.updateStatus(
-          decision.practitioner.id,
-          PractitionerStatus.REJECTED,
-          tx,
-        );
+        const currentProfile = await tx.practitionerProfile.findUnique({
+          where: { id: decision.practitioner.id },
+          select: { status: true },
+        });
+        if (currentProfile?.status === PractitionerStatus.APPROVED) {
+          const snapshot = decision.submissionSnapshot as {
+            credentials?: Array<{ credentialId?: string }>;
+          } | null;
+          const credentialIds = (snapshot?.credentials ?? [])
+            .map((item) => item.credentialId)
+            .filter((item): item is string => typeof item === 'string');
+          if (credentialIds.length > 0) {
+            await tx.practitionerCredential.updateMany({
+              where: {
+                practitionerId: decision.practitioner.id,
+                id: { in: credentialIds },
+                reviewStatus: 'PENDING',
+              },
+              data: {
+                reviewStatus: 'REJECTED',
+                reviewedAt,
+                reviewedByUserId: input.adminUserId,
+                reviewNotes: reason,
+              },
+            });
+          }
+        } else {
+          await this.profileRepository.updateStatus(
+            decision.practitioner.id,
+            PractitionerStatus.REJECTED,
+            tx,
+          );
+        }
+
+        const reviewCase = await tx.practitionerReviewCase.findFirst({
+          where: {
+            practitionerId: decision.practitioner.id,
+            status: { in: ['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED'] },
+          },
+          orderBy: { updatedAt: 'desc' },
+        });
+        if (reviewCase) {
+          await tx.practitionerReviewCase.update({
+            where: { id: reviewCase.id },
+            data: {
+              status: 'REJECTED',
+              reviewedAt,
+              reviewedByUserId: input.adminUserId,
+              decisionReason: reason,
+            },
+          });
+          await tx.practitionerReviewSection.updateMany({
+            where: { caseId: reviewCase.id, status: { in: ['PENDING', 'CHANGES_REQUESTED'] } },
+            data: { status: 'REJECTED', reviewedAt, reviewedByUserId: input.adminUserId, decisionReason: reason },
+          });
+        }
 
         await this.securityAuditService.recordRequired(tx, {
           action: 'security.practitioner.application.reject',

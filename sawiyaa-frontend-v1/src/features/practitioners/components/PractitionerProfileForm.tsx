@@ -20,6 +20,7 @@ import type {
 } from "../types/practitioners.types";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import { getLocalizedProfessionalTitleOptions, getProfessionalTitleLabel } from "@/constants/reference-data";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
 import {
@@ -256,6 +257,7 @@ export default function PractitionerProfileForm({
   }, [profile, reset]);
 
   const watchedCountryCode = useWatch({ control, name: "countryCode" });
+  const watchedProfessionalTitle = useWatch({ control, name: "professionalTitle" });
   const watchedPayoutCountryCode = useWatch({ control, name: "payoutCountryCode" });
   const watchedPayoutMethodType = useWatch({ control, name: "payoutMethodType" });
   const watchedPayoutBankName = useWatch({ control, name: "payoutBankName" });
@@ -486,13 +488,21 @@ export default function PractitionerProfileForm({
             {/* Professional Title */}
             <div>
               <Label htmlFor="professionalTitle">{t("profile.fields.professionalTitle.label")}</Label>
-              <Input
+              <select
                 id="professionalTitle"
-                type="text"
-                placeholder={t("profile.fields.professionalTitle.placeholder")}
-                error={!!errors.professionalTitle}
                 {...register("professionalTitle")}
-              />
+                className="h-11 w-full rounded-xl border border-border-light bg-surface-tertiary px-4 text-sm text-text-primary"
+              >
+                <option value="">{t("profile.fields.professionalTitle.placeholder")}</option>
+                {watchedProfessionalTitle && !getLocalizedProfessionalTitleOptions(locale).some((option) => option.value === watchedProfessionalTitle) ? (
+                  <option value={watchedProfessionalTitle}>
+                    {getProfessionalTitleLabel(watchedProfessionalTitle, locale)}
+                  </option>
+                ) : null}
+                {getLocalizedProfessionalTitleOptions(locale).map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Practitioner Type */}

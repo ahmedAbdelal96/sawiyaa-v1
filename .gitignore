@@ -22,8 +22,10 @@ coverage/
 # Local env files (never commit secrets)
 .env
 .env.*
+*.env.upload
 **/.env
 **/.env.*
+**/*.env.upload
 !**/.env.example
 !**/.env.*.example
 !.env.example
@@ -99,6 +101,7 @@ deploy/*.sql
 sawiyaa-backend-v1/storage/**
 !sawiyaa-backend-v1/storage/.gitkeep
 !sawiyaa-backend-v1/storage/**/.gitkeep
+sawiyaa-backend-v1/scratch/
 
 # Local screenshot exports (optional artifacts)
 WhatsApp Image *.jpg

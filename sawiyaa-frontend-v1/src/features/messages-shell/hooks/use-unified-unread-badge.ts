@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getCanonicalUnreadSummary } from "../api/messages-shell.api";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getUnifiedMessagingUnreadSummary } from "../api/messages-shell.api";
 import type { UnifiedMessagingRole } from "../types/messages-shell.types";
 
 export function useUnifiedUnreadBadge(role: UnifiedMessagingRole) {
+  const queryClient = useQueryClient();
   const [isPageVisible, setIsPageVisible] = useState(
     () => (typeof document === "undefined" ? true : document.visibilityState === "visible"),
   );
@@ -23,21 +24,30 @@ export function useUnifiedUnreadBadge(role: UnifiedMessagingRole) {
     };
   }, []);
 
+  useEffect(() => {
+    const refresh = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["unified-messages-shell", role, "unread-summary"],
+      });
+    };
+
+    window.addEventListener("unified-messages:unread-summary:dirty", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.removeEventListener("unified-messages:unread-summary:dirty", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [queryClient, role]);
+
   const unreadSummaryQuery = useQuery({
-    queryKey: ["canonical-unread-summary", role],
-    queryFn: () => getCanonicalUnreadSummary(),
+    queryKey: ["unified-messages-shell", role, "unread-summary"],
+    queryFn: () => getUnifiedMessagingUnreadSummary(),
     staleTime: 10000,
     refetchInterval: isPageVisible ? 15000 : false,
     refetchIntervalInBackground: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 
-  const summary = unreadSummaryQuery.data;
-  const summaryItem = summary?.item;
-
-  if (role === "admin") {
-    return summaryItem?.needsSupportReplyCount ?? 0;
-  }
-  return summaryItem?.unreadCount ?? 0;
+  return unreadSummaryQuery.data?.item.totalUnreadMessages ?? 0;
 
 }

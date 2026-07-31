@@ -199,6 +199,22 @@ export async function practitionerLogin(data: PractitionerLoginRequest) {
   throw new Error("PRACTITIONER_LOGIN_INVALID_RESPONSE");
 }
 
+export async function practitionerVerifyRegistrationOtp(data: { challengeId: string; code: string }) {
+  const response = await httpClient.post<ApiPayload<PractitionerRegistrationResponse>>(
+    "/auth/practitioner/register/verify-otp",
+    data,
+  );
+  return extractData(response.data);
+}
+
+export async function practitionerResendRegistrationOtp(data: { challengeId: string }) {
+  const response = await httpClient.post<ApiPayload<PractitionerRegistrationResponse>>(
+    "/auth/practitioner/register/resend-otp",
+    data,
+  );
+  return extractData(response.data);
+}
+
 export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) {
   const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>(
     "/auth/practitioner/login/verify-otp",

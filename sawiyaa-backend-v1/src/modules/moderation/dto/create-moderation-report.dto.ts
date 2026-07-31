@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ModerationChatType,
   ModerationReportReason,
   ModerationReportTargetType,
 } from '@prisma/client';
@@ -29,4 +30,28 @@ export class CreateModerationReportDto {
   @IsString()
   @MaxLength(1000)
   note?: string;
+
+  @ApiPropertyOptional({ enum: ModerationChatType })
+  @IsOptional()
+  @IsEnum(ModerationChatType)
+  chatType?: ModerationChatType;
+
+  @ApiPropertyOptional({
+    description: 'Conversation reference for chat evidence',
+  })
+  @IsOptional()
+  @IsUUID()
+  conversationId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Specific message reference for chat evidence',
+  })
+  @IsOptional()
+  @IsUUID()
+  reportedMessageId?: string;
+
+  @ApiPropertyOptional({ description: 'User who is the subject of the report' })
+  @IsOptional()
+  @IsUUID()
+  targetUserId?: string;
 }

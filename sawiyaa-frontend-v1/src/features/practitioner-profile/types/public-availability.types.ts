@@ -13,6 +13,8 @@ export type PublicAvailabilityWindow = {
 };
 
 export type PublicAvailabilityWindowsData = {
+  acceptsNormalBookings: boolean;
+  reasonCode?: "NORMAL_BOOKINGS_PAUSED";
   /** IANA timezone of the practitioner (informational — display is in user's local time) */
   timezone: string;
   /** Echoed back range from the request */

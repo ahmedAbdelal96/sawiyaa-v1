@@ -80,6 +80,7 @@ import { SecurityAuditOutcome } from '@prisma/client';
 import { GetPractitionerApplicationAvatarFileUseCase } from '../use-cases/get-practitioner-application-avatar-file.use-case';
 import { GetPractitionerApplicationCredentialFileUseCase } from '../use-cases/get-practitioner-application-credential-file.use-case';
 import { UploadAdminPractitionerCredentialFileUseCase } from '../use-cases/upload-admin-practitioner-credential-file.use-case';
+import { GetAdminDirectCreateCredentialFileUseCase } from '../use-cases/get-admin-direct-create-credential-file.use-case';
 
 /**
  * Admin-only controller for practitioner application review decisions.
@@ -105,6 +106,7 @@ export class PractitionerApplicationsAdminController {
     private readonly upsertPractitionerApplicationCredentialUseCase: UpsertPractitionerApplicationCredentialUseCase,
     private readonly deletePractitionerApplicationCredentialUseCase: DeletePractitionerApplicationCredentialUseCase,
     private readonly uploadAdminPractitionerCredentialFileUseCase: UploadAdminPractitionerCredentialFileUseCase,
+    private readonly getAdminDirectCreateCredentialFileUseCase: GetAdminDirectCreateCredentialFileUseCase,
     private readonly securityAuditService: SecurityAuditService,
   ) {}
 
@@ -192,6 +194,7 @@ export class PractitionerApplicationsAdminController {
   ) {
     return this.listPractitionerApplicationsUseCase.execute({
       locale,
+      view: query.view,
       kind: query.kind,
       status: query.status,
       q: query.q,
@@ -313,6 +316,25 @@ export class PractitionerApplicationsAdminController {
             : new Date(body.expiresAt),
       file,
     });
+  }
+
+  @Get('direct-create/credentials/:credentialId/file')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @ApiOperation({ summary: 'View an uploaded direct-create credential file' })
+  @ApiQuery({ name: 'mimeType', required: true })
+  @ApiNotFoundResponse({ description: 'Credential file not found' })
+  async viewDirectCredential(
+    @Param('credentialId') credentialId: string,
+    @Query('mimeType') mimeType: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const stored = await this.getAdminDirectCreateCredentialFileUseCase.execute({
+      credentialId,
+      mimeType,
+    });
+    response.setHeader('Content-Type', stored.mimeType);
+    response.setHeader('Cache-Control', 'private, no-store');
+    return new StreamableFile(createReadStream(stored.absolutePath));
   }
 
   /** Returns full admin details for one practitioner application. */
@@ -646,6 +668,7 @@ export class PractitionerApplicationsAdminController {
       adminUserId: currentUser.id,
       reason: body.reason,
       note: body.note,
+      requirements: body.requirements,
     });
   }
 }

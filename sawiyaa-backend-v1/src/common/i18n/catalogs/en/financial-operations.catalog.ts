@@ -18,6 +18,8 @@ export const enFinancialOperationsCatalog = {
     invalidSettlementPayoutState:
       'The settlement is in an invalid state for payout recording.',
     invalidPayoutAmount: 'Paid amount is invalid.',
+    payoutOverrideReasonRequired: 'A reason is required when the actual transfer differs materially from the calculated amount.',
+    exchangeRateRequired: 'An exchange rate is required for a cross-currency payout.',
     payoutAmountExceedsDue: 'Paid amount exceeds the remaining due.',
     partialPayoutNotSupported:
       'Partial payout is not supported in this payout flow.',

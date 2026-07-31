@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ArrowLeft, ArrowRight, Loader2, Star } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Star, User, Calendar, FileText } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import { useAdminReview, useModerateReview } from "../hooks/use-reviews";
 import { ALLOWED_MODERATION_DECISIONS } from "../types/reviews.types";
@@ -31,7 +31,7 @@ function getRatingLabel(rating: number) {
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
@@ -42,18 +42,18 @@ function StarRating({ rating }: { rating: number }) {
           }`}
         />
       ))}
-      <span className="ms-1 text-sm font-medium text-text-secondary">{getRatingLabel(rating)}</span>
+      <span className="ms-1.5 text-sm font-semibold text-text-primary dark:text-white">{getRatingLabel(rating)}</span>
     </span>
   );
 }
 
 const DECISION_BADGE_COLOR: Record<ReviewModerationDecision, Parameters<typeof Badge>[0]["color"]> = {
   AUTO_APPROVED_POSITIVE: "success",
-  APPROVE_AS_IS: "success",
-  EDIT_AND_APPROVE: "success",
-  REJECT_PUBLISHING: "error",
+  APPROVED_AS_IS: "success",
+  EDITED_AND_APPROVED: "success",
+  REJECTED_PUBLISHING: "error",
   INTERNAL_NOTE_ONLY: "info",
-  EXCLUDE_FROM_PUBLIC_AVERAGE: "warning",
+  EXCLUDED_FROM_PUBLIC_AVERAGE: "warning",
 };
 
 type DecisionCard = {
@@ -61,21 +61,6 @@ type DecisionCard = {
   titleKey: string;
   descriptionKey: string;
 };
-
-function SummaryField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | ReactNode;
-}) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-text-muted">{label}</dt>
-      <dd className="mt-1 text-sm text-text-primary dark:text-white/90">{value}</dd>
-    </div>
-  );
-}
 
 function DecisionChoice({
   selected,
@@ -103,19 +88,21 @@ function DecisionChoice({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-[22px] border p-4 text-start transition ${
+      className={`rounded-xl border p-3.5 text-start transition w-full ${
         selected
-          ? `${toneClass} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-surface-secondary`
+          ? `${toneClass} ring-1 ring-primary`
           : "border-border-light bg-white hover:border-primary/40 dark:border-white/10 dark:bg-white/[0.03]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">{title}</p>
-          <p className="text-xs leading-6 text-text-secondary">{description}</p>
+          <p className="text-xs font-semibold text-text-primary dark:text-white/95">{title}</p>
+          {selected && (
+            <p className="text-[11px] leading-relaxed text-text-secondary mt-1">{description}</p>
+          )}
         </div>
         <span
-          className={`mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
+          className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border text-[9px] font-bold ${
             selected
               ? "border-primary bg-primary text-white"
               : "border-border-light text-text-muted dark:border-white/20"
@@ -154,19 +141,19 @@ function ModerationPanel({
 
   const decisionCards: DecisionCard[] = [
     {
-      decision: "APPROVE_AS_IS",
-      titleKey: "admin.moderation.decisions.APPROVE_AS_IS.title",
-      descriptionKey: "admin.moderation.decisions.APPROVE_AS_IS.description",
+      decision: "APPROVED_AS_IS",
+      titleKey: "admin.moderation.decisions.APPROVED_AS_IS.title",
+      descriptionKey: "admin.moderation.decisions.APPROVED_AS_IS.description",
     },
     {
-      decision: "EDIT_AND_APPROVE",
-      titleKey: "admin.moderation.decisions.EDIT_AND_APPROVE.title",
-      descriptionKey: "admin.moderation.decisions.EDIT_AND_APPROVE.description",
+      decision: "EDITED_AND_APPROVED",
+      titleKey: "admin.moderation.decisions.EDITED_AND_APPROVED.title",
+      descriptionKey: "admin.moderation.decisions.EDITED_AND_APPROVED.description",
     },
     {
-      decision: "REJECT_PUBLISHING",
-      titleKey: "admin.moderation.decisions.REJECT_PUBLISHING.title",
-      descriptionKey: "admin.moderation.decisions.REJECT_PUBLISHING.description",
+      decision: "REJECTED_PUBLISHING",
+      titleKey: "admin.moderation.decisions.REJECTED_PUBLISHING.title",
+      descriptionKey: "admin.moderation.decisions.REJECTED_PUBLISHING.description",
     },
     {
       decision: "INTERNAL_NOTE_ONLY",
@@ -174,15 +161,15 @@ function ModerationPanel({
       descriptionKey: "admin.moderation.decisions.INTERNAL_NOTE_ONLY.description",
     },
     {
-      decision: "EXCLUDE_FROM_PUBLIC_AVERAGE",
-      titleKey: "admin.moderation.decisions.EXCLUDE_FROM_PUBLIC_AVERAGE.title",
-      descriptionKey: "admin.moderation.decisions.EXCLUDE_FROM_PUBLIC_AVERAGE.description",
+      decision: "EXCLUDED_FROM_PUBLIC_AVERAGE",
+      titleKey: "admin.moderation.decisions.EXCLUDED_FROM_PUBLIC_AVERAGE.title",
+      descriptionKey: "admin.moderation.decisions.EXCLUDED_FROM_PUBLIC_AVERAGE.description",
     },
   ];
 
   const selectedDecisionConfig = decisionCards.find((item) => item.decision === selectedDecision);
-  const requiresPublicRating = selectedDecision === "EDIT_AND_APPROVE";
-  const requiresReason = Boolean(selectedDecision) && selectedDecision !== "APPROVE_AS_IS";
+  const requiresPublicRating = selectedDecision === "EDITED_AND_APPROVED";
+  const requiresReason = Boolean(selectedDecision) && selectedDecision !== "APPROVED_AS_IS";
 
   const validate = () => {
     if (!selectedDecision) {
@@ -235,11 +222,7 @@ function ModerationPanel({
         {t("admin.moderation.heading")}
       </h2>
 
-      <p className="mt-2 text-sm leading-6 text-text-secondary">
-        {t("admin.moderation.note")}
-      </p>
-
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-2.5">
         {decisionCards
           .filter((item) => allowedDecisions.includes(item.decision))
           .map((item) => (
@@ -250,15 +233,15 @@ function ModerationPanel({
               description={t(item.descriptionKey as Parameters<typeof t>[0])}
               onSelect={() => {
                 setSelectedDecision(item.decision);
-                if (item.decision !== "EDIT_AND_APPROVE") {
+                if (item.decision !== "EDITED_AND_APPROVED") {
                   setPublicRatingValue(originalRatingValue);
                 }
                 setFeedback(null);
               }}
               tone={
-                item.decision === "REJECT_PUBLISHING"
+                item.decision === "REJECTED_PUBLISHING"
                   ? "error"
-                  : item.decision === "EXCLUDE_FROM_PUBLIC_AVERAGE"
+                  : item.decision === "EXCLUDED_FROM_PUBLIC_AVERAGE"
                     ? "warning"
                     : item.decision === "INTERNAL_NOTE_ONLY"
                       ? "info"
@@ -269,22 +252,13 @@ function ModerationPanel({
       </div>
 
       {selectedDecisionConfig ? (
-        <div className="mt-5 space-y-4 rounded-[22px] border border-border-light bg-surface-secondary/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-          <div>
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
-              {t("admin.moderation.selectedDecision")}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              {t(selectedDecisionConfig.titleKey as Parameters<typeof t>[0])}
-            </p>
-          </div>
-
+        <div className="mt-4 space-y-4 rounded-[18px] border border-border-light bg-surface-secondary/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
           {requiresPublicRating ? (
             <div className="space-y-2">
-              <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <p className="text-xs font-semibold text-text-muted">
                 {t("admin.detail.publicRating")}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {Array.from({ length: 5 }).map((_, index) => {
                   const value = index + 1;
                   const active = value <= publicRatingValue;
@@ -293,7 +267,7 @@ function ModerationPanel({
                       key={value}
                       type="button"
                       onClick={() => setPublicRatingValue(value)}
-                      className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition ${
                         active
                           ? "border-primary bg-primary-light text-primary"
                           : "border-border-light bg-white text-text-muted hover:border-primary/40 dark:bg-white/5"
@@ -305,14 +279,11 @@ function ModerationPanel({
                   );
                 })}
               </div>
-              <p className="text-xs text-text-muted">
-                {t("admin.detail.publicRatingHint")}
-              </p>
             </div>
           ) : null}
 
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-text-primary dark:text-white/90">
+            <span className="mb-1.5 block text-xs font-semibold text-text-muted">
               {t("admin.moderation.reasonLabel")}
               {requiresReason ? " *" : ""}
             </span>
@@ -320,27 +291,22 @@ function ModerationPanel({
               value={moderationReason}
               onChange={(event) => setModerationReason(event.target.value)}
               maxLength={1000}
-              rows={4}
+              rows={3}
               placeholder={t("admin.moderation.reasonPlaceholder")}
-              className="w-full resize-none rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition placeholder:text-text-muted focus:border-primary/40 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/95"
+              className="w-full resize-none rounded-xl border border-border-light bg-white px-3 py-2 text-xs text-text-primary outline-none transition placeholder:text-text-muted focus:border-primary/40 dark:border-white/10 dark:bg-white/[0.03] dark:text-white/95"
             />
-            <p className="mt-2 text-xs text-text-muted">
-              {requiresReason
-                ? t("admin.moderation.reasonRequiredHint")
-                : t("admin.moderation.reasonOptionalHint")}
-            </p>
           </label>
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-3">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!selectedDecision || moderate.isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {moderate.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {moderate.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           {moderate.isPending
             ? t("admin.moderation.submitting")
             : t("admin.moderation.submit")}
@@ -348,7 +314,7 @@ function ModerationPanel({
 
         {feedback ? (
           <div
-            className={`rounded-2xl border px-4 py-3 text-sm ${
+            className={`rounded-xl border px-3 py-2 text-xs ${
               feedback.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300"
                 : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300"
@@ -364,13 +330,12 @@ function ModerationPanel({
 
 function DetailSkeleton() {
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="app-panel space-y-5 rounded-[24px] p-6">
         <div className="h-5 w-32 animate-pulse rounded bg-surface-tertiary dark:bg-white/10" />
         <div className="space-y-3">
           <div className="h-4 w-full animate-pulse rounded bg-surface-tertiary dark:bg-white/10" />
           <div className="h-4 w-4/5 animate-pulse rounded bg-surface-tertiary dark:bg-white/10" />
-          <div className="h-4 w-3/5 animate-pulse rounded bg-surface-tertiary dark:bg-white/10" />
         </div>
       </div>
       <div className="app-panel h-48 animate-pulse rounded-[24px]" />
@@ -424,168 +389,172 @@ export default function AdminReviewDetailScreen({ reviewId }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href="/admin/reviews"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
-        >
-          <BackIcon className="h-4 w-4" />
-          {t("admin.detail.back")}
-        </Link>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95">
-          {t("admin.detail.heading")}
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
-          {t("admin.detail.subtitle")}
-        </p>
+      {/* Header section with back navigation and compact status badges */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border-light pb-4 dark:border-white/10">
+        <div>
+          <Link
+            href="/admin/reviews"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-primary transition-colors"
+          >
+            <BackIcon className="h-3.5 w-3.5" />
+            {t("admin.detail.back")}
+          </Link>
+          <h1 className="mt-1.5 text-xl font-bold tracking-tight text-text-primary dark:text-white/95">
+            {t("admin.detail.heading")}
+          </h1>
+        </div>
+        
+        {/* Status badges */}
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="light" size="sm" color="dark">
+            {t(`admin.statuses.${item.status}` as Parameters<typeof t>[0])}
+          </Badge>
+          {displayDecision ? (
+            <Badge
+              variant="light"
+              size="sm"
+              color={DECISION_BADGE_COLOR[displayDecision]}
+            >
+              {t(`admin.decisions.${displayDecision}` as Parameters<typeof t>[0])}
+            </Badge>
+          ) : (
+            <Badge variant="light" size="sm" color="warning">
+              {t("admin.decisions.pending")}
+            </Badge>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      {/* Main Grid Layout */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        
+        {/* Left Column: Details Area */}
         <div className="space-y-5">
-          <section className="app-panel rounded-[24px] p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <StarRating rating={originalRatingValue} />
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="light" size="sm" color="dark">
-                  {t(`admin.statuses.${item.status}` as Parameters<typeof t>[0])}
-                </Badge>
-                {displayDecision ? (
-                  <Badge
-                    variant="light"
-                    size="sm"
-                    color={DECISION_BADGE_COLOR[displayDecision]}
-                  >
-                    {t(`admin.decisions.${displayDecision}` as Parameters<typeof t>[0])}
-                  </Badge>
-                ) : (
-                  <Badge variant="light" size="sm" color="warning">
-                    {t("admin.decisions.pending")}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.originalRating")}
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-                  {getRatingLabel(originalRatingValue)}
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.publicRating")}
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white/95">
-                  {publicRatingValue != null ? getRatingLabel(publicRatingValue) : "—"}
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.averageContribution")}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-                  {countsLabel}
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.moderationState")}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-                  {displayDecision
-                    ? t(`admin.decisions.${displayDecision}` as Parameters<typeof t>[0])
-                    : t("admin.decisions.pending")}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 xl:grid-cols-2">
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.moderationReason")}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-text-secondary">
-                  {item.moderationReason?.trim() || t("admin.detail.none")}
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.moderatedBy")}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-                  {item.moderatedByUserId
-                    ? t("admin.detail.moderatedByFallback")
-                    : t("admin.detail.none")}
-                </p>
-              </div>
-            </div>
-            {item.moderatedAt ? (
-              <div className="mt-3 rounded-[18px] border border-border-light bg-surface-secondary/70 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-                  {t("admin.detail.moderatedAt")}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/95">
-                  {formatDate(item.moderatedAt, locale)}
-                </p>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="app-panel rounded-[24px] p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
+          
+          {/* Summary Card */}
+          <section className="app-panel rounded-[20px] p-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted flex items-center gap-1.5">
+              <User className="h-3.5 w-3.5" />
               {t("admin.detail.sessionSection")}
             </h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <SummaryField
-                label={t("admin.detail.practitioner")}
-                value={item.practitioner.displayName ?? t("admin.detail.unknown")}
-              />
-              <SummaryField
-                label={t("admin.detail.patient")}
-                value={
-                  item.patient.isAnonymous
-                    ? t("admin.detail.anonymousPatient")
-                    : item.patient.displayName ?? t("admin.detail.patientFallback")
-                }
-              />
-              <SummaryField
-                label={t("admin.detail.sessionDate")}
-                value={formatDate(item.session.scheduledStartAt, locale)}
-              />
-              <SummaryField
-                label={t("admin.detail.submittedAt")}
-                value={formatDate(item.submittedAt, locale)}
-              />
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 text-xs">
+              <div className="space-y-1">
+                <span className="font-semibold text-text-muted">{t("admin.detail.practitioner")}</span>
+                <p className="text-sm font-bold text-text-primary dark:text-white">{item.practitioner.displayName ?? t("admin.detail.unknown")}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="font-semibold text-text-muted">{t("admin.detail.patient")}</span>
+                <p className="text-sm font-bold text-text-primary dark:text-white">
+                  {item.patient.isAnonymous
+                    ? <span className="italic text-text-muted">{t("admin.detail.anonymousPatient")}</span>
+                    : item.patient.displayName ?? t("admin.detail.patientFallback")}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="font-semibold text-text-muted">{t("admin.detail.sessionDate")}</span>
+                <p className="text-sm font-medium text-text-primary dark:text-white">{formatDate(item.session.scheduledStartAt, locale)}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="font-semibold text-text-muted">{t("admin.detail.submittedAt")}</span>
+                <p className="text-sm font-medium text-text-primary dark:text-white">{formatDate(item.submittedAt, locale)}</p>
+              </div>
             </div>
           </section>
 
-          <section className="app-panel rounded-[24px] p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
+          {/* Rating Section */}
+          <section className="app-panel rounded-[20px] p-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted flex items-center gap-1.5">
+              <Star className="h-3.5 w-3.5" />
+              {locale === "ar" ? "تفاصيل التقييم" : "Rating Details"}
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3 text-xs">
+              <div className="space-y-1.5 border-e border-border-light/60 last:border-0 dark:border-white/5">
+                <span className="font-semibold text-text-muted">{t("admin.detail.originalRating")}</span>
+                <div>
+                  <StarRating rating={originalRatingValue} />
+                </div>
+              </div>
+              
+              <div className="space-y-1.5 border-e border-border-light/60 last:border-0 dark:border-white/5">
+                <span className="font-semibold text-text-muted">{t("admin.detail.publicRating")}</span>
+                <div>
+                  {publicRatingValue != null ? (
+                    <StarRating rating={publicRatingValue} />
+                  ) : (
+                    <span className="text-text-muted font-medium">—</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="font-semibold text-text-muted">{t("admin.detail.averageContribution")}</span>
+                <div>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold text-[11px] ${
+                    item.countsInPublicAverage
+                      ? "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400"
+                      : "bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
+                  }`}>
+                    {countsLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Comment Section */}
+          <section className="app-panel rounded-[20px] p-5">
+            <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted flex items-center gap-1.5">
+              <FileText className="h-3.5 w-3.5" />
               {t("admin.detail.patientNote")}
             </h2>
-            <div className="mt-4 rounded-[22px] border border-border-light bg-surface-secondary/70 p-5 dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="mt-3.5 rounded-xl border border-border-light bg-surface-secondary/50 p-4 dark:border-white/10 dark:bg-white/[0.02]">
               {item.title ? (
-                <p className="text-base font-semibold text-text-primary dark:text-white/95">
+                <p className="text-sm font-bold text-text-primary dark:text-white mb-2">
                   {item.title}
                 </p>
               ) : null}
               {item.textReview ? (
-                <p className={`${item.title ? "mt-3" : ""} whitespace-pre-wrap text-sm leading-7 text-text-secondary`}>
+                <p className="text-xs leading-6 text-text-secondary whitespace-pre-wrap">
                   {item.textReview}
                 </p>
               ) : (
-                <p className="text-sm italic text-text-muted">{t("admin.detail.noText")}</p>
+                <p className="text-xs italic text-text-muted">{t("admin.detail.noText")}</p>
               )}
-              <p className="mt-4 text-xs leading-6 text-text-muted">
-                {t("admin.detail.internalOnlyNote")}
-              </p>
             </div>
           </section>
+
+          {/* Moderation History (Rendered compactly only when history/previous moderation exists) */}
+          {item.moderatedAt ? (
+            <section className="app-panel rounded-[20px] p-5 border border-border-light/60 dark:border-white/5">
+              <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-text-muted">
+                {locale === "ar" ? "تاريخ المراجعة" : "Moderation History"}
+              </h2>
+              <div className="mt-3.5 grid gap-3 sm:grid-cols-3 text-xs leading-normal">
+                <div>
+                  <span className="font-semibold text-text-muted">{t("admin.detail.moderatedBy")}</span>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white">
+                    {item.moderatedByUserId
+                      ? t("admin.detail.moderatedByFallback")
+                      : t("admin.detail.none")}
+                  </p>
+                </div>
+                <div>
+                  <span className="font-semibold text-text-muted">{t("admin.detail.moderatedAt")}</span>
+                  <p className="mt-1 font-semibold text-text-primary dark:text-white">{formatDate(item.moderatedAt, locale)}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-text-muted">{t("admin.detail.moderationReason")}</span>
+                  <p className="mt-1 text-text-secondary max-w-[200px] truncate" title={item.moderationReason || ""}>
+                    {item.moderationReason?.trim() || t("admin.detail.none")}
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
         </div>
 
+        {/* Right Column: Moderation Side Actions Panel */}
         <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <ModerationPanel
             reviewId={reviewId}
@@ -593,16 +562,8 @@ export default function AdminReviewDetailScreen({ reviewId }: Props) {
             originalRatingValue={originalRatingValue}
             t={t}
           />
-
-          <div className="app-panel rounded-[24px] p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("admin.detail.visibility")}
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-text-secondary">
-              {t("admin.detail.visibilityNote")}
-            </p>
-          </div>
         </div>
+
       </div>
     </div>
   );

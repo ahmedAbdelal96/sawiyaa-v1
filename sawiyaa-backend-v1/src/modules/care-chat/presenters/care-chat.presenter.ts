@@ -14,6 +14,7 @@ export class CareChatPresenter {
       status: import('@prisma/client').ChatApprovalStatus;
       requestReason: string | null;
       relatedSessionId: string | null;
+      session?: { sessionCode: string | null } | null;
       linkedConversationId: string | null;
       requestedAt: Date;
       reviewedAt: Date | null;
@@ -31,6 +32,7 @@ export class CareChatPresenter {
       status: item.status,
       reason: item.requestReason ?? null,
       relatedSessionId: item.relatedSessionId ?? null,
+      relatedSessionCode: item.session?.sessionCode ?? null,
       linkedConversationId: item.linkedConversationId ?? null,
       requestedAt: item.requestedAt.toISOString(),
       reviewedAt: item.reviewedAt?.toISOString() ?? null,

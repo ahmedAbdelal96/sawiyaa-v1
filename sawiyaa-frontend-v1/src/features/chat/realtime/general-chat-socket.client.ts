@@ -70,3 +70,10 @@ export function ensureGeneralChatSocketConnected() {
 
   return socket;
 }
+
+export function disconnectGeneralChatSocket() {
+  if (!socketInstance) return;
+  socketInstance.disconnect();
+  socketInstance.removeAllListeners();
+  socketInstance = null;
+}

@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -41,7 +42,6 @@ import type {
   PractitionerCredential,
   PractitionerCredentialType,
   SubmitPractitionerApplicationRequest,
-  UploadPractitionerCredentialRequest,
 } from "../../src/features/practitioner/onboarding";
 import {
   getLocalizedSpecialtyCategoryName,
@@ -62,15 +62,6 @@ type PricingForm = {
   sessionPrice60Usd: string;
   acceptsPackage: boolean;
 };
-
-function isValidHttpUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
 
 function parseCurrencyInput(value: string) {
   const trimmed = value.trim();
@@ -159,6 +150,17 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   const specialtyItems =
     specialtiesQuery.data?.specialties ?? profile?.specialties ?? [];
   const credentials = credentialsQuery.data?.credentials ?? [];
+  const validCredential = (type: PractitionerCredentialType) =>
+    credentials.some(
+      (item) =>
+        item.credentialType === type &&
+        (item.reviewStatus === "PENDING" || item.reviewStatus === "APPROVED"),
+    );
+  const hasIdentityComplete =
+    validCredential("PASSPORT") ||
+    (validCredential("NATIONAL_ID_FRONT") && validCredential("NATIONAL_ID_BACK"));
+  const hasProfessionalAuthorization =
+    validCredential("MEMBERSHIP") || validCredential("LICENSE");
   const catalogCategories = catalogQuery.data?.categories ?? [];
   const catalogSpecialties = catalogQuery.data?.specialties ?? [];
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
@@ -183,7 +185,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   );
   const [credentialType, setCredentialType] =
     useState<PractitionerCredentialType>("LICENSE");
-  const [credentialFileUrl, setCredentialFileUrl] = useState("");
+  const [credentialFile, setCredentialFile] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [credentialExpiresAt, setCredentialExpiresAt] = useState("");
 
   const pricingInitialized = useRef(false);
@@ -365,10 +367,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   }
 
   async function saveCredential() {
-    const fileUrl = credentialFileUrl.trim();
     const expiresAt = normalizeIsoDateInput(credentialExpiresAt);
 
-    if (!isValidHttpUrl(fileUrl)) {
+    if (!credentialFile) {
       Alert.alert(
         t("practitioner.onboarding.credentials.invalidUrlTitle"),
         t("practitioner.onboarding.credentials.invalidUrlBody"),
@@ -379,11 +380,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
     try {
       await uploadCredential.mutateAsync({
         credentialType,
-        fileUrl,
+        file: credentialFile,
         expiresAt,
       });
 
-      setCredentialFileUrl("");
+      setCredentialFile(null);
       setCredentialExpiresAt("");
       setCredentialType("LICENSE");
       Alert.alert(
@@ -395,6 +396,22 @@ export default function PractitionerOnboardingWorkspaceScreen() {
         t("practitioner.onboarding.credentials.saveFailedTitle"),
         t("practitioner.onboarding.credentials.saveFailedBody"),
       );
+    }
+  }
+
+  async function chooseCredentialFile() {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/jpeg", "image/png"],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setCredentialFile({
+        uri: asset.uri,
+        name: asset.name || "practitioner-document",
+        type: asset.mimeType || "application/octet-stream",
+      });
     }
   }
 
@@ -840,23 +857,13 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           <View style={styles.checklistItem}>
             <Ionicons
               name={
-                credentials.some(
-                  (c) =>
-                    (c.credentialType === "NATIONAL_ID" ||
-                      c.credentialType === "PASSPORT") &&
-                    c.reviewStatus === "APPROVED",
-                )
+                hasIdentityComplete
                   ? "checkmark-circle"
                   : "ellipse-outline"
               }
               size={24}
               color={
-                credentials.some(
-                  (c) =>
-                    (c.credentialType === "NATIONAL_ID" ||
-                      c.credentialType === "PASSPORT") &&
-                    c.reviewStatus === "APPROVED",
-                )
+                hasIdentityComplete
                   ? theme.colors.primary
                   : theme.colors.textMuted
               }
@@ -877,12 +884,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                   "practitioner.onboarding.requiredDocuments.idOrPassportHint",
                 )}
               </Text>
-              {credentials.find(
-                (c) =>
-                  (c.credentialType === "NATIONAL_ID" ||
-                    c.credentialType === "PASSPORT") &&
-                  c.reviewStatus === "PENDING",
-              ) && (
+              {!hasIdentityComplete && (
                 <Text
                   color={theme.colors.textMuted}
                   style={styles.checklistItemStatus}
@@ -898,21 +900,13 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           <View style={styles.checklistItem}>
             <Ionicons
               name={
-                credentials.some(
-                  (c) =>
-                    c.credentialType === "DEGREE" &&
-                    c.reviewStatus === "APPROVED",
-                )
+                validCredential("DEGREE")
                   ? "checkmark-circle"
                   : "ellipse-outline"
               }
               size={24}
               color={
-                credentials.some(
-                  (c) =>
-                    c.credentialType === "DEGREE" &&
-                    c.reviewStatus === "APPROVED",
-                )
+                validCredential("DEGREE")
                   ? theme.colors.primary
                   : theme.colors.textMuted
               }
@@ -943,6 +937,22 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                   {t("practitioner.onboarding.requiredDocuments.pendingReview")}
                 </Text>
               )}
+            </View>
+          </View>
+
+          <View style={styles.checklistItem}>
+            <Ionicons
+              name={hasProfessionalAuthorization ? "checkmark-circle" : "ellipse-outline"}
+              size={24}
+              color={hasProfessionalAuthorization ? theme.colors.primary : theme.colors.textMuted}
+            />
+            <View style={styles.checklistItemContent}>
+              <Text weight="500" color={theme.colors.textPrimary} style={styles.checklistItemLabel}>
+                {t("practitioner.onboarding.requiredDocuments.professionalAuthorization")}
+              </Text>
+              <Text color={theme.colors.textMuted} style={styles.checklistItemHint}>
+                {t("practitioner.onboarding.requiredDocuments.professionalAuthorizationHint")}
+              </Text>
             </View>
           </View>
         </View>
@@ -1009,7 +1019,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                       color={theme.colors.textSecondary}
                       style={styles.credentialMeta}
                     >
-                      {item.fileUrl}
+                      {t("practitioner.onboarding.credentials.chooseFile")}
                     </Text>
                   </View>
                   <StatusChip
@@ -1067,11 +1077,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
               [
                 "LICENSE",
                 "DEGREE",
-                "CERTIFICATION",
-                "NATIONAL_ID",
+                "NATIONAL_ID_FRONT",
+                "NATIONAL_ID_BACK",
                 "PASSPORT",
                 "MEMBERSHIP",
-                "OTHER",
               ] as PractitionerCredentialType[]
             ).map((item) => {
               const selected = credentialType === item;
@@ -1106,13 +1115,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
               );
             })}
           </View>
-          <Input
-            label={t("practitioner.onboarding.credentials.fileUrl")}
-            value={credentialFileUrl}
-            onChangeText={setCredentialFileUrl}
-            placeholder="https://..."
-            helperText={t("practitioner.onboarding.credentials.fileUrlHint")}
-            autoCapitalize="none"
+          <Button
+            title={credentialFile?.name ?? t("practitioner.onboarding.credentials.chooseFile")}
+            variant="secondary"
+            onPress={() => void chooseCredentialFile()}
+            disabled={uploadCredential.isPending}
           />
           <Input
             label={t("practitioner.onboarding.credentials.expiresAt")}

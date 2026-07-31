@@ -133,6 +133,8 @@ export class PatientAuthController {
       email: dto.email,
       password: dto.password,
       displayName: dto.displayName,
+      phone: dto.phone,
+      phoneCountryCode: dto.phoneCountryCode,
       deviceContext: getRequestDeviceContext(request, dto.deviceId),
     });
 

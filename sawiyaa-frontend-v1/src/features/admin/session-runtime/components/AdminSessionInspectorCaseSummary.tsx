@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
 import { formatInspectorDateTime } from "../lib/inspector-utils";
 import { OUTCOME_TONE_CLASS, type OutcomeTone } from "../lib/inspector-utils";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT:
@@ -85,9 +86,15 @@ export default function AdminSessionInspectorCaseSummary({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
             {t("inspector.caseSummary.title")}
           </p>
-          <p className="mt-2 font-mono text-xs text-text-secondary">
-            {item.sessionCode || item.id}
-          </p>
+          <div className="mt-2">
+            <AdminSessionReference
+              sessionId={item.id}
+              sessionCode={item.sessionCode}
+              href={`/admin/sessions/runtime-inspection?sessionId=${item.id}`}
+              variant="inline"
+              copyable
+            />
+          </div>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${

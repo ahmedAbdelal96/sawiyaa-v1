@@ -52,8 +52,57 @@ export class ModerationPresenter {
     return {
       ...this.presentQueueItem(input),
       reporterUserId: input.reportedByUserId,
+      targetUserId: input.targetUserId ?? null,
       note: input.note,
       reporter: this.presentReporterSnapshot(input.reporter),
+      targetUser: this.presentReporterSnapshot(input.targetUser ?? null),
+      investigation: input.investigation
+        ? {
+            chatType: input.investigation.chatType,
+            conversationId: input.investigation.conversationId,
+            reportedMessageId: input.investigation.reportedMessageId,
+            conversation: input.investigation.conversation,
+            messages: input.investigation.messages.map((message) => ({
+              ...message,
+              sentAt: message.sentAt.toISOString(),
+            })),
+          }
+        : null,
+      history: input.history
+        ? {
+            reporterPreviousReports: input.history.reporterPreviousReports.map(
+              (item) => ({
+                ...item,
+                createdAt: item.createdAt.toISOString(),
+                lastActionAt: item.lastActionAt?.toISOString() ?? null,
+              }),
+            ),
+            targetPreviousReports: input.history.targetPreviousReports.map(
+              (item) => ({
+                ...item,
+                createdAt: item.createdAt.toISOString(),
+                lastActionAt: item.lastActionAt?.toISOString() ?? null,
+              }),
+            ),
+            targetEnforcements: input.history.targetEnforcements.map(
+              (item) => ({ ...item, createdAt: item.createdAt.toISOString() }),
+            ),
+            actions: input.history.actions.map((action) => ({
+              ...action,
+              createdAt: action.createdAt.toISOString(),
+            })),
+            auditEvents: input.history.auditEvents.map((event) => ({
+              ...event,
+              createdAt: event.createdAt.toISOString(),
+            })),
+          }
+        : {
+            reporterPreviousReports: [],
+            targetPreviousReports: [],
+            targetEnforcements: [],
+            actions: [],
+            auditEvents: [],
+          },
     };
   }
 

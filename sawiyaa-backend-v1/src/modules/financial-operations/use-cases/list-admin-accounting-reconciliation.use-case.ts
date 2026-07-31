@@ -159,6 +159,8 @@ export class ListAdminAccountingReconciliationUseCase {
       return {
         sourceType: JournalEntrySourceType.PAYMENT_CAPTURED,
         sourceId: payment.id,
+        sessionId: payment.session?.id ?? payment.sessionId ?? null,
+        sessionCode: payment.session?.sessionCode ?? null,
         practitionerId: payment.practitionerId ?? null,
         paymentId: payment.id,
         refundId: null,
@@ -203,6 +205,8 @@ export class ListAdminAccountingReconciliationUseCase {
       return {
         sourceType: JournalEntrySourceType.REFUND_SUCCEEDED,
         sourceId: refund.id,
+        sessionId: refund.session?.id ?? refund.sessionId ?? null,
+        sessionCode: refund.session?.sessionCode ?? null,
         practitionerId: refund.payment.practitionerId ?? null,
         paymentId: refund.paymentId,
         refundId: refund.id,
@@ -248,6 +252,8 @@ export class ListAdminAccountingReconciliationUseCase {
       return {
         sourceType: JournalEntrySourceType.PRACTITIONER_PAYOUT,
         sourceId: payout.id,
+        sessionId: payout.settlement?.session?.id ?? payout.settlement?.sourceReview?.sessionId ?? null,
+        sessionCode: payout.settlement?.session?.sessionCode ?? null,
         practitionerId: payout.practitionerId,
         paymentId: null,
         refundId: null,
@@ -289,6 +295,7 @@ export class ListAdminAccountingReconciliationUseCase {
             item.refundId,
             item.settlementId,
             item.payoutId,
+            item.sessionCode,
             item.reviewNote,
           ]
             .filter(Boolean)

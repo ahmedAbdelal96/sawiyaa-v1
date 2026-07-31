@@ -9,6 +9,7 @@ import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIco
 import { useAdminFinanceOperationEvent } from "../hooks/use-admin-finance-operations";
 import { getAdminFinanceOperationsErrorKey } from "../lib/admin-finance-operations-errors";
 import type { FinanceOperationEventItem } from "../types/admin-finance-operations.types";
+import { formatAdminMoney } from "@/features/admin/finance/lib/finance-formatters";
 
 type Props = {
   eventId: string;
@@ -42,18 +43,7 @@ function toViewValue(value: string | null) {
 
 function formatMoney(value: string | null, currency: string | null, locale: string) {
   if (!value || !currency) return "-";
-
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) {
-    return `${value} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numeric);
+  return formatAdminMoney(value, currency, locale);
 }
 
 function OperationalSnapshot({ item }: { item: FinanceOperationEventItem }) {

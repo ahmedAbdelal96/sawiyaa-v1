@@ -16,6 +16,7 @@ import type {
   PaymentProvider,
   PaymentStatus,
 } from "../types/payments.types";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 const STATUS_STYLES: Record<PaymentStatus, string> = {
   CREATED: "bg-surface-tertiary text-text-secondary dark:bg-white/10 dark:text-white/60",
@@ -541,11 +542,6 @@ export default function PatientPaymentsHistoryPanel() {
               <tbody className="divide-y divide-border-light bg-white dark:divide-white/8 dark:bg-surface-secondary">
                 {visiblePayments.map((payment) => {
                   const session = payment.sessionId ? sessionMap.get(payment.sessionId) : null;
-                  const sessionLabel = session
-                    ? `${session.sessionCode}`
-                    : payment.sessionId
-                      ? payment.sessionId.slice(0, 8)
-                      : t("history.unknownSession");
                   const practitionerLabel = session?.practitionerName
                     ? session.practitionerName
                     : t("history.unknownPractitioner");
@@ -563,7 +559,7 @@ export default function PatientPaymentsHistoryPanel() {
                       <td className="px-4 py-4">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-                            {sessionLabel}
+                            {payment.sessionId ? <SessionCodeReference sessionId={payment.sessionId} sessionCode={session?.sessionCode} href={`/patient/sessions/${payment.sessionId}`} copyable /> : t("history.unknownSession")}
                           </p>
                           <p className="mt-1 truncate text-xs text-text-secondary">
                             {practitionerLabel}

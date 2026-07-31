@@ -37,7 +37,7 @@ export default async function PublicArticleDetailScreen({ article }: Props) {
       publicationLabel={t("publicationLabel")}
       authorHeadingLabel={t("authorLabel")}
       trustHeadingLabel={t("trustLabel")}
-      primaryCtaHref="/signup?mode=patient"
+      primaryCtaHref="/signup/patient"
       primaryCtaLabel={t("nextStep.startMatching")}
       secondaryCtaHref="/practitioners"
       secondaryCtaLabel={t("nextStep.browsePractitioners")}

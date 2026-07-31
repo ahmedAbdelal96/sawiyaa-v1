@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { LedgerDirection, LedgerEntryType, Prisma } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  LedgerDirection,
+  LedgerEntryType,
+  PractitionerWalletStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { WalletRepository } from '../repositories/wallet.repository';
 import { MoneyAmountService } from './money-amount.service';
+import { assertWalletCurrencyMatches } from '../utils/wallet-currency-invariant';
 
 /**
  * Wallet remains a projection. Every refresh is rebuilt from ledger aggregates
@@ -24,27 +30,33 @@ export class RefreshPractitionerWalletService {
         practitionerId,
         tx,
       );
-    const byCurrency = new Map<
-      string,
-      {
-        available: Prisma.Decimal;
-        pending: Prisma.Decimal;
-        reserved: Prisma.Decimal;
-        lifetimeEarned: Prisma.Decimal;
-        lifetimePaidOut: Prisma.Decimal;
-        lastLedgerEntryAt: Date | null;
-      }
-    >();
+    const db = tx ?? this.prisma;
+    const activeWallet = await db.practitionerWallet.findFirst({
+      where: { practitionerId, status: PractitionerWalletStatus.ACTIVE },
+      select: { id: true, currencyCode: true },
+    });
+    if (!activeWallet) {
+      throw new BadRequestException({
+        messageKey: 'financialOperations.errors.practitionerWalletNotFound',
+        error: 'PRACTITIONER_WALLET_NOT_FOUND',
+      });
+    }
+    const activeCurrencyCode = activeWallet.currencyCode.trim().toUpperCase();
+    const value = {
+      available: new Prisma.Decimal(0),
+      pending: new Prisma.Decimal(0),
+      reserved: new Prisma.Decimal(0),
+      lifetimeEarned: new Prisma.Decimal(0),
+      lifetimePaidOut: new Prisma.Decimal(0),
+      lastLedgerEntryAt: null as Date | null,
+    };
 
     for (const aggregate of aggregates) {
-      const current = byCurrency.get(aggregate.currencyCode) ?? {
-        available: new Prisma.Decimal(0),
-        pending: new Prisma.Decimal(0),
-        reserved: new Prisma.Decimal(0),
-        lifetimeEarned: new Prisma.Decimal(0),
-        lifetimePaidOut: new Prisma.Decimal(0),
-        lastLedgerEntryAt: null,
-      };
+      assertWalletCurrencyMatches({
+        operation: 'WALLET_CREDIT',
+        walletCurrency: activeCurrencyCode,
+        attemptedCurrency: aggregate.currencyCode,
+      });
 
       const signed = this.moneyAmountService.signedAmount(
         aggregate.direction,
@@ -52,18 +64,18 @@ export class RefreshPractitionerWalletService {
       );
 
       if (aggregate.balanceBucket === 'AVAILABLE') {
-        current.available = current.available.add(signed);
+        value.available = value.available.add(signed);
       } else if (aggregate.balanceBucket === 'PENDING') {
-        current.pending = current.pending.add(signed);
+        value.pending = value.pending.add(signed);
       } else if (aggregate.balanceBucket === 'RESERVED') {
-        current.reserved = current.reserved.add(signed);
+        value.reserved = value.reserved.add(signed);
       }
 
       if (
         aggregate.entryType === LedgerEntryType.PRACTITIONER_EARNING &&
         aggregate.direction === LedgerDirection.CREDIT
       ) {
-        current.lifetimeEarned = current.lifetimeEarned.add(
+        value.lifetimeEarned = value.lifetimeEarned.add(
           aggregate._sum.amount ?? 0,
         );
       }
@@ -72,38 +84,33 @@ export class RefreshPractitionerWalletService {
         aggregate.entryType === LedgerEntryType.SETTLEMENT_PAYOUT &&
         aggregate.direction === LedgerDirection.DEBIT
       ) {
-        current.lifetimePaidOut = current.lifetimePaidOut.add(
+        value.lifetimePaidOut = value.lifetimePaidOut.add(
           aggregate._sum.amount ?? 0,
         );
       }
 
       if (
         aggregate._max.effectiveAt &&
-        (!current.lastLedgerEntryAt ||
-          aggregate._max.effectiveAt > current.lastLedgerEntryAt)
+        (!value.lastLedgerEntryAt ||
+          aggregate._max.effectiveAt > value.lastLedgerEntryAt)
       ) {
-        current.lastLedgerEntryAt = aggregate._max.effectiveAt;
+        value.lastLedgerEntryAt = aggregate._max.effectiveAt;
       }
-
-      byCurrency.set(aggregate.currencyCode, current);
     }
 
-    return Promise.all(
-      Array.from(byCurrency.entries()).map(([currencyCode, value]) =>
-        this.walletRepository.upsertWallet(
-          {
-            practitionerId,
-            currencyCode,
-            availableBalance: value.available.toFixed(2),
-            pendingBalance: value.pending.toFixed(2),
-            reservedBalance: value.reserved.toFixed(2),
-            lifetimeEarned: value.lifetimeEarned.toFixed(2),
-            lifetimePaidOut: value.lifetimePaidOut.toFixed(2),
-            lastLedgerEntryAt: value.lastLedgerEntryAt,
-          },
-          tx,
-        ),
-      ),
+    return this.walletRepository.upsertWallet(
+      {
+        practitionerId,
+        currencyCode: activeCurrencyCode,
+        availableBalance: value.available.toFixed(2),
+        pendingBalance: value.pending.toFixed(2),
+        reservedBalance: value.reserved.toFixed(2),
+        lifetimeEarned: value.lifetimeEarned.toFixed(2),
+        lifetimePaidOut: value.lifetimePaidOut.toFixed(2),
+        lastLedgerEntryAt: value.lastLedgerEntryAt,
+        status: PractitionerWalletStatus.ACTIVE,
+      },
+      tx,
     );
   }
 }

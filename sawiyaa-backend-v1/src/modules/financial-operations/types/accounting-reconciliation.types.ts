@@ -124,6 +124,8 @@ export type ReconciliationOverviewViewModel = {
 export type ReconciliationItemViewModel = {
   sourceType: JournalEntrySourceType;
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   practitionerId: string | null;
   paymentId: string | null;
   refundId: string | null;

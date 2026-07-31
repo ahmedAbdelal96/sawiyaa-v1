@@ -165,8 +165,8 @@ export class SessionEarningReviewSessionSummaryDto {
   @ApiProperty()
   sessionId!: string;
 
-  @ApiProperty()
-  sessionCode!: string;
+  @ApiProperty({ nullable: true, description: 'Canonical public reference; null when the Session relation is unavailable.' })
+  sessionCode!: string | null;
 
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;

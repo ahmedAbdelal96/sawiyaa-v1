@@ -1,3 +1,38 @@
+import { normalizeCurrencyCode } from "@/lib/finance-format";
+import type { FinanceMoneyFormatOptions } from "@/lib/finance-format";
+
+/** Compact amount format used by Admin financial screens only. */
+export function formatAdminMoney(
+  amount: string | number,
+  currencyCode: string | null | undefined,
+  _locale: string,
+) {
+  const numeric = typeof amount === "string" ? Number(amount) : amount;
+  const currency = normalizeCurrencyCode(currencyCode);
+
+  if (!Number.isFinite(numeric) || !currency) {
+    return typeof amount === "string" ? amount : String(amount);
+  }
+
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: numeric % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+
+  return currency === "USD"
+    ? `$${formattedAmount}`
+    : `${currency} ${formattedAmount}`;
+}
+
+export function formatAdminMoneyForLocale(
+  locale: string,
+  amount: string | number,
+  currencyCode: string | null | undefined,
+  _options?: FinanceMoneyFormatOptions,
+) {
+  return formatAdminMoney(amount, currencyCode, locale);
+}
+
 export function formatSettlementDateTime(locale: string, value: string | null) {
   if (!value) {
     return "-";
@@ -18,22 +53,11 @@ export function formatSettlementMoney(
   value: string | null,
   currency: string | null,
 ) {
-  if (!value || !currency) {
+  if (value === null || value === undefined || !currency) {
     return "-";
   }
 
-  const numeric = Number(value);
-
-  if (Number.isNaN(numeric)) {
-    return `${value} ${currency}`;
-  }
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numeric);
+  return formatAdminMoney(value, currency, locale);
 }
 
 export function toDateTimeLocalInputValue(date = new Date()) {

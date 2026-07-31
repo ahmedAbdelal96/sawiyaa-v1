@@ -57,6 +57,12 @@ export class ListPractitionerApplicationsUseCase {
 
     const applications = rows.map((item) => {
       const primarySpecialty = item.practitioner.specialties[0];
+      const snapshot = item.submissionSnapshot as { review?: { sections?: unknown } } | null;
+      const changedSections = Array.isArray(snapshot?.review?.sections)
+        ? snapshot.review.sections.filter((section): section is string => typeof section === 'string')
+        : item.practitioner.status === PractitionerStatus.APPROVED
+          ? ['PROFILE', 'SPECIALTIES', 'CREDENTIALS']
+          : ['PROFILE', 'SPECIALTIES', 'CREDENTIALS'];
 
       return this.mapper.toListItem({
         applicationId: item.id,
@@ -65,10 +71,11 @@ export class ListPractitionerApplicationsUseCase {
         displayName: item.practitioner.user.displayName ?? null,
         practitionerType: item.practitioner.practitionerType,
         countryCode: item.practitioner.country?.isoCode ?? null,
-        applicationKind:
+          applicationKind:
           item.practitioner.status === PractitionerStatus.APPROVED
             ? AdminPractitionerApplicationKind.EDIT_REQUEST
             : AdminPractitionerApplicationKind.NEW_APPLICATION,
+        changedSections,
         mainSpecialty: primarySpecialty
           ? {
               specialtyId: primarySpecialty.specialtyId,

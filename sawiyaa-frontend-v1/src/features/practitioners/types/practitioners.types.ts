@@ -133,6 +133,20 @@ export interface PractitionerApplicationSummary {
   reviewDecisionReason: string | null;
   reviewNotes: string | null;
   submissionSnapshot: Record<string, unknown> | null;
+  reviewCase?: {
+    id: string;
+    status: string;
+    proposedSnapshot: Record<string, unknown> | null;
+    sections: Array<{ section: string; status: string }>;
+    requirements: Array<{
+      id: string;
+      section: string;
+      fieldPath: string | null;
+      status: string;
+      title: string;
+      reason: string;
+    }>;
+  } | null;
 }
 
 export interface PractitionerProfile {
@@ -196,7 +210,6 @@ export interface PractitionerSpecialtiesSuccessResponse {
 export interface PractitionerCredential {
   credentialId: string;
   credentialType: CredentialType;
-  fileUrl: string;
   reviewStatus: CredentialReviewStatus;
   expiresAt: string | null;
   uploadedAt: string;
@@ -231,7 +244,16 @@ export interface PractitionerReadiness {
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
   missingRequirements: string[];
+  remediationMissingRequirements: string[];
   checks: PractitionerReadinessChecks;
+  professionalTitle: {
+    approvedValue: string | null;
+    proposedValue: string | null;
+    requirementStatus: string | null;
+    reviewStatus: string | null;
+    publiclyComplete: boolean;
+    remediationComplete: boolean;
+  };
   completion?: PractitionerApplicationCompletionViewModel;
 }
 

@@ -8,9 +8,6 @@ export class PractitionerCredentialResponseDto {
   @ApiProperty({ enum: CredentialType })
   credentialType!: CredentialType;
 
-  @ApiProperty()
-  fileUrl!: string;
-
   @ApiProperty({ enum: CredentialReviewStatus })
   reviewStatus!: CredentialReviewStatus;
 

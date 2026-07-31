@@ -262,7 +262,10 @@
       "ENFORCE_REVIEW_REJECT": "Reject review",
       "ENFORCE_REVIEW_RESTORE": "Restore review",
       "ENFORCE_ARTICLE_ARCHIVE": "Archive article",
-      "ENFORCE_SUPPORT_ESCALATE": "Escalate support ticket"
+      "ENFORCE_SUPPORT_ESCALATE": "Escalate support ticket",
+      "ENFORCE_USER_WARNING": "Send user warning",
+      "ENFORCE_USER_RESTRICTION": "Restrict user account",
+      "ENFORCE_USER_SUSPENSION": "Suspend user account"
     }
   },
   "errors": {
@@ -271,6 +274,7 @@
     "reportNotFound": "Moderation report was not found.",
     "caseNotFound": "Moderation case was not found.",
     "actionNotAllowed": "This action is not allowed for your role.",
+    "enforcementNotAllowed": "Elevated enforcement permission is required for this action.",
     "reasonRequired": "This action requires a reason.",
     "invalidActionTarget": "This action is not valid for the selected target.",
     "invalidTransition": "This action is not valid for the current report status.",

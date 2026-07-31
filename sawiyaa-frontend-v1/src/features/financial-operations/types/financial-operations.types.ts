@@ -39,6 +39,7 @@ export type PractitionerLedgerEntry = {
   balanceBucket: WalletBalanceBucket;
   paymentId: string | null;
   sessionId: string | null;
+  sessionCode: string | null;
   settlementId: string | null;
   referenceType: string | null;
   referenceId: string | null;
@@ -74,6 +75,11 @@ export type PractitionerLedgerListParams = {
 
 export type PractitionerSettlementStatus =
   | "DRAFT"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "CREDITED"
+  | "PAID_OUT"
   | "READY"
   | "PROCESSING"
   | "PAID"
@@ -81,19 +87,14 @@ export type PractitionerSettlementStatus =
   | "CANCELLED";
 
 export type PractitionerSettlementItem = {
-  id: string;
-  batchId: string;
-  practitionerId: string;
   status: PractitionerSettlementStatus;
   currency: string;
-  amountGross: string;
-  amountAdjustments: string;
-  amountNet: string;
-  externalPayoutRef: string | null;
-  paidAt: string | null;
-  failedAt: string | null;
-  notes: string | null;
-  createdAt: string;
+  amountAdded: string;
+  payoutStatus: "PENDING" | "PAID" | "NOT_ELIGIBLE";
+  sessionId: string | null;
+  sessionCode: string | null;
+  date: string | null;
+  sessionType: string | null;
 };
 
 export type PractitionerSettlementListResponse = {

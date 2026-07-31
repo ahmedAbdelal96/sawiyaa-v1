@@ -14,12 +14,14 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useGetMatchingSession } from "../../../src/features/patient/matching/api";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 
 export default function MatchingResultsScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const { theme } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabicUi = i18n.language?.startsWith("ar") ?? false;
 
   const {
     data: sessionData,
@@ -151,7 +153,7 @@ export default function MatchingResultsScreen() {
                     color={theme.colors.textSecondary}
                     style={styles.therapistSpec}
                   >
-                    {item.practitioner.professionalTitle ||
+                    {getProfessionalTitleLabel(item.practitioner.professionalTitle, isArabicUi) ||
                       t("matching.results.professionalFallback")}
                   </Text>
 

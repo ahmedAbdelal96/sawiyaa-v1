@@ -22,11 +22,11 @@
     }
   },
   "hub": {
-    "metaTitle": "Finance Overview - Admin",
-    "metaDescription": "Open the main finance tools.",
+    "metaTitle": "Financial Dashboard - Admin",
+    "metaDescription": "Monitor money movement, settlements, and practitioner payments.",
     "eyebrow": "Finance Operations Hub",
-    "title": "Finance Overview",
-    "description": "Open the main finance tools.",
+    "title": "Financial Dashboard",
+    "description": "Monitor platform money movement, settlements, and practitioner payments. Use this page to identify items requiring review or action.",
     "safetyEyebrow": "NAVIGATION HUB ONLY",
     "safety": "This hub only links to finance areas.",
     "openLabel": "Open",
@@ -50,20 +50,20 @@
     },
     "cards": {
       "overview": {
-        "title": "Accounting Dashboard",
-        "description": "Open the finance dashboard."
+        "title": "Accountant settlements",
+        "description": "Review and approve practitioner settlements generated from completed sessions."
       },
       "payments": {
         "title": "Payments Review",
         "description": "Review payments and refunds."
       },
       "dues": {
-        "title": "Practitioner Dues",
-        "description": "See payout-ready balances."
+        "title": "Practitioner balances",
+        "description": "View credited balances without creating or executing a payout."
       },
       "history": {
-        "title": "Payout History",
-        "description": "Review recorded payouts."
+        "title": "Practitioner payments",
+        "description": "Review completed external payments and their references."
       },
       "reportsPaymentsRevenue": {
         "title": "Payments Revenue",
@@ -428,11 +428,12 @@
       "anomaly": "Alert type",
       "currency": "Currency",
       "query": "Search",
-      "queryPlaceholder": "Search by source, payment, refund, settlement, or note",
+      "queryPlaceholder": "Search by Session Code, source, payment, refund, settlement, or note",
       "all": "All"
     },
     "table": {
       "source": "Operation",
+      "sessionCode": "Session Code",
       "status": "Status",
       "amount": "Amount",
       "journalAmount": "Recorded amount",
@@ -458,12 +459,14 @@
         "operationalAmount": "System amount",
         "journalAmount": "Recorded amount",
         "occurredAt": "Occurred",
+        "sessionCode": "Session Code",
         "anomalies": "Alerts"
       }
     },
     "common": {
       "none": "None",
-      "notAvailable": "Not available"
+      "notAvailable": "Not available",
+      "notLinkedToSession": "Not linked to a Session"
     },
     "status": {
       "pending_review": "Needs review",
@@ -570,7 +573,7 @@
     "filters": {
       "all": "All",
       "query": "Search",
-      "queryPlaceholder": "Search by memo, source, account code, or reference",
+      "queryPlaceholder": "Search by Session Code, memo, source, account code, or reference",
       "account": "Ledger account",
       "sourceType": "Source type",
       "practitionerId": "Practitioner ID",
@@ -591,6 +594,7 @@
       "entryId": "Entry: {value}",
       "account": "Account",
       "source": "Source",
+      "sessionCode": "Session Code",
       "direction": "Direction",
       "amount": "Amount",
       "reference": "Reference"

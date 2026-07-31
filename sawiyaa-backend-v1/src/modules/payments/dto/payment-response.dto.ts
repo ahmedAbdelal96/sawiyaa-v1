@@ -35,6 +35,9 @@ export class PaymentItemDto {
   @ApiProperty({ nullable: true })
   sessionId!: string | null;
 
+  @ApiProperty({ nullable: true, description: 'Canonical public session reference.' })
+  sessionCode!: string | null;
+
   @ApiProperty({ enum: PaymentProvider })
   provider!: PaymentProvider;
 
@@ -177,6 +180,9 @@ export class AdminPaymentOpsRefundItemDto {
   @ApiProperty({ enum: RefundStatus })
   status!: RefundStatus;
 
+  @ApiProperty({ nullable: true, description: 'Canonical public session reference.' })
+  sessionCode!: string | null;
+
   @ApiProperty()
   amount!: string;
 
@@ -214,6 +220,9 @@ export class AdminPaymentOpsRefundItemDto {
 export class AdminPaymentOpsSessionDto {
   @ApiProperty()
   id!: string;
+
+  @ApiProperty({ description: 'Canonical public session reference.' })
+  sessionCode!: string;
 
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
@@ -333,6 +342,32 @@ export class AdminPaymentOpsEventDto {
   createdAt!: string;
 }
 
+export class AdminPaymentOpsRelatedSettlementDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ nullable: true })
+  reference!: string | null;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  practitionerName!: string;
+
+  @ApiProperty()
+  originalAmount!: string;
+
+  @ApiProperty()
+  originalCurrency!: string;
+
+  @ApiProperty()
+  finalAmount!: string;
+
+  @ApiProperty()
+  walletCurrency!: string;
+}
+
 export class AdminPaymentOpsItemDto {
   @ApiProperty({ type: AdminPaymentOpsSummaryDto })
   payment!: AdminPaymentOpsSummaryDto;
@@ -348,6 +383,9 @@ export class AdminPaymentOpsItemDto {
 
   @ApiProperty({ type: AdminPaymentOpsEventDto, isArray: true })
   recentEvents!: AdminPaymentOpsEventDto[];
+
+  @ApiProperty({ type: AdminPaymentOpsRelatedSettlementDto, nullable: true })
+  relatedSettlement!: AdminPaymentOpsRelatedSettlementDto | null;
 }
 
 export class AdminPaymentOpsDataResponseDto {

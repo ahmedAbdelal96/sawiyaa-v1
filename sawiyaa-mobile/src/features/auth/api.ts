@@ -3,7 +3,6 @@ import type {
   AuthSuccessResponse,
   CurrentAuthUserResponse,
   MessageResponse,
-  OtpChallengeResponse,
   PractitionerLoginResponse,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
@@ -22,6 +21,9 @@ import type {
   PractitionerRegistrationResponse,
   PractitionerResetPasswordRequest,
   PractitionerVerifyOtpRequest,
+  PractitionerRegistrationOtpRequest,
+  SpecialtyCategoriesResponse,
+  SpecialtiesResponse,
   RefreshTokenRequest,
 } from "./contracts";
 
@@ -92,6 +94,24 @@ export async function patientConfirmPasswordReset(
 
 export async function practitionerRegister(data: PractitionerRegisterRequest) {
   const response = await apiClient.post("/auth/practitioner/register", data);
+  return extractApiData<PractitionerRegistrationResponse>(response);
+}
+
+export async function practitionerVerifyRegistrationOtp(
+  data: PractitionerRegistrationOtpRequest,
+) {
+  const response = await apiClient.post(
+    "/auth/practitioner/register/verify-otp",
+    data,
+  );
+  return extractApiData<PractitionerRegistrationResponse>(response);
+}
+
+export async function practitionerResendRegistrationOtp(challengeId: string) {
+  const response = await apiClient.post(
+    "/auth/practitioner/register/resend-otp",
+    { challengeId },
+  );
   return extractApiData<PractitionerRegistrationResponse>(response);
 }
 
@@ -171,4 +191,14 @@ export async function practitionerConfirmPasswordReset(
 export async function getAuthMe() {
   const response = await apiClient.get("/auth/me");
   return extractApiData<CurrentAuthUserResponse>(response);
+}
+
+export async function listSpecialtyCategories() {
+  const response = await apiClient.get("/specialty-categories");
+  return extractApiData<SpecialtyCategoriesResponse>(response);
+}
+
+export async function listSpecialties() {
+  const response = await apiClient.get("/specialties");
+  return extractApiData<SpecialtiesResponse>(response);
 }

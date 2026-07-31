@@ -15,7 +15,7 @@ import {
   Target,
 } from "lucide-react";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { SurfaceCard, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import { usePatientAssessmentsHistory } from "../hooks/use-assessments";
 import type { AssessmentDefinition, AssessmentResultBand } from "../types/assessments.types";
 

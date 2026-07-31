@@ -1,0 +1,6 @@
+{
+  "paymentGateways": {
+    "title": "Payment Gateways",
+    "description": "Manage payment gateway configurations used for collecting and processing payments."
+  }
+}

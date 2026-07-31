@@ -11,6 +11,7 @@ import { MoneyText } from "@/components/money/MoneyText";
 import { mapPractitionerDurationMoney } from "../lib/practitioner-price";
 import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
+import { getLocalizedLanguageLabel } from "@/constants/reference-data";
 
 type Props = {
   practitioner: PublicPractitioner;
@@ -54,8 +55,12 @@ export default function PractitionerCard({
   const visibleSpecialties = practitioner.specialties.slice(0, 2);
   const sessionPrices = getPublicSessionPrices(practitioner);
 
-  // Short language tags for horizontal stats layout
-  const languagesList = practitioner.languages.map((code) => code.toUpperCase()).join(", ");
+  const visibleLanguages = practitioner.languages.slice(0, 2);
+  const languagesList = visibleLanguages
+    .map((code) => languageLabels[code] ?? getLocalizedLanguageLabel(code, locale))
+    .join(", ");
+  const hiddenLanguageCount = Math.max(0, practitioner.languages.length - visibleLanguages.length);
+  const languageSummary = hiddenLanguageCount > 0 ? `${languagesList} +${hiddenLanguageCount}` : languagesList;
 
   const profileHref = `${basePath}/${practitioner.slug}`;
 
@@ -147,8 +152,8 @@ export default function PractitionerCard({
           </div>
           <div className="border-s border-border-light/50 dark:border-white/10">
             <p className="text-[10px] text-text-muted font-medium mb-0.5">{t("languages")}</p>
-            <p className="font-bold text-text-primary dark:text-white/90 truncate px-0.5" title={languagesList}>
-              {languagesList || "-"}
+            <p className="font-bold text-text-primary dark:text-white/90 truncate px-0.5" title={languageSummary}>
+              {languageSummary || "-"}
             </p>
           </div>
           <div className="border-s border-border-light/50 dark:border-white/10">

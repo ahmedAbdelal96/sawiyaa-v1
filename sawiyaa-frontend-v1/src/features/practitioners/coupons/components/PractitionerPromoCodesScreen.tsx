@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import {
   buildUpdatedSearchParams,
@@ -30,8 +31,10 @@ import {
 import Button from "@/components/ui/button/Button";
 import Badge from "@/components/ui/badge/Badge";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
-import { Drawer, ConfirmModal, FormModal } from "@/components/ui/modal";
+import { ConfirmModal, FormModal, Modal } from "@/components/ui/modal";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import { SurfaceCard } from "@/components/shared/SurfaceShell";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import {
   PractitionerPageHeader,
   PractitionerStatsGrid,
@@ -697,7 +700,7 @@ function CouponRedemptionsTable({
             <p className="text-sm font-semibold text-text-primary dark:text-white/95">
               {row.patientDisplayName ?? t("redemptions.anonymousPatient")}
             </p>
-            <p className="font-mono text-[11px] text-text-muted">{row.sessionId}</p>
+            <SessionCodeReference sessionId={row.sessionId} sessionCode={row.sessionCode} copyable />
           </div>
         ),
       },
@@ -838,7 +841,7 @@ function CouponRedemptionsTable({
   );
 }
 
-function CouponDetailDrawer({
+function CouponDetailModal({
   couponId,
   tab,
   onClose,
@@ -865,11 +868,11 @@ function CouponDetailDrawer({
   }
 
   return (
-    <Drawer
+    <Modal
       isOpen={Boolean(couponId)}
       onClose={onClose}
       ariaLabel={t("detail.title")}
-      className="max-w-4xl"
+      size="2xl"
     >
       <div className="flex h-full flex-col">
         <div className="border-b border-border-light bg-white px-6 pb-5 pt-6 dark:border-white/10 dark:bg-surface-secondary sm:px-7">
@@ -896,37 +899,56 @@ function CouponDetailDrawer({
             </div>
 
             {coupon ? (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant={tab === "overview" ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => onSwitchTab("overview")}
-                >
-                  {t("detail.tabs.overview")}
-                </Button>
-                <Button
-                  type="button"
-                  variant={tab === "redemptions" ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => onSwitchTab("redemptions")}
-                >
-                  {t("detail.tabs.redemptions")}
-                </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => onEdit(coupon)}>
-                  <Pencil className="h-4 w-4" />
-                  {t("actions.edit")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
-                  disabled={!coupon.isActive || coupon.status === "DISABLED"}
-                  onClick={() => onDisable(coupon)}
-                >
-                  <Ban className="h-4 w-4" />
-                  {t("actions.disable")}
-                </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Tabs */}
+                <div className="flex rounded-xl border border-border-light bg-surface-tertiary p-1 dark:border-white/8 dark:bg-white/5" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === "overview"}
+                    onClick={() => onSwitchTab("overview")}
+                    className={cn(
+                      "rounded-lg px-4 py-1.5 text-xs font-semibold transition-all",
+                      tab === "overview"
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-text-secondary hover:text-text-primary"
+                    )}
+                  >
+                    {t("detail.tabs.overview")}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === "redemptions"}
+                    onClick={() => onSwitchTab("redemptions")}
+                    className={cn(
+                      "rounded-lg px-4 py-1.5 text-xs font-semibold transition-all",
+                      tab === "redemptions"
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-text-secondary hover:text-text-primary"
+                    )}
+                  >
+                    {t("detail.tabs.redemptions")}
+                  </button>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => onEdit(coupon)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    {t("actions.edit")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    disabled={!coupon.isActive || coupon.status === "DISABLED"}
+                    onClick={() => onDisable(coupon)}
+                  >
+                    <Ban className="h-3.5 w-3.5" />
+                    {t("actions.disable")}
+                  </Button>
+                </div>
               </div>
             ) : null}
           </div>
@@ -963,7 +985,7 @@ function CouponDetailDrawer({
             })()
           ) : coupon ? tab === "overview" ? (
             <div className="space-y-5">
-              <PractitionerStatsGrid cols={4}>
+              <PractitionerStatsGrid cols={2}>
                 <PractitionerStatCard
                   label={t("detail.stats.discount")}
                   value={getDiscountLabel(coupon, locale)}
@@ -994,8 +1016,8 @@ function CouponDetailDrawer({
                 />
               </PractitionerStatsGrid>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <PractitionerSectionCard className="space-y-3">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <SurfaceCard variant="section" className="space-y-3">
                   <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("detail.sectionSummary")}
                   </h3>
@@ -1006,9 +1028,9 @@ function CouponDetailDrawer({
                     <DetailRow label={t("detail.usageLimitTotal")} value={coupon.usageLimitTotal === null ? t("common.unlimited") : String(coupon.usageLimitTotal)} />
                     <DetailRow label={t("detail.usageLimitPerPatient")} value={coupon.usageLimitPerPatient === null ? t("common.unlimited") : String(coupon.usageLimitPerPatient)} />
                   </dl>
-                </PractitionerSectionCard>
+                </SurfaceCard>
 
-                <PractitionerSectionCard className="space-y-3">
+                <SurfaceCard variant="section" className="space-y-3">
                   <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
                     {t("detail.sectionStatus")}
                   </h3>
@@ -1032,7 +1054,7 @@ function CouponDetailDrawer({
                       value={formatDateTime(coupon.updatedAt, locale, practitionerTimeZone)}
                     />
                   </dl>
-                </PractitionerSectionCard>
+                </SurfaceCard>
               </div>
 
               <div className="rounded-[22px] border border-border-light bg-primary-light/45 px-4 py-4 text-sm leading-6 text-text-secondary dark:border-primary/20 dark:bg-primary/10">
@@ -1055,7 +1077,7 @@ function CouponDetailDrawer({
           ) : null}
         </div>
       </div>
-    </Drawer>
+    </Modal>
   );
 }
 
@@ -1067,9 +1089,9 @@ function DetailRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-border-light last:border-0 dark:border-white/5 text-sm">
       <dt className="min-w-0 text-text-muted">{label}</dt>
-      <dd className="max-w-[55%] text-right font-medium text-text-primary dark:text-white/95">{value}</dd>
+      <dd className="max-w-[70%] text-right font-medium text-text-primary dark:text-white/95">{value}</dd>
     </div>
   );
 }
@@ -1100,9 +1122,11 @@ export default function PractitionerPromoCodesScreen() {
   const [editingCoupon, setEditingCoupon] = useState<PractitionerCoupon | null>(null);
   const [disableTarget, setDisableTarget] = useState<PractitionerCoupon | null>(null);
 
-  useEffect(() => {
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery);
     setSearchInput(searchQuery);
-  }, [searchQuery]);
+  }
 
   useEffect(() => {
     const normalized = debouncedSearch.trim();
@@ -1478,7 +1502,7 @@ export default function PractitionerPromoCodesScreen() {
         </div>
       </ConfirmModal>
 
-      <CouponDetailDrawer
+      <CouponDetailModal
         couponId={selectedCouponId}
         tab={detailTab}
         onClose={() => setSelectedCouponId(null)}

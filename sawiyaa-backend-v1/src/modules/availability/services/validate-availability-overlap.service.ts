@@ -80,15 +80,20 @@ export class ValidateAvailabilityOverlapService {
       });
     }
 
-    if (slot.endMinuteOfDay <= slot.startMinuteOfDay) {
+    if (
+      slot.startMinuteOfDay < 0 ||
+      slot.endMinuteOfDay > 24 * 60 ||
+      slot.endMinuteOfDay <= slot.startMinuteOfDay
+    ) {
       throw new BadRequestException({
         messageKey: 'availability.errors.invalidWeeklySlotRange',
         error: 'AVAILABILITY_INVALID_WEEKLY_SLOT_RANGE',
       });
     }
 
+    const requiredStartGranularity = slot.durationMinutes === 60 ? 60 : this.minimumGranularityMinutes;
     if (
-      slot.startMinuteOfDay % this.minimumGranularityMinutes !== 0 ||
+      slot.startMinuteOfDay % requiredStartGranularity !== 0 ||
       slot.endMinuteOfDay % this.minimumGranularityMinutes !== 0
     ) {
       throw new BadRequestException({

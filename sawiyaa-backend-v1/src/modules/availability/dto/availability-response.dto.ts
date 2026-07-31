@@ -34,6 +34,12 @@ export class PublicAvailabilityRangeResponseDto {
 }
 
 export class PublicPractitionerAvailabilityWindowsDataResponseDto {
+  @ApiProperty({ example: true })
+  acceptsNormalBookings!: boolean;
+
+  @ApiProperty({ enum: ['NORMAL_BOOKINGS_PAUSED'], required: false })
+  reasonCode?: 'NORMAL_BOOKINGS_PAUSED';
+
   @ApiProperty()
   timezone!: string;
 

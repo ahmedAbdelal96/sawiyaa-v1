@@ -18,6 +18,8 @@ export class ExportAdminLedgerExplorerCsvUseCase {
       journalEntryId: string;
       sourceType: string;
       sourceId: string;
+      sessionId: string | null;
+      sessionCode: string | null;
       occurredAt: string;
       createdAt: string;
       currencyCode: string;
@@ -72,6 +74,8 @@ export class ExportAdminLedgerExplorerCsvUseCase {
         'Journal entry id',
         'Source type',
         'Source id',
+        'Session id',
+        'Session code',
         'Occurred at',
         'Created at',
         'Currency',
@@ -90,6 +94,8 @@ export class ExportAdminLedgerExplorerCsvUseCase {
         item.journalEntryId,
         item.sourceType,
         item.sourceId,
+        item.sessionId ?? '',
+        item.sessionCode ?? '',
         item.occurredAt,
         item.createdAt,
         item.currencyCode,

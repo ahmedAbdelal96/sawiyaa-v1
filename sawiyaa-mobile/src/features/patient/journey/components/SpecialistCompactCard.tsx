@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
 import { Text } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { PriceDisplay } from "../../../../components/money";
@@ -142,7 +143,7 @@ export function SpecialistCompactCard({
             numberOfLines={2}
             style={[styles.subtitle, isRTL ? styles.textRight : null]}
           >
-            {item.professionalTitle ||
+            {getProfessionalTitleLabel(item.professionalTitle, i18n.language?.startsWith("ar") ?? false) ||
               item.primarySpecialty ||
               t("home.nextSession.defaultSpecialty")}
           </Text>

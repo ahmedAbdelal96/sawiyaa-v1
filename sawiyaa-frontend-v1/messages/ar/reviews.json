@@ -74,15 +74,15 @@
       "success": "تم تحديث قرار المراجعة بنجاح.",
       "error": "تعذر تحديث قرار المراجعة. حاول مرة أخرى.",
       "decisions": {
-        "APPROVE_AS_IS": {
+        "APPROVED_AS_IS": {
           "title": "اعتماد التقييم كما هو",
           "description": "نشر التقييم الأصلي من المريض بدون تغيير."
         },
-        "EDIT_AND_APPROVE": {
+        "EDITED_AND_APPROVED": {
           "title": "تعديل واعتماد التقييم",
           "description": "سيظل تقييم المريض الأصلي محفوظًا داخليًا، ثم يتم نشر التقييم الظاهر الذي تختاره."
         },
-        "REJECT_PUBLISHING": {
+        "REJECTED_PUBLISHING": {
           "title": "رفض نشر التقييم",
           "description": "يبقى التقييم داخليًا ولا يدخل في المتوسط العام."
         },
@@ -90,7 +90,7 @@
           "title": "تحويله لملاحظة داخلية فقط",
           "description": "يظل القرار داخليًا فقط ولا يظهر للعامة."
         },
-        "EXCLUDE_FROM_PUBLIC_AVERAGE": {
+        "EXCLUDED_FROM_PUBLIC_AVERAGE": {
           "title": "استبعاده من متوسط تقييم المختص",
           "description": "يبقى التقييم داخليًا لكن لا يدخل في متوسط المختص."
         }
@@ -105,11 +105,11 @@
     "decisions": {
       "pending": "في انتظار المراجعة",
       "AUTO_APPROVED_POSITIVE": "تم النشر تلقائيًا",
-      "APPROVE_AS_IS": "اعتماد كما هو",
-      "EDIT_AND_APPROVE": "تم التعديل والاعتماد",
+      "APPROVED_AS_IS": "اعتماد كما هو",
+      "EDITED_AND_APPROVED": "تم التعديل والاعتماد",
       "REJECT_PUBLISHING": "مرفوض النشر",
       "INTERNAL_NOTE_ONLY": "داخلي فقط",
-      "EXCLUDE_FROM_PUBLIC_AVERAGE": "مستبعد من المتوسط"
+      "EXCLUDED_FROM_PUBLIC_AVERAGE": "مستبعد من المتوسط"
     },
     "validation": {
       "decisionRequired": "اختر قرار المراجعة.",
@@ -150,7 +150,13 @@
       "session": "الجلسة",
       "status": "الحالة",
       "rating": "الدرجة",
-      "submitted": "تم الإرسال"
+      "submitted": "تم الإرسال",
+      "patientRating": "تقييم المريض",
+      "publicRating": "التقييم الظاهر",
+      "averageInclusion": "محتسب بالمتوسط",
+      "comment": "التعليق",
+      "publicationStatus": "حالة النشر",
+      "moderationDecision": "قرار المراجعة"
     },
     "summary": {
       "average": "المتوسط"
@@ -236,7 +242,7 @@
       },
       "fields": {
         "practitioner": "الممارس",
-        "sessionId": "معرّف الجلسة",
+        "sessionCode": "كود الجلسة",
         "submittedAt": "تاريخ الإرسال",
         "publishedAt": "تاريخ النشر",
         "moderatedAt": "آخر تحديث إشرافي"

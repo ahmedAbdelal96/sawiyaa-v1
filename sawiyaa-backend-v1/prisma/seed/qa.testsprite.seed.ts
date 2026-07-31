@@ -7,15 +7,11 @@ import {
   PaymentPurpose,
   PaymentStatus,
   PrismaClient,
-  PractitionerSettlementStatus,
   SessionFlowType,
   SessionMode,
   SessionProvider,
   SessionStatus,
   SessionPaymentCoverageType,
-  SettlementPayoutMethod,
-  SettlementPayoutSource,
-  SettlementBatchStatus,
   PackageSettlementStatus,
   SupportTicketPriority,
   SupportTicketStatus,
@@ -37,6 +33,8 @@ import {
 } from './modules/auth.seed';
 import { seedCredentials, seedIds } from './shared/seed.constants';
 import { daysAgo, daysFromNow, hashPassword } from './shared/seed.utils';
+import { assertFinancialFixtureSeedAllowed } from './shared/financial-fixture-gate';
+import { reserveSeedSessionCode } from './session-code-fixture';
 
 type QaAccount = {
   key: string;
@@ -767,12 +765,15 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
     return false;
   }
 
-  const sessionCode = 'QA-SESSION-001';
   const existingSession = await prisma.session.findUnique({
-    where: { sessionCode },
-    select: { id: true },
+    where: { id: toStableUuid('qa-session-001') },
+    select: { id: true, sessionCode: true },
   });
   const sessionId = existingSession?.id ?? toStableUuid('qa-session-001');
+  const createdAt = new Date();
+  const sessionCode =
+    existingSession?.sessionCode ??
+    (await reserveSeedSessionCode(prisma, createdAt, 'qa_testsprite'));
   const sessionStartAt = daysFromNow(2);
   const sessionEndAt = new Date(sessionStartAt.getTime() + 60 * 60 * 1000);
 
@@ -781,12 +782,13 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
     create: {
       id: sessionId,
       sessionCode,
+      createdAt,
       patientId: patientProfile.id,
       practitionerId: practitionerProfile.id,
       flowType: SessionFlowType.SCHEDULED,
       sessionMode: SessionMode.VIDEO,
       durationMinutes: 60,
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       requestedStartAt: sessionStartAt,
       scheduledStartAt: sessionStartAt,
       scheduledEndAt: sessionEndAt,
@@ -797,8 +799,7 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
       notesInternal: 'QA session for TestSprite.',
     },
     update: {
-      sessionCode,
-      status: SessionStatus.CONFIRMED,
+      status: SessionStatus.UPCOMING,
       scheduledStartAt: sessionStartAt,
       scheduledEndAt: sessionEndAt,
       expiresAt: daysFromNow(3),
@@ -877,97 +878,6 @@ async function ensureSessionPaymentData(prisma: PrismaClient): Promise<boolean> 
         qa: true,
         source: 'testsprite-seed',
       },
-    },
-  });
-
-  const existingBatch = await prisma.settlementBatch.findFirst({
-    where: {
-      periodYear: new Date().getUTCFullYear(),
-      periodMonth: new Date().getUTCMonth() + 1,
-      currencyCode: 'EGP',
-    },
-    select: { id: true },
-  });
-  const batchId = existingBatch?.id ?? toStableUuid('qa-settlement-batch-001');
-  const existingSettlement = await prisma.practitionerSettlement.findFirst({
-    where: {
-      batchId,
-      practitionerId: practitionerProfile.id,
-    },
-    select: { id: true },
-  });
-  const settlementId =
-    existingSettlement?.id ?? toStableUuid('qa-practitioner-settlement-001');
-  await prisma.settlementBatch.upsert({
-    where: { id: batchId },
-    create: {
-      id: batchId,
-      periodYear: new Date().getUTCFullYear(),
-      periodMonth: new Date().getUTCMonth() + 1,
-      currencyCode: 'EGP',
-      status: SettlementBatchStatus.GENERATED,
-      slug: 'qa-settlement-batch-egp',
-      generatedAt: new Date(),
-    },
-    update: {
-      slug: 'qa-settlement-batch-egp',
-      status: SettlementBatchStatus.GENERATED,
-      generatedAt: new Date(),
-    },
-  });
-
-  await prisma.practitionerSettlement.upsert({
-    where: { id: settlementId },
-    create: {
-      id: settlementId,
-      batchId,
-      practitionerId: practitionerProfile.id,
-      walletId: null,
-      amountGross: 1000,
-      amountAdjustments: 0,
-      amountNet: 900,
-      amountPaidTotal: 0,
-      currencyCode: 'EGP',
-      status: PractitionerSettlementStatus.READY,
-      notes: 'QA settlement ready for TestSprite.',
-    },
-    update: {
-      batchId,
-      practitionerId: practitionerProfile.id,
-      amountGross: 1000,
-      amountNet: 900,
-      currencyCode: 'EGP',
-      status: PractitionerSettlementStatus.READY,
-      notes: 'QA settlement ready for TestSprite.',
-    },
-  });
-
-  await prisma.practitionerSettlementPayout.upsert({
-    where: { id: toStableUuid('qa-practitioner-payout-001') },
-    create: {
-      id: toStableUuid('qa-practitioner-payout-001'),
-      batchId,
-      settlementId,
-      practitionerId: practitionerProfile.id,
-      amountPaid: 900,
-      currencyCode: 'EGP',
-      payoutMethod: SettlementPayoutMethod.MANUAL_BANK_TRANSFER,
-      payoutSource: SettlementPayoutSource.BATCH_CLOSEOUT,
-      payoutMethodSnapshot: {
-        qa: true,
-        source: 'testsprite-seed',
-      },
-      transferFeeAmount: 0,
-      effectiveAt: new Date(),
-      processedByUserId: seedIds.users.superAdmin,
-      notes: 'QA payout for TestSprite.',
-    },
-    update: {
-      amountPaid: 900,
-      currencyCode: 'EGP',
-      effectiveAt: new Date(),
-      processedByUserId: seedIds.users.superAdmin,
-      notes: 'QA payout for TestSprite.',
     },
   });
 
@@ -1191,19 +1101,16 @@ async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean
   const reviewSessions = [
     {
       seedKey: 'qa-review-acceptance-f-text',
-      sessionCode: 'QA-REVIEW-ACCEPT-F-001',
       sessionDate: daysAgo(4),
       roomSuffix: 'f-text',
     },
     {
       seedKey: 'qa-review-acceptance-f-rating-only',
-      sessionCode: 'QA-REVIEW-ACCEPT-F-002',
       sessionDate: daysAgo(3),
       roomSuffix: 'f-rating-only',
     },
     {
       seedKey: 'qa-review-acceptance-f-rating-only-2',
-      sessionCode: 'QA-REVIEW-ACCEPT-F-003',
       sessionDate: daysAgo(2),
       roomSuffix: 'f-rating-only-2',
     },
@@ -1213,12 +1120,21 @@ async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean
     const endAt = new Date(reviewSession.sessionDate.getTime() + 60 * 60 * 1000);
     const sessionId = toStableUuid(reviewSession.seedKey);
     const paymentId = toStableUuid(`${reviewSession.seedKey}-payment`);
+    const existingSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { sessionCode: true },
+    });
+    const createdAt = new Date();
+    const sessionCode =
+      existingSession?.sessionCode ??
+      (await reserveSeedSessionCode(prisma, createdAt, 'qa_testsprite_review'));
 
     await prisma.session.upsert({
       where: { id: sessionId },
       create: {
         id: sessionId,
-        sessionCode: reviewSession.sessionCode,
+        sessionCode,
+        createdAt,
         patientId: patientProfile.id,
         practitionerId: practitionerProfile.id,
         flowType: SessionFlowType.SCHEDULED,
@@ -1240,7 +1156,6 @@ async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean
         notesInternal: 'QA review acceptance session for TestSprite.',
       },
       update: {
-        sessionCode: reviewSession.sessionCode,
         patientId: patientProfile.id,
         practitionerId: practitionerProfile.id,
         flowType: SessionFlowType.SCHEDULED,
@@ -1320,6 +1235,7 @@ async function ensureReviewAcceptanceData(prisma: PrismaClient): Promise<boolean
 }
 
 async function main(): Promise<void> {
+  assertFinancialFixtureSeedAllowed('qa.testsprite');
   assertSafeDatabaseUrl();
 
   const prisma = new PrismaClient();

@@ -94,6 +94,9 @@ export class PractitionerApplicationListItemResponseDto {
   @ApiProperty({ enum: AdminPractitionerApplicationKind })
   applicationKind!: AdminPractitionerApplicationKind;
 
+  @ApiProperty({ type: [String] })
+  changedSections!: string[];
+
   @ApiProperty({ type: AdminSpecialtySummaryResponseDto, nullable: true })
   mainSpecialty!: AdminSpecialtySummaryResponseDto | null;
 
@@ -250,9 +253,6 @@ export class AdminPractitionerCredentialResponseDto {
 
   @ApiProperty({ enum: CredentialType })
   credentialType!: CredentialType;
-
-  @ApiProperty()
-  fileUrl!: string;
 
   @ApiProperty({ enum: CredentialReviewStatus })
   reviewStatus!: CredentialReviewStatus;
@@ -468,11 +468,14 @@ export class AdminDirectPractitionerCreateSuccessResponseDto {
 }
 
 export class AdminPreparedPractitionerCredentialResponseDto {
+  @ApiProperty()
+  credentialId!: string;
+
   @ApiProperty({ enum: CredentialType })
   credentialType!: CredentialType;
 
   @ApiProperty()
-  fileUrl!: string;
+  mimeType!: string;
 
   @ApiProperty({ nullable: true })
   expiresAt!: Date | null;

@@ -78,6 +78,7 @@ export class GetAdminFinanceHubSummaryUseCase {
         where: {
           status: {
             in: [
+              PractitionerSettlementStatus.CREDITED,
               PractitionerSettlementStatus.READY,
               PractitionerSettlementStatus.PROCESSING,
             ],
@@ -89,6 +90,7 @@ export class GetAdminFinanceHubSummaryUseCase {
         where: {
           status: {
             in: [
+              PractitionerSettlementStatus.CREDITED,
               PractitionerSettlementStatus.READY,
               PractitionerSettlementStatus.PROCESSING,
             ],

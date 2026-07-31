@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "title": "Practitioner Settlements",
+    "description": "Review practitioner settlement calculations before wallet credit.",
+    "detailTitle": "Settlement detail",
+    "detailDescription": "Review one settlement, adjustments, approval and audit history."
+  },
+  "eyebrow": "Accountant settlement queue",
+  "title": "Practitioner Settlements",
+  "description": "Use this page to determine and approve the practitioner's amount after the session ends, then credit it to their platform wallet. This page does not transfer money to the practitioner's bank account.",
+  "system": "System",
+  "tabs": {
+    "label": "Settlement status",
+    "UNDER_REVIEW": "Needs Review",
+    "CREDITED": "Credited to Wallet",
+    "PAID_OUT": "Transferred to Practitioner",
+    "REJECTED": "Rejected",
+    "ALL": "All settlements"
+  },
+  "filters": {
+    "practitioner": "Search practitioner",
+    "search": "Search",
+    "searchPlaceholder": "Session code, settlement, practitioner or patient",
+    "currency": "Currency",
+    "fromDate": "Created from",
+    "toDate": "Created to",
+    "sort": "Sort",
+    "allStatuses": "All statuses",
+    "allCurrencies": "All currencies",
+    "sortOptions": {
+      "createdAt_desc": "Newest first",
+      "createdAt_asc": "Oldest first",
+      "amount_desc": "Highest practitioner amount",
+      "amount_asc": "Lowest practitioner amount",
+      "practitionerName_asc": "Practitioner name"
+    }
+  },
+  "table": {
+    "practitioner": "Practitioner",
+    "sessionCode": "Session code",
+    "patient": "Patient",
+    "sessionEndedAt": "Session ended",
+    "customerPayment": "Customer payment",
+    "practitionerAmount": "Practitioner amount",
+    "lastUpdated": "Last updated",
+    "session": "Session / patient",
+    "date": "Session date",
+    "original": "Original payment",
+    "gross": "Gross earning",
+    "adjustments": "Adjustments",
+    "finalCredit": "Final wallet credit",
+    "status": "Status",
+    "createdAt": "Created",
+    "actions": "Actions"
+  },
+  "actions": {
+    "reviewSettlement": "Review settlement",
+    "viewDetails": "View details",
+    "retry": "Try again",
+    "back": "Back to settlements",
+    "addAdjustment": "Add adjustment",
+    "saveAdjustment": "Save adjustment",
+    "cancel": "Cancel",
+    "approve": "Approve and Credit Wallet",
+    "reject": "Reject",
+    "confirmApprove": "Approve and Credit Wallet",
+    "confirmApproveWithCurrency": "Approve and Credit {amount} to Wallet",
+    "confirmReject": "Reject settlement",
+    "recordTransfer": "Record Practitioner Transfer"
+  },
+  "integrity": {
+    "walletCurrencyMismatch": "Approval is unavailable because the final entitlement currency does not match the practitioner wallet currency. Refresh the data or contact technical support.",
+    "refresh": "Refresh financial data"
+  },
+  "feedback": {
+    "adjustmentAdded": "Adjustment added.",
+    "approved": "Settlement approved and wallet credited.",
+    "rejected": "Settlement rejected."
+  },
+  "states": {
+    "error": "Could not load settlements.",
+    "empty": "No settlements found",
+    "emptyDescription": "Settlements will appear here when a completed session enters accounting review.",
+    "emptyNeedsReview": {
+      "title": "No settlements need review",
+      "description": "New completed-session settlements will appear here."
+    },
+    "emptyCredited": {
+      "title": "No credited settlements",
+      "description": "Settlements credited to practitioner wallets will appear here."
+    },
+    "emptyTransferred": {
+      "title": "No transferred settlements",
+      "description": "Settlements recorded as transferred to practitioners will appear here."
+    },
+    "emptyRejected": {
+      "title": "No rejected settlements",
+      "description": "Rejected settlements will appear here."
+    },
+    "emptyAll": {
+      "title": "No settlements found",
+      "description": "Try changing the filters or search term."
+    },
+    "actionError": "The action could not be completed.",
+    "noAdjustments": "No adjustments have been added.",
+    "noAudit": "No audit events are available."
+  },
+  "statuses": {
+    "DRAFT": "Draft",
+    "UNDER_REVIEW": "Needs Review",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected",
+    "CREDITED": "Credited to Wallet",
+    "PAID_OUT": "Transferred to Practitioner",
+    "READY": "Ready",
+    "PROCESSING": "Processing",
+    "PAID": "Paid",
+    "FAILED": "Failed",
+    "CANCELLED": "Cancelled"
+  },
+  "adjustmentTypes": {
+    "PLATFORM_FEE": "Platform fee",
+    "ADMINISTRATIVE_FEE": "Administrative fee",
+    "TAX": "Tax",
+    "MANUAL_CORRECTION": "Manual correction"
+  },
+  "detail": {
+    "eyebrow": "Settlement review",
+    "title": "Settlement detail",
+    "session": "Session and participants",
+    "financial": "Financial calculation",
+    "conversion": "Currency conversion snapshot",
+    "adjustments": "Adjustments",
+    "appendOnly": "Adjustments are recorded in the financial history.",
+    "decision": "Accountant Decision",
+    "decisionNote": "Review the session, amount, and adjustments before approving the practitioner's entitlement. Approval credits the final amount to the practitioner's platform wallet only.",
+    "readOnly": "This settlement is read-only because its accounting decision is already complete.",
+    "audit": "Audit history",
+    "externalTransfer": "External Practitioner Transfer",
+    "externalTransferNote": "Use this action only after the real transfer has been completed to the practitioner's bank account or external payout method. Confirmation records the transfer and debits the practitioner's platform balance.",
+    "transferRecorded": "The external transfer has already been recorded."
+  },
+  "fields": {
+    "patient": "Patient",
+    "practitioner": "Practitioner",
+    "sessionId": "Session",
+    "sessionDate": "Session date",
+    "sessionStatus": "Session status",
+    "sessionType": "Session type",
+    "originalPayment": "Original payment",
+    "gross": "Gross practitioner amount",
+    "adjustments": "Adjustments total",
+    "finalCredit": "Final wallet credit",
+    "exchangeRate": "Exchange rate",
+    "exchangeSource": "Rate source",
+    "converted": "Converted amount",
+    "walletCurrency": "Wallet currency",
+    "patientPayment": "Patient payment",
+    "practitionerEntitlement": "Practitioner entitlement",
+    "entitlementCurrency": "Entitlement currency",
+    "calculatedWalletCredit": "Calculated wallet credit",
+    "approvedWalletCredit": "Approved wallet credit",
+    "difference": "Difference",
+    "walletCreditOverrideReason": "Reason for wallet credit difference"
+  },
+  "modals": {
+    "adjustmentTitle": "Add settlement adjustment",
+    "adjustmentDescription": "Add a reviewed adjustment. This does not credit the wallet by itself.",
+    "amount": "Amount",
+    "reason": "Reason",
+    "approveTitle": "Approve Entitlement and Credit Wallet",
+    "approveDescription": "The final amount will be approved and credited to the practitioner's platform wallet. No bank or external transfer will be performed in this step.",
+    "rejectTitle": "Reject settlement",
+    "rejectDescription": "A reason is required and the settlement will not credit the wallet.",
+    "rejectionReason": "Rejection reason",
+    "payoutTitle": "Record Practitioner Transfer",
+    "payoutDescription": "This records an external transfer that has already been completed. It does not send money automatically.",
+    "transferMethod": "Transfer Method",
+    "externalReference": "External Transfer Reference",
+    "transferDate": "Transfer Date and Time",
+    "notes": "Notes",
+    "paymentMethod": "Payment Method",
+    "approvedEntitlement": "Approved Entitlement",
+    "payoutCurrency": "Payout Currency",
+    "exchangeRate": "Exchange Rate (1 USD = X EGP)",
+    "calculatedAmount": "Calculated Amount",
+    "actualAmount": "Actual Amount Transferred",
+    "difference": "Difference",
+    "overrideReason": "Reason for Amount Difference",
+    "overrideReasonPlaceholder": "Explain why the actual amount differs",
+    "useCalculated": "Use Calculated Amount",
+    "noConversion": "No Currency Conversion Required",
+    "legacyFxUnavailable": "FX snapshot unavailable for this legacy transfer",
+    "payoutWarning": "This records an external transfer that has already been completed; it does not send money automatically.",
+    "adjustmentType": "Adjustment type",
+    "notApplied": "Not applied",
+    "noExternalTransfer": "This approves the entitlement and credits the wallet. No external transfer is performed in this step."
+  },
+  "payout": {
+    "walletCurrency": "Wallet currency",
+    "walletDebit": "Amount debited from wallet",
+    "transferFee": "Transfer fee",
+    "feeBearer": "Who bears the transfer fee?",
+    "practitioner": "Practitioner",
+    "platform": "Platform",
+    "netReceived": "Net amount received",
+    "platformOutflow": "Total platform outflow"
+  }
+}

@@ -97,7 +97,7 @@ export class RecordPractitionerSettlementPayoutUseCase {
             settlement.batchId,
             tx,
           );
-        const allPaid = settlements.every((item) => item.status === 'PAID');
+        const allPaid = settlements.every((item) => item.status === 'PAID_OUT');
         const targetStatus: SettlementBatchStatus = allPaid
           ? SettlementBatchStatus.COMPLETED
           : SettlementBatchStatus.PROCESSING;

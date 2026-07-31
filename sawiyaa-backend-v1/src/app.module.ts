@@ -20,6 +20,7 @@ import sessionConfig from './config/session.config';
 import throttleConfig from './config/throttle.config';
 import stepUpConfig from './config/step-up.config';
 import geoipConfig from './config/geoip.config';
+import availabilityConfig from './config/availability.config';
 import { I18nModule } from './common/i18n/i18n.module';
 import { LocaleContextMiddleware } from './common/i18n/services/locale-context.middleware';
 import { PrismaModule } from './common/prisma/prisma.module';
@@ -89,6 +90,7 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
         throttleConfig,
         stepUpConfig,
         geoipConfig,
+        availabilityConfig,
       ],
     }),
     LoggingModule,

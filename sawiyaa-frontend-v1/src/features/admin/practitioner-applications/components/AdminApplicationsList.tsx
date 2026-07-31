@@ -186,6 +186,24 @@ export default function AdminApplicationsList() {
         align: "center",
       },
       {
+        id: "sections",
+        header: locale === "ar" ? "الأقسام المتغيرة" : t("applications.table.sections"),
+        accessor: (row) => row.changedSections?.join(",") ?? "",
+        align: "start",
+        hideOnMobile: true,
+        cell: (row) => (
+          <div className="flex flex-wrap gap-1">
+            {(row.changedSections ?? []).map((section) => (
+              <span key={section} className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-text-muted dark:bg-white/10">
+                {locale === "ar"
+                  ? ({ PROFILE: "الملف المهني", SPECIALTIES: "التخصصات", CREDENTIALS: "المستندات" } as Record<string, string>)[section] ?? section
+                  : t(`applications.table.sectionLabels.${section}`)}
+              </span>
+            ))}
+          </div>
+        ),
+      },
+      {
         id: "specialty",
         header: t("applications.table.specialty"),
         accessor: (row) => row.mainSpecialty?.title ?? "-",

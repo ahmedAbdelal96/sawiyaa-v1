@@ -1,5 +1,5 @@
-import SignUpForm from "@/components/auth/SignUpForm";
+import PatientSignUpForm from "@/components/auth/PatientSignUpForm";
 
 export default function PatientSignUpPage() {
-  return <SignUpForm mode="patient" />;
+  return <PatientSignUpForm />;
 }

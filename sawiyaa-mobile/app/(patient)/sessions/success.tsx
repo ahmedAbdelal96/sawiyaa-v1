@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Card, Screen, Text, Button } from "../../../src/components/ui";
+import { SessionCodeReference } from "../../../src/components/shared";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
 
@@ -61,9 +62,7 @@ export default function BookingSuccessScreen() {
               : { borderRightColor: theme.colors.primary },
           ]}
         >
-          <Text weight="600" style={styles.sessionCode}>
-            {params.sessionCode ?? params.sessionId}
-          </Text>
+          <SessionCodeReference sessionCode={params.sessionCode} copyable testID="booking-success-session-code" />
           <View
             style={[
               styles.statusBadge,
@@ -183,10 +182,6 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRightWidth: 3,
     borderRightColor: "#3f7dcf",
-  },
-  sessionCode: {
-    fontSize: 20,
-    marginBottom: 4,
   },
   statusHint: {
     fontSize: 12,

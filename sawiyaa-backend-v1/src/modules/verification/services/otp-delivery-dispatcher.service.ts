@@ -12,6 +12,7 @@ import { NotificationEmailService } from '@modules/notifications/services/notifi
 import { OtpDeliveryResult } from '../types/otp.types';
 import { renderPractitionerLoginOtpEmail } from './practitioner-login-otp-email.template';
 import { renderPasswordResetOtpEmail } from './password-reset-otp-email.template';
+import { renderPractitionerSignupEmailOtp } from './practitioner-signup-email-otp.template';
 import { PractitionerOtpQaCaptureService } from './practitioner-otp-qa-capture.service';
 
 /**
@@ -31,7 +32,7 @@ export class OtpDeliveryDispatcherService {
   ) {}
 
   async dispatch(input: {
-    userId: string;
+    userId?: string | null;
     channel: OtpChannel;
     target: string;
     code: string;
@@ -41,6 +42,24 @@ export class OtpDeliveryDispatcherService {
     isPractitioner?: boolean;
   }): Promise<OtpDeliveryResult> {
     if (input.channel === OtpChannel.EMAIL) {
+      if (
+        this.practitionerOtpQaCaptureService.shouldCapture?.(
+          input.target,
+          input.purposeLabel,
+        ) === true
+      ) {
+        await this.practitionerOtpQaCaptureService.capture({
+          target: input.target,
+          code: input.code,
+          expiresAt: input.expiresAt,
+          purpose: input.purposeLabel,
+        });
+        return {
+          delivered: true,
+          deliveryTarget: input.target,
+          channel: input.channel,
+        };
+      }
       return this.sendEmailOtp(input);
     }
 
@@ -58,7 +77,13 @@ export class OtpDeliveryDispatcherService {
     if (purposeLabel === OtpPurpose.PASSWORD_RESET) {
       return 'auth.password-reset';
     }
+
     if (purposeLabel === OtpPurpose.PRACTITIONER_LOGIN) {
+      return 'auth.practitioner-login-otp';
+    }
+    if (purposeLabel === OtpPurpose.PRACTITIONER_SIGNUP_EMAIL_VERIFICATION) {
+      // Keep delivery infrastructure compatible with existing notification seeds;
+      // the OTP purpose remains isolated in the challenge record.
       return 'auth.practitioner-login-otp';
     }
     return 'auth.practitioner-login-otp';
@@ -153,6 +178,13 @@ export class OtpDeliveryDispatcherService {
       return { subject, body, html };
     }
 
+    if (purposeLabel === OtpPurpose.PRACTITIONER_SIGNUP_EMAIL_VERIFICATION) {
+      return renderPractitionerSignupEmailOtp({
+        code,
+        ttlMinutes: this.resolvePractitionerLoginOtpTtlMinutes(),
+      });
+    }
+
     // PRACTITIONER_LOGIN — English-only override (product decision).
     // Locale is intentionally ignored here. The rich HTML body is
     // computed by the dispatcher; we only forward it to the email
@@ -163,7 +195,7 @@ export class OtpDeliveryDispatcherService {
   }
 
   private async sendEmailOtp(input: {
-    userId: string;
+    userId?: string | null;
     channel: OtpChannel;
     target: string;
     code: string;
@@ -193,6 +225,24 @@ export class OtpDeliveryDispatcherService {
     const redirectResolution = this.notificationEmailService.resolveOtpTarget(
       input.target,
     );
+
+    // Pre-account verification has no user row yet. Deliver directly and never
+    // create a notification row that would require a non-existent userId.
+    if (!input.userId) {
+      const delivery = await this.notificationEmailService.sendEmail({
+        to: redirectResolution.deliveryTarget,
+        subject,
+        body,
+        ...(html ? { html } : {}),
+        isOtp: true,
+      });
+      return {
+        delivered: delivery.delivered,
+        deliveryTarget: delivery.deliveryTarget,
+        channel: input.channel,
+        redirectTarget: redirectResolution.redirectTarget,
+      };
+    }
 
     const notification = await this.notificationRepository.createNotification({
       userId: input.userId,
@@ -242,6 +292,7 @@ export class OtpDeliveryDispatcherService {
 
     if (input.purposeLabel === OtpPurpose.PRACTITIONER_LOGIN) {
       await this.practitionerOtpQaCaptureService.capture({
+        target: input.target,
         code: input.code,
         expiresAt: input.expiresAt,
         purpose: input.purposeLabel,

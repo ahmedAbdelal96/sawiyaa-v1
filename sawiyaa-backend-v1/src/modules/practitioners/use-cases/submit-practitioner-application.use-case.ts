@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   Optional,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
@@ -31,6 +32,9 @@ import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { PractitionerPayoutDestinationValidationService } from '../services/practitioner-payout-destination-validation.service';
+import { PractitionerRequiredDocumentsService } from '../services/practitioner-required-documents.service';
+import { normalizeProfessionalTitle } from '../constants/professional-title.constants';
+import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
 
 /**
  * Practitioner self-submission is review-gated and snapshot-based.
@@ -54,8 +58,28 @@ export class SubmitPractitionerApplicationUseCase {
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
+    private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
+
+    private readonly practitionerRequiredDocumentsService =
+    new PractitionerRequiredDocumentsService();
+
+  private assertRequiredDocumentsComplete(records: Array<{
+    credentialType: string;
+    reviewStatus: string;
+    expiresAt: Date | null;
+    fileUrl: string;
+  }>) {
+    const result = this.practitionerRequiredDocumentsService.evaluate(records);
+    if (result.complete) return;
+    throw new UnprocessableEntityException({
+      code: 'PRACTITIONER_REQUIRED_DOCUMENTS_INCOMPLETE',
+      error: 'PRACTITIONER_REQUIRED_DOCUMENTS_INCOMPLETE',
+      missingRequirements: result.missingRequirements,
+      missingDocumentTypes: result.missingDocumentTypes,
+    });
+  }
 
   async execute(input: {
     userId: string;
@@ -121,9 +145,11 @@ export class SubmitPractitionerApplicationUseCase {
           ? input.data.practitionerGender
           : (profileState.practitionerGender ?? null),
       professionalTitle:
-        input.data.professionalTitle !== undefined
-          ? input.data.professionalTitle
-          : (profileState.professionalTitle ?? null),
+        normalizeProfessionalTitle(
+          input.data.professionalTitle !== undefined
+            ? input.data.professionalTitle
+            : (profileState.professionalTitle ?? null),
+        ),
       bio:
         input.data.bio !== undefined
           ? input.data.bio
@@ -287,6 +313,15 @@ export class SubmitPractitionerApplicationUseCase {
       latestApplicationStatus: latestApplicationBeforeTx?.status ?? null,
     });
 
+    this.assertRequiredDocumentsComplete(
+      credentials.map((credential) => ({
+        credentialType: credential.credentialType,
+        reviewStatus: credential.reviewStatus,
+        expiresAt: credential.expiresAt,
+        fileUrl: credential.fileUrl,
+      })),
+    );
+
     if (!eligibility.canSubmit) {
       const alreadySubmitted =
         latestApplicationBeforeTx?.status ===
@@ -315,6 +350,19 @@ export class SubmitPractitionerApplicationUseCase {
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const transactionCredentials =
+        await this.practitionerCredentialRepository.listByPractitionerId(
+          profile.id,
+          tx,
+        );
+      this.assertRequiredDocumentsComplete(
+        transactionCredentials.map((credential) => ({
+          credentialType: credential.credentialType,
+          reviewStatus: credential.reviewStatus,
+          expiresAt: credential.expiresAt,
+          fileUrl: credential.fileUrl,
+        })),
+      );
       const latestApplication =
         await this.practitionerApplicationRepository.findLatestByPractitionerId(
           profile.id,
@@ -365,6 +413,16 @@ export class SubmitPractitionerApplicationUseCase {
           targetUserId: input.userId,
           metadata: { previousStatus: latestApplication.status, status: decision.status },
         });
+        await this.practitionerReviewCaseService.ensureOnboardingCase({
+          practitionerId: profile.id,
+          proposedSnapshot: submissionSnapshot as Prisma.InputJsonValue,
+          tx,
+        });
+        await this.practitionerReviewCaseService.resubmitChangeCase({
+          practitionerId: profile.id,
+          proposedSnapshot: submissionSnapshot as Prisma.InputJsonValue,
+          tx,
+        });
         return;
       }
 
@@ -384,6 +442,11 @@ export class SubmitPractitionerApplicationUseCase {
         resourceId: decision.id,
         targetUserId: input.userId,
         metadata: { previousStatus: null, status: decision.status },
+      });
+      await this.practitionerReviewCaseService.ensureOnboardingCase({
+        practitionerId: profile.id,
+        proposedSnapshot: submissionSnapshot as Prisma.InputJsonValue,
+        tx,
       });
     });
 

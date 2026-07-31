@@ -21,6 +21,7 @@ type Props = {
   onOpenFull: () => void;
   onCreatedTicket?: (ticketId: string) => void;
   onThreadActive?: () => void;
+  isVisible?: boolean;
 };
 
 export default function SupportLaneThread({
@@ -30,11 +31,13 @@ export default function SupportLaneThread({
   onOpenFull,
   onCreatedTicket,
   onThreadActive,
+  isVisible = true,
 }: Props) {
   const queryClient = useQueryClient();
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   // Fetch all conversations to match ticketId with the conversation
   const listQuery = useQuery({
@@ -47,10 +50,10 @@ export default function SupportLaneThread({
   ) || null;
 
   useEffect(() => {
-    if (conversation && onThreadActive) {
+    if (isVisible && conversation && onThreadActive) {
       onThreadActive();
     }
-  }, [conversation, onThreadActive]);
+  }, [conversation, isVisible, onThreadActive]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,9 +65,17 @@ export default function SupportLaneThread({
 
       let res;
       if (role === "patient") {
-        res = await createPatientSupportTicket({ description: description.trim() });
+        res = await createPatientSupportTicket({
+          description: description.trim(),
+          newConversation: true,
+          idempotencyKey,
+        });
       } else {
-        res = await createPractitionerSupportTicket({ description: description.trim() });
+        res = await createPractitionerSupportTicket({
+          description: description.trim(),
+          newConversation: true,
+          idempotencyKey,
+        });
       }
 
       if (res?.item?.conversationId) {
@@ -74,11 +85,14 @@ export default function SupportLaneThread({
           onCreatedTicket(res.item.conversationId);
         }
       } else {
-        setError(locale.startsWith("ar") ? "حدث خطأ أثناء إرسال الطلب" : "Failed to send request");
+        setError(locale.startsWith("ar")
+          ? "تعذر إرسال رسالتك إلى الدعم. حاول مرة أخرى."
+          : "Could not send your message to support. Please try again.");
       }
-    } catch (err) {
-      console.error(err);
-      setError(locale.startsWith("ar") ? "فشل الاتصال بالخادر. حاول مجدداً." : "Server connection failed. Try again.");
+    } catch {
+      setError(locale.startsWith("ar")
+        ? "تعذر إرسال رسالتك إلى الدعم. حاول مرة أخرى."
+        : "Could not send your message to support. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -103,6 +117,7 @@ export default function SupportLaneThread({
             role={role}
             locale={locale}
             onOpenFullChat={onOpenFull}
+            isVisible={isVisible}
           />
         ) : (
           <div className="flex h-full items-center justify-center p-8 text-center text-text-muted">
@@ -117,12 +132,12 @@ export default function SupportLaneThread({
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border-light/80 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-slate-900/40">
       <h3 className="text-base font-bold text-text-primary dark:text-white">
-        {isAr ? "تواصل مع فريق الدعم" : "Contact Support Team"}
+        {isAr ? "ابدأ محادثة جديدة مع الدعم" : "Start a new support conversation"}
       </h3>
       <p className="mt-1 text-xs text-text-secondary dark:text-white/60">
         {isAr
           ? "اطرح مشكلتك أو استفسارك هنا وسيرد عليك أحد ممثلي الدعم الفني في أقرب وقت."
-          : "Write your inquiry or problem below, and a support agent will get back to you shortly."}
+          : "Write your message and it will be sent to the support team."}
       </p>
 
       {error && (
@@ -142,6 +157,7 @@ export default function SupportLaneThread({
             rows={5}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            autoFocus
             placeholder={
               isAr
                 ? "اكتب تفاصيل المشكلة أو طلبك بوضوح..."

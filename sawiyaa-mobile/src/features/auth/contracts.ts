@@ -59,6 +59,7 @@ export interface AuthSuccessResponse {
   tokens: AuthTokens;
   user: AuthenticatedUser;
   nextStep?: "AUTHENTICATED";
+  phone?: { status?: "SAVED" | "NOT_SAVED" | string };
 }
 
 export interface MessageResponse {
@@ -92,8 +93,15 @@ export type PractitionerLoginResponse =
 
 export interface PractitionerRegistrationResponse {
   message: string;
-  userId: string;
-  requiresOtpOnLogin: boolean;
+  challengeId?: string;
+  channel?: string;
+  maskedTarget?: string;
+  expiresAt?: string;
+  requiresOtpVerification?: boolean;
+  nextStep?: "OTP_REQUIRED";
+  userId?: string;
+  requiresOtpOnLogin?: boolean;
+  phone?: { status?: "SAVED" | "NOT_SAVED" | string };
 }
 
 export interface CurrentAuthUserResponse {
@@ -126,6 +134,7 @@ export interface PatientRegisterRequest {
   displayName?: string;
   deviceId?: string;
   phone?: string;
+  phoneCountryCode?: string;
 }
 
 export interface PatientLoginRequest {
@@ -165,6 +174,8 @@ export interface PractitionerRegisterRequest {
   email: string;
   otpEmail?: string;
   password: string;
+  phone?: string;
+  phoneCountryCode?: string;
   displayName?: string;
   practitionerType?:
     | "PSYCHOLOGIST"
@@ -191,6 +202,38 @@ export interface PractitionerRegisterRequest {
     fileUrl: string;
     expiresAt?: string;
   };
+}
+
+export interface PractitionerRegistrationOtpRequest {
+  challengeId: string;
+  code: string;
+}
+
+export interface SpecialtyCategory {
+  id: string;
+  name: string;
+  nameAr: string | null;
+  nameEn: string | null;
+  slug: string;
+}
+
+export interface Specialty {
+  id: string;
+  name: string | null;
+  nameAr: string | null;
+  nameEn: string | null;
+  slug: string;
+  category: SpecialtyCategory | null;
+}
+
+export interface SpecialtyCategoriesResponse {
+  message: string;
+  categories: SpecialtyCategory[];
+}
+
+export interface SpecialtiesResponse {
+  message: string;
+  specialties: Specialty[];
 }
 
 export interface PractitionerLoginRequest {

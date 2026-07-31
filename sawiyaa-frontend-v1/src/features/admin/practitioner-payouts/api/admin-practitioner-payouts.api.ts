@@ -11,7 +11,20 @@ import type {
   ListAdminPractitionerPayoutSummariesParams,
   ListAdminPractitionerManualPayoutsParams,
   ListAdminPractitionerManualPayoutHistoryParams,
+  AdminPractitionerWalletListResponseData,
+  AdminPractitionerWalletDetailResponseData,
+  ListAdminPractitionerWalletsParams,
 } from "../types/admin-practitioner-payouts.types";
+
+export async function listAdminPractitionerWallets(params?: ListAdminPractitionerWalletsParams) {
+  const response = await httpClient.get<ApiPayload<AdminPractitionerWalletListResponseData>>("/admin/practitioner-wallets", { params });
+  return extractData(response.data);
+}
+
+export async function getAdminPractitionerWalletDetail(walletId: string, limit = 20) {
+  const response = await httpClient.get<ApiPayload<AdminPractitionerWalletDetailResponseData>>(`/admin/practitioner-wallets/${walletId}`, { params: { limit } });
+  return extractData(response.data);
+}
 
 export async function getAdminPractitionerPayoutBalance(
   practitionerId: string,

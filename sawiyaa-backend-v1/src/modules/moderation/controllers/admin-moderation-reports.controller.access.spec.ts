@@ -1,29 +1,47 @@
+import 'reflect-metadata';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
-import { ROLES_KEY } from '@common/constants/auth-metadata.constants';
-import { AppRole } from '@common/enums/app-role.enum';
-import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
-import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PERMISSIONS_KEY } from '@common/constants/auth-metadata.constants';
+import { PermissionKey } from '@common/enums/permission-key.enum';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { AdminModerationReportsController } from './admin-moderation-reports.controller';
 
-describe('AdminModerationReportsController access contract', () => {
-  it('requires moderation reviewer roles only', () => {
-    const roles = Reflect.getMetadata(
-      ROLES_KEY,
+describe('AdminModerationReportsController authorization', () => {
+  it('applies the backend permissions guard at controller scope', () => {
+    const guards = Reflect.getMetadata(
+      GUARDS_METADATA,
       AdminModerationReportsController,
     );
-    expect(roles).toEqual([
-      AppRole.ADMIN,
-      AppRole.SUPPORT_AGENT,
-      AppRole.CONTENT_REVIEWER,
+
+    expect(guards).toContain(PermissionsGuard);
+  });
+
+  it('requires report view permission for the queue', () => {
+    const permissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminModerationReportsController.prototype.list,
+    );
+
+    expect(permissions).toEqual([PermissionKey.MODERATION_REPORT_VIEW]);
+  });
+
+  it('requires evidence permission for report detail', () => {
+    const permissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminModerationReportsController.prototype.getById,
+    );
+
+    expect(permissions).toEqual([
+      PermissionKey.MODERATION_REPORT_VIEW,
+      PermissionKey.MODERATION_EVIDENCE_VIEW,
     ]);
   });
 
-  it('enforces auth and role guards', () => {
-    const guards =
-      Reflect.getMetadata(GUARDS_METADATA, AdminModerationReportsController) ??
-      [];
+  it('requires action permission for mutations', () => {
+    const permissions = Reflect.getMetadata(
+      PERMISSIONS_KEY,
+      AdminModerationReportsController.prototype.executeAction,
+    );
 
-    expect(guards).toContain(JwtAccessAuthGuard);
-    expect(guards).toContain(RolesGuard);
+    expect(permissions).toEqual([PermissionKey.MODERATION_ACTION_EXECUTE]);
   });
 });

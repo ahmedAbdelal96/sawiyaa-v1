@@ -145,26 +145,11 @@ export default function PatientGoogleAuthButton({
   ]);
 
   if (!googleClientId) {
-    return (
-      <div className="rounded-lg border border-dashed border-border-light p-3 text-xs text-text-muted">
-        {t("googleUnavailable")}
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t border-border-light dark:border-white/5" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase tracking-[0.16em] text-text-muted dark:text-white/45">
-          <span className="relative z-10 bg-white px-3 dark:bg-surface-secondary dark:text-white/45">
-            {t("orContinueWith")}
-          </span>
-        </div>
-      </div>
-
       <div
         ref={buttonContainerRef}
         className="flex min-h-11 items-center justify-center"

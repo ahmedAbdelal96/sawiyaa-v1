@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AlertTriangle, CheckCircle2, Pencil, ShieldOff } from "lucide-react";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
+import { PractitionerFinancialStatCard } from "@/components/shared/practitioner/PractitionerFinancialStatCard";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
 import { ConfirmModal, DestructiveConfirmModal, FormModal } from "@/components/ui/modal";
@@ -230,25 +231,25 @@ export default function AdminPackagePlanDetailScreen({ code }: Props) {
           }
           meta={
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <SurfaceStatCard
+              <PractitionerFinancialStatCard
                 label={t("detail.summary.code")}
                 value={item.code}
                 hint={t("detail.summary.codeHint")}
                 tone="primary"
               />
-              <SurfaceStatCard
+              <PractitionerFinancialStatCard
                 label={t("detail.summary.sessionCount")}
                 value={String(item.sessionCount)}
                 hint={t("detail.summary.sessionCountHint")}
                 tone="neutral"
               />
-              <SurfaceStatCard
+              <PractitionerFinancialStatCard
                 label={t("detail.summary.discountPercent")}
                 value={formatDiscount(item.discountPercent)}
                 hint={t("detail.summary.discountPercentHint")}
                 tone="success"
               />
-              <SurfaceStatCard
+              <PractitionerFinancialStatCard
                 label={t("detail.summary.purchaseCount")}
                 value={String(item.counts.purchaseCount)}
                 hint={t("detail.summary.purchaseCountHint")}

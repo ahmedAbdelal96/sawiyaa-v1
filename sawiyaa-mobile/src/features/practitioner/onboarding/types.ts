@@ -6,11 +6,10 @@ import type {
 export type PractitionerCredentialType =
   | "LICENSE"
   | "DEGREE"
-  | "CERTIFICATION"
-  | "NATIONAL_ID"
+  | "NATIONAL_ID_FRONT"
+  | "NATIONAL_ID_BACK"
   | "PASSPORT"
-  | "MEMBERSHIP"
-  | "OTHER";
+  | "MEMBERSHIP";
 
 export type PractitionerCredentialReviewStatus =
   | "PENDING"
@@ -50,7 +49,7 @@ export interface UpdatePractitionerSpecialtiesResponse {
 
 export interface UploadPractitionerCredentialRequest {
   credentialType: PractitionerCredentialType;
-  fileUrl: string;
+  file: { uri: string; name: string; type: string };
   expiresAt?: string | null;
 }
 

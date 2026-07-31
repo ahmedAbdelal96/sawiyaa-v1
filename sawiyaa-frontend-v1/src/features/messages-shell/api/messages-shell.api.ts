@@ -7,6 +7,7 @@ import type {
   CanonicalMessageListResponse,
   CanonicalUnreadSummary,
   MessagingMessage,
+  UnifiedMessagingUnreadSummary,
 } from "../types/messages-shell.types";
 
 function isCanonicalUnreadSummary(value: unknown): value is CanonicalUnreadSummary {
@@ -85,18 +86,18 @@ export async function getCanonicalUnreadSummary() {
   return { item };
 }
 
-export async function createPatientSupportTicket(payload: { description: string }) {
+export async function createPatientSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
   const response = await httpClient.post<ApiPayload<{ item: any }>>(
     "/patients/me/support/tickets",
-    { category: "GENERAL", description: payload.description },
+    { category: "GENERAL", description: payload.description, newConversation: payload.newConversation, idempotencyKey: payload.idempotencyKey },
   );
   return extractData(response.data);
 }
 
-export async function createPractitionerSupportTicket(payload: { description: string }) {
+export async function createPractitionerSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
   const response = await httpClient.post<ApiPayload<{ item: any }>>(
     "/practitioners/me/support/tickets",
-    { category: "GENERAL", description: payload.description },
+    { category: "GENERAL", description: payload.description, newConversation: payload.newConversation, idempotencyKey: payload.idempotencyKey },
   );
   return extractData(response.data);
 }
@@ -110,16 +111,20 @@ export async function updateSupportTicketStatus(ticketId: string, status: string
 }
 
 export async function getUnifiedMessagingUnreadSummary() {
-  const summary = await getCanonicalUnreadSummary();
-  return {
-    item: {
-      session: { unreadMessages: 0, unreadConversations: 0 },
-      support: { unreadMessages: summary.item.needsSupportReplyCount, unreadConversations: 0 },
-      practitioner: { unreadMessages: 0, unreadConversations: 0 },
-      totalUnreadMessages: summary.item.unreadCount || summary.item.needsSupportReplyCount,
-      totalUnreadConversations: 0,
-    },
-  };
+  const response = await httpClient.get<
+    ApiPayload<{ item: UnifiedMessagingUnreadSummary }>
+  >("/chat/conversations/unread-summary");
+  const data = extractData(response.data) as unknown;
+  const item =
+    data && typeof data === "object" && "item" in data
+      ? (data as { item?: UnifiedMessagingUnreadSummary }).item
+      : (data as UnifiedMessagingUnreadSummary);
+
+  if (!item || typeof item.totalUnreadMessages !== "number") {
+    throw new Error("Invalid unified unread summary response");
+  }
+
+  return { item };
 }
 
 export async function getAdminSupportTickets(params: { status?: string; page?: number; limit?: number } = {}) {

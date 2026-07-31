@@ -31,17 +31,17 @@ export class CreateAdminPractitionerCredentialDto {
   @IsEnum(CredentialType)
   credentialType!: CredentialType;
 
-  @ApiProperty({
-    example:
-      '/uploads/practitioners/admin-direct-create/credentials/license.pdf',
-  })
+  @ApiProperty({ example: '32-character opaque credential id' })
   @IsString()
   @MinLength(3)
-  @MaxLength(500)
-  @Matches(/^\/uploads\/.+/, {
-    message: 'credential file url must reference a managed upload path',
-  })
-  fileUrl!: string;
+  @MaxLength(64)
+  @Matches(/^[a-f0-9]{32}$/i, { message: 'credential id must be opaque' })
+  credentialId!: string;
+
+  @ApiProperty({ example: 'application/pdf' })
+  @IsString()
+  @MaxLength(100)
+  mimeType!: string;
 
   @ApiPropertyOptional({
     example: '2028-12-31T00:00:00.000Z',
@@ -62,16 +62,18 @@ export class CreateAdminPractitionerDto {
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'EG' })
+  @ApiPropertyOptional({ example: 'EG' })
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(3)
-  phoneCountryCode!: string;
+  phoneCountryCode?: string;
 
-  @ApiProperty({ example: '01012345678' })
+  @ApiPropertyOptional({ example: '01012345678' })
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  phone!: string;
+  phone?: string;
 
   @ApiProperty({
     minLength: 8,

@@ -104,6 +104,8 @@ export interface PublicAvailabilityWindowsData {
   };
   windows: AvailabilityWindow[];
   bookedSlots?: BookedAvailabilitySlot[];
+  acceptsNormalBookings?: boolean;
+  reasonCode?: "NORMAL_BOOKINGS_PAUSED";
 }
 
 export interface SessionPractitionerSummary {

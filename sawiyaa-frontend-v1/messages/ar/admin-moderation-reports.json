@@ -221,7 +221,7 @@
   },
   "actions": {
     "fields": {
-      "action": "الإجراء",
+      "action": "الإجراء المطلوب",
       "reason": "السبب",
       "note": "ملاحظة داخلية"
     },
@@ -252,17 +252,20 @@
       "reasonRequired": "يجب إدخال سبب لهذا الإجراء."
     },
     "options": {
-      "REVIEW_CASE": "نقل إلى قيد المراجعة",
-      "PREPARE_ENFORCEMENT": "تجهيز للتنفيذ",
-      "MARK_RESOLVED": "وضع كتم الحسم",
-      "DISMISS_CASE": "رفض البلاغ",
+      "REVIEW_CASE": "بدء مراجعة البلاغ",
+      "PREPARE_ENFORCEMENT": "إحالة لاتخاذ إجراء",
+      "MARK_RESOLVED": "إغلاق البلاغ بعد المعالجة",
+      "DISMISS_CASE": "رفض البلاغ لعدم ثبوت المخالفة",
       "ENFORCE_CARE_CHAT_REVOKE": "إيقاف محادثة الرعاية",
-      "ENFORCE_CARE_CHAT_MESSAGE_HIDE": "إخفاء رسالة رعاية",
+      "ENFORCE_CARE_CHAT_MESSAGE_HIDE": "إخفاء الرسالة المبلّغ عنها",
       "ENFORCE_REVIEW_HIDE": "إخفاء المراجعة",
       "ENFORCE_REVIEW_REJECT": "رفض المراجعة",
       "ENFORCE_REVIEW_RESTORE": "استعادة المراجعة",
       "ENFORCE_ARTICLE_ARCHIVE": "أرشفة المقال",
-      "ENFORCE_SUPPORT_ESCALATE": "تصعيد تذكرة الدعم"
+      "ENFORCE_SUPPORT_ESCALATE": "تصعيد تذكرة الدعم",
+      "ENFORCE_USER_WARNING": "إصدار تحذير للمستخدم محل البلاغ",
+      "ENFORCE_USER_RESTRICTION": "تقييد حساب المستخدم محل البلاغ",
+      "ENFORCE_USER_SUSPENSION": "إيقاف حساب المستخدم محل البلاغ"
     }
   },
   "errors": {
@@ -271,6 +274,7 @@
     "reportNotFound": "لم يتم العثور على البلاغ.",
     "caseNotFound": "لم يتم العثور على الحالة.",
     "actionNotAllowed": "هذا الإجراء غير مسموح لدورك.",
+    "enforcementNotAllowed": "هذا الإجراء يتطلب صلاحية إنفاذ إشرافية مرفوعة.",
     "reasonRequired": "هذا الإجراء يتطلب سببًا.",
     "invalidActionTarget": "الإجراء غير صالح لهذا الهدف.",
     "invalidTransition": "الإجراء غير صالح للحالة الحالية.",

@@ -1,9 +1,11 @@
+import { Injectable } from '@nestjs/common';
 import { Prisma, SecurityAuditLog } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
 /** Append-only persistence boundary for security audit records. */
+@Injectable()
 export class SecurityAuditRepository {
   constructor(private readonly prisma: PrismaService) {}
 

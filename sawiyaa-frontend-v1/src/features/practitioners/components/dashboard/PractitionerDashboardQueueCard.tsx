@@ -6,7 +6,7 @@ import { PractitionerDashboardSectionHeader } from "./PractitionerDashboardSecti
 type QueueItem = {
   id: string;
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   href?: string;
   badge?: ReactNode;
 };

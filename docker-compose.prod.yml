@@ -40,6 +40,7 @@ services:
     volumes:
       - backend_storage:/app/storage
       - backend_uploads:/app/uploads
+      - ./geoip/GeoLite2-Country.mmdb:/opt/sawiyaa/geoip/GeoLite2-Country.mmdb:ro
     expose:
       - "7000"
     depends_on:

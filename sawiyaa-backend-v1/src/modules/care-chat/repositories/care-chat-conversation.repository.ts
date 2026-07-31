@@ -123,43 +123,34 @@ export class CareChatConversationRepository {
   }
 
   async countUnreadForUser(input: { userId: string }) {
-    const unreadWhere: Prisma.MessageWhereInput = {
-      senderUserId: {
-        not: input.userId,
-      },
-      status: {
-        in: [MessageStatus.SENT, MessageStatus.DELIVERED],
-      },
-      deletedAt: null,
-      visibility: MessageVisibility.NORMAL,
-      conversation: {
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
         conversationType: 'CARE_APPROVED',
+        participants: { some: { userId: input.userId, isActive: true } },
+      },
+      select: {
+        id: true,
         participants: {
-          some: {
-            userId: input.userId,
-            isActive: true,
-          },
+          where: { userId: input.userId, isActive: true },
+          select: { lastReadAt: true, lastReadMessageId: true },
         },
       },
-    };
-
-    const [unreadMessages, unreadConversationRows] =
-      await this.prisma.$transaction([
-        this.prisma.message.count({
-          where: unreadWhere,
-        }),
-        this.prisma.message.findMany({
-          where: unreadWhere,
-          select: {
-            conversationId: true,
-          },
-          distinct: ['conversationId'],
-        }),
-      ]);
+    });
+    const counts = await Promise.all(conversations.map(async (conversation) => {
+      const cursor = conversation.participants[0] ?? null;
+      const count = await this.countUnreadForCursor({
+        conversationId: conversation.id,
+        userId: input.userId,
+        lastReadAt: cursor?.lastReadAt ?? null,
+        lastReadMessageId: cursor?.lastReadMessageId ?? null,
+      });
+      return count;
+    }));
+    const unreadMessages = counts.reduce((total, count) => total + count, 0);
 
     return {
       unreadMessages,
-      unreadConversations: unreadConversationRows.length,
+      unreadConversations: counts.filter((count) => count > 0).length,
     };
   }
 
@@ -174,34 +165,55 @@ export class CareChatConversationRepository {
       return new Map<string, number>();
     }
 
-    const rows = await this.prisma.message.groupBy({
-      by: ['conversationId'],
+    const conversations = await this.prisma.conversation.findMany({
       where: {
-        conversationId: { in: uniqueConversationIds },
-        senderUserId: {
-          not: input.userId,
-        },
-        status: {
-          in: [MessageStatus.SENT, MessageStatus.DELIVERED],
-        },
-        deletedAt: null,
-        visibility: MessageVisibility.NORMAL,
-        conversation: {
-          conversationType: 'CARE_APPROVED',
-          participants: {
-            some: {
-              userId: input.userId,
-              isActive: true,
-            },
-          },
-        },
+        id: { in: uniqueConversationIds },
+        conversationType: 'CARE_APPROVED',
       },
-      _count: {
-        _all: true,
+      select: {
+        id: true,
+        participants: {
+          where: { userId: input.userId, isActive: true },
+          select: { lastReadAt: true, lastReadMessageId: true },
+        },
       },
     });
+    const counts = await Promise.all(conversations.map(async (conversation) => {
+      const cursor = conversation.participants[0] ?? null;
+      const count = await this.countUnreadForCursor({
+        conversationId: conversation.id,
+        userId: input.userId,
+        lastReadAt: cursor?.lastReadAt ?? null,
+        lastReadMessageId: cursor?.lastReadMessageId ?? null,
+      });
+      return [conversation.id, count] as const;
+    }));
+    return new Map(counts);
+  }
 
-    return new Map(rows.map((row) => [row.conversationId, row._count._all]));
+  private countUnreadForCursor(input: {
+    conversationId: string;
+    userId: string;
+    lastReadAt: Date | null;
+    lastReadMessageId: string | null;
+  }) {
+    return this.prisma.message.count({
+      where: {
+        conversationId: input.conversationId,
+        senderUserId: { not: input.userId },
+        status: { in: [MessageStatus.SENT, MessageStatus.DELIVERED] },
+        deletedAt: null,
+        visibility: MessageVisibility.NORMAL,
+        ...(input.lastReadAt
+          ? {
+              OR: [
+                { sentAt: { gt: input.lastReadAt } },
+                { sentAt: input.lastReadAt, id: { gt: input.lastReadMessageId ?? '' } },
+              ],
+            }
+          : {}),
+      },
+    });
   }
 
   updateConversationStatus(

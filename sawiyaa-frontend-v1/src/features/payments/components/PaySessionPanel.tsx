@@ -19,6 +19,7 @@ import { useRefundPolicy } from "@/features/refund-policies/hooks/use-refund-pol
 import type { RefundPolicy } from "@/features/refund-policies/types/refund-policies.types";
 import Button from "@/components/ui/button/Button";
 import Avatar from "@/components/ui/avatar/Avatar";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import {
   useInitiateSessionPayment,
   usePatientSessionPaymentCapabilities,
@@ -665,9 +666,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
             <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
               {t("page.sessionCodeLabel")}
             </span>
-            <span className="font-mono font-bold text-xs text-text-primary dark:text-white/90">
-              {session.sessionCode}
-            </span>
+            <SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} copyable />
           </div>
         </div>
       </div>

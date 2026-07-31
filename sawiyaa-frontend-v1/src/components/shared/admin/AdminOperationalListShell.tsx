@@ -7,6 +7,7 @@ import {
   AdminStatsGrid,
   AdminTableSection,
 } from "@/components/shared/admin/AdminDashboardKit";
+import FinancialPageHeader from "./FinancialPageHeader";
 
 // ─── AdminSummaryCard ─────────────────────────────────────────────────────────
 // Convenience alias kept for backward-compat with existing pages.
@@ -67,6 +68,7 @@ export type AdminOperationalListShellProps = {
   eyebrow?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
+  headerVariant?: "default" | "financial";
 
   // Optional notice/banner above stats
   notice?: ReactNode;
@@ -94,6 +96,7 @@ export default function AdminOperationalListShell({
   eyebrow,
   description,
   actions,
+  headerVariant = "default",
   notice,
   summaryCards,
   filters,
@@ -109,12 +112,11 @@ export default function AdminOperationalListShell({
   return (
     <div className={cn("space-y-4", className)}>
       {/* ── Page Header ── */}
-      <AdminPageHeader
-        eyebrow={eyebrow}
-        title={title}
-        description={description}
-        actions={actions}
-      />
+      {headerVariant === "financial" ? (
+        <FinancialPageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} />
+      ) : (
+        <AdminPageHeader eyebrow={eyebrow} title={title} description={description} actions={actions} />
+      )}
 
       {/* ── Notice / Banner ── */}
       {notice ? <section>{notice}</section> : null}

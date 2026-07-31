@@ -253,8 +253,10 @@ export function ChatConversationHeader({
 
 export function ChatMessageBubble({
   message,
+  onReport,
 }: {
   message: ChatMessageViewModel;
+  onReport?: React.ReactNode;
 }) {
   const isMine = message.direction === "outgoing";
   
@@ -282,6 +284,7 @@ export function ChatMessageBubble({
               )}
             </span>
           )}
+          {onReport ? <span className="ms-1 inline-flex">{onReport}</span> : null}
         </div>
       </div>
     </div>

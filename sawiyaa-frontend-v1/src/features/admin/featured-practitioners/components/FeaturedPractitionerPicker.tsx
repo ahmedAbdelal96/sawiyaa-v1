@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import Avatar from "@/components/ui/avatar/Avatar";
+import { useLocale } from "next-intl";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { cn } from "@/lib/utils";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
@@ -42,6 +44,7 @@ export default function FeaturedPractitionerPicker({
   error,
 }: Props) {
   const t = useTranslations("admin-featured-practitioners");
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -177,7 +180,7 @@ export default function FeaturedPractitionerPicker({
                           {candidate.displayName ?? candidate.slug}
                         </p>
                         <p className="truncate text-xs text-text-muted">
-                          {candidate.professionalTitle ?? candidate.slug}
+                          {getProfessionalTitleLabel(candidate.professionalTitle, locale) || candidate.slug}
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -210,7 +213,7 @@ export default function FeaturedPractitionerPicker({
               {value.displayName ?? value.slug}
             </p>
             <p className="truncate text-xs text-text-muted">
-              {value.professionalTitle ?? value.slug}
+              {getProfessionalTitleLabel(value.professionalTitle, locale) || value.slug}
             </p>
           </div>
           <AdminStatusBadge tone={getPractitionerStatusTone(value.status)}>

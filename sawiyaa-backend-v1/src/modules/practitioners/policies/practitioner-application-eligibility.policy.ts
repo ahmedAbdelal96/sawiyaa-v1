@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PractitionerApplicationStatus } from '@prisma/client';
-import { PractitionerReadinessViewModel } from '../types/practitioner.types';
+import { PractitionerBaselineReadinessViewModel } from '../types/practitioner.types';
 
 /**
  * Application eligibility policy combines readiness with current application state.
@@ -9,7 +9,7 @@ import { PractitionerReadinessViewModel } from '../types/practitioner.types';
 @Injectable()
 export class PractitionerApplicationEligibilityPolicy {
   evaluate(input: {
-    readiness: PractitionerReadinessViewModel;
+    readiness: PractitionerBaselineReadinessViewModel;
     latestApplicationStatus: PractitionerApplicationStatus | null;
   }): {
     canSubmit: boolean;

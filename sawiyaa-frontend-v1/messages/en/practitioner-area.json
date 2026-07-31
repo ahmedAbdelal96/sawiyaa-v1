@@ -437,7 +437,7 @@
         "label": "Practitioner type"
       },
       "professionalTitle": {
-        "placeholder": "e.g. Clinical Psychologist, Nutritionist",
+        "placeholder": "Select a professional title",
         "label": "Professional title"
       },
       "yearsOfExperience": {
@@ -595,13 +595,12 @@
       "EXPIRED": "Expired"
     },
     "type": {
-      "LICENSE": "License",
-      "DEGREE": "Degree",
-      "CERTIFICATION": "Certification",
-      "NATIONAL_ID": "National ID",
-      "PASSPORT": "Passport",
-      "MEMBERSHIP": "Membership",
-      "OTHER": "Other"
+      "LICENSE": "Professional practice license",
+      "DEGREE": "Academic certificate",
+      "NATIONAL_ID_FRONT": "National ID — Front side",
+      "NATIONAL_ID_BACK": "National ID — Back side",
+      "PASSPORT": "Passport identity page",
+      "MEMBERSHIP": "Syndicate card"
     },
     "management": {
       "heading": "Credential references on your practitioner account",
@@ -645,7 +644,7 @@
       "retry": "Try again",
       "uploadSuccess": "Your credential reference was added successfully.",
       "uploadError": "Could not upload your credential reference. Please try again.",
-      "duplicateError": "This credential type already has the same file reference on your account."
+      "duplicateError": "A document of this type has already been uploaded. Delete it before uploading another one."
     }
   },
   "specialties": {
@@ -707,6 +706,39 @@
     }
   },
   "availability": {
+    "header": {
+      "title": "Session schedules",
+      "subtitle": "Organize your weekly session times for this week and the weeks ahead.",
+      "metaTitle": "Session schedules - Practitioner",
+      "metaDescription": "Manage weekly session schedules, publication, bookings, and future repeats."
+    },
+    "workspace": {
+      "eyebrow": "Weekly schedule",
+      "title": "Manage your session schedules",
+      "description": "Review each week in the active window, set session times, and publish only when the schedule is ready."
+    },
+    "editorLabels": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "duration30": "30 minutes",
+      "duration60": "60 minutes"
+    },
+    "timeRange": {
+      "from": "from",
+      "to": "to"
+    },
+    "reminders": {
+      "currentMissing": "Add session times for this week so patients can see your availability."
+    },
+    "feedbackLabels": {
+      "loadError": "Could not load your session schedules. Please try again.",
+      "retry": "Try again"
+    },
     "meta": {
       "title": "Availability — Practitioner",
       "description": "Manage your current and next week availability. Draft weeks stay private until published, and patients can book only from published weeks."
@@ -715,9 +747,221 @@
       "title": "Availability",
       "subtitle": "Manage your current and next week availability here. Draft weeks are private until published. Patients can only book times from published weeks."
     },
+    "workflow": {
+      "protectedTitle": "Availability is protected",
+      "protectedBody": "Availability cannot be edited while your application is under review or locked.",
+      "eyebrow": "Availability workflow",
+      "title": "Build your availability",
+      "description": "Set this week's schedule and prepare next week's draft without changing published availability.",
+      "bannerTitle": "How availability works",
+      "bullets": {
+        "thisWeekOnly": "Edit the current week's schedule from this workspace.",
+        "publishedOnly": "Patients can book only published availability.",
+        "nextWeekHidden": "Next week's draft stays hidden until published.",
+        "bookedSessionsStay": "Existing booked sessions remain unchanged."
+      },
+      "timezone": "Your timezone: {timezone}"
+    },
+    "range": {
+      "activeLabel": "Active window",
+      "futureWeeksLabel": "Future weeks",
+      "futureWeeksValue": "Up to {count} weeks",
+      "weekStartsLabel": "Week starts",
+      "sunday": "Sunday"
+    },
+    "table": {
+      "week": "Week",
+      "status": "Status",
+      "sessions": "Session times",
+      "sessions30": "30-minute sessions",
+      "sessions60": "60-minute sessions",
+      "bookings": "Bookings",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "timezone": {
+      "requiredTitle": "Add your timezone before setting availability",
+      "requiredBody": "Your timezone is required to interpret weekly session times safely. Update it from your practitioner profile, then return here.",
+      "openProfile": "Open profile settings"
+    },
+    "weekMeta": {
+      "statusLabel": "Status",
+      "sessionCount": "{count, plural, =0 {No session times} one {# session time} other {# session times}}",
+      "durationCount": "{duration}-minute: {count}",
+      "none": "None",
+      "bookings": "Has bookings",
+      "noBookings": "No bookings",
+      "copied": "Copied schedule",
+      "original": "Original schedule",
+      "currentLabel": "Current week",
+      "nextMissing": "The next week has no session times yet. Add them when you are ready."
+    },
+    "statusLabels": {
+      "notSet": "Not set",
+      "noSessionTimes": "No session times",
+      "notPublished": "Not published",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "weeks": {
+      "currentLabel": "Current week",
+      "nextLabel": "Next week",
+      "notes": {
+        "notSet": "Timezone is not set"
+      },
+      "status": {
+        "notSet": "Not set"
+      },
+      "card": {
+        "noSlots": "No availability slots"
+      },
+      "days": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "duration30": "30 minutes",
+      "duration60": "60 minutes",
+      "empty": {
+        "title": "No availability yet",
+        "current": "You have not added availability for the current week yet.",
+        "noteTitle": "Add your availability",
+        "noteBody": "Choose a day and add session times to build your weekly schedule."
+      },
+      "reminder": {
+        "currentMissing": "Add session times for the current week so patients can see your availability."
+      },
+      "actions": {
+        "createCurrentDraft": "Create current-week draft",
+        "createDraftHint": "Start with an empty draft for this week.",
+        "copyCurrentToNextDraft": "Copy current week to next-week draft",
+        "copyRequiresCurrent": "Add current-week availability before copying it to next week."
+      }
+    },
+    "actions": {
+      "details": "Details",
+      "setup": "Set up",
+      "edit": "Edit",
+      "publish": "Publish",
+      "repeat": "Repeat",
+      "close": "Close",
+      "cancel": "Cancel",
+      "save": "Save schedule",
+      "saving": "Saving...",
+      "publishing": "Publishing...",
+      "preview": "Preview",
+      "previewing": "Preparing preview...",
+      "confirm": "Confirm repeat",
+      "confirming": "Applying..."
+    },
+    "dialogs": {
+      "details": {
+        "eyebrow": "Weekly schedule",
+        "title": "Schedule details",
+        "sessionTimes": "Session times",
+        "sessionTimes30": "30-minute sessions",
+        "sessionTimes60": "60-minute sessions",
+        "sessionCount": "{count, plural, =0 {None} one {# time} other {# times}}",
+        "bookings": "Booking protection",
+        "booked": "Booked sessions are protected",
+        "noBookings": "No bookings in this week",
+        "weekStart": "Week starts",
+        "weekEnd": "Week ends",
+        "noTimes": "No session times",
+        "metadataOnly": "This view shows the rolling-window summary."
+      },
+      "loading": "Loading schedule details...",
+      "loadError": "Could not load schedule details. Please try again.",
+      "editor": {
+        "eyebrow": "Session times",
+        "createTitle": "Set up weekly session times",
+        "editTitle": "Edit weekly session times",
+        "daysLabel": "Weekday",
+        "durationLabel": "Session duration",
+        "saveHint": "Choose start times in your timezone. Existing booked sessions remain protected by the server.",
+        "existingDetailsUnavailable": "This week already exists, but its session times are not available yet.",
+        "protectedTime": "This time overlaps a protected booking and cannot be removed.",
+        "endOfDay": "A 60-minute session cannot end after midnight.",
+        "invalidLegacy60": "{count, plural, one {One existing 60-minute time uses an invalid half-hour start and was excluded from saving.} other {# existing 60-minute times use invalid half-hour starts and were excluded from saving.}}"
+      },
+      "publish": {
+        "title": "Publish this schedule?",
+        "body": "Publishing makes these session times available for patient booking.",
+        "notice": "Only publish after checking the timezone and every session time.",
+        "error": "The schedule could not be published. Check the session times and try again."
+      },
+      "repeat": {
+        "eyebrow": "Repeat schedule",
+        "title": "Repeat into future weeks",
+        "description": "Choose future weeks, review the server preview, then confirm. Existing weeks are never overwritten.",
+        "sourceDescription": "Copy the schedule from {range}. Weeks that already exist are unavailable and will be explained below.",
+        "previewTitle": "Preview result",
+        "confirmationTitle": "Repeat completed",
+        "createdSchedules": "Created schedules",
+        "skippedSchedules": "Skipped schedules",
+        "errors": {
+          "SOURCE_HAS_NO_SESSION_TIMES": "Add session times before repeating this schedule.",
+          "REPEAT_PREVIEW_EXPIRED": "The preview expired. Select the target weeks again.",
+          "SOURCE_CHANGED_SINCE_PREVIEW": "The source schedule changed. Create a new preview.",
+          "INVALID_TIMEZONE": "The schedule timezone is invalid. Update it and try again.",
+          "REPEAT_IN_PROGRESS": "Another repeat operation is still processing. Try again shortly.",
+          "IDEMPOTENCY_CONFLICT": "This repeat request conflicts with an earlier request. Select the weeks again.",
+          "UNKNOWN": "The repeat operation could not be completed. Please try again."
+        },
+        "sessions30": "30-minute sessions",
+        "sessions60": "60-minute sessions",
+        "expired": "This preview expired. Start a new preview.",
+        "error": "The repeat operation could not be completed. Please try again.",
+        "reasons": {
+          "ELIGIBLE": "Eligible ({count} session times)",
+          "TARGET_ALREADY_EXISTS": "A schedule already exists",
+          "NO_EMPTY_FUTURE_WEEKS": "No empty future weeks are available",
+          "TARGET_PUBLISHED": "Skipped: week is published",
+          "TARGET_HAS_BOOKINGS": "Skipped: week has bookings",
+          "TARGET_CHANGED_SINCE_PREVIEW": "Skipped: week changed",
+          "TARGET_OUT_OF_ACTIVE_RANGE": "Outside active window",
+          "TARGET_NOT_FUTURE": "Not a future week",
+          "TARGET_NOT_SUNDAY": "Invalid Sunday start",
+          "TARGET_EQUALS_SOURCE": "Same as source",
+          "TARGET_DUPLICATED": "Duplicate target",
+          "SOURCE_HAS_NO_SESSION_TIMES": "Source has no session times",
+          "SOURCE_CHANGED_SINCE_PREVIEW": "Source changed",
+          "REPEAT_PREVIEW_EXPIRED": "Preview expired",
+          "DST_INVALID_TIME": "Invalid daylight-saving time",
+          "DST_AMBIGUOUS_TIME": "Ambiguous daylight-saving time",
+          "INVALID_TIMEZONE": "Invalid timezone",
+          "SOURCE_NOT_FOUND": "Source not found",
+          "SOURCE_OUT_OF_ACTIVE_RANGE": "Source outside active window",
+          "IDEMPOTENCY_CONFLICT": "Request already used",
+          "REPEAT_IN_PROGRESS": "Another repeat is in progress"
+        }
+      }
+    },
     "feedback": {
       "loadError": "Could not load your availability. Please try again.",
       "retry": "Try again"
+    },
+    "bookingIntake": {
+      "title": "Accepting bookings",
+      "description": "When bookings are paused, patients cannot create new scheduled bookings. Existing bookings are not affected.",
+      "enabled": "Accepting bookings",
+      "paused": "Bookings paused",
+      "loading": "Loading booking settings",
+      "loadError": "Could not load booking settings. Please try again.",
+      "saveError": "Could not update booking settings. Please try again.",
+      "errors": { "paused": "Booking intake is currently paused." },
+      "toast": { "paused": "New scheduled bookings are paused.", "resumed": "New scheduled bookings are enabled." },
+      "confirm": {
+        "title": "Pause accepting bookings?",
+        "body": "Patients will not be able to create new bookings, and existing bookings will remain unchanged.",
+        "pause": "Pause bookings",
+        "cancel": "Cancel",
+        "saving": "Pausing..."
+      }
     },
     "presence": {
       "heading": "Online presence",
@@ -956,6 +1200,29 @@
         "actions": "Actions"
       }
     },
+    "detailsPage": {
+      "metaTitle": "Weekly schedule details",
+      "metaDescription": "Review, edit, publish, and repeat one practitioner schedule.",
+      "loading": "Loading schedule details...",
+      "back": "Back to schedules",
+      "eyebrow": "Weekly schedule",
+      "title": {
+        "details": "Schedule for {range}",
+        "setup": "Set up schedule for {range}"
+      },
+      "timezone": "Timezone: {timezone}",
+      "summary": {
+        "sessions30": "30-minute sessions",
+        "sessions60": "60-minute sessions",
+        "bookings": "Booking protection",
+        "timezone": "Timezone"
+      },
+      "sessionsTitle": "Session times",
+      "sessionsDescription": "Review the available start times for this week.",
+      "protectedTime": "Linked to an existing booking",
+      "exceptionsTitle": "Week exceptions",
+      "exceptionsDescription": "Specific-day exceptions are managed separately from the recurring weekly schedule."
+    },
     "application": {
       "meta": {
         "title": "Application — Practitioner",
@@ -1029,6 +1296,7 @@
         "approvedTitle": "Application approved",
         "lockedTitle": "Application locked",
         "changesRequestedTitle": "Changes requested",
+        "pendingTitle": "Submitted - pending admin review",
         "rejectedTitle": "Application rejected",
         "reviewNoteTitle": "Review note",
         "requestChangesTitle": "Requested changes",
@@ -1131,6 +1399,14 @@
         "qualificationsModalDescription": "Add or review the credentials that support your application.",
         "documentsNote": "{count, plural, one {# credential is attached.} other {# credentials are attached.}}",
         "documentsHint": "If a document step is empty, upload the missing credential first.",
+        "documentRules": {
+          "academicTitle": "Academic certificate — Required",
+          "academicHint": "Upload at least one academic certificate.",
+          "professionalTitle": "Professional authorization — Required",
+          "professionalHint": "Upload a syndicate card or professional practice license.",
+          "complete": "Complete",
+          "incomplete": "Incomplete"
+        },
         "documentsIssuesTitle": "Document notes",
         "documentsIssuesHint": "Any document-related issues will appear here in a compact summary.",
         "payoutNote": "Choose the payout method and complete only the fields that match that method.",
@@ -1521,7 +1797,10 @@
       "stepStatus": {
         "complete": "Complete",
         "warning": "Warning",
-        "incomplete": "Incomplete"
+        "incomplete": "Incomplete",
+        "needsAttention": "Needs attention",
+        "notStarted": "Not started",
+        "checking": "Checking..."
       },
       "severity": {
         "BLOCKER": "Required",
@@ -1557,8 +1836,12 @@
       "canSubmitBadge": "Ready to submit",
       "cannotSubmitBadge": "Not ready yet",
       "missingPrefix": "Missing:",
-      "stepIssuesTitle": "Issues in this step",
-      "stepIssuesBody": "These are the blockers, warnings, or info items that apply to the step you are viewing.",
+      "stepIssuesTitle": "Complete these details to continue",
+      "stepIssuesBody": "Review the specific requirements below before continuing.",
+      "requiredBadge": "Required",
+      "goToField": "Go to field",
+      "requirementsRemaining": "{count} requirements remaining",
+      "submitHelperText": "Complete the required fields to submit.",
       "footerTitle": "Application actions",
       "footerStepHint": "Save your progress and move to the next step when you are ready.",
       "footerReviewHint": "Check the summary one last time before you submit.",
@@ -1572,7 +1855,7 @@
         "resubmit": "Resubmit"
       },
       "blockedTitle": "Cannot submit yet",
-      "submitBlocked": "Complete the blockers above before submitting.",
+      "submitBlocked": "Complete the required fields to submit.",
       "readyTitle": "Ready to submit",
       "readyBody": "You can submit now. The team will review the completed application.",
       "requestChangesTitle": "Requested changes",

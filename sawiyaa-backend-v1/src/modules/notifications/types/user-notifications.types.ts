@@ -50,6 +50,7 @@ export type NotificationContext = {
   patientName?: string;
   practitionerName?: string;
   sessionStartAt?: string;
+  sessionCode?: string;
   sessionStatus?: string;
   supportTicketSubject?: string;
   senderName?: string;

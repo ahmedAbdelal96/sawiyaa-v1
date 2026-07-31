@@ -41,6 +41,7 @@ export type CareChatRequestItem = {
   status: CareChatRequestStatus;
   reason: string | null;
   relatedSessionId: string | null;
+  relatedSessionCode: string | null;
   linkedConversationId: string | null;
   unreadCount: number;
   hasUnread: boolean;

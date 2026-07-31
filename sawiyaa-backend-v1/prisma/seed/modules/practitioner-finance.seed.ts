@@ -24,6 +24,8 @@ import { createHash } from 'crypto';
 import { seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo, daysFromNow } from '../shared/seed.utils';
+import { assertLegacyFinancialFixtureSeedDisabled } from '../shared/financial-fixture-gate';
+import { reserveSeedSessionCode } from '../session-code-fixture';
 
 type BalanceState = {
   available: number;
@@ -182,6 +184,7 @@ function applyLedgerState(
 export const practitionerFinanceSeedModule: SeedModule = {
   name: 'practitioner-finance',
   async run(prisma: PrismaClient): Promise<void> {
+    assertLegacyFinancialFixtureSeedDisabled('practitioner-finance');
     const practitionerId = seedIds.practitionerProfiles.practitionerB;
     const practitionerUserId = seedIds.users.practitionerB;
     const marker = 'DEV_FINANCE_SEED | dr.mohamed finance QA';
@@ -685,11 +688,21 @@ export const practitionerFinanceSeedModule: SeedModule = {
                 couponPractitionerShareSnapshot: null,
               };
 
+        const existingSession = await tx.session.findUnique({
+          where: { id: sessionId },
+          select: { sessionCode: true },
+        });
+        const createdAt = new Date();
+        const sessionCode =
+          existingSession?.sessionCode ??
+          (await reserveSeedSessionCode(tx, createdAt, 'practitioner_finance'));
+
         await tx.session.upsert({
           where: { id: sessionId },
           create: {
             id: sessionId,
-            sessionCode: `QA-FIN-${plan.key.toUpperCase()}-${practitionerId.slice(-4)}`,
+            sessionCode,
+            createdAt,
             patientId: plan.patientId,
             practitionerId,
             flowType: SessionFlowType.SCHEDULED,
@@ -710,7 +723,6 @@ export const practitionerFinanceSeedModule: SeedModule = {
             paymentCoverageType: SessionPaymentCoverageType.DIRECT_PAYMENT,
           },
           update: {
-            sessionCode: `QA-FIN-${plan.key.toUpperCase()}-${practitionerId.slice(-4)}`,
             patientId: plan.patientId,
             practitionerId,
             flowType: SessionFlowType.SCHEDULED,

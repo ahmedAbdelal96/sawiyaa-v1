@@ -6,6 +6,8 @@ import {
   PractitionerPayoutMethodType,
   PractitionerStatus,
   PractitionerType,
+  ReviewCaseStatus,
+  ReviewRequirementStatus,
 } from '@prisma/client';
 
 /**
@@ -74,7 +76,6 @@ export interface PractitionerSpecialtyViewModel {
 export interface PractitionerCredentialViewModel {
   credentialId: string;
   credentialType: CredentialType;
-  fileUrl: string;
   reviewStatus: CredentialReviewStatus;
   expiresAt: Date | null;
   uploadedAt: Date;
@@ -100,6 +101,20 @@ export interface PractitionerApplicationStatusViewModel {
   reviewNotes: string | null;
   submissionSnapshot: Record<string, unknown> | null;
   completion: PractitionerApplicationCompletionViewModel;
+  reviewCase?: {
+    id: string;
+    status: ReviewCaseStatus;
+    proposedSnapshot: Record<string, unknown> | null;
+    sections: Array<{ section: string; status: string }>;
+    requirements: Array<{
+      id: string;
+      section: string;
+      fieldPath: string | null;
+      status: string;
+      title: string;
+      reason: string;
+    }>;
+  } | null;
 }
 
 export interface PractitionerReadinessChecks {
@@ -117,11 +132,24 @@ export interface PractitionerReadinessChecks {
   isPractitionerOtpVerified: boolean;
 }
 
-export interface PractitionerReadinessViewModel {
+export type PractitionerBaselineReadinessViewModel = {
   isProfileCompleted: boolean;
   canSubmitApplication: boolean;
   missingRequirements: string[];
   checks: PractitionerReadinessChecks;
+};
+
+export interface PractitionerReadinessViewModel
+  extends PractitionerBaselineReadinessViewModel {
+  remediationMissingRequirements: string[];
+  professionalTitle: {
+    approvedValue: string | null;
+    proposedValue: string | null;
+    requirementStatus: ReviewRequirementStatus | null;
+    reviewStatus: ReviewCaseStatus | null;
+    publiclyComplete: boolean;
+    remediationComplete: boolean;
+  };
 }
 
 export type PractitionerApplicationCompletionStepKey =
@@ -169,6 +197,12 @@ export interface PractitionerApplicationCompletionViewModel {
   blockers: PractitionerApplicationCompletionIssue[];
   warnings: PractitionerApplicationCompletionIssue[];
   steps: PractitionerApplicationCompletionStep[];
+  documentGroups?: {
+    complete: boolean;
+    groups: Record<string, unknown>;
+    missingRequirements: string[];
+    missingDocumentTypes: string[];
+  };
 }
 
 export interface PractitionerProfileViewModel {

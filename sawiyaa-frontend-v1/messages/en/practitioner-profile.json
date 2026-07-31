@@ -66,6 +66,8 @@
     "nextWeek": "Next week",
     "noSlots": "No available times right now.",
     "noSlotsHint": "This practitioner has not published available times for the current or next week yet. Please check again later or choose another practitioner.",
+    "normalBookingsPaused": "This practitioner is not accepting new bookings right now.",
+    "normalBookingsPausedHint": "Existing bookings are not affected. Please check again later.",
     "loading": "Checking availability...",
     "loadError": "Could not load available times right now.",
     "retry": "Try again",

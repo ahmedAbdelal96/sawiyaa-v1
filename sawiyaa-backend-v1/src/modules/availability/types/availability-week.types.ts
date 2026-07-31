@@ -43,10 +43,34 @@ export interface AvailabilityWeekViewModel {
 
 export interface AvailabilityWeekOverviewViewModel {
   timezone: string;
+  weekStartsOn?: 'SUNDAY';
+  futureWeeksAllowed?: number;
+  activeRange?: {
+    startWeekDate: string;
+    endWeekDate: string;
+  };
+  weeks?: AvailabilityWeekWindowEntryViewModel[];
   currentWeek: AvailabilityWeekViewModel;
   nextWeek: AvailabilityWeekViewModel;
   reminderState: AvailabilityWeekReminderState;
   shouldPromptForNextWeek: boolean;
   daysUntilCurrentWeekEnds: number | null;
   nextWeekPublished: boolean;
+}
+
+export interface AvailabilityWeekWindowEntryViewModel {
+  weekId: string | null;
+  weekStartDate: string;
+  weekEndDate: string;
+  status: AvailabilityWeekUiStatus;
+  isCurrentWeek: boolean;
+  relativeWeekIndex: number;
+  canCreate: boolean;
+  canEdit: boolean;
+  canPublish: boolean;
+  containsBookings: boolean;
+  slotCount: number;
+  slotCount30Minutes: number;
+  slotCount60Minutes: number;
+  copiedFromWeekId: string | null;
 }

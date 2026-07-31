@@ -4,9 +4,18 @@ import {
   getAdminPaymentRefunds,
   requestAdminPaymentRefund,
   retryAdminPaymentRefund,
+  listAdminIncomingPayments,
 } from "../api/admin-payments.api";
 import { adminPaymentsQueryKeys } from "../constants/query-keys";
-import type { RequestAdminRefundInput } from "../types/admin-payments.types";
+import type { AdminIncomingPaymentsQuery, RequestAdminRefundInput } from "../types/admin-payments.types";
+
+export function useAdminIncomingPayments(params: AdminIncomingPaymentsQuery) {
+  return useQuery({
+    queryKey: ["admin", "incoming-payments", params],
+    queryFn: () => listAdminIncomingPayments(params),
+    staleTime: 30_000,
+  });
+}
 
 export function useAdminPaymentOpsDetails(paymentId?: string) {
   return useQuery({

@@ -62,7 +62,7 @@ type RecoveryRow = {
   };
   session: {
     id: string;
-    sessionCode: string;
+    sessionCode: string | null;
     status: AdminPractitionerRecoverySessionSummaryDto['status'];
     paymentCoverageType: AdminPractitionerRecoverySessionSummaryDto['paymentCoverageType'];
     scheduledStartAt: Date | null;

@@ -313,6 +313,15 @@
       "providerRoomId": "Provider room ID",
       "providerSessionRef": "Provider session reference"
     },
+    "settlementFields": {
+      "title": "Related Settlement",
+      "noSettlement": "No settlement has been created yet. A settlement will be created after the session is completed and practitioner eligibility is confirmed.",
+      "status": "Settlement status",
+      "practitioner": "Practitioner",
+      "finalAmount": "Final credit to practitioner",
+      "walletCurrency": "Final currency",
+      "openSettlement": "Open Settlement"
+    },
     "sessionRuntime": {
       "heading": "Runtime inspection",
       "note": "Open the runtime inspection tool to check join readiness and provider linkage.",
@@ -887,6 +896,7 @@
       "search": "Search",
       "searchPlaceholder": "Search by applicant name or specialty",
       "kind": "Request kind",
+      "sections": "Changed sections",
       "kindTabs": {
         "NEW_APPLICATION": "New applications",
         "EDIT_REQUEST": "Edit requests"
@@ -916,6 +926,11 @@
       "kindLabels": {
         "NEW_APPLICATION": "New application",
         "EDIT_REQUEST": "Edit request"
+      },
+      "sectionLabels": {
+        "PROFILE": "Profile",
+        "SPECIALTIES": "Specialties",
+        "CREDENTIALS": "Credentials"
       }
     },
     "empty": "No applications match the selected filter.",
@@ -953,8 +968,6 @@
       "modalDescription": "This flow creates an approved practitioner account, profile, payout setup, and credential baseline in one guided admin path.",
       "summaryHeading": "What will happen",
       "passwordHint": "Use a strong temporary password and share it with the practitioner through a safe channel only.",
-      "phoneHelper": "Enter the number in its normal local format. Sawiyaa saves it internationally.",
-      "phoneSavedAs": "Saved as: {phone}",
       "pricingHeading": "Pricing",
       "instantPricingHeading": "Instant booking pricing",
       "instantPricingNote": "Enter instant booking prices if you want to prepare them for the practitioner now.",
@@ -1037,7 +1050,7 @@
         "phoneCountry": "Select phone country",
         "phoneCountrySearch": "Search countries or calling codes...",
         "phone": "010 1234 5678",
-        "professionalTitle": "Clinical psychologist",
+        "professionalTitle": "Select a professional title",
         "yearsOfExperience": "6",
         "bio": "Short professional summary for the practitioner profile",
         "languageCodes": "Select languages",
@@ -1100,7 +1113,11 @@
         "degreeReady": "Academic degree is uploaded.",
         "degreeMissing": "Upload an academic degree before approval.",
         "identityReady": "Identity evidence is uploaded.",
-        "identityMissing": "Upload a passport or both national ID sides before approval."
+        "identityMissing": "Upload a passport or both national ID sides before approval.",
+        "professionalAuthorizationReady": "A syndicate card or professional practice license is uploaded.",
+        "professionalAuthorizationMissing": "Upload a syndicate card or professional practice license before approval.",
+        "identityFrontMissing": "Upload the front side of the national ID.",
+        "identityBackMissing": "Upload the back side of the national ID."
       },
       "genderOptions": {
         "MALE": "Male",
@@ -1118,6 +1135,20 @@
           "OTHER": "Other"
         },
         "ownerWarning": "Enter the account holder's name exactly as registered. A mismatch may cause the external transfer to fail."
+        },
+      "credentialType": {
+        "LICENSE": "Professional practice license",
+        "DEGREE": "Degree",
+        "CERTIFICATION": "Certification",
+        "NATIONAL_ID_FRONT": "National ID (front)",
+        "NATIONAL_ID_BACK": "National ID (back)",
+        "PASSPORT": "Passport",
+        "MEMBERSHIP": "Syndicate card",
+        "OTHER": "Other"
+      },
+      "upload": {
+        "hint": "Accepted formats: PDF, JPG, PNG, WebP up to 5 MB.",
+        "submit": "Upload document"
         }
       },
       "upload": {
@@ -1137,6 +1168,7 @@
         "displayNameRequired": "Display name is required.",
         "phoneCountryRequired": "Select the phone country.",
         "phoneRequired": "Mobile phone number is required.",
+        "professionalAuthorizationRequired": "Upload a syndicate card or professional practice license before approval.",
         "countryRequired": "Country is required.",
         "typeRequired": "Practitioner type is required.",
         "titleRequired": "Professional title is required.",
@@ -1162,18 +1194,19 @@
         "pricePositive": "Price must be greater than zero when provided.",
         "degreeRequired": "Upload an academic degree before creating the practitioner.",
         "identityRequired": "Upload a passport or both national ID sides before creating the practitioner.",
-        "uploadFileRequired": "Choose a document file before uploading."
+        "uploadFileRequired": "Choose a document file before uploading.",
+        "duplicateCredentialType": "A document of this type has already been uploaded. Remove it before uploading another one."
       },
       "validationCategoryRequired": "Select a primary specialty category first.",
       "validationSpecialtiesRequired": "Select at least one specialty from the selected category.",
       "credentialType": {
-        "LICENSE": "License",
+        "LICENSE": "Professional practice license",
         "DEGREE": "Degree",
         "CERTIFICATION": "Certification",
         "NATIONAL_ID_FRONT": "National ID (front)",
         "NATIONAL_ID_BACK": "National ID (back)",
         "PASSPORT": "Passport",
-        "MEMBERSHIP": "Membership",
+        "MEMBERSHIP": "Syndicate card",
         "OTHER": "Other"
       },
       "success": {
@@ -1346,12 +1379,12 @@
       "file": "Document file",
       "openFile": "Open file",
       "type": {
-        "LICENSE": "License",
+        "LICENSE": "Professional practice license",
         "DEGREE": "Degree",
         "CERTIFICATION": "Certification",
         "NATIONAL_ID": "National ID",
         "PASSPORT": "Passport",
-        "MEMBERSHIP": "Membership",
+        "MEMBERSHIP": "Syndicate card",
         "OTHER": "Other"
       },
       "status": {
@@ -1504,6 +1537,13 @@
       "payoutFieldRequired": "This field is required for the selected payout method."
     },
     "decision": {
+      "finalSummary": {
+        "title": "Final decision recorded",
+        "date": "Decision date",
+        "reviewedBy": "Reviewed by",
+        "sections": "Reviewed sections",
+        "readOnlyNote": "This decision is final. You can review the application data and decision history, but no further decision action is available here."
+      },
       "heading": "Take a decision",
       "notReviewable": "This application cannot be reviewed in its current state.",
       "blockedHeading": "This application cannot be approved yet",

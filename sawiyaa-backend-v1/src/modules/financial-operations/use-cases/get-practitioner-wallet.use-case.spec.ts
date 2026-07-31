@@ -40,29 +40,16 @@ describe('GetPractitionerWalletUseCase', () => {
     jest.clearAllMocks();
   });
 
-  it('returns explicit default zero wallet state when no wallet rows exist', async () => {
+  it('fails closed when no active wallet exists', async () => {
     findByUserIdMock.mockResolvedValue({
       id: 'pract_1',
     });
     findByPractitionerIdMock.mockResolvedValue([]);
 
-    const result = await useCase.execute({ userId: 'user_1' });
-
-    expect(getBalanceMock).toHaveBeenCalledWith({
-      practitionerId: 'pract_1',
-      currencyCode: 'EGP',
-    });
-    expect(result.item).toEqual({
-      currency: 'EGP',
-      pendingBalance: '0.00',
-      availableBalance: '0.00',
-      reservedBalance: '0.00',
-      totalEarned: '0.00',
-      lifetimePaidOut: '0.00',
-      manualRecoveryAmount: '0.00',
-      lastLedgerEntryAt: null,
-      updatedAt: null,
-    });
+    await expect(useCase.execute({ userId: 'user_1' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(getBalanceMock).not.toHaveBeenCalled();
   });
 
   it('rejects when practitioner profile is missing in self-scope resolution', async () => {

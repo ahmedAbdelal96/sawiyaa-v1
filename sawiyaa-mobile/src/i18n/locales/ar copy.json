@@ -243,7 +243,7 @@
         "unspecified": "أفضل عدم التحديد"
       },
       "fields": {
-        "displayName": "الاسم الظاهر",
+        "displayName": "الإسم",
         "dateOfBirth": "تاريخ الميلاد",
         "dateOfBirthPlaceholder": "YYYY-MM-DD",
         "gender": "النوع",
@@ -348,7 +348,7 @@
       "backToPractitionerSignIn": "الرجوع لتسجيل دخول المعالج"
     },
     "fields": {
-      "displayName": "الاسم الظاهر",
+      "displayName": "الإسم",
       "email": "البريد الإلكتروني",
       "otpEmail": "بريد استلام رمز التحقق",
       "password": "كلمة المرور",
@@ -1561,7 +1561,7 @@
         "verificationTitle": "التحقق والتواصل"
       },
       "fields": {
-        "displayName": "الاسم الظاهر",
+        "displayName": "الإسم",
         "professionalTitle": "المسمى المهني",
         "countryCode": "رمز الدولة",
         "locale": "لغة التطبيق",
@@ -1601,7 +1601,7 @@
         "payoutOtherDetails": "تفاصيل أخرى"
       },
       "validation": {
-        "titleRequired": "الاسم الظاهر مطلوب",
+        "titleRequired": "الإسم مطلوب",
         "titleRequiredBody": "يرجى الاحتفاظ باسم ظاهر قبل حفظ الملف.",
         "yearsTitle": "سنوات الخبرة غير صحيحة",
         "yearsBody": "يرجى إدخال رقم بين 0 و80.",

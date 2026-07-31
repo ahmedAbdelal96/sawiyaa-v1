@@ -93,6 +93,46 @@ export const referenceDataSeedModule: SeedModule = {
         nativeName: 'English',
         isActive: true,
       },
+      {
+        id: seedIds.languages.french,
+        code: 'fr',
+        slug: 'french',
+        name: 'French',
+        nativeName: 'French',
+        isActive: true,
+      },
+      {
+        id: seedIds.languages.german,
+        code: 'de',
+        slug: 'german',
+        name: 'German',
+        nativeName: 'German',
+        isActive: true,
+      },
+      {
+        id: seedIds.languages.spanish,
+        code: 'es',
+        slug: 'spanish',
+        name: 'Spanish',
+        nativeName: 'Spanish',
+        isActive: true,
+      },
+      {
+        id: seedIds.languages.turkish,
+        code: 'tr',
+        slug: 'turkish',
+        name: 'Turkish',
+        nativeName: 'Turkish',
+        isActive: true,
+      },
+      {
+        id: seedIds.languages.russian,
+        code: 'ru',
+        slug: 'russian',
+        name: 'Russian',
+        nativeName: 'Russian',
+        isActive: true,
+      },
     ];
 
     for (const language of languages) {

@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import {
   getDefaultRouteByRole,
+  getSignInRouteForRole,
   isRoleAllowedInArea,
   resolveRole,
   type RouteArea,
 } from "@/config/route-access";
-import { getUserData } from "./server";
+import { getSessionRole, getUserData } from "./server";
 
 function toLocalizedPath(locale: string, path: string): string {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;
@@ -25,7 +26,7 @@ export async function requireAuthenticatedArea(
 ) {
   const user = await getUserData();
   if (!user) {
-    redirect(toLocalizedPath(locale, "/signin"));
+    redirect(toLocalizedPath(locale, getSignInRouteForRole(await getSessionRole())));
   }
 
   const role = resolveRole(user.role);

@@ -28,6 +28,7 @@ import type {
   PractitionerLedgerListParams,
   WalletBalanceBucket,
 } from "../types/financial-operations.types";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 const ENTRY_TYPE_FILTERS: Array<LedgerEntryType | "ALL"> = [
   "ALL",
@@ -193,7 +194,9 @@ export default function PractitionerLedgerListScreen() {
         accessor: (row) => row.paymentId ?? row.sessionId ?? row.settlementId ?? row.referenceId ?? "",
         cell: (row) => {
           const reference = getReferenceLabel(row, t);
-          return reference ? (
+          return row.sessionId ? (
+            <SessionCodeReference sessionId={row.sessionId} sessionCode={row.sessionCode} copyable />
+          ) : reference ? (
             <span className="text-xs text-text-secondary">{reference}</span>
           ) : (
             <span className="text-xs text-text-muted">-</span>

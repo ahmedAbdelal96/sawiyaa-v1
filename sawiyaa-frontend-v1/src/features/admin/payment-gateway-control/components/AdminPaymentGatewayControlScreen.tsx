@@ -1129,6 +1129,7 @@ function Badge({
 export default function AdminPaymentGatewayControlScreen() {
   const locale = useLocale();
   const t = useTranslations("payment-gateway-control");
+  const financeT = useTranslations("finance");
   const currentUserQuery = useCurrentUser(true);
   const listQuery = useAdminPaymentGatewayControlList();
   const paymobHistoryQuery = useAdminPaymentGatewayControlHistory("provider", "PAYMOB");
@@ -1428,8 +1429,8 @@ export default function AdminPaymentGatewayControlScreen() {
     <div className="space-y-6">
       <SurfaceHeader
         eyebrow={t("page.eyebrow")}
-        title={t("page.title")}
-        description={t("page.description")}
+        title={financeT("paymentGateways.title")}
+        description={financeT("paymentGateways.description")}
       />
 
       <AdminSummaryCardsRow>

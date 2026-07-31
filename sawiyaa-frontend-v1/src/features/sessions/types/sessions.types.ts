@@ -137,8 +137,64 @@ export type SessionItem = {
   completedAt: string | null;
   expiredAt: string | null;
   timezone: string | null;
+  notesInternal: string | null;
+  paymentCoverageType: "DIRECT_PAYMENT" | "PACKAGE" | "CORPORATE_SPONSORSHIP";
+  packagePurchase: { id: string; packagePlan: { title: string } } | null;
   unreadCount?: number;
   hasUnread?: boolean;
+  conversationId: string | null;
+  patientDetails: {
+    dateOfBirth: string | null;
+    gender: string | null;
+    preferredLanguage: string | null;
+    country: {
+      isoCode: string;
+      name: string;
+      nativeName: string | null;
+    } | null;
+  } | null;
+  practitionerDetails: {
+    professionalTitle: string | null;
+    avatarUrl: string | null;
+    specialties: Array<{
+      id: string;
+      nameAr: string | null;
+      nameEn: string | null;
+      isPrimary: boolean;
+    }>;
+  } | null;
+  paymentDetails: {
+    id: string;
+    paymentPurpose: string;
+    status: string;
+    amountTotal: number;
+    currencyCode: string;
+    provider: string;
+    initiatedAt: string;
+  } | null;
+  corporateSponsorshipDetails: {
+    id: string;
+    coverageType: string;
+    originalAmount: number;
+    coveredAmount: number;
+    patientPayAmount: number;
+    currency: string;
+    benefitPlanName: string;
+    organizationName: string;
+  } | null;
+  reviewDetails: {
+    id: string;
+    ratingValue: number;
+    reviewTitle: string | null;
+    reviewText: string | null;
+    submittedAt: string | null;
+  } | null;
+  timeline: Array<{
+    eventType: string;
+    occurredAt: string;
+    actorType: string | null;
+    reason: string | null;
+  }>;
 };
 
 /**

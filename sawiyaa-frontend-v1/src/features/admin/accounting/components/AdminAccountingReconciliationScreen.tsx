@@ -10,7 +10,8 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parsePositiveIntParam, parseTextParam } from "@/components/ui/data-table";
 import Button from "@/components/ui/button/Button";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
-import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import { formatAdminMoneyForLocale as formatFinanceMoney } from "@/features/admin/finance/lib/finance-formatters";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 import {
   useAdminAccountingReconciliationItems,
   useAdminAccountingReconciliationOverview,
@@ -171,6 +172,23 @@ export default function AdminAccountingReconciliationScreen() {
             label={t(`reconciliation.status.${row.effectiveStatus.toLowerCase()}`)}
           />
         ),
+      },
+      {
+        id: "sessionCode",
+        header: t("reconciliation.table.sessionCode"),
+        accessor: (row) => row.sessionCode ?? "",
+        cell: (row) =>
+          row.sessionId ? (
+            <AdminSessionReference
+              sessionId={row.sessionId}
+              sessionCode={row.sessionCode}
+              href={`/admin/sessions/runtime-inspection?sessionId=${row.sessionId}`}
+              variant="table"
+              copyable
+            />
+          ) : (
+            <span className="text-xs text-text-muted">{t("reconciliation.common.notLinkedToSession")}</span>
+          ),
       },
       {
         id: "amounts",
@@ -396,6 +414,24 @@ export default function AdminAccountingReconciliationScreen() {
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+                {t("reconciliation.review.fields.sessionCode")}
+              </p>
+              <div className="mt-2">
+                {selectedItem.sessionId ? (
+                  <AdminSessionReference
+                    sessionId={selectedItem.sessionId}
+                    sessionCode={selectedItem.sessionCode}
+                    href={`/admin/sessions/runtime-inspection?sessionId=${selectedItem.sessionId}`}
+                    variant="table"
+                    copyable
+                  />
+                ) : (
+                  <span className="text-xs text-text-muted">{t("reconciliation.common.notLinkedToSession")}</span>
+                )}
+              </div>
+            </div>
             <div className="rounded-[18px] border border-border-light bg-white px-4 py-3 text-sm dark:border-white/8 dark:bg-white/[0.03]">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
                 {t("reconciliation.review.fields.source")}

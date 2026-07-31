@@ -81,10 +81,11 @@ export class RecordPractitionerPayoutDto {
   @IsUUID()
   settlementId!: string;
 
-  @ApiProperty({ example: '1750.00' })
+  @ApiPropertyOptional({ example: '3500.00', description: 'Wallet amount to withdraw, always in the practitioner wallet currency.' })
+  @IsOptional()
   @IsString()
   @Matches(/^\d+(\.\d{1,2})?$/)
-  amountPaid!: string;
+  amountPaid?: string;
 
   @ApiProperty({ enum: SettlementPayoutMethod })
   @IsEnum(SettlementPayoutMethod)
@@ -94,6 +95,11 @@ export class RecordPractitionerPayoutDto {
   @IsOptional()
   @IsDateString()
   payoutDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-04-14T08:33:25.512Z', description: 'Canonical transfer timestamp. payoutDate remains supported for compatibility.' })
+  @IsOptional()
+  @IsDateString()
+  transferredAt?: string;
 
   @ApiPropertyOptional({ example: 'manual-transfer-2026-04-14' })
   @IsOptional()

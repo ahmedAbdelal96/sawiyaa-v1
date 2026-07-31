@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Input, Screen, Text } from "../../src/components/ui";
+import { Button, Input, Screen, Text, OtpInput } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
@@ -402,15 +402,12 @@ export default function PatientForgotPasswordScreen() {
                 </Text>
               </View>
 
-              <Input
+              <OtpInput
                 label={t("auth.fields.resetCode")}
-                labelDirection={labelAlign}
-                placeholder={t("auth.placeholders.resetCode")}
-                placeholderDirection="left"
                 onChangeText={setCode}
                 value={code}
-                keyboardType="number-pad"
-                maxLength={8}
+                length={6}
+                disabled={isSubmitting}
               />
 
               {errorText ? (
@@ -437,7 +434,7 @@ export default function PatientForgotPasswordScreen() {
               <Button
                 title={t("auth.patientForgotPassword.verifyOtp")}
                 onPress={submitVerifyOtp}
-                disabled={!code || isSubmitting}
+                disabled={code.trim().length < 6 || isSubmitting}
                 style={styles.primaryButton}
               >
                 {isSubmitting && (

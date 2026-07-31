@@ -21,9 +21,12 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ExecuteModerationActionDto } from '../dto/execute-moderation-action.dto';
@@ -40,7 +43,7 @@ import { ListModerationCasesUseCase } from '../use-cases/list-moderation-cases.u
 
 @ApiTags('Moderation')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(...MODERATION_REVIEW_ALLOWED_ROLES)
 @Controller('admin/moderation/reports')
@@ -52,6 +55,7 @@ export class AdminModerationReportsController {
   ) {}
 
   @Get()
+  @Permissions(PermissionKey.MODERATION_REPORT_VIEW)
   @ApiOperation({
     summary:
       'List moderation report cases for reviewer queue (contract baseline)',
@@ -74,6 +78,10 @@ export class AdminModerationReportsController {
   }
 
   @Get(':id')
+  @Permissions(
+    PermissionKey.MODERATION_REPORT_VIEW,
+    PermissionKey.MODERATION_EVIDENCE_VIEW,
+  )
   @ApiOperation({
     summary: 'Get one moderation case detail for reviewer context',
   })
@@ -97,6 +105,7 @@ export class AdminModerationReportsController {
   }
 
   @Patch(':id/actions')
+  @Permissions(PermissionKey.MODERATION_ACTION_EXECUTE)
   @ApiOperation({ summary: 'Execute moderation action on one case' })
   @ApiResponse({
     status: 200,

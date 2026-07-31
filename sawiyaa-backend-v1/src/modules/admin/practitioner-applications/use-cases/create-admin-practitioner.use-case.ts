@@ -32,12 +32,14 @@ import { PractitionerPayoutDestinationValidationService } from '@modules/practit
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
 import { UserPhoneRepository } from '@modules/auth/repositories/user-phone.repository';
 import { isUserPhoneUniqueConstraintError } from '@modules/auth/utils/is-user-phone-unique-constraint-error';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
 } from '@common/security-audit/security-audit.types';
+import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
 
 /**
  * Creates a practitioner directly from admin scope without practitioner self-submission.
@@ -57,6 +59,7 @@ export class CreateAdminPractitionerUseCase {
     private readonly phoneNumberValidationService: PhoneNumberValidationService,
     private readonly userPhoneRepository: UserPhoneRepository,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
+    @Optional() private readonly credentialStorageService?: PractitionerCredentialStorageService,
   ) {}
 
   private async hashPassword(password: string): Promise<string> {
@@ -92,8 +95,8 @@ export class CreateAdminPractitionerUseCase {
     locale: SupportedLocale;
     adminUserId: string;
     email: string;
-    phone: string;
-    phoneCountryCode: string;
+    phone?: string | null;
+    phoneCountryCode?: string | null;
     password: string;
     displayName?: string | null;
     practitionerType?: PractitionerType;
@@ -128,16 +131,20 @@ export class CreateAdminPractitionerUseCase {
     } | null;
     credentials?: Array<{
       credentialType: CredentialType;
-      fileUrl: string;
+      credentialId?: string;
+      mimeType?: string;
+      fileUrl?: string;
       expiresAt?: string;
     }>;
     note?: string | null;
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const validatedPhone = this.phoneNumberValidationService.assertValid(
-      input.phone,
-      input.phoneCountryCode,
-    );
+    const validatedPhone = input.phone?.trim()
+      ? this.phoneNumberValidationService.validate(
+          input.phone,
+          input.phoneCountryCode,
+        )
+      : null;
     const existingEmail = await this.prisma.userEmail.findUnique({
       where: { email: normalizedEmail },
       select: { id: true },
@@ -200,7 +207,7 @@ export class CreateAdminPractitionerUseCase {
 
     const passwordHash = await this.hashPassword(input.password);
     const displayName = input.displayName?.trim() || null;
-    const professionalTitle = input.professionalTitle?.trim() || null;
+    const professionalTitle = assertProfessionalTitle(input.professionalTitle, { required: true });
     const practitionerType = input.practitionerType ?? PractitionerType.OTHER;
     const practitionerGender = input.practitionerGender ?? null;
     const bio = input.bio?.trim() || null;
@@ -223,12 +230,27 @@ export class CreateAdminPractitionerUseCase {
       ),
     );
     const credentials = (input.credentials ?? [])
-      .map((item) => ({
-        credentialType: item.credentialType,
-        fileUrl: item.fileUrl.trim(),
-        expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
-      }))
+      .map((item) => {
+        const fileUrl = (item.credentialId && item.mimeType && this.credentialStorageService
+          ? this.credentialStorageService.resolveDirectCreateCredentialFileUrl(item.credentialId, item.mimeType)
+          : item.fileUrl?.trim() ?? '') ?? '';
+        return {
+          credentialType: item.credentialType,
+          fileUrl,
+          expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
+        };
+      })
       .filter((item) => item.fileUrl.length > 0);
+    const credentialTypes = credentials
+      .map((item) => item.credentialType)
+      .filter((type) => type !== CredentialType.OTHER);
+    if (new Set(credentialTypes).size !== credentialTypes.length) {
+      throw new BadRequestException({
+        messageKey:
+          'admin.practitionerApplications.errors.duplicateCredentialType',
+        error: 'ADMIN_DUPLICATE_CREDENTIAL_TYPE',
+      });
+    }
     const payoutDestination = input.payoutDestination
       ? {
           methodType: input.payoutDestination.methodType,
@@ -331,6 +353,12 @@ export class CreateAdminPractitionerUseCase {
         ).length,
       },
       credentialTypes: credentials.map((item) => item.credentialType),
+      credentialRecords: credentials.map((item) => ({
+        credentialType: item.credentialType,
+        fileUrl: item.fileUrl,
+        reviewStatus: CredentialReviewStatus.APPROVED,
+        expiresAt: item.expiresAt,
+      })),
       payoutDestination,
       isAccountActive: true,
       isPractitionerOtpVerified: true,
@@ -404,16 +432,23 @@ export class CreateAdminPractitionerUseCase {
             userId: user.id,
             email: normalizedEmail,
             isPrimary: true,
-            isVerified: true,
+            isVerified: false,
           },
         });
 
-        await this.userPhoneRepository.upsertPrimaryPhone(
-          user.id,
-          validatedPhone.e164,
-          false,
-          tx,
-        );
+        if (validatedPhone?.valid) {
+          try {
+            await this.userPhoneRepository.upsertPrimaryPhone(
+              user.id,
+              validatedPhone.e164,
+              false,
+              tx,
+              validatedPhone.countryCode,
+            );
+          } catch {
+            // Phone is optional; a conflict must not roll back the core account.
+          }
+        }
 
         await tx.authIdentity.create({
           data: {

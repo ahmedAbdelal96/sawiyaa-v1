@@ -134,6 +134,7 @@
     },
     "fields": {
       "sessionCount": "عدد الجلسات",
+      "sessionCode": "كود الجلسة",
       "discountPercent": "نسبة الخصم",
       "duration": "مدة الجلسة",
       "paymentExpiresAt": "تاريخ انتهاء الدفع",

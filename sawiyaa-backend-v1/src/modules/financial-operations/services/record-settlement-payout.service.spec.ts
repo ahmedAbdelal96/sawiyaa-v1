@@ -9,6 +9,7 @@ import { RecordSettlementPayoutService } from './record-settlement-payout.servic
 import { FinancialOperationsMapper } from '../mappers/financial-operations.mapper';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { AccountingJournalPostingService } from './accounting-journal-posting.service';
+import { CalculatePractitionerPayoutConversionService } from './calculate-practitioner-payout-conversion.service';
 import {
   Prisma,
   SettlementPayoutMethod,
@@ -19,6 +20,9 @@ describe('RecordSettlementPayoutService', () => {
   const prisma = {
     $connect: jest.fn(),
     $disconnect: jest.fn(),
+    practitionerWallet: {
+      findFirst: jest.fn(),
+    },
     ledgerEntry: {
       groupBy: jest.fn(),
     },
@@ -60,6 +64,7 @@ describe('RecordSettlementPayoutService', () => {
     refreshPractitionerWalletService,
     mapper,
     accountingJournalPostingService,
+    new CalculatePractitionerPayoutConversionService(),
   );
 
   beforeEach(() => {
@@ -70,6 +75,10 @@ describe('RecordSettlementPayoutService', () => {
         _sum: { amount: new Prisma.Decimal('120.00') },
       },
     ]);
+    (prisma.practitionerWallet.findFirst as jest.Mock).mockResolvedValue({
+      id: 'wallet_1',
+      currencyCode: 'EGP',
+    });
     (
       settlementPayoutRepository.findSettlementPayoutByExternalPayoutRef as jest.Mock
     ).mockResolvedValue(null);
@@ -115,7 +124,7 @@ describe('RecordSettlementPayoutService', () => {
           id: 'settlement_1',
           batchId: 'batch_1',
           practitionerId: 'pract_1',
-          status: 'READY',
+          status: 'CREDITED',
           amountNet: new Prisma.Decimal('120.00'),
           amountPaidTotal: new Prisma.Decimal('0.00'),
           currencyCode: 'EGP',
@@ -155,7 +164,7 @@ describe('RecordSettlementPayoutService', () => {
     ).toHaveBeenCalledWith(
       'settlement_1',
       expect.objectContaining({
-        status: 'PAID',
+        status: 'PAID_OUT',
       }),
       undefined,
     );
@@ -223,12 +232,12 @@ describe('RecordSettlementPayoutService', () => {
     )
       .mockResolvedValueOnce({
         id: 'settlement_1',
-        status: 'PROCESSING',
+        status: 'CREDITED',
         amountPaidTotal: new Prisma.Decimal('40.00'),
       })
       .mockResolvedValueOnce({
         id: 'settlement_1',
-        status: 'PAID',
+        status: 'PAID_OUT',
         amountPaidTotal: new Prisma.Decimal('120.00'),
       });
     (ledgerRepository.createLedgerEntry as jest.Mock).mockResolvedValue({
@@ -250,7 +259,7 @@ describe('RecordSettlementPayoutService', () => {
           id: 'settlement_1',
           batchId: 'batch_1',
           practitionerId: 'pract_1',
-          status: 'PROCESSING',
+          status: 'CREDITED',
           amountNet: new Prisma.Decimal('120.00'),
           amountPaidTotal: new Prisma.Decimal('0.00'),
           currencyCode: 'EGP',
@@ -281,7 +290,7 @@ describe('RecordSettlementPayoutService', () => {
           id: 'settlement_1',
           batchId: 'batch_1',
           practitionerId: 'pract_1',
-          status: 'PROCESSING',
+          status: 'CREDITED',
           amountNet: new Prisma.Decimal('120.00'),
           amountPaidTotal: new Prisma.Decimal('40.00'),
           currencyCode: 'EGP',
@@ -314,7 +323,7 @@ describe('RecordSettlementPayoutService', () => {
       1,
       'settlement_1',
       expect.objectContaining({
-        status: 'PROCESSING',
+        status: 'CREDITED',
         amountPaidTotal: new Prisma.Decimal('40.00'),
       }),
       undefined,
@@ -325,7 +334,7 @@ describe('RecordSettlementPayoutService', () => {
       2,
       'settlement_1',
       expect.objectContaining({
-        status: 'PAID',
+        status: 'PAID_OUT',
         amountPaidTotal: new Prisma.Decimal('120.00'),
       }),
       undefined,
@@ -359,7 +368,7 @@ describe('RecordSettlementPayoutService', () => {
           id: 'settlement_1',
           batchId: 'batch_1',
           practitionerId: 'pract_1',
-          status: 'PROCESSING',
+          status: 'CREDITED',
           amountNet: new Prisma.Decimal('120.00'),
           amountPaidTotal: new Prisma.Decimal('0.00'),
           currencyCode: 'EGP',
@@ -410,7 +419,7 @@ describe('RecordSettlementPayoutService', () => {
           id: 'settlement_1',
           batchId: 'batch_1',
           practitionerId: 'pract_1',
-          status: 'PROCESSING',
+          status: 'CREDITED',
           amountNet: new Prisma.Decimal('120.00'),
           amountPaidTotal: new Prisma.Decimal('0.00'),
           currencyCode: 'EGP',
@@ -452,7 +461,7 @@ describe('RecordSettlementPayoutService', () => {
             id: 'settlement_1',
             batchId: 'batch_1',
             practitionerId: 'pract_1',
-            status: 'READY',
+          status: 'CREDITED',
             amountNet: new Prisma.Decimal('120.00'),
             amountPaidTotal: new Prisma.Decimal('0.00'),
             currencyCode: 'EGP',
@@ -487,7 +496,7 @@ describe('RecordSettlementPayoutService', () => {
             id: 'settlement_1',
             batchId: 'batch_1',
             practitionerId: 'pract_1',
-            status: 'READY',
+          status: 'CREDITED',
             amountNet: new Prisma.Decimal('120.00'),
             amountPaidTotal: new Prisma.Decimal('40.00'),
             currencyCode: 'EGP',
@@ -536,7 +545,7 @@ describe('RecordSettlementPayoutService', () => {
             id: 'settlement_1',
             batchId: 'batch_1',
             practitionerId: 'pract_1',
-            status: 'READY',
+          status: 'CREDITED',
             amountNet: new Prisma.Decimal('120.00'),
             amountPaidTotal: new Prisma.Decimal('0.00'),
             currencyCode: 'EGP',

@@ -44,7 +44,11 @@ export async function getPractitionerCredentials() {
 export async function uploadPractitionerCredential(
   payload: UploadPractitionerCredentialRequest,
 ) {
-  const response = await apiClient.post("/practitioners/me/credentials", payload);
+  const formData = new FormData();
+  formData.append("file", payload.file as unknown as Blob);
+  formData.append("credentialType", payload.credentialType);
+  if (payload.expiresAt) formData.append("expiresAt", payload.expiresAt);
+  const response = await apiClient.post("/practitioners/me/credentials/upload", formData);
   return extractApiData<UploadPractitionerCredentialResponse>(response);
 }
 

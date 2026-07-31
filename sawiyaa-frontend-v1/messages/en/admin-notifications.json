@@ -265,6 +265,10 @@
       "rawLogs": "Raw Diagnostics Logs"
     },
     "slugs": {
+      "admin-practitioner-application-approved": {
+        "title": "Practitioner application approved",
+        "subtitle": "Practitioner · Application"
+      },
       "GENERAL_CHAT_MESSAGE": {
         "title": "New chat message",
         "subtitle": "Chat · Message"

@@ -26,6 +26,36 @@ export class PractitionerApplicationRepository {
     });
   }
 
+  findActiveChangeByPractitionerId(
+    practitionerId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerApplication.findFirst({
+      where: {
+        practitionerId,
+        status: {
+          in: [
+            PractitionerApplicationStatus.SUBMITTED,
+            PractitionerApplicationStatus.UNDER_REVIEW,
+            PractitionerApplicationStatus.CHANGES_REQUESTED,
+          ],
+        },
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  updateSubmissionSnapshot(
+    id: string,
+    submissionSnapshot: Prisma.InputJsonValue,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).practitionerApplication.update({
+      where: { id },
+      data: { submissionSnapshot },
+    });
+  }
+
   createSubmitted(
     practitionerId: string,
     submissionSnapshot?: Prisma.InputJsonValue,

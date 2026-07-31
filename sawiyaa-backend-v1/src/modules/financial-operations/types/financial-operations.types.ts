@@ -1,4 +1,4 @@
-﻿import { AppRole } from '@common/enums/app-role.enum';
+import { AppRole } from '@common/enums/app-role.enum';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -7,6 +7,7 @@ import {
   PractitionerSettlementStatus,
   SettlementPayoutMethod,
   SettlementPayoutSource,
+  PayoutTransferFeeTreatment,
   SettlementBatchStatus,
   PractitionerPayoutMethodType,
   WalletBalanceBucket,
@@ -36,6 +37,13 @@ export const FINANCIAL_OPS_ERROR_CODES = {
     'FINANCIAL_OPERATIONS_RECOVERY_AMOUNT_EXCEEDS_REMAINING',
   recoveryAlreadyResolved: 'FINANCIAL_OPERATIONS_RECOVERY_ALREADY_RESOLVED',
   recoveryReasonRequired: 'FINANCIAL_OPERATIONS_RECOVERY_REASON_REQUIRED',
+  practitionerWalletCurrencyMismatch:
+    'PRACTITIONER_WALLET_CURRENCY_MISMATCH',
+  practitionerWalletNotFound: 'PRACTITIONER_WALLET_NOT_FOUND',
+  practitionerWalletCurrencyUnresolved:
+    'PRACTITIONER_WALLET_CURRENCY_UNRESOLVED',
+  ledgerWalletCurrencyMismatch: 'LEDGER_WALLET_CURRENCY_MISMATCH',
+  payoutWalletCurrencyMismatch: 'PAYOUT_WALLET_CURRENCY_MISMATCH',
 } as const;
 
 export const FINANCIAL_OPS_ROUTE_SCOPE = {
@@ -93,6 +101,7 @@ export type LedgerEntryViewModel = {
   balanceBucket: WalletBalanceBucket;
   paymentId: string | null;
   sessionId: string | null;
+  sessionCode: string | null;
   settlementId: string | null;
   referenceType: string | null;
   referenceId: string | null;
@@ -147,6 +156,19 @@ export type SettlementPayoutViewModel = {
   practitionerId: string;
   amountNet: string;
   currency: string;
+  sourceAmount: string | null;
+  sourceCurrency: string | null;
+  payoutCurrency: string | null;
+  exchangeRateEgpPerUsd: string | null;
+  calculatedPayoutAmount: string | null;
+  actualPayoutAmount: string | null;
+  differenceAmount: string | null;
+  overrideReason: string | null;
+  transferFeeAmount: string | null;
+  transferFeeCurrency: string | null;
+  feeBearer: PayoutTransferFeeTreatment;
+  netAmountReceived: string | null;
+  totalPlatformOutflow: string | null;
   payoutMethod: SettlementPayoutMethod;
   payoutSource: SettlementPayoutSource;
   externalPayoutRef: string | null;
@@ -202,6 +224,14 @@ export type PractitionerPayoutHistoryViewModel = {
   settlementId: string;
   amountPaid: string;
   currency: string;
+  sourceAmount: string | null;
+  sourceCurrency: string | null;
+  payoutCurrency: string | null;
+  exchangeRateEgpPerUsd: string | null;
+  calculatedPayoutAmount: string | null;
+  actualPayoutAmount: string | null;
+  differenceAmount: string | null;
+  overrideReason: string | null;
   payoutMethod: SettlementPayoutMethod;
   payoutSource: SettlementPayoutSource;
   payoutDate: string;
@@ -211,6 +241,7 @@ export type PractitionerPayoutHistoryViewModel = {
   processedByDisplayName: string | null;
   proof: SettlementPayoutProofViewModel | null;
   createdAt: string;
+  status: PractitionerSettlementStatus | null;
 };
 
 export type AdminPayoutHistoryViewModel = PractitionerPayoutHistoryViewModel & {
@@ -235,6 +266,7 @@ export type PractitionerStatementRowViewModel = {
   amount: string;
   paymentId: string | null;
   sessionId: string | null;
+  sessionCode: string | null;
   settlementId: string | null;
   referenceType: string | null;
   referenceId: string | null;
@@ -383,6 +415,17 @@ export type PractitionerManualPayoutSummaryViewModel = {
   lastPayoutAt: string | null;
 };
 
+export type PractitionerSafeSettlementViewModel = {
+  sessionId: string | null;
+  sessionCode: string | null;
+  date: string | null;
+  sessionType: string | null;
+  amountAdded: string;
+  currency: string;
+  status: PractitionerSettlementStatus;
+  payoutStatus: 'PENDING' | 'PAID' | 'NOT_ELIGIBLE';
+};
+
 export type PractitionerManualPayoutSummaryStatsViewModel = {
   practitionersWithDues: number;
   readyForPayoutPractitioners: number;
@@ -409,4 +452,3 @@ export type PractitionerManualPayoutViewModel = {
   createdAt: string;
   updatedAt: string;
 };
-

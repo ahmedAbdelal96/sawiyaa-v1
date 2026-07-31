@@ -28,6 +28,8 @@ export type AccountingRecentEvent = {
   journalEntryId: string;
   sourceType: "PAYMENT_CAPTURED" | "REFUND_SUCCEEDED" | "PRACTITIONER_PAYOUT";
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   occurredAt: string;
   currencyCode: string;
   amount: string;
@@ -74,6 +76,8 @@ export type LedgerExplorerRow = {
   journalEntryId: string;
   sourceType: "PAYMENT_CAPTURED" | "REFUND_SUCCEEDED" | "PRACTITIONER_PAYOUT";
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   occurredAt: string;
   createdAt: string;
   currencyCode: string;
@@ -172,6 +176,8 @@ export type ReconciliationFilters = {
 export type ReconciliationItem = {
   sourceType: ReconciliationSourceType;
   sourceId: string;
+  sessionId: string | null;
+  sessionCode: string | null;
   practitionerId: string | null;
   paymentId: string | null;
   refundId: string | null;

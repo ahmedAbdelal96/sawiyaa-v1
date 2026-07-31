@@ -6,6 +6,7 @@ import {
   ModerationAuditEventType,
   ModerationCaseActionType,
   ModerationCaseStatus,
+  ModerationChatType,
   ModerationReportReason,
   ModerationReportTargetType,
   ModerationReporterRole,
@@ -91,38 +92,150 @@ export class ModerationRepository {
     reporterUserId: string;
     reporterRole: ModerationReporterRole;
   }) {
-    return this.prisma.moderationReport.create({
-      data: {
-        targetType: input.targetType,
-        targetId: input.targetId,
-        reason: input.reason,
-        note: input.note,
-        status: ModerationCaseStatus.OPEN,
-        reportedByUserId: input.reporterUserId,
-        reportedByRole: input.reporterRole,
-        auditEvents: {
-          create: {
-            eventType: ModerationAuditEventType.REPORT_CREATED,
-            actorUserId: input.reporterUserId,
-            actorRole: input.reporterRole,
-            metadataJson: {
-              targetType: input.targetType,
-              targetId: input.targetId,
-              reason: input.reason,
+    return this.resolveReportContext({
+      targetType: input.targetType,
+      targetId: input.targetId,
+      reporterUserId: input.reporterUserId,
+      reporterRole: input.reporterRole,
+    }).then((context) =>
+      this.prisma.moderationReport.create({
+        data: {
+          targetType: input.targetType,
+          targetId: input.targetId,
+          reason: input.reason,
+          note: input.note,
+          status: ModerationCaseStatus.OPEN,
+          reportedByUserId: input.reporterUserId,
+          reportedByRole: input.reporterRole,
+          conversationId: context.conversationId,
+          reportedMessageId: context.reportedMessageId,
+          targetUserId: context.targetUserId,
+          chatType: context.chatType,
+          auditEvents: {
+            create: {
+              eventType: ModerationAuditEventType.REPORT_CREATED,
+              actorUserId: input.reporterUserId,
+              actorRole: input.reporterRole,
+              metadataJson: {
+                targetType: input.targetType,
+                targetId: input.targetId,
+                reason: input.reason,
+              },
             },
           },
         },
-      },
-      select: {
-        id: true,
-        targetType: true,
-        targetId: true,
-        reason: true,
-        note: true,
-        status: true,
-        createdAt: true,
-      },
-    });
+        select: {
+          id: true,
+          targetType: true,
+          targetId: true,
+          reason: true,
+          note: true,
+          status: true,
+          createdAt: true,
+          conversationId: true,
+          reportedMessageId: true,
+          targetUserId: true,
+          chatType: true,
+        },
+      }),
+    );
+  }
+
+  private async resolveReportContext(input: {
+    targetType: ModerationReportTargetType;
+    targetId: string;
+    reporterUserId: string;
+    reporterRole: ModerationReporterRole;
+  }): Promise<{
+    conversationId: string | null;
+    reportedMessageId: string | null;
+    targetUserId: string | null;
+    chatType: ModerationChatType | null;
+  }> {
+    const chatTargetTypes: ModerationReportTargetType[] = [
+      ModerationReportTargetType.CARE_CHAT_CONVERSATION,
+      ModerationReportTargetType.CARE_CHAT_MESSAGE,
+      ModerationReportTargetType.GENERAL_CHAT_CONVERSATION,
+      ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+    ];
+    const isChat = chatTargetTypes.includes(input.targetType);
+    if (!isChat) {
+      return {
+        conversationId: null,
+        reportedMessageId: null,
+        targetUserId: null,
+        chatType: null,
+      };
+    }
+
+    const isMessage = input.targetType.endsWith('_MESSAGE');
+    const message = isMessage
+      ? await this.prisma.message.findFirst({
+          where: { id: input.targetId, deletedAt: null },
+          select: {
+            id: true,
+            senderUserId: true,
+            conversation: {
+              select: {
+                id: true,
+                conversationType: true,
+                sessionId: true,
+                session: { select: { sessionCode: true } },
+                patient: { select: { userId: true } },
+                practitioner: { select: { userId: true } },
+                participants: {
+                  where: { isActive: true },
+                  select: { userId: true },
+                },
+              },
+            },
+          },
+        })
+      : null;
+    const conversation =
+      message?.conversation ??
+      (await this.prisma.conversation.findFirst({
+        where: { id: input.targetId },
+        select: {
+          id: true,
+          conversationType: true,
+          sessionId: true,
+          session: { select: { sessionCode: true } },
+          patient: { select: { userId: true } },
+          practitioner: { select: { userId: true } },
+          participants: { where: { isActive: true }, select: { userId: true } },
+        },
+      }));
+    if (!conversation) {
+      return {
+        conversationId: null,
+        reportedMessageId: null,
+        targetUserId: null,
+        chatType: null,
+      };
+    }
+
+    const chatType =
+      conversation.conversationType === ConversationType.CARE_APPROVED
+        ? ModerationChatType.CARE_CHAT
+        : conversation.sessionId
+          ? ModerationChatType.SESSION_CHAT
+          : ModerationChatType.GENERAL_CHAT;
+    const candidateUserIds = message?.senderUserId
+      ? [message.senderUserId]
+      : ([
+          conversation.patient?.userId,
+          conversation.practitioner?.userId,
+          ...conversation.participants.map((p) => p.userId),
+        ].filter(Boolean) as string[]);
+    const targetUserId =
+      candidateUserIds.find((id) => id !== input.reporterUserId) ?? null;
+    return {
+      conversationId: conversation.id,
+      reportedMessageId: message?.id ?? null,
+      targetUserId,
+      chatType,
+    };
   }
 
   executeCaseAction(input: {
@@ -313,11 +426,32 @@ export class ModerationRepository {
         status: true,
         reportedByUserId: true,
         reportedByRole: true,
+        conversationId: true,
+        reportedMessageId: true,
+        targetUserId: true,
+        chatType: true,
         createdAt: true,
-        actions: {
-          orderBy: [{ createdAt: 'desc' }],
-          take: 1,
+        auditEvents: {
+          orderBy: [{ createdAt: 'asc' }],
           select: {
+            id: true,
+            eventType: true,
+            actorUserId: true,
+            actorRole: true,
+            metadataJson: true,
+            createdAt: true,
+          },
+        },
+        actions: {
+          orderBy: [{ createdAt: 'asc' }],
+          select: {
+            id: true,
+            actionType: true,
+            previousStatus: true,
+            nextStatus: true,
+            reason: true,
+            note: true,
+            actedByUserId: true,
             createdAt: true,
           },
         },
@@ -332,6 +466,22 @@ export class ModerationRepository {
       row.targetType,
       row.targetId,
     );
+
+    const [
+      investigation,
+      reporterPreviousReports,
+      targetPreviousReports,
+      targetEnforcements,
+    ] = await Promise.all([
+      this.findInvestigationEvidence({
+        conversationId: row.conversationId,
+        reportedMessageId: row.reportedMessageId,
+        chatType: row.chatType,
+      }),
+      this.findReportHistory(row.reportedByUserId, row.id, 'reportedByUserId'),
+      this.findReportHistory(row.targetUserId, row.id, 'targetUserId'),
+      this.findUserEnforcements(row.targetUserId),
+    ]);
 
     let reporter = row.reportedByUserId
       ? await this.findReporterSnapshot(row.reportedByUserId)
@@ -371,12 +521,184 @@ export class ModerationRepository {
       note: row.note,
       status: row.status,
       reportedByUserId: row.reportedByUserId,
+      targetUserId: row.targetUserId,
       reportedByRole: row.reportedByRole,
       createdAt: row.createdAt,
       lastActionAt: row.actions[0]?.createdAt ?? null,
       reporter,
+      targetUser: row.targetUserId
+        ? await this.findReporterSnapshot(row.targetUserId)
+        : null,
       targetSnapshot,
+      investigation,
+      history: {
+        reporterPreviousReports,
+        targetPreviousReports,
+        targetEnforcements,
+        actions: row.actions,
+        auditEvents: row.auditEvents,
+      },
     };
+  }
+
+  private async findReportHistory(
+    userId: string | null,
+    currentId: string,
+    field: 'reportedByUserId' | 'targetUserId',
+  ) {
+    if (!userId) return [];
+    const rows = await this.prisma.moderationReport.findMany({
+      where: {
+        id: { not: currentId },
+        [field]: userId,
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 25,
+      select: {
+        id: true,
+        status: true,
+        reason: true,
+        targetType: true,
+        createdAt: true,
+        actions: {
+          orderBy: [{ createdAt: 'desc' }],
+          take: 1,
+          select: { createdAt: true },
+        },
+      },
+    });
+    return rows.map((item) => ({
+      id: item.id,
+      status: item.status,
+      reason: item.reason,
+      targetType: item.targetType,
+      createdAt: item.createdAt,
+      lastActionAt: item.actions[0]?.createdAt ?? null,
+    }));
+  }
+
+  private async findUserEnforcements(userId: string | null) {
+    if (!userId) return [];
+    return this.prisma.moderationUserEnforcement.findMany({
+      where: { targetUserId: userId },
+      orderBy: [{ createdAt: 'desc' }],
+      take: 25,
+      select: {
+        id: true,
+        type: true,
+        reason: true,
+        note: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  private async findInvestigationEvidence(input: {
+    conversationId: string | null;
+    reportedMessageId: string | null;
+    chatType: ModerationChatType | null;
+  }) {
+    if (!input.conversationId) return null;
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: input.conversationId },
+      select: {
+        id: true,
+        conversationRef: true,
+        conversationType: true,
+        sessionId: true,
+        session: { select: { sessionCode: true } },
+        messages: {
+          where: { deletedAt: null, visibility: MessageVisibility.NORMAL },
+          orderBy: [{ sentAt: 'asc' }, { id: 'asc' }],
+          select: {
+            id: true,
+            senderUserId: true,
+            contentText: true,
+            sentAt: true,
+            attachments: {
+              orderBy: [{ uploadedAt: 'asc' }, { id: 'asc' }],
+              select: {
+                storageProvider: true,
+                mimeType: true,
+                originalName: true,
+              },
+            },
+          },
+        },
+        participants: {
+          where: { isActive: true },
+          select: { userId: true, participantRole: true },
+        },
+      },
+    });
+    if (!conversation) return null;
+    const participantRoles = new Map(
+      conversation.participants.map((item) => [
+        item.userId,
+        String(item.participantRole),
+      ]),
+    );
+    const userIds = Array.from(
+      new Set(
+        conversation.messages
+          .map((item) => item.senderUserId)
+          .filter(Boolean) as string[],
+      ),
+    );
+    const participantUserIds = conversation.participants.map(
+      (item) => item.userId,
+    );
+    const usersToResolve = Array.from(
+      new Set([...userIds, ...participantUserIds]),
+    );
+    const users = usersToResolve.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: usersToResolve } },
+          select: { id: true, displayName: true },
+        })
+      : [];
+    const names = new Map(users.map((item) => [item.id, item.displayName]));
+    return {
+      chatType: input.chatType,
+      conversationId: input.conversationId,
+      reportedMessageId: input.reportedMessageId,
+      conversation: {
+        name: conversation.conversationRef,
+        type: conversation.conversationType,
+        sessionId: conversation.sessionId,
+        sessionCode: conversation.session?.sessionCode ?? null,
+        participants: conversation.participants.map((participant) => ({
+          userId: participant.userId,
+          displayName: names.get(participant.userId) ?? null,
+          role: String(participant.participantRole),
+        })),
+      },
+      messages: conversation.messages.map((message) => ({
+        id: message.id,
+        senderUserId: message.senderUserId,
+        senderName: message.senderUserId
+          ? (names.get(message.senderUserId) ?? null)
+          : null,
+        senderRole: message.senderUserId
+          ? (participantRoles.get(message.senderUserId) ?? 'SYSTEM')
+          : 'SYSTEM',
+        body: message.contentText ?? '',
+        sentAt: message.sentAt,
+        attachments: message.attachments.map((attachment) => ({
+          fileId: this.extractAttachmentFileId(attachment.storageProvider),
+          mimeType: attachment.mimeType,
+          originalName: attachment.originalName,
+        })),
+        isReported: message.id === input.reportedMessageId,
+      })),
+    };
+  }
+
+  private extractAttachmentFileId(storageProvider: string | null) {
+    if (!storageProvider) return 'protected';
+    return storageProvider.startsWith('ref:')
+      ? storageProvider.slice(4)
+      : 'protected';
   }
 
   private async deriveReporterUserIdFromTarget(input: {
@@ -593,9 +915,18 @@ export class ModerationRepository {
     return this.prisma.conversation.findFirst({
       where: {
         id: input.targetId,
-        conversationType: ConversationType.SYSTEM,
-        supportTicketId: null,
-        chatApprovalRequestId: null,
+        // SessionChatPanel historically sends GENERAL_CHAT_* targets even
+        // when the underlying session conversation is CARE_APPROVED. Keep
+        // that contract backward-compatible while preserving participant
+        // scoping below.
+        OR: [
+          {
+            conversationType: ConversationType.SYSTEM,
+            supportTicketId: null,
+            chatApprovalRequestId: null,
+          },
+          { conversationType: ConversationType.CARE_APPROVED },
+        ],
         ...(this.isPrivileged(input.reporterRole)
           ? {}
           : {
@@ -622,9 +953,14 @@ export class ModerationRepository {
         deletedAt: null,
         visibility: MessageVisibility.NORMAL,
         conversation: {
-          conversationType: ConversationType.SYSTEM,
-          supportTicketId: null,
-          chatApprovalRequestId: null,
+          OR: [
+            {
+              conversationType: ConversationType.SYSTEM,
+              supportTicketId: null,
+              chatApprovalRequestId: null,
+            },
+            { conversationType: ConversationType.CARE_APPROVED },
+          ],
           ...(this.isPrivileged(input.reporterRole)
             ? {}
             : {
@@ -817,9 +1153,14 @@ export class ModerationRepository {
         const row = await this.prisma.conversation.findFirst({
           where: {
             id: targetId,
-            conversationType: ConversationType.SYSTEM,
-            supportTicketId: null,
-            chatApprovalRequestId: null,
+            OR: [
+              {
+                conversationType: ConversationType.SYSTEM,
+                supportTicketId: null,
+                chatApprovalRequestId: null,
+              },
+              { conversationType: ConversationType.CARE_APPROVED },
+            ],
           },
           select: {
             status: true,
@@ -847,9 +1188,14 @@ export class ModerationRepository {
             deletedAt: null,
             visibility: MessageVisibility.NORMAL,
             conversation: {
-              conversationType: ConversationType.SYSTEM,
-              supportTicketId: null,
-              chatApprovalRequestId: null,
+              OR: [
+                {
+                  conversationType: ConversationType.SYSTEM,
+                  supportTicketId: null,
+                  chatApprovalRequestId: null,
+                },
+                { conversationType: ConversationType.CARE_APPROVED },
+              ],
             },
           },
           select: {
@@ -962,9 +1308,9 @@ export class ModerationRepository {
       return null;
     }
     const clean = input.trim();
-    if (clean.length <= 160) {
-      return clean;
-    }
-    return `${clean.slice(0, 157)}...`;
+    // Moderation reviewers need the complete reported message as evidence.
+    // The admin UI controls the layout/scrolling; truncating here can hide the
+    // part of a message that led to the report.
+    return clean;
   }
 }

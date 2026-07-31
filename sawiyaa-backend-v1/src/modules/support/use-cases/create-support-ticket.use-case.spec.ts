@@ -126,4 +126,54 @@ describe('CreateSupportTicketUseCase', () => {
       }),
     );
   });
+
+  it('passes explicit new-conversation and idempotency intent to the repository', async () => {
+    const actorRepository = {
+      findPatientProfileByUserId: jest.fn().mockResolvedValue({ id: 'patient-1' }),
+      findPractitionerProfileByUserId: jest.fn(),
+    } as unknown as SupportActorRepository;
+    const ticketRepository = {
+      createTicket: jest.fn().mockResolvedValue({
+        id: 'ticket-new',
+        ticketType: 'GENERAL',
+        subject: 'Start support',
+        status: 'OPEN',
+        priority: SupportTicketPriority.NORMAL,
+        assignedToUserId: null,
+        description: 'Start support',
+        relatedSessionId: null,
+        relatedPaymentId: null,
+        relatedInstantBookingRequestId: null,
+        relatedMatchingSessionId: null,
+        relatedAssessmentSubmissionId: null,
+        lastMessageAt: new Date(),
+        resolvedAt: null,
+        closedAt: null,
+        createdAt: new Date(),
+        conversation: { participants: [], messages: [], internalNotes: [] },
+      }),
+    } as unknown as SupportTicketRepository;
+    const linkedValidation = { validate: jest.fn() } as unknown as ValidateSupportLinkedEntitiesService;
+    const useCase = new CreateSupportTicketUseCase(
+      actorRepository,
+      ticketRepository,
+      linkedValidation,
+      new SupportPresenter(),
+    );
+
+    await useCase.execute({
+      actorKind: 'PATIENT',
+      userId: 'user-1',
+      payload: {
+        category: 'GENERAL',
+        description: 'Start support',
+        newConversation: true,
+        idempotencyKey: 'draft-1',
+      } as never,
+    });
+
+    expect(ticketRepository.createTicket).toHaveBeenCalledWith(
+      expect.objectContaining({ forceNew: true, idempotencyKey: 'draft-1' }),
+    );
+  });
 });

@@ -5,18 +5,46 @@ import { isAdminRole } from "@/lib/auth/roles";
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import {
   getAdminPractitionerPayoutBalance,
+  getAdminPractitionerWalletDetail,
+  listAdminPractitionerWallets,
   listAdminPractitionerManualPayoutHistory,
   listAdminPractitionerManualPayouts,
   listAdminPractitionerPayoutSummaries,
   recordAdminPractitionerManualPayout,
 } from "../api/admin-practitioner-payouts.api";
+import { listAdminPractitionerTransfers } from "../api/admin-practitioner-transfers.api";
 import { adminPractitionerPayoutsQueryKeys } from "../constants/query-keys";
 import type {
   ListAdminPractitionerManualPayoutHistoryParams,
   ListAdminPractitionerManualPayoutsParams,
   ListAdminPractitionerPayoutSummariesParams,
+  ListAdminPractitionerWalletsParams,
   RecordAdminPractitionerManualPayoutRequest,
 } from "../types/admin-practitioner-payouts.types";
+
+export function useAdminPractitionerWallets(params?: ListAdminPractitionerWalletsParams) {
+  const role = useSessionRole();
+  return useQuery({ queryKey: ["admin", "practitioner-wallets", params ?? {}], queryFn: () => listAdminPractitionerWallets(params), enabled: isAdminRole(role), staleTime: 30_000 });
+}
+
+export function useAdminPractitionerWalletDetail(walletId?: string, open = true) {
+  const role = useSessionRole();
+  return useQuery({ queryKey: ["admin", "practitioner-wallets", walletId ?? "detail"], queryFn: () => getAdminPractitionerWalletDetail(walletId as string), enabled: isAdminRole(role) && open && Boolean(walletId), staleTime: 30_000 });
+}
+
+export function useAdminPractitionerTransfers(
+  params?: ListAdminPractitionerManualPayoutHistoryParams,
+) {
+  const role = useSessionRole();
+
+  return useQuery({
+    queryKey: ["admin", "practitioner-transfers", params ?? {}],
+    queryFn: () => listAdminPractitionerTransfers(params),
+    enabled: isAdminRole(role),
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+  });
+}
 
 export function useAdminPractitionerPayoutBalance(
   practitionerId?: string,

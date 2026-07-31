@@ -20,6 +20,7 @@ import { specialtiesSeedModule } from './seed/modules/specialties.seed';
 import { usersSeedModule } from './seed/modules/users.seed';
 import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
+import { assertLegacyFinancialFixtureSeedDisabled } from './seed/shared/financial-fixture-gate';
 
 const prisma = new PrismaClient();
 const seedProfile = (process.env.SEED_PROFILE ?? 'curated').toLowerCase();
@@ -50,6 +51,7 @@ const curatedSeedModules: SeedModule[] = [
 const bulkSeedModules: SeedModule[] =
   seedProfile === 'bulk'
     ? [
+        ...(assertLegacyFinancialFixtureSeedDisabled('bulk'), []),
         regionalBulkSeedModule,
         settlementsLabSeedModule,
         accountingSeedModule,

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { appendFile, chmod, mkdir } from 'node:fs/promises';
+import { appendFile, chmod, mkdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 /**
@@ -11,6 +11,7 @@ import { dirname, resolve } from 'node:path';
 export class PractitionerOtpQaCaptureService {
   private readonly enabled: boolean;
   private readonly capturePath: string;
+  private readonly allowedAccounts: Set<string>;
 
   constructor(private readonly configService: ConfigService) {
     this.enabled =
@@ -20,6 +21,9 @@ export class PractitionerOtpQaCaptureService {
     this.capturePath = resolve(
       process.env.PRACTITIONER_OTP_QA_CAPTURE_PATH ??
         resolve(process.cwd(), '.tmp/practitioner-otp-qa.capture'),
+    );
+    this.allowedAccounts = new Set(
+      this.configService.get<string[]>('auth.practitionerOtpQaCaptureAccounts') ?? [],
     );
 
     if (
@@ -31,21 +35,44 @@ export class PractitionerOtpQaCaptureService {
         'PRACTITIONER_OTP_QA_CAPTURE_ENABLED must be disabled in production',
       );
     }
+
+    if (this.enabled && this.allowedAccounts.size === 0) {
+      throw new Error(
+        'PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS is required when OTP QA capture is enabled',
+      );
+    }
   }
 
   async capture(input: {
+    target: string;
     code: string;
     expiresAt: Date;
     purpose: string;
   }): Promise<void> {
-    if (!this.enabled) return;
+    if (!this.shouldCapture(input.target)) return;
 
     await mkdir(dirname(this.capturePath), { recursive: true, mode: 0o700 });
     await appendFile(
       this.capturePath,
-      `${new Date().toISOString()} purpose=${input.purpose} code=${input.code} expiresAt=${input.expiresAt.toISOString()}\n`,
+      `${new Date().toISOString()} target=${input.target.trim().toLowerCase()} purpose=${input.purpose} code=${input.code} expiresAt=${input.expiresAt.toISOString()}\n`,
       { encoding: 'utf8', mode: 0o600 },
     );
     await chmod(this.capturePath, 0o600);
+  }
+
+  shouldCapture(target: string, purpose = 'PRACTITIONER_LOGIN'): boolean {
+    return purpose === 'PRACTITIONER_LOGIN' && this.enabled && this.allowedAccounts.has(target.trim().toLowerCase());
+  }
+
+  async readLatest(target: string): Promise<string | null> {
+    if (!this.shouldCapture(target)) return null;
+    try {
+      const lines = (await readFile(this.capturePath, 'utf8')).trim().split(/\r?\n/).reverse();
+      const line = lines.find((candidate) => candidate.includes(`target=${target.trim().toLowerCase()}`));
+      const match = line?.match(/\bcode=(\d{4,8})\b/);
+      return match?.[1] ?? null;
+    } catch {
+      return null;
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import {
   CalendarDays,
   Clock,
@@ -14,7 +15,7 @@ import {
 import Badge from "@/components/ui/badge/Badge";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
-import { SurfaceCard, SurfaceHeader, SurfaceStatCard } from "@/components/shared/SurfaceShell";
+import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import { MoneyText } from "@/components/money/MoneyText";
 import { toAppError, isUnauthorizedError } from "@/lib/api/errors";
 import { useMyPackagePurchase } from "../hooks/use-package-purchases";
@@ -35,6 +36,7 @@ import type {
   PatientPackagePurchaseSessionSummary,
 } from "../types/package-purchases.types";
 import { DataTable } from "@/components/ui/data-table/DataTable";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 export default function PatientPackagePurchaseDetailPanel({
   purchaseId,
@@ -91,7 +93,7 @@ export default function PatientPackagePurchaseDetailPanel({
           label: unauthorized ? t("errors.authAction") : t("detail.retry"),
           href: unauthorized ? (
             <Link
-              href="/signin?mode=patient"
+              href="/signin/patient"
               className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               {t("errors.authAction")}
@@ -161,6 +163,12 @@ export default function PatientPackagePurchaseDetailPanel({
           })}
         </span>
       ),
+    },
+    {
+      id: "sessionCode",
+      header: t("detail.fields.sessionCode"),
+      accessor: (row: PatientPackagePurchaseSessionSummary) => row.sessionCode,
+      cell: (row: PatientPackagePurchaseSessionSummary) => <SessionCodeReference sessionId={row.id} sessionCode={row.sessionCode} href={`/patient/sessions/${row.id}`} copyable />,
     },
     {
       id: "scheduledAt",
@@ -305,7 +313,7 @@ export default function PatientPackagePurchaseDetailPanel({
                 </h3>
                 {purchase.practitioner.professionalTitle && (
                   <p className="truncate text-xs text-text-muted mt-0.5">
-                    {purchase.practitioner.professionalTitle}
+                    {getProfessionalTitleLabel(purchase.practitioner.professionalTitle, locale)}
                   </p>
                 )}
               </div>

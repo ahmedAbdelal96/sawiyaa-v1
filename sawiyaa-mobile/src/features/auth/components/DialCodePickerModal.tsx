@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { Text } from "../../../components/ui";
-import { DialCodeOption, DIAL_CODES } from "../dial-codes";
+import { DialCodeOption, DIAL_CODES, getCountryFlag } from "../dial-codes";
 
 interface DialCodePickerModalProps {
   visible: boolean;
@@ -163,6 +163,7 @@ export function DialCodePickerModal({
                         gap: 10,
                       }}
                     >
+                      <Text style={{ fontSize: 20 }}>{getCountryFlag(dial.countryCode)}</Text>
                       <Text
                         weight={isSelected ? "600" : "400"}
                         style={{

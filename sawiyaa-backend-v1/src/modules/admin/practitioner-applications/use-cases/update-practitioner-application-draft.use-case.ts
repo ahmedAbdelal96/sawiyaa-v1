@@ -23,6 +23,8 @@ import { AdminPractitionerApplicationRepository } from '../repositories/admin-pr
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
+import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
 
 @Injectable()
 export class UpdatePractitionerApplicationDraftUseCase {
@@ -35,6 +37,7 @@ export class UpdatePractitionerApplicationDraftUseCase {
     private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
+    private readonly practitionerCurrencyLifecycleService: PractitionerCurrencyLifecycleService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
@@ -179,8 +182,9 @@ export class UpdatePractitionerApplicationDraftUseCase {
           profileUpdateData.practitionerGender = input.data.practitionerGender;
         }
         if (input.data.professionalTitle !== undefined) {
-          profileUpdateData.professionalTitle =
-            input.data.professionalTitle?.trim() || null;
+          profileUpdateData.professionalTitle = assertProfessionalTitle(
+            input.data.professionalTitle,
+          );
         }
         if (input.data.bio !== undefined) {
           profileUpdateData.bio = input.data.bio?.trim() || null;
@@ -189,6 +193,12 @@ export class UpdatePractitionerApplicationDraftUseCase {
           profileUpdateData.yearsOfExperience = input.data.yearsOfExperience;
         }
         if (resolvedCountryId !== undefined) {
+          await this.practitionerCurrencyLifecycleService.ensureForCountryChange({
+            practitionerId: application.practitionerId,
+            newCountryId: resolvedCountryId,
+            actorUserId: input.adminUserId,
+            tx,
+          });
           profileUpdateData.country =
             resolvedCountryId === null
               ? { disconnect: true }

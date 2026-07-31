@@ -101,6 +101,10 @@ export default function PractitionerLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="availability/[weekId]" options={{ href: null }} />
+      <Tabs.Screen name="availability/editor" options={{ href: null }} />
+      <Tabs.Screen name="availability/repeat-targets" options={{ href: null }} />
+      <Tabs.Screen name="availability/repeat-review" options={{ href: null }} />
       <Tabs.Screen
         name="more"
         options={{

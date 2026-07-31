@@ -27,6 +27,7 @@ export class UserPhoneRepository {
     phone: string,
     isVerified: boolean,
     tx?: Prisma.TransactionClient,
+    countryCode?: string,
   ) {
     const db = this.getDb(tx);
     return db.userPhone
@@ -49,11 +50,13 @@ export class UserPhoneRepository {
             phone,
             isPrimary: true,
             isVerified,
+            countryCode: countryCode ?? null,
           },
           update: {
             userId,
             isPrimary: true,
             isVerified,
+            countryCode: countryCode ?? null,
           },
         });
       });

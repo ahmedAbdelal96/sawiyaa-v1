@@ -306,7 +306,7 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     if (step === "otp") {
       handleChangeEmail();
     } else {
-      router.push(`/signin${isPractitioner ? "?mode=practitioner" : ""}`);
+      router.push(isPractitioner ? "/signin/practitioner" : "/signin/patient");
     }
   };
 
@@ -362,7 +362,7 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
             {tFp("resetSuccessMessage")}
           </p>
           <Link
-            href={`/signin${isPractitioner ? "?mode=practitioner" : ""}`}
+                  href={isPractitioner ? "/signin/practitioner" : "/signin/patient"}
             className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98]"
           >
             {tFp("signInNow")}

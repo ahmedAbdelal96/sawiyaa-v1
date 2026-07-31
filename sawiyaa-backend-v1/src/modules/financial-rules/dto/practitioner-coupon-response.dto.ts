@@ -36,6 +36,9 @@ export class PractitionerCouponRedemptionItemDto {
   sessionId!: string | null;
 
   @ApiProperty({ nullable: true })
+  sessionCode!: string | null;
+
+  @ApiProperty({ nullable: true })
   paymentId!: string | null;
 
   @ApiProperty()

@@ -6,6 +6,7 @@ export const arAvailabilityCatalog = {
     exceptionUpdated: 'تم تحديث استثناء الإتاحة بنجاح',
     exceptionDeleted: 'تم حذف استثناء الإتاحة بنجاح',
     weeksFetched: 'تم تحميل جدول التوفر بنجاح.',
+    weekDetailsFetched: 'تم تحميل تفاصيل جدول الجلسات بنجاح.',
     weekUpdated: 'تم حفظ التعديلات بنجاح.',
     weekCreated: 'تم إنشاء الجدول بنجاح.',
     weekPublished: 'تم اعتماد الجدول وأصبح متاحاً للحجز.',
@@ -21,6 +22,9 @@ export const arAvailabilityCatalog = {
   errors: {
     practitionerNotFound: 'تعذر العثور على ملف المعالج',
     invalidTimezone: 'المنطقة الزمنية غير صالحة',
+    timezoneRequired: 'حدد منطقتك الزمنية قبل إعداد جدول الجلسات',
+    weekOutsideActiveWindow: 'هذا الأسبوع خارج نطاق الجدولة النشط',
+    invalidLocalTime: 'الوقت المحلي المختار غير صالح للتاريخ {{date}} والساعة {{time}} في {{timezone}}',
     invalidWeeklySlotRange: 'نطاق وقت الإتاحة الأسبوعية غير صالح',
     invalidWeeklySlotDuration:
       'مدة خانة الإتاحة الأسبوعية يجب أن تطابق المدة المختارة',
@@ -38,7 +42,7 @@ export const arAvailabilityCatalog = {
     publicAvailabilityNotFound:
       'تعذر العثور على إتاحة المعالج العامة',
     weekNotFound: 'تعذر العثور على الجدول الأسبوعي',
-    weekNotDraft: 'هذا الجدول ليس مسودة ولا يمكن تعديله بهذه الطريقة',
+    weekNotDraft: 'هذا الجدول منشور بالفعل ولا يمكن نشره مرة أخرى',
     weekNotEditable: 'لا يمكن تعديل هذا الجدول.',
     slotInPast: 'لا يمكن تعديل وقت انتهى بالفعل.',
     slotBooked: 'لا يمكن تعديل هذا الوقت لأنه مرتبط بحجز.',

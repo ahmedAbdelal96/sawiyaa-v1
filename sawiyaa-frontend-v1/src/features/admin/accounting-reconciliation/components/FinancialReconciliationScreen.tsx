@@ -32,6 +32,7 @@ import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { Link } from "@/i18n/navigation";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { formatUtcAuditDateTime } from "@/lib/time-formatting";
+import { formatAdminMoneyForLocale as formatMoney } from "@/features/admin/finance/lib/finance-formatters";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
 import { getReconciliationIssueCopy } from "../issue-code-copy";
 import {
@@ -328,13 +329,15 @@ function formatMoneyValue(locale: string, value: string | null | undefined) {
 }
 
 function getCurrencyDisplay(locale: string, currencyCode: string | null | undefined) {
-  const localized = getLocalizedCurrencyLabel(currencyCode);
-  if (!localized) return null;
+  const normalized = (currencyCode ?? "").trim().toUpperCase();
   if (locale === "ar") {
-    if ((currencyCode ?? "").toUpperCase() === "EGP") return "ج.م";
-    return localized.ar;
+    if (normalized === "EGP") return "EGP";
+    if (normalized === "USD") return "USD";
+    return normalized;
   }
-  return localized.en;
+  if (normalized === "EGP") return "EGP";
+  if (normalized === "USD") return "USD";
+  return normalized;
 }
 
 function getIssueSourceKey(issue: AccountingReconciliationIssueRecord) {
@@ -360,7 +363,6 @@ function formatIssueSourceLabel(issue: AccountingReconciliationIssueRecord, t: R
 function formatIssueAmountSummary(issue: AccountingReconciliationIssueRecord, locale: string, t: ReturnType<typeof useTranslations>) {
   const expected = parseNumericValue(issue.expectedValue);
   const actual = parseNumericValue(issue.actualValue);
-  const currencyDisplay = getCurrencyDisplay(locale, issue.currencyCode);
 
   if (expected === null && actual === null) return t("common.notAvailable");
 
@@ -368,25 +370,15 @@ function formatIssueAmountSummary(issue: AccountingReconciliationIssueRecord, lo
     const difference = actual - expected;
     if (difference === 0) return t("issues.amount.noDifference");
 
-    if (currencyDisplay) {
-      const differenceText = formatCompactNumber(locale, Math.abs(difference));
-      return locale === "ar"
-        ? `${t("issues.amount.difference")} ${differenceText} ${currencyDisplay}`
-        : `${t("issues.amount.difference")} ${currencyDisplay} ${differenceText}`;
-    }
-
-    const expectedText = formatCompactNumber(locale, expected);
-    const actualText = formatCompactNumber(locale, actual);
-    return `${t("issues.amount.expected")} ${expectedText} / ${t("issues.amount.actual")} ${actualText}`;
+    const differenceText = formatMoney(locale, Math.abs(difference), issue.currencyCode);
+    return `${t("issues.amount.difference")} ${differenceText}`;
   }
-
-  if (!currencyDisplay) return t("common.notAvailable");
 
   if (expected !== null) {
-    return `${t("issues.amount.expected")} ${formatCompactNumber(locale, expected)} ${currencyDisplay}`;
+    return `${t("issues.amount.expected")} ${formatMoney(locale, expected, issue.currencyCode)}`;
   }
 
-  return `${t("issues.amount.actual")} ${formatCompactNumber(locale, actual ?? 0)} ${currencyDisplay}`;
+  return `${t("issues.amount.actual")} ${formatMoney(locale, actual ?? 0, issue.currencyCode)}`;
 }
 
 async function copyTextToClipboard(value: string) {

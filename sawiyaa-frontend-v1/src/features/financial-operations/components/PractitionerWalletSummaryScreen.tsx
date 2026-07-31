@@ -1,30 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, BadgeDollarSign, Clock3, Layers, ShieldCheck, Wallet, WalletCards } from "lucide-react";
+import { ArrowUpRight, BadgeDollarSign, Clock, Layers, ShieldCheck, Wallet, AlertTriangle, RefreshCw } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import { buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam } from "@/components/ui/data-table";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import {
-  PractitionerPageHeader,
-  PractitionerStatsGrid,
-  PractitionerStatCard,
-  PractitionerFilterCard,
-  PractitionerTableSection,
-  PractitionerSectionCard,
-  PractitionerEmptyState,
+  SurfaceCard,
+  SurfaceHeader,
+} from "@/components/shared/SurfaceShell";
+import {
+  PractitionerFinancialStatCard,
 } from "@/components/shared/practitioner/PractitionerWorkspaceKit";
+import { EmptyState } from "@/components/shared/EmptyStates";
+import { Skeleton, TableSkeleton } from "@/components/shared/LoadingStates";
+import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import {
   formatPractitionerOrViewerDateTime,
   formatPractitionerOrViewerDate,
   formatTimeZoneLabel,
 } from "@/lib/time-formatting";
+import { formatMoney } from "@/lib/finance-format";
 import { getPractitionerSettlementsErrorKey, getPractitionerWalletErrorKey } from "../lib/financial-operations-errors";
 import { usePractitionerSettlements, usePractitionerWallet } from "../hooks/use-financial-operations";
 import type {
@@ -43,17 +45,19 @@ const STATUS_FILTERS: Array<PractitionerSettlementStatus | "ALL"> = [
   "CANCELLED",
 ];
 
-function formatMoney(value: string, currency: string, locale: string) {
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) return `${value} ${currency}`;
-
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(numeric);
-}
+const STATUS_TONES: Record<PractitionerSettlementStatus, "neutral" | "primary" | "warning" | "success" | "danger"> = {
+  DRAFT: "neutral",
+  UNDER_REVIEW: "warning",
+  APPROVED: "primary",
+  REJECTED: "danger",
+  CREDITED: "success",
+  PAID_OUT: "success",
+  READY: "primary",
+  PROCESSING: "warning",
+  PAID: "success",
+  FAILED: "danger",
+  CANCELLED: "neutral",
+};
 
 function formatDateTime(value: string | null, locale: string, timeZone: string | null = null) {
   if (!value) return "-";
@@ -71,22 +75,74 @@ function formatDate(value: string | null, locale: string, timeZone: string | nul
   });
 }
 
-function shortId(value: string) {
-  if (value.length <= 12) return value;
-  return `${value.slice(0, 8)}...${value.slice(-4)}`;
+function formatMoneyWithSmallCurrency(
+  locale: string,
+  amount: string | number,
+  currencyCode?: string | null,
+  valueClassName = "text-2xl sm:text-3xl font-bold"
+) {
+  const numeric = typeof amount === "string" ? Number(amount) : amount;
+  if (!Number.isFinite(numeric)) return String(amount);
+
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+
+  const currency = currencyCode?.trim().toUpperCase() || "EGP";
+  const isArabic = locale.toLowerCase().startsWith("ar");
+  const currencyLabel = isArabic
+    ? (currency === "USD" ? "دولار" : "جنيه")
+    : (currency === "USD" ? "USD" : "EGP");
+
+  return (
+    <span className="font-semibold text-text-primary dark:text-white/95">
+      <span className={valueClassName}>{formattedAmount}</span>
+      <span className="text-xs font-normal text-text-secondary dark:text-white/50 ms-1 select-none">
+        {currencyLabel}
+      </span>
+    </span>
+  );
 }
 
-const STATUS_STYLES: Record<PractitionerSettlementStatus, string> = {
-  DRAFT: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
-  READY: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
-  PROCESSING: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  PAID: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  FAILED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  CANCELLED: "bg-neutral-100 text-neutral-600 dark:bg-white/10 dark:text-white/60",
-};
+function WalletLoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header Skeleton */}
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-96" />
+      </div>
 
-function getStatusTone(status: PractitionerSettlementStatus) {
-  return STATUS_STYLES[status] ?? "app-chip";
+      {/* Stats Grid Skeleton */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-pulse">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={index}
+            className="relative overflow-hidden rounded-[22px] border border-border-light bg-surface-secondary px-4 py-5 shadow-sm sm:px-5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+              <Skeleton variant="circular" className="h-10 w-10 bg-surface-tertiary" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters Skeleton */}
+      <div className="rounded-xl border border-border-light bg-surface-secondary p-4 shadow-sm animate-pulse">
+        <Skeleton className="h-10 w-64" />
+      </div>
+
+      {/* Table Skeleton */}
+      <div className="rounded-xl border border-border-light bg-surface-secondary p-4 shadow-sm animate-pulse">
+        <TableSkeleton rows={5} columns={5} />
+      </div>
+    </div>
+  );
 }
 
 export default function PractitionerWalletSummaryScreen() {
@@ -139,16 +195,15 @@ export default function PractitionerWalletSummaryScreen() {
 
     return {
       currency: wallet.currency,
-      available: formatMoney(wallet.availableBalance, wallet.currency, locale),
-      pending: formatMoney(wallet.pendingBalance, wallet.currency, locale),
-      reserved: formatMoney(wallet.reservedBalance, wallet.currency, locale),
-      totalEarned: formatMoney(wallet.totalEarned, wallet.currency, locale),
-      lifetimePaidOut: formatMoney(wallet.lifetimePaidOut, wallet.currency, locale),
-      manualRecoveryAmount: formatMoney(wallet.manualRecoveryAmount, wallet.currency, locale),
-      lastLedgerEntryAt: formatDateTime(wallet.lastLedgerEntryAt, locale),
-      updatedAt: formatDateTime(wallet.updatedAt, locale),
+      available: formatMoneyWithSmallCurrency(locale, wallet.availableBalance, wallet.currency),
+      pending: formatMoneyWithSmallCurrency(locale, wallet.pendingBalance, wallet.currency),
+      reserved: formatMoneyWithSmallCurrency(locale, wallet.reservedBalance, wallet.currency),
+      totalEarned: formatMoneyWithSmallCurrency(locale, wallet.totalEarned, wallet.currency),
+      lifetimePaidOut: formatMoneyWithSmallCurrency(locale, wallet.lifetimePaidOut, wallet.currency),
+      lastLedgerEntryAt: formatDateTime(wallet.lastLedgerEntryAt, locale, practitionerTimeZone),
+      updatedAt: formatDateTime(wallet.updatedAt, locale, practitionerTimeZone),
     };
-  }, [locale, wallet]);
+  }, [locale, wallet, practitionerTimeZone]);
 
   const settlementColumns = useMemo<ColumnDef<PractitionerSettlementItem>[]>(
     () => [
@@ -157,33 +212,30 @@ export default function PractitionerWalletSummaryScreen() {
         header: locale.startsWith("ar") ? "الحالة" : "Status",
         accessor: (row) => row.status,
         cell: (row) => (
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusTone(row.status)}`}>
+          <AdminStatusBadge tone={STATUS_TONES[row.status]}>
             {t(`settlements.statuses.${row.status}` as Parameters<typeof t>[0])}
-          </span>
+          </AdminStatusBadge>
         ),
       },
       {
-        id: "amountNet",
+        id: "amountAdded",
         header: locale.startsWith("ar") ? "الصافي" : "Net",
-        accessor: (row) => Number(row.amountNet),
-        cell: (row) => (
-          <span className="font-semibold text-text-primary dark:text-white/95">
-            {formatMoney(row.amountNet, row.currency, locale)}
-          </span>
-        ),
+        accessor: (row) => Number(row.amountAdded),
+        cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountAdded, row.currency, "text-sm font-semibold"),
       },
+      /*
       {
         id: "amountGross",
         header: locale.startsWith("ar") ? "الإجمالي" : "Gross",
         accessor: (row) => Number(row.amountGross),
-        cell: (row) => <span className="text-sm text-text-secondary">{formatMoney(row.amountGross, row.currency, locale)}</span>,
+        cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountGross, row.currency, "text-sm font-normal text-text-secondary"),
         hideOnMobile: true,
       },
       {
         id: "amountAdjustments",
         header: locale.startsWith("ar") ? "التعديلات" : "Adjustments",
         accessor: (row) => Number(row.amountAdjustments),
-        cell: (row) => <span className="text-sm text-text-secondary">{formatMoney(row.amountAdjustments, row.currency, locale)}</span>,
+        cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountAdjustments, row.currency, "text-sm font-normal text-text-secondary"),
         hideOnMobile: true,
       },
       {
@@ -207,50 +259,57 @@ export default function PractitionerWalletSummaryScreen() {
       },
       {
         id: "createdAt",
-        header: locale.startsWith("ar") ? "أُنشئت" : "Created",
+        header: locale.startsWith("ar") ? "تاريخ الإنشاء" : "Created",
         accessor: (row) => new Date(row.createdAt).getTime(),
-        cell: (row) => formatDate(row.createdAt, locale),
+        cell: (row) => formatDate(row.createdAt, locale, practitionerTimeZone),
       },
       {
         id: "paidAt",
-        header: locale.startsWith("ar") ? "صُرفت" : "Paid",
+        header: locale.startsWith("ar") ? "تاريخ الصرف" : "Paid At",
         accessor: (row) => (row.paidAt ? new Date(row.paidAt).getTime() : 0),
-        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale)}</span>,
+        cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale, practitionerTimeZone)}</span>,
+        hideOnMobile: true,
+      },
+      */
+      {
+        id: "date",
+        header: locale.startsWith("ar") ? "Date" : "Date",
+        accessor: (row) => row.date ? new Date(row.date).getTime() : 0,
+        cell: (row) => formatDate(row.date, locale, practitionerTimeZone),
+      },
+      {
+        id: "payoutStatus",
+        header: locale.startsWith("ar") ? "Payout" : "Payout",
+        accessor: (row) => row.payoutStatus,
+        cell: (row) => <span className="text-xs text-text-secondary">{row.payoutStatus}</span>,
         hideOnMobile: true,
       },
     ],
-    [locale, t],
+    [locale, t, practitionerTimeZone],
   );
 
   if (walletQuery.isLoading) {
-    return (
-      <div className="space-y-4">
-        <PractitionerSectionCard>
-          <p className="text-sm text-text-muted">{t("summary.note")}</p>
-        </PractitionerSectionCard>
-        <PractitionerSectionCard>
-          <p className="text-sm text-text-muted">{t("settlements.countLoading")}</p>
-        </PractitionerSectionCard>
-      </div>
-    );
+    return <WalletLoadingSkeleton />;
   }
 
   if (walletQuery.isError) {
     return (
-      <div className="space-y-4">
-        <PractitionerSectionCard>
-          <h1 className="text-xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
-            {t("summary.title")}
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-text-secondary">{t(getPractitionerWalletErrorKey(walletQuery.error))}</p>
-        </PractitionerSectionCard>
-      </div>
+      <EmptyState
+        icon={<AlertTriangle className="h-10 w-10 text-danger" />}
+        title={t("states.error.heading")}
+        description={t(getPractitionerWalletErrorKey(walletQuery.error))}
+        action={{
+          label: t("states.error.retry"),
+          onClick: () => walletQuery.refetch(),
+          icon: <RefreshCw size={14} />,
+        }}
+      />
     );
   }
 
   if (!summary) {
     return (
-      <PractitionerEmptyState
+      <EmptyState
         title={t("states.empty.heading")}
         description={t("states.empty.note")}
       />
@@ -258,109 +317,102 @@ export default function PractitionerWalletSummaryScreen() {
   }
 
   return (
-    <div className="space-y-4">
-      <PractitionerPageHeader
-        eyebrow={t("summary.eyebrow")}
+    <div className="space-y-6">
+      <SurfaceHeader
         title={t("summary.title")}
         description={t("summary.note")}
-        actions={
+        meta={
           <div className="flex flex-wrap items-center gap-2">
             {practitionerTimeZoneLabel ? (
-              <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+              <span className="inline-flex items-center rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/5">
                 {t("summary.timezoneLabel")}: {practitionerTimeZoneLabel}
               </span>
             ) : null}
-            <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            <span className="inline-flex items-center rounded-full bg-surface-tertiary px-3 py-1 text-xs font-semibold text-text-secondary dark:bg-white/5">
               {t("summary.currency", { currency: summary.currency })}
             </span>
           </div>
         }
       />
 
-      <PractitionerStatsGrid cols={6}>
-        <PractitionerStatCard
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <PractitionerFinancialStatCard
           label={t("summary.cards.available")}
           value={summary.available}
           tone="primary"
-          metricKey="wallet.available"
+          icon={<Wallet className="h-4 w-4" />}
         />
-        <PractitionerStatCard
+        <PractitionerFinancialStatCard
           label={t("summary.cards.pending")}
           value={summary.pending}
           tone="warning"
-          metricKey="wallet.pending"
+          icon={<Clock className="h-4 w-4" />}
         />
-        <PractitionerStatCard
+        <PractitionerFinancialStatCard
           label={t("summary.cards.reserved")}
           value={summary.reserved}
           tone="neutral"
-          metricKey="wallet.reserved"
+          icon={<ShieldCheck className="h-4 w-4" />}
         />
-        <PractitionerStatCard
-          label={t("summary.manualRecoveryLabel")}
-          value={summary.manualRecoveryAmount}
-          tone="warning"
-          metricKey="wallet.manualRecoveryAmount"
-          hint={t("summary.manualRecoveryNote")}
-        />
-        <PractitionerStatCard
+        <PractitionerFinancialStatCard
           label={t("summary.cards.totalEarned")}
           value={summary.totalEarned}
           tone="neutral"
-          metricKey="wallet.totalEarned"
+          icon={<BadgeDollarSign className="h-4 w-4" />}
         />
-        <PractitionerStatCard
+        <PractitionerFinancialStatCard
           label={t("summary.cards.lifetimePaidOut")}
           value={summary.lifetimePaidOut}
           tone="success"
-          metricKey="wallet.lifetimePaidOut"
+          icon={<ArrowUpRight className="h-4 w-4" />}
         />
-      </PractitionerStatsGrid>
+      </div>
 
-      <PractitionerFilterCard>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <label className="block min-w-[220px]">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("settlements.filters.allStatuses")}
-            </span>
-            <select
-              value={settlementStatus}
-              onChange={(event) =>
-                updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
-              }
-              className="app-control w-full px-4 py-3"
-            >
-              {STATUS_FILTERS.map((status) => (
-                <option key={status} value={status}>
-                  {status === "ALL"
-                    ? t("settlements.filters.allStatuses")
-                    : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <FilterClearButton
-            disabled={!hasSettlementFilters && settlementPage === 1}
-            onClick={() =>
-              updateListQuery({
-                status: null,
-                page: 1,
-              })
+      <SurfaceCard variant="compact" className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-semibold text-text-secondary">
+            {locale === "ar" ? "تصفية حسب الحالة:" : "Filter by status:"}
+          </span>
+          <select
+            value={settlementStatus}
+            onChange={(event) =>
+              updateListQuery({ status: event.target.value === "ALL" ? null : event.target.value, page: 1 })
             }
-          />
+            className="app-control min-w-[180px] px-3 py-1.5 text-sm"
+          >
+            {STATUS_FILTERS.map((status) => (
+              <option key={status} value={status}>
+                {status === "ALL"
+                  ? t("settlements.filters.allStatuses")
+                  : t(`settlements.statuses.${status}` as Parameters<typeof t>[0])}
+              </option>
+            ))}
+          </select>
         </div>
-      </PractitionerFilterCard>
 
-      <PractitionerTableSection
-        title={t("settlements.eyebrow")}
-        subtitle={t("settlements.note")}
-        flushContent
-      >
+        <FilterClearButton
+          disabled={!hasSettlementFilters && settlementPage === 1}
+          onClick={() =>
+            updateListQuery({
+              status: null,
+              page: 1,
+            })
+          }
+        />
+      </SurfaceCard>
+
+      <SurfaceCard variant="section" className="overflow-hidden">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {t("settlements.eyebrow")}
+          </h2>
+          <p className="mt-1 text-xs text-text-muted">{t("settlements.note")}</p>
+        </div>
+
         <DataTable
           data={settlements?.items ?? []}
           columns={settlementColumns}
-          getRowId={(row) => row.id}
+          getRowId={(row) => row.sessionId ?? `${row.date ?? "undated"}-${row.amountAdded}-${row.currency}-${row.status}`}
           loading={settlementsQuery.isLoading}
           error={settlementsQuery.isError ? t(getPractitionerSettlementsErrorKey(settlementsQuery.error)) : null}
           errorState={{
@@ -395,28 +447,36 @@ export default function PractitionerWalletSummaryScreen() {
           caption={t("settlements.title")}
           size="sm"
         />
-      </PractitionerTableSection>
+      </SurfaceCard>
 
-      <PractitionerSectionCard>
-        <div className="flex items-center gap-2 text-sm font-semibold text-text-primary dark:text-white/95">
-          <WalletCards className="h-4 w-4 text-primary" />
-          {t("summary.detailsHeading")}
-        </div>
-        <div className="mt-4">
-          <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-            <span className="text-xs font-medium text-text-muted">{t("summary.details.lastLedgerEntryAt")}</span>
-            <span className="text-sm text-text-primary dark:text-white/90">
-              {formatDateTime(wallet?.lastLedgerEntryAt ?? null, locale, practitionerTimeZone)}
+      <SurfaceCard variant="subtle" className="mt-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-text-muted">{t("summary.details.lastLedgerEntryAt")}</span>
+            <span className="text-text-primary dark:text-white/90">
+              {summary.lastLedgerEntryAt}
             </span>
           </div>
-          <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-            <span className="text-xs font-medium text-text-muted">{t("summary.details.updatedAt")}</span>
-            <span className="text-sm text-text-primary dark:text-white/90">
-              {formatDateTime(wallet?.updatedAt ?? null, locale, practitionerTimeZone)}
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-text-muted">{t("summary.details.updatedAt")}</span>
+            <span className="text-text-primary dark:text-white/90">
+              {summary.updatedAt}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-text-muted">{t("summary.timezoneLabel")}</span>
+            <span className="text-text-primary dark:text-white/90">
+              {practitionerTimeZoneLabel || "-"}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-text-muted">{locale === "ar" ? "العملة" : "Currency"}</span>
+            <span className="text-text-primary dark:text-white/90 font-medium">
+              {summary.currency}
             </span>
           </div>
         </div>
-      </PractitionerSectionCard>
+      </SurfaceCard>
     </div>
   );
 }

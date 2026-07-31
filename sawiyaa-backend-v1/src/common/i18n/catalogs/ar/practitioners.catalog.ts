@@ -7,6 +7,7 @@ export const arPractitionersCatalog = {
     specialtiesFetched: 'تم جلب تخصصات الممارس بنجاح',
     specialtiesUpdated: 'تم تحديث تخصصات الممارس بنجاح',
     credentialUploaded: 'تم رفع بيانات مؤهل الممارس بنجاح',
+    credentialDeleted: 'تم حذف مستند الممارس بنجاح',
     credentialsFetched: 'تم جلب مؤهلات الممارس بنجاح',
     applicationSubmitted: 'تم إرسال طلب الممارس بنجاح',
     applicationStatusFetched: 'تم جلب حالة طلب الممارس بنجاح',
@@ -15,6 +16,8 @@ export const arPractitionersCatalog = {
     publicDetailsFetched: 'تم جلب ملف الممارس العام بنجاح',
   },
   errors: {
+    professionalTitleRequired: 'اختر اللقب المهني',
+    invalidProfessionalTitle: 'اختر لقبًا مهنيًا من القائمة المعتمدة',
     payoutAccountHolderRequired: '\u0623\u062f\u062e\u0644 \u0627\u0633\u0645 \u0635\u0627\u062d\u0628 \u0627\u0644\u062d\u0633\u0627\u0628 \u0623\u0648 \u0635\u0627\u062d\u0628 \u0627\u0644\u0645\u062d\u0641\u0638\u0629',
     payoutAccountHolderInvalid: '\u0623\u062f\u062e\u0644 \u0627\u0633\u0645\u0627\u064b \u0635\u0627\u0644\u062d\u0627\u064b \u0644\u0635\u0627\u062d\u0628 \u0627\u0644\u062d\u0633\u0627\u0628',
     payoutCountryRequired: '\u0627\u062e\u062a\u0631 \u062f\u0648\u0644\u0629 \u0648\u0633\u064a\u0644\u0629 \u0627\u0644\u0635\u0631\u0641',
@@ -36,8 +39,9 @@ export const arPractitionersCatalog = {
     applicationNotEligible:
       'لا يمكن إرسال طلب الممارس قبل استكمال متطلبات الجاهزية',
     applicationAlreadySubmitted: 'طلب الممارس مُرسل بالفعل أو قيد المراجعة',
-    credentialAlreadyExists: 'ملف المؤهل مسجل مسبقًا لنفس النوع ومرجع الملف',
+    credentialAlreadyExists: 'تم رفع مستند من هذا النوع بالفعل',
     credentialFileRequired: 'يرجى اختيار ملف مستند قبل الرفع',
+    credentialsLocked: 'لا يمكن تعديل المستندات بعد إرسال الطلب',
     credentialInvalidType:
       'نوع الملف غير مدعوم. استخدم PDF أو JPG أو PNG أو WEBP',
     credentialFileTooLarge: 'حجم ملف المستند أكبر من الحد المسموح (5MB)',

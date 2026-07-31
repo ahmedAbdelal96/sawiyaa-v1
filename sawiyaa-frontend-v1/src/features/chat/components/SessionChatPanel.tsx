@@ -14,6 +14,7 @@ import {
   ChatComposer,
 } from "@/components/shared/chat/ChatKit";
 import httpClient from "@/lib/api/http-client";
+import { toAppError } from "@/lib/api/errors";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import {
   usePatientSession,
@@ -44,6 +45,8 @@ import type {
   GeneralChatParticipantIdentity,
   GeneralChatMessageItem,
 } from "../types/general-chat.types";
+import ChatModerationReportAction from "@/features/moderation/components/ChatModerationReportAction";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 
 type Props = {
   sessionId: string;
@@ -89,11 +92,29 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
   const sessionChatAvailability =
     conversationIdentity?.chatAvailability ?? session?.chatAvailability ?? null;
 
+  const errorObj = openMutation.error ? toAppError(openMutation.error) : null;
+  const isForbidden = errorObj?.status === 403 || errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
+  const openErrorTitle = isForbidden
+    ? (locale === "ar" ? "لا يمكنك الوصول إلى محادثة هذه الجلسة." : "You do not have access to this session's conversation.")
+    : (locale === "ar" ? "تعذر فتح محادثة الجلسة الآن." : "Could not open session chat right now.");
+  const openErrorNote = isForbidden
+    ? ""
+    : (locale === "ar" ? "حاول مرة أخرى." : "Please try again.");
+
+  const hasCalledOpen = useRef(false);
+
+  useEffect(() => {
+    setConversationId(null);
+    setConversationIdentity(null);
+    hasCalledOpen.current = false;
+  }, [sessionId]);
+
   useEffect(() => {
     if (!chatAllowed) return;
     if (conversationId) return;
-    if (openMutation.isPending) return;
+    if (hasCalledOpen.current) return;
 
+    hasCalledOpen.current = true;
     openMutation
       .mutateAsync()
       .then((data) => {
@@ -149,7 +170,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
 
   useEffect(() => {
     if (!endRef.current) return;
-    endRef.current.scrollIntoView({ block: "end" });
+    endRef.current.scrollIntoView?.({ block: "end" });
   }, [conversationId, ordered.length]);
 
   const counterpartName = useMemo(() => {
@@ -334,6 +355,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                 <p className="text-xs text-text-muted dark:text-slate-400 font-medium">
                   {getConversationSubtitle(conversationIdentity, myUserId) || sessionTitle}
                 </p>
+                <SessionCodeReference sessionId={sessionId} sessionCode={session?.sessionCode} showLabel />
                 {session?.scheduledStartAt && (
                   <p className="text-[10px] text-text-muted opacity-75 font-semibold font-mono tracking-wide">
                     {locale.startsWith("ar") ? "الموعد: " : "Scheduled: "}
@@ -351,8 +373,9 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
             online={false}
             actions={
               <div className="flex items-center gap-2">
+                <ChatModerationReportAction targetType="GENERAL_CHAT_CONVERSATION" targetId={conversationId} />
                 <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
-                  {session?.presentationStatus.replaceAll("_", " ")}
+                  {session?.presentationStatus?.replaceAll("_", " ")}
                 </span>
               </div>
             }
@@ -368,10 +391,8 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           ) : showReadOnlyNotice ? (
             <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-medium">
               <p className="font-bold text-text-primary dark:text-white/90">
-                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
+                {locale.startsWith("ar") ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة." : "Messaging is no longer available in this conversation. You can review the previous messages."}
               </p>
-              <p className="mt-1">{t("detail.chat.states.readOnly.review")}</p>
-              <p className="mt-1">{t("detail.chat.states.readOnly.sendBlocked")}</p>
             </div>
           ) : showComposer ? (
             <ChatComposer
@@ -388,14 +409,22 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           ) : null
         }
       >
-        {/* Scrollable messages area */}
-        {openMutation.isPending || messagesQuery.isLoading ? (
+        {openMutation.isError || messagesQuery.isError ? (
+          <div className="p-4 text-center">
+            <p className="text-xs text-rose-500 mb-2">
+              {openMutation.isError
+                ? openErrorTitle
+                : t("detail.chat.states.messagesError.heading")}
+            </p>
+            {!isForbidden && (
+              <p className="text-xs text-text-secondary">
+                {openMutation.isError ? openErrorNote : t("detail.chat.states.messagesError.note")}
+              </p>
+            )}
+          </div>
+        ) : openMutation.isPending || messagesQuery.isLoading || !conversationId ? (
           <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse font-semibold">
             {locale === "ar" ? "جاري التحميل..." : "Loading..."}
-          </div>
-        ) : openMutation.isError || messagesQuery.isError ? (
-          <div className="p-4 text-center">
-            <p className="text-xs text-rose-500 mb-2">{t("detail.chat.states.messagesError.heading")}</p>
           </div>
         ) : ordered.length === 0 ? (
           <div className="p-8 text-center text-xs text-text-muted font-medium">
@@ -407,6 +436,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
             return (
               <ChatMessageBubble
                 key={entry.messageId}
+                onReport={<ChatModerationReportAction compact targetType="GENERAL_CHAT_MESSAGE" targetId={entry.messageId} />}
                 message={{
                   id: entry.messageId,
                   body: entry.contentText || "",
@@ -497,6 +527,10 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                 : t("detail.chat.actions.close")}
             </button>
           ) : null}
+          <ChatModerationReportAction
+            targetType="GENERAL_CHAT_CONVERSATION"
+            targetId={conversationId}
+          />
         </div>
       </section>
 
@@ -516,19 +550,22 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
         </div>
 
         <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:px-4">
-          {openMutation.isPending || messagesQuery.isLoading ? (
-            <ListStateSkeleton items={6} heightClass="h-20" />
-          ) : openMutation.isError ? (
+          {openMutation.isError ? (
             <StateCard
-              title={t("detail.chat.states.openError.heading")}
-              note={t("detail.chat.states.openError.note")}
-              action={{
+              title={openErrorTitle}
+              note={openErrorNote}
+              action={isForbidden ? undefined : {
                 label: t("detail.chat.states.openError.retry"),
-                onClick: () => openMutation.reset(),
+                onClick: () => {
+                  hasCalledOpen.current = false;
+                  openMutation.reset();
+                },
               }}
               centered={false}
               className="rounded-[24px] p-5"
             />
+          ) : openMutation.isPending || messagesQuery.isLoading || !conversationId ? (
+            <ListStateSkeleton items={6} heightClass="h-20" />
           ) : messagesQuery.isError ? (
             <StateCard
               title={t("detail.chat.states.messagesError.heading")}
@@ -657,6 +694,11 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                         ) : null}
                         {formatTime(entry.sentAt, locale)}
                       </p>
+                      <ChatModerationReportAction
+                        compact
+                        targetType="GENERAL_CHAT_MESSAGE"
+                        targetId={entry.messageId}
+                      />
                     </div>
                   </div>
                 </div>
@@ -686,10 +728,8 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           ) : showReadOnlyNotice ? (
             <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
               <p className="font-semibold text-text-primary dark:text-white/90">
-                {locale.startsWith("ar") ? "هذه المحادثة للقراءة فقط." : "This conversation is read-only."}
+                {locale.startsWith("ar") ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة." : "Messaging is no longer available in this conversation. You can review the previous messages."}
               </p>
-              <p className="mt-1">{t("detail.chat.states.readOnly.review")}</p>
-              <p className="mt-1">{t("detail.chat.states.readOnly.sendBlocked")}</p>
             </div>
           ) : showComposer ? (
             <form onSubmit={handleSend} className="space-y-2">

@@ -78,13 +78,13 @@ describe('PractitionerApplicationCompletionService', () => {
       specialtyCount: 1,
       primarySpecialtyCategoryId: '11111111-1111-4111-8111-111111111111',
       credentialSummary: {
-        totalCredentials: 2,
-        approvedCount: 2,
+        totalCredentials: 3,
+        approvedCount: 3,
         pendingCount: 0,
         rejectedCount: 0,
         expiredCount: 0,
       },
-      credentialTypes: ['PASSPORT' as const, 'DEGREE' as const],
+      credentialTypes: ['PASSPORT' as const, 'DEGREE' as const, 'MEMBERSHIP' as const],
       payoutDestination: {
         methodType: PractitionerPayoutMethodType.BANK_ACCOUNT,
         accountHolderName: 'Dr. Nour',

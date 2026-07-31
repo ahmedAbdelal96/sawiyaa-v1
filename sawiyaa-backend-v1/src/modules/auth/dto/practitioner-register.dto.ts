@@ -45,16 +45,18 @@ export class PractitionerRegisterDto {
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'EG' })
+  @ApiPropertyOptional({ example: 'EG' })
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(3)
-  phoneCountryCode!: string;
+  phoneCountryCode?: string;
 
-  @ApiProperty({ example: '01012345678' })
+  @ApiPropertyOptional({ example: '01012345678' })
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  phone!: string;
+  phone?: string;
 
   @ApiProperty({ minLength: 8 })
   @IsString()

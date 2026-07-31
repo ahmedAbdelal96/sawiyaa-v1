@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import SignInForm, { type SignInMode } from "@/components/auth/SignInForm";
+import { redirect } from "next/navigation";
+import { getSignInRouteForRole } from "@/config/route-access";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -18,12 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SignInPage({ params, searchParams }: Props) {
   const { locale } = await params;
-  const { mode } = await searchParams;
+  const { mode, callbackUrl } = await searchParams;
+  const role = mode === "practitioner" ? "PRACTITIONER" : mode === "admin" ? "ADMIN" : "PATIENT";
+  const query = callbackUrl
+    ? `?${new URLSearchParams({ callbackUrl }).toString()}`
+    : "";
   setRequestLocale(locale);
-
-  const signInMode = mode === "patient" || mode === "practitioner" || mode === "admin"
-    ? (mode as SignInMode)
-    : "patient";
-
-  return <SignInForm mode={signInMode} />;
+  redirect(`/${locale}${getSignInRouteForRole(role)}${query}`);
 }

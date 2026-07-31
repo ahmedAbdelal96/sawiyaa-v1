@@ -130,6 +130,7 @@ export interface ListPublicPractitionersFilters {
   search?: string;
   specialtySlug?: string;
   language?: string;
+  languageCodes?: string[];
   country?: string;
   practitionerKind?: "doctor" | "therapist";
   gender?: "male" | "female";

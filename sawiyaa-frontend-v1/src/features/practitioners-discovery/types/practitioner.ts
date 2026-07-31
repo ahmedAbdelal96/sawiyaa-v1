@@ -1,4 +1,4 @@
-import { SUPPORTED_COUNTRY_CODES } from "@/constants/reference-data";
+import { SUPPORTED_COUNTRY_CODES, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
 
 export type SpecialtyId =
   | "anxiety"
@@ -10,7 +10,7 @@ export type SpecialtyId =
   | "psychiatry"
   | "ocd";
 
-export type LanguageCode = "ar" | "en" | "fr";
+export type LanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 
 export type CountryCode = (typeof SUPPORTED_COUNTRY_CODES)[number];
 
@@ -138,6 +138,7 @@ export type PractitionerQueryParams = {
   specialtySlug?: string;
   specialtyCategorySlug?: string;
   language?: string;
+  languageCodes?: string[];
   country?: string;
   practitionerKind?: "doctor" | "therapist";
   gender?: "male" | "female";
@@ -168,5 +169,5 @@ export type PractitionerPagination = {
   totalPages: number;
 };
 
-export const LANGUAGE_CODES: LanguageCode[] = ["ar", "en", "fr"];
+export const LANGUAGE_CODES: LanguageCode[] = [...SUPPORTED_LANGUAGE_CODES];
 export const COUNTRY_CODES: CountryCode[] = [...SUPPORTED_COUNTRY_CODES];

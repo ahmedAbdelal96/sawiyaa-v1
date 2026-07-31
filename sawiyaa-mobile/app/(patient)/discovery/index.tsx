@@ -26,6 +26,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ListPublicPractitionersFilters } from "../../../src/features/patient/discovery/types";
 import { useTranslation } from "react-i18next";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
+import { normalizeSupportedLanguageCodes } from "../../../src/features/languages/reference-data";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -98,6 +99,9 @@ export default function DiscoveryListScreen() {
       search: flatParams.search || undefined,
       specialtySlug: flatParams.specialtySlug || undefined,
       language: flatParams.language || undefined,
+      languageCodes: normalizeSupportedLanguageCodes(
+        (flatParams.languageCodes || "").split(","),
+      ),
       country: flatParams.country || undefined,
       practitionerKind: parsePractitionerKind(flatParams.practitionerKind),
       gender: (flatParams.gender as "male" | "female") || undefined,
@@ -169,6 +173,7 @@ export default function DiscoveryListScreen() {
       "search",
       "specialtySlug",
       "language",
+      "languageCodes",
       "country",
       "practitionerKind",
       "gender",

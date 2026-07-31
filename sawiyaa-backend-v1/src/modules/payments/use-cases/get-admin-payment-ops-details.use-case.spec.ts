@@ -82,13 +82,19 @@ describe('GetAdminPaymentOpsDetailsUseCase', () => {
         .fn()
         .mockReturnValue({ payment: { id: 'payment_1' } }),
     };
+    const prisma = {
+      practitionerSettlement: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
 
     const useCase = new GetAdminPaymentOpsDetailsUseCase(
       paymentRepository as never,
       paymentMapper as never,
+      prisma as never,
     );
 
-    return { useCase, paymentRepository, paymentMapper };
+    return { useCase, paymentRepository, paymentMapper, prisma };
   }
 
   it('returns payment operational details snapshot', async () => {
@@ -101,7 +107,7 @@ describe('GetAdminPaymentOpsDetailsUseCase', () => {
     );
     expect(setup.paymentMapper.toAdminOpsViewModel).toHaveBeenCalledTimes(1);
     expect(result).toEqual({
-      item: { payment: { id: 'payment_1' } },
+      item: { payment: { id: 'payment_1' }, relatedSettlement: null },
     });
   });
 });

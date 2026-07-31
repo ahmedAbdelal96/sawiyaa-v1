@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import {
   CredentialType,
@@ -20,6 +21,8 @@ import { UserPhoneRepository } from '../repositories/user-phone.repository';
 import { isUserEmailUniqueConstraintError } from '../utils/is-user-email-unique-constraint-error';
 import { isUserPhoneUniqueConstraintError } from '../utils/is-user-phone-unique-constraint-error';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
+import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
+import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
 
 /**
  * Practitioner registration creates only the auth/account baseline.
@@ -27,6 +30,7 @@ import { PhoneNumberValidationService } from '@common/validation/phone-number-va
  */
 @Injectable()
 export class RegisterPractitionerAccountUseCase {
+  private readonly logger = new Logger(RegisterPractitionerAccountUseCase.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly userRepository: UserRepository,
@@ -36,13 +40,16 @@ export class RegisterPractitionerAccountUseCase {
     private readonly twoFactorSettingRepository: TwoFactorSettingRepository,
     private readonly hashPasswordUseCase: HashPasswordUseCase,
     private readonly phoneNumberValidationService: PhoneNumberValidationService,
+    private readonly practitionerSpecialtyIntegrityService: PractitionerSpecialtyIntegrityService,
   ) {}
 
   async execute(input: {
     email: string;
-    phone: string;
-    phoneCountryCode: string;
+    phone?: string | null;
+    phoneCountryCode?: string | null;
     password: string;
+    passwordHash?: string;
+    phoneStatusOverride?: 'NOT_PROVIDED' | 'NOT_SAVED_INVALID' | 'SAVED';
     displayName?: string | null;
     practitionerType?: PractitionerType;
     professionalTitle?: string;
@@ -58,10 +65,20 @@ export class RegisterPractitionerAccountUseCase {
     };
   }) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const validatedPhone = this.phoneNumberValidationService.assertValid(
-      input.phone,
-      input.phoneCountryCode,
+    const normalizedSpecialtyIds = Array.from(
+      new Set(input.specialtyIds.map((id) => id.trim()).filter(Boolean)),
     );
+    const validatedPhone = input.phone?.trim()
+      ? typeof this.phoneNumberValidationService.validate === 'function'
+        ? this.phoneNumberValidationService.validate(
+            input.phone,
+            input.phoneCountryCode,
+          )
+        : this.phoneNumberValidationService.assertValid(
+            input.phone,
+            input.phoneCountryCode,
+          )
+      : null;
     const existingEmail =
       await this.userEmailRepository.findByEmail(normalizedEmail);
 
@@ -72,7 +89,14 @@ export class RegisterPractitionerAccountUseCase {
       });
     }
 
-    const passwordHash = await this.hashPasswordUseCase.execute(input.password);
+    await this.practitionerSpecialtyIntegrityService.validateSelection({
+      primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
+      specialtyIds: normalizedSpecialtyIds,
+    });
+
+    const passwordHash =
+      input.passwordHash ??
+      (await this.hashPasswordUseCase.execute(input.password));
     const user = await this.prisma
       .$transaction(async (tx) => {
         let countryId: string | undefined;
@@ -113,7 +137,7 @@ export class RegisterPractitionerAccountUseCase {
 
         const specialties = await tx.specialty.findMany({
           where: {
-            id: { in: input.specialtyIds },
+            id: { in: normalizedSpecialtyIds },
             isActive: true,
             categoryId: input.primarySpecialtyCategoryId,
           },
@@ -122,7 +146,7 @@ export class RegisterPractitionerAccountUseCase {
 
         const validatedSpecialtyIds = specialties.map((item) => item.id);
 
-        if (validatedSpecialtyIds.length !== input.specialtyIds.length) {
+        if (validatedSpecialtyIds.length !== normalizedSpecialtyIds.length) {
           throw new BadRequestException({
             messageKey: 'auth.errors.invalidRegistrationSpecialtiesForCategory',
             error: 'INVALID_REGISTRATION_SPECIALTIES_FOR_CATEGORY',
@@ -152,10 +176,15 @@ export class RegisterPractitionerAccountUseCase {
           where: { userId: createdUser.id },
           data: {
             practitionerType: input.practitionerType ?? PractitionerType.OTHER,
-            professionalTitle: input.professionalTitle?.trim() || null,
+            professionalTitle: assertProfessionalTitle(input.professionalTitle),
             bio: input.bio?.trim() || null,
             yearsOfExperience: input.yearsOfExperience ?? null,
             countryId: countryId ?? null,
+            // Keep the selected category on the canonical practitioner profile.
+            // The specialty links below are scoped to this category, and the
+            // application/readiness/public flows use this scalar as their
+            // primary-category source of truth.
+            primarySpecialtyCategoryId: input.primarySpecialtyCategoryId,
           },
         });
 
@@ -213,12 +242,6 @@ export class RegisterPractitionerAccountUseCase {
           true,
           tx,
         );
-        await this.userPhoneRepository.upsertPrimaryPhone(
-          createdUser.id,
-          validatedPhone.e164,
-          false,
-          tx,
-        );
         await this.authIdentityRepository.createPasswordIdentity(
           createdUser.id,
           passwordHash,
@@ -245,6 +268,32 @@ export class RegisterPractitionerAccountUseCase {
         throw error;
       });
 
+    let phoneStatus:
+      | 'NOT_PROVIDED'
+      | 'NOT_SAVED_INVALID'
+      | 'SAVED'
+      | 'NOT_SAVED' = input.phone?.trim()
+      ? 'NOT_SAVED_INVALID'
+      : 'NOT_PROVIDED';
+    if (input.phoneStatusOverride) {
+      phoneStatus = input.phoneStatusOverride;
+    }
+    if (validatedPhone?.valid) {
+      try {
+        await this.userPhoneRepository.upsertPrimaryPhone(
+          user.id,
+          validatedPhone.e164,
+          false,
+          undefined,
+          validatedPhone.countryCode,
+        );
+        phoneStatus = 'SAVED';
+      } catch {
+        phoneStatus = 'NOT_SAVED';
+        this.logger.warn('Optional practitioner phone was not saved');
+      }
+    }
+
     await this.twoFactorSettingRepository.upsertPractitionerDefault(
       user.id,
       OtpChannel.EMAIL,
@@ -253,6 +302,7 @@ export class RegisterPractitionerAccountUseCase {
     return {
       userId: user.id,
       requiresOtpOnLogin: true,
+      phone: { status: phoneStatus },
     };
   }
 }

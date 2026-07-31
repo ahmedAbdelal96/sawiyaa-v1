@@ -2,6 +2,8 @@ import { AppRole } from '@common/enums/app-role.enum';
 import {
   ModerationCaseActionType,
   ModerationCaseStatus,
+  ModerationChatType,
+  ModerationAuditEventType,
   ModerationReportReason,
   ModerationReportTargetType,
   ModerationReporterRole,
@@ -127,7 +129,83 @@ export type ModerationQueueCase = {
 export type ModerationCaseDetail = ModerationQueueCase & {
   note: string | null;
   reportedByUserId: string | null;
+  targetUserId?: string | null;
   reporter: ModerationReporterSnapshot | null;
+  targetUser?: ModerationReporterSnapshot | null;
+  investigation?: ModerationInvestigation | null;
+  history?: ModerationHistory;
+};
+
+export type ModerationInvestigationMessage = {
+  id: string;
+  senderUserId: string | null;
+  senderName: string | null;
+  senderRole: string;
+  body: string;
+  sentAt: Date;
+  attachments: Array<{
+    fileId: string;
+    mimeType: string;
+    originalName: string | null;
+  }>;
+  isReported: boolean;
+};
+
+export type ModerationInvestigation = {
+  chatType: ModerationChatType | null;
+  conversationId: string;
+  reportedMessageId: string | null;
+  conversation: {
+    name: string | null;
+    type: string;
+    sessionId: string | null;
+    sessionCode: string | null;
+    participants: Array<{
+      userId: string;
+      displayName: string | null;
+      role: string;
+    }>;
+  };
+  messages: ModerationInvestigationMessage[];
+};
+
+export type ModerationHistoryItem = {
+  id: string;
+  status: ModerationCaseStatus;
+  reason: ModerationReportReason;
+  targetType: ModerationReportTargetType;
+  createdAt: Date;
+  lastActionAt: Date | null;
+};
+
+export type ModerationHistory = {
+  reporterPreviousReports: ModerationHistoryItem[];
+  targetPreviousReports: ModerationHistoryItem[];
+  targetEnforcements: Array<{
+    id: string;
+    type: string;
+    reason: string | null;
+    note: string | null;
+    createdAt: Date;
+  }>;
+  actions: Array<{
+    id: string;
+    actionType: ModerationCaseActionType;
+    previousStatus: ModerationCaseStatus;
+    nextStatus: ModerationCaseStatus;
+    reason: string | null;
+    note: string | null;
+    actedByUserId: string | null;
+    createdAt: Date;
+  }>;
+  auditEvents: Array<{
+    id: string;
+    eventType: ModerationAuditEventType;
+    actorUserId: string | null;
+    actorRole: ModerationReporterRole;
+    metadataJson: unknown;
+    createdAt: Date;
+  }>;
 };
 
 export type ModerationReporterSnapshot = {

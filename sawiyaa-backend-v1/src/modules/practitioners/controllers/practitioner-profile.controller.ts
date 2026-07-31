@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Patch,
+  Param,
   Post,
   Put,
   UploadedFile,
@@ -70,6 +71,14 @@ import { UploadPractitionerCredentialFileDto } from '../dto/upload-practitioner-
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
 import { UploadPractitionerCredentialFileUseCase } from '../use-cases/upload-practitioner-credential-file.use-case';
+import { DeletePractitionerCredentialUseCase } from '../use-cases/delete-practitioner-credential.use-case';
+import { GetPractitionerCredentialFileUseCase } from '../use-cases/get-practitioner-credential-file.use-case';
+import { GetMyBookingSettingsUseCase } from '../use-cases/get-my-booking-settings.use-case';
+import { UpdateMyBookingSettingsUseCase } from '../use-cases/update-my-booking-settings.use-case';
+import {
+  PractitionerBookingSettingsSuccessResponseDto,
+  UpdatePractitionerBookingSettingsDto,
+} from '../dto/practitioner-booking-settings.dto';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 import { CountryRepository } from '../../patients/repositories/country.repository';
 
@@ -94,6 +103,8 @@ export class PractitionerProfileController {
     private readonly listPractitionerSpecialtiesUseCase: ListPractitionerSpecialtiesUseCase,
     private readonly uploadPractitionerCredentialMetadataUseCase: UploadPractitionerCredentialMetadataUseCase,
     private readonly uploadPractitionerCredentialFileUseCase: UploadPractitionerCredentialFileUseCase,
+    private readonly deletePractitionerCredentialUseCase: DeletePractitionerCredentialUseCase,
+    private readonly getPractitionerCredentialFileUseCase: GetPractitionerCredentialFileUseCase,
     private readonly updatePractitionerAvatarUseCase: UpdatePractitionerAvatarUseCase,
     private readonly removePractitionerAvatarUseCase: RemovePractitionerAvatarUseCase,
     private readonly listPractitionerCredentialsUseCase: ListPractitionerCredentialsUseCase,
@@ -103,6 +114,8 @@ export class PractitionerProfileController {
     private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
     private readonly securityAuditService: SecurityAuditService,
     private readonly countryRepository: CountryRepository,
+    private readonly getMyBookingSettingsUseCase: GetMyBookingSettingsUseCase,
+    private readonly updateMyBookingSettingsUseCase: UpdateMyBookingSettingsUseCase,
   ) {}
 
   /** Returns practitioner product-facing summary for the currently authenticated practitioner. */
@@ -162,6 +175,28 @@ export class PractitionerProfileController {
   })
   listCountries(): ReturnType<CountryRepository['findAllActive']> {
     return this.countryRepository.findAllActive();
+  }
+
+  @Get('me/booking-settings')
+  @ApiOperation({ summary: 'Get current practitioner booking settings' })
+  @ApiResponse({ status: 200, type: PractitionerBookingSettingsSuccessResponseDto })
+  bookingSettings(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getMyBookingSettingsUseCase.execute({ userId: currentUser.id });
+  }
+
+  @Patch('me/booking-settings')
+  @ApiOperation({ summary: 'Update normal booking intake settings' })
+  @ApiBody({ type: UpdatePractitionerBookingSettingsDto })
+  @ApiResponse({ status: 200, type: PractitionerBookingSettingsSuccessResponseDto })
+  updateBookingSettings(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() body: UpdatePractitionerBookingSettingsDto,
+  ) {
+    return this.updateMyBookingSettingsUseCase.execute({
+      userId: currentUser.id,
+      currentUser,
+      acceptsNormalBookings: body.acceptsNormalBookings,
+    });
   }
 
   /** Updates current practitioner avatar URL. */
@@ -520,6 +555,41 @@ export class PractitionerProfileController {
   ) {
     return this.listPractitionerCredentialsUseCase.execute({
       userId: currentUser.id,
+      locale,
+    });
+  }
+
+  @Get('me/credentials/:credentialId/view')
+  @ApiOperation({ summary: 'View an owned practitioner credential file' })
+  @ApiResponse({ status: 200, description: 'Protected credential file stream' })
+  @ApiNotFoundResponse({ description: 'Credential or file not found' })
+  async viewCredential(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Param('credentialId') credentialId: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const stored = await this.getPractitionerCredentialFileUseCase.execute({
+      userId: currentUser.id,
+      credentialId,
+    });
+    response.setHeader('Content-Type', stored.mimeType);
+    response.setHeader('Cache-Control', 'private, no-store');
+    return new StreamableFile(createReadStream(stored.absolutePath));
+  }
+
+  @Delete('me/credentials/:credentialId')
+  @ApiOperation({ summary: 'Delete a practitioner credential from a draft application' })
+  @ApiResponse({ status: 200, description: 'Credential deleted' })
+  @ApiConflictResponse({ description: 'Credentials are locked after submission' })
+  @ApiNotFoundResponse({ description: 'Credential or practitioner profile not found' })
+  deleteCredential(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Param('credentialId') credentialId: string,
+  ) {
+    return this.deletePractitionerCredentialUseCase.execute({
+      userId: currentUser.id,
+      credentialId,
       locale,
     });
   }

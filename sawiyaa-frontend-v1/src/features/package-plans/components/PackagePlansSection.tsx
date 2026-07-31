@@ -315,7 +315,7 @@ export default function PackagePlansSection({ slug, profile }: Props) {
                     </Button>
                   ) : (
                     <Link
-                  href="/signin?mode=patient"
+                  href="/signin/patient"
                       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-3 text-sm font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:bg-white/5 dark:hover:bg-white/10 sm:w-auto"
                     >
                       <BadgePercent className="h-4 w-4" />

@@ -34,7 +34,7 @@ describe('ValidateAvailabilitySessionConflictsService', () => {
           practitionerId: 'practitioner-1',
           status: {
             in: expect.arrayContaining([
-              SessionStatus.CONFIRMED,
+              SessionStatus.PENDING_PAYMENT,
               SessionStatus.UPCOMING,
               SessionStatus.READY_TO_JOIN,
             ]),

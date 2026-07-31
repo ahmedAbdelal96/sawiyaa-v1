@@ -33,6 +33,11 @@ const baseEnvSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
   LOG_MAX_FILE_SIZE: z.string().default('20m'),
 
+  // Practitioner weekly session schedule
+  AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce.number().int().min(1).max(12).default(4),
+  AVAILABILITY_RETENTION_MONTHS: z.coerce.number().int().positive().default(12),
+  AVAILABILITY_REPEAT_PREVIEW_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
+
   // Trusted customer country resolution. GeoIP is optional and unknown always
   // falls back to USD through the central payment-region resolver.
   GEOIP_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -129,6 +134,7 @@ const baseEnvSchema = z.object({
   PRACTITIONER_OTP_QA_CAPTURE_ENABLED: z
     .enum(['true', 'false'])
     .optional(),
+  PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS: z.string().optional(),
 
   // Google Auth
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -331,6 +337,23 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
         path: ['PAYMOB_MODE'],
         message:
           'PAYMOB_MODE must be test when APP_ENV/NODE_ENV is non-production',
+      });
+    }
+  }
+
+  if (env.PRACTITIONER_OTP_QA_CAPTURE_ENABLED === 'true') {
+    if (effectiveAppEnv === 'production') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PRACTITIONER_OTP_QA_CAPTURE_ENABLED'],
+        message: 'Practitioner OTP QA capture cannot be enabled in production',
+      });
+    }
+    if (!env.PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS'],
+        message: 'PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS is required when OTP QA capture is enabled',
       });
     }
   }

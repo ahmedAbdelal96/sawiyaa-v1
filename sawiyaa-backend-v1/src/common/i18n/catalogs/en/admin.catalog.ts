@@ -56,6 +56,8 @@ export const enAdminCatalog = {
       countryInactive: 'Selected country is currently inactive',
       invalidCredentialExpiry:
         'Credential expiry must be a future date when provided',
+      duplicateCredentialType:
+        'A document with this type has already been uploaded',
       credentialRejectionReasonRequired:
         'A reason is required when rejecting a credential',
       invalidYearsOfExperience: 'Years of experience must be zero or greater',

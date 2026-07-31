@@ -607,7 +607,8 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         ticketId: payload.ticketId,
         lastReadMessageId: result.item.lastReadMessageId,
         readAt: result.item.lastReadAt,
-        userId: actor.id,
+        readerUserId: actor.id,
+        unreadCount: result.item.unreadCount,
       });
 
       return {
@@ -826,7 +827,8 @@ export class GeneralChatGateway implements OnGatewayConnection, OnGatewayInit {
         conversationId: payload.conversationId,
         lastReadMessageId: result.item.lastReadMessageId,
         readAt: result.item.lastReadAt,
-        userId: actor.id,
+        readerUserId: actor.id,
+        unreadCount: result.item.unreadCount,
       });
 
       return {

@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import {
   SurfaceCard,
   SurfaceHeader,
-  SurfaceStatCard,
 } from "@/components/shared/SurfaceShell";
 
 type PatientPageHeaderProps = {
@@ -166,33 +165,4 @@ export function PatientStatusBadge({ children, className }: PatientStatusBadgePr
       {children}
     </span>
   );
-}
-
-type PatientStatCardProps = {
-  label: string;
-  value: string;
-  hint?: ReactNode;
-  icon?: ReactNode;
-  tone?: "neutral" | "brand" | "primary" | "success" | "warning";
-  className?: string;
-};
-
-export function PatientStatCard({
-  label,
-  value,
-  hint,
-  icon,
-  tone = "primary",
-  className,
-}: PatientStatCardProps) {
-  return (
-    <SurfaceStatCard
-      label={label}
-      value={value}
-      hint={hint}
-      icon={icon}
-      tone={tone}
-      className={className}
-    />
-  );
-}
+}

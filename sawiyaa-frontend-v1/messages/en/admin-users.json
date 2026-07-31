@@ -109,7 +109,7 @@
     "description": "Create an internal platform user with the selected role and a secure password.",
     "submit": "Create user",
     "cancel": "Cancel",
-    "passwordHint": "Deliver the password securely out of band. The backend stores only a hash.",
+    "passwordHint": "Share the password securely with the user.",
     "fields": {
       "displayName": "Display name",
       "email": "Email",

@@ -190,9 +190,12 @@ export class AdminPractitionerApplicationRepository {
       rejectedApplications,
       archivedApplications,
     ] = await Promise.all([
-      this.prisma.practitionerApplication.count(),
+      this.prisma.practitionerApplication.count({
+        where: { status: { in: ACTIVE_APPLICATION_STATUSES } },
+      }),
       this.prisma.practitionerApplication.count({
         where: {
+          status: { in: ACTIVE_APPLICATION_STATUSES },
           practitioner: {
             status: {
               not: PractitionerStatus.APPROVED,
@@ -202,6 +205,7 @@ export class AdminPractitionerApplicationRepository {
       }),
       this.prisma.practitionerApplication.count({
         where: {
+          status: { in: ACTIVE_APPLICATION_STATUSES },
           practitioner: {
             status: PractitionerStatus.APPROVED,
           },

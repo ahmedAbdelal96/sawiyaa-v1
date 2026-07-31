@@ -25,6 +25,9 @@ import {
   SecurityAuditActorType,
   SecurityAuditSource,
 } from '@common/security-audit/security-audit.types';
+import { PractitionerChangeReviewPolicy } from '../policies/practitioner-change-review.policy';
+import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
+import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
 
 /**
  * Profile update orchestrates practitioner profile + user preference writes in one transaction.
@@ -45,7 +48,10 @@ export class UpdatePractitionerProfileUseCase {
     private readonly languageRepository: LanguageRepository,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly getPractitionerProfileUseCase: GetPractitionerProfileUseCase,
+    @Optional() private readonly practitionerCurrencyLifecycleService?: PractitionerCurrencyLifecycleService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
+    @Optional() private readonly changeReviewPolicy?: PractitionerChangeReviewPolicy,
+    @Optional() private readonly changeReviewService?: PractitionerChangeReviewService,
   ) {}
 
   private resolvePackageAvailabilityMissingRequirements(input: {
@@ -211,9 +217,8 @@ export class UpdatePractitionerProfileUseCase {
           }
         }
 
-        await this.practitionerProfileRepository.updateByUserId(
-          input.userId,
-          {
+        const profileUpdate = (() => {
+            const profileUpdate: Prisma.PractitionerProfileUncheckedUpdateInput = {
             professionalTitle: normalizedInput.professionalTitle,
             bio: normalizedInput.bio,
             yearsOfExperience: normalizedInput.yearsOfExperience,
@@ -230,9 +235,51 @@ export class UpdatePractitionerProfileUseCase {
             acceptsPackages: normalizedInput.acceptsPackage,
             countryId:
               country === undefined ? undefined : country ? country.id : null,
-          },
-          tx,
-        );
+            };
+            if (profile.status === PractitionerStatus.APPROVED) {
+              for (const field of (this.changeReviewPolicy?.getChangedProfileFields(
+                normalizedInput as unknown as Record<string, unknown>,
+              ) ?? [])) {
+                if (field === 'countryCode') {
+                  delete profileUpdate.countryId;
+                } else {
+                  delete profileUpdate[field];
+                }
+              }
+            }
+            return profileUpdate;
+          })();
+
+        if (profileUpdate.countryId !== undefined) {
+          await this.practitionerCurrencyLifecycleService?.ensureForCountryChange({
+            practitionerId: profile.id,
+            newCountryId: (profileUpdate.countryId as string | null | undefined) ?? null,
+            actorUserId: input.userId,
+            tx,
+          });
+        }
+
+        await this.practitionerProfileRepository.updateByUserId(input.userId, profileUpdate, tx);
+
+        const changedReviewFields = this.changeReviewPolicy?.getChangedProfileFields(
+          normalizedInput as unknown as Record<string, unknown>,
+        ) ?? [];
+        if (profile.status === PractitionerStatus.APPROVED && changedReviewFields.length > 0 && this.changeReviewService) {
+          await this.changeReviewService.upsert({
+            practitionerId: profile.id,
+            profile: Object.fromEntries(
+              [
+                ['practitionerType', normalizedInput.practitionerType],
+                ['practitionerGender', normalizedInput.practitionerGender],
+                ['professionalTitle', normalizedInput.professionalTitle],
+                ['bio', normalizedInput.bio],
+                ['yearsOfExperience', normalizedInput.yearsOfExperience],
+                ['countryCode', normalizedInput.countryCode],
+              ].filter(([, value]) => value !== undefined),
+            ) as Record<string, unknown>,
+            tx,
+          });
+        }
 
         await this.practitionerUserRepository.updateProfilePreferences(
           input.userId,

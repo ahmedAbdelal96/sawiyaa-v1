@@ -49,6 +49,9 @@ describe('SubmitPractitionerApplicationUseCase', () => {
   const getPractitionerApplicationStatusUseCase = {
     execute: jest.fn(),
   } as never;
+  const practitionerPayoutDestinationValidationService = {
+    validate: jest.fn(),
+  } as never;
 
   const useCase = new SubmitPractitionerApplicationUseCase(
     prisma,
@@ -65,6 +68,7 @@ describe('SubmitPractitionerApplicationUseCase', () => {
     practitionerApplicationEligibilityPolicy,
     getPractitionerProfileReadinessUseCase,
     getPractitionerApplicationStatusUseCase,
+    practitionerPayoutDestinationValidationService,
   );
 
   const baseProfile = {
@@ -132,6 +136,26 @@ describe('SubmitPractitionerApplicationUseCase', () => {
         expiresAt: null,
         createdAt: new Date('2026-01-01T00:00:00.000Z'),
         reviewedAt: new Date('2026-01-02T00:00:00.000Z'),
+        reviewNotes: null,
+      },
+      {
+        id: 'cred-2',
+        credentialType: 'DEGREE',
+        fileUrl: 'https://example.com/degree.pdf',
+        reviewStatus: 'PENDING',
+        expiresAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        reviewedAt: null,
+        reviewNotes: null,
+      },
+      {
+        id: 'cred-3',
+        credentialType: 'PASSPORT',
+        fileUrl: 'https://example.com/passport.pdf',
+        reviewStatus: 'PENDING',
+        expiresAt: null,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        reviewedAt: null,
         reviewNotes: null,
       },
     ]);

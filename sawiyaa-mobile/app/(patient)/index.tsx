@@ -16,7 +16,7 @@ const HORIZONTAL_MARGIN = 20;
 export default function PatientHomeScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const { user, patientRegistrationNotice, clearPatientRegistrationNotice } = useAuth();
   const router = useRouter();
   const { isRtl, rowDirection, arrowForward } = useAppDirection();
 
@@ -43,6 +43,17 @@ export default function PatientHomeScreen() {
   return (
     <Screen bg="background" style={styles.root} edges={["top", "left", "right"]}>
       <Header variant="home" />
+
+      {patientRegistrationNotice === "phone-not-saved" ? (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={clearPatientRegistrationNotice}
+          style={[styles.phoneNotice, { backgroundColor: theme.colors.surfaceTertiary }]}
+        >
+          <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
+          <Text style={styles.phoneNoticeText}>{t("auth.patientSignUp.phoneNotSavedNotice")}</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {homeQuery.isError ? (
         <ErrorState
@@ -391,5 +402,20 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 8,
+  },
+  phoneNotice: {
+    marginHorizontal: HORIZONTAL_MARGIN,
+    marginTop: 8,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  phoneNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

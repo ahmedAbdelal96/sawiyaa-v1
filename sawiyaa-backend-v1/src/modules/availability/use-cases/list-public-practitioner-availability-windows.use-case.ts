@@ -76,6 +76,20 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       });
     }
 
+    if (!practitioner.acceptsNormalBookings) {
+      return {
+        acceptsNormalBookings: false,
+        reasonCode: 'NORMAL_BOOKINGS_PAUSED' as const,
+        timezone: practitioner.user.timezone,
+        range: {
+          from: input.fromUtc.toISOString(),
+          to: input.toUtc.toISOString(),
+        },
+        windows: [],
+        bookedSlots: input.includeBooked ? [] : undefined,
+      };
+    }
+
     const timezone = this.resolvePractitionerTimezoneService.resolve({
       fallbackTimezone: practitioner.user.timezone,
     });
@@ -95,6 +109,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
 
     if (effectiveTo.getTime() <= effectiveFrom.getTime()) {
       return {
+        acceptsNormalBookings: true,
         timezone,
         range: {
           from: input.fromUtc.toISOString(),
@@ -181,6 +196,7 @@ export class ListPublicPractitionerAvailabilityWindowsUseCase {
       );
 
     return {
+      acceptsNormalBookings: true,
       timezone,
       range: {
         from: input.fromUtc.toISOString(),

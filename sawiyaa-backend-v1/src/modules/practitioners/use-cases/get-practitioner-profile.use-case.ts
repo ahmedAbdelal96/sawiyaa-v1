@@ -11,6 +11,7 @@ import { PractitionerProfileRepository } from '../repositories/practitioner-prof
 import { PractitionerUserRepository } from '../repositories/practitioner-user.repository';
 import { SpecialtyRepository } from '../repositories/specialty.repository';
 import { GetPractitionerProfileReadinessUseCase } from './get-practitioner-profile-readiness.use-case';
+import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
 
 /**
  * Current practitioner profile read model for product-facing UI.
@@ -29,6 +30,7 @@ export class GetPractitionerProfileUseCase {
     private readonly practitionerProfileMapper: PractitionerProfileMapper,
     private readonly practitionerApplicationMapper: PractitionerApplicationMapper,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
+    private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
   ) {}
 
   async execute(input: {
@@ -54,6 +56,7 @@ export class GetPractitionerProfileUseCase {
       specialties,
       credentialSummary,
       latestApp,
+      reviewCase,
     ] = await Promise.all([
       this.getPractitionerProfileReadinessUseCase.evaluate({
         userId: input.userId,
@@ -65,6 +68,7 @@ export class GetPractitionerProfileUseCase {
       this.practitionerApplicationRepository.findLatestByPractitionerId(
         profile.id,
       ),
+      this.practitionerReviewCaseService.findActiveChangeCase(profile.id),
     ]);
 
     const mappedSpecialties = specialties.map((link) => ({
@@ -137,6 +141,7 @@ export class GetPractitionerProfileUseCase {
                   unknown
                 > | null) ?? null,
               completion: readiness.completion,
+              reviewCase,
             })
           : this.practitionerApplicationMapper.empty(),
         credentialSummary,

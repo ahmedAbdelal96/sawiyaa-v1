@@ -57,6 +57,9 @@ export class UploadAdminPractitionerCredentialFileUseCase {
         mimeType: input.file.mimetype,
         fileBuffer: input.file.buffer,
       });
+    const fileName = stored.fileUrl.split('/').pop() ?? '';
+    const extension = fileName.slice(fileName.lastIndexOf('.'));
+    const credentialId = fileName.slice(0, -extension.length);
 
     return {
       message: this.i18nService.t(
@@ -64,8 +67,9 @@ export class UploadAdminPractitionerCredentialFileUseCase {
         input.locale,
       ),
       credential: {
+        credentialId,
         credentialType: input.credentialType,
-        fileUrl: stored.fileUrl,
+        mimeType: input.file.mimetype,
         expiresAt: input.expiresAt ?? null,
         sizeBytes: stored.sizeBytes,
       },

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import FinancialReconciliationScreen from "@/features/admin/accounting-reconciliation/components/FinancialReconciliationScreen";
+import AdminAccountingReconciliationScreen from "@/features/admin/accounting/components/AdminAccountingReconciliationScreen";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -20,5 +20,5 @@ export default async function FinancialReconciliationPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <FinancialReconciliationScreen />;
+  return <AdminAccountingReconciliationScreen />;
 }

@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, TouchableOpacity, View, Image } from "react-nat
 import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
+import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Button,
@@ -308,7 +309,7 @@ export default function PractitionerHomeScreen() {
         <View style={[styles.greetingWrapper, { flexDirection: rowDirection }]}>
           <View style={styles.greetingTextWrap}>
             <Text color={theme.colors.textSecondary} style={[styles.greetingEyebrow, { textAlign }]}>
-              {profile.professionalTitle ?? t("practitioner.home.fallbackTitle", isArabic ? "مختص طبي" : "Medical Specialist")}
+              {getProfessionalTitleLabel(profile.professionalTitle, isArabic) || t("practitioner.home.fallbackTitle", isArabic ? "مختص طبي" : "Medical Specialist")}
             </Text>
             <Text weight="700" style={[styles.greetingName, { textAlign }]} numberOfLines={1}>
               {profile.displayName ?? t("practitioner.home.fallbackName")}

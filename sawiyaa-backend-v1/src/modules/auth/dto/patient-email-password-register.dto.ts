@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class PatientEmailPasswordRegisterDto {
   @ApiProperty()
@@ -28,4 +34,14 @@ export class PatientEmailPasswordRegisterDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({
+    example: 'EG',
+    description: 'ISO-2 country used to parse a national phone number',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(2)
+  phoneCountryCode?: string;
 }

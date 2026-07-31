@@ -17,7 +17,7 @@ export const PUBLIC_ROUTES = ["/signin", "/signup", "/verify-email"];
 
 export const AUTH_ROUTES = ["/signin", "/signup"];
 export const DEFAULT_LOGIN_REDIRECT = "/admin/dashboard";
-export const LOGIN_PAGE = "/signin";
+export const LOGIN_PAGE = "/signin/patient";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api/v1";

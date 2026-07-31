@@ -365,7 +365,7 @@ export default function PublicAvailabilityViewer({
           <div>
             <p className="mb-2 text-xs text-text-muted">{tBook("signInNote")}</p>
             <Link
-              href="/signin?mode=patient"
+              href="/signin/patient"
               className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90"
             >
               {tBook("signInToCta")}
@@ -541,16 +541,20 @@ export default function PublicAvailabilityViewer({
 
           {allEmpty && (
             <div className="mt-3 rounded-2xl bg-surface px-4 py-4 dark:bg-white/5">
-              <p className="text-sm font-medium text-text-primary dark:text-white/90">{tAvail("noSlots")}</p>
-              <p className="mt-1 text-xs leading-5 text-text-muted">{tAvail("noSlotsHint")}</p>
+              <p className="text-sm font-medium text-text-primary dark:text-white/90">
+                {data.reasonCode === "NORMAL_BOOKINGS_PAUSED" ? tAvail("normalBookingsPaused") : tAvail("noSlots")}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-text-muted">
+                {data.reasonCode === "NORMAL_BOOKINGS_PAUSED" ? tAvail("normalBookingsPausedHint") : tAvail("noSlotsHint")}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button
+                {data.reasonCode === "NORMAL_BOOKINGS_PAUSED" ? null : <button
                   type="button"
                   onClick={() => setDateWindowOffsetDays((n) => n + VISIBLE_DATE_COLUMNS)}
                   className="inline-flex items-center justify-center rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:hover:bg-white/5"
                 >
                   {browseNextDatesLabel}
-                </button>
+                </button>}
                 <Link
                   href={isPatient ? "/patient/practitioners" : "/practitioners"}
                   className="inline-flex items-center justify-center rounded-xl border border-border-light px-3 py-2 text-xs font-semibold text-text-primary transition hover:border-primary/40 hover:text-primary dark:hover:bg-white/5"

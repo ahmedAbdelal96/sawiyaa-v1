@@ -232,7 +232,12 @@ export class MessagingRepository {
     }
   }
 
-  async markRead(input: { conversationId: string; userId: string; messageId: string }) {
+  async markRead(input: {
+    conversationId: string;
+    userId: string;
+    messageId: string;
+    participantRole?: ConversationParticipantRole;
+  }) {
     const target = await this.prisma.message.findFirst({
       where: {
         id: input.messageId,
@@ -243,10 +248,26 @@ export class MessagingRepository {
       select: { id: true, senderUserId: true, sentAt: true },
     });
     if (!target) throw new NotFoundException({ messageKey: 'messages.errors.messageNotFound', errorCode: 'MESSAGING_MESSAGE_NOT_FOUND' });
-    const participant = await this.prisma.conversationParticipant.findFirst({
-      where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
-      select: { lastReadMessageId: true, lastReadAt: true },
-    });
+    let participant = input.participantRole
+      ? await this.prisma.conversationParticipant.upsert({
+          where: {
+            conversationId_userId: {
+              conversationId: input.conversationId,
+              userId: input.userId,
+            },
+          },
+          create: {
+            conversationId: input.conversationId,
+            userId: input.userId,
+            participantRole: input.participantRole,
+          },
+          update: {},
+          select: { lastReadMessageId: true, lastReadAt: true },
+        })
+      : await this.prisma.conversationParticipant.findFirst({
+          where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
+          select: { lastReadMessageId: true, lastReadAt: true },
+        });
     if (!participant) return { lastReadMessageId: null, lastReadAt: null };
     const current = participant.lastReadAt?.getTime() ?? -1;
     const currentMsgId = participant.lastReadMessageId ?? '';
@@ -428,7 +449,7 @@ export class MessagingRepository {
         take: 50,
         select: { id: true, senderUserId: true, messageType: true, status: true, contentText: true, sentAt: true, deliveredAt: true, readAt: true },
       },
-      session: { select: { status: true } },
+      session: { select: { sessionCode: true, status: true } },
       supportTicket: { select: { status: true, subject: true } },
       chatApprovalRequest: { select: { status: true, expiresAt: true } },
     };

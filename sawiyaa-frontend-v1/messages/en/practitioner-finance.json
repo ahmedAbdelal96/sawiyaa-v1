@@ -9,8 +9,8 @@
   },
   "summary": {
     "eyebrow": "Practitioner wallet",
-    "title": "Review your wallet summary without jumping into ledger or settlement detail.",
-    "note": "This summary is derived from the financial ledger. It shows balances and totals that are ready for visibility now.",
+    "title": "Wallet",
+    "note": "Track your balances and financial settlements.",
     "manualRecoveryLabel": "Manual recovery amount",
     "manualRecoveryNote": "This amount is separate from the payable total and is not deducted automatically from the next payout.",
     "currency": "Currency: {currency}",
@@ -148,12 +148,22 @@
       "notes": "Notes"
     },
     "statuses": {
+      "UNDER_REVIEW": "Under review",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "CREDITED": "Credited",
+      "PAID_OUT": "Paid out",
       "DRAFT": "Draft",
       "READY": "Ready",
       "PROCESSING": "Processing",
       "PAID": "Paid",
       "FAILED": "Failed",
       "CANCELLED": "Cancelled"
+    },
+    "payoutStatuses": {
+      "PENDING": "Pending payout",
+      "PAID": "Paid",
+      "NOT_ELIGIBLE": "Not eligible"
     },
     "filters": {
       "allStatuses": "All statuses"

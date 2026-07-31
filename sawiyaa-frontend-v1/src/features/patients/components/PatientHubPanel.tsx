@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import { ArrowRight, Calendar, Clock, CreditCard, Search, UserRound } from "lucide-react";
 import { usePatientSessions } from "@/features/sessions/hooks/use-sessions";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
@@ -184,6 +185,7 @@ export default function PatientHubPanel() {
                       {formatDatetime(session.scheduledStartAt, numLocale)}
                     </p>
                   )}
+                  <SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} />
                 </div>
                 <span
                   className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${SESSION_STATUS_CLASS[session.status] ?? "bg-surface-tertiary text-text-muted"}`}

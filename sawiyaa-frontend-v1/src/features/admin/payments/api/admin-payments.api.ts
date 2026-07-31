@@ -6,7 +6,17 @@ import type {
   AdminRefundItemResponseData,
   AdminRefundListResponseData,
   RequestAdminRefundInput,
+  AdminIncomingPaymentsResponseData,
+  AdminIncomingPaymentsQuery,
 } from "../types/admin-payments.types";
+
+export async function listAdminIncomingPayments(params: AdminIncomingPaymentsQuery) {
+  const response = await httpClient.get<ApiPayload<AdminIncomingPaymentsResponseData>>(
+    "/admin/payments",
+    { params },
+  );
+  return extractData(response.data);
+}
 
 export async function getAdminPaymentOpsDetails(paymentId: string) {
   const response = await httpClient.get<ApiPayload<AdminPaymentOpsResponseData>>(

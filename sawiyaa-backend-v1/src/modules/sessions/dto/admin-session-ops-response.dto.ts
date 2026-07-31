@@ -118,7 +118,7 @@ export class AdminSessionRuntimeInspectionItemDto {
   id!: string;
 
   @ApiProperty({
-    example: 'SES-2026-000123',
+    example: 'S-260729-0042',
     description: 'Human-readable session reference code.',
   })
   sessionCode!: string;

@@ -13,6 +13,9 @@ import {
   MessageVisibility,
   ModerationCaseActionType,
   ModerationReportTargetType,
+  PractitionerComplianceState,
+  PractitionerOperationalStatus,
+  PractitionerStatus,
   ReviewModerationAction,
   SessionReviewModerationDecision,
   SupportTicketStatus,
@@ -52,6 +55,8 @@ export class ExecuteModerationSurfaceEnforcementService {
     actorRoles: AppRole[];
     reason: string | null;
     note: string | null;
+    reportId?: string;
+    targetUserId?: string | null;
   }): Promise<void> {
     switch (input.action) {
       case ModerationCaseActionType.ENFORCE_CARE_CHAT_REVOKE:
@@ -68,6 +73,12 @@ export class ExecuteModerationSurfaceEnforcementService {
         return this.enforceArticleArchive(input);
       case ModerationCaseActionType.ENFORCE_SUPPORT_ESCALATE:
         return this.enforceSupportEscalation(input);
+      case ModerationCaseActionType.ENFORCE_USER_WARNING:
+        return this.enforceUser(input, 'WARNING');
+      case ModerationCaseActionType.ENFORCE_USER_RESTRICTION:
+        return this.enforceUser(input, 'RESTRICTION');
+      case ModerationCaseActionType.ENFORCE_USER_SUSPENSION:
+        return this.enforceUser(input, 'SUSPENSION');
       default:
         return;
     }
@@ -228,6 +239,71 @@ export class ExecuteModerationSurfaceEnforcementService {
         },
         tx,
       );
+    });
+  }
+
+  private async enforceUser(
+    input: {
+      targetUserId?: string | null;
+      reportId?: string;
+      actorUserId: string;
+      reason: string | null;
+      note: string | null;
+    },
+    type: 'WARNING' | 'RESTRICTION' | 'SUSPENSION',
+  ) {
+    if (!input.targetUserId || !input.reportId) {
+      throw new NotFoundException({
+        messageKey: 'moderation.errors.enforcementTargetReferenceNotFound',
+        error: 'MODERATION_ENFORCEMENT_TARGET_REFERENCE_NOT_FOUND',
+      });
+    }
+    const targetUserId = input.targetUserId;
+    const moderationReportId = input.reportId;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.moderationUserEnforcement.create({
+        data: {
+          targetUserId,
+          moderationReportId,
+          actedByUserId: input.actorUserId,
+          type,
+          reason: input.reason,
+          note: input.note,
+        },
+      });
+
+      // A warning is a recorded notice only. It must not change the
+      // practitioner's approval, operational, or compliance state. Those
+      // states control authentication and public visibility, while a warning
+      // is intentionally a lower-severity enforcement action.
+      if (type === 'WARNING') {
+        return;
+      }
+
+      if (type === 'SUSPENSION') {
+        await tx.user.update({
+          where: { id: targetUserId },
+          data: { status: 'SUSPENDED' },
+        });
+      }
+
+      const practitionerComplianceUpdate =
+        type === 'SUSPENSION'
+          ? {
+              status: PractitionerStatus.SUSPENDED,
+              operationalStatus: PractitionerOperationalStatus.SUSPENDED,
+              complianceState: PractitionerComplianceState.REMEDIATION_REQUIRED,
+            }
+          : {
+              status: PractitionerStatus.INACTIVE,
+              operationalStatus: PractitionerOperationalStatus.LIMITED,
+              complianceState: PractitionerComplianceState.REMEDIATION_REQUIRED,
+            };
+
+      await tx.practitionerProfile.updateMany({
+        where: { userId: targetUserId },
+        data: practitionerComplianceUpdate,
+      });
     });
   }
 

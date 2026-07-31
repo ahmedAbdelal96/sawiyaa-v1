@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import {
   BadgeCheck,
   Eye,
@@ -13,6 +15,7 @@ import {
   Wifi,
   Globe2,
   GlobeLock,
+  ExternalLink,
 } from "lucide-react";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import ActionIconLink from "@/components/ui/action-icon-button/ActionIconLink";
@@ -169,7 +172,7 @@ export default function AdminPractitionersDirectory() {
                 {row.displayName ?? tAdmin("applications.table.noName")}
               </p>
               <p className="truncate text-xs text-text-muted">
-                {row.professionalTitle || tListing("empty.subtitle")}
+                {getProfessionalTitleLabel(row.professionalTitle, locale) || tListing("empty.subtitle")}
               </p>
               <p className="mt-0.5 truncate text-[11px] text-text-muted">
                 {row.slug}
@@ -604,10 +607,19 @@ export default function AdminPractitionersDirectory() {
               </Button>
               <ActionIconLink
                 intent="view"
-                href={`/practitioners/${row.slug}`}
+                href={`/admin/practitioners/${row.id}`}
                 label={tAdmin("applications.table.viewAction")}
                 icon={<Eye className="h-4 w-4" />}
               />
+              <Link
+                href={`/practitioners/${row.slug}`}
+                target="_blank"
+                title={locale === "ar" ? "معاينة الملف العام" : "Preview public profile"}
+                aria-label={locale === "ar" ? "معاينة الملف العام" : "Preview public profile"}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light bg-surface-tertiary text-text-secondary hover:text-text-brand hover:border-primary/30 transition"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Link>
             </div>
           )}
           pagination={
@@ -636,7 +648,6 @@ export default function AdminPractitionersDirectory() {
           caption={tNav("main.practitioners")}
         />
       </AdminOperationalListShell>
-
       {/* Avatar edit modal — business logic unchanged */}
       <FormModal
         isOpen={!!selectedPractitioner}
@@ -672,7 +683,7 @@ export default function AdminPractitionersDirectory() {
                   {selectedPractitioner.displayName ?? tAdmin("applications.table.noName")}
                 </p>
                 <p className="truncate text-xs text-text-muted">
-                  {selectedPractitioner.professionalTitle ?? "-"}
+                  {getProfessionalTitleLabel(selectedPractitioner.professionalTitle, locale) || "-"}
                 </p>
               </div>
             </div>

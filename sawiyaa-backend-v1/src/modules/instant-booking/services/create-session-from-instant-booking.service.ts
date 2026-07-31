@@ -35,14 +35,8 @@ export class CreateSessionFromInstantBookingService {
     );
 
     const run = async (tx: Prisma.TransactionClient) => {
-      const sessionCode = await this.sessionRepository.reserveNextSessionCode(
-        input.startsAtUtc,
-        tx,
-      );
-
       const session = await this.sessionRepository.createSession(
         {
-          sessionCode,
           patientId: input.request.patientId,
           practitionerId: input.request.practitionerId,
           flowType: SessionFlowType.INSTANT,
@@ -56,6 +50,7 @@ export class CreateSessionFromInstantBookingService {
           timezoneSnapshot: input.timezone,
         },
         tx,
+        'instant_booking',
       );
 
       await this.sessionRepository.createEvent(

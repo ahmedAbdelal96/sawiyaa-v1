@@ -34,6 +34,8 @@ export class GetAdminLedgerJournalEntryUseCase {
         journalEntryId: line.journalEntryId,
         sourceType: journal.sourceType,
         sourceId: journal.sourceId,
+        sessionId: line.sessionId,
+        sessionCode: line.sessionCode,
         occurredAt: journal.occurredAt.toISOString(),
         createdAt: line.createdAt.toISOString(),
         currencyCode: journal.currencyCode,

@@ -4,7 +4,14 @@ import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.
 
 describe('RefreshPractitionerWalletService', () => {
   it('projects practitioner wallet balances from practitioner earning entries only', async () => {
-    const prisma = {} as never;
+    const prisma = {
+      practitionerWallet: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'wallet-egp',
+          currencyCode: 'EGP',
+        }),
+      },
+    } as never;
     const ledgerRepository = {
       aggregatePractitionerBalances: jest.fn().mockResolvedValue([
         {

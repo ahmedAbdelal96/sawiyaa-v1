@@ -11,9 +11,10 @@ describe('CreateScheduledSessionUseCase', () => {
     ),
   } as unknown as ConfigService;
 
+  const tx = { practitionerProfile: { findUnique: jest.fn() } };
   const prisma: any = {
     $transaction: jest.fn(async (callback: (tx: never) => Promise<unknown>) =>
-      callback({} as never),
+      callback(tx as never),
     ),
   };
 
@@ -26,7 +27,6 @@ describe('CreateScheduledSessionUseCase', () => {
   };
 
   const sessionRepository: any = {
-    reserveNextSessionCode: jest.fn(),
     createSession: jest.fn(),
     createEvent: jest.fn(),
   };
@@ -88,6 +88,7 @@ describe('CreateScheduledSessionUseCase', () => {
     professionalTitle: 'Therapist',
     bio: 'Bio',
     specialties: [{ id: 'specialty-1' }],
+    acceptsNormalBookings: true,
   };
 
   beforeEach(() => {
@@ -118,9 +119,6 @@ describe('CreateScheduledSessionUseCase', () => {
     (
       validateSessionConflictsService.assertNoPatientConflict as jest.Mock
     ).mockResolvedValue(undefined);
-    (sessionRepository.reserveNextSessionCode as jest.Mock).mockResolvedValue(
-      'SES-2999-000001',
-    );
     (sessionRepository.createSession as jest.Mock).mockResolvedValue({
       id: 'session-1',
       sessionCode: 'SES-2999-000001',
@@ -131,6 +129,7 @@ describe('CreateScheduledSessionUseCase', () => {
       sessionMode: SessionMode.VIDEO,
     });
     (sessionRepository.createEvent as jest.Mock).mockResolvedValue(undefined);
+    tx.practitionerProfile.findUnique.mockResolvedValue({ acceptsNormalBookings: true });
   });
 
   it('creates a pending-payment session on the happy path', async () => {
@@ -153,6 +152,7 @@ describe('CreateScheduledSessionUseCase', () => {
         scheduledEndAt: new Date('2999-01-01T11:00:00.000Z'),
       }),
       expect.anything(),
+      'scheduled',
     );
     expect(result.item.id).toBe('session-1');
   });
@@ -202,6 +202,34 @@ describe('CreateScheduledSessionUseCase', () => {
         sessionMode: SessionMode.VIDEO,
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects paused normal booking intake before any booking side effect', async () => {
+    (sessionPractitionerRepository.findByPublicSlug as jest.Mock).mockResolvedValueOnce({
+      ...practitioner,
+      acceptsNormalBookings: false,
+    });
+
+    await expect(useCase.execute({
+      userId: 'user-1', locale: 'en', practitionerSlug: 'dr-youssef',
+      scheduledStartAt: '2999-01-01T10:00:00.000Z', durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+    })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }) });
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(sessionRepository.createSession).not.toHaveBeenCalled();
+  });
+
+  it('re-checks normal booking intake inside the transaction for stale submissions', async () => {
+    tx.practitionerProfile.findUnique.mockResolvedValueOnce({ acceptsNormalBookings: false });
+
+    await expect(useCase.execute({
+      userId: 'user-1', locale: 'en', practitionerSlug: 'dr-youssef',
+      scheduledStartAt: '2999-01-01T10:00:00.000Z', durationMinutes: 60,
+      sessionMode: SessionMode.VIDEO,
+    })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }) });
+
+    expect(sessionRepository.createSession).not.toHaveBeenCalled();
   });
 
   it('rejects a past scheduled start through the booking-request guard before availability validation', async () => {

@@ -11,6 +11,9 @@ export class RefundItemDto {
   @ApiProperty({ nullable: true })
   sessionId!: string | null;
 
+  @ApiProperty({ nullable: true, description: 'Canonical public session reference.' })
+  sessionCode!: string | null;
+
   @ApiProperty({ enum: RefundType })
   refundType!: RefundType;
 

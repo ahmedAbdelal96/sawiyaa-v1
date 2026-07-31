@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  GoneException,
   Get,
   Param,
   ParseUUIDPipe,
@@ -156,26 +157,16 @@ export class AdminPractitionerPayoutsController {
   })
   @UseGuards(AdminGuard)
   @Roles(AppRole.ADMIN)
-  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_WRITE)
+  @Permissions(PermissionKey.FINANCIAL_PAYOUT_EXECUTE)
   async record(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: RecordPractitionerPayoutDto,
   ) {
-    const result = await this.recordPractitionerPayoutUseCase.execute({
-      practitionerId,
-      body,
-      operatorUserId: currentUser.id,
+    throw new GoneException({
+      messageKey: 'financialOperations.errors.legacyPayoutPathBlocked',
+      error: 'FINANCIAL_OPERATIONS_LEGACY_PAYOUT_PATH_BLOCKED',
     });
-    this.securityAuditService.logAsync({
-      action: 'finance.practitioner_payout.record',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: currentUser.id,
-      actorRoles: currentUser.roles,
-      resourceType: 'PractitionerPayout',
-      targetUserId: practitionerId,
-    });
-    return result;
   }
 
   @Post(':payoutId/proof')
@@ -208,9 +199,7 @@ export class AdminPractitionerPayoutsController {
   @ApiNotFoundResponse({
     description: 'Practitioner profile or payout record was not found',
   })
-  @UseGuards(AdminGuard)
-  @Roles(AppRole.ADMIN)
-  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_WRITE)
+  @Permissions(PermissionKey.FINANCIAL_PAYOUT_EXECUTE)
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
   )

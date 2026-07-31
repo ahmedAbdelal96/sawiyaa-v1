@@ -368,6 +368,15 @@ export default function PackagePurchaseCreateScreen() {
                 style={styles.retryButton}
               />
             </Card>
+          ) : availabilityQuery.data?.reasonCode === "NORMAL_BOOKINGS_PAUSED" ? (
+            <Card variant="flat" padding="md" style={styles.noticeCard}>
+              <Text color={theme.colors.textPrimary} style={{ textAlign }} weight="700">
+                {t("packagePurchases.create.normalBookingsPaused", "Normal bookings are paused")}
+              </Text>
+              <Text color={theme.colors.textSecondary} style={[styles.helperText, { textAlign }]}>
+                {t("packagePurchases.create.normalBookingsPausedBody", "This practitioner is not accepting new normal booking requests right now. Please check again later.")}
+              </Text>
+            </Card>
           ) : groupedSlots.length === 0 ? (
             <Card variant="flat" padding="md" style={styles.noticeCard}>
               <Text color={theme.colors.textSecondary} style={{ textAlign }}>

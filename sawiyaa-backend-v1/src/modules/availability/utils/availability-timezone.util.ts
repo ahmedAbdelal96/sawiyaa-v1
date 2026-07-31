@@ -14,6 +14,11 @@ interface ZonedDateTimeParts extends CalendarDateParts {
   second: number;
 }
 
+export type ZonedDateTimeResolution =
+  | { status: 'valid'; date: Date }
+  | { status: 'nonexistent' }
+  | { status: 'ambiguous' };
+
 const zonedDateTimeFormatterCache = new Map<string, Intl.DateTimeFormat>();
 
 export { isValidIanaTimeZone } from '@common/utils/timezone.util';
@@ -101,28 +106,60 @@ export function zonedDateTimeToUtc(
   input: CalendarDateParts & { hour: number; minute: number },
   timeZone: string,
 ): Date {
-  const utcGuess = Date.UTC(
-    input.year,
-    input.month - 1,
-    input.day,
-    input.hour,
-    input.minute,
-    0,
-    0,
-  );
-
-  const firstOffset = getTimeZoneOffsetMilliseconds(
-    new Date(utcGuess),
-    timeZone,
-  );
-  let resolved = new Date(utcGuess - firstOffset);
-  const secondOffset = getTimeZoneOffsetMilliseconds(resolved, timeZone);
-
-  if (secondOffset !== firstOffset) {
-    resolved = new Date(utcGuess - secondOffset);
+  const resolution = resolveZonedDateTime(input, timeZone);
+  if (resolution.status !== 'valid') {
+    throw new RangeError(`Local time is ${resolution.status}`);
   }
 
-  return resolved;
+  return resolution.date;
+}
+
+export function resolveZonedDateTime(
+  input: CalendarDateParts & { hour: number; minute: number },
+  timeZone: string,
+): ZonedDateTimeResolution {
+  const normalizedDate = input.hour === 24 && input.minute === 0
+    ? addDaysToCalendarDate(input, 1)
+    : input;
+  const hour = normalizedDate === input ? input.hour : 0;
+  const minute = normalizedDate === input ? input.minute : 0;
+  const utcGuess = Date.UTC(
+    normalizedDate.year,
+    normalizedDate.month - 1,
+    normalizedDate.day,
+    hour,
+    minute,
+    0,
+    0,
+  );
+  const candidates = new Set<number>();
+
+  for (const hours of [-36, -24, -12, 0, 12, 24, 36]) {
+    candidates.add(
+      getTimeZoneOffsetMilliseconds(
+        new Date(utcGuess + hours * 60 * 60 * 1000),
+        timeZone,
+      ),
+    );
+  }
+
+  const matches = [...candidates]
+    .map((offset) => new Date(utcGuess - offset))
+    .filter((candidate) => {
+      const parts = getZonedDateTimeParts(candidate, timeZone);
+      return (
+        parts.year === normalizedDate.year &&
+        parts.month === normalizedDate.month &&
+        parts.day === normalizedDate.day &&
+        parts.hour === hour &&
+        parts.minute === minute
+      );
+    });
+
+  const uniqueMatches = new Map(matches.map((match) => [match.getTime(), match]));
+  if (uniqueMatches.size === 0) return { status: 'nonexistent' };
+  if (uniqueMatches.size > 1) return { status: 'ambiguous' };
+  return { status: 'valid', date: [...uniqueMatches.values()][0] };
 }
 
 export function addDaysToCalendarDate(

@@ -1,8 +1,8 @@
 {
   "meta": {
     "list": {
-      "title": "Payments Review - Admin",
-      "description": "Review payment and refund operations with amounts, currencies, and linked operational context."
+      "title": "Incoming Payments",
+      "description": "Review customer payments and their collection and refund status."
     },
     "detail": {
       "title": "Finance operation event - Admin",
@@ -21,28 +21,38 @@
   },
   "list": {
     "eyebrow": "Operational payments review",
-    "title": "Payments review",
-    "note": "Review payment and refund events by status, provider, currency, and reference. Use ledger/reconciliation for accounting traceability.",
-    "count": "{value, number} events",
+    "title": "Incoming Payments",
+    "note": "Review customer payments and their collection and refund status.",
+    "count": "{value, number} payments",
     "countLoading": "Loading...",
     "noSummary": "No summary provided",
     "externalRef": "External ref: {value}",
-    "openAction": "Open event",
+    "openAction": "View details",
+    "eventLogAction": "Payment event log",
+    "unknownCustomer": "Unknown customer",
     "headers": {
-      "type": "Type",
-      "summary": "Summary",
+      "customer": "Customer",
+      "paymentReference": "Payment reference",
+      "provider": "Provider",
       "amount": "Amount",
-      "payment": "Payment",
-      "refund": "Refund",
-      "occurredAt": "Occurred",
-      "createdAt": "Created"
+      "currency": "Currency",
+      "paymentStatus": "Payment status",
+      "refundStatus": "Refund status",
+      "session": "Session",
+      "settlement": "Settlement",
+      "paidAt": "Paid at",
+      "lastUpdated": "Last updated"
     }
+  },
+  "incomingPayments": {
+    "eventLogAction": "Payment event log",
+    "unknownCustomer": "Unknown customer"
   },
   "scope": {
     "heading": "Operational review",
     "items": {
-      "list": "Review payment and refund events in one feed.",
-      "detail": "Open an event to inspect the linked payment or refund context.",
+      "list": "Review one row per customer payment.",
+      "detail": "Open payment details to inspect provider, refund, session, and settlement context.",
       "filters": "Filter by status, provider, purpose, and date."
     }
   },
@@ -57,12 +67,33 @@
   "filters": {
     "all": "All",
     "query": "Search",
-    "queryPlaceholder": "Search by summary or external reference",
-    "operationType": "Operation type",
+    "queryPlaceholder": "Search by payment reference or customer name",
     "provider": "Provider",
+    "currency": "Currency",
+    "fromDate": "From date",
+    "toDate": "To date",
     "paymentStatus": "Payment status",
     "refundStatus": "Refund status",
-    "paymentPurpose": "Payment purpose"
+    "paymentPurpose": "Payment purpose",
+    "sort": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortHighest": "Highest amount",
+    "sortLowest": "Lowest amount"
+  },
+  "relations": {
+    "noRelatedSession": "No related session",
+    "notCreatedYet": "Not created yet",
+    "awaitingSettlement": "Awaiting settlement"
+  },
+  "settlementStatuses": {
+    "DRAFT": "Draft",
+    "UNDER_REVIEW": "Needs review",
+    "APPROVED": "Approved",
+    "CREDITED": "Credited to wallet",
+    "PAID_OUT": "Transferred to practitioner",
+    "REJECTED": "Rejected",
+    "CANCELLED": "Cancelled"
   },
   "types": {
     "PAYMENT": "Payment",
@@ -94,11 +125,22 @@
     "REFUNDED": "Refunded"
   },
   "refundStatuses": {
+    "NONE": "No refund",
+    "PENDING": "Refund pending",
+    "REFUNDED": "Refunded",
+    "PARTIALLY_REFUNDED": "Partially refunded",
     "REQUESTED": "Requested",
     "PROCESSING": "Processing",
     "SUCCEEDED": "Succeeded",
     "FAILED": "Failed",
     "CANCELLED": "Cancelled"
+  },
+  "refundSummaryStatuses": {
+    "NONE": "No refund",
+    "PENDING": "Refund pending",
+    "REFUNDED": "Refunded",
+    "PARTIALLY_REFUNDED": "Partially refunded",
+    "FAILED": "Refund failed"
   },
   "sessionStatuses": {
     "DRAFT": "Draft",

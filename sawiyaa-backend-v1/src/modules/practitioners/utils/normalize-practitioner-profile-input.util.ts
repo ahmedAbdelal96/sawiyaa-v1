@@ -1,5 +1,6 @@
 import { UpdatePractitionerProfileInput } from '../types/practitioner.types';
 import { normalizeIanaTimeZoneInput } from '@common/utils/timezone.util';
+import { assertProfessionalTitle } from '../constants/professional-title.constants';
 
 /**
  * Normalization keeps profile update behavior deterministic:
@@ -17,7 +18,7 @@ export function normalizePractitionerProfileInput(
         ? undefined
         : input.professionalTitle === null
           ? null
-          : input.professionalTitle.trim(),
+          : assertProfessionalTitle(input.professionalTitle),
     bio:
       input.bio === undefined
         ? undefined

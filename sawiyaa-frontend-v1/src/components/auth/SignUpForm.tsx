@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/refs */
 
 import { useRef, useState, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -20,6 +21,8 @@ import {
 import {
   usePatientRegister,
   usePractitionerRegister,
+  usePractitionerVerifyRegistrationOtp,
+  usePractitionerResendRegistrationOtp,
 } from "@/features/auth/hooks/use-auth";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 import {
@@ -28,6 +31,9 @@ import {
 } from "@/features/specialties/utils/localized-specialty";
 import AuthSplitCard from "./AuthSplitCard";
 import { PractitionerPhoneField } from "@/components/form/group-input/PractitionerPhoneField";
+import AuthOtpInput from "./AuthOtpInput";
+import AuthOtpTimer from "./AuthOtpTimer";
+import type { PractitionerRegistrationResponse } from "@/features/auth/types/auth.types";
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
   const [pathname, existingQuery = ""] = basePath.split("?");
@@ -48,6 +54,7 @@ const staticSignUpSchema = z.object({
   phoneCountryCode: z.string().optional(),
   phone: z.string().optional(),
   password: z.string(),
+  confirmPassword: z.string(),
   primarySpecialtyCategoryId: z.string().optional(),
   specialtyIds: z.array(z.string()).optional(),
 });
@@ -63,10 +70,11 @@ const PRACTITIONER_PHONE_COUNTRIES = [
 type SignUpFormData = z.infer<typeof staticSignUpSchema>;
 
 type SignUpFormProps = {
-  mode: SignUpMode;
+  accountType: SignUpMode;
 };
 
-export default function SignUpForm({ mode }: SignUpFormProps) {
+export default function SignUpForm({ accountType }: SignUpFormProps) {
+  const mode = accountType;
   const t = useTranslations("auth");
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
@@ -75,24 +83,34 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
   const normalizedCallbackUrl = normalizeCallbackPath(callbackUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationChallenge, setRegistrationChallenge] = useState<PractitionerRegistrationResponse | null>(null);
+  const [registrationCode, setRegistrationCode] = useState("");
   const submitLockRef = useRef(false);
 
   const patientRegister = usePatientRegister();
   const practitionerRegister = usePractitionerRegister();
+  const practitionerVerifyRegistrationOtp = usePractitionerVerifyRegistrationOtp();
+  const practitionerResendRegistrationOtp = usePractitionerResendRegistrationOtp();
   const specialtyCategoriesQuery = useSpecialtyCategories(mode === "practitioner");
   const specialtiesQuery = useSpecialties(undefined, mode === "practitioner");
-  const isSubmitting = patientRegister.isPending || practitionerRegister.isPending;
+  const isSubmitting = patientRegister.isPending || practitionerRegister.isPending || practitionerVerifyRegistrationOtp.isPending || practitionerResendRegistrationOtp.isPending;
 
   const signUpSchema = useMemo(() => {
-    return z.object({
-      displayName: z.string().min(1, t("signUpForm.validation.nameRequired")),
-      email: z.string().email(t("signUpForm.validation.emailInvalid")),
-      phoneCountryCode: mode === "practitioner" ? z.string().min(1, t("phoneCountryRequired")) : z.string().optional(),
-      phone: mode === "practitioner" ? z.string().min(1, t("phoneRequired")) : z.string().optional(),
-      password: z.string().min(8, t("signUpForm.validation.passwordTooShort")),
-      primarySpecialtyCategoryId: z.string().optional(),
-      specialtyIds: z.array(z.string()).optional(),
-    });
+    return z
+      .object({
+        displayName: z.string().min(1, t("signUpForm.validation.nameRequired")),
+        email: z.string().email(t("signUpForm.validation.emailInvalid")),
+         phoneCountryCode: z.string().optional(),
+         phone: z.string().optional(),
+        password: z.string().min(8, t("signUpForm.validation.passwordTooShort")),
+        confirmPassword: z.string().min(1, t("patientSignUp.validation.confirmPasswordRequired")),
+        primarySpecialtyCategoryId: z.string().optional(),
+        specialtyIds: z.array(z.string()).optional(),
+      })
+      .refine((data) => data.password === data.confirmPassword, {
+        message: t("patientSignUp.validation.passwordsMismatch"),
+        path: ["confirmPassword"],
+      });
   }, [mode, t]);
 
   const form = useForm<SignUpFormData>({
@@ -103,6 +121,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
       phoneCountryCode: "",
       phone: "",
       password: "",
+      confirmPassword: "",
       primarySpecialtyCategoryId: "",
       specialtyIds: [],
     },
@@ -183,6 +202,29 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
     }) ?? [];
   const selectedPhoneCountryCode = useWatch({ control: form.control, name: "phoneCountryCode" }) ?? "";
   const enteredPhone = useWatch({ control: form.control, name: "phone" }) ?? "";
+  const passwordVal = useWatch({ control: form.control, name: "password" }) ?? "";
+  const passwordStrength = useMemo(() => {
+    if (!passwordVal) return { score: 0, text: "", color: "" };
+    let score = 0;
+    if (passwordVal.length >= 8) score++;
+    if (/[a-z]/.test(passwordVal)) score++;
+    if (/[A-Z]/.test(passwordVal)) score++;
+    if (/[0-9]/.test(passwordVal) || /[^A-Za-z0-9]/.test(passwordVal)) score++;
+
+    let text = "";
+    let color = "";
+    if (score <= 1) {
+      text = isRtl ? "ضعيفة" : "Weak";
+      color = "bg-error-500";
+    } else if (score === 2) {
+      text = isRtl ? "متوسطة" : "Medium";
+      color = "bg-warning-500";
+    } else if (score >= 3) {
+      text = isRtl ? "قوية" : "Strong";
+      color = "bg-success-500";
+    }
+    return { score, text, color };
+  }, [passwordVal, isRtl]);
   const categoryOptions = (specialtyCategoriesQuery.data?.categories ?? []).map((category) => ({
     value: category.id,
     label: getLocalizedSpecialtyCategoryName(category, locale),
@@ -226,26 +268,43 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
         return;
       }
 
-      await practitionerRegister.mutateAsync({
+       const registration = await practitionerRegister.mutateAsync({
         displayName: data.displayName,
         email: data.email,
-        phoneCountryCode: data.phoneCountryCode ?? "",
-        phone: data.phone ?? "",
+        ...(data.phone?.trim() ? { phoneCountryCode: data.phoneCountryCode, phone: data.phone } : {}),
         password: data.password,
         primarySpecialtyCategoryId: selectedCategory,
         specialtyIds: selectedSpecialties,
       });
-      form.reset();
-      window.location.replace(
-        `/${locale}${buildAuthHref("/signin", {
-          callbackUrl: normalizedCallbackUrl,
-          mode: "practitioner",
-        })}`
-      );
+       setRegistrationChallenge(registration);
+       setRegistrationCode("");
     } catch (submissionError) {
       setError(getLocalizedError(submissionError));
     } finally {
       submitLockRef.current = false;
+    }
+  };
+
+  const verifyPractitionerRegistration = async () => {
+    if (!registrationChallenge?.challengeId || registrationCode.length !== 6) return;
+    try {
+      await practitionerVerifyRegistrationOtp.mutateAsync({ challengeId: registrationChallenge.challengeId, code: registrationCode });
+      form.reset();
+      window.location.replace(`/${locale}${buildAuthHref("/signin", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })}`);
+    } catch (verificationError) {
+      setError(getLocalizedError(verificationError));
+    }
+  };
+
+  const resendPractitionerRegistration = async () => {
+    if (!registrationChallenge?.challengeId) return;
+    try {
+      const next = await practitionerResendRegistrationOtp.mutateAsync({ challengeId: registrationChallenge.challengeId });
+      setRegistrationChallenge(next);
+      setRegistrationCode("");
+      setError(null);
+    } catch (resendError) {
+      setError(getLocalizedError(resendError));
     }
   };
 
@@ -286,7 +345,19 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
 
       {/* Form */}
       {/* react-hook-form requires handleSubmit to be passed from the form instance. */}
-      {/* eslint-disable-next-line react-hooks/refs */}
+      {registrationChallenge?.nextStep === "OTP_REQUIRED" && mode === "practitioner" ? (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-lg font-semibold text-text-primary dark:text-white">{t("practitionerRegistrationOtp.title")}</h2>
+            <p className="mt-2 text-sm leading-6 text-text-secondary dark:text-text-secondary">{t("practitionerRegistrationOtp.description", { target: registrationChallenge.maskedTarget ?? "" })}</p>
+          </div>
+          <AuthOtpInput value={registrationCode} onChange={setRegistrationCode} disabled={isSubmitting} error={error ?? undefined} />
+          <AuthOtpTimer expiresAt={registrationChallenge.expiresAt ?? ""} />
+          <button type="button" onClick={verifyPractitionerRegistration} disabled={isSubmitting || registrationCode.length !== 6} className="flex w-full items-center justify-center rounded-2xl bg-[#1A365D] px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{t("practitionerRegistrationOtp.verify")}</button>
+          <button type="button" onClick={resendPractitionerRegistration} disabled={isSubmitting} className="w-full text-sm font-semibold text-primary disabled:opacity-50">{t("practitionerRegistrationOtp.resend")}</button>
+          <button type="button" onClick={() => { setRegistrationChallenge(null); setRegistrationCode(""); setError(null); }} className="w-full rounded-2xl border border-border-light px-4 py-3 text-sm font-semibold text-text-secondary">{t("practitionerRegistrationOtp.back")}</button>
+        </div>
+      ) : (
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -325,6 +396,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                 {form.formState.errors.email.message}
               </p>
             )}
+            {mode === "practitioner" && <p className="mt-1.5 text-xs leading-5 text-text-secondary">{t("practitionerEmailVerificationHint")}</p>}
           </div>
 
           <div>
@@ -343,6 +415,42 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
             )}
           </div>
 
+          <div>
+            <Label>
+              {t("patientSignUp.confirmPassword")} <span className="text-error-500">*</span>
+            </Label>
+            <AuthPasswordField
+              placeholder={t("patientSignUp.confirmPasswordPlaceholder")}
+              error={!!form.formState.errors.confirmPassword}
+              {...form.register("confirmPassword")}
+            />
+            {form.formState.errors.confirmPassword && (
+              <p className="mt-1.5 text-xs text-error-500">
+                {form.formState.errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
+          {/* Password Strength Indicator */}
+          {passwordVal && passwordVal.length > 0 && (
+            <div className="sm:col-span-2 mt-1 space-y-1.5 select-none">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-text-secondary dark:text-text-secondary">
+                  {isRtl ? "قوة كلمة المرور:" : "Password strength:"}{" "}
+                  <span className="font-semibold">{passwordStrength.text}</span>
+                </span>
+                <span className="text-text-muted">
+                  {isRtl ? "8 أحرف على الأقل" : "At least 8 characters"}
+                </span>
+              </div>
+              <div className="flex gap-1 h-1.5">
+                <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 1 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+                <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 2.5 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+                <div className={`h-full flex-1 rounded-full transition-colors duration-300 ${passwordStrength.score >= 4 ? passwordStrength.color : "bg-border-light dark:bg-white/5"}`} />
+              </div>
+            </div>
+          )}
+
           {mode === "practitioner" ? (
             <div className="sm:col-span-2">
               <PractitionerPhoneField
@@ -356,8 +464,6 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                 countryPlaceholder={t("phoneCountryPlaceholder")}
                 searchPlaceholder={t("phoneCountrySearchPlaceholder")}
                 phonePlaceholder={t("phonePlaceholder")}
-                helperText={t("phoneHelper")}
-                savedAsLabel={t("phoneSavedAs")}
                 countryError={form.formState.errors.phoneCountryCode?.message}
                 phoneError={form.formState.errors.phone?.message}
               />
@@ -424,11 +530,7 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
                     setError(null);
                   }}
                 />
-                <p className="mt-1.5 text-[11px] leading-relaxed text-text-muted">
-                  {isRtl
-                    ? "ستظهر التخصصات الفرعية حسب التخصص الرئيسي الذي اخترته."
-                    : "Sub-specialties are displayed based on your selected primary specialty."}
-                </p>
+
               </div>
             </div>
 
@@ -448,38 +550,17 @@ export default function SignUpForm({ mode }: SignUpFormProps) {
           </div>
         )}
 
-        {/* Onboarding expectation note */}
-        {mode === "practitioner" && (
-          <div className="flex items-start gap-2.5 rounded-2xl border border-primary/10 bg-primary-light/30 px-4 py-3 text-xs leading-5 text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
-            <svg
-              className="mt-0.5 shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>
-              {isRtl
-                ? "بعد إنشاء الحساب، ستنتقل لإكمال بيانات طلب الانضمام."
-                : "After creating your account, you will continue the joining request."}
-            </span>
-          </div>
-        )}
+
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full items-center justify-center rounded-2xl bg-[#1A365D] hover:bg-[#2A4D7C] px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? t("creatingAccount") : t("createAccountButton")}
         </button>
       </form>
+      )}
 
       {/* Footer Switch Link */}
       <div className="mt-8 border-t border-border-light pt-6 dark:border-white/5">

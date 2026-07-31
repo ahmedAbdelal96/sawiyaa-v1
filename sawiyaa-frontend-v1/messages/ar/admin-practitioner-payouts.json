@@ -1,23 +1,23 @@
 {
   "meta": {
-    "title": "مستحقات المعالجين - الإدارة",
-    "description": "راجع أرصدة المعالجين ومبالغ الباقات وسجلات الدفعات اليدوية."
+    "title": "أرصدة المختصين - الإدارة",
+    "description": "راجع أرصدة المختصين ومبالغ الباقات وسجلات الدفعات."
   },
   "unavailable": "غير متاح",
   "manualRecoveryLabel": "مبلغ التحصيل اليدوي",
   "manualRecoveryNote": "هذا المبلغ منفصل عن إجمالي المستحقات ولا يُخصم تلقائيًا من الدفعة التالية.",
   "list": {
     "meta": {
-      "title": "مستحقات المعالجين - الإدارة",
-      "description": "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة."
+      "title": "أرصدة المختصين - الإدارة",
+      "description": "راجع أرصدة كل مختص حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة."
     },
-    "eyebrow": "مستحقات المعالجين",
-    "title": "مستحقات المعالجين",
-    "description": "راجع مستحقات كل معالج حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
-    "searchLabel": "ابحث عن معالج",
+    "eyebrow": "أرصدة المختصين",
+    "title": "أرصدة المختصين",
+    "description": "راجع أرصدة كل مختص حسب العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
+    "searchLabel": "ابحث عن مختص",
     "searchPlaceholder": "ابحث بالاسم أو المعرّف",
-    "results": "{count, number} معالج",
-    "loading": "جارٍ تحميل المعالجين...",
+    "results": "{count, number} مختص",
+    "loading": "جارٍ تحميل المختصين...",
     "emptyTitle": "لا توجد مستحقات قابلة للدفع حاليًا",
     "emptyDescription": "لا يوجد معالجون لديهم مستحقات أو مبالغ باقات في هذه اللحظة.",
     "unavailable": "غير متاح",
@@ -73,8 +73,8 @@
       "viewDetails": "عرض التفاصيل",
       "pay": "دفع",
       "history": "سجل الدفعات",
-      "createPayout": "تسجيل دفعة",
-      "recordManualPayout": "Record manual payout",
+      "createPayout": "تسجيل تحويل للمختص",
+      "recordManualPayout": "تسجيل تحويل للمختص",
       "reconciliation": "مراجعة محاسبية"
     },
     "pagination": {
@@ -97,7 +97,7 @@
     "manualTransferNote": "Recording a payout here documents an external manual transfer. It does not send money automatically from Sawiyaa.",
     "balanceScopeNote": "Held amounts are not necessarily available for payout until released by the platform rules.",
     "backToList": "العودة إلى المستحقات",
-    "payNow": "دفع الآن",
+    "payNow": "تسجيل تحويل للمختص",
     "sections": {
       "egp": "الجنيه المصري",
       "usd": "الدولار الأمريكي"
@@ -144,47 +144,49 @@
   },
   "history": {
     "meta": {
-      "title": "سجل دفعات المعالجين - الإدارة",
-      "description": "راجع الدفعات اليدوية المسجلة عبر المعالجين."
+      "title": "تحويلات المختصين - الإدارة",
+      "description": "راجع سجلات التحويلات المحاسبية وحالاتها."
     },
-    "eyebrow": "سجل دفعات المعالجين",
-    "title": "سجل دفعات المعالجين",
-    "description": "راجع سجلات الدفعات التي سجّلتها الإدارة.",
-    "safetyNote": "Recorded payouts only.",
-    "tableSubtitle": "Backend totals.",
-    "filterNote": "Filters update the server results.",
-    "backToList": "العودة إلى المستحقات",
+    "eyebrow": "تحويلات المختصين",
+    "title": "تحويلات المختصين",
+    "description": "راجع سجلات التحويلات التي سجّلتها المنصة.",
+    "safetyNote": "التحويلات المسجلة فقط.",
+    "tableSubtitle": "مجاميع النظام.",
+    "filterNote": "الفلاتر تُحدّث النتائج من الخادم مباشرة.",
+    "backToList": "العودة إلى أرصدة المختصين",
     "results": "{count, number} سجل",
     "summary": {
-      "totalPayouts": "Total payouts",
-      "egpRecorded": "Total recorded EGP",
-      "usdRecorded": "Total recorded USD",
-      "filterMatched": "Filtered totals",
-      "currencyMatched": "Currency totals"
+      "totalPayouts": "إجمالي التحويلات",
+      "egpRecorded": "إجمالي التحويلات بالجنيه المصري",
+      "usdRecorded": "إجمالي التحويلات بالدولار الأمريكي",
+      "filterMatched": "المجاميع المصفاة",
+      "currencyMatched": "مجاميع العملة"
     },
-    "loading": "جارٍ تحميل سجل الدفعات...",
-    "emptyTitle": "لا توجد سجلات دفعات",
-    "emptyDescription": "ستظهر الدفعات المسجلة هنا.",
+    "loading": "جارٍ تحميل سجل التحويلات...",
+    "emptyTitle": "لا توجد سجلات تحويلات",
+    "emptyDescription": "ستظهر التحويلات المعتمدة هنا.",
     "filters": {
       "currencyLabel": "العملة",
       "allCurrencies": "كل العملات",
-      "practitionerLabel": "Practitioner",
-      "practitionerPlaceholder": "Search by practitioner name or ID",
-      "methodLabel": "Method",
-      "allMethods": "All methods",
-      "from": "From",
-      "to": "To",
-      "clear": "Clear filters"
+      "practitionerLabel": "المختص",
+      "practitionerPlaceholder": "ابحث باسم المختص أو الرقم التعريفي",
+      "methodLabel": "طريقة التحويل",
+      "allMethods": "كل الطرق",
+      "from": "من تاريخ",
+      "to": "إلى تاريخ",
+      "clear": "مسح الفلاتر"
     },
     "columns": {
-      "practitioner": "المعالج",
+      "practitioner": "المختص",
+      "settlementReference": "مرجع التسوية",
+      "amount": "المبلغ",
       "currency": "العملة",
-      "amount": "المبلغ المدفوع",
-      "paidAt": "تاريخ الدفع",
-      "reference": "مرجع التحويل",
-      "notes": "ملاحظات",
-      "recordedBy": "تم التسجيل بواسطة",
-      "actions": "Actions"
+      "transferMethod": "طريقة التحويل",
+      "externalReference": "مرجع التحويل الخارجي",
+      "recordedBy": "نفذه",
+      "paidAt": "تاريخ التحويل",
+      "status": "الحالة",
+      "actions": "الإجراءات"
     },
     "pagination": {
       "previous": "السابق",
@@ -194,29 +196,29 @@
     "actions": {
       "viewPractitioner": "عرض المختص",
       "viewDetails": "عرض التفاصيل",
-      "reconciliation": "Accounting review"
+      "reconciliation": "المراجعة المحاسبية"
     },
-    "errorTitle": "We couldn't load payout history.",
-    "errorDescription": "We couldn't load payout history. Please try again.",
-    "errorRetry": "Try again",
+    "errorTitle": "تعذر تحميل سجل التحويلات.",
+    "errorDescription": "فشل تحميل سجل التحويلات. يرجى المحاولة مرة أخرى.",
+    "errorRetry": "إعادة المحاولة",
     "detail": {
-      "eyebrow": "سجل دفعة",
-      "title": "تفاصيل الدفعة",
-      "description": "راجع تفاصيل الدفعة كما تم تسجيلها من الإدارة.",
+      "eyebrow": "سجل تحويل",
+      "title": "تفاصيل التحويل",
+      "description": "راجع تفاصيل تحويل أرباح المختص كما سجّلها النظام.",
       "close": "إغلاق",
-      "unknownPractitioner": "معالج غير معروف",
-      "reviewOnlyNotice": "Review only.",
-      "reviewOnlyHelper": "This shows a recorded manual transfer and does not move money.",
+      "unknownPractitioner": "مختص غير معروف",
+      "reviewOnlyNotice": "للمراجعة فقط.",
+      "reviewOnlyHelper": "يعرض هذا التحويلات المسجلة ولا يقوم بنقل أموال فعلية.",
       "notesTitle": "ملاحظات",
-      "noNotes": "لم تضاف ملاحظات لهذه الدفعة.",
+      "noNotes": "لم تضاف ملاحظات لهذا التحويل.",
       "fields": {
-        "amount": "المبلغ المدفوع",
+        "amount": "المبلغ",
         "currency": "العملة",
-        "paidAt": "تاريخ الدفع",
-        "recordedAt": "Recorded at",
-        "paymentMethod": "الطريقة",
-        "reference": "مرجع التحويل",
-        "recordedBy": "تم التسجيل بواسطة"
+        "paidAt": "تاريخ التحويل",
+        "recordedAt": "تاريخ التسجيل",
+        "paymentMethod": "طريقة التحويل",
+        "reference": "مرجع التحويل الخارجي",
+        "recordedBy": "نفذه"
       }
     }
   },
@@ -225,7 +227,7 @@
     "searchEyebrow": "مساحة التسوية",
     "searchTitle": "إنشاء تسوية",
     "searchDescription": "ابحث باسم المعالج أو الكود لاختيار المعالج الذي تريد تسجيل تسوية له.",
-    "title": "تسجيل دفعة معالج",
+    "title": "تسجيل تحويل للمختص",
     "description": "اختر العملة وسجّل المبلغ الذي تم تحويله فعليًا خارج المنصة.",
     "manualNotice": "هذه الصفحة تسجل الدفعة فقط. التحويل الفعلي يتم خارج المنصة.",
     "searchHint": "البحث يعرض حتى 30 نتيجة مختصرة فقط.",
@@ -309,8 +311,18 @@
     "confirmAction": "Confirm recorded payout"
   },
   "currencies": {
-    "EGP": "EGP - الجنيه المصري",
-    "USD": "USD - الدولار الأمريكي"
+    "EGP": "EGP",
+    "USD": "USD"
+  },
+  "statuses": {
+    "PAID_OUT": "تم التحويل",
+    "CREDITED": "تم التحويل",
+    "PROCESSING": "قيد المعالجة",
+    "FAILED": "فشل التحويل",
+    "CANCELLED": "ملغي",
+    "UNDER_REVIEW": "تحت المراجعة",
+    "APPROVED": "مقبول",
+    "REJECTED": "مرفوض"
   },
   "paymentMethods": {
     "MANUAL_BANK_TRANSFER": "تحويل بنكي يدوي",
@@ -322,12 +334,32 @@
     "record": "تسجيل الدفع",
     "saving": "جارٍ الحفظ...",
     "pay": "دفع",
-    "payNow": "دفع الآن",
+    "payNow": "تسجيل تحويل للمختص",
     "backToList": "العودة إلى القائمة",
     "viewDetails": "عرض التفاصيل",
     "history": "سجل الدفعات",
-    "createPayout": "تسجيل دفعة",
+    "createPayout": "تسجيل تحويل للمختص",
     "reconciliation": "مراجعة محاسبية"
+  },
+  "balanceView": {
+    "eyebrow": "المالية / المحافظ الداخلية",
+    "title": "أرصدة المختصين",
+    "description": "اعرض أرصدة المختصين المتاحة داخل المنصة بعد اعتماد التسويات، وتابع مصادر الرصيد والتحويلات السابقة. هذه الصفحة للمتابعة فقط ولا تنفذ تحويلات بنكية أو خارجية.",
+    "searchLabel": "بحث",
+    "searchPlaceholder": "ابحث باسم المختص أو بريده الإلكتروني أو كوده",
+    "currency": "العملة",
+    "allCurrencies": "الكل",
+    "sort": "ترتيب",
+    "sortLatest": "الأحدث نشاطاً",
+    "sortHighest": "أعلى رصيد",
+    "sortLowest": "أقل رصيد",
+    "sortName": "اسم المختص",
+    "columns": {"practitioner": "المختص", "code": "كود المختص", "currency": "العملة", "available": "الرصيد المتاح", "credited": "إجمالي المضاف", "transferred": "إجمالي التحويلات الخارجية", "activity": "آخر حركة", "updated": "آخر تحديث", "actions": "الإجراءات"},
+    "viewDetails": "عرض التفاصيل",
+    "emptyTitle": "لا توجد أرصدة للمختصين",
+    "emptyDescription": "ستظهر الأرصدة هنا بعد اعتماد التسويات وإضافة الرصيد إلى المحفظة الداخلية.",
+    "error": "تعذر تحميل أرصدة المختصين.",
+    "drawer": {"eyebrow": "عرض المحفظة للقراءة فقط", "title": "تفاصيل رصيد المختص", "notice": "هذا الرصيد موجود داخل منصة سويّاً ولا يعني أن المبلغ تم تحويله إلى الحساب البنكي للمختص. تظهر التحويلات الخارجية المسجلة في القسم المخصص لها.", "available": "الرصيد المتاح", "credited": "إجمالي المضاف للمحفظة", "transferred": "إجمالي التحويلات الخارجية", "lastActivity": "آخر حركة", "walletActivity": "سجل حركات المحفظة", "relatedSettlements": "التسويات المرتبطة", "externalTransfers": "التحويلات الخارجية", "close": "إغلاق", "openSettlement": "فتح التسوية", "viewTransfer": "عرض التحويل", "noActivity": "لا توجد حركات مسجلة لهذه المحفظة.", "noSettlements": "لا توجد تسويات مرتبطة بهذا الرصيد.", "noTransfers": "لم يتم تسجيل تحويلات خارجية لهذا المختص.", "credit": "إضافة", "debit": "خصم", "sessionEarning": "إضافة مستحق جلسة للمحفظة", "settlementPayout": "خصم تحويل خارجي", "financialRecovery": "استرداد مالي", "manualAdjustment": "تسوية إدارية على الرصيد", "recorded": "مسجل"}
   },
   "errors": {
     "pickPractitioner": "يرجى اختيار المعالج أولًا.",

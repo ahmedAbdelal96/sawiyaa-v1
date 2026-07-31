@@ -48,6 +48,51 @@ describe('env.schema payment validation', () => {
     ).toThrow(/PRACTITIONER_LOGIN_OTP_REQUIRED/);
   });
 
+  it('requires an allowlisted account for OTP QA capture', () => {
+    expect(() =>
+      validate(buildValidEnv({ PRACTITIONER_OTP_QA_CAPTURE_ENABLED: 'true' })),
+    ).toThrow(/PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS/);
+  });
+
+  it('rejects OTP QA capture in production', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          PRACTITIONER_OTP_QA_CAPTURE_ENABLED: 'true',
+          PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS: 'qa@example.test',
+        }),
+      ),
+    ).toThrow(/cannot be enabled in production/);
+  });
+
+  it('uses the safe availability defaults', () => {
+    const env = validate(buildValidEnv());
+    expect(env.AVAILABILITY_FUTURE_WEEKS_ALLOWED).toBe(4);
+    expect(env.AVAILABILITY_RETENTION_MONTHS).toBe(12);
+  });
+
+  it('accepts availability environment overrides', () => {
+    const env = validate(
+      buildValidEnv({
+        AVAILABILITY_FUTURE_WEEKS_ALLOWED: '6',
+        AVAILABILITY_RETENTION_MONTHS: '24',
+      }),
+    );
+    expect(env.AVAILABILITY_FUTURE_WEEKS_ALLOWED).toBe(6);
+    expect(env.AVAILABILITY_RETENTION_MONTHS).toBe(24);
+  });
+
+  it('rejects unsafe availability limits', () => {
+    expect(() =>
+      validate(buildValidEnv({ AVAILABILITY_FUTURE_WEEKS_ALLOWED: '13' })),
+    ).toThrow(/AVAILABILITY_FUTURE_WEEKS_ALLOWED/);
+    expect(() =>
+      validate(buildValidEnv({ AVAILABILITY_RETENTION_MONTHS: '0' })),
+    ).toThrow(/AVAILABILITY_RETENTION_MONTHS/);
+  });
+
   it('rejects live stripe mode in non-production environments', () => {
     expect(() =>
       validate(

@@ -46,6 +46,8 @@ export class ListAdminLedgerExplorerUseCase {
         journalEntryId: item.journalEntryId,
         sourceType: item.journalEntry.sourceType,
         sourceId: item.journalEntry.sourceId,
+        sessionId: item.sessionId,
+        sessionCode: item.sessionCode,
         occurredAt: item.journalEntry.occurredAt.toISOString(),
         createdAt: item.createdAt.toISOString(),
         currencyCode: item.journalEntry.currencyCode,

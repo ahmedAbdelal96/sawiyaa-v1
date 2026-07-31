@@ -93,6 +93,7 @@ describe('GetAdminFinanceHubSummaryUseCase', () => {
     expect(
       prismaMock.practitionerSettlement.count.mock.calls[0][0].where.status.in,
     ).toEqual([
+      PractitionerSettlementStatus.CREDITED,
       PractitionerSettlementStatus.READY,
       PractitionerSettlementStatus.PROCESSING,
     ]);

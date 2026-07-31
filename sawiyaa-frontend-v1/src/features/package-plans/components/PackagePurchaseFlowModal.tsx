@@ -393,7 +393,7 @@ export default function PackagePurchaseFlowModal({
                 label: t("packages.flow.signInToContinue"),
                 href: (
                   <Link
-                  href="/signin?mode=patient"
+                  href="/signin/patient"
                     className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
                   >
                     {t("packages.flow.signInToContinue")}

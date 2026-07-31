@@ -177,6 +177,19 @@ export interface ThemeColors {
   ringFocus: string;
 }
 
+export type PublicThemeTokens = {
+  canvas: string;
+  heroSurface: string;
+  raisedSurface: string;
+  accentMint: string;
+  accentSand: string;
+  accentPeach: string;
+  primaryText: string;
+  secondaryText: string;
+  subtleBorder: string;
+  ambientShadow: string;
+};
+
 export type ThemeShape = {
   colors: ThemeColors;
   spacing: typeof spacing;
@@ -185,6 +198,7 @@ export type ThemeShape = {
   layers: typeof layers;
   touchTargets: typeof touchTargets;
   typography: typeof typography;
+  public: PublicThemeTokens;
 };
 
 const lightColors = {
@@ -390,6 +404,32 @@ const sharedColors = {
   onTertiaryFixedVariant: lightColors.onTertiaryFixedVariant,
 } as const;
 
+const lightPublicColors: PublicThemeTokens = {
+  canvas: "#F7F4EE",
+  heroSurface: "#FFFCF8",
+  raisedSurface: "#FFFCF8",
+  accentMint: "#DDEAE3",
+  accentSand: "#F4E0C5",
+  accentPeach: "#EECFC2",
+  primaryText: "#053f38",
+  secondaryText: "#404847",
+  subtleBorder: "#DDEAE3",
+  ambientShadow: "rgba(31, 51, 47, 0.05)",
+};
+
+const darkPublicColors: PublicThemeTokens = {
+  canvas: "#101716",
+  heroSurface: "#131b1a",
+  raisedSurface: "#182221",
+  accentMint: "#153534",
+  accentSand: "#332612",
+  accentPeach: "#2d2620",
+  primaryText: "#f2f7f6",
+  secondaryText: "#c8d4d2",
+  subtleBorder: "rgba(156, 180, 177, 0.16)",
+  ambientShadow: "rgba(0, 0, 0, 0.32)",
+};
+
 export const lightTheme: ThemeShape = {
   colors: {
     ...lightColors,
@@ -420,6 +460,7 @@ export const lightTheme: ThemeShape = {
   layers,
   touchTargets,
   typography,
+  public: lightPublicColors,
 };
 
 export const darkTheme: ThemeShape = {
@@ -492,4 +533,5 @@ export const darkTheme: ThemeShape = {
   layers,
   touchTargets,
   typography,
+  public: darkPublicColors,
 };

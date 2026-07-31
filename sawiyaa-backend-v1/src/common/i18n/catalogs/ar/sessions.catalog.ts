@@ -37,6 +37,8 @@ export const arSessionsCatalog = {
       ' الجلسة {{packageSessionIndex}} من أصل {{packageSessionCount}} ضمن الباقة الخاصة بك.',
   },
   errors: {
+    normalBookingsPaused:
+      'Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬ Ù„Ø§ ÙŠØ³ØªÙ‚Ø¨Ù„ Ø­Ø¬ÙˆØ²Ø§Øª Ø¬Ø¯ÙŠØ¯Ø© Ø­Ø§Ù„ÙŠÙ‹Ø§',
     patientNotFound: 'لم يتم العثور على ملف المريض',
     practitionerNotFound: 'لم يتم العثور على ملف المعالج',
     practitionerNotBookable: 'المعالج غير متاح للحجز المجدول حاليًا',

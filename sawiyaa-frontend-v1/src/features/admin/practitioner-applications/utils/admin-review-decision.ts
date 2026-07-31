@@ -89,7 +89,7 @@ function getCredentialTypeLabel(locale: string, type: CredentialType) {
     NATIONAL_ID_BACK: ar ? "بطاقة الهوية - الوجه الخلفي" : "National ID back",
     NATIONAL_ID: ar ? "بطاقة الهوية" : "National ID",
     PASSPORT: ar ? "جواز السفر" : "Passport",
-    MEMBERSHIP: ar ? "العضوية" : "Membership",
+    MEMBERSHIP: ar ? "كارنيه النقابة" : "Syndicate card",
     OTHER: ar ? "مستند آخر" : "Other document",
   };
   return labels[type];

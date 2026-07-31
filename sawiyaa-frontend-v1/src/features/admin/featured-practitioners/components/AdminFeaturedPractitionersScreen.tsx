@@ -14,6 +14,7 @@ import {
   ScrollText,
   SquarePen,
 } from "lucide-react";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
@@ -346,7 +347,7 @@ export default function AdminFeaturedPractitionersScreen() {
                 {row.practitioner?.displayName ?? "-"}
               </p>
               <p className="truncate text-xs text-text-muted">
-                {row.practitioner?.professionalTitle ?? row.practitioner?.slug ?? row.practitionerId}
+                {getProfessionalTitleLabel(row.practitioner?.professionalTitle, locale) || row.practitioner?.slug || row.practitionerId}
               </p>
             </div>
           </div>

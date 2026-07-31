@@ -7,14 +7,13 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { AuthScaffold } from "../../../src/components/auth/AuthScaffold";
-import { Button, Input, Text } from "../../../src/components/ui";
+import { Button, Input, Text, OtpInput } from "../../../src/components/ui";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
 import { getAuthLockoutErrorMessage } from "../../../src/features/auth/auth-lockout-messages";
 import type {
   PractitionerOtpChallengeResponse,
-  PractitionerLoginResponse,
 } from "../../../src/features/auth/contracts";
 
 function validateEmail(email: string) {
@@ -274,14 +273,12 @@ export default function PractitionerSignInScreen() {
             </Text>
           </View>
 
-          <Input
-            autoCapitalize="none"
-            keyboardType="number-pad"
-            label={t("auth.fields.otpCode")}
-            maxLength={8}
-            onChangeText={setOtpCode}
-            placeholder={t("auth.placeholders.otpCode")}
+          <OtpInput
             value={otpCode}
+            onChangeText={setOtpCode}
+            length={6}
+            disabled={isSubmitting}
+            label={t("auth.fields.otpCode")}
           />
 
           {infoText ? (
@@ -302,7 +299,7 @@ export default function PractitionerSignInScreen() {
                 : t("auth.practitionerSignIn.verifyOtp")
             }
             onPress={() => void submitOtp()}
-            disabled={isSubmitting || otpCode.trim().length < 4}
+            disabled={isSubmitting || otpCode.trim().length < 6}
             style={styles.primaryButton}
           />
           <Button

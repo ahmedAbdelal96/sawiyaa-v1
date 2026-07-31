@@ -16,6 +16,7 @@ import {
   getLocalizedSpecialtyCategoryName,
   getLocalizedSpecialtyName,
 } from "@/features/specialties/utils/localized-specialty";
+import { getLocalizedLanguageOptions } from "@/constants/reference-data";
 import { useCreateMatchingSession } from "../hooks/use-guided-matching";
 import type {
   CreateMatchingSessionRequest,
@@ -626,14 +627,16 @@ export default function GuidedMatchingStartScreen({ specialties }: GuidedMatchin
           {currentStep === "language" && (
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                { value: "ar", tone: "emerald" as const },
-                { value: "en", tone: "blue" as const },
-                { value: "fr", tone: "violet" as const },
-                { value: "ANY", tone: "slate" as const },
-              ].map(({ value, tone }) => (
+                ...getLocalizedLanguageOptions(locale).map((option, index) => ({
+                  value: option.value,
+                  title: option.text,
+                  tone: (["emerald", "blue", "violet", "amber", "rose", "teal", "cyan"] as const)[index],
+                })),
+                { value: "ANY", title: locale === "ar" ? "أي لغة" : "Any language", tone: "slate" as const },
+              ].map(({ value, title, tone }) => (
                   <ChoiceCard
                     key={value}
-                    title={t(`choices.language.${value}`)}
+                    title={title}
                     selected={selectedLanguage === value}
                     onClick={() => {
                       form.setValue("preferredLanguage", value);

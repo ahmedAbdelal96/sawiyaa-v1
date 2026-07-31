@@ -12,13 +12,30 @@ export type ServerHttpRequestOptions = {
 };
 
 async function resolveServerBaseUrl(): Promise<string> {
-  if (/^https?:\/\//i.test(API_BASE_URL)) {
-    return API_BASE_URL;
-  }
-
   const normalizedPath = API_BASE_URL.startsWith("/")
     ? API_BASE_URL
     : `/${API_BASE_URL}`;
+
+  const proxyTarget = process.env.API_PROXY_TARGET?.trim();
+  if (proxyTarget) {
+    try {
+      const target = new URL(proxyTarget);
+      if (target.protocol === "http:" || target.protocol === "https:") {
+        const targetPath = target.pathname.replace(/\/+$/, "");
+        const apiPath = normalizedPath.replace(/\/+$/, "");
+        target.pathname = targetPath.endsWith(apiPath)
+          ? targetPath
+          : `${targetPath}${apiPath}`;
+        return target.toString().replace(/\/$/, "");
+      }
+    } catch {
+      // Ignore invalid proxy targets and use the existing public fallback.
+    }
+  }
+
+  if (/^https?:\/\//i.test(API_BASE_URL)) {
+    return API_BASE_URL;
+  }
 
   try {
     const h = await headers();
@@ -66,17 +83,22 @@ async function fetchJson<T>(
   appendParams(requestUrl, options.params);
   const accessToken = await getAccessToken();
 
-  let trustedCountryHeaders: Record<string, string> = {};
+  let forwardedRequestHeaders: Record<string, string> = {};
   try {
     const requestHeaders = await headers();
-    const cfCountry = requestHeaders.get("cf-ipcountry");
-    const vercelCountry = requestHeaders.get("x-vercel-ip-country");
-    const geoIpCountry = requestHeaders.get("x-geoip-country");
-    trustedCountryHeaders = {
-      ...(cfCountry ? { "cf-ipcountry": cfCountry } : {}),
-      ...(vercelCountry ? { "x-vercel-ip-country": vercelCountry } : {}),
-      ...(geoIpCountry ? { "x-geoip-country": geoIpCountry } : {}),
-    };
+    const allowedHeaders = [
+      "x-forwarded-for",
+      "x-real-ip",
+      "user-agent",
+      "cf-ipcountry",
+      "x-vercel-ip-country",
+      "x-geoip-country",
+    ];
+    forwardedRequestHeaders = Object.fromEntries(
+      allowedHeaders
+        .map((name) => [name, requestHeaders.get(name)] as const)
+        .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
+    );
   } catch {
     // No request context available. Keep public fallback behavior.
   }
@@ -93,7 +115,7 @@ async function fetchJson<T>(
         Accept: "application/json",
         ...(options.locale ? { "Accept-Language": options.locale } : {}),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...trustedCountryHeaders,
+        ...forwardedRequestHeaders,
       },
       signal: controller.signal,
       cache: "no-store",

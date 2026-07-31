@@ -403,9 +403,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
 
   const signUpHref =
     mode === "patient"
-      ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "patient" })
+      ? buildAuthHref("/signup/patient", { callbackUrl: normalizedCallbackUrl })
       : mode === "practitioner"
-        ? buildAuthHref("/signup", { callbackUrl: normalizedCallbackUrl, mode: "practitioner" })
+        ? buildAuthHref("/signup/practitioner", { callbackUrl: normalizedCallbackUrl })
         : null;
 
   const forgotPasswordHref =
@@ -494,7 +494,17 @@ export default function SignInForm({ mode }: SignInFormProps) {
         </div>
 
         {!challenge ? (
-          <form onSubmit={credentialsForm.handleSubmit(onSubmitCredentials)}>
+          <div
+            role="form"
+            aria-label={mode === "admin" ? "Admin sign in" : undefined}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.target instanceof HTMLButtonElement) {
+                return;
+              }
+              event.preventDefault();
+              void credentialsForm.handleSubmit(onSubmitCredentials)();
+            }}
+          >
             <div className="space-y-5">
               
               {/* Email Input */}
@@ -559,9 +569,18 @@ export default function SignInForm({ mode }: SignInFormProps) {
 
               {/* Submit Button */}
               <button
-                type="submit"
+                type="button"
                 disabled={isSubmitting}
-                className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => {
+                  void credentialsForm.handleSubmit(onSubmitCredentials)();
+                }}
+                className={`flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                  mode === "patient"
+                    ? "bg-[#24564F] hover:bg-[#1E4B45]"
+                    : mode === "practitioner"
+                    ? "bg-[#1A365D] hover:bg-[#2A4D7C]"
+                    : "bg-[#2D3748] hover:bg-[#4A5568]"
+                }`}
               >
                 {isSubmitting ? t("signingIn") : t("signInButton")}
               </button>
@@ -582,9 +601,12 @@ export default function SignInForm({ mode }: SignInFormProps) {
                 </div>
               )}
             </div>
-          </form>
+          </div>
         ) : (
-          <form onSubmit={otpForm.handleSubmit(onSubmitOtp)}>
+          <form
+            // eslint-disable-next-line react-hooks/refs
+            onSubmit={otpForm.handleSubmit(onSubmitOtp)}
+          >
             <div className="space-y-6">
               <div>
                 <Label className="mb-3 block text-center">

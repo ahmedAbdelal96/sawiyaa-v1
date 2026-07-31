@@ -4,10 +4,12 @@ import {
   LedgerEntryType,
   PaymentStatus,
   Prisma,
+  PractitionerSettlementStatus,
   SessionEarningReviewDecision,
   SessionEarningReviewSourceType,
   SessionEarningReviewStatus,
   SessionStatus,
+  SecurityAuditOutcome,
   WalletBalanceBucket,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -15,6 +17,13 @@ import { CalculatePackageSessionAllocationService } from './calculate-package-se
 import { ExtractPaymentLedgerBreakdownService } from './extract-payment-ledger-breakdown.service';
 import { LedgerRepository } from '../repositories/ledger.repository';
 import { RefreshPractitionerWalletService } from './refresh-practitioner-wallet.service';
+import { ApprovePractitionerSettlementService } from './approve-practitioner-settlement.service';
+import { WalletRepository } from '../repositories/wallet.repository';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
 
@@ -55,6 +64,9 @@ export class SessionEarningReviewService {
     private readonly extractPaymentLedgerBreakdownService: ExtractPaymentLedgerBreakdownService,
     private readonly calculatePackageSessionAllocationService: CalculatePackageSessionAllocationService,
     private readonly refreshPractitionerWalletService: RefreshPractitionerWalletService,
+    private readonly approvePractitionerSettlementService: ApprovePractitionerSettlementService,
+    private readonly walletRepository?: WalletRepository,
+    private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   private async lockPaymentReviewScope(db: DbClient, paymentId: string) {
@@ -98,6 +110,10 @@ export class SessionEarningReviewService {
     finalPractitionerAmount?: string | number | Prisma.Decimal | null;
     finalPlatformAmount?: string | number | Prisma.Decimal | null;
     finalCurrencyCode?: string | null;
+    exchangeRate?: string | number | Prisma.Decimal | null;
+    calculatedWalletCreditAmount?: string | number | Prisma.Decimal | null;
+    walletCreditDifferenceAmount?: string | number | Prisma.Decimal | null;
+    walletCreditOverrideReason?: string | null;
     internalReason?: string | null;
     practitionerFacingNote?: string | null;
     tx?: Prisma.TransactionClient;
@@ -158,6 +174,8 @@ export class SessionEarningReviewService {
         },
         entryType: LedgerEntryType.PRACTITIONER_EARNING,
         direction: LedgerDirection.CREDIT,
+        settlementId: { not: null },
+        actorUserId: { not: null },
       },
       select: {
         id: true,
@@ -283,6 +301,10 @@ export class SessionEarningReviewService {
       update: updateData,
       include: this.reviewInclude,
     });
+
+    if (!alreadyRealized && review.reviewStatus === SessionEarningReviewStatus.PENDING_REVIEW) {
+      await this.ensureSettlementCandidate(db, review);
+    }
 
     return {
       reviewId: review.id,
@@ -412,6 +434,8 @@ export class SessionEarningReviewService {
       include: this.reviewInclude,
     });
 
+    await this.ensureSettlementCandidate(db, review);
+
     return {
       reviewId: review.id,
       reviewStatus: review.reviewStatus,
@@ -434,6 +458,10 @@ export class SessionEarningReviewService {
       finalPractitionerAmount?: string | number | Prisma.Decimal | null;
       finalPlatformAmount?: string | number | Prisma.Decimal | null;
       finalCurrencyCode?: string | null;
+      exchangeRate?: string | number | Prisma.Decimal | null;
+      calculatedWalletCreditAmount?: string | number | Prisma.Decimal | null;
+      walletCreditDifferenceAmount?: string | number | Prisma.Decimal | null;
+      walletCreditOverrideReason?: string | null;
       internalReason?: string | null;
       practitionerFacingNote?: string | null;
     },
@@ -553,62 +581,38 @@ export class SessionEarningReviewService {
       };
     }
 
-    const ledgerEntries = [
-      {
-        practitionerId: review.practitionerId,
+    const settlement = await this.approvePractitionerSettlementService.approveAndCredit({
+      db: db as Prisma.TransactionClient,
+      practitionerId: review.practitionerId,
+      sessionId: review.sessionId,
+      paymentId: review.paymentId,
+      sessionEarningReviewId: review.id,
+      originalAmount: review.paymentAmount,
+      originalCurrencyCode: review.paymentCurrencyCode,
+      walletCurrencyCode: finalCurrencyCode,
+      exchangeRate: input.exchangeRate
+        ? this.resolveDecimal(input.exchangeRate, new Prisma.Decimal(1))
+        : undefined,
+      convertedAmount: input.calculatedWalletCreditAmount
+        ? this.resolveDecimal(input.calculatedWalletCreditAmount, finalPractitionerAmount)
+        : finalPractitionerAmount,
+      finalWalletCredit: finalPractitionerAmount,
+      walletCreditDifferenceAmount: input.walletCreditDifferenceAmount
+        ? this.resolveDecimal(input.walletCreditDifferenceAmount, new Prisma.Decimal(0))
+        : new Prisma.Decimal(0),
+      walletCreditOverrideReason: input.walletCreditOverrideReason ?? null,
+      platformAmount: finalPlatformAmount,
+      actorUserId: input.reviewerUserId,
+      referenceType: 'session-earning-review',
+      referenceId: review.id,
+      description: 'Practitioner earning approved from session accounting review.',
+      metadata: {
+        reviewId: review.id,
         sessionId: review.sessionId,
         paymentId: review.paymentId,
-        settlementId: null,
-        sessionEarningReviewId: review.id,
-        entryType: LedgerEntryType.PRACTITIONER_EARNING,
-        direction: LedgerDirection.CREDIT,
-        amount: finalPractitionerAmount,
-        currencyCode: finalCurrencyCode,
-        balanceBucket: WalletBalanceBucket.AVAILABLE,
-        referenceType: 'session-earning-review',
-        referenceId: review.id,
-        description: 'Practitioner earning approved from session accounting review.',
-        metadataJson: {
-          source: 'session-earning-review',
-          reviewId: review.id,
-          sessionId: review.sessionId,
-          paymentId: review.paymentId,
-          sourceType: review.sourceType,
-          reviewerUserId: input.reviewerUserId,
-        },
+        sourceType: review.sourceType,
       },
-      {
-        practitionerId: null,
-        sessionId: review.sessionId,
-        paymentId: review.paymentId,
-        settlementId: null,
-        sessionEarningReviewId: review.id,
-        entryType: LedgerEntryType.PLATFORM_COMMISSION,
-        direction: LedgerDirection.CREDIT,
-        amount: finalPlatformAmount,
-        currencyCode: finalCurrencyCode,
-        balanceBucket: WalletBalanceBucket.AVAILABLE,
-        referenceType: 'session-earning-review',
-        referenceId: review.id,
-        description: 'Platform commission approved from session accounting review.',
-        metadataJson: {
-          source: 'session-earning-review',
-          reviewId: review.id,
-          sessionId: review.sessionId,
-          paymentId: review.paymentId,
-          sourceType: review.sourceType,
-          reviewerUserId: input.reviewerUserId,
-        },
-      },
-    ].filter((entry) => entry.amount.gt(0));
-
-    if (ledgerEntries.length > 0) {
-      await this.ledgerRepository.createManyLedgerEntries(
-        ledgerEntries,
-        db instanceof PrismaService ? undefined : db,
-        true,
-      );
-    }
+    });
 
     const postedEntries = await db.ledgerEntry.findMany({
       where: {
@@ -663,6 +667,7 @@ export class SessionEarningReviewService {
         finalPractitionerAmount: resolvedFinalPractitionerAmount,
         finalPlatformAmount: resolvedFinalPlatformAmount,
         finalCurrencyCode: resolvedFinalCurrencyCode,
+        settlementId: settlement.id,
       },
       include: this.reviewInclude,
     });
@@ -710,6 +715,7 @@ export class SessionEarningReviewService {
       },
       select: {
         id: true,
+        sessionId: true,
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
@@ -723,6 +729,19 @@ export class SessionEarningReviewService {
 
     const reviewIds = pendingReviews.map((item) => item.id);
     const invalidatedAt = new Date();
+    const pendingSettlements = await db.practitionerSettlement.findMany({
+      where: {
+        sourceReviewId: { in: reviewIds },
+        status: PractitionerSettlementStatus.UNDER_REVIEW,
+      },
+      select: {
+        id: true,
+        sourceReviewId: true,
+        status: true,
+        finalWalletCredit: true,
+        walletCurrencyCode: true,
+      },
+    });
 
     await db.sessionEarningReview.updateMany({
       where: {
@@ -744,6 +763,65 @@ export class SessionEarningReviewService {
         practitionerFacingNote: null,
       },
     });
+
+    await db.practitionerSettlement.updateMany({
+      where: {
+        sourceReviewId: { in: reviewIds },
+        status: PractitionerSettlementStatus.UNDER_REVIEW,
+      },
+      data: {
+        status: PractitionerSettlementStatus.REJECTED,
+        rejectionReason:
+          input.internalReason?.trim() ||
+          'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL',
+        rejectedByUserId: null,
+        rejectedAt: invalidatedAt,
+      },
+    });
+
+    if (this.securityAuditService) {
+      const reviewById = new Map(
+        pendingReviews.map((review) => [review.id, review]),
+      );
+
+      for (const settlement of pendingSettlements) {
+        const review = settlement.sourceReviewId
+          ? reviewById.get(settlement.sourceReviewId)
+          : undefined;
+        const reason =
+          input.internalReason?.trim() ||
+          'PAYMENT_REFUNDED_BEFORE_REVIEW_APPROVAL';
+
+        await this.securityAuditService.recordRequired(
+          db as Prisma.TransactionClient,
+          {
+            action: 'SETTLEMENT_AUTO_REJECTED_REFUND',
+            outcome: SecurityAuditOutcome.SUCCESS,
+            actorType: SecurityAuditActorType.SYSTEM,
+            source: SecurityAuditSource.SYSTEM,
+            resourceType: 'PractitionerSettlement',
+            resourceId: settlement.id,
+            reason,
+            metadata: {
+              settlementId: settlement.id,
+              sessionId: review?.sessionId ?? null,
+              reviewId: settlement.sourceReviewId,
+              paymentId: input.paymentId,
+              previousSettlementStatus: settlement.status,
+              newSettlementStatus: PractitionerSettlementStatus.REJECTED,
+              previousReviewStatus: SessionEarningReviewStatus.PENDING_REVIEW,
+              newReviewStatus: SessionEarningReviewStatus.EXCLUDED_FROM_PAYOUT,
+              amount: settlement.finalWalletCredit.toString(),
+              currency: settlement.walletCurrencyCode,
+              reason,
+              referenceType: 'PAYMENT',
+              referenceId: input.paymentId,
+              transitionAt: invalidatedAt.toISOString(),
+            },
+          },
+        );
+      }
+    }
 
     return {
       updatedCount: reviewIds.length,
@@ -920,6 +998,68 @@ export class SessionEarningReviewService {
     }
 
     return value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
+  }
+
+  private async ensureSettlementCandidate(
+    db: DbClient,
+    review: {
+      id: string;
+      practitionerId: string;
+      paymentAmount: Prisma.Decimal;
+      paymentCurrencyCode: string;
+      suggestedPractitionerAmount: Prisma.Decimal;
+    },
+  ) {
+    if (!('practitionerProfile' in db) || !this.walletRepository) return null;
+    const existing = await db.practitionerSettlement.findUnique({
+      where: { sourceReviewId: review.id },
+      select: { id: true },
+    });
+    if (existing) return existing;
+
+    const practitioner = await db.practitionerProfile.findUnique({
+      where: { id: review.practitionerId },
+      select: { country: { select: { isoCode: true } } },
+    });
+    const countryCode = practitioner?.country?.isoCode?.trim().toUpperCase();
+    if (!countryCode) return null;
+    const walletCurrencyCode = ['EG', 'EGY'].includes(countryCode) ? 'EGP' : 'USD';
+    const now = new Date();
+    const batch = await db.settlementBatch.upsert({
+      where: { periodYear_periodMonth_currencyCode: { periodYear: now.getUTCFullYear(), periodMonth: now.getUTCMonth() + 1, currencyCode: walletCurrencyCode } },
+      create: { periodYear: now.getUTCFullYear(), periodMonth: now.getUTCMonth() + 1, currencyCode: walletCurrencyCode, status: 'GENERATED', slug: `settlement-${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${walletCurrencyCode}`, generatedAt: now },
+      update: { status: 'GENERATED' },
+    });
+    const wallet = await this.walletRepository.ensureActiveWallet(review.practitionerId, walletCurrencyCode, db as Prisma.TransactionClient);
+    const settlement = await db.practitionerSettlement.create({
+      data: {
+        batchId: batch.id,
+        practitionerId: review.practitionerId,
+        sourceReviewId: review.id,
+        walletId: wallet.id,
+        amountGross: review.suggestedPractitionerAmount,
+        amountAdjustments: 0,
+        amountNet: review.suggestedPractitionerAmount,
+        currencyCode: walletCurrencyCode,
+        originalAmount: review.paymentAmount,
+        originalCurrencyCode: review.paymentCurrencyCode,
+        walletCurrencyCode,
+        exchangeRate: 1,
+        convertedAmount: review.suggestedPractitionerAmount,
+        finalWalletCredit: 0,
+        status: 'UNDER_REVIEW',
+        notes: 'Created automatically after eligible session completion.',
+      },
+    });
+
+    if (this.securityAuditService && db instanceof PrismaService === false) {
+      await this.securityAuditService.recordRequired(db as Prisma.TransactionClient, {
+        action: 'SETTLEMENT_CREATED', outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: 'SYSTEM', resourceType: 'PractitionerSettlement', resourceId: settlement.id,
+        metadata: { sourceReviewId: review.id, status: 'UNDER_REVIEW' },
+      });
+    }
+    return settlement;
   }
 
   private readonly reviewInclude = {

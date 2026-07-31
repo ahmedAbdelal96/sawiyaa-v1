@@ -2,6 +2,7 @@
 
 import React, { forwardRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useLocale } from "next-intl";
 
 interface AuthPasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
@@ -10,6 +11,12 @@ interface AuthPasswordFieldProps extends React.InputHTMLAttributes<HTMLInputElem
 const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldProps>(
   ({ className = "", disabled = false, error = false, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
+    const locale = useLocale();
+    const isAr = locale.startsWith("ar");
+
+    const toggleLabel = showPassword
+      ? (isAr ? "إخفاء كلمة المرور" : "Hide password")
+      : (isAr ? "إظهار كلمة المرور" : "Show password");
 
     let inputClasses = `app-control bg-surface-tertiary dark:bg-surface-tertiary focus:ring-ring-focus focus:border-border-focus h-11 w-full appearance-none pl-4 pr-12 py-2.5 ${className}`;
 
@@ -34,6 +41,7 @@ const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldProps>(
           onClick={() => setShowPassword((prev) => !prev)}
           className="absolute right-3.5 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary hover:text-text-primary transition hover:bg-surface-secondary/50 dark:hover:bg-white/5 active:scale-95"
           disabled={disabled}
+          aria-label={toggleLabel}
         >
           {showPassword ? (
             <Eye className="h-4.5 w-4.5 shrink-0" />

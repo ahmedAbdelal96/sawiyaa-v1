@@ -21,6 +21,7 @@ export type PractitionersListingSearchParams = {
   specialtyCategorySlug?: string;
   specialtySlug?: string;
   language?: string;
+  languageCodes?: string | string[];
   country?: string;
   practitionerKind?: string;
   gender?: string;
@@ -50,7 +51,7 @@ export type PractitionersListingViewData = {
   safeSearch: string;
   safeSpecialtyCategorySlug: string;
   safeSpecialtySlug: string;
-  safeLanguage: string;
+  safeLanguageCodes: string[];
   safeCountry: string;
   safePractitionerKind: "doctor" | "therapist" | "";
   safeGender: "male" | "female" | "";
@@ -77,6 +78,7 @@ export async function getPractitionersListingData(
     specialtyCategorySlug = "",
     specialtySlug = "",
     language = "",
+    languageCodes,
     country = "",
     practitionerKind = "",
     gender = "",
@@ -149,9 +151,6 @@ export async function getPractitionersListingData(
     // Best-effort rendering: listing still works even if filter metadata is unavailable.
   }
 
-  const safeLanguage = filters.languages.some((option) => option.value === language)
-    ? language
-    : "";
   const safeCountry = filters.countries.some((option) => option.value === country.toUpperCase())
     ? country.toUpperCase()
     : "";
@@ -177,11 +176,25 @@ export async function getPractitionersListingData(
         : item.nameEn ?? item.nameAr ?? item.name,
     ]),
   );
-  const languageLabels = Object.fromEntries(
-    filters.languages.map((item) => [item.value, item.label]),
-  );
+  const languageLabels = Object.fromEntries(filters.languages.map((item) => [item.value, item.label]));
   const countryLabels = Object.fromEntries(
     filters.countries.map((item) => [item.value.toLowerCase(), item.label]),
+  );
+
+  const languageParamValues = Array.isArray(languageCodes)
+    ? languageCodes
+    : typeof languageCodes === "string"
+      ? [languageCodes]
+      : [];
+  const safeLanguageCodes = Array.from(
+    new Set(
+      [
+        ...languageParamValues.flatMap((value) => value.split(",")),
+        ...(!languageParamValues.length && language ? [language] : []),
+      ]
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => filters.languages.some((option) => option.value === value)),
+    ),
   );
 
   let fetchError = false;
@@ -198,7 +211,7 @@ export async function getPractitionersListingData(
       search: safeSearch || undefined,
       specialtyCategorySlug: safeSpecialtyCategorySlug || undefined,
       specialtySlug: safeSpecialtySlug || undefined,
-      language: safeLanguage || undefined,
+      languageCodes: safeLanguageCodes.length > 0 ? safeLanguageCodes : undefined,
       country: safeCountry || undefined,
       practitionerKind: safePractitionerKind || undefined,
       gender: safeGender || undefined,
@@ -229,7 +242,7 @@ export async function getPractitionersListingData(
     safeSearch,
     safeSpecialtyCategorySlug,
     safeSpecialtySlug,
-    safeLanguage,
+    safeLanguageCodes,
     safeCountry,
     safePractitionerKind,
     safeGender,
@@ -260,7 +273,7 @@ export default async function PractitionersListingView({
     safeSearch,
     safeSpecialtyCategorySlug,
     safeSpecialtySlug,
-    safeLanguage,
+    safeLanguageCodes,
     safeCountry,
     safePractitionerKind,
     safeGender,
@@ -278,7 +291,7 @@ export default async function PractitionersListingView({
     if (safeSearch) qs.set("search", safeSearch);
     if (safeSpecialtyCategorySlug) qs.set("specialtyCategorySlug", safeSpecialtyCategorySlug);
     if (safeSpecialtySlug) qs.set("specialtySlug", safeSpecialtySlug);
-    if (safeLanguage) qs.set("language", safeLanguage);
+    if (safeLanguageCodes.length > 0) qs.set("languageCodes", safeLanguageCodes.join(","));
     if (safeCountry) qs.set("country", safeCountry);
     if (safePractitionerKind) qs.set("practitionerKind", safePractitionerKind);
     if (safeGender) qs.set("gender", safeGender);

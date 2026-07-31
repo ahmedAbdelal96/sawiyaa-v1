@@ -5,6 +5,10 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ReactNode, useState } from "react";
 import { TIME } from "@/lib/api/hooks/config";
 import { toAppError } from "@/lib/api/errors";
+import { useEffect } from "react";
+import { SENSITIVE_CACHE_CLEAR_EVENT } from "@/lib/security/sensitive-cache";
+import { disconnectGeneralChatSocket } from "@/features/chat/realtime/general-chat-socket.client";
+import { disconnectUnifiedMessagesSocket } from "@/features/chat/realtime/unified-messages-socket.client";
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -55,6 +59,19 @@ export function QueryProvider({ children }: QueryProviderProps) {
         },
       })
   );
+
+  useEffect(() => {
+    const clearSensitiveState = () => {
+      queryClient.clear();
+      disconnectGeneralChatSocket();
+      disconnectUnifiedMessagesSocket();
+    };
+
+    window.addEventListener(SENSITIVE_CACHE_CLEAR_EVENT, clearSensitiveState);
+    return () => {
+      window.removeEventListener(SENSITIVE_CACHE_CLEAR_EVENT, clearSensitiveState);
+    };
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

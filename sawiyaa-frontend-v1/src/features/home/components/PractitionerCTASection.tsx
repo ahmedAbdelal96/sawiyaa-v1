@@ -46,7 +46,7 @@ export default async function PractitionerCTASection() {
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
-                href="/signin?mode=practitioner"
+                href="/signup/practitioner"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
               >
                 {t("ctaPrimary")}

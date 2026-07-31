@@ -25,7 +25,7 @@ import { useAdminModerationReports } from "@/features/admin/moderation-reports/h
 import { useAdminNotifications } from "@/features/admin/notifications/hooks/use-admin-notifications";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
 import { PermissionKey } from "@/lib/auth/permissions";
-import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
+import { formatAdminMoneyForLocale as formatFinanceMoney } from "@/features/admin/finance/lib/finance-formatters";
 import {
   AreaTrendChart,
   BarTrendChart,

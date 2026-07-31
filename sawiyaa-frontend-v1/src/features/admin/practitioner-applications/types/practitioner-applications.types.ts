@@ -47,6 +47,7 @@ export interface PractitionerApplicationListItem {
   practitionerType: PractitionerType;
   countryCode: string | null;
   applicationKind: PractitionerApplicationKind;
+  changedSections?: string[];
   mainSpecialty: AdminSpecialtySummary | null;
   applicationStatus: PractitionerApplicationStatus;
   submittedAt: string | null;
@@ -139,7 +140,6 @@ export interface AdminPractitionerProfileSection {
 export interface AdminPractitionerCredential {
   credentialId: string;
   credentialType: CredentialType;
-  fileUrl: string;
   reviewStatus: CredentialReviewStatus;
   expiresAt: string | null;
   uploadedAt: string;
@@ -179,6 +179,31 @@ export interface PractitionerApplicationDetails {
   application: AdminPractitionerApplicationSummary;
   readinessSnapshot: AdminReadinessSnapshot;
   completion: PractitionerApplicationCompletionViewModel;
+  reviewCase?: PractitionerReviewCase | null;
+}
+
+export interface PractitionerReviewCase {
+  id: string;
+  type: string;
+  status: string;
+  submittedAt: string | null;
+  dueAt: string | null;
+  sections: Array<{ section: string; status: string }>;
+  requirements: Array<{
+    id: string;
+    section: string;
+    fieldPath: string | null;
+    credentialType: CredentialType | null;
+    title: string;
+    reason: string;
+    instructions: string | null;
+    dueAt: string | null;
+    severity: string;
+    operationalImpact: string[];
+    status: string;
+    createdByUserId: string;
+    resolvedAt: string | null;
+  }>;
 }
 
 export interface PractitionerApplicationDetailsResponse {
@@ -221,8 +246,9 @@ export interface AdminDirectPractitionerCreateResponse {
 }
 
 export interface AdminPreparedPractitionerCredential {
+  credentialId: string;
   credentialType: CredentialType;
-  fileUrl: string;
+  mimeType: string;
   expiresAt: string | null;
   sizeBytes: number;
 }
@@ -254,6 +280,14 @@ export interface RejectPractitionerApplicationRequest {
 export interface RequestPractitionerApplicationChangesRequest {
   reason: string;
   note?: string;
+  requirements?: Array<{
+    section: string;
+    title: string;
+    reason: string;
+    fieldPath?: string;
+    credentialType?: CredentialType;
+    severity?: "INFO" | "WARNING" | "BLOCKING";
+  }>;
 }
 
 export interface UpdatePractitionerApplicationDraftRequest {
@@ -297,6 +331,8 @@ export interface PractitionerApplicationCredentialDeleteResponse {
 
 export interface CreateAdminPractitionerRequest {
   email: string;
+  phoneCountryCode?: string;
+  phone?: string;
   password: string;
   displayName: string;
   practitionerType: PractitionerType;
@@ -318,7 +354,8 @@ export interface CreateAdminPractitionerRequest {
   payoutDestination?: PractitionerPayoutDestinationInput | null;
   credentials: Array<{
     credentialType: CredentialType;
-    fileUrl: string;
+    credentialId: string;
+    mimeType: string;
     expiresAt?: string;
   }>;
   note?: string;

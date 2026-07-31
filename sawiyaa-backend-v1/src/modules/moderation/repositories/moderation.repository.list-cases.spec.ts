@@ -16,6 +16,12 @@ describe('ModerationRepository.listCases', () => {
     sessionReview: {
       findUnique: jest.fn(),
     },
+    conversation: {
+      findFirst: jest.fn(),
+    },
+    message: {
+      findFirst: jest.fn(),
+    },
   } as unknown as PrismaService;
 
   const repository = new ModerationRepository(prisma);
@@ -94,5 +100,35 @@ describe('ModerationRepository.listCases', () => {
 
     expect(items).toEqual([]);
     expect(total).toBe(0);
+  });
+
+  it('accepts legacy general-chat targets for patient-accessible care sessions', async () => {
+    (prisma.message.findFirst as jest.Mock).mockResolvedValue({
+      id: 'message_1',
+    });
+
+    await repository.findAccessibleTarget({
+      targetType: ModerationReportTargetType.GENERAL_CHAT_MESSAGE,
+      targetId: 'message_1',
+      userId: 'patient_1',
+      reporterRole: ModerationReporterRole.PATIENT,
+    });
+
+    expect(prisma.message.findFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        conversation: expect.objectContaining({
+          OR: expect.arrayContaining([
+            { conversationType: 'CARE_APPROVED' },
+          ]),
+          participants: {
+            some: {
+              userId: 'patient_1',
+              isActive: true,
+            },
+          },
+        }),
+      }),
+      select: { id: true },
+    });
   });
 });

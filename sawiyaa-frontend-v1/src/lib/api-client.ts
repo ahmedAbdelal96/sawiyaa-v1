@@ -5,6 +5,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { API_BASE_URL } from "@/config/api";
 import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
+import { getSignInRouteForRole } from "@/config/route-access";
+
+function getRoleSignInUrl(): string {
+  const locale = typeof window !== "undefined" ? window.location.pathname.split("/")[1] || "ar" : "ar";
+  const role = getUserFromCookie()?.role;
+  return `/${locale}${getSignInRouteForRole(role)}`;
+}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -93,7 +100,7 @@ apiClient.interceptors.response.use(
         if (!refreshFailureHandled && typeof window !== "undefined") {
           refreshFailureHandled = true;
           requestSensitiveCacheClear("session-expired");
-          window.location.href = "/signin";
+          window.location.href = getRoleSignInUrl();
         }
       } catch (refreshError) {
         if (process.env.NODE_ENV === "development") {
@@ -106,7 +113,7 @@ apiClient.interceptors.response.use(
         if (!refreshFailureHandled && typeof window !== "undefined") {
           refreshFailureHandled = true;
           requestSensitiveCacheClear("session-expired");
-          window.location.href = "/signin";
+          window.location.href = getRoleSignInUrl();
         }
       }
     }
@@ -142,6 +149,7 @@ export const getUserFromCookie = (): any | null => {
 };
 
 export const logout = async (): Promise<void> => {
+  const signInUrl = getRoleSignInUrl();
   try {
     await fetch("/api/auth/logout", {
       method: "POST",
@@ -150,7 +158,7 @@ export const logout = async (): Promise<void> => {
 
     if (typeof window !== "undefined") {
       requestSensitiveCacheClear("logout");
-      window.location.href = "/signin";
+      window.location.href = signInUrl;
     }
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -161,7 +169,7 @@ export const logout = async (): Promise<void> => {
     }
     if (typeof window !== "undefined") {
       requestSensitiveCacheClear("logout");
-      window.location.href = "/signin";
+      window.location.href = signInUrl;
     }
   }
 };

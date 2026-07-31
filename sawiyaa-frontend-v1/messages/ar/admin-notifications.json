@@ -265,6 +265,10 @@
       "rawLogs": "سجلات التشخيص الخام"
     },
     "slugs": {
+      "admin-practitioner-application-approved": {
+        "title": "تمت الموافقة على طلب انضمام المختص",
+        "subtitle": "مختص · انضمام"
+      },
       "GENERAL_CHAT_MESSAGE": {
         "title": "رسالة جديدة في المحادثة",
         "subtitle": "محادثة · رسالة"

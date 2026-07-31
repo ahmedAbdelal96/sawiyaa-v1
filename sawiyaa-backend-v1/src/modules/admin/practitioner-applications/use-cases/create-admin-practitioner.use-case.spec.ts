@@ -191,7 +191,11 @@ describe('CreateAdminPractitionerUseCase', () => {
       }),
     } as unknown as PractitionerApplicationCompletionService;
     const phoneNumberValidationService = {
-      assertValid: jest.fn().mockReturnValue({ e164: '+201012345678' }),
+      validate: jest.fn().mockReturnValue({
+        valid: true,
+        e164: '+201012345678',
+        countryCode: 'EG',
+      }),
     } as unknown as PhoneNumberValidationService;
     const userPhoneRepository = {
       upsertPrimaryPhone: jest.fn(),
@@ -257,6 +261,9 @@ describe('CreateAdminPractitionerUseCase', () => {
         }),
       ]),
     });
+    expect(tx.userEmail.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ isVerified: false }),
+    });
     expect(result.practitioner).toEqual(
       expect.objectContaining({
         practitionerProfileId: 'profile-1',
@@ -266,6 +273,32 @@ describe('CreateAdminPractitionerUseCase', () => {
         passwordRotationFollowUpRequired: true,
       }),
     );
+  });
+
+  it('does not block or persist an invalid optional phone', async () => {
+    const { sut, tx } = makeSut();
+    const input = { ...baseInput, phone: 'not-a-phone', phoneCountryCode: 'EG' };
+    const phoneValidationService = (sut as any).phoneNumberValidationService;
+    phoneValidationService.validate.mockReturnValue({
+      valid: false,
+      code: 'PHONE_INVALID',
+    });
+
+    await sut.execute(input);
+
+    expect(tx.userPhone.upsert).not.toHaveBeenCalled();
+  });
+
+  it('does not roll back core creation when the optional phone conflicts', async () => {
+    const { sut, tx } = makeSut();
+    const phoneNumberRepository = (sut as any).userPhoneRepository;
+    phoneNumberRepository.upsertPrimaryPhone.mockRejectedValue(
+      new ConflictException({ error: 'PHONE_ALREADY_REGISTERED' }),
+    );
+
+    await expect(sut.execute(baseInput)).resolves.toBeDefined();
+    expect(tx.userEmail.create).toHaveBeenCalled();
+    expect(tx.practitionerProfile.create).toHaveBeenCalled();
   });
 
   it('returns COUNTRY_NOT_FOUND when submitted country does not exist', async () => {

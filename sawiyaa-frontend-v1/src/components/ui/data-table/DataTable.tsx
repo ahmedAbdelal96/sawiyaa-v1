@@ -122,6 +122,7 @@ export function DataTable<T = any>({
   
   // Styling
   className = '',
+  tableClassName = 'w-full table-fixed md:table-auto',
   striped = false,
   hoverable = true,
   size = 'md',
@@ -339,7 +340,7 @@ export function DataTable<T = any>({
           style={{ maxHeight: maxHeight }}
         >
           <table
-            className="w-full table-fixed md:table-auto"
+            className={tableClassName}
             role="table"
             aria-label={ariaLabel}
           >

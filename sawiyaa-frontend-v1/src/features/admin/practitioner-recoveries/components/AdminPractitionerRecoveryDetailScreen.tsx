@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
 import { AdminSectionCard, AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { PermissionKey } from "@/lib/auth/permissions";
@@ -221,7 +223,7 @@ function RecoveryContextCard({
           />
           <DetailRow
             label={t("practitionerRecoveries.detail.context.professionalTitle")}
-            value={readOnlyValue(item.practitioner.professionalTitle)}
+            value={readOnlyValue(getProfessionalTitleLabel(item.practitioner.professionalTitle, locale))}
           />
           <DetailRow
             label={t("practitionerRecoveries.detail.context.publicSlug")}
@@ -236,11 +238,20 @@ function RecoveryContextCard({
         </div>
 
         <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
-          <DetailRow
-            label={t("practitionerRecoveries.detail.context.session")}
-            value={item.session?.sessionCode ? `${shortId(item.session.sessionCode)}` : t("practitionerRecoveries.detail.context.notLinked")}
-            mono={Boolean(item.session?.sessionCode)}
-          />
+          <div className="flex items-center justify-between gap-4 border-b border-border-light py-3 text-sm dark:border-white/8">
+            <span className="text-text-muted">{t("practitionerRecoveries.detail.context.session")}</span>
+            {item.session ? (
+              <AdminSessionReference
+                sessionId={item.session.sessionId}
+                sessionCode={item.session.sessionCode}
+                href={`/admin/sessions/runtime-inspection?sessionId=${item.session.sessionId}`}
+                variant="inline"
+                copyable
+              />
+            ) : (
+              <span className="text-text-secondary">{t("practitionerRecoveries.detail.context.notLinked")}</span>
+            )}
+          </div>
           <DetailRow
             label={t("practitionerRecoveries.detail.context.payment")}
             value={item.payment?.paymentId ? shortId(item.payment.paymentId) : t("practitionerRecoveries.detail.context.notLinked")}
