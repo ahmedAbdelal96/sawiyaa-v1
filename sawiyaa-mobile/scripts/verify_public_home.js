@@ -2,112 +2,32 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const ARTIFACT_DIR = 'C:/Users/Abdelal/.gemini/antigravity/brain/8ccec7ca-6acd-4c3a-a643-dd8f1cdf10c2';
+const ARTIFACT_DIR = 'C:/Users/IT/.gemini/antigravity/brain/7c27f882-2735-4866-b9a8-a2d420934ff8';
 
-const mockSpecialties = {
-  success: true,
-  data: {
-    message: "Success",
-    specialties: [
-      { id: "spec_1", name: "Psychiatry", nameAr: "الطب النفسي", nameEn: "Psychiatry", slug: "psychiatry" },
-      { id: "spec_2", name: "Anxiety Therapy", nameAr: "علاج القلق", nameEn: "Anxiety Therapy", slug: "anxiety" },
-      { id: "spec_3", name: "Depression Therapy", nameAr: "علاج الاكتئاب", nameEn: "Depression Therapy", slug: "depression" },
-      { id: "spec_4", name: "Family Counseling", nameAr: "الاستشارات الأسرية", nameEn: "Family Counseling", slug: "family" }
-    ]
-  }
-};
-
-const mockPractitioners = {
-  success: true,
-  data: {
-    items: [
-      {
-        id: "prac_1",
-        slug: "ahmed-ali",
-        displayName: "د. أحمد علي",
-        professionalTitle: "استشاري الطب النفسي والامراض العصبية",
-        specialties: [{ specialtyId: "spec_1", slug: "psychiatry", title: "الطب النفسي", isPrimary: true }],
-        languages: ["العربية", "English"],
-        currencyCode: "EGP",
-        sessionPrice30: 400,
-        ratingSummary: { averageRating: 4.8, totalReviews: 24 },
-        isVerified: true
-      },
-      {
-        id: "prac_2",
-        slug: "sarah-smith",
-        displayName: "Dr. Sarah Smith",
-        professionalTitle: "Licensed Marriage and Family Therapist",
-        specialties: [{ specialtyId: "spec_4", slug: "family", title: "Family Therapy", isPrimary: true }],
-        languages: ["English"],
-        currencyCode: "USD",
-        sessionPrice30: 50,
-        ratingSummary: { averageRating: 4.9, totalReviews: 12 },
-        isVerified: true
-      }
-    ],
-    pagination: { page: 1, limit: 3, totalItems: 2, totalPages: 1 }
-  }
-};
-
-async function captureScreen(page, name, width = 390, height = 844) {
+async function captureScreen(page, name, width = 390, height = 844, clip = null) {
   await page.setViewportSize({ width, height });
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1000);
   const targetPath = path.join(ARTIFACT_DIR, name);
-  await page.screenshot({ path: targetPath });
+  const options = { path: targetPath };
+  if (clip) options.clip = clip;
+  await page.screenshot(options);
   console.log(`Saved screenshot: ${name} (${width}x${height})`);
 }
 
 async function run() {
-  console.log("=== Start Public Home Visual Verification ===");
+  console.log("=== Start Rebuilt Mobile Public Home Visual Verification ===");
+
+  if (!fs.existsSync(ARTIFACT_DIR)) {
+    fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+  }
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
 
-  // Stub Alert/confirm inside the browser so it renders a beautiful modal box on the screen
-  await page.addInitScript(() => {
-    window.alert = window.confirm = (msg) => {
-      // Remove previous mock alert if any
-      const existing = document.getElementById('mock-alert-box');
-      if (existing) existing.remove();
-
-      const box = document.createElement('div');
-      box.id = 'mock-alert-box';
-      box.style.position = 'absolute';
-      box.style.top = '30%';
-      box.style.left = '10%';
-      box.style.right = '10%';
-      box.style.backgroundColor = '#FFFFFF';
-      box.style.border = '2px solid #24564F';
-      box.style.borderRadius = '16px';
-      box.style.padding = '20px';
-      box.style.zIndex = '99999';
-      box.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
-      box.style.direction = 'rtl';
-      box.style.textAlign = 'center';
-
-      box.innerHTML = `
-        <h3 style="margin-top: 0; color: #24564F; font-size: 18px; font-weight: bold;">مطلوب تسجيل الدخول</h3>
-        <p style="color: #5C736F; font-size: 14px; margin-bottom: 20px;">${msg || 'يرجى تسجيل الدخول أو إنشاء حساب مريض للمتابعة.'}</p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-          <button style="background-color: #24564F; color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">إنشاء حساب</button>
-          <button style="background-color: #E0F2EF; color: #24564F; border: none; padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">تسجيل الدخول</button>
-          <button onclick="document.getElementById('mock-alert-box').remove()" style="background-color: #ECEBE6; color: #5C736F; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer;">إلغاء</button>
-        </div>
-      `;
-      document.body.appendChild(box);
-      return true;
-    };
-  });
-
   try {
-    // ----------------------------------------------------
-    // Scenario 1: Success Loading (Arabic)
-    // ----------------------------------------------------
-    console.log("\nScenario 1: Arabic Public Home Success...");
-    await page.route('**/specialties', route => route.fulfill({ status: 200, json: mockSpecialties }));
-    await page.route('**/public/practitioners*', route => route.fulfill({ status: 200, json: mockPractitioners }));
-
+    // 1. Arabic 390x844 viewports & focused crops
+    console.log("\n1. Capturing Arabic 390x844 Viewports & Components...");
     await page.goto('http://localhost:8081/');
     await page.evaluate(() => {
       localStorage.clear();
@@ -116,91 +36,54 @@ async function run() {
       document.documentElement.dir = 'rtl';
     });
     await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(3000);
 
-    // Capture standard viewports
+    // Arabic Full Viewport 390x844
     await captureScreen(page, 'public_home_ar_390.png', 390, 844);
+
+    // Focused Arabic Header (Top 70px)
+    await captureScreen(page, 'public_header_ar.png', 390, 844, { x: 0, y: 0, width: 390, height: 75 });
+
+    // Focused Arabic Hero (y: 70 to 380)
+    await captureScreen(page, 'public_hero_ar.png', 390, 844, { x: 0, y: 70, width: 390, height: 320 });
+
+    // Focused Arabic Trust Row (y: 380 to 480)
+    await captureScreen(page, 'public_trust_ar.png', 390, 844, { x: 0, y: 380, width: 390, height: 110 });
+
+    // Focused Patient Actions (inside Hero)
+    await captureScreen(page, 'public_patient_actions_ar.png', 390, 844, { x: 0, y: 220, width: 390, height: 160 });
+
+    // Focused Practitioner Sign In (y: 480 to 560)
+    await captureScreen(page, 'public_practitioner_ar.png', 390, 844, { x: 0, y: 480, width: 390, height: 80 });
+
+    // 2. Arabic 360x640 Compact Viewport
+    console.log("\n2. Capturing Arabic 360x640 Viewport...");
     await captureScreen(page, 'public_home_ar_360.png', 360, 640);
+
+    // 3. Arabic 430x932 Large Viewport
+    console.log("\n3. Capturing Arabic 430x932 Viewport...");
     await captureScreen(page, 'public_home_ar_430.png', 430, 932);
 
-    // Capture Arabic Tab Bar focus
-    await captureScreen(page, 'public_tabs_ar.png', 390, 200); // Small snapshot of tabbar height area
-
-    // ----------------------------------------------------
-    // Scenario 2: Success Loading (English)
-    // ----------------------------------------------------
-    console.log("\nScenario 2: English Public Home Success...");
+    // 4. English 390x844 Viewport & Header
+    console.log("\n4. Capturing English 390x844 Viewport & Header...");
     await page.evaluate(() => {
       localStorage.setItem('sawiyaa.app.language', '"en"');
       document.documentElement.dir = 'ltr';
     });
     await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(3000);
 
+    // English Full Viewport 390x844
     await captureScreen(page, 'public_home_en_390.png', 390, 844);
-    await captureScreen(page, 'public_tabs_en.png', 390, 200);
 
-    // ----------------------------------------------------
-    // Scenario 3: Skeleton Loading states
-    // ----------------------------------------------------
-    console.log("\nScenario 3: Loading Skeleton States...");
-    // Force indefinite delay for API calls to show Skeletons
-    await page.route('**/specialties', () => {}); 
-    await page.route('**/public/practitioners*', () => {}); 
+    // Focused English Header
+    await captureScreen(page, 'public_header_en.png', 390, 844, { x: 0, y: 0, width: 390, height: 75 });
 
-    await page.evaluate(() => {
-      localStorage.setItem('sawiyaa.app.language', '"ar"');
-      document.documentElement.dir = 'rtl';
-    });
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(2000);
-    await captureScreen(page, 'public_home_loading.png', 390, 844);
-
-    // ----------------------------------------------------
-    // Scenario 4: Section Errors and Retry CTA
-    // ----------------------------------------------------
-    console.log("\nScenario 4: Section Errors...");
-    await page.route('**/specialties', route => route.fulfill({ status: 500 }));
-    await page.route('**/public/practitioners*', route => route.fulfill({ status: 500 }));
-
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(3000);
-    await captureScreen(page, 'public_home_error.png', 390, 844);
-
-    // ----------------------------------------------------
-    // Scenario 5: Empty states
-    // ----------------------------------------------------
-    console.log("\nScenario 5: Empty states...");
-    await page.route('**/specialties', route => route.fulfill({ status: 200, json: { specialties: [] } }));
-    await page.route('**/public/practitioners*', route => route.fulfill({ status: 200, json: { success: true, data: { items: [], pagination: { page: 1, limit: 3, totalItems: 0, totalPages: 1 } } } }));
-
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(3000);
-    await captureScreen(page, 'public_home_empty.png', 390, 844);
-
-    // ----------------------------------------------------
-    // Scenario 6: Authentication Gateway Alert Prompt
-    // ----------------------------------------------------
-    console.log("\nScenario 6: Authentication Gateway Prompt...");
-    // Restore success route to render practitioner card to tap
-    await page.route('**/specialties', route => route.fulfill({ status: 200, json: mockSpecialties }));
-    await page.route('**/public/practitioners*', route => route.fulfill({ status: 200, json: mockPractitioners }));
-
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(4000);
-
-    // Click on a specialty chip to trigger Auth Gateway
-    console.log("Tapping on specialty chip to open Auth Gateway...");
-    await page.locator('text=علاج القلق').first().click();
-    await page.waitForTimeout(1000);
-
-    await captureScreen(page, 'public_home_auth_gateway.png', 390, 844);
-
+    console.log("\nVisual capture completed successfully!");
   } catch (error) {
     console.error("Visual capture failed:", error);
   } finally {
     await browser.close();
-    console.log("Browser closed.");
   }
 }
 

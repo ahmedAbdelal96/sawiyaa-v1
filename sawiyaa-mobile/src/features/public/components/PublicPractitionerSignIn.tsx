@@ -1,24 +1,25 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity, Text, I18nManager } from "react-native";
+import { StyleSheet, TouchableOpacity, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { usePublicTheme } from "../theme/public-theme";
+import { useAppDirection } from "../../../i18n/direction";
 
 export function PublicPractitionerSignIn() {
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { publicTheme } = usePublicTheme();
-  const isRTL = i18n.language?.startsWith("ar") ?? I18nManager.isRTL;
+  const { textAlign } = useAppDirection();
 
   return (
-    /* Exact practitioner signin route */
     <TouchableOpacity
       onPress={() => router.push("/(auth)/signin/practitioner")}
       style={styles.practitionerCta}
+      activeOpacity={0.8}
       accessibilityRole="button"
       accessibilityLabel={t("publicHome.practitioner.button")}
     >
-      <Text style={[styles.practitionerText, { color: publicTheme.secondaryText, textAlign: "center" }]}>
+      <Text style={[styles.practitionerText, { color: publicTheme.secondaryText, textAlign }]}>
         {t("publicHome.practitioner.label")}{" "}
         <Text style={[styles.practitionerTextLink, { color: publicTheme.primaryText }]}>
           {t("publicHome.practitioner.button")}
@@ -31,10 +32,12 @@ export function PublicPractitionerSignIn() {
 const styles = StyleSheet.create({
   practitionerCta: {
     alignSelf: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     minHeight: 48,
     justifyContent: "center",
-    marginBottom: 40,
+    marginTop: 8,
+    marginBottom: 24,
   },
   practitionerText: {
     fontSize: 14,

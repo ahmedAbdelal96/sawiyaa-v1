@@ -1,17 +1,18 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity, I18nManager } from "react-native";
+import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../../../components/ui";
 import { usePublicTheme } from "../theme/public-theme";
+import { useAppDirection } from "../../../i18n/direction";
 import { MOBILE_HORIZONTAL_PADDING } from "../../../components/mobile-shell";
 
 export function PublicHeader() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { publicTheme } = usePublicTheme();
-  const isRTL = i18n.language?.startsWith("ar") ?? I18nManager.isRTL;
+  const { isRTL, rowDirection, textAlign } = useAppDirection();
 
   const handleToggleLanguage = () => {
     const nextLang = i18n.language === "ar" ? "en" : "ar";
@@ -26,7 +27,7 @@ export function PublicHeader() {
       style={[
         styles.header,
         {
-          flexDirection: isRTL ? "row-reverse" : "row",
+          flexDirection: rowDirection,
           backgroundColor: publicTheme.canvas,
           borderBottomColor: publicTheme.subtleBorder,
         },
@@ -39,7 +40,7 @@ export function PublicHeader() {
             styles.brandText,
             {
               color: publicTheme.primaryText,
-              textAlign: isRTL ? "right" : "left",
+              textAlign,
             },
           ]}
         >
@@ -47,15 +48,15 @@ export function PublicHeader() {
         </Text>
       </View>
 
-      <View style={[styles.headerActions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+      <View style={[styles.headerActions, { flexDirection: rowDirection }]}>
         <TouchableOpacity
           onPress={handleToggleLanguage}
           style={styles.langBtn}
           accessibilityRole="button"
           accessibilityLabel={isRTL ? t("publicHome.header.languageEnglish") : t("publicHome.header.languageArabic")}
         >
-          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="language-outline" size={16} color={publicTheme.secondaryText} />
+          <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 6 }}>
+            <Ionicons name="language-outline" size={16} color={publicTheme.secondaryText} importantForAccessibility="no" />
             <Text style={[styles.langBtnText, { color: publicTheme.secondaryText }]}>
               {i18n.language === "ar" ? "EN" : "العربية"}
             </Text>
@@ -79,7 +80,7 @@ export function PublicHeader() {
 
 const styles = StyleSheet.create({
   header: {
-    height: 64,
+    height: 60,
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
     alignItems: "center",
     justifyContent: "space-between",
@@ -90,16 +91,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brandText: {
-    fontWeight: "900",
-    fontSize: 24,
+    fontWeight: "800",
+    fontSize: 22,
     letterSpacing: 0.5,
   },
   headerActions: {
     alignItems: "center",
-    gap: 16,
+    gap: 12,
   },
   langBtn: {
-    minHeight: 40,
+    minHeight: 48,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 8,
@@ -110,11 +111,11 @@ const styles = StyleSheet.create({
   },
   signInBtn: {
     borderRadius: 20,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 38,
+    minHeight: 48,
   },
   signInBtnText: {
     fontSize: 14,

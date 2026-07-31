@@ -2336,70 +2336,17 @@
     "brandName": "Sawiyaa",
     "header": { "signIn": "Sign In", "languageEnglish": "Switch to English", "languageArabic": "Switch to Arabic" },
     "hero": {
-      "title": "Your space to find the right support",
-      "subtitle": "A platform that helps you find the right specialist, organise your sessions, and follow your bookings in one place.",
-      "directoryNote": "The public specialist directory is currently being prepared."
+      "title": "The right support starts with a simple step",
+      "subtitle": "Find the right specialist and begin with clear steps.",
+      "primaryCta": "Create Patient Account",
+      "secondaryCta": "Sign In"
     },
-    "sereneBadge": "Explore specialists across different areas",
-    "commitment": {
-      "eyebrow": "Our commitment",
-      "title": "Sawiyaa supports every step",
-      "desc": "A clear experience that helps you explore specialists, choose a time, and manage your bookings."
-    },
-    "features": {
-      "clearChoice": { "title": "Clearer choices", "desc": "Browse specialists by specialty, language, and your needs." },
-      "flexibleBooking": { "title": "More flexible booking", "desc": "Choose a suitable time and complete your booking easily." },
-      "privacyPriority": { "title": "A privacy-conscious experience", "desc": "A clear experience designed with your data and privacy in mind." }
-    },
-    "specialties": {
-      "title": "Explore specialties",
-      "anxiety": "Anxiety support",
-      "depression": "Depression support",
-      "family": "Family counseling",
-      "self": "Self-development",
-      "adolescent": "Adolescent mental health support"
-    },
-    "journey": {
-      "title": "How to begin",
-      "discover": { "title": "Explore", "desc": "Browse available specialists and specialties." },
-      "choose": { "title": "Choose", "desc": "Select the specialist and time that suit you." },
-      "start": { "title": "Begin", "desc": "Complete your booking and start your session." }
-    },
-    "teasers": {
-      "practitioners": { "title": "Find the right specialist", "desc": "Explore specialists based on your needs and preferences." },
-      "specialties": { "title": "Explore specialties", "desc": "Start with the area closest to your needs." }
-    },
-    "patientCta": {
-      "title": "Ready to begin your journey?",
-      "desc": "Create a patient account to save your bookings and follow your sessions easily.",
-      "button": "Create Patient Account",
-      "signIn": "Patient Sign In"
+    "trust": {
+      "clearChoice": "Clear choices",
+      "simpleBooking": "Simple booking",
+      "privacyPriority": "Privacy-conscious"
     },
     "practitioner": { "label": "Are you a practitioner?", "button": "Practitioner Sign In" },
-    "heroTitle": "The right support starts with the right specialist",
-    "heroSubtitle": "Explore specialists based on your needs and choose a time that works for you.",
-    "browseCta": "Browse Specialists",
-    "specialtiesTitle": "Browse by Specialty",
-    "viewAll": "View all",
-    "specialistsTitle": "Available Specialists",
-    "priceLabel": "Starts from",
-    "perSession30": "/ 30m session",
-    "howItWorks": {
-      "title": "How it works",
-      "step1Title": "Choose Specialist",
-      "step1Desc": "Find a verified therapist suited to your needs.",
-      "step2Title": "Book Time",
-      "step2Desc": "Pick an available slot and confirm instantly.",
-      "step3Title": "Start Session",
-      "step3Desc": "Join your private session safely on mobile."
-    },
-    "ctas": {
-      "patientTitle": "Ready to get started?",
-      "patientDesc": "Create an account to book sessions, chat with specialists, and buy discount packages.",
-      "patientButton": "Create Patient Account",
-      "practitionerTitle": "Are you a practitioner?",
-      "practitionerButton": "Join as a Practitioner"
-    },
     "placeholders": {
       "comingSoon": "Coming Soon",
       "comingSoonDesc": "This feature will be available in the next phase. Stay tuned!",

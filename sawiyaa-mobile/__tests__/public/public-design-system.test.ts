@@ -8,10 +8,9 @@ describe("Public Mobile Design System Validation", () => {
   const authGatewayPath = path.resolve(__dirname, "../../src/providers/AuthGatewayProvider.tsx");
   const publicLayoutPath = path.resolve(__dirname, "../../app/(public)/_layout.tsx");
   const publicHeroPath = path.resolve(__dirname, "../../src/features/public/components/PublicHero.tsx");
-  const publicSerenePath = path.resolve(__dirname, "../../src/features/public/components/PublicSereneVisual.tsx");
-  const publicPractitionerPath = path.resolve(__dirname, "../../src/features/public/components/PublicPractitionerSignIn.tsx");
-  const publicDiscoveryPath = path.resolve(__dirname, "../../src/features/public/components/PublicDiscoveryCard.tsx");
   const publicHeaderPath = path.resolve(__dirname, "../../src/features/public/components/PublicHeader.tsx");
+  const publicTrustPath = path.resolve(__dirname, "../../src/features/public/components/PublicTrustRow.tsx");
+  const publicPractitionerPath = path.resolve(__dirname, "../../src/features/public/components/PublicPractitionerSignIn.tsx");
   const arLocalePath = path.resolve(__dirname, "../../src/i18n/locales/ar.json");
   const enLocalePath = path.resolve(__dirname, "../../src/i18n/locales/en.json");
 
@@ -21,10 +20,6 @@ describe("Public Mobile Design System Validation", () => {
     expect(content).not.toContain("١٠٠ مختص");
     expect(content).not.toContain("100 specialists");
     expect(content).not.toContain("specialists available now");
-    
-    // Public copy is localized in the locale resources, not embedded in the screen.
-    const contentSerene = fs.readFileSync(publicSerenePath, "utf8");
-    expect(contentSerene).toContain("publicHome.sereneBadge");
   });
 
   // 2. Prohibit remote Stitch asset URLs in Public Home code
@@ -41,7 +36,7 @@ describe("Public Mobile Design System Validation", () => {
     expect(content).not.toContain("listPractitioners");
     expect(content).not.toContain("public/practitioners");
     expect(content).not.toContain("public-practitioners");
-    expect(content).not.toContain("useQuery"); // specialties is also removed, so no queries on home!
+    expect(content).not.toContain("useQuery");
   });
 
   // 4. Verification of routes mapping
@@ -57,6 +52,7 @@ describe("Public Mobile Design System Validation", () => {
 
     // Patient Sign In exact path
     expect(contentGateway).toContain("/(auth)/signin/patient");
+    expect(contentHero).toContain("/(auth)/signin/patient");
 
     // Patient Sign Up exact path
     expect(contentGateway).toContain("/(auth)/signup/patient");
@@ -64,7 +60,7 @@ describe("Public Mobile Design System Validation", () => {
 
     // Practitioner Sign In exact path (minimum foot links)
     expect(contentPractitioner).toContain("/(auth)/signin/practitioner");
-    
+
     // Prohibit Practitioner signup references
     expect(contentHome).not.toContain("/(auth)/signup/practitioner");
     expect(contentGateway).not.toContain("/(auth)/signup/practitioner");
@@ -73,13 +69,11 @@ describe("Public Mobile Design System Validation", () => {
   // 5. Auth Gateway constraints
   it("verifies Auth Gateway is patient-only and dismissible", () => {
     const content = fs.readFileSync(authGatewayPath, "utf8");
-    
-    // Dismissible via close trigger
+
     expect(content).toContain("handleClose");
     expect(content).toContain("Modal");
     expect(content).toContain("onRequestClose");
 
-    // Patient Actions only (English & Arabic)
     expect(content).toContain("Create Patient Account");
     expect(content).toContain("Patient Sign In");
     expect(content).toContain("Continue Browsing");
@@ -88,7 +82,6 @@ describe("Public Mobile Design System Validation", () => {
     expect(content).toContain("تسجيل الدخول كمريض");
     expect(content).toContain("متابعة التصفح");
 
-    // Strictly no practitioner signup/onboarding
     expect(content).not.toContain("Practitioner Sign Up");
     expect(content).not.toContain("Join as Practitioner");
   });
@@ -96,8 +89,7 @@ describe("Public Mobile Design System Validation", () => {
   // 6. Tab bar configurations
   it("hides unfinished tabs from the public menu", () => {
     const content = fs.readFileSync(publicLayoutPath, "utf8");
-    
-    // Unfinished tabs options have href: null
+
     expect(content).toContain('name="practitioners"');
     expect(content).toContain('name="specialties"');
     expect(content).toContain('name="packages"');
@@ -109,16 +101,14 @@ describe("Public Mobile Design System Validation", () => {
     expect(lightTheme.public).toBeDefined();
     expect(darkTheme.public).toBeDefined();
 
-    // Verify colors light values
     expect(lightTheme.public.canvas).toBe("#F7F4EE");
     expect(lightTheme.public.raisedSurface).toBe("#FFFCF8");
     expect(lightTheme.public.primaryText).toBe("#053f38");
     expect(lightTheme.public.accentSand).toBe("#F4E0C5");
 
-    // Verify existing base theme tokens remain unchanged
     expect(lightTheme.colors.background).toBe("#F7F4EE");
-    expect(lightTheme.colors.primary).toBe("#24564F"); // Legacy primary unchanged!
-    expect(lightTheme.colors.surfaceRaised).toBe("#FFFFFF"); // Legacy surface raised unchanged!
+    expect(lightTheme.colors.primary).toBe("#24564F");
+    expect(lightTheme.colors.surfaceRaised).toBe("#FFFFFF");
 
     expect(darkTheme.colors.background).toBe("#101716");
     expect(darkTheme.colors.primary).toBe("#6de0d8");
@@ -151,19 +141,16 @@ describe("Public Mobile Design System Validation", () => {
   it("prohibits browse actions from triggering or importing Auth Gateway", () => {
     const contentHome = fs.readFileSync(publicHomePath, "utf8");
     const contentHero = fs.readFileSync(publicHeroPath, "utf8");
-    const contentDiscovery = fs.readFileSync(publicDiscoveryPath, "utf8");
+    const contentTrust = fs.readFileSync(publicTrustPath, "utf8");
 
-    // Public Home does not import or use useAuthGateway / requireAuth
     expect(contentHome).not.toContain("useAuthGateway");
     expect(contentHome).not.toContain("requireAuth");
 
-    // Public Hero does not import or use useAuthGateway / requireAuth
     expect(contentHero).not.toContain("useAuthGateway");
     expect(contentHero).not.toContain("requireAuth");
 
-    // Public Discovery Card does not import or use useAuthGateway / requireAuth
-    expect(contentDiscovery).not.toContain("useAuthGateway");
-    expect(contentDiscovery).not.toContain("requireAuth");
+    expect(contentTrust).not.toContain("useAuthGateway");
+    expect(contentTrust).not.toContain("requireAuth");
   });
 
   // 10. Prohibited wording validations
@@ -172,11 +159,9 @@ describe("Public Mobile Design System Validation", () => {
     const contentEn = fs.readFileSync(enLocalePath, "utf8");
     const contentHome = fs.readFileSync(publicHomePath, "utf8");
 
-    // Prohibit "integrated therapy journey" or "complete therapy journey"
     expect(contentHome).not.toContain("integrated therapy journey");
     expect(contentHome).not.toContain("complete therapy journey");
 
-    // Prohibit "guaranteed match", "complete privacy", "full encryption", "highest quality"
     expect(contentAr).not.toContain("اتصال مشفر بالكامل");
     expect(contentAr).not.toContain("بسرية تامة");
     expect(contentAr).not.toContain("أعلى مستويات الجودة");
@@ -189,24 +174,22 @@ describe("Public Mobile Design System Validation", () => {
     const authProviderContent = fs.readFileSync(path.resolve(__dirname, "../../src/providers/AuthProvider.tsx"), "utf8");
     const headerContent = fs.readFileSync(path.resolve(__dirname, "../../src/features/public/components/PublicHeader.tsx"), "utf8");
 
-    // Guest staying in public group (no forced redirect to auth)
     expect(authProviderContent).toContain("!inAuthGroup && !inOnboardingGroup && !inPublicGroup");
     expect(authProviderContent).toContain('router.replace("/(public)")');
 
-    // Sign out redirects to /(public)
     expect(authProviderContent).toContain("signOut");
     expect(authProviderContent).toContain('router.replace("/(public)")');
 
-    // Explicit Sign In button in Public Header navigates to Auth Entry
     expect(headerContent).toContain('router.push("/(auth)")');
   });
 
-  // 12. Public Design and i18n copy rules
-  it("enforces i18n copy, no unsupported claims, and hidden bottom tab bar", () => {
+  // 12. Public Design, RTL direction helper, and i18n copy rules
+  it("enforces i18n copy, direction helper usage, and hidden bottom tab bar", () => {
     const contentAr = fs.readFileSync(arLocalePath, "utf8");
     const contentEn = fs.readFileSync(enLocalePath, "utf8");
     const contentHome = fs.readFileSync(publicHomePath, "utf8");
     const contentHero = fs.readFileSync(publicHeroPath, "utf8");
+    const contentHeader = fs.readFileSync(publicHeaderPath, "utf8");
     const contentLayout = fs.readFileSync(publicLayoutPath, "utf8");
 
     // No mixed-language labels inside locale spaces
@@ -221,22 +204,39 @@ describe("Public Mobile Design System Validation", () => {
     expect(contentAr).not.toContain("رحلة علاجية متكاملة");
     expect(contentAr).not.toContain("آلاف المستفيدين");
     expect(contentAr).not.toContain("مختصين معتمدين");
-    
+
     expect(contentEn).not.toContain("certified specialists");
     expect(contentEn).not.toContain("integrated support");
     expect(contentEn).not.toContain("thousands of users");
     expect(contentEn).not.toContain("thousands of beneficiaries");
 
-    // Primary Hero CTA is not disabled
-    expect(contentHero).not.toContain("heroPrimaryBtnDisabled");
+    // Uses centralized direction helper useAppDirection
+    expect(contentHeader).toContain("useAppDirection");
+    expect(contentHero).toContain("useAppDirection");
 
     // Hides the bottom tab bar completely
     expect(contentLayout).toContain('display: "none"');
 
     // No hardcoded English fallbacks in t() calls inside index.tsx
-    // i.e., t("key", "fallback") is forbidden; it should be t("key") only.
     const tWithSecondArgRegex = /t\(\s*["'`][^"'`]+["'`]\s*,\s*["'`]/g;
     expect(tWithSecondArgRegex.test(contentHome)).toBe(false);
     expect(tWithSecondArgRegex.test(contentHero)).toBe(false);
+  });
+
+  // 13. Single Patient CTA section (No duplicated CTA section)
+  it("ensures Public Home has exactly 4 compact sections and no duplicate patient CTA section", () => {
+    const contentHome = fs.readFileSync(publicHomePath, "utf8");
+
+    expect(contentHome).toContain("PublicHeader");
+    expect(contentHome).toContain("PublicHero");
+    expect(contentHome).toContain("PublicTrustRow");
+    expect(contentHome).toContain("PublicPractitionerSignIn");
+
+    // Prohibit deprecated/removed component names
+    expect(contentHome).not.toContain("PublicPatientCta");
+    expect(contentHome).not.toContain("PublicSereneVisual");
+    expect(contentHome).not.toContain("PublicFeatureCard");
+    expect(contentHome).not.toContain("PublicJourney");
+    expect(contentHome).not.toContain("PublicDiscoveryCard");
   });
 });

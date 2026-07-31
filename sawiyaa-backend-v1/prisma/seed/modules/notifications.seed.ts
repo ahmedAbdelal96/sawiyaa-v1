@@ -29,6 +29,16 @@ export const notificationsSeedModule: SeedModule = {
         category: NotificationCategory.SECURITY,
       },
       {
+        slug: 'auth.practitioner-signup-email-verification',
+        displayName: 'Practitioner Signup Email Verification',
+        description: 'OTP verification during practitioner signup',
+        category: NotificationCategory.SECURITY,
+        supportsEmail: true,
+        supportsSms: false,
+        supportsPush: false,
+        supportsInApp: false,
+      },
+      {
         slug: 'auth.password-reset',
         displayName: 'Password Reset OTP',
         description: 'Password reset challenge notification',
@@ -329,6 +339,26 @@ export const notificationsSeedModule: SeedModule = {
             subjectTemplate: 'رمز التحقق لتسجيل الدخول',
             titleTemplate: 'رمز تحقق دخول المعالج',
             bodyTemplate: 'رمز التحقق الخاص بك هو {{code}}.',
+          },
+        },
+      },
+      {
+        typeSlug: 'auth.practitioner-signup-email-verification',
+        channel: NotificationChannel.EMAIL,
+        slug: 'auth.practitioner-signup-email-verification.email.v1',
+        translations: {
+          en: {
+            subjectTemplate: 'Verify your email',
+            titleTemplate: 'Email Verification',
+            bodyTemplate: 'Your verification code is {{code}}.',
+          },
+          ar: {
+            subjectTemplate:
+              '\u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
+            titleTemplate:
+              '\u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a',
+            bodyTemplate:
+              '\u0631\u0645\u0632 \u0627\u0644\u062a\u062d\u0642\u0642 \u0627\u0644\u062e\u0627\u0635 \u0628\u0643 \u0647\u0648 {{code}}.',
           },
         },
       },

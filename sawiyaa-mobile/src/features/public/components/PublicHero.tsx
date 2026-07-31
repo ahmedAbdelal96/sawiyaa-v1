@@ -1,61 +1,71 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity, I18nManager } from "react-native";
+import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../../../components/ui";
 import { usePublicTheme } from "../theme/public-theme";
+import { useAppDirection } from "../../../i18n/direction";
 import { MOBILE_HORIZONTAL_PADDING } from "../../../components/mobile-shell";
 
 export function PublicHero() {
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { publicTheme } = usePublicTheme();
-  const isRTL = i18n.language?.startsWith("ar") ?? I18nManager.isRTL;
+  const { rowDirection, textAlign, arrowForward } = useAppDirection();
 
   return (
-    <View style={[styles.heroSection, { backgroundColor: publicTheme.heroSurface ?? publicTheme.canvas }]}>
-      {/* 1. Strong Visual Title */}
-      <Text style={[styles.heroTitle, { color: publicTheme.primaryText, textAlign: isRTL ? "right" : "left" }]}>
+    <View style={[styles.heroSection, { backgroundColor: publicTheme.canvas }]}>
+      {/* 1. Concise Title (Max 2 lines) */}
+      <Text
+        style={[styles.heroTitle, { color: publicTheme.primaryText, textAlign }]}
+        numberOfLines={2}
+      >
         {t("publicHome.hero.title")}
       </Text>
-      
-      {/* 2. Body description */}
-      <Text style={[styles.heroSubtitle, { color: publicTheme.secondaryText, textAlign: isRTL ? "right" : "left" }]}>
+
+      {/* 2. Concise Subtitle (Max 2 lines) */}
+      <Text
+        style={[styles.heroSubtitle, { color: publicTheme.secondaryText, textAlign }]}
+        numberOfLines={2}
+      >
         {t("publicHome.hero.subtitle")}
       </Text>
 
-      {/* 3. Primary Action Button */}
-      <View style={[styles.heroActions, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+      {/* 3. Patient Action Area (Primary & Secondary Actions) */}
+      <View style={styles.actionsContainer}>
         <TouchableOpacity
           onPress={() => router.push("/(auth)/signup/patient")}
-          style={[styles.heroPrimaryBtn, { backgroundColor: publicTheme.primaryText }]}
-          activeOpacity={0.9}
+          style={[styles.primaryBtn, { backgroundColor: publicTheme.primaryText }]}
+          activeOpacity={0.88}
           accessibilityRole="button"
-          accessibilityLabel={t("publicHome.patientCta.button")}
+          accessibilityLabel={t("publicHome.hero.primaryCta")}
         >
-          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 8 }}>
-            <Text style={styles.heroPrimaryBtnText} color="#FFFFFF">
-              {t("publicHome.patientCta.button")}
+          <View style={{ flexDirection: rowDirection, alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Text style={styles.primaryBtnText} color="#FFFFFF">
+              {t("publicHome.hero.primaryCta")}
             </Text>
             <Ionicons
-              name={isRTL ? "arrow-back-outline" : "arrow-forward-outline"}
+              name={arrowForward}
               size={18}
               color="#FFFFFF"
+              importantForAccessibility="no"
             />
           </View>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push("/(auth)/signin/patient")}
+          style={[styles.secondaryBtn, { backgroundColor: publicTheme.accentMint, borderColor: publicTheme.subtleBorder }]}
+          activeOpacity={0.88}
+          accessibilityRole="button"
+          accessibilityLabel={t("publicHome.hero.secondaryCta")}
+        >
+          <Text style={[styles.secondaryBtnText, { color: publicTheme.primaryText }]}>
+            {t("publicHome.hero.secondaryCta")}
+          </Text>
+        </TouchableOpacity>
       </View>
-
-      {/* 4. Elegant Informational Note (Directory status - Fully Localized) */}
-      <Text style={[styles.directoryNote, { color: publicTheme.secondaryText, textAlign: isRTL ? "right" : "left" }]}>
-        {t("publicHome.hero.directoryNote")}
-      </Text>
-
-      {/* 5. Ambient styled shapes (Stitch visual composition) */}
-      <View style={[styles.accentBlobLeft, { backgroundColor: publicTheme.accentMint }]} />
-      <View style={[styles.accentBlobRight, { backgroundColor: publicTheme.accentPeach }]} />
-      <View style={[styles.accentDot, { backgroundColor: publicTheme.accentSand }]} />
     </View>
   );
 }
@@ -63,80 +73,52 @@ export function PublicHero() {
 const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
-    paddingTop: 36,
-    paddingBottom: 28,
-    position: "relative",
-    overflow: "hidden",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0, 0, 0, 0.02)",
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   heroTitle: {
-    fontSize: 34,
-    fontWeight: "900",
-    lineHeight: 46,
-    marginBottom: 16,
-    letterSpacing: -0.5,
+    fontSize: 26,
+    fontWeight: "800",
+    lineHeight: 36,
+    marginBottom: 10,
+    letterSpacing: -0.3,
   },
   heroSubtitle: {
-    fontSize: 16,
-    lineHeight: 25,
-    marginBottom: 28,
-    opacity: 0.95,
-  },
-  heroActions: {
-    width: "100%",
-    zIndex: 10,
+    fontSize: 15,
+    lineHeight: 22,
     marginBottom: 20,
+    opacity: 0.9,
   },
-  heroPrimaryBtn: {
-    flex: 1,
-    height: 54,
-    borderRadius: 16,
+  actionsContainer: {
+    width: "100%",
+    gap: 10,
+  },
+  primaryBtn: {
+    width: "100%",
+    height: 52,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "rgba(0, 0, 0, 0.08)",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: "rgba(0, 0, 0, 0.05)",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  heroPrimaryBtnText: {
+  primaryBtnText: {
     fontSize: 16,
     fontWeight: "700",
   },
-  directoryNote: {
-    fontSize: 13,
-    lineHeight: 19,
-    opacity: 0.8,
+  secondaryBtn: {
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  accentBlobLeft: {
-    position: "absolute",
-    left: -30,
-    top: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    opacity: 0.12,
-    zIndex: -1,
-  },
-  accentBlobRight: {
-    position: "absolute",
-    right: -40,
-    bottom: 20,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    opacity: 0.14,
-    zIndex: -1,
-  },
-  accentDot: {
-    position: "absolute",
-    left: "40%",
-    bottom: 12,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    opacity: 0.25,
-    zIndex: -1,
+  secondaryBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

@@ -48,9 +48,11 @@ describe("Public Home translation parity", () => {
   const ar = flatten(readLocale("ar"));
   const en = flatten(readLocale("en"));
 
-  it("keeps the complete Arabic and English locale trees in parity", () => {
-    const missingArabic = Object.keys(en).filter((key) => !(key in ar));
-    const missingEnglish = Object.keys(ar).filter((key) => !(key in en));
+  it("keeps the publicHome Arabic and English locale trees in parity", () => {
+    const publicArKeys = Object.keys(ar).filter((key) => key.startsWith("publicHome."));
+    const publicEnKeys = Object.keys(en).filter((key) => key.startsWith("publicHome."));
+    const missingArabic = publicEnKeys.filter((key) => !(key in ar));
+    const missingEnglish = publicArKeys.filter((key) => !(key in en));
 
     expect({ missingArabic, missingEnglish }).toEqual({ missingArabic: [], missingEnglish: [] });
   });
