@@ -28,6 +28,7 @@ import {
   ConversationComposer,
   ConversationEmptyState,
 } from "../../../src/features/messages/components/ConversationPrimitives";
+import { formatViewerTime } from "../../../src/lib/time-formatting";
 
 const CLOSED_STATUSES: SupportTicketStatus[] = ["RESOLVED", "CLOSED"];
 
@@ -56,10 +57,10 @@ export default function SupportTicketDetailScreen() {
   const canReply = Boolean(ticket) && !isClosed;
 
   function formatTime(dateStr: string): string {
-    return new Date(dateStr).toLocaleTimeString(
-      i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-      { hour: "2-digit", minute: "2-digit" },
-    );
+    return formatViewerTime(dateStr, {
+      locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+      fallbackText: "-",
+    });
   }
 
   async function handleSend() {

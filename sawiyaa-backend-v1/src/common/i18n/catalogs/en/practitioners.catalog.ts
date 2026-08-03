@@ -60,6 +60,8 @@ export const enPractitionersCatalog = {
     credentialNotFound: 'Practitioner credential was not found',
     profileAccessDenied:
       'You are not allowed to access this practitioner profile',
+    timezoneChangeBlocked:
+      'Timezone cannot be changed while future availability or appointments exist. Remove future availability or contact support.',
     publicProfileNotFound: 'Public practitioner profile was not found',
   },
 };

@@ -569,13 +569,16 @@
       "professionalTitle": "المسمى المهني",
       "countryCode": "رمز الدولة",
       "yearsOfExperience": "سنوات الخبرة",
-      "bio": "نبذة مهنية"
+      "bio": "نبذة مهنية",
+      "confirmPassword": "تأكيد كلمة المرور"
     },
     "placeholders": {
       "displayName": "كيف تريد أن يظهر اسمك؟",
       "email": "name@example.com",
+      "phone": "رقم الهاتف",
       "otpEmail": "اختياري إذا كان رمز التحقق سيصل لبريد آخر",
       "password": "أدخل كلمة المرور",
+      "confirmPassword": "أدخل كلمة المرور مرة أخرى",
       "newPassword": "اختر كلمة مرور أقوى",
       "otpCode": "أدخل رمز التحقق",
       "resetCode": "أدخل رمز الاستعادة",
@@ -1003,15 +1006,19 @@
       "REFUNDED": "تم الاسترداد"
     },
     "presentationStatus": {
+      "DRAFT": "مسودة",
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PRACTITIONER_CONFIRMATION": "بانتظار تأكيد المعالج",
       "UPCOMING": "قادمة",
-      "JOINABLE": "جاهزة للانضمام",
+      "READY_TO_JOIN": "جاهزة للانضمام",
       "IN_PROGRESS": "جارية الآن",
+      "AWAITING_COMPLETION_CONFIRMATION": "بانتظار تأكيد الاكتمال",
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
-      "ENDED": "غير مكتملة",
-      "UNAVAILABLE": "غير متاح الآن",
-      "NO_SHOW": "لم يحضر",
-      "UNDER_REVIEW": "قيد المراجعة"
+      "PATIENT_NO_SHOW": "عدم حضور المريض",
+      "PRACTITIONER_NO_SHOW": "عدم حضور المعالج",
+      "BOTH_NO_SHOW": "عدم حضور الطرفين",
+      "EXPIRED": "منتهية"
     },
     "selectTime": {
       "title": "اختر موعد الجلسة",
@@ -2403,7 +2410,7 @@
     "promoCodes": {
       "title": "أكواد الخصم",
       "subtitle": "أنشئ أكواد خصم مخصصة وادِرها من مكان واحد.",
-      "financialNote": "خصم الكود مئوي فقط وبحد أقصى 20%.",
+      "financialNote": "خصم الكود مئوي فقط وبحد أقصى 25%.",
       "cardBadge": "أكواد الخصم",
       "quickAccess": "أكواد الخصم",
       "openAction": "فتح أكواد الخصم",
@@ -2476,7 +2483,7 @@
       "form": {
         "createTitle": "إنشاء كود خصم",
         "editTitle": "تعديل كود الخصم",
-        "subtitle": "اجعل الكود بنسبة مئوية فقط، ولجلساتك فقط، وضمن حد 20%.",
+        "subtitle": "اجعل الكود بنسبة مئوية فقط، ولجلساتك فقط، وضمن حد 25%.",
         "note": "التحقق النهائي يظل في الباك إند. نموذج الموبايل فقط يساعدك على تجهيز طلب آمن.",
         "codeLabel": "الكود",
         "codePlaceholder": "DR_AHMED20",
@@ -2484,7 +2491,7 @@
         "codeReadOnlyHint": "الكود يصبح للقراءة فقط بعد الإنشاء.",
         "discountLabel": "نسبة الخصم",
         "discountPlaceholder": "10",
-        "discountHint": "خصم الكود مئوي فقط وبحد أقصى 20%.",
+        "discountHint": "خصم الكود مئوي فقط وبحد أقصى 25%.",
         "discountReadOnlyHint": "أصبح الخصم للقراءة فقط لأن هذا الكود تم استخدامه بالفعل.",
         "totalLimitLabel": "الحد الإجمالي للاستخدام",
         "totalLimitPlaceholder": "اختياري",
@@ -2510,7 +2517,7 @@
         "errors": {
           "required": "هذا الحقل مطلوب.",
           "invalid": "أدخل قيمة صحيحة.",
-          "tooHigh": "أكواد خصم المعالج لا يمكن أن تتجاوز 20%.",
+          "tooHigh": "أكواد خصم المعالج لا يمكن أن تتجاوز 25%.",
           "invalidRange": "تاريخ النهاية يجب أن يكون بعد تاريخ البداية أو في نفس اليوم.",
           "locked": "لم يعد بالإمكان تغيير الخصم لأن الكود تم استخدامه بالفعل."
         }
@@ -2537,7 +2544,7 @@
         "generic": "تعذر حفظ كود الخصم حالياً.",
         "duplicateCode": "هذا الكود موجود بالفعل.",
         "invalidCode": "أدخل كوداً يحتوي فقط على الحروف والأرقام والشرطة أو الشرطة السفلية.",
-        "discountTooHigh": "أكواد خصم المعالج لا يمكن أن تتجاوز 20%.",
+        "discountTooHigh": "أكواد خصم المعالج لا يمكن أن تتجاوز 25%.",
         "percentageOnly": "أكواد خصم المعالج تكون بنسبة مئوية فقط.",
         "invalidDateRange": "نطاق تاريخ الكود غير صالح.",
         "usageLimitBelowCurrentUsage": "لا يمكن أن يكون الحد أقل من عدد الاستخدامات المسجلة بالفعل.",
@@ -2579,6 +2586,7 @@
     "presentationStatus": {
       "UPCOMING": "قادمة",
       "JOINABLE": "جاهزة للانضمام",
+      "READY_TO_JOIN": "جاهزة للانضمام",
       "IN_PROGRESS": "جارية الآن",
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
@@ -3947,19 +3955,22 @@
   "publicHome": {
     "signIn": "تسجيل الدخول",
     "brandName": "سويّـة",
-    "header": { "signIn": "تسجيل الدخول", "languageEnglish": "التبديل إلى الإنجليزية", "languageArabic": "التبديل إلى العربية" },
+    "header": { "signIn": "تسجيل الدخول", "practitionerSignIn": "دخول المختص", "languageEnglish": "التبديل إلى الإنجليزية", "languageArabic": "التبديل إلى العربية" },
     "hero": {
       "title": "الدعم المناسب يبدأ بخطوة بسيطة",
-      "subtitle": "اكتشف المختص المناسب وابدأ بخطوات واضحة.",
+      "subtitle": "اكتشف المختص المناسب وابدأ رحلتك بوضوح وراحة.",
       "primaryCta": "إنشاء حساب مريض",
-      "secondaryCta": "تسجيل الدخول"
+      "secondaryCta": "تسجيل الدخول",
+      "startJourney": "ابدأ رحلتك معنا",
+      "chooseSpecialist": "ابدأ اختيار المتخصص",
+      "helpChoose": "ساعدني أختار الأنسب"
     },
     "trust": {
       "clearChoice": "اختيار واضح",
       "simpleBooking": "حجز بسيط",
       "privacyPriority": "خصوصية تراعيك"
     },
-    "practitioner": { "label": "هل أنت مختص؟", "button": "تسجيل دخول المختص" },
+    "practitioner": { "label": "هل أنت مختص؟", "button": "تسجيل دخول المختص", "viewAll": "استكشف جميع المتخصصين" },
     "placeholders": {
       "comingSoon": "قريباً",
       "comingSoonDesc": "هذه الميزة ستكون متاحة في المرحلة القادمة. تابعنا!",

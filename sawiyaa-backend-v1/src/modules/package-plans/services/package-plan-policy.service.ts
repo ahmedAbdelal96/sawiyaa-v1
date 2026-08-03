@@ -1,13 +1,15 @@
 import { ServiceUnavailableException, Injectable } from '@nestjs/common';
-import { ConfigResolverService } from '@modules/config/services/config-resolver.service';
+import { CONFIG_KEYS } from '@modules/config/registry/config-key.constants';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
 
 @Injectable()
 export class PackagePlanPolicyService {
-  constructor(private readonly configResolverService: ConfigResolverService) {}
+  constructor(private readonly configRuntimeService: ConfigRuntimeService) {}
 
   async assertPackagesEnabled(): Promise<void> {
-    const enabled =
-      await this.configResolverService.getBoolean('packages.enabled');
+    const enabled = await this.configRuntimeService.getBoolean(
+      CONFIG_KEYS.packages.enabled,
+    );
 
     if (enabled === false) {
       throw new ServiceUnavailableException({
@@ -18,8 +20,8 @@ export class PackagePlanPolicyService {
   }
 
   async assertPurchasesEnabled(): Promise<void> {
-    const enabled = await this.configResolverService.getBoolean(
-      'packages.purchaseEnabled',
+    const enabled = await this.configRuntimeService.getBoolean(
+      CONFIG_KEYS.packages.purchaseEnabled,
     );
 
     if (enabled === false) {

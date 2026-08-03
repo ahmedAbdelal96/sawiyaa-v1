@@ -15,6 +15,7 @@ import {
 import { useTheme } from "../../../../src/providers/ThemeProvider";
 import { useMyCareChatRequest } from "../../../../src/features/patient/care-chat/hooks";
 import type { ChatApprovalStatus } from "../../../../src/features/patient/care-chat/types";
+import { formatViewerDate } from "../../../../src/lib/time-formatting";
 
 function statusColor(
   status: ChatApprovalStatus,
@@ -44,7 +45,7 @@ export default function CareChatRequestDetailScreen() {
   if (requestQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header showBack />
         <LoadingState fullScreen />
       </Screen>
     );
@@ -53,7 +54,7 @@ export default function CareChatRequestDetailScreen() {
   if (requestQuery.isError || !request) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header showBack />
         <ErrorState fullScreen onRetry={requestQuery.refetch} />
       </Screen>
     );
@@ -64,10 +65,7 @@ export default function CareChatRequestDetailScreen() {
 
   return (
     <Screen bg="background">
-      <Header
-        title={t("careChat.requestDetail.title")}
-        showBack
-      />
+      <Header title={t("careChat.requestDetail.title")} showBack />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -87,10 +85,13 @@ export default function CareChatRequestDetailScreen() {
                   t("careChat.unknownPractitioner")}
               </Text>
               <Text color={theme.colors.textMuted} style={styles.dateText}>
-                {new Date(request.requestedAt).toLocaleDateString(
-                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-                  { day: "numeric", month: "long", year: "numeric" },
-                )}
+                {formatViewerDate(request.requestedAt, {
+                  locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  fallbackText: "-",
+                })}
               </Text>
             </View>
           </View>
@@ -124,10 +125,13 @@ export default function CareChatRequestDetailScreen() {
                 color={theme.colors.textSecondary}
                 style={styles.fieldValue}
               >
-                {new Date(request.expiresAt).toLocaleDateString(
-                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-                  { day: "numeric", month: "long", year: "numeric" },
-                )}
+                {formatViewerDate(request.expiresAt, {
+                  locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  fallbackText: "-",
+                })}
               </Text>
             </View>
           ) : null}
@@ -253,5 +257,3 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
-
-

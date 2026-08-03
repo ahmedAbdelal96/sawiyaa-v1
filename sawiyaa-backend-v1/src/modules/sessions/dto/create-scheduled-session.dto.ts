@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SessionMode } from '@prisma/client';
-import { IsEnum, IsIn, IsISO8601, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsISO8601,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 /**
  * Scheduled session creation stays intentionally minimal in V1.
@@ -20,6 +27,7 @@ export class CreateScheduledSessionDto {
     description: 'Requested UTC session start datetime',
   })
   @IsISO8601()
+  @Matches(/(?:Z|[+-]\d{2}:?\d{2})$/i)
   scheduledStartAt!: string;
 
   @ApiProperty({

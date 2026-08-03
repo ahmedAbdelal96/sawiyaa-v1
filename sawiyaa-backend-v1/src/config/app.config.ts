@@ -26,7 +26,6 @@ export default registerAs('app', () => {
     name: serviceName,
     // APP_URL is validated by env.schema.ts at startup - will throw if missing/invalid
     url: process.env.APP_URL!,
-    defaultLocale: process.env.APP_DEFAULT_LOCALE ?? 'ar',
     corsOrigins: Array.from(
       new Set([...defaultCorsOrigins, ...envCorsOrigins]),
     ),

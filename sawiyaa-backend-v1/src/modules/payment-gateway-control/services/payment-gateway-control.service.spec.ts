@@ -1,10 +1,10 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import {
-  OtpChannel,
-  OtpPurpose,
-  PaymentProvider,
-  UserRoleType,
-} from '@prisma/client';
+import { PaymentProvider, UserRoleType } from '@prisma/client';
+import { PaymobCheckoutFlow } from '@modules/payments/types/paymob-payment.types';
+import type {
+  ConfigurationWriteResult,
+  UpdateConfigurationCommand,
+} from '@modules/config/types/configuration-write.types';
 import { PaymentGatewayControlService } from './payment-gateway-control.service';
 import type {
   PaymentRoutingRuntimeSnapshot,
@@ -18,7 +18,7 @@ function createSnapshot(
   return {
     provider: PaymentProvider.PAYMOB,
     enabled: true,
-    checkoutFlow: 'legacy' as any,
+    checkoutFlow: PaymobCheckoutFlow.LEGACY,
     defaultMethod: 'CARD',
     maintenanceMode: false,
     allowedCountryIsoCodes: [],
@@ -29,7 +29,11 @@ function createSnapshot(
         type: 'CARD',
         enabled: true,
         priority: 100,
-        supportedCheckoutFlows: ['legacy', 'intention'] as any,
+        supportedCheckoutFlows: [
+          PaymobCheckoutFlow.LEGACY,
+          PaymobCheckoutFlow.INTENTION,
+        ],
+        currencyCodes: [],
         countryIsoCodes: [],
         integrationId: '5611307',
       },
@@ -80,6 +84,7 @@ function createRoutingSnapshot(
     defaultProvider: PaymentProvider.PAYMOB,
     priorityOrder: [PaymentProvider.PAYMOB, PaymentProvider.STRIPE],
     fallbackProvider: PaymentProvider.STRIPE,
+    currencyRoutes: [],
     validation: {
       healthy: true,
       issues: [],
@@ -88,6 +93,7 @@ function createRoutingSnapshot(
       defaultProvider: 'config',
       priorityOrder: 'config',
       fallbackProvider: 'config',
+      currencyRoutes: 'config',
     },
     updatedAt: new Date().toISOString(),
     ...overrides,
@@ -117,8 +123,20 @@ describe('PaymentGatewayControlService', () => {
   const repository = {
     listHistory: jest.fn(),
     findHistoryEvent: jest.fn(),
-    applySnapshot: jest.fn(),
   };
+  const configurationManagementService = {
+    getCurrentVersion: jest.fn(),
+    updateManyWithTransaction: jest.fn(),
+  };
+  const auditEventCountMock = jest.fn().mockResolvedValue(6);
+  const auditEventCreateMock = jest.fn().mockResolvedValue({ id: 'audit-1' });
+  type ConfigTransaction = {
+    auditEvent: {
+      count: jest.Mock;
+      create: jest.Mock;
+    };
+  };
+  type UpdateManyCall = [readonly UpdateConfigurationCommand[], unknown];
   const createOtpChallengeUseCase = {
     execute: jest.fn(),
   };
@@ -140,6 +158,7 @@ describe('PaymentGatewayControlService', () => {
     sendOtpChallengeUseCase as never,
     verifyOtpChallengeUseCase as never,
     passwordConfirmationService as never,
+    configurationManagementService as never,
   );
 
   beforeEach(() => {
@@ -150,12 +169,37 @@ describe('PaymentGatewayControlService', () => {
       emails: [{ email: 'admin@example.com', isVerified: true }],
     });
     verifyOtpChallengeUseCase.execute.mockResolvedValue({});
-    repository.applySnapshot.mockResolvedValue({
-      revisionNumber: 7,
-      auditEventId: 'audit-1',
-      configChangeLogIds: ['log-1'],
-      changedKeys: ['enabled'],
+    configurationManagementService.getCurrentVersion.mockResolvedValue({
+      valueId: 'current-value',
+      updatedAt: new Date('2026-08-02T12:00:00.000Z'),
     });
+    configurationManagementService.updateManyWithTransaction.mockImplementation(
+      (
+        commands: readonly UpdateConfigurationCommand[],
+        operation: (
+          tx: ConfigTransaction,
+          results: readonly ConfigurationWriteResult[],
+        ) => unknown,
+      ) =>
+        operation(
+          {
+            auditEvent: {
+              count: auditEventCountMock,
+              create: auditEventCreateMock,
+            },
+          },
+          commands.map((_, index) => ({
+            key: commands[index].key,
+            scopeType: commands[index].scopeType,
+            scopeRefId: commands[index].scopeRefId,
+            value: commands[index].value,
+            valueId: `value-${index + 1}`,
+            previousValueId: null,
+            updatedAt: new Date('2026-08-02T12:00:00.000Z'),
+            changeLogId: `log-${index + 1}`,
+          })),
+        ),
+    );
     repository.findHistoryEvent.mockResolvedValue({
       id: 'event-1',
       metadataJson: {
@@ -175,10 +219,10 @@ describe('PaymentGatewayControlService', () => {
     });
   });
 
-  it('blocks invalid drafts when no usable method remains', async () => {
-    const result = await service.validateDraft(PaymentProvider.PAYMOB, {
+  it('blocks invalid drafts when no usable method remains', () => {
+    const result = service.validateDraft(PaymentProvider.PAYMOB, {
       enabled: true,
-      checkoutFlow: 'legacy' as any,
+      checkoutFlow: PaymobCheckoutFlow.LEGACY,
       defaultMethod: null,
       maintenanceMode: false,
       allowedCountryIsoCodes: [],
@@ -191,10 +235,10 @@ describe('PaymentGatewayControlService', () => {
     );
   });
 
-  it('allows maintenance mode even when no active methods remain', async () => {
-    const result = await service.validateDraft(PaymentProvider.PAYMOB, {
+  it('allows maintenance mode even when no active methods remain', () => {
+    const result = service.validateDraft(PaymentProvider.PAYMOB, {
       enabled: true,
-      checkoutFlow: 'legacy' as any,
+      checkoutFlow: PaymobCheckoutFlow.LEGACY,
       defaultMethod: null,
       maintenanceMode: true,
       allowedCountryIsoCodes: [],
@@ -216,7 +260,7 @@ describe('PaymentGatewayControlService', () => {
         stepUpCode: '',
         rawDraft: {
           enabled: true,
-          checkoutFlow: 'legacy' as any,
+          checkoutFlow: PaymobCheckoutFlow.LEGACY,
           defaultMethod: 'CARD',
           maintenanceMode: false,
           allowedCountryIsoCodes: [],
@@ -244,7 +288,7 @@ describe('PaymentGatewayControlService', () => {
         stepUpCode: '123456',
         rawDraft: {
           enabled: true,
-          checkoutFlow: 'legacy' as any,
+          checkoutFlow: PaymobCheckoutFlow.LEGACY,
           defaultMethod: 'CARD',
           maintenanceMode: false,
           allowedCountryIsoCodes: [],
@@ -273,12 +317,90 @@ describe('PaymentGatewayControlService', () => {
         targetId: PaymentProvider.PAYMOB,
       }),
     );
-    expect(repository.applySnapshot).toHaveBeenCalled();
+    expect(
+      configurationManagementService.updateManyWithTransaction,
+    ).toHaveBeenCalledTimes(1);
     expect(result.revisionNumber).toBe(7);
   });
 
-  it('validates stripe drafts using the provider-specific model', async () => {
-    const result = await service.validateProviderDraft(PaymentProvider.STRIPE, {
+  it('maps Paymob changes to canonical config commands and one payment audit event', async () => {
+    await service.updateProvider({
+      provider: PaymentProvider.PAYMOB,
+      actorUserId: 'user-1',
+      requestId: 'request-4',
+      reason: 'Disable Paymob for maintenance',
+      currentPassword: 'current-password',
+      stepUpChallengeId: 'challenge-1',
+      stepUpCode: '123456',
+      rawDraft: {
+        enabled: false,
+        checkoutFlow: PaymobCheckoutFlow.LEGACY,
+        defaultMethod: 'CARD',
+        maintenanceMode: false,
+        allowedCountryIsoCodes: [],
+        methodRegistry: createSnapshot().methodRegistry,
+      },
+    });
+
+    const [commands, operation] = configurationManagementService
+      .updateManyWithTransaction.mock.calls[0] as UpdateManyCall;
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({
+      key: 'payment.provider.paymob.enabled',
+      value: false,
+      scopeType: 'GLOBAL',
+      scopeRefId: null,
+      reason: 'Disable Paymob for maintenance',
+      actor: {
+        type: 'USER',
+        id: 'user-1',
+        permissions: ['configuration.edit.financial'],
+      },
+      actorType: 'USER',
+    });
+    expect(typeof operation).toBe('function');
+    expect(auditEventCreateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps multi-key routing changes into one canonical atomic batch', async () => {
+    await service.updateRouting({
+      actorUserId: 'user-1',
+      requestId: 'request-5',
+      reason: 'Reorder payment routing',
+      currentPassword: 'current-password',
+      stepUpChallengeId: 'challenge-1',
+      stepUpCode: '123456',
+      rawDraft: {
+        defaultProvider: PaymentProvider.STRIPE,
+        priorityOrder: [PaymentProvider.STRIPE, PaymentProvider.PAYMOB],
+        fallbackProvider: PaymentProvider.PAYMOB,
+        currencyRoutes: [],
+      },
+    });
+
+    const [commands] = configurationManagementService.updateManyWithTransaction
+      .mock.calls[0] as UpdateManyCall;
+    expect(
+      commands.map((command: UpdateConfigurationCommand) => command.key),
+    ).toEqual([
+      'payment.routing.defaultProvider',
+      'payment.routing.priorityOrder',
+      'payment.routing.fallbackProvider',
+    ]);
+    expect(
+      commands.every(
+        (command: UpdateConfigurationCommand) => command.scopeType === 'GLOBAL',
+      ),
+    ).toBe(true);
+    expect(
+      commands.every(
+        (command: UpdateConfigurationCommand) => command.scopeRefId === null,
+      ),
+    ).toBe(true);
+  });
+
+  it('validates stripe drafts using the provider-specific model', () => {
+    const result = service.validateProviderDraft(PaymentProvider.STRIPE, {
       enabled: true,
       maintenanceMode: false,
       allowedCountryIsoCodes: ['eg'],
@@ -287,8 +409,8 @@ describe('PaymentGatewayControlService', () => {
     expect(result.valid).toBe(true);
   });
 
-  it('validates routing drafts using the bounded routing model', async () => {
-    const result = await service.validateRoutingDraft({
+  it('validates routing drafts using the bounded routing model', () => {
+    const result = service.validateRoutingDraft({
       defaultProvider: PaymentProvider.PAYMOB,
       priorityOrder: [PaymentProvider.PAYMOB, PaymentProvider.STRIPE],
       fallbackProvider: PaymentProvider.STRIPE,

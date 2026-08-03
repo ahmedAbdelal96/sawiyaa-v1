@@ -22,7 +22,8 @@ import Button from "@/components/ui/button/Button";
 import { DestructiveConfirmModal, Modal, ModalBody } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
-import { formatViewerDate, formatViewerDateTime, formatViewerTime } from "@/lib/time-formatting";
+import { formatPatientDateTime } from "@/lib/time-formatting";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import {
   useCancelPatientSession,
   usePreviewPatientSessionCancellation,
@@ -54,10 +55,6 @@ import { PatientSectionCard } from "@/components/patient/PatientChrome";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
 import PatientSessionReviewCard from "./PatientSessionReviewCard";
 
-function formatDatetime(isoString: string | null, numLocale: string): string {
-  return formatViewerDateTime(isoString, { locale: numLocale });
-}
-
 function formatPlainAmount(value: string, numLocale: string): string {
   return new Intl.NumberFormat(numLocale, {
     minimumFractionDigits: 2,
@@ -69,14 +66,6 @@ function formatSessionAmount(value: string, numLocale: string, currencyCode: str
   return currencyCode
     ? formatFinanceMoney(numLocale, value, currencyCode, { fallbackText: "—" })
     : formatPlainAmount(value, numLocale);
-}
-
-function formatSessionDateLabel(isoString: string | null, numLocale: string): string {
-  return formatViewerDate(isoString, { locale: numLocale, fallbackText: "—" });
-}
-
-function formatSessionTimeLabel(isoString: string | null, numLocale: string): string {
-  return formatViewerTime(isoString, { locale: numLocale, fallbackText: "—" });
 }
 
 function getSafeTranslation(
@@ -265,6 +254,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const [now, setNow] = useState<number>(() => Date.now());
 
   const { data: session, isLoading, isError, refetch } = usePatientSession(sessionId);
+  const patientProfileQuery = usePatientProfile();
+  const patientTimezone = patientProfileQuery.data?.profile.timezone;
 
   useEffect(() => {
     if (!session || session.status !== "PENDING_PAYMENT") {
@@ -486,8 +477,8 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const practitionerDisplayName =
     session.practitioner.displayName ?? t("detail.cancelConfirm.summaryFields.practitioner");
   const sessionScheduledAt = session.scheduledStartAt ?? cancellationPreview?.sessionStartAt ?? null;
-  const sessionScheduledDateLabel = formatSessionDateLabel(sessionScheduledAt, numLocale);
-  const sessionScheduledTimeLabel = formatSessionTimeLabel(sessionScheduledAt, numLocale);
+  const sessionScheduledDateLabel = formatPatientDateTime(sessionScheduledAt, patientTimezone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined });
+  const sessionScheduledTimeLabel = formatPatientDateTime(sessionScheduledAt, patientTimezone, { locale: numLocale, dateStyle: undefined, timeStyle: "short" });
   const supportHref = `/patient/messages?lane=support&relatedSessionId=${encodeURIComponent(
     session.id,
   )}`;
@@ -605,7 +596,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               </span>
               <p className="text-sm sm:text-base font-bold text-text-primary dark:text-white/90">
                 {session.scheduledStartAt
-                  ? formatDatetime(session.scheduledStartAt, numLocale)
+                  ? formatPatientDateTime(session.scheduledStartAt, patientTimezone, { locale: numLocale })
                   : t("detail.notScheduled")}
               </p>
             </div>
@@ -623,7 +614,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               </span>
               <p className="text-sm sm:text-base font-semibold text-text-secondary dark:text-white/70">
                 {session.scheduledEndAt
-                  ? formatDatetime(session.scheduledEndAt, numLocale)
+                  ? formatPatientDateTime(session.scheduledEndAt, patientTimezone, { locale: numLocale })
                   : "—"}
               </p>
             </div>

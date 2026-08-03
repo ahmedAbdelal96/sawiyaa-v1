@@ -8,6 +8,7 @@ import type {
   AdminSessionEvidenceTimelineItem,
 } from "../types/admin-session-runtime.types";
 import { formatInspectorDateTime } from "../lib/inspector-utils";
+import { useRuntimeViewerTimeZone } from "../lib/runtime-time";
 
 // =============================================================================
 // Legacy attendance-only row (kept for backward compatibility)
@@ -26,6 +27,7 @@ function AttendanceTimelineRow({
   providerParticipantRefLabel,
   providerRoomRefLabel,
   providerEventRefLabel,
+  viewerTimeZone,
 }: {
   event: AdminSessionAttendanceTimelineItem;
   locale: string;
@@ -39,6 +41,7 @@ function AttendanceTimelineRow({
   providerParticipantRefLabel: string;
   providerRoomRefLabel: string;
   providerEventRefLabel: string;
+  viewerTimeZone: string;
 }) {
   const t = useTranslations("admin-session-runtime");
   const isJoin = event.attendanceEventType === "JOINED";
@@ -54,10 +57,12 @@ function AttendanceTimelineRow({
     : "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300";
 
   const showProviderRefs =
-    event.providerEventRef || event.providerRoomRef || event.providerParticipantRef;
+    event.providerEventRef ||
+    event.providerRoomRef ||
+    event.providerParticipantRef;
 
   return (
-    <li className="flex items-start gap-3 rounded-2xl border border-border-light p-3 dark:border-white/8">
+    <li className="border-border-light flex items-start gap-3 rounded-2xl border p-3 dark:border-white/8">
       <span
         className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${accent}`}
       >
@@ -69,62 +74,66 @@ function AttendanceTimelineRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <p className="text-text-primary text-sm font-semibold dark:text-white/95">
             {roleLabel} · {actionLabel}
           </p>
-          <span className="font-mono text-[11px] text-text-secondary">
-            {formatInspectorDateTime(event.occurredAt, locale)}
+          <span className="text-text-secondary font-mono text-[11px]">
+            {formatInspectorDateTime(event.occurredAt, locale, viewerTimeZone)}
           </span>
         </div>
-        <details className="mt-2 group">
-          <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+        <details className="group mt-2">
+          <summary className="text-text-muted cursor-pointer text-[11px] font-semibold tracking-[0.18em] uppercase">
             {t("inspector.timeline.subtitle")}
           </summary>
           <div className="mt-2 grid gap-1 sm:grid-cols-2">
-            <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-              <span className="text-[11px] text-text-muted">{providerLabel}</span>
-              <span className="text-xs font-semibold text-text-primary dark:text-white/95">
+            <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+              <span className="text-text-muted text-[11px]">
+                {providerLabel}
+              </span>
+              <span className="text-text-primary text-xs font-semibold dark:text-white/95">
                 {event.provider}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-              <span className="text-[11px] text-text-muted">{providerEventTypeLabel}</span>
-              <span className="font-mono text-[11px] text-text-secondary">
+            <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+              <span className="text-text-muted text-[11px]">
+                {providerEventTypeLabel}
+              </span>
+              <span className="text-text-secondary font-mono text-[11px]">
                 {event.providerEventType}
               </span>
             </div>
             {event.providerParticipantRef ? (
-              <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-                <span className="text-[11px] text-text-muted">
+              <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+                <span className="text-text-muted text-[11px]">
                   {providerParticipantRefLabel}
                 </span>
-                <span className="font-mono text-[11px] text-text-secondary break-all">
+                <span className="text-text-secondary font-mono text-[11px] break-all">
                   {event.providerParticipantRef}
                 </span>
               </div>
             ) : null}
             {event.providerRoomRef ? (
-              <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-                <span className="text-[11px] text-text-muted">
+              <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+                <span className="text-text-muted text-[11px]">
                   {providerRoomRefLabel}
                 </span>
-                <span className="font-mono text-[11px] text-text-secondary break-all">
+                <span className="text-text-secondary font-mono text-[11px] break-all">
                   {event.providerRoomRef}
                 </span>
               </div>
             ) : null}
             {event.providerEventRef ? (
-              <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-                <span className="text-[11px] text-text-muted">
+              <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+                <span className="text-text-muted text-[11px]">
                   {providerEventRefLabel}
                 </span>
-                <span className="font-mono text-[11px] text-text-secondary break-all">
+                <span className="text-text-secondary font-mono text-[11px] break-all">
                   {event.providerEventRef}
                 </span>
               </div>
             ) : null}
             {showProviderRefs ? null : (
-              <p className="text-[11px] text-text-muted sm:col-span-2">
+              <p className="text-text-muted text-[11px] sm:col-span-2">
                 {t("inspector.timeline.platformNote")}
               </p>
             )}
@@ -149,8 +158,7 @@ const SEVERITY_ACCENT: Record<
     "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
   ERROR: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
   INFO: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
-  NEUTRAL:
-    "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
+  NEUTRAL: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
 };
 
 function EvidenceTimelineRow({
@@ -161,6 +169,7 @@ function EvidenceTimelineRow({
   severityLabels,
   metaLabels,
   unknownEventLabel,
+  viewerTimeZone,
 }: {
   item: AdminSessionEvidenceTimelineItem;
   roleLabels: Record<AdminSessionEvidenceActorRole, string>;
@@ -176,18 +185,18 @@ function EvidenceTimelineRow({
     safeMetadata: string;
   };
   unknownEventLabel: string;
+  viewerTimeZone: string;
 }) {
   const locale = useLocale();
   const t = useTranslations("admin-session-runtime");
   const accent = SEVERITY_ACCENT[item.severity] ?? SEVERITY_ACCENT.NEUTRAL;
   const roleLabel = roleLabels[item.actorRole] ?? roleLabels.UNKNOWN;
-  const eventLabel =
-    eventLabels[item.titleKey] ?? unknownEventLabel;
+  const eventLabel = eventLabels[item.titleKey] ?? unknownEventLabel;
   const displayName = item.actorDisplayName?.trim() || roleLabel;
   const summary = item.safeMetadataSummary ?? {};
 
   return (
-    <li className="flex items-start gap-3 rounded-2xl border border-border-light p-3 dark:border-white/8">
+    <li className="border-border-light flex items-start gap-3 rounded-2xl border p-3 dark:border-white/8">
       <span
         className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${accent}`}
       >
@@ -203,11 +212,11 @@ function EvidenceTimelineRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <p className="text-text-primary text-sm font-semibold dark:text-white/95">
             {displayName} · {eventLabel}
           </p>
-          <span className="font-mono text-[11px] text-text-secondary">
-            {formatInspectorDateTime(item.occurredAt, locale)}
+          <span className="text-text-secondary font-mono text-[11px]">
+            {formatInspectorDateTime(item.occurredAt, locale, viewerTimeZone)}
           </span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -216,39 +225,43 @@ function EvidenceTimelineRow({
           >
             {severityLabels[item.severity] ?? item.severity}
           </span>
-          <span className="inline-flex items-center rounded-full bg-surface-tertiary px-2 py-0.5 text-[10px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/80">
+          <span className="bg-surface-tertiary text-text-muted inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold dark:bg-white/10 dark:text-white/80">
             {sourceLabels[item.source] ?? item.source}
           </span>
         </div>
         {Object.keys(summary).length > 0 ? (
-          <details className="mt-2 group">
-            <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <details className="group mt-2">
+            <summary className="text-text-muted cursor-pointer text-[11px] font-semibold tracking-[0.18em] uppercase">
               {metaLabels.safeMetadata}
             </summary>
             <div className="mt-2 grid gap-1 sm:grid-cols-2">
-              <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-                <span className="text-[11px] text-text-muted">
+              <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+                <span className="text-text-muted text-[11px]">
                   {metaLabels.recordedAt}
                 </span>
-                <span className="font-mono text-[11px] text-text-secondary">
-                  {formatInspectorDateTime(item.recordedAt, locale)}
+                <span className="text-text-secondary font-mono text-[11px]">
+                  {formatInspectorDateTime(
+                    item.recordedAt,
+                    locale,
+                    viewerTimeZone,
+                  )}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8">
-                <span className="text-[11px] text-text-muted">
+              <div className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8">
+                <span className="text-text-muted text-[11px]">
                   {metaLabels.actor}
                 </span>
-                <span className="text-[11px] font-semibold text-text-primary dark:text-white/95">
+                <span className="text-text-primary text-[11px] font-semibold dark:text-white/95">
                   {displayName}
                 </span>
               </div>
               {Object.entries(summary).map(([key, value]) => (
                 <div
                   key={key}
-                  className="flex items-center justify-between gap-3 border-b border-border-light py-1.5 dark:border-white/8"
+                  className="border-border-light flex items-center justify-between gap-3 border-b py-1.5 dark:border-white/8"
                 >
-                  <span className="text-[11px] text-text-muted">{key}</span>
-                  <span className="font-mono text-[11px] text-text-secondary break-all">
+                  <span className="text-text-muted text-[11px]">{key}</span>
+                  <span className="text-text-secondary font-mono text-[11px] break-all">
                     {value === null ? "—" : String(value)}
                   </span>
                 </div>
@@ -276,6 +289,7 @@ export default function AdminSessionInspectorTimeline({
 }) {
   const t = useTranslations("admin-session-runtime");
   const locale = useLocale();
+  const viewerTimeZone = useRuntimeViewerTimeZone();
 
   const roleLabels: Record<AdminSessionEvidenceActorRole, string> = {
     PATIENT: t("attendance.timeline.participantRoles.PATIENT"),
@@ -297,20 +311,24 @@ export default function AdminSessionInspectorTimeline({
     ),
     MEETING_STARTED: t("inspector.evidenceTimeline.eventTypes.MEETING_STARTED"),
     MEETING_ENDED: t("inspector.evidenceTimeline.eventTypes.MEETING_ENDED"),
-    ATTENDANCE_JOINED: t("inspector.evidenceTimeline.eventTypes.ATTENDANCE_JOINED"),
+    ATTENDANCE_JOINED: t(
+      "inspector.evidenceTimeline.eventTypes.ATTENDANCE_JOINED",
+    ),
     ATTENDANCE_LEFT: t("inspector.evidenceTimeline.eventTypes.ATTENDANCE_LEFT"),
-    PROVIDER_ROOM_CREATED: t("inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_CREATED"),
-    PROVIDER_ROOM_ENDED: t("inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_ENDED"),
+    PROVIDER_ROOM_CREATED: t(
+      "inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_CREATED",
+    ),
+    PROVIDER_ROOM_ENDED: t(
+      "inspector.evidenceTimeline.eventTypes.PROVIDER_ROOM_ENDED",
+    ),
   };
 
-  const sourceLabels: Record<
-    "PLATFORM" | "DAILY_WEBHOOK" | "SYSTEM",
-    string
-  > = {
-    PLATFORM: t("inspector.evidenceTimeline.sources.PLATFORM"),
-    DAILY_WEBHOOK: t("inspector.evidenceTimeline.sources.DAILY_WEBHOOK"),
-    SYSTEM: t("inspector.evidenceTimeline.sources.SYSTEM"),
-  };
+  const sourceLabels: Record<"PLATFORM" | "DAILY_WEBHOOK" | "SYSTEM", string> =
+    {
+      PLATFORM: t("inspector.evidenceTimeline.sources.PLATFORM"),
+      DAILY_WEBHOOK: t("inspector.evidenceTimeline.sources.DAILY_WEBHOOK"),
+      SYSTEM: t("inspector.evidenceTimeline.sources.SYSTEM"),
+    };
 
   const severityLabels: Record<
     "INFO" | "SUCCESS" | "WARNING" | "ERROR" | "NEUTRAL",
@@ -331,32 +349,32 @@ export default function AdminSessionInspectorTimeline({
 
   // Prefer the unified evidence timeline (Phase 3). Fall back to the
   // attendance-only timeline (Phase 1 / 2).
-  const useUnified =
-    hasEvidenceTimeline && (evidenceTimeline?.length ?? 0) > 0;
+  const useUnified = hasEvidenceTimeline && (evidenceTimeline?.length ?? 0) > 0;
   const sortedEvidenceTimeline: AdminSessionEvidenceTimelineItem[] = useUnified
     ? [...(evidenceTimeline ?? [])].sort(
         (a, b) =>
           new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
       )
     : [];
-  const sortedAttendanceTimeline: AdminSessionAttendanceTimelineItem[] = useUnified
-    ? []
-    : [...events].sort(
-        (a, b) =>
-          new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
-      );
+  const sortedAttendanceTimeline: AdminSessionAttendanceTimelineItem[] =
+    useUnified
+      ? []
+      : [...events].sort(
+          (a, b) =>
+            new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime(),
+        );
 
   return (
     <section className="app-panel rounded-[28px] p-5 sm:p-6">
       <div className="flex items-center gap-3">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light">
+        <span className="bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light inline-flex h-9 w-9 items-center justify-center rounded-2xl">
           <Clock className="h-4 w-4" />
         </span>
         <div>
-          <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+          <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
             {t("inspector.timeline.title")}
           </h2>
-          <p className="text-xs text-text-secondary">
+          <p className="text-text-secondary text-xs">
             {t("inspector.timeline.subtitle")}
           </p>
         </div>
@@ -364,9 +382,9 @@ export default function AdminSessionInspectorTimeline({
 
       <div
         role="note"
-        className="mt-4 flex items-start gap-2 rounded-2xl border border-border-light bg-surface-tertiary/60 p-3 text-xs text-text-secondary dark:border-white/8 dark:bg-white/[0.03]"
+        className="border-border-light bg-surface-tertiary/60 text-text-secondary mt-4 flex items-start gap-2 rounded-2xl border p-3 text-xs dark:border-white/8 dark:bg-white/[0.03]"
       >
-        <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-primary" />
+        <Info className="text-primary mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
         <p>
           {useUnified
             ? t("inspector.timeline.noteUnified")
@@ -374,17 +392,17 @@ export default function AdminSessionInspectorTimeline({
         </p>
       </div>
 
-      {useUnified
-        ? sortedEvidenceTimeline.length === 0
-        : sortedAttendanceTimeline.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-border-light p-6 text-center dark:border-white/10">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+      {useUnified ? (
+        sortedEvidenceTimeline.length === 0
+      ) : sortedAttendanceTimeline.length === 0 ? (
+        <div className="border-border-light mt-4 rounded-2xl border border-dashed p-6 text-center dark:border-white/10">
+          <p className="text-text-primary text-sm font-semibold dark:text-white/95">
             {t("inspector.timeline.empty.heading")}
           </p>
-          <p className="mt-1 text-xs text-text-secondary">
+          <p className="text-text-secondary mt-1 text-xs">
             {t("inspector.timeline.empty.note")}
           </p>
-          <p className="mt-2 text-[11px] text-text-muted">
+          <p className="text-text-muted mt-2 text-[11px]">
             {t("inspector.timeline.empty.nextStep")}
           </p>
         </div>
@@ -400,8 +418,9 @@ export default function AdminSessionInspectorTimeline({
               severityLabels={severityLabels}
               metaLabels={metaLabels}
               unknownEventLabel={t(
-                'inspector.evidenceTimeline.eventTypes.UNKNOWN_PLATFORM_EVENT',
+                "inspector.evidenceTimeline.eventTypes.UNKNOWN_PLATFORM_EVENT",
               )}
+              viewerTimeZone={viewerTimeZone}
             />
           ))}
         </ol>
@@ -432,6 +451,7 @@ export default function AdminSessionInspectorTimeline({
               providerEventRefLabel={t(
                 "inspector.timeline.fields.providerEventRef",
               )}
+              viewerTimeZone={viewerTimeZone}
             />
           ))}
         </ol>

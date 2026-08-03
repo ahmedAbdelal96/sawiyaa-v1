@@ -2,9 +2,11 @@ import { Global, Module } from '@nestjs/common';
 import { I18nService } from './services/i18n.service';
 import { LocaleResolverService } from './services/locale-resolver.service';
 import { LocaleContextMiddleware } from './services/locale-context.middleware';
+import { ConfigModule } from '@modules/config/config.module';
 
 @Global()
 @Module({
+  imports: [ConfigModule],
   providers: [LocaleResolverService, I18nService, LocaleContextMiddleware],
   exports: [LocaleResolverService, I18nService, LocaleContextMiddleware],
 })

@@ -27,6 +27,15 @@ import type {
   RefreshTokenRequest,
 } from "./contracts";
 
+export async function initializeCurrentUserTimezone(timezone: string) {
+  const response = await apiClient.post("/users/me/timezone/initialize", {
+    timezone,
+  });
+  return extractApiData<{ timezone: string | null; initialized: boolean }>(
+    response,
+  );
+}
+
 function buildRefreshAuthHeader(refreshToken?: string) {
   return refreshToken ? { Authorization: `Bearer ${refreshToken}` } : undefined;
 }

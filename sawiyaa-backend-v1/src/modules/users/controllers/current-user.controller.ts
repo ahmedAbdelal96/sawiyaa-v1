@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBadRequestResponse,
@@ -20,12 +20,17 @@ import { CurrentUserPermissionsEnvelopeResponseDto } from '../dto/current-user-p
 import { CurrentUserSecurityStateEnvelopeResponseDto } from '../dto/current-user-security-state-response.dto';
 import { CurrentUserSummaryEnvelopeResponseDto } from '../dto/current-user-summary-response.dto';
 import { PatchCurrentUserProfileDto } from '../dto/patch-current-user-profile.dto';
+import {
+  InitializeCurrentUserTimezoneDto,
+  InitializeCurrentUserTimezoneEnvelopeResponseDto,
+} from '../dto/initialize-current-user-timezone.dto';
 import { GetCurrentUserPermissionsUseCase } from '../use-cases/get-current-user-permissions.use-case';
 import { GetCurrentUserProfileLinksUseCase } from '../use-cases/get-current-user-profile-links.use-case';
 import { GetCurrentUserSecurityStateUseCase } from '../use-cases/get-current-user-security-state.use-case';
 import { GetCurrentUserSummaryUseCase } from '../use-cases/get-current-user-summary.use-case';
 import { ListCurrentUserRolesUseCase } from '../use-cases/list-current-user-roles.use-case';
 import { PatchCurrentUserProfileUseCase } from '../use-cases/patch-current-user-profile.use-case';
+import { InitializeCurrentUserTimezoneUseCase } from '../use-cases/initialize-current-user-timezone.use-case';
 
 /**
  * Users controller exposes authenticated read-only endpoints for the current user.
@@ -43,6 +48,7 @@ export class CurrentUserController {
     private readonly getCurrentUserSecurityStateUseCase: GetCurrentUserSecurityStateUseCase,
     private readonly getCurrentUserProfileLinksUseCase: GetCurrentUserProfileLinksUseCase,
     private readonly patchCurrentUserProfileUseCase: PatchCurrentUserProfileUseCase,
+    private readonly initializeCurrentUserTimezoneUseCase: InitializeCurrentUserTimezoneUseCase,
   ) {}
 
   /**
@@ -66,6 +72,28 @@ export class CurrentUserController {
   })
   me(@CurrentUser() currentUser: AuthenticatedUser) {
     return this.getCurrentUserSummaryUseCase.execute(currentUser);
+  }
+
+  @Post('me/timezone/initialize')
+  @ApiOperation({
+    summary: 'Initialize the missing current-user timezone',
+    description:
+      'Validates a detected IANA timezone and persists it only when the authenticated user has no timezone yet. Existing values are never overwritten.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: InitializeCurrentUserTimezoneEnvelopeResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid IANA timezone' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  initializeTimezone(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() dto: InitializeCurrentUserTimezoneDto,
+  ) {
+    return this.initializeCurrentUserTimezoneUseCase.execute({
+      authenticatedUser: currentUser,
+      timezone: dto.timezone,
+    });
   }
 
   /** Role list endpoint stays separate to support small frontend permission checks without fetching the full summary payload. */

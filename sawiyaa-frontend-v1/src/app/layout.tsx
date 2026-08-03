@@ -7,6 +7,7 @@ import { QueryProvider } from "@/providers/query-provider";
 import { ToastProvider } from "@/providers/toast-provider";
 import { ThemeHydration } from "@/components/providers/ThemeHydration";
 import { buildPublicMetadata } from "@/lib/seo/public-metadata";
+import { AutomaticTimeZoneInitializer } from "@/providers/AutomaticTimeZoneInitializer";
 
 const cairo = Cairo({
   subsets: ["arabic"],
@@ -52,13 +53,17 @@ export default async function RootLayout({ children, params }: Props) {
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={`${outfit.variable} ${cairo.variable}`} suppressHydrationWarning>
-      <body
-        className="dark:bg-gray-900 antialiased"
-      >
+    <html
+      lang={locale}
+      dir={dir}
+      className={`${outfit.variable} ${cairo.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased dark:bg-gray-900">
         <QueryProvider>
+          <AutomaticTimeZoneInitializer />
           <ThemeHydration />
-          <NextTopLoader 
+          <NextTopLoader
             color="#24564F"
             showSpinner={false}
             height={3}

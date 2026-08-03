@@ -12,6 +12,8 @@ import {
   useAdminPatientWalletSummary,
 } from "../hooks/use-admin-patient-wallet";
 import type { CustomerWalletEntryItem } from "@/features/payments/types/payments.types";
+import { formatEffectiveViewerDateTime } from "@/lib/time-formatting";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 
 function formatMoney(value: string, currency: string, locale: string) {
   const amount = Number(value ?? 0);
@@ -33,13 +35,13 @@ function InfoRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-border-light bg-surface-primary px-4 py-3">
-      <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-surface-secondary text-text-secondary">
+    <div className="border-border-light bg-surface-primary flex items-start gap-3 rounded-2xl border px-4 py-3">
+      <span className="bg-surface-secondary text-text-secondary mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-2xl">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold text-text-muted">{label}</p>
-        <p className="mt-1 truncate text-sm font-medium text-text-primary dark:text-white/95">
+        <p className="text-text-muted text-xs font-semibold">{label}</p>
+        <p className="text-text-primary mt-1 truncate text-sm font-medium dark:text-white/95">
           {value}
         </p>
       </div>
@@ -47,17 +49,26 @@ function InfoRow({
   );
 }
 
-function WalletEntryRow({ entry }: { entry: CustomerWalletEntryItem }) {
+function WalletEntryRow({
+  entry,
+  timeZone,
+}: {
+  entry: CustomerWalletEntryItem;
+  timeZone?: string | null;
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-border-light bg-surface-primary px-4 py-3">
+    <div className="border-border-light bg-surface-primary flex items-start justify-between gap-4 rounded-2xl border px-4 py-3">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-text-primary dark:text-white/95">
+        <p className="text-text-primary truncate text-sm font-medium dark:text-white/95">
           {entry.entryType}
         </p>
-        <p className="mt-1 text-xs text-text-muted">{new Date(entry.effectiveAt).toLocaleString()}</p>
+        <p className="text-text-muted mt-1 text-xs">
+          {formatEffectiveViewerDateTime(entry.effectiveAt, timeZone)}
+        </p>
       </div>
-      <p className="shrink-0 text-sm font-semibold tabular-nums text-text-primary dark:text-white/95">
-        {entry.direction === "CREDIT" ? "+" : "-"} {entry.amount} {entry.currencyCode}
+      <p className="text-text-primary shrink-0 text-sm font-semibold tabular-nums dark:text-white/95">
+        {entry.direction === "CREDIT" ? "+" : "-"} {entry.amount}{" "}
+        {entry.currencyCode}
       </p>
     </div>
   );
@@ -74,11 +85,17 @@ export default function AdminPatientDetailsDrawer({
 }) {
   const t = useTranslations("admin-patients");
   const locale = useLocale();
+  const settingsQuery = useMySettings();
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const [walletEntriesPage, setWalletEntriesPage] = useState(1);
   const patientId = patient?.id ?? null;
 
-  const { data: walletSummaryData, isLoading: walletSummaryLoading, isError: walletSummaryError, refetch: refetchWalletSummary } =
-    useAdminPatientWalletSummary(patientId, undefined, open);
+  const {
+    data: walletSummaryData,
+    isLoading: walletSummaryLoading,
+    isError: walletSummaryError,
+    refetch: refetchWalletSummary,
+  } = useAdminPatientWalletSummary(patientId, undefined, open);
 
   const {
     data: walletEntriesData,
@@ -96,7 +113,8 @@ export default function AdminPatientDetailsDrawer({
   const entriesPagination = walletEntriesData?.pagination;
 
   const headerTitle = patient?.displayName ?? t("details.unknownName");
-  const headerSubtitle = patient?.primaryEmail ?? patient?.primaryPhone ?? patient?.userId ?? "-";
+  const headerSubtitle =
+    patient?.primaryEmail ?? patient?.primaryPhone ?? patient?.userId ?? "-";
 
   const walletCards = useMemo(() => {
     if (!wallet) return null;
@@ -137,10 +155,12 @@ export default function AdminPatientDetailsDrawer({
         >
           <div className="mt-4 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-text-primary dark:text-white/95">
+              <p className="text-text-primary truncate text-base font-semibold dark:text-white/95">
                 {headerTitle}
               </p>
-              <p className="mt-1 truncate text-xs text-text-muted">{headerSubtitle}</p>
+              <p className="text-text-muted mt-1 truncate text-xs">
+                {headerSubtitle}
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={onClose}>
               {t("actions.close")}
@@ -150,60 +170,102 @@ export default function AdminPatientDetailsDrawer({
 
         <ModalBody className="space-y-4">
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+            <h3 className="text-text-primary text-sm font-semibold dark:text-white/95">
               {t("details.section.profile")}
             </h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <InfoRow icon={<UserRound className="h-4 w-4" />} label={t("fields.userId")} value={patient?.userId ?? "-"} />
-              <InfoRow icon={<CalendarClock className="h-4 w-4" />} label={t("fields.createdAt")} value={patient?.createdAt ? new Date(patient.createdAt).toLocaleString() : "-"} />
-              <InfoRow icon={<Mail className="h-4 w-4" />} label={t("fields.email")} value={patient?.primaryEmail ?? "-"} />
-              <InfoRow icon={<Phone className="h-4 w-4" />} label={t("fields.phone")} value={patient?.primaryPhone ?? "-"} />
+              <InfoRow
+                icon={<UserRound className="h-4 w-4" />}
+                label={t("fields.userId")}
+                value={patient?.userId ?? "-"}
+              />
+              <InfoRow
+                icon={<CalendarClock className="h-4 w-4" />}
+                label={t("fields.createdAt")}
+                value={
+                  patient?.createdAt
+                    ? formatEffectiveViewerDateTime(
+                        patient.createdAt,
+                        viewerTimeZone,
+                        { locale },
+                      )
+                    : "-"
+                }
+              />
+              <InfoRow
+                icon={<Mail className="h-4 w-4" />}
+                label={t("fields.email")}
+                value={patient?.primaryEmail ?? "-"}
+              />
+              <InfoRow
+                icon={<Phone className="h-4 w-4" />}
+                label={t("fields.phone")}
+                value={patient?.primaryPhone ?? "-"}
+              />
             </div>
           </section>
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <h3 className="text-text-primary text-sm font-semibold dark:text-white/95">
                 {t("details.section.wallet")}
               </h3>
               {walletSummaryError ? (
-                <Button variant="outline" size="sm" onClick={() => refetchWalletSummary()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchWalletSummary()}
+                >
                   {t("actions.retry")}
                 </Button>
               ) : null}
             </div>
 
             {walletSummaryLoading ? (
-              <p className="text-sm text-text-muted">{t("states.loading")}</p>
+              <p className="text-text-muted text-sm">{t("states.loading")}</p>
             ) : walletSummaryError ? (
-              <p className="text-sm text-text-secondary">{t("states.walletError")}</p>
+              <p className="text-text-secondary text-sm">
+                {t("states.walletError")}
+              </p>
             ) : wallet ? (
               walletCards
             ) : (
-              <p className="text-sm text-text-secondary">{t("states.walletEmpty")}</p>
+              <p className="text-text-secondary text-sm">
+                {t("states.walletEmpty")}
+              </p>
             )}
           </section>
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">
+              <h3 className="text-text-primary text-sm font-semibold dark:text-white/95">
                 {t("details.section.walletActivity")}
               </h3>
               {walletEntriesError ? (
-                <Button variant="outline" size="sm" onClick={() => refetchWalletEntries()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchWalletEntries()}
+                >
                   {t("actions.retry")}
                 </Button>
               ) : null}
             </div>
 
             {walletEntriesLoading ? (
-              <p className="text-sm text-text-muted">{t("states.loading")}</p>
+              <p className="text-text-muted text-sm">{t("states.loading")}</p>
             ) : walletEntriesError ? (
-              <p className="text-sm text-text-secondary">{t("states.walletEntriesError")}</p>
+              <p className="text-text-secondary text-sm">
+                {t("states.walletEntriesError")}
+              </p>
             ) : entries.length > 0 ? (
               <div className="space-y-2">
                 {entries.map((entry) => (
-                  <WalletEntryRow key={entry.id} entry={entry} />
+                  <WalletEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    timeZone={viewerTimeZone}
+                  />
                 ))}
                 {entriesPagination && entriesPagination.totalPages > 1 ? (
                   <div className="flex items-center justify-between pt-2">
@@ -211,11 +273,13 @@ export default function AdminPatientDetailsDrawer({
                       variant="outline"
                       size="sm"
                       disabled={walletEntriesPage <= 1}
-                      onClick={() => setWalletEntriesPage((p) => Math.max(1, p - 1))}
+                      onClick={() =>
+                        setWalletEntriesPage((p) => Math.max(1, p - 1))
+                      }
                     >
                       {t("actions.prev")}
                     </Button>
-                    <p className="text-xs text-text-muted">
+                    <p className="text-text-muted text-xs">
                       {t("wallet.page", {
                         page: entriesPagination.page,
                         total: entriesPagination.totalPages,
@@ -224,9 +288,13 @@ export default function AdminPatientDetailsDrawer({
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={walletEntriesPage >= entriesPagination.totalPages}
+                      disabled={
+                        walletEntriesPage >= entriesPagination.totalPages
+                      }
                       onClick={() =>
-                        setWalletEntriesPage((p) => Math.min(entriesPagination.totalPages, p + 1))
+                        setWalletEntriesPage((p) =>
+                          Math.min(entriesPagination.totalPages, p + 1),
+                        )
                       }
                     >
                       {t("actions.next")}
@@ -235,7 +303,9 @@ export default function AdminPatientDetailsDrawer({
                 ) : null}
               </div>
             ) : (
-              <p className="text-sm text-text-secondary">{t("states.walletEntriesEmpty")}</p>
+              <p className="text-text-secondary text-sm">
+                {t("states.walletEntriesEmpty")}
+              </p>
             )}
           </section>
         </ModalBody>

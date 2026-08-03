@@ -24,6 +24,8 @@ import {
   Text,
 } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import TimeZonePicker from "../../src/components/timezone/TimeZonePicker";
+import { resolveDeviceTimeZone } from "../../src/lib/time-formatting";
 import {
   usePractitionerApplicationStatus,
   usePractitionerProfile,
@@ -109,15 +111,19 @@ function formatRequirementLabel(value: string) {
     .join(" ");
 }
 
-function specialtyLabel(specialty: {
-  name?: string | null;
-  nameAr?: string | null;
-  nameEn?: string | null;
-  title?: string | null;
-  slug: string;
-}, locale: string) {
-  return specialty.title
-    ?? getLocalizedSpecialtyName(
+function specialtyLabel(
+  specialty: {
+    name?: string | null;
+    nameAr?: string | null;
+    nameEn?: string | null;
+    title?: string | null;
+    slug: string;
+  },
+  locale: string,
+) {
+  return (
+    specialty.title ??
+    getLocalizedSpecialtyName(
       {
         name: specialty.name ?? null,
         nameAr: specialty.nameAr ?? null,
@@ -125,7 +131,8 @@ function specialtyLabel(specialty: {
         slug: specialty.slug,
       },
       locale,
-    );
+    )
+  );
 }
 
 export default function PractitionerOnboardingWorkspaceScreen() {
@@ -158,7 +165,8 @@ export default function PractitionerOnboardingWorkspaceScreen() {
     );
   const hasIdentityComplete =
     validCredential("PASSPORT") ||
-    (validCredential("NATIONAL_ID_FRONT") && validCredential("NATIONAL_ID_BACK"));
+    (validCredential("NATIONAL_ID_FRONT") &&
+      validCredential("NATIONAL_ID_BACK"));
   const hasProfessionalAuthorization =
     validCredential("MEMBERSHIP") || validCredential("LICENSE");
   const catalogCategories = catalogQuery.data?.categories ?? [];
@@ -185,7 +193,11 @@ export default function PractitionerOnboardingWorkspaceScreen() {
   );
   const [credentialType, setCredentialType] =
     useState<PractitionerCredentialType>("LICENSE");
-  const [credentialFile, setCredentialFile] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [credentialFile, setCredentialFile] = useState<{
+    uri: string;
+    name: string;
+    type: string;
+  } | null>(null);
   const [credentialExpiresAt, setCredentialExpiresAt] = useState("");
 
   const pricingInitialized = useRef(false);
@@ -590,6 +602,19 @@ export default function PractitionerOnboardingWorkspaceScreen() {
 
       <Card variant="outlined" padding="lg">
         <SectionHeader
+          title={t("practitioner.account.fields.timezone")}
+          subtitle={t("practitioner.onboarding.pricing.subtitle")}
+        />
+        <TimeZonePicker
+          value={profile.timezone ?? ""}
+          onChange={(timezone) => void profileUpdate.mutateAsync({ timezone })}
+          placeholder={t("practitioner.account.unknown")}
+          detectedTimeZone={resolveDeviceTimeZone()}
+        />
+      </Card>
+
+      <Card variant="outlined" padding="lg">
+        <SectionHeader
           title={t("practitioner.onboarding.pricing.title")}
           subtitle={t("practitioner.onboarding.pricing.subtitle")}
         />
@@ -745,7 +770,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                           : theme.colors.textPrimary
                       }
                     >
-                      {getLocalizedSpecialtyCategoryName(category, i18n.language || "en")}
+                      {getLocalizedSpecialtyCategoryName(
+                        category,
+                        i18n.language || "en",
+                      )}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -759,7 +787,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             >
               {selectedCategory
                 ? t("practitioner.onboarding.specialties.specialtiesIn", {
-                    category: getLocalizedSpecialtyCategoryName(selectedCategory, i18n.language || "en"),
+                    category: getLocalizedSpecialtyCategoryName(
+                      selectedCategory,
+                      i18n.language || "en",
+                    ),
                   })
                 : t("practitioner.onboarding.specialties.specialties")}
             </Text>
@@ -818,7 +849,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
                 value={
                   selectedSpecialties.length
                     ? selectedSpecialties
-                        .map((specialty) => specialtyLabel(specialty, i18n.language || "en"))
+                        .map((specialty) =>
+                          specialtyLabel(specialty, i18n.language || "en"),
+                        )
                         .join(", ")
                     : t("practitioner.onboarding.specialties.none")
                 }
@@ -857,9 +890,7 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           <View style={styles.checklistItem}>
             <Ionicons
               name={
-                hasIdentityComplete
-                  ? "checkmark-circle"
-                  : "ellipse-outline"
+                hasIdentityComplete ? "checkmark-circle" : "ellipse-outline"
               }
               size={24}
               color={
@@ -942,16 +973,35 @@ export default function PractitionerOnboardingWorkspaceScreen() {
 
           <View style={styles.checklistItem}>
             <Ionicons
-              name={hasProfessionalAuthorization ? "checkmark-circle" : "ellipse-outline"}
+              name={
+                hasProfessionalAuthorization
+                  ? "checkmark-circle"
+                  : "ellipse-outline"
+              }
               size={24}
-              color={hasProfessionalAuthorization ? theme.colors.primary : theme.colors.textMuted}
+              color={
+                hasProfessionalAuthorization
+                  ? theme.colors.primary
+                  : theme.colors.textMuted
+              }
             />
             <View style={styles.checklistItemContent}>
-              <Text weight="500" color={theme.colors.textPrimary} style={styles.checklistItemLabel}>
-                {t("practitioner.onboarding.requiredDocuments.professionalAuthorization")}
+              <Text
+                weight="500"
+                color={theme.colors.textPrimary}
+                style={styles.checklistItemLabel}
+              >
+                {t(
+                  "practitioner.onboarding.requiredDocuments.professionalAuthorization",
+                )}
               </Text>
-              <Text color={theme.colors.textMuted} style={styles.checklistItemHint}>
-                {t("practitioner.onboarding.requiredDocuments.professionalAuthorizationHint")}
+              <Text
+                color={theme.colors.textMuted}
+                style={styles.checklistItemHint}
+              >
+                {t(
+                  "practitioner.onboarding.requiredDocuments.professionalAuthorizationHint",
+                )}
               </Text>
             </View>
           </View>
@@ -1116,7 +1166,10 @@ export default function PractitionerOnboardingWorkspaceScreen() {
             })}
           </View>
           <Button
-            title={credentialFile?.name ?? t("practitioner.onboarding.credentials.chooseFile")}
+            title={
+              credentialFile?.name ??
+              t("practitioner.onboarding.credentials.chooseFile")
+            }
             variant="secondary"
             onPress={() => void chooseCredentialFile()}
             disabled={uploadCredential.isPending}
@@ -1186,7 +1239,9 @@ export default function PractitionerOnboardingWorkspaceScreen() {
           value={
             selectedSpecialties.length
               ? selectedSpecialties
-                  .map((specialty) => specialtyLabel(specialty, i18n.language || "en"))
+                  .map((specialty) =>
+                    specialtyLabel(specialty, i18n.language || "en"),
+                  )
                   .join(", ")
               : "-"
           }

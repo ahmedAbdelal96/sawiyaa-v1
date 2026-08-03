@@ -30,6 +30,7 @@ export class CurrentUserMapper {
       userId: input.basics.id,
       displayName: input.basics.displayName,
       locale: input.basics.locale,
+      timezone: input.basics.timezone,
       avatarUrl: input.avatarUrl,
       avatarDataUrl: input.avatarDataUrl,
       accountStatus: input.basics.accountStatus,
@@ -61,6 +62,7 @@ export class CurrentUserMapper {
     id: string;
     displayName: string | null;
     defaultLocale: string | null;
+    timezone: string | null;
     status: UserStatus;
     createdAt: Date;
     emails: Array<{ email: string; isPrimary: boolean; isVerified: boolean }>;
@@ -73,6 +75,7 @@ export class CurrentUserMapper {
       id: record.id,
       displayName: record.displayName,
       locale: record.defaultLocale,
+      timezone: record.timezone,
       accountStatus: record.status,
       createdAt: record.createdAt,
       primaryEmail: primaryEmail?.email ?? null,

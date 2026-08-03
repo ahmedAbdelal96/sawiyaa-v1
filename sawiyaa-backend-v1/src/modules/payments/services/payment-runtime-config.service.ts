@@ -73,8 +73,10 @@ export class PaymentRuntimeConfigService {
   ) {}
 
   getStripeConfig(): StripeRuntimeConfig {
+    const snapshot =
+      this.paymentGatewayControlRuntimeService.getStripeSnapshot();
     return {
-      enabled: this.paymentCfg.stripe.enabled,
+      enabled: snapshot.enabled,
       mode: this.paymentCfg.stripe.mode,
       publishableKey: this.toNullable(this.paymentCfg.stripe.publishableKey),
       secretKey: this.toNullable(this.paymentCfg.stripe.secretKey),
@@ -100,7 +102,7 @@ export class PaymentRuntimeConfigService {
       this.paymentGatewayControlRuntimeService.getPaymobSnapshot();
 
     return {
-      enabled: this.paymentCfg.paymob.enabled && snapshot.enabled,
+      enabled: snapshot.enabled,
       mode: this.paymentCfg.paymob.mode,
       apiKey: this.toNullable(this.paymentCfg.paymob.apiKey),
       publicKey: this.toNullable(this.paymentCfg.paymob.publicKey),
@@ -128,9 +130,7 @@ export class PaymentRuntimeConfigService {
       ),
       iframeId: this.toNullable(this.paymentCfg.paymob.iframeId),
       defaultCheckoutMethod: snapshot.defaultMethod,
-      methodRegistryJson: this.toNullable(
-        this.paymentCfg.paymob.methodRegistryJson,
-      ),
+      methodRegistryJson: JSON.stringify(snapshot.methodRegistry),
       maintenanceMode: snapshot.maintenanceMode,
       allowedCountryIsoCodes: snapshot.allowedCountryIsoCodes,
     };
@@ -295,29 +295,13 @@ export class PaymentRuntimeConfigService {
   getPaymobCurrencyMethodConfigIssues(): string[] {
     const paymob = this.getPaymobConfig();
     const issues: string[] = [];
-    const hasExplicitEnvConfig = Boolean(
-      paymob.egpCardIntegrationId ||
-      paymob.egpWalletIntegrationId ||
-      paymob.usdCardIntegrationId,
-    );
-    const hasLegacyEnvConfig = Boolean(
-      paymob.integrationIdCard || paymob.integrationIdWallet,
-    );
     const rawRegistry = paymob.methodRegistryJson;
     const registry = this.parsePaymobMethodRegistry(rawRegistry);
-    const sourceLabel = rawRegistry?.trim()
-      ? 'PAYMOB_METHOD_REGISTRY_JSON'
-      : 'env';
-
-    if (rawRegistry?.trim() && (hasExplicitEnvConfig || hasLegacyEnvConfig)) {
-      issues.push(
-        'Paymob currency/method config is ambiguous. Use either PAYMOB_METHOD_REGISTRY_JSON or the explicit PAYMOB_*_INTEGRATION_ID variables, not both.',
-      );
-    }
+    const sourceLabel = 'database';
 
     if (rawRegistry?.trim() && registry.length === 0) {
       issues.push(
-        'PAYMOB_METHOD_REGISTRY_JSON is present but could not be parsed into any valid method entries.',
+        'Database Paymob method registry is present but could not be parsed into valid method entries.',
       );
     }
 

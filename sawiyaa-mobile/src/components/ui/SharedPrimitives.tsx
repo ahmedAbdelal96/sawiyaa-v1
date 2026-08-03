@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   I18nManager,
   Image,
@@ -6,12 +6,17 @@ import {
   TouchableOpacity,
   View,
   ViewProps,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../providers/ThemeProvider';
-import { Text } from './Text';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../providers/ThemeProvider";
+import { Text } from "./Text";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+  formatViewerTime,
+} from "../../lib/time-formatting";
 
-export type StatusTone = 'default' | 'info' | 'success' | 'warning' | 'error';
+export type StatusTone = "default" | "info" | "success" | "warning" | "error";
 
 export interface StatusChipProps {
   label: string;
@@ -44,45 +49,48 @@ export interface CompactActionRowProps extends ViewProps {
 const toneSelectors: Record<
   StatusTone,
   {
-    bg: keyof ReturnType<typeof useTheme>['theme']['colors'];
-    text: keyof ReturnType<typeof useTheme>['theme']['colors'];
-    border: keyof ReturnType<typeof useTheme>['theme']['colors'];
-    dot: keyof ReturnType<typeof useTheme>['theme']['colors'];
+    bg: keyof ReturnType<typeof useTheme>["theme"]["colors"];
+    text: keyof ReturnType<typeof useTheme>["theme"]["colors"];
+    border: keyof ReturnType<typeof useTheme>["theme"]["colors"];
+    dot: keyof ReturnType<typeof useTheme>["theme"]["colors"];
   }
 > = {
   default: {
-    bg: 'surfaceContainer',
-    text: 'textSecondary',
-    border: 'border',
-    dot: 'textMuted',
+    bg: "surfaceContainer",
+    text: "textSecondary",
+    border: "border",
+    dot: "textMuted",
   },
   info: {
-    bg: 'statusInfoBg',
-    text: 'statusInfoText',
-    border: 'statusInfoBg',
-    dot: 'info',
+    bg: "statusInfoBg",
+    text: "statusInfoText",
+    border: "statusInfoBg",
+    dot: "info",
   },
   success: {
-    bg: 'statusSuccessBg',
-    text: 'statusSuccessText',
-    border: 'statusSuccessBg',
-    dot: 'success',
+    bg: "statusSuccessBg",
+    text: "statusSuccessText",
+    border: "statusSuccessBg",
+    dot: "success",
   },
   warning: {
-    bg: 'statusWarningBg',
-    text: 'statusWarningText',
-    border: 'statusWarningBg',
-    dot: 'warning',
+    bg: "statusWarningBg",
+    text: "statusWarningText",
+    border: "statusWarningBg",
+    dot: "warning",
   },
   error: {
-    bg: 'statusErrorBg',
-    text: 'statusErrorText',
-    border: 'statusErrorBg',
-    dot: 'error',
+    bg: "statusErrorBg",
+    text: "statusErrorText",
+    border: "statusErrorBg",
+    dot: "error",
   },
 };
 
-function resolveTone(theme: ReturnType<typeof useTheme>['theme'], tone: StatusTone) {
+function resolveTone(
+  theme: ReturnType<typeof useTheme>["theme"],
+  tone: StatusTone,
+) {
   const selector = toneSelectors[tone];
   return {
     backgroundColor: theme.colors[selector.bg],
@@ -92,60 +100,37 @@ function resolveTone(theme: ReturnType<typeof useTheme>['theme'], tone: StatusTo
   };
 }
 
-function parseDateValue(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function resolveLocale(locale?: string) {
-  return locale || Intl.DateTimeFormat().resolvedOptions().locale;
-}
-
-function formatDateLike(
+export function formatDateTime(
   value: string | null | undefined,
-  locale: string | undefined,
-  options: Intl.DateTimeFormatOptions,
+  locale?: string,
 ) {
-  const date = parseDateValue(value);
-  if (!date) {
-    return '-';
-  }
-
-  return date.toLocaleString(resolveLocale(locale), options);
-}
-
-export function formatDateTime(value: string | null | undefined, locale?: string) {
-  return formatDateLike(value, locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+  return formatViewerDateTime(value, {
+    locale,
+    dateStyle: "medium",
+    timeStyle: "short",
+    fallbackText: "-",
   });
 }
 
 export function formatDate(value: string | null | undefined, locale?: string) {
-  return formatDateLike(value, locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  return formatViewerDate(value, {
+    locale,
+    dateStyle: "medium",
+    fallbackText: "-",
   });
 }
 
 export function formatTime(value: string | null | undefined, locale?: string) {
-  return formatDateLike(value, locale, {
-    hour: 'numeric',
-    minute: '2-digit',
+  return formatViewerTime(value, {
+    locale,
+    timeStyle: "short",
+    fallbackText: "-",
   });
 }
 
 export const StatusPill = ({
   label,
-  tone = 'default',
+  tone = "default",
   showDot = true,
   accessibilityLabel,
 }: StatusChipProps) => {
@@ -168,7 +153,12 @@ export const StatusPill = ({
       {showDot ? (
         <View style={[styles.dot, { backgroundColor: colors.dotColor }]} />
       ) : null}
-      <Text variant="caption" weight="600" style={styles.chipLabel} color={colors.textColor}>
+      <Text
+        variant="caption"
+        weight="600"
+        style={styles.chipLabel}
+        color={colors.textColor}
+      >
         {label}
       </Text>
     </View>
@@ -191,17 +181,26 @@ export const SectionHeader = ({
     <View
       style={[
         styles.sectionHeader,
-        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        { flexDirection: isRTL ? "row-reverse" : "row" },
         style,
       ]}
       {...props}
     >
       <View style={styles.sectionHeaderText}>
-        <Text variant="title" weight="700" style={styles.sectionTitle} color={theme.colors.textPrimary}>
+        <Text
+          variant="title"
+          weight="700"
+          style={styles.sectionTitle}
+          color={theme.colors.textPrimary}
+        >
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="bodySmall" style={styles.sectionSubtitle} color={theme.colors.textSecondary}>
+          <Text
+            variant="bodySmall"
+            style={styles.sectionSubtitle}
+            color={theme.colors.textSecondary}
+          >
             {subtitle}
           </Text>
         ) : null}
@@ -228,15 +227,20 @@ export const InfoRow = ({
 
   const Chevron = () => (
     <Ionicons
-      name={isRTL ? 'chevron-back' : 'chevron-forward'}
+      name={isRTL ? "chevron-back" : "chevron-forward"}
       size={18}
       color={theme.colors.textMuted}
     />
   );
 
   const valueNode =
-    typeof value === 'string' || typeof value === 'number' ? (
-      <Text variant="body" weight="600" style={styles.rowValueText} color={theme.colors.textPrimary}>
+    typeof value === "string" || typeof value === "number" ? (
+      <Text
+        variant="body"
+        weight="600"
+        style={styles.rowValueText}
+        color={theme.colors.textPrimary}
+      >
         {value}
       </Text>
     ) : (
@@ -249,7 +253,7 @@ export const InfoRow = ({
         styles.row,
         {
           borderBottomColor: theme.colors.divider,
-          flexDirection: isRTL ? 'row-reverse' : 'row',
+          flexDirection: isRTL ? "row-reverse" : "row",
         },
         style,
       ]}
@@ -257,11 +261,19 @@ export const InfoRow = ({
       {...props}
     >
       <View style={styles.rowContent}>
-        <Text variant="body" color={theme.colors.textPrimary} style={styles.rowLabel}>
+        <Text
+          variant="body"
+          color={theme.colors.textPrimary}
+          style={styles.rowLabel}
+        >
           {label}
         </Text>
         {helperText ? (
-          <Text variant="caption" color={theme.colors.textMuted} style={styles.rowHelper}>
+          <Text
+            variant="caption"
+            color={theme.colors.textMuted}
+            style={styles.rowHelper}
+          >
             {helperText}
           </Text>
         ) : null}
@@ -270,8 +282,14 @@ export const InfoRow = ({
       {(valueNode || rightElement || showChevron) && (
         <View style={styles.rowRight}>
           {valueNode}
-          {rightElement ? <View style={styles.rowRightElement}>{rightElement}</View> : null}
-          {showChevron ? <View style={styles.rowChevron}><Chevron /></View> : null}
+          {rightElement ? (
+            <View style={styles.rowRightElement}>{rightElement}</View>
+          ) : null}
+          {showChevron ? (
+            <View style={styles.rowChevron}>
+              <Chevron />
+            </View>
+          ) : null}
         </View>
       )}
     </Container>
@@ -298,20 +316,25 @@ export const IconRow = ({
       accessibilityLabel={accessibilityLabel}
       style={[
         styles.compactActionRow,
-        { flexDirection: isRTL ? 'row-reverse' : 'row' },
+        { flexDirection: isRTL ? "row-reverse" : "row" },
         style,
       ]}
       {...props}
     >
-      {typeof label === 'string' || typeof label === 'number' ? (
-        <Text variant="bodySmall" color={theme.colors.primary} weight="600" style={styles.compactActionLabel}>
+      {typeof label === "string" || typeof label === "number" ? (
+        <Text
+          variant="bodySmall"
+          color={theme.colors.primary}
+          weight="600"
+          style={styles.compactActionLabel}
+        >
           {label}
         </Text>
       ) : (
         label
       )}
       <Ionicons
-        name={isRTL ? 'arrow-back' : 'arrow-forward'}
+        name={isRTL ? "arrow-back" : "arrow-forward"}
         size={16}
         color={theme.colors.primary}
         style={styles.compactActionIcon}
@@ -336,11 +359,11 @@ export const Avatar = ({
   const { theme } = useTheme();
   const initials =
     name
-      ?.split(' ')
+      ?.split(" ")
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join('') || '?';
+      .join("") || "?";
 
   return (
     <View
@@ -356,7 +379,7 @@ export const Avatar = ({
       ]}
       accessible
       accessibilityRole="image"
-      accessibilityLabel={label || name || 'Avatar'}
+      accessibilityLabel={label || name || "Avatar"}
     >
       {source ? (
         <Image source={source} resizeMode="cover" style={styles.avatarImage} />
@@ -371,9 +394,9 @@ export const Avatar = ({
 
 const styles = StyleSheet.create({
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
@@ -389,8 +412,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   sectionHeader: {
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   sectionHeaderText: {
     flex: 1,
@@ -404,11 +427,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   sectionAction: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    alignItems: "flex-end",
+    justifyContent: "center",
   },
   row: {
-    alignItems: 'center',
+    alignItems: "center",
     minHeight: 58,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -424,12 +447,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   rowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginStart: 12,
   },
   rowValueText: {
-    textAlign: 'right',
+    textAlign: "right",
   },
   rowRightElement: {
     marginStart: 8,
@@ -438,8 +461,8 @@ const styles = StyleSheet.create({
     marginStart: 6,
   },
   compactActionRow: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignItems: "center",
+    alignSelf: "flex-start",
   },
   compactActionLabel: {
     lineHeight: 18,
@@ -448,13 +471,13 @@ const styles = StyleSheet.create({
     marginStart: 6,
   },
   avatar: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });

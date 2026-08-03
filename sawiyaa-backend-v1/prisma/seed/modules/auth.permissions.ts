@@ -5,6 +5,22 @@ export const permissionDefinitions: Array<{
   description: string;
 }> = [
   {
+    key: 'configuration.view',
+    description: 'View safe Admin platform settings metadata and values',
+  },
+  {
+    key: 'configuration.edit.operational',
+    description: 'Edit operational Admin platform settings',
+  },
+  {
+    key: 'configuration.edit.financial',
+    description: 'Authorize financial configuration workflows',
+  },
+  {
+    key: 'configuration.history.view',
+    description: 'View safe platform configuration change history',
+  },
+  {
     key: 'finance.events.read',
     description: 'Read finance operation events and diagnostics',
   },
@@ -25,11 +41,26 @@ export const permissionDefinitions: Array<{
     key: 'settlements.write',
     description: 'Mutate settlement state and record settlement payouts',
   },
-  { key: 'financial.settlement.view', description: 'View accountant settlement queue and details' },
-  { key: 'financial.settlement.review', description: 'Review and reject accountant settlements' },
-  { key: 'financial.settlement.approve', description: 'Approve accountant settlements and credit wallets' },
-  { key: 'financial.settlement.adjust', description: 'Add append-only settlement adjustments before approval' },
-  { key: 'financial.payout.execute', description: 'Execute external payout preparation for credited settlements' },
+  {
+    key: 'financial.settlement.view',
+    description: 'View accountant settlement queue and details',
+  },
+  {
+    key: 'financial.settlement.review',
+    description: 'Review and reject accountant settlements',
+  },
+  {
+    key: 'financial.settlement.approve',
+    description: 'Approve accountant settlements and credit wallets',
+  },
+  {
+    key: 'financial.settlement.adjust',
+    description: 'Add append-only settlement adjustments before approval',
+  },
+  {
+    key: 'financial.payout.execute',
+    description: 'Execute external payout preparation for credited settlements',
+  },
   {
     key: 'practitioner-payouts.read',
     description: 'Read practitioner payout dues/history/details/proofs',
@@ -128,7 +159,8 @@ export const permissionDefinitions: Array<{
   },
   {
     key: 'patients.update.admin',
-    description: 'Update patient profile data in back-office (e.g. country change for pricing correction)',
+    description:
+      'Update patient profile data in back-office (e.g. country change for pricing correction)',
   },
   {
     key: 'support.ticket.note.internal',
@@ -261,6 +293,9 @@ export const rolePermissionBundles: Array<{
   {
     role: UserRoleType.FINANCE_STAFF,
     permissions: [
+      'configuration.view',
+      'configuration.history.view',
+      'configuration.edit.financial',
       'finance.events.read',
       'finance.accounting.read',
       'finance.accounting.write',
@@ -281,6 +316,8 @@ export const rolePermissionBundles: Array<{
   {
     role: UserRoleType.MARKETING_STAFF,
     permissions: [
+      'configuration.view',
+      'configuration.history.view',
       'notification-ops.read',
       'featured-practitioners.read',
       'featured-practitioners.manage',
@@ -299,6 +336,8 @@ export const rolePermissionBundles: Array<{
   {
     role: UserRoleType.PATIENT_OPERATIONS,
     permissions: [
+      'configuration.view',
+      'configuration.history.view',
       'notification-ops.read',
       'audit-log.read',
       'sessions.read.admin',

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { assertOffsetQualifiedIsoInstant } from '@common/utils/timezone.util';
 
 /**
  * Session booking request validation keeps temporal assumptions explicit.
@@ -6,6 +7,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class ValidateSessionBookingRequestService {
+  assertScheduledStartHasExplicitTimezone(value: string): void {
+    assertOffsetQualifiedIsoInstant(value, {
+      messageKey: 'sessions.errors.scheduledStartTimezoneRequired',
+      error: 'SESSION_SCHEDULED_START_TIMEZONE_REQUIRED',
+    });
+  }
+
   assertScheduledStartIsFuture(scheduledStartAtUtc: Date): void {
     if (scheduledStartAtUtc.getTime() <= Date.now()) {
       throw new BadRequestException({

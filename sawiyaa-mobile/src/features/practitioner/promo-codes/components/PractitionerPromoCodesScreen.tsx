@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "expo-router";
 import {
   Button,
   Card,
@@ -85,6 +86,7 @@ const STATUS_FILTERS: ("ALL" | "ACTIVE" | "DISABLED" | "EXPIRED")[] = [
 export default function PractitionerPromoCodesScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const router = useRouter();
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const [panelMode, setPanelMode] = useState<PanelMode>("none");
@@ -161,8 +163,10 @@ export default function PractitionerPromoCodesScreen() {
   };
 
   const openDetails = (couponId: string) => {
-    setActiveCouponId(couponId);
-    setPanelMode("details");
+    router.push({
+      pathname: "/(practitioner)/promo-codes/[id]" as any,
+      params: { id: couponId },
+    });
   };
 
   const closePanel = () => {
@@ -378,28 +382,45 @@ export default function PractitionerPromoCodesScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Card variant="outlined" padding="sm" style={styles.toolbarCard}>
-          <View style={styles.toolbarHeader}>
-            <View style={styles.toolbarTextWrap}>
-              <Text weight="bold" style={styles.toolbarTitle}>
+        <Card
+          variant="outlined"
+          padding="md"
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor: "#FCFAF6",
+              borderColor: "#E8DED0",
+            },
+          ]}
+        >
+          <View style={[styles.heroRow, { flexDirection: locale.startsWith("ar") ? "row-reverse" : "row" }]}>
+            <View style={[styles.heroIconWrap, { backgroundColor: "#EEF4EF" }]}>
+              <Ionicons name="pricetag" size={20} color="#24564F" />
+            </View>
+            <View style={[styles.heroCopy, { alignItems: locale.startsWith("ar") ? "flex-end" : "flex-start" }]}>
+              <Text weight="700" style={styles.heroTitle} color="#1F332F">
                 {t("practitioner.promoCodes.title")}
               </Text>
-              <Text color={theme.colors.textSecondary} style={styles.toolbarSubtitle}>
+              <Text color="#6F7E78" style={[styles.heroSubtitle, { textAlign: locale.startsWith("ar") ? "right" : "left" }]}>
                 {t("practitioner.promoCodes.subtitle")}
               </Text>
             </View>
-            <Button
-              title={t("practitioner.promoCodes.createCta")}
-              onPress={openCreate}
-              variant="secondary"
-              style={styles.createButton}
-            />
           </View>
 
-          <Text color={theme.colors.textSecondary} style={styles.toolbarNote}>
+          <Text color="#8F9E98" style={[styles.heroNote, { textAlign: locale.startsWith("ar") ? "right" : "left" }]}>
             {t("practitioner.promoCodes.financialNote")}
           </Text>
 
+          <Button
+            title={t("practitioner.promoCodes.createCta")}
+            onPress={openCreate}
+            variant="primary"
+            leftIcon={<Ionicons name="add" size={20} color="#FFFFFF" />}
+            style={styles.heroCreateBtn}
+          />
+        </Card>
+
+        <View style={styles.searchFilterSection}>
           <SearchBar
             value={searchDraft}
             onChangeText={setSearchDraft}
@@ -408,10 +429,14 @@ export default function PractitionerPromoCodesScreen() {
           />
 
           <View style={styles.filterBlock}>
-            <Text weight="600" style={styles.filterLabel}>
+            <Text weight="700" style={[styles.filterLabel, { textAlign: locale.startsWith("ar") ? "right" : "left" }]} color="#1F332F">
               {t("practitioner.promoCodes.filters.status")}
             </Text>
-            <View style={styles.chipRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
               {STATUS_FILTERS.map((status) => (
                 <FilterChip
                   key={status}
@@ -424,9 +449,10 @@ export default function PractitionerPromoCodesScreen() {
                   onPress={() => setStatusFilter(status)}
                 />
               ))}
-            </View>
+            </ScrollView>
           </View>
-        </Card>
+        </View>
+
 
         {feedback ? (
           <Card
@@ -514,21 +540,7 @@ export default function PractitionerPromoCodesScreen() {
         onUpdate={handleUpdate}
       />
 
-      <PromoCodeDetailModal
-        visible={panelMode === "details"}
-        coupon={selectedCoupon}
-        locale={locale}
-        theme={theme}
-        t={t}
-        loading={detailQuery.isLoading || redemptionsQuery.isLoading}
-        error={detailQuery.isError || redemptionsQuery.isError}
-        onClose={closePanel}
-        onRetry={() => {
-          detailQuery.refetch();
-          redemptionsQuery.refetch();
-        }}
-        redemptions={redemptionsQuery.data?.items ?? []}
-      />
+
     </Screen>
   );
 }
@@ -611,14 +623,28 @@ function CouponCard({
     variant: "default" | "danger" | "success";
   }[];
 
+  const isRtl = locale.startsWith("ar");
+  const rowDirection = isRtl ? "row-reverse" : "row";
+  const alignSelfStart = isRtl ? "flex-end" : "flex-start";
+
   return (
-    <Card variant="outlined" padding="sm" style={styles.couponCard}>
-      <View style={styles.couponTopRow}>
-        <View style={styles.couponTextWrap}>
-          <Text weight="700" style={styles.couponCode} numberOfLines={1}>
+    <Card
+      variant="outlined"
+      padding="md"
+      style={[
+        styles.couponCard,
+        {
+          borderColor: "#E8DED0",
+          backgroundColor: "#FFFFFF",
+        },
+      ]}
+    >
+      <View style={[styles.couponTopRow, { flexDirection: rowDirection }]}>
+        <View style={[styles.couponTextWrap, { alignItems: alignSelfStart }]}>
+          <Text weight="700" style={styles.couponCode} color="#24564F" numberOfLines={1}>
             {coupon.code}
           </Text>
-          <Text color={theme.colors.textSecondary} style={styles.couponSubtitle}>
+          <Text color="#1F332F" weight="600" style={styles.couponSubtitle}>
             {t("practitioner.promoCodes.list.discount", {
               value: formatPercentLabel(coupon.discountValue),
             })}
@@ -631,15 +657,32 @@ function CouponCard({
         />
       </View>
 
-      <Text color={theme.colors.textSecondary} style={styles.couponUsageLine} numberOfLines={1}>
-        {usageLabel} · {t("practitioner.promoCodes.list.perPatient")}: {patientLimitLabel}
-      </Text>
+      <View style={[styles.couponDetailsBlock, { alignItems: alignSelfStart }]}>
+        <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="pie-chart-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+          <Text color="#6F7E78" style={styles.couponDetailText}>
+            {usageLabel}
+          </Text>
+        </View>
 
-      <Text color={theme.colors.textSecondary} style={styles.couponWindow} numberOfLines={1}>
-        {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
-      </Text>
+        <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="person-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+          <Text color="#6F7E78" style={styles.couponDetailText}>
+            {t("practitioner.promoCodes.list.perPatient")}: {patientLimitLabel}
+          </Text>
+        </View>
 
-      <View style={styles.couponActions}>
+        <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+          <Ionicons name="calendar-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+          <Text color="#6F7E78" style={styles.couponDetailText}>
+            {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.couponDivider, { backgroundColor: "#E8DED0" }]} />
+
+      <View style={[styles.couponActions, { flexDirection: rowDirection }]}>
         {actions.map((action) => (
           <ActionPill
             key={action.kind}
@@ -774,9 +817,14 @@ function PromoCodeFormModal({
 
   const handleDiscountChange = (next: string) => {
     clearSubmissionError();
+    let cleaned = next.replace(/[^0-9.]/g, "");
+    const parts = cleaned.split(".");
+    if (parts.length > 2) {
+      cleaned = parts[0] + "." + parts.slice(1).join("");
+    }
     setValues((current) => ({
       ...current,
-      discountValue: normalizePercentageInput(next),
+      discountValue: cleaned,
     }));
   };
 
@@ -881,6 +929,11 @@ function PromoCodeFormModal({
               onChangeText={handleDiscountChange}
               placeholder={t("practitioner.promoCodes.form.discountPlaceholder")}
               keyboardType="decimal-pad"
+              rightElement={
+                <View style={{ paddingHorizontal: 12, justifyContent: "center" }}>
+                  <Text weight="700" color="#5C6E68">%</Text>
+                </View>
+              }
               helperText={
                 discountLocked
                   ? t("practitioner.promoCodes.form.discountReadOnlyHint")
@@ -899,7 +952,8 @@ function PromoCodeFormModal({
               value={values.usageLimitTotal}
               onChangeText={(next) => {
                 clearSubmissionError();
-                setValues((current) => ({ ...current, usageLimitTotal: next }));
+                const cleaned = next.replace(/[^0-9]/g, "");
+                setValues((current) => ({ ...current, usageLimitTotal: cleaned }));
               }}
               placeholder={t("practitioner.promoCodes.form.totalLimitPlaceholder")}
               keyboardType="number-pad"
@@ -916,7 +970,8 @@ function PromoCodeFormModal({
               value={values.usageLimitPerPatient}
               onChangeText={(next) => {
                 clearSubmissionError();
-                setValues((current) => ({ ...current, usageLimitPerPatient: next }));
+                const cleaned = next.replace(/[^0-9]/g, "");
+                setValues((current) => ({ ...current, usageLimitPerPatient: cleaned }));
               }}
               placeholder={t("practitioner.promoCodes.form.patientLimitPlaceholder")}
               keyboardType="number-pad"
@@ -1466,6 +1521,10 @@ function PromoCodeDetailModal({
   onClose: () => void;
   onRetry: () => void;
 }) {
+  const isRtl = locale.startsWith("ar");
+  const rowDirection = isRtl ? "row-reverse" : "row";
+  const alignSelfStart = isRtl ? "flex-end" : "flex-start";
+
   if (!coupon && !loading && !error) {
     return null;
   }
@@ -1504,13 +1563,23 @@ function PromoCodeDetailModal({
               />
             ) : coupon ? (
               <>
-                <Card variant="outlined" padding="sm" style={styles.detailHero}>
-                  <View style={styles.couponTopRow}>
-                    <View style={styles.couponTextWrap}>
-                      <Text weight="700" style={styles.couponCode} numberOfLines={1}>
+                <Card
+                  variant="outlined"
+                  padding="md"
+                  style={[
+                    styles.detailHero,
+                    {
+                      borderColor: "#E8DED0",
+                      backgroundColor: "#FFFFFF",
+                    },
+                  ]}
+                >
+                  <View style={[styles.couponTopRow, { flexDirection: rowDirection }]}>
+                    <View style={[styles.couponTextWrap, { alignItems: alignSelfStart }]}>
+                      <Text weight="700" style={styles.couponCode} color="#24564F" numberOfLines={1}>
                         {coupon.code}
                       </Text>
-                      <Text color={theme.colors.textSecondary} style={styles.couponSubtitle}>
+                      <Text color="#1F332F" weight="600" style={styles.couponSubtitle}>
                         {t("practitioner.promoCodes.list.discount", {
                           value: formatPercentLabel(coupon.discountValue),
                         })}
@@ -1528,13 +1597,28 @@ function PromoCodeDetailModal({
                     />
                   </View>
 
-                  <Text color={theme.colors.textSecondary} style={styles.couponUsageLine} numberOfLines={1}>
-                    {formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t)} · {t("practitioner.promoCodes.list.perPatient")}: {formatPatientLimitLabel(coupon.usageLimitPerPatient, t)}
-                  </Text>
+                  <View style={[styles.couponDetailsBlock, { alignItems: alignSelfStart }]}>
+                    <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+                      <Ionicons name="pie-chart-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+                      <Text color="#6F7E78" style={styles.couponDetailText}>
+                        {formatUsageLabel(coupon.currentUsageCount, coupon.usageLimitTotal, t)}
+                      </Text>
+                    </View>
 
-                  <Text color={theme.colors.textSecondary} style={styles.couponWindow} numberOfLines={1}>
-                    {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
-                  </Text>
+                    <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+                      <Ionicons name="person-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+                      <Text color="#6F7E78" style={styles.couponDetailText}>
+                        {t("practitioner.promoCodes.list.perPatient")}: {formatPatientLimitLabel(coupon.usageLimitPerPatient, t)}
+                      </Text>
+                    </View>
+
+                    <View style={[styles.couponDetailRow, { flexDirection: rowDirection }]}>
+                      <Ionicons name="calendar-outline" size={14} color="#6F7E78" style={isRtl ? { marginLeft: 8 } : { marginRight: 8 }} />
+                      <Text color="#6F7E78" style={styles.couponDetailText}>
+                        {formatDateWindow(coupon.startsAt, coupon.endsAt, locale, t)}
+                      </Text>
+                    </View>
+                  </View>
                 </Card>
 
                 <Card variant="outlined" padding="sm" style={styles.detailSection}>
@@ -1745,7 +1829,7 @@ function ActionPill({
   );
 }
 
-function resolveCouponStatusTone(
+export function resolveCouponStatusTone(
   status: PractitionerCouponStatus | PractitionerCouponEffectiveStatus,
 ) {
   switch (status) {
@@ -1762,7 +1846,7 @@ function resolveCouponStatusTone(
   }
 }
 
-function resolveCouponStatusLabel(
+export function resolveCouponStatusLabel(
   status: PractitionerCouponStatus | PractitionerCouponEffectiveStatus,
   t: ReturnType<typeof useTranslation>["t"],
 ) {
@@ -1782,7 +1866,7 @@ function resolveCouponStatusLabel(
   }
 }
 
-function formatPercentLabel(value: string) {
+export function formatPercentLabel(value: string) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return `${value}%`;
@@ -1792,7 +1876,7 @@ function formatPercentLabel(value: string) {
   return `${label}%`;
 }
 
-function formatUsageLabel(
+export function formatUsageLabel(
   currentUsageCount: number,
   usageLimitTotal: number | null,
   t: ReturnType<typeof useTranslation>["t"],
@@ -1809,7 +1893,7 @@ function formatUsageLabel(
   });
 }
 
-function formatPatientLimitLabel(
+export function formatPatientLimitLabel(
   usageLimitPerPatient: number | null,
   t: ReturnType<typeof useTranslation>["t"],
 ) {
@@ -1820,7 +1904,7 @@ function formatPatientLimitLabel(
   return t("common.notSet");
 }
 
-function formatMoney(
+export function formatMoney(
   amount: string,
   currencyCode: string | null | undefined,
   locale: string,
@@ -1839,7 +1923,7 @@ function formatMoney(
   }).format(parsed);
 }
 
-function formatDateWindow(
+export function formatDateWindow(
   startsAt: string | null,
   endsAt: string | null,
   locale: string,
@@ -1928,9 +2012,9 @@ function mapCouponError(error: unknown, t: ReturnType<typeof useTranslation>["t"
 const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
-    gap: 10,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 16,
   },
   headerRight: {
     flexDirection: "row",
@@ -1940,113 +2024,140 @@ const styles = StyleSheet.create({
   headerAction: {
     padding: 8,
   },
-  toolbarCard: {
-    gap: 6,
+  heroCard: {
+    borderRadius: 24,
+    borderWidth: 1.5,
+    padding: 20,
+    gap: 12,
   },
-  toolbarHeader: {
+  heroRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
+    alignItems: "center",
+    gap: 12,
   },
-  toolbarTextWrap: {
+  heroIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroCopy: {
     flex: 1,
     gap: 2,
   },
-  toolbarTitle: {
-    fontSize: 15,
-    lineHeight: 20,
+  heroTitle: {
+    fontSize: 16.5,
+    lineHeight: 22,
   },
-  toolbarSubtitle: {
-    fontSize: 10,
-    lineHeight: 14,
+  heroSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
   },
-  toolbarNote: {
-    fontSize: 9,
-    lineHeight: 13,
+  heroNote: {
+    fontSize: 11,
+    lineHeight: 16,
   },
-  createButton: {
-    width: 100,
-    minHeight: 36,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+  heroCreateBtn: {
+    marginTop: 8,
+    minHeight: 48,
+    borderRadius: 14,
+  },
+  searchFilterSection: {
+    gap: 14,
   },
   filterBlock: {
-    gap: 4,
+    gap: 8,
   },
   filterLabel: {
-    fontSize: 11,
+    fontSize: 13,
+    marginBottom: 2,
   },
   chipRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    paddingRight: 16,
   },
   feedbackCard: {
-    gap: 3,
+    gap: 3.5,
+    borderRadius: 16,
   },
   feedbackRow: {
     flexDirection: "row",
     justifyContent: "flex-start",
   },
   feedbackTitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 13.5,
+    lineHeight: 19,
   },
   feedbackBody: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 17,
   },
   list: {
-    gap: 5,
+    gap: 12,
   },
   couponCard: {
-    gap: 4,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
   },
   couponTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 4,
+    alignItems: "center",
+    gap: 8,
   },
   couponTextWrap: {
     flex: 1,
+    gap: 2,
   },
   couponCode: {
-    fontSize: 14,
-    marginBottom: 1,
+    fontSize: 16,
+    lineHeight: 22,
   },
   couponSubtitle: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 13,
+    lineHeight: 18,
   },
-  couponUsageLine: {
-    fontSize: 10,
-    lineHeight: 14,
+  couponDetailsBlock: {
+    gap: 6,
+    marginTop: 2,
   },
-  couponWindow: {
-    fontSize: 9,
-    lineHeight: 13,
+  couponDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  couponDetailText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  couponDivider: {
+    height: 1.2,
+    marginVertical: 2,
+    width: "100%",
   },
   couponActions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 3,
+    gap: 6,
   },
   actionPill: {
     flexGrow: 1,
-    flexBasis: "31%",
-    minHeight: 30,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 5,
+    flexBasis: "30%",
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    gap: 3,
+    gap: 4,
   },
   actionPillLabel: {
-    fontSize: 9,
+    fontSize: 11.5,
   },
   modalOverlay: {
     flex: 1,
@@ -2083,7 +2194,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   modalSubtitle: {
-    fontSize: 12,
+    fontSize: 12.5,
     lineHeight: 18,
   },
   modalCloseButton: {
@@ -2092,14 +2203,15 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     paddingHorizontal: 20,
-    paddingBottom: 28,
-    gap: 12,
+    paddingBottom: 32,
+    gap: 14,
   },
   modalNoteCard: {
     gap: 6,
+    borderRadius: 16,
   },
   modalNoteTitle: {
-    fontSize: 14,
+    fontSize: 13.5,
   },
   modalNoteBody: {
     fontSize: 12,
@@ -2110,46 +2222,49 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   toggleText: {
     flex: 1,
   },
   toggleLabel: {
-    fontSize: 13,
+    fontSize: 13.5,
     marginBottom: 2,
   },
   toggleHint: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 16.5,
   },
   inlineErrorCard: {
     backgroundColor: "#fef3f2",
+    borderRadius: 14,
   },
   inlineErrorText: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 12.5,
+    lineHeight: 18.5,
   },
   dateFieldWrap: {
-    gap: 4,
+    gap: 6,
+    width: "100%",
   },
   dateFieldLabel: {
-    fontSize: 13,
+    fontSize: 13.5,
+    fontWeight: "600",
+    color: "#053F38",
   },
   dateFieldButton: {
-    minHeight: 60,
-    borderRadius: 12,
-    borderWidth: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     gap: 8,
-    flexDirection: "row",
   },
   dateFieldValue: {
     flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 14.5,
+    lineHeight: 20,
   },
   dateFieldActions: {
     flexDirection: "row",
@@ -2162,10 +2277,11 @@ const styles = StyleSheet.create({
   dateFieldError: {
     fontSize: 12,
     lineHeight: 18,
+    fontWeight: "600",
   },
   dateFieldHelper: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
   },
   datePickerOverlay: {
     flex: 1,
@@ -2201,7 +2317,7 @@ const styles = StyleSheet.create({
   },
   datePickerTitle: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 16.5,
     textAlign: "center",
   },
   datePickerBody: {
@@ -2304,15 +2420,19 @@ const styles = StyleSheet.create({
   },
   detailHero: {
     gap: 4,
+    borderRadius: 20,
+    borderWidth: 1.5,
   },
   detailSection: {
-    gap: 6,
+    gap: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
   },
   detailSectionTitle: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   detailSectionBody: {
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 16,
   },
   redemptionList: {
@@ -2320,6 +2440,7 @@ const styles = StyleSheet.create({
   },
   redemptionCard: {
     gap: 6,
+    borderRadius: 16,
   },
   redemptionTopRow: {
     flexDirection: "row",
@@ -2330,14 +2451,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   redemptionName: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   redemptionMeta: {
-    fontSize: 10,
+    fontSize: 10.5,
     marginTop: 1,
   },
   redemptionAmount: {
-    fontSize: 13,
+    fontSize: 13.5,
   },
   redemptionPairs: {
     flexDirection: "row",
@@ -2352,15 +2473,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metaPillLabel: {
-    fontSize: 8,
+    fontSize: 8.5,
     lineHeight: 12,
   },
   metaPillValue: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 10.5,
+    lineHeight: 14.5,
   },
   redemptionFooter: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 10.5,
+    lineHeight: 14.5,
   },
 });

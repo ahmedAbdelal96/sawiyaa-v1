@@ -5,7 +5,7 @@ let socketInstance: Socket | null = null;
 
 function resolveSocketBaseUrl() {
   const base = apiClient.defaults.baseURL || "";
-  // base is e.g. "http://localhost:7000/api/v1" or "http://10.0.2.2:7000/api/v1"
+  // The socket shares the configured API origin and strips the API prefix.
   return base.replace("/api/v1", "");
 }
 

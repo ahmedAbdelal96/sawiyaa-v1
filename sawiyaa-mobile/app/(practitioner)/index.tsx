@@ -320,6 +320,128 @@ export default function PractitionerHomeScreen() {
             status={mapProfileBadge(profile.profileStatus)}
           />
         </View>
+        {/* Unified Master Account Readiness & Action Card (Single Place for Account Status & Missing Data) */}
+        <Card
+          variant="outlined"
+          padding="md"
+          style={[
+            styles.masterReadinessCard,
+            (!isProfileComplete || missingRequirements.length > 0)
+              ? { backgroundColor: "#FFF8F6", borderColor: "#F97316" }
+              : { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderLight },
+          ]}
+        >
+          <CompactSectionHeader
+            title={isArabic ? "حالة الحساب وتجهيز العيادة" : "Account Status & Readiness"}
+            subtitle={isArabic ? "ملخص موحد لحالة الطلب والتوثيق والبيانات المطلوب إكمالها" : "Unified summary of application status, verification, and profile data"}
+            action={
+              <CompactActionLink
+                label={isArabic ? "إدارة الحساب" : "Manage Account"}
+                onPress={() => router.push("/(practitioner)/account")}
+              />
+            }
+          />
+
+          {/* Account Status Chips Row */}
+          <View style={[styles.readinessChipsRow, { flexDirection: rowDirection }]}>
+            <View style={styles.statusChipItem}>
+              <Text color={theme.colors.textSecondary} style={styles.statusChipLabel}>
+                {isArabic ? "طلب الانضمام:" : "Application:"}
+              </Text>
+              <StatusChip
+                label={
+                  applicationStatus
+                    ? t(`practitioner.account.applicationStatuses.${applicationStatus}`, applicationStatus)
+                    : t("practitioner.account.applicationStatuses.NONE", isArabic ? "لا يوجد" : "None")
+                }
+                tone={mapApplicationSummaryTone(applicationStatus)}
+                showDot={false}
+              />
+            </View>
+
+            {verificationLabel ? (
+              <View style={styles.statusChipItem}>
+                <Text color={theme.colors.textSecondary} style={styles.statusChipLabel}>
+                  {isArabic ? "التوثيق:" : "Verification:"}
+                </Text>
+                <StatusChip label={verificationLabel} tone={verificationTone} showDot={false} />
+              </View>
+            ) : null}
+
+            <View style={styles.statusChipItem}>
+              <Text color={theme.colors.textSecondary} style={styles.statusChipLabel}>
+                {isArabic ? "الملف الشخصي:" : "Profile:"}
+              </Text>
+              <StatusChip
+                label={
+                  isProfileComplete
+                    ? t("practitioner.account.readiness.complete", isArabic ? "مكتمل ✓" : "Complete ✓")
+                    : t("practitioner.account.readiness.incomplete", isArabic ? "غير مكتمل ⚠️" : "Incomplete ⚠️")
+                }
+                tone={isProfileComplete ? "success" : "warning"}
+                showDot={false}
+              />
+            </View>
+          </View>
+
+          {/* If there are missing requirements or incomplete profile: Show High-Urgency Checklist & Action Button */}
+          {(!isProfileComplete || missingRequirements.length > 0) ? (
+            <View style={styles.urgentAlertSection}>
+              <View style={[styles.urgentAlertHeader, { flexDirection: rowDirection }]}>
+                <View style={styles.urgentIconCircle}>
+                  <Ionicons name="warning-outline" size={20} color="#DC2626" />
+                </View>
+                <View style={styles.urgentTitleWrap}>
+                  <Text weight="bold" style={[styles.urgentTitle, { textAlign, color: "#9A1C1C" }]}>
+                    {isArabic
+                      ? "⚠️ يرجى استكمال البيانات والمستندات الناقصة"
+                      : "⚠️ Please complete missing documents & profile data"}
+                  </Text>
+                  <Text style={[styles.urgentSubtitle, { textAlign, color: "#7F1D1D" }]}>
+                    {isArabic
+                      ? "يرجى تعديل وإضافة المستندات المطلوبة في أقرب وقت لتجنب إيقاف الحساب وتعليق استقبال حجوزات المرضى."
+                      : "Please update required documents quickly to avoid account suspension and booking pauses."}
+                  </Text>
+                </View>
+              </View>
+
+              {/* List of Incomplete Items */}
+              {missingRequirements.length > 0 ? (
+                <View style={styles.urgentMissingList}>
+                  {missingRequirements.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => router.push("/(practitioner)/account")}
+                      style={[styles.urgentItemRow, { flexDirection: rowDirection }]}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color="#DC2626" />
+                      <Text weight="600" style={[styles.urgentItemText, { color: "#7F1D1D", textAlign }]}>
+                        {practitionerMissingRequirementLabel(item, t) || formatRequirementLabel(item)}
+                      </Text>
+                      <Ionicons name={isArabic ? "chevron-back" : "chevron-forward"} size={14} color="#9A1C1C" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
+
+              {/* Direct Urgent CTA Button */}
+              <Button
+                title={isArabic ? "استكمال وتعديل البيانات الآن ➔" : "Complete & Edit Data Now ➔"}
+                onPress={() => router.push("/(practitioner)/account")}
+                style={[styles.urgentCtaButton, { backgroundColor: "#DC2626" }]}
+              />
+            </View>
+          ) : (
+            <View style={[styles.completeSuccessBanner, { flexDirection: rowDirection }]}>
+              <Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.success} />
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 13, flex: 1, textAlign }}>
+                {isArabic ? "عيادتك مكتملة وجاهزة لاستقبال الحجوزات" : "Your workspace is complete and ready for client bookings"}
+              </Text>
+            </View>
+          )}
+        </Card>
+
         {/* Today Snapshot Card - Clean 2x2 Layout */}
         <Card variant="outlined" padding="md" style={styles.snapshotCard}>
           <CompactSectionHeader
@@ -414,86 +536,6 @@ export default function PractitionerHomeScreen() {
                 onPress={() => router.push("/(practitioner)/availability")}
                 style={styles.compactButton}
               />
-            </View>
-          )}
-        </Card>
-
-        {/* Shorter Workspace Status Checklist Card */}
-        <Card variant="outlined" padding="md" style={styles.workspaceCard}>
-          <CompactSectionHeader
-            title={t("practitioner.home.workspaceStatus.title", "جاهزية العيادة")}
-            subtitle={t("practitioner.home.workspaceStatus.subtitle", "حالة طلب الانضمام والمستندات المطلوبة")}
-            action={
-              <CompactActionLink
-                label={t("practitioner.home.workspaceStatus.openAccount", isArabic ? "التفاصيل" : "Details")}
-                onPress={() => router.push("/(practitioner)/account")}
-              />
-            }
-          />
-          {workspaceState === "loading" ? (
-            <LoadingState />
-          ) : workspaceState === "error" ? (
-            <ErrorState
-              onRetry={() => {
-                readinessQuery.refetch();
-                applicationQuery.refetch();
-              }}
-            />
-          ) : (
-            <View style={styles.workspaceBody}>
-              <View style={styles.workspaceRows}>
-                <SummaryRow
-                  label={t("practitioner.home.workspaceStatus.application", isArabic ? "حالة طلب الانضمام" : "Application Status")}
-                  value={
-                    <StatusChip
-                      label={
-                        applicationStatus
-                          ? t(`practitioner.account.applicationStatuses.${applicationStatus}`, applicationStatus)
-                          : t("practitioner.account.applicationStatuses.NONE", isArabic ? "لا يوجد" : "None")
-                      }
-                      tone={mapApplicationSummaryTone(applicationStatus)}
-                      showDot={false}
-                    />
-                  }
-                />
-                {verificationLabel ? (
-                  <SummaryRow
-                    label={t("practitioner.home.workspaceStatus.verification", isArabic ? "التحقق من رقم الهاتف" : "Phone Verification")}
-                    value={<StatusChip label={verificationLabel} tone={verificationTone} showDot={false} />}
-                  />
-                ) : null}
-                <SummaryRow
-                  label={t("practitioner.home.workspaceStatus.profileCompleteness", isArabic ? "اكتمال الملف التعريفي" : "Profile Completeness")}
-                  value={
-                    <StatusChip
-                      label={
-                        isProfileComplete
-                          ? t("practitioner.account.readiness.complete", isArabic ? "مكتمل" : "Complete")
-                          : t("practitioner.account.readiness.incomplete", isArabic ? "غير مكتمل" : "Incomplete")
-                      }
-                      tone={isProfileComplete ? "success" : "warning"}
-                      showDot={false}
-                    />
-                  }
-                />
-              </View>
-              {missingRequirements.length ? (
-                <View style={styles.missingBlock}>
-                  <Text weight="700" style={[styles.missingTitle, { textAlign }]} color={theme.colors.textSecondary}>
-                    {t("practitioner.home.workspaceStatus.missingSteps", isArabic ? "الخطوات المطلوبة للتفعيل:" : "Steps required for activation:")}
-                  </Text>
-                  <View style={styles.missingList}>
-                    {missingRequirements.slice(0, 4).map((item) => (
-                      <View key={item} style={[styles.requirementRow, { flexDirection: rowDirection }]}>
-                        <Ionicons name="alert-circle-outline" size={15} color={theme.colors.warning} />
-                        <Text color={theme.colors.textSecondary} style={styles.requirementText}>
-                          {practitionerMissingRequirementLabel(item, t) || formatRequirementLabel(item)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
             </View>
           )}
         </Card>
@@ -1074,6 +1116,93 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 10,
     alignItems: "center",
+    justifyContent: "center",
+  },
+  masterReadinessCard: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    gap: 14,
+  },
+  readinessChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(0, 0, 0, 0.02)",
+    padding: 10,
+    borderRadius: 12,
+  },
+  statusChipItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statusChipLabel: {
+    fontSize: 11.5,
+  },
+  urgentAlertSection: {
+    gap: 12,
+    borderTopWidth: 1,
+    borderColor: "rgba(249, 115, 22, 0.2)",
+    paddingTop: 12,
+  },
+  completeSuccessBanner: {
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    padding: 10,
+    borderRadius: 12,
+  },
+  urgentAlertHeader: {
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  urgentIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(220, 38, 38, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  urgentTitleWrap: {
+    flex: 1,
+    gap: 4,
+  },
+  urgentTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+  },
+  urgentSubtitle: {
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  urgentMissingList: {
+    gap: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(249, 115, 22, 0.3)",
+  },
+  urgentItemRow: {
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.15)",
+  },
+  urgentItemText: {
+    flex: 1,
+    fontSize: 13,
+  },
+  urgentCtaButton: {
+    minHeight: 48,
+    borderRadius: 14,
     justifyContent: "center",
   },
 });

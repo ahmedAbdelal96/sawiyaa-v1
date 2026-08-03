@@ -2,9 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, CheckCheck, Loader2, Paperclip, SendHorizonal, X } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  Loader2,
+  Paperclip,
+  SendHorizonal,
+  X,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import {
+  ListStateSkeleton,
+  StateCard,
+} from "@/components/shared/ContentStates";
 import FullHeightMessagesPage from "@/components/messages/FullHeightMessagesPage";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
@@ -47,6 +57,9 @@ import type {
 } from "../types/general-chat.types";
 import ChatModerationReportAction from "@/features/moderation/components/ChatModerationReportAction";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { formatEffectiveViewerTime } from "@/lib/time-formatting";
 
 type Props = {
   sessionId: string;
@@ -54,33 +67,38 @@ type Props = {
   variant?: "page" | "embedded";
 };
 
-function formatTime(iso: string, locale: string) {
-  try {
-    const date = new Date(iso);
-    return new Intl.DateTimeFormat(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  } catch {
-    return iso;
-  }
-}
-
 function normalizeApiPath(pathOrUrl: string) {
-  return pathOrUrl.startsWith("/api/v1/") ? pathOrUrl.slice("/api/v1".length) : pathOrUrl;
+  return pathOrUrl.startsWith("/api/v1/")
+    ? pathOrUrl.slice("/api/v1".length)
+    : pathOrUrl;
 }
 
-export default function SessionChatPanel({ sessionId, scope, variant = "page" }: Props) {
+export default function SessionChatPanel({
+  sessionId,
+  scope,
+  variant = "page",
+}: Props) {
   const t = useTranslations("sessions");
   const locale = useLocale();
   const meQuery = useCurrentUser(true);
+  const patientProfileQuery = usePatientProfile(scope === "patient");
+  const practitionerProfileQuery = usePractitionerProfile(
+    scope === "practitioner",
+  );
+  const viewerTimeZone =
+    scope === "patient"
+      ? patientProfileQuery.data?.profile.timezone
+      : practitionerProfileQuery.data?.profile.timezone;
   const endRef = useRef<HTMLDivElement | null>(null);
 
-  const patientSessionQuery = usePatientSession(scope === "patient" ? sessionId : null);
+  const patientSessionQuery = usePatientSession(
+    scope === "patient" ? sessionId : null,
+  );
   const practitionerSessionQuery = usePractitionerSession(
     scope === "practitioner" ? sessionId : null,
   );
-  const sessionQuery = scope === "patient" ? patientSessionQuery : practitionerSessionQuery;
+  const sessionQuery =
+    scope === "patient" ? patientSessionQuery : practitionerSessionQuery;
 
   const session = sessionQuery.data ?? null;
   const chatAllowed = session?.chatAvailability?.canRead ?? false;
@@ -93,17 +111,27 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
     conversationIdentity?.chatAvailability ?? session?.chatAvailability ?? null;
 
   const errorObj = openMutation.error ? toAppError(openMutation.error) : null;
-  const isForbidden = errorObj?.status === 403 || errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
+  const isForbidden =
+    errorObj?.status === 403 ||
+    errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
   const openErrorTitle = isForbidden
-    ? (locale === "ar" ? "لا يمكنك الوصول إلى محادثة هذه الجلسة." : "You do not have access to this session's conversation.")
-    : (locale === "ar" ? "تعذر فتح محادثة الجلسة الآن." : "Could not open session chat right now.");
+    ? locale === "ar"
+      ? "لا يمكنك الوصول إلى محادثة هذه الجلسة."
+      : "You do not have access to this session's conversation."
+    : locale === "ar"
+      ? "تعذر فتح محادثة الجلسة الآن."
+      : "Could not open session chat right now.";
   const openErrorNote = isForbidden
     ? ""
-    : (locale === "ar" ? "حاول مرة أخرى." : "Please try again.");
+    : locale === "ar"
+      ? "حاول مرة أخرى."
+      : "Please try again.";
 
   const hasCalledOpen = useRef(false);
 
   useEffect(() => {
+    // Reset the conversation when the session identity changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversationId(null);
     setConversationIdentity(null);
     hasCalledOpen.current = false;
@@ -136,7 +164,9 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
   const closeMutation = useCloseGeneralChatConversation(conversationId);
 
   const [message, setMessage] = useState("");
-  const [attachments, setAttachments] = useState<GeneralChatAttachmentRef[]>([]);
+  const [attachments, setAttachments] = useState<GeneralChatAttachmentRef[]>(
+    [],
+  );
   const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -161,9 +191,15 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
       return {
         message,
         isGroupStart:
-          !previous || previous.senderUserId !== message.senderUserId || previous.messageType === "SYSTEM" || message.messageType === "SYSTEM",
+          !previous ||
+          previous.senderUserId !== message.senderUserId ||
+          previous.messageType === "SYSTEM" ||
+          message.messageType === "SYSTEM",
         isGroupEnd:
-          !next || next.senderUserId !== message.senderUserId || next.messageType === "SYSTEM" || message.messageType === "SYSTEM",
+          !next ||
+          next.senderUserId !== message.senderUserId ||
+          next.messageType === "SYSTEM" ||
+          message.messageType === "SYSTEM",
       };
     });
   }, [ordered]);
@@ -176,8 +212,8 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
   const counterpartName = useMemo(() => {
     const fallbackName =
       scope === "patient"
-        ? session?.practitioner.displayName ?? null
-        : session?.patient?.displayName ?? null;
+        ? (session?.practitioner.displayName ?? null)
+        : (session?.patient?.displayName ?? null);
     const primaryParticipant = getConversationPrimaryParticipant(
       conversationIdentity,
       meQuery.data?.userId ?? null,
@@ -192,10 +228,11 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
   }, [conversationIdentity, meQuery.data?.userId, scope, session, t]);
   const sessionTitle =
     scope === "patient"
-      ? session?.practitioner.displayName ?? null
-      : session?.patient?.displayName ?? null;
+      ? (session?.practitioner.displayName ?? null)
+      : (session?.patient?.displayName ?? null);
 
-  const backHref = scope === "patient" ? "/patient/sessions" : "/practitioner/sessions";
+  const backHref =
+    scope === "patient" ? "/patient/sessions" : "/practitioner/sessions";
   const sessionDetailsHref =
     scope === "patient"
       ? (`/patient/sessions/${sessionId}` as never)
@@ -205,10 +242,13 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
     sessionChatAvailability?.canSend === true &&
     sessionChatAvailability?.readOnly !== true;
   const showAvailabilityLoading =
-    sessionChatAvailability == null || !conversationId || openMutation.isPending;
+    sessionChatAvailability == null ||
+    !conversationId ||
+    openMutation.isPending;
   const showReadOnlyNotice =
     !showAvailabilityLoading &&
-    (sessionChatAvailability?.canSend !== true || sessionChatAvailability?.readOnly === true);
+    (sessionChatAvailability?.canSend !== true ||
+      sessionChatAvailability?.readOnly === true);
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -331,7 +371,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           href: (
             <Link
               href={sessionDetailsHref}
-              className="inline-flex items-center justify-center rounded-2xl border border-border-light px-5 py-2 text-sm text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/5"
+              className="border-border-light text-text-secondary hover:bg-surface-tertiary inline-flex items-center justify-center rounded-2xl border px-5 py-2 text-sm dark:hover:bg-white/5"
             >
               {t("detail.chat.states.notAvailable.backToSession")}
             </Link>
@@ -344,37 +384,47 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
   const myUserId = meQuery.data?.userId ?? null;
 
   if (variant === "embedded") {
-    const counterpartNameForHeader = counterpartName || t("detail.chat.fallbackName");
+    const counterpartNameForHeader =
+      counterpartName || t("detail.chat.fallbackName");
     return (
       <ChatConversationPanel
         header={
           <ChatConversationHeader
             title={counterpartNameForHeader}
             subtitle={
-              <div className="flex flex-col gap-1 mt-0.5">
-                <p className="text-xs text-text-muted dark:text-slate-400 font-medium">
-                  {getConversationSubtitle(conversationIdentity, myUserId) || sessionTitle}
+              <div className="mt-0.5 flex flex-col gap-1">
+                <p className="text-text-muted text-xs font-medium dark:text-slate-400">
+                  {getConversationSubtitle(conversationIdentity, myUserId) ||
+                    sessionTitle}
                 </p>
-                <SessionCodeReference sessionId={sessionId} sessionCode={session?.sessionCode} showLabel />
+                <SessionCodeReference
+                  sessionId={sessionId}
+                  sessionCode={session?.sessionCode}
+                  showLabel
+                />
                 {session?.scheduledStartAt && (
-                  <p className="text-[10px] text-text-muted opacity-75 font-semibold font-mono tracking-wide">
+                  <p className="text-text-muted font-mono text-[10px] font-semibold tracking-wide opacity-75">
                     {locale.startsWith("ar") ? "الموعد: " : "Scheduled: "}
-                    {formatTime(session.scheduledStartAt, locale)}
+                    {formatEffectiveViewerTime(
+                      session.scheduledStartAt,
+                      viewerTimeZone,
+                      { locale },
+                    )}
                   </p>
                 )}
               </div>
             }
             avatarUrl={getParticipantAvatarUrl(
-              getConversationPrimaryParticipant(
-                conversationIdentity,
-                myUserId,
-              ),
+              getConversationPrimaryParticipant(conversationIdentity, myUserId),
             )}
             online={false}
             actions={
               <div className="flex items-center gap-2">
-                <ChatModerationReportAction targetType="GENERAL_CHAT_CONVERSATION" targetId={conversationId} />
-                <span className="rounded-full bg-teal-50/70 border border-teal-100/30 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+                <ChatModerationReportAction
+                  targetType="GENERAL_CHAT_CONVERSATION"
+                  targetId={conversationId}
+                />
+                <span className="rounded-full border border-teal-100/30 bg-teal-50/70 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
                   {session?.presentationStatus?.replaceAll("_", " ")}
                 </span>
               </div>
@@ -383,15 +433,17 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
         }
         composer={
           showAvailabilityLoading ? (
-            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-semibold">
+            <div className="text-text-secondary shrink-0 border-t border-slate-100 bg-slate-50 p-4 text-xs leading-5 font-semibold dark:border-white/10 dark:bg-slate-900">
               <p className="text-text-primary dark:text-white/90">
                 {t("detail.chat.states.availabilityLoading.heading")}
               </p>
             </div>
           ) : showReadOnlyNotice ? (
-            <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-slate-50 dark:bg-slate-900 shrink-0 text-xs text-text-secondary leading-5 font-medium">
-              <p className="font-bold text-text-primary dark:text-white/90">
-                {locale.startsWith("ar") ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة." : "Messaging is no longer available in this conversation. You can review the previous messages."}
+            <div className="text-text-secondary shrink-0 border-t border-slate-100 bg-slate-50 p-4 text-xs leading-5 font-medium dark:border-white/10 dark:bg-slate-900">
+              <p className="text-text-primary font-bold dark:text-white/90">
+                {locale.startsWith("ar")
+                  ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة."
+                  : "Messaging is no longer available in this conversation. You can review the previous messages."}
               </p>
             </div>
           ) : showComposer ? (
@@ -411,23 +463,27 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
       >
         {openMutation.isError || messagesQuery.isError ? (
           <div className="p-4 text-center">
-            <p className="text-xs text-rose-500 mb-2">
+            <p className="mb-2 text-xs text-rose-500">
               {openMutation.isError
                 ? openErrorTitle
                 : t("detail.chat.states.messagesError.heading")}
             </p>
             {!isForbidden && (
-              <p className="text-xs text-text-secondary">
-                {openMutation.isError ? openErrorNote : t("detail.chat.states.messagesError.note")}
+              <p className="text-text-secondary text-xs">
+                {openMutation.isError
+                  ? openErrorNote
+                  : t("detail.chat.states.messagesError.note")}
               </p>
             )}
           </div>
-        ) : openMutation.isPending || messagesQuery.isLoading || !conversationId ? (
-          <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse font-semibold">
+        ) : openMutation.isPending ||
+          messagesQuery.isLoading ||
+          !conversationId ? (
+          <div className="text-text-muted flex animate-pulse items-center justify-center p-8 text-xs font-semibold">
             {locale === "ar" ? "جاري التحميل..." : "Loading..."}
           </div>
         ) : ordered.length === 0 ? (
-          <div className="p-8 text-center text-xs text-text-muted font-medium">
+          <div className="text-text-muted p-8 text-center text-xs font-medium">
             {t("detail.chat.states.empty.heading")}
           </div>
         ) : (
@@ -436,11 +492,21 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
             return (
               <ChatMessageBubble
                 key={entry.messageId}
-                onReport={<ChatModerationReportAction compact targetType="GENERAL_CHAT_MESSAGE" targetId={entry.messageId} />}
+                onReport={
+                  <ChatModerationReportAction
+                    compact
+                    targetType="GENERAL_CHAT_MESSAGE"
+                    targetId={entry.messageId}
+                  />
+                }
                 message={{
                   id: entry.messageId,
                   body: entry.contentText || "",
-                  sentAt: formatTime(entry.sentAt, locale),
+                  sentAt: formatEffectiveViewerTime(
+                    entry.sentAt,
+                    viewerTimeZone,
+                    { locale },
+                  ),
                   direction: fromMe ? "outgoing" : "incoming",
                   status: (fromMe ? entry.localStatus : undefined) as any,
                 }}
@@ -449,8 +515,8 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           })
         )}
         {realtimeThread.isPeerTyping && (
-          <div className="flex justify-start mt-2">
-            <div className="inline-flex items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-3 py-1 text-[11px] text-text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/60">
+          <div className="mt-2 flex justify-start">
+            <div className="border-border-light bg-surface-secondary text-text-muted inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] dark:border-white/10 dark:bg-white/10 dark:text-white/60">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:120ms]" />
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:240ms]" />
@@ -467,7 +533,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
       <section className="app-panel rounded-[24px] p-3 sm:p-4">
         <Link
           href={backHref as never}
-          className="mb-2 inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline"
+          className="text-primary mb-2 inline-flex items-center gap-2 text-xs font-semibold hover:underline"
         >
           <DirectionalArrowIcon direction="back" className="h-4 w-4" />
           {t("detail.chat.back")}
@@ -475,7 +541,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light text-primary ring-1 ring-primary/15">
+            <div className="bg-primary-light text-primary ring-primary/15 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1">
               {getParticipantAvatarUrl(
                 getConversationPrimaryParticipant(
                   conversationIdentity,
@@ -502,14 +568,16 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-xl">
+              <h1 className="text-text-primary truncate text-lg font-semibold tracking-tight sm:text-xl dark:text-white/95">
                 {counterpartName ?? t("detail.chat.fallbackName")}
               </h1>
-              <p className="mt-1 truncate text-xs leading-5 text-text-secondary">
-                {getConversationSubtitle(conversationIdentity, meQuery.data?.userId ?? null) ??
-                  sessionTitle}
+              <p className="text-text-secondary mt-1 truncate text-xs leading-5">
+                {getConversationSubtitle(
+                  conversationIdentity,
+                  meQuery.data?.userId ?? null,
+                ) ?? sessionTitle}
               </p>
-              <p className="mt-1 text-xs leading-5 text-text-secondary">
+              <p className="text-text-secondary mt-1 text-xs leading-5">
                 {t("detail.chat.note")}
               </p>
             </div>
@@ -520,7 +588,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
               type="button"
               disabled={!conversationId || closeMutation.isPending}
               onClick={() => closeMutation.mutateAsync().catch(() => {})}
-              className="inline-flex items-center justify-center rounded-full border border-border-light px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-danger-500/40 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white/90"
+              className="border-border-light text-text-primary hover:border-danger-500/40 hover:text-danger-600 inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-white/90"
             >
               {closeMutation.isPending
                 ? t("detail.chat.actions.closing")
@@ -535,13 +603,13 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
       </section>
 
       <section className="app-panel flex min-h-0 flex-1 flex-col rounded-[24px] p-0">
-        <div className="border-b border-border-light px-3 py-2.5 sm:px-4">
+        <div className="border-border-light border-b px-3 py-2.5 sm:px-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-text-primary dark:text-white/95">
+            <h2 className="text-text-primary text-sm font-semibold dark:text-white/95">
               {t("detail.chat.thread.heading")}
             </h2>
             {messagesQuery.isFetching ? (
-              <span className="inline-flex items-center gap-2 text-xs text-text-muted">
+              <span className="text-text-muted inline-flex items-center gap-2 text-xs">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 {t("detail.chat.thread.refreshing")}
               </span>
@@ -554,17 +622,23 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
             <StateCard
               title={openErrorTitle}
               note={openErrorNote}
-              action={isForbidden ? undefined : {
-                label: t("detail.chat.states.openError.retry"),
-                onClick: () => {
-                  hasCalledOpen.current = false;
-                  openMutation.reset();
-                },
-              }}
+              action={
+                isForbidden
+                  ? undefined
+                  : {
+                      label: t("detail.chat.states.openError.retry"),
+                      onClick: () => {
+                        hasCalledOpen.current = false;
+                        openMutation.reset();
+                      },
+                    }
+              }
               centered={false}
               className="rounded-[24px] p-5"
             />
-          ) : openMutation.isPending || messagesQuery.isLoading || !conversationId ? (
+          ) : openMutation.isPending ||
+            messagesQuery.isLoading ||
+            !conversationId ? (
             <ListStateSkeleton items={6} heightClass="h-20" />
           ) : messagesQuery.isError ? (
             <StateCard
@@ -586,9 +660,12 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
             />
           ) : (
             messageRows.map(({ message: entry, isGroupStart }) => {
-              const fromMe = Boolean(myUserId && entry.senderUserId === myUserId);
+              const fromMe = Boolean(
+                myUserId && entry.senderUserId === myUserId,
+              );
               const senderIdentity =
-                entry.senderIdentity ?? getMessageSenderIdentity(entry, conversationIdentity);
+                entry.senderIdentity ??
+                getMessageSenderIdentity(entry, conversationIdentity);
               const senderParticipant: {
                 identity: GeneralChatParticipantIdentity | null;
               } | null = senderIdentity
@@ -598,21 +675,30 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                 : null;
               const senderName = fromMe
                 ? t("detail.chat.you")
-                : getParticipantDisplayName(senderParticipant, t("detail.chat.fallbackName"));
+                : getParticipantDisplayName(
+                    senderParticipant,
+                    t("detail.chat.fallbackName"),
+                  );
               const senderSubtitle = fromMe
                 ? t("detail.chat.youSubtitle")
                 : getParticipantSubtitle(senderParticipant, null);
-              const senderAvatarUrl = fromMe ? null : getParticipantAvatarUrl(senderParticipant);
+              const senderAvatarUrl = fromMe
+                ? null
+                : getParticipantAvatarUrl(senderParticipant);
 
               return (
                 <div
                   key={entry.messageId}
                   className={`flex ${fromMe ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`flex max-w-[92%] flex-col ${fromMe ? "items-end" : "items-start"}`}>
+                  <div
+                    className={`flex max-w-[92%] flex-col ${fromMe ? "items-end" : "items-start"}`}
+                  >
                     {isGroupStart ? (
-                      <div className={`mb-1 flex items-center gap-2 ${fromMe ? "flex-row-reverse" : ""}`}>
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-light text-primary ring-1 ring-primary/15">
+                      <div
+                        className={`mb-1 flex items-center gap-2 ${fromMe ? "flex-row-reverse" : ""}`}
+                      >
+                        <div className="bg-primary-light text-primary ring-primary/15 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1">
                           {senderAvatarUrl ? (
                             <img
                               src={senderAvatarUrl}
@@ -623,12 +709,14 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                             <AvatarText name={senderName} className="h-8 w-8" />
                           )}
                         </div>
-                        <div className={`min-w-0 ${fromMe ? "text-end" : "text-start"}`}>
-                          <p className="truncate text-[11px] font-semibold text-text-primary dark:text-white/90">
+                        <div
+                          className={`min-w-0 ${fromMe ? "text-end" : "text-start"}`}
+                        >
+                          <p className="text-text-primary truncate text-[11px] font-semibold dark:text-white/90">
                             {senderName}
                           </p>
                           {senderSubtitle ? (
-                            <p className="truncate text-[10px] text-text-muted dark:text-white/55">
+                            <p className="text-text-muted truncate text-[10px] dark:text-white/55">
                               {senderSubtitle}
                             </p>
                           ) : null}
@@ -639,12 +727,12 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                     <div
                       className={`max-w-full rounded-[14px] border px-2.5 py-1.5 ${
                         fromMe
-                          ? "border-primary/45 bg-gradient-to-br from-primary to-primary-active text-white shadow-[0_14px_26px_-18px_rgba(68,161,148,0.7)]"
-                          : "border-border-light/80 bg-white text-text-primary shadow-[0_8px_18px_-16px_rgba(34,52,56,0.2)] dark:border-white/10 dark:bg-white/10 dark:text-white/90"
+                          ? "border-primary/45 from-primary to-primary-active bg-gradient-to-br text-white shadow-[0_14px_26px_-18px_rgba(68,161,148,0.7)]"
+                          : "border-border-light/80 text-text-primary bg-white shadow-[0_8px_18px_-16px_rgba(34,52,56,0.2)] dark:border-white/10 dark:bg-white/10 dark:text-white/90"
                       }`}
                     >
                       {entry.contentText ? (
-                        <p className="break-words text-xs leading-4.5 tracking-[0.01em]">
+                        <p className="text-xs leading-4.5 tracking-[0.01em] break-words">
                           {entry.contentText}
                         </p>
                       ) : null}
@@ -655,11 +743,15 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                             <button
                               key={att.fileId}
                               type="button"
-                              onClick={() => handleOpenAttachment(att.fileUrl).catch(() => {})}
+                              onClick={() =>
+                                handleOpenAttachment(att.fileUrl).catch(
+                                  () => {},
+                                )
+                              }
                               className={`flex items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-xs font-medium transition ${
                                 fromMe
                                   ? "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                                  : "border-border-light bg-white text-text-primary hover:border-primary/30 dark:bg-white/5 dark:text-white/90"
+                                  : "border-border-light text-text-primary hover:border-primary/30 bg-white dark:bg-white/5 dark:text-white/90"
                               }`}
                             >
                               <span className="min-w-0 break-words">
@@ -690,9 +782,13 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                           <CheckCheck className="me-1 h-3 w-3" />
                         ) : null}
                         {fromMe && entry.localStatus === "READ" ? (
-                          <CheckCheck className="me-1 h-3 w-3 text-primary-light" />
+                          <CheckCheck className="text-primary-light me-1 h-3 w-3" />
                         ) : null}
-                        {formatTime(entry.sentAt, locale)}
+                        {formatEffectiveViewerTime(
+                          entry.sentAt,
+                          viewerTimeZone,
+                          { locale },
+                        )}
                       </p>
                       <ChatModerationReportAction
                         compact
@@ -707,7 +803,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           )}
           {realtimeThread.isPeerTyping ? (
             <div className="flex justify-start">
-              <div className="inline-flex items-center gap-1 rounded-full border border-border-light bg-surface-secondary px-3 py-1 text-[11px] text-text-muted dark:border-white/10 dark:bg-white/10 dark:text-white/60">
+              <div className="border-border-light bg-surface-secondary text-text-muted inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] dark:border-white/10 dark:bg-white/10 dark:text-white/60">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:120ms]" />
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:240ms]" />
@@ -717,18 +813,22 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
           <div ref={endRef} />
         </div>
 
-        <div className="shrink-0 border-t border-border-light px-3 py-3 sm:px-4">
+        <div className="border-border-light shrink-0 border-t px-3 py-3 sm:px-4">
           {showAvailabilityLoading ? (
-            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
-              <p className="font-semibold text-text-primary dark:text-white/90">
+            <div className="border-border-light bg-surface-tertiary text-text-secondary rounded-2xl border px-4 py-3 text-xs leading-6 dark:bg-white/5">
+              <p className="text-text-primary font-semibold dark:text-white/90">
                 {t("detail.chat.states.availabilityLoading.heading")}
               </p>
-              <p className="mt-1">{t("detail.chat.states.availabilityLoading.note")}</p>
+              <p className="mt-1">
+                {t("detail.chat.states.availabilityLoading.note")}
+              </p>
             </div>
           ) : showReadOnlyNotice ? (
-            <div className="rounded-2xl border border-border-light bg-surface-tertiary px-4 py-3 text-xs leading-6 text-text-secondary dark:bg-white/5">
-              <p className="font-semibold text-text-primary dark:text-white/90">
-                {locale.startsWith("ar") ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة." : "Messaging is no longer available in this conversation. You can review the previous messages."}
+            <div className="border-border-light bg-surface-tertiary text-text-secondary rounded-2xl border px-4 py-3 text-xs leading-6 dark:bg-white/5">
+              <p className="text-text-primary font-semibold dark:text-white/90">
+                {locale.startsWith("ar")
+                  ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة."
+                  : "Messaging is no longer available in this conversation. You can review the previous messages."}
               </p>
             </div>
           ) : showComposer ? (
@@ -738,7 +838,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                   {attachments.map((att) => (
                     <span
                       key={att.fileId}
-                      className="inline-flex items-center gap-2 rounded-full border border-border-light bg-white px-3 py-1 text-xs font-medium text-text-primary dark:bg-white/5 dark:text-white/90"
+                      className="border-border-light text-text-primary inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-medium dark:bg-white/5 dark:text-white/90"
                     >
                       <span className="break-words">
                         {att.originalName ?? att.mimeType}
@@ -746,7 +846,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                       <button
                         type="button"
                         onClick={() => handleRemoveAttachment(att.fileId)}
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-border-light text-text-muted transition hover:text-danger-600"
+                        className="border-border-light text-text-muted hover:text-danger-600 inline-flex h-5 w-5 items-center justify-center rounded-full border transition"
                         aria-label={t("detail.chat.actions.removeAttachment")}
                       >
                         <X className="h-3 w-3" />
@@ -757,7 +857,9 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
               ) : null}
 
               <div className="flex items-end gap-2">
-                <label className="sr-only">{t("detail.chat.compose.label")}</label>
+                <label className="sr-only">
+                  {t("detail.chat.compose.label")}
+                </label>
                 <textarea
                   rows={1}
                   value={message}
@@ -769,7 +871,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                   maxLength={4000}
                   disabled={!conversationId || isSending}
                   placeholder={t("detail.chat.compose.placeholder")}
-                  className="app-control max-h-20 min-h-9 flex-1 resize-none rounded-md border-border-strong bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-white/8 dark:text-white"
+                  className="app-control border-border-strong focus:border-primary focus:ring-primary/20 max-h-20 min-h-9 flex-1 resize-none rounded-md bg-white px-2 py-1.5 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_8px_14px_-14px_rgba(68,161,148,0.35)] focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/15 dark:bg-white/8 dark:text-white"
                 />
 
                 <input
@@ -787,7 +889,7 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                     attachments.length >= 5 ||
                     sessionChatAvailability?.readOnly === true
                   }
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border-light bg-white text-text-secondary transition hover:border-primary/35 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-white/5 dark:text-white/75"
+                  className="border-border-light text-text-secondary hover:border-primary/35 hover:text-primary inline-flex h-9 w-9 items-center justify-center rounded-md border bg-white transition disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/12 dark:bg-white/5 dark:text-white/75"
                   aria-label={t("detail.chat.actions.attach")}
                   title={t("detail.chat.actions.attach")}
                 >
@@ -799,8 +901,12 @@ export default function SessionChatPanel({ sessionId, scope, variant = "page" }:
                 </button>
                 <button
                   type="submit"
-                  disabled={message.trim().length === 0 || isSending || closeMutation.isPending}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-gradient-to-br from-primary to-primary-active px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-10px_rgba(68,161,148,0.78)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={
+                    message.trim().length === 0 ||
+                    isSending ||
+                    closeMutation.isPending
+                  }
+                  className="from-primary to-primary-active inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-gradient-to-br px-3 text-xs font-semibold text-white shadow-[0_10px_18px_-10px_rgba(68,161,148,0.78)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

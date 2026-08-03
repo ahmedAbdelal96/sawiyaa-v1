@@ -1,21 +1,16 @@
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Header,
   Screen,
   Card,
   Text,
-  Input,
   Button,
   SegmentedControl,
 } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { resolveDeviceTimeZone } from "../../src/lib/time-formatting";
 import { useTranslation } from "react-i18next";
 import { usePatientProfile } from "../../src/features/patient/profile/hooks";
 import {
@@ -26,6 +21,7 @@ import type { SettingsLocale } from "../../src/features/settings/types";
 import { setAppLanguage } from "../../src/i18n";
 import { useAppDirection } from "../../src/i18n/direction";
 import { extractApiErrorMessage } from "../../src/lib/api";
+import TimeZonePicker from "../../src/components/timezone/TimeZonePicker";
 
 export default function PatientProfilePreferencesScreen() {
   const { theme } = useTheme();
@@ -51,7 +47,7 @@ export default function PatientProfilePreferencesScreen() {
     setTimezone(
       settings?.preferences.timezone ??
         profile?.timezone ??
-        Intl.DateTimeFormat().resolvedOptions().timeZone ??
+        resolveDeviceTimeZone() ??
         "",
     );
   }, [
@@ -94,20 +90,35 @@ export default function PatientProfilePreferencesScreen() {
   return (
     <Screen bg="background">
       <Header title={t("profileScreen.preferences.screenTitle")} showBack />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Language Selection Card */}
-        <Card
-          variant="elevated"
-          style={styles.card}
-          padding="none"
-        >
+        <Card variant="elevated" style={styles.card} padding="none">
           {/* Subtle gold accent indicator line at the top */}
-          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+          <View
+            style={[
+              styles.goldAccentLine,
+              { backgroundColor: theme.colors.tertiary },
+            ]}
+          />
 
           <View style={styles.cardInnerPadding}>
-            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="language-outline" size={20} color={theme.colors.primary} style={{ marginEnd: 8 }} />
-              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+            <View
+              style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="language-outline"
+                size={20}
+                color={theme.colors.primary}
+                style={{ marginEnd: 8 }}
+              />
+              <Text
+                weight="bold"
+                style={styles.cardTitle}
+                color={theme.colors.textPrimary}
+              >
                 {t("profileScreen.preferences.languageTitle")}
               </Text>
             </View>
@@ -128,22 +139,34 @@ export default function PatientProfilePreferencesScreen() {
         </Card>
 
         {/* Timezone Selection Card */}
-        <Card
-          variant="elevated"
-          style={styles.card}
-          padding="none"
-        >
+        <Card variant="elevated" style={styles.card} padding="none">
           {/* Subtle gold accent indicator line at the top */}
-          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+          <View
+            style={[
+              styles.goldAccentLine,
+              { backgroundColor: theme.colors.tertiary },
+            ]}
+          />
 
           <View style={styles.cardInnerPadding}>
-            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="time-outline" size={20} color={theme.colors.primary} style={{ marginEnd: 8 }} />
-              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+            <View
+              style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color={theme.colors.primary}
+                style={{ marginEnd: 8 }}
+              />
+              <Text
+                weight="bold"
+                style={styles.cardTitle}
+                color={theme.colors.textPrimary}
+              >
                 {t("profileScreen.preferences.timezoneTitle")}
               </Text>
             </View>
-            
+
             {/* Informative calm green care tip, no harsh warnings */}
             <View
               style={[
@@ -153,20 +176,31 @@ export default function PatientProfilePreferencesScreen() {
                 },
               ]}
             >
-              <View style={[styles.infoNoteRow, { flexDirection: rowDirection }]}>
-                <Ionicons name="sparkles-outline" size={16} color={theme.colors.primary} style={{ marginEnd: 8, marginTop: 2 }} />
-                <Text color={theme.colors.textPrimary} style={styles.infoNoteText}>
+              <View
+                style={[styles.infoNoteRow, { flexDirection: rowDirection }]}
+              >
+                <Ionicons
+                  name="sparkles-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                  style={{ marginEnd: 8, marginTop: 2 }}
+                />
+                <Text
+                  color={theme.colors.textPrimary}
+                  style={styles.infoNoteText}
+                >
                   {t("profileScreen.preferences.timezoneBody")}
                 </Text>
               </View>
             </View>
 
             <View style={styles.formSpacer}>
-              <Input
+              <TimeZonePicker
                 label={t("profileScreen.details.fields.timezone")}
                 value={timezone}
                 placeholder={t("profileScreen.preferences.timezonePlaceholder")}
-                onChangeText={setTimezone}
+                onChange={setTimezone}
+                detectedTimeZone={resolveDeviceTimeZone()}
               />
             </View>
           </View>
@@ -179,12 +213,28 @@ export default function PatientProfilePreferencesScreen() {
           padding="none"
         >
           {/* Subtle gold accent indicator line at the top */}
-          <View style={[styles.goldAccentLine, { backgroundColor: theme.colors.tertiary }]} />
+          <View
+            style={[
+              styles.goldAccentLine,
+              { backgroundColor: theme.colors.tertiary },
+            ]}
+          />
 
           <View style={styles.cardInnerPadding}>
-            <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
-              <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.textSecondary} style={{ marginEnd: 8 }} />
-              <Text weight="bold" style={styles.cardTitle} color={theme.colors.textPrimary}>
+            <View
+              style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={theme.colors.textSecondary}
+                style={{ marginEnd: 8 }}
+              />
+              <Text
+                weight="bold"
+                style={styles.cardTitle}
+                color={theme.colors.textPrimary}
+              >
                 {t("profileScreen.preferences.boundaryTitle")}
               </Text>
             </View>

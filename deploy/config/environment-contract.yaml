@@ -9,7 +9,18 @@ derivedSources:
   frontendReferences: sawiyaa-frontend-v1/src
   frontendConfig: sawiyaa-frontend-v1/next.config.ts
   compose: docker-compose.prod.yml
-statuses: [PRESENT, MISSING, EMPTY, PLACEHOLDER, INVALID, UNKNOWN, CONFLICT, DEPRECATED, NOT_REQUIRED]
+statuses:
+  [
+    PRESENT,
+    MISSING,
+    EMPTY,
+    PLACEHOLDER,
+    INVALID,
+    UNKNOWN,
+    CONFLICT,
+    DEPRECATED,
+    NOT_REQUIRED,
+  ]
 allowedUntrackedPaths:
   - deploy/certs/
   - deploy/certbot-logs/
@@ -118,20 +129,9 @@ variables:
     validationOwner: forbidden by database-authoritative routing policy
     description: Forbidden legacy configuration; database owns payment routes.
     deprecated: true
-  - name: PAYMENT_PAYMOB_ENABLED
-    service: backend
-    required: true
-    secret: false
-    phase: runtime
-    environments: [local, staging, production]
-    safeDefault: false
-    restartRequired: true
-    rebuildRequired: false
-    validationOwner: backend Zod schema + payment approval policy
-    description: Enables Paymob integration; does not define database routes.
   - name: PAYMOB_MODE
     service: backend
-    required: "PAYMENT_PAYMOB_ENABLED == true"
+    required: "database payment.provider.paymob.enabled == true"
     secret: false
     phase: runtime
     environments: [staging, production]
@@ -142,7 +142,7 @@ variables:
     description: Paymob provider mode, independent from APP_ENV.
   - name: PAYMOB_API_KEY
     service: backend
-    required: "PAYMENT_PAYMOB_ENABLED == true"
+    required: "database payment.provider.paymob.enabled == true"
     secret: true
     phase: runtime
     environments: [staging, production]
@@ -153,7 +153,7 @@ variables:
     description: Paymob API credential.
   - name: PAYMOB_HMAC_SECRET
     service: backend
-    required: "PAYMENT_PAYMOB_ENABLED == true"
+    required: "database payment.provider.paymob.enabled == true"
     secret: true
     phase: runtime
     environments: [staging, production]
@@ -162,20 +162,9 @@ variables:
     rebuildRequired: false
     validationOwner: backend Zod schema
     description: Paymob webhook verification secret.
-  - name: PAYMOB_CHECKOUT_FLOW
-    service: backend
-    required: "PAYMENT_PAYMOB_ENABLED == true"
-    secret: false
-    phase: runtime
-    environments: [staging, production]
-    safeDefault: legacy
-    restartRequired: true
-    rebuildRequired: false
-    validationOwner: backend Zod schema
-    description: Paymob checkout flow selector.
   - name: PAYMOB_EGP_CARD_INTEGRATION_ID
     service: backend
-    required: "PAYMENT_PAYMOB_ENABLED == true and no method registry/legacy card route"
+    required: "database payment.provider.paymob.enabled == true and no method registry/legacy card route"
     secret: true
     phase: runtime
     environments: [staging, production]
@@ -196,17 +185,6 @@ variables:
     rebuildRequired: false
     validationOwner: database-authoritative payment routing policy
     description: Optional USD card integration; empty is allowed when USD route is disabled.
-  - name: PAYMOB_METHOD_REGISTRY_JSON
-    service: backend
-    required: false
-    secret: true
-    phase: runtime
-    environments: [staging, production]
-    safeDefault: null
-    restartRequired: true
-    rebuildRequired: false
-    validationOwner: backend Zod schema + database route policy
-    description: Transitional method registry; must not conflict with explicit aliases.
   - name: NEXT_PUBLIC_API_URL
     service: frontend
     required: true

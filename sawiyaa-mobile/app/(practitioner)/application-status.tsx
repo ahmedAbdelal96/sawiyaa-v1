@@ -62,7 +62,7 @@ export default function PractitionerApprovalStatusScreen() {
     );
 
   const webBaseUrl = normalizeBaseUrl(
-    process.env.EXPO_PUBLIC_WEB_APP_URL ?? "http://localhost:3000",
+    process.env.EXPO_PUBLIC_WEB_APP_URL ?? "https://sawiyaa.com",
   );
   const locale = i18n.language?.startsWith("ar") ? "ar" : "en";
   const webApplicationUrl = `${webBaseUrl}/${locale}/practitioner/application`;

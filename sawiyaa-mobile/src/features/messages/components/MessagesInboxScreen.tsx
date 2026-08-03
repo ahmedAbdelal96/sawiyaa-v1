@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Image,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -32,6 +33,8 @@ import {
   useCanonicalConversations,
 } from "../hooks";
 
+const FALLBACK_AVATAR = require("../../../../assets/user.avif");
+
 type InboxTab = "all" | "sessions" | "support" | "followup";
 
 const TAB_ORDER: InboxTab[] = ["all", "sessions", "support", "followup"];
@@ -49,9 +52,6 @@ function isTextEnglish(text?: string | null): boolean {
   return false;
 }
 
-
-
-
 function StatusPill({
   conversation,
   locale,
@@ -64,8 +64,8 @@ function StatusPill({
   const color = CONVERSATION_STATUS_TONE_COLORS[status.tone];
 
   return (
-    <View style={[styles.statusPill, { backgroundColor: color + "12", borderColor: color + "24" }]}>
-      <Text style={[styles.statusPillText, { color }]}>{status.label}</Text>
+    <View style={[styles.statusPill, { backgroundColor: color + "14", borderColor: color + "30" }]}>
+      <Text style={[styles.statusPillText, { color }]} weight="600">{status.label}</Text>
     </View>
   );
 }
@@ -85,9 +85,8 @@ export function MessagesInboxScreen({
   const isPatient = role === "patient";
 
   const validTabs: InboxTab[] = ["all", "sessions", "support", "followup"];
-  // Patients see unified list — start on "all", no visible tab bar
   const [activeTab, setActiveTab] = useState<InboxTab>(
-    isPatient ? "all" : (initialTab && validTabs.includes(initialTab) ? initialTab : "all"),
+    initialTab && validTabs.includes(initialTab) ? initialTab : "all",
   );
 
   const canonicalQuery = useCanonicalConversations(role, { page: 1, limit: 100 }, true);
@@ -166,26 +165,38 @@ export function MessagesInboxScreen({
     return "messages.inbox.tabEmpty";
   }, [activeTab]);
 
+  const getTabIcon = (tab: InboxTab): keyof typeof Ionicons.glyphMap => {
+    switch (tab) {
+      case "all":
+        return "chatbubbles-outline";
+      case "sessions":
+        return "videocam-outline";
+      case "support":
+        return "headset-outline";
+      case "followup":
+        return "repeat-outline";
+    }
+  };
+
   return (
     <Screen bg="background">
       <Header
         title={t("messages.inbox.title", "Messages")}
         showBack
         rightElement={
-          role === "patient" || role === "practitioner" ? (
-            <TouchableOpacity
-              onPress={handleStartSupport}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel={t("messages.inbox.supportCtaBtn")}
-              style={[styles.headerSupportBtn, { backgroundColor: "#EEF4EF" }]}
-            >
-              <Ionicons name="headset-outline" size={18} color="#24564F" />
-            </TouchableOpacity>
-          ) : undefined
+          <TouchableOpacity
+            onPress={handleStartSupport}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={t("messages.inbox.supportCtaBtn")}
+            style={[styles.headerSupportBtn, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary + "30" }]}
+          >
+            <Ionicons name="headset" size={18} color={theme.colors.primary} />
+          </TouchableOpacity>
         }
       />
 
+      {/* Practitioner intro card */}
       {role === "practitioner" ? (
         <Card
           variant="outlined"
@@ -193,20 +204,20 @@ export function MessagesInboxScreen({
           style={[
             styles.introCard,
             {
-              borderColor: "#E8DED0",
-              backgroundColor: "#FCFAF6",
+              borderColor: theme.colors.borderLight,
+              backgroundColor: theme.colors.surface,
             },
           ]}
         >
           <View style={[styles.introRow, { flexDirection: rowDirection }]}>
-            <View style={[styles.introIconWrap, { backgroundColor: "#EEF4EF" }]}>
-              <Ionicons name="chatbubbles-outline" size={16} color="#24564F" />
+            <View style={[styles.introIconWrap, { backgroundColor: theme.colors.primaryLight }]}>
+              <Ionicons name="chatbubbles" size={18} color={theme.colors.primary} />
             </View>
             <View style={styles.introCopy}>
-              <Text weight="700" style={[styles.introTitle, { textAlign: isRtl ? "right" : "left" }]} color="#1F332F">
+              <Text weight="bold" style={[styles.introTitle, { textAlign: isRtl ? "right" : "left" }]} color={theme.colors.textPrimary}>
                 {t("messages.inbox.practitionerIntroTitle")}
               </Text>
-              <Text color="#6F7E78" style={[styles.introSubtitle, { textAlign: isRtl ? "right" : "left" }]}>
+              <Text color={theme.colors.textSecondary} style={[styles.introSubtitle, { textAlign: isRtl ? "right" : "left" }]}>
                 {t("messages.inbox.practitionerIntroSubtitle")}
               </Text>
             </View>
@@ -214,50 +225,40 @@ export function MessagesInboxScreen({
         </Card>
       ) : null}
 
-      {/* Practitioner only: show tab filter bar */}
-      {role === "practitioner" ? (
-        <View
-          style={[
-            styles.tabsBar,
-            {
-              flexDirection: rowDirection,
-            },
-          ]}
+      {/* ── Filter Tabs Bar (for Patient and Practitioner) ── */}
+      <View style={styles.filterScrollWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.tabsBar, { flexDirection: rowDirection }]}
         >
           {TAB_ORDER.map((tab) => {
             const active = activeTab === tab;
+            const iconName = getTabIcon(tab);
 
             return (
               <TouchableOpacity
                 key={tab}
                 onPress={() => setActiveTab(tab)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel={
-                  tab === "all"
-                    ? t("messages.tabs.all")
-                    : tab === "sessions"
-                    ? t("messages.tabs.sessions")
-                    : tab === "support"
-                    ? t("messages.tabs.support")
-                    : t("messages.tabs.followup")
-                }
                 style={[
                   styles.tabBtn,
                   {
-                    borderColor: active ? "transparent" : "#E8DED0",
-                    backgroundColor: active ? "#24564F" : "#FFFFFF",
+                    backgroundColor: active ? theme.colors.primary : theme.colors.surface,
+                    borderColor: active ? theme.colors.primary : theme.colors.borderLight,
                   },
                 ]}
               >
+                <Ionicons
+                  name={iconName}
+                  size={14}
+                  color={active ? "#FFFFFF" : theme.colors.textSecondary}
+                />
                 <Text
-                  weight={active ? "700" : "500"}
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: active ? "#FFFFFF" : "#6F7E78",
-                    },
-                  ]}
+                  weight={active ? "bold" : "600"}
+                  style={styles.tabLabel}
+                  color={active ? "#FFFFFF" : theme.colors.textSecondary}
                 >
                   {tab === "all"
                     ? t("messages.tabs.all")
@@ -270,46 +271,32 @@ export function MessagesInboxScreen({
               </TouchableOpacity>
             );
           })}
-        </View>
-      ) : null}
+        </ScrollView>
+      </View>
 
-      {role === "patient" || role === "practitioner" ? (
-        <View
+      {/* ── New Support Ticket Action Strip ── */}
+      <View style={[styles.supportActionRow, { flexDirection: rowDirection }]}>
+        <View style={styles.supportActionLabelGroup}>
+          <Ionicons name="chatbox-ellipses-outline" size={16} color={theme.colors.primary} />
+          <Text weight="bold" style={styles.supportActionTitle} color={theme.colors.textPrimary}>
+            {t("messages.inbox.supportHeaderTitle", "محادثات الدعم والمتابعة")}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={handleStartSupport}
+          activeOpacity={0.85}
+          accessibilityRole="button"
           style={[
-            styles.supportActionRow,
-            {
-              flexDirection: rowDirection,
-            },
+            styles.supportActionButton,
+            { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
           ]}
         >
-          <Text
-            weight="600"
-            style={[styles.supportActionTitle, { textAlign: isRtl ? "right" : "left" }]}
-            color="#1F332F"
-          >
-            {t("messages.tabs.support")}
+          <Ionicons name="add" size={16} color="#FFFFFF" />
+          <Text weight="bold" style={styles.supportActionButtonText} color="#FFFFFF">
+            {t("messages.inbox.supportCtaBtn")}
           </Text>
-          <TouchableOpacity
-            onPress={handleStartSupport}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            accessibilityRole="button"
-            accessibilityLabel={t("messages.inbox.supportCtaBtn")}
-            style={[
-              styles.supportActionButton,
-              { backgroundColor: "#EEF4EF", borderColor: "#D9E4DB" },
-            ]}
-          >
-            <Ionicons name="add" size={16} color="#24564F" />
-            <Text
-              weight="600"
-              style={styles.supportActionButtonText}
-              color="#24564F"
-            >
-              {t("messages.inbox.supportCtaBtn")}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.contentArea}>
         {hasErrorAny && tabItems.length > 0 ? (
@@ -323,7 +310,7 @@ export function MessagesInboxScreen({
           >
             <Ionicons
               name="warning"
-              size={15}
+              size={16}
               color={theme.colors.error}
             />
             <Text
@@ -339,8 +326,8 @@ export function MessagesInboxScreen({
 
         {isInitialLoading ? (
           <View style={styles.centerState}>
-            <ActivityIndicator color="#24564F" size="large" />
-            <Text color="#6F7E78" style={styles.loadingText}>
+            <ActivityIndicator color={theme.colors.primary} size="large" />
+            <Text color={theme.colors.textSecondary} style={styles.loadingText}>
               {t("messages.common.loading")}
             </Text>
           </View>
@@ -353,52 +340,52 @@ export function MessagesInboxScreen({
               <RefreshControl
                 refreshing={isRefreshing}
                 onRefresh={handleRefresh}
-                tintColor="#24564F"
-                colors={["#24564F"]}
+                tintColor={theme.colors.primary}
+                colors={[theme.colors.primary]}
               />
             }
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               activeTab === "support" && tabItems.length === 0 ? (
                 <Card
-                  variant="outlined"
-                  padding="sm"
+                  variant="elevated"
+                  padding="md"
                   style={[
                     styles.supportCtaCard,
                     {
-                      borderColor: "#E8DED0",
-                      backgroundColor: "#FFFFFF",
+                      borderColor: theme.colors.borderLight,
+                      backgroundColor: theme.colors.surface,
                     },
                   ]}
                 >
-                  <View style={[styles.supportCtaIcon, { backgroundColor: "#EEF4EF" }]}>
+                  <View style={[styles.supportCtaIcon, { backgroundColor: theme.colors.primaryLight }]}>
                     <Ionicons
-                      name="chatbubbles-outline"
-                      size={20}
-                      color="#24564F"
+                      name="headset"
+                      size={24}
+                      color={theme.colors.primary}
                     />
                   </View>
-                  <Text weight="700" style={styles.supportCtaTitle} color="#1F332F">
+                  <Text weight="bold" style={styles.supportCtaTitle} color={theme.colors.textPrimary}>
                     {t("messages.inbox.supportCtaTitle")}
                   </Text>
-                  <Text color="#6F7E78" style={styles.supportCtaDesc}>
+                  <Text color={theme.colors.textSecondary} style={styles.supportCtaDesc}>
                     {t("messages.inbox.supportCtaDesc")}
                   </Text>
                   <TouchableOpacity
                     style={[
                       styles.supportCtaBtn,
-                      { backgroundColor: "#24564F" },
+                      { backgroundColor: theme.colors.primary },
                     ]}
                     onPress={handleStartSupport}
                     activeOpacity={0.85}
                     accessibilityRole="button"
                   >
                     <Ionicons
-                      name="chatbubble-ellipses-outline"
-                      size={16}
+                      name="add-circle-outline"
+                      size={18}
                       color="#FFFFFF"
                     />
-                    <Text weight="600" style={styles.supportCtaBtnText} color="#FFFFFF">
+                    <Text weight="bold" style={styles.supportCtaBtnText} color="#FFFFFF">
                       {t("messages.inbox.supportCtaBtn")}
                     </Text>
                   </TouchableOpacity>
@@ -408,24 +395,25 @@ export function MessagesInboxScreen({
             ListEmptyComponent={
               tabItems.length === 0 && !isInitialLoading ? (
                 <View style={styles.tabEmptyState}>
-                  <Ionicons
-                    name={
-                      activeTab === "sessions"
-                        ? "calendar-outline"
-                        : activeTab === "support"
-                        ? "headset-outline"
-                        : "chatbubbles-outline"
-                    }
-                    size={28}
-                    color="#6F7E78"
-                  />
-                  <Text color="#6F7E78" style={styles.tabEmptyText}>
+                  <View style={[styles.tabEmptyIconWrap, { backgroundColor: theme.colors.surfaceTertiary }]}>
+                    <Ionicons
+                      name={
+                        activeTab === "sessions"
+                          ? "calendar-outline"
+                          : activeTab === "support"
+                          ? "headset-outline"
+                          : "chatbubbles-outline"
+                      }
+                      size={32}
+                      color={theme.colors.textMuted}
+                    />
+                  </View>
+                  <Text color={theme.colors.textSecondary} weight="600" style={styles.tabEmptyText}>
                     {t(emptyStateKey)}
                   </Text>
                 </View>
               ) : null
             }
-            ListFooterComponent={null}
             renderItem={({ item }) => (
               <InboxCard
                 item={item}
@@ -461,6 +449,9 @@ function InboxCard({
   chevronForward: string;
   t: (key: string) => string;
 }) {
+  const { theme } = useTheme();
+  const [imageFailed, setImageFailed] = useState(false);
+
   const avatarUrl = useMemo(() => {
     const conversation = item.raw as unknown as CanonicalConversation;
     return conversation?.otherParty?.avatarUrl || null;
@@ -468,24 +459,24 @@ function InboxCard({
 
   const avatarBg =
     item.sourceType === "session"
-      ? "#EEF4EF"
+      ? theme.colors.primaryLight
       : item.sourceType === "support"
-      ? "#FCFAF6"
-      : "#EEF4EF";
+      ? "rgba(200, 169, 121, 0.15)"
+      : theme.colors.surfaceTertiary;
 
   const avatarIcon =
     item.sourceType === "session"
-      ? "chatbubble-ellipses-outline"
+      ? "chatbubble-ellipses"
       : item.sourceType === "support"
-      ? "headset-outline"
-      : "repeat-outline";
+      ? "headset"
+      : "repeat";
 
   const avatarColor =
     item.sourceType === "session"
-      ? "#24564F" // Deep Teal
+      ? theme.colors.primary
       : item.sourceType === "support"
-      ? "#C8A979" // Gold
-      : "#A7BFAE"; // Soft Sage
+      ? "#C8A979"
+      : theme.colors.textSecondary;
 
   const sourceLabel =
     item.sourceType === "session"
@@ -499,42 +490,43 @@ function InboxCard({
     : "-";
 
   const rawConversation = item.raw as unknown as CanonicalConversation;
-
   const isUnread = item.unreadCount > 0;
-
   const isEngTitle = isTextEnglish(item.title);
   const isEngPreview = isTextEnglish(item.preview);
+  const showAvatarImage = avatarUrl && !imageFailed;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      activeOpacity={0.88}
       onPress={onPress}
       accessibilityRole="button"
       style={[
         styles.card,
         {
-          borderColor: "#E8DED0",
-          backgroundColor: "#FFFFFF",
+          borderColor: isUnread ? theme.colors.primary + "50" : theme.colors.borderLight,
+          backgroundColor: isUnread ? theme.colors.primaryLight + "30" : theme.colors.surface,
           flexDirection: rowDirection,
         },
       ]}
     >
-      <View style={[styles.cardAvatar, { backgroundColor: avatarBg }]}>
-        {avatarUrl ? (
+      {/* Avatar / Icon */}
+      <View style={[styles.cardAvatar, { backgroundColor: avatarBg, borderColor: theme.colors.borderLight }]}>
+        {showAvatarImage ? (
           <Image
             source={{ uri: avatarUrl }}
             style={styles.cardAvatarImage}
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <Ionicons name={avatarIcon as any} size={20} color={avatarColor} />
         )}
       </View>
 
+      {/* Main Content */}
       <View style={styles.cardBody}>
-        {/* Row 1: Title */}
         <View style={[styles.cardTitleRow, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
           <Text
-            weight={isUnread ? "700" : "600"}
+            weight={isUnread ? "bold" : "600"}
             style={[
               styles.cardTitle,
               {
@@ -542,17 +534,16 @@ function InboxCard({
                 writingDirection: isEngTitle ? "ltr" : (isRtl ? "rtl" : "ltr"),
               },
             ]}
-            color={isUnread ? "#24564F" : "#1F332F"}
+            color={isUnread ? theme.colors.primary : theme.colors.textPrimary}
             numberOfLines={1}
           >
             {item.title}
           </Text>
         </View>
 
-        {/* Row 2: Preview (if available) */}
         {item.preview ? (
           <Text
-            color="#6F7E78"
+            color={isUnread ? theme.colors.textPrimary : theme.colors.textSecondary}
             style={[
               styles.cardPreviewText,
               {
@@ -566,7 +557,7 @@ function InboxCard({
           </Text>
         ) : null}
 
-        {/* Row 3: category/status/timestamp/unread in a clean layout */}
+        {/* Footer Badges & Date */}
         <View
           style={[
             styles.cardBottomRow,
@@ -576,8 +567,8 @@ function InboxCard({
           ]}
         >
           <View style={[styles.metadataGroup, { flexDirection: rowDirection }]}>
-            <View style={[styles.sourceBadge, { backgroundColor: avatarBg, borderColor: "#D9E4DB", borderWidth: 1 }]}>
-              <Text style={[styles.sourceBadgeText, { color: isUnread ? "#24564F" : avatarColor }]}>
+            <View style={[styles.sourceBadge, { backgroundColor: avatarBg, borderColor: avatarColor + "30" }]}>
+              <Text weight="600" style={[styles.sourceBadgeText, { color: avatarColor }]}>
                 {sourceLabel}
               </Text>
             </View>
@@ -590,12 +581,12 @@ function InboxCard({
           </View>
 
           <View style={[styles.metadataGroup, { flexDirection: rowDirection }]}>
-            <Text color="#6F7E78" style={styles.cardTime}>
+            <Text color={theme.colors.textMuted} style={styles.cardTime}>
               {activityValue}
             </Text>
             {isUnread ? (
-              <View style={[styles.badge, { backgroundColor: "#24564F" }]}>
-                <Text weight="700" style={styles.badgeText} color="#FFFFFF">
+              <View style={[styles.badge, { backgroundColor: theme.colors.primary }]}>
+                <Text weight="bold" style={styles.badgeText} color="#FFFFFF">
                   {item.unreadCount > 99 ? "99+" : item.unreadCount}
                 </Text>
               </View>
@@ -604,10 +595,11 @@ function InboxCard({
         </View>
       </View>
 
+      {/* Chevron */}
       <Ionicons
         name={chevronForward as any}
         size={16}
-        color="#6F7E78"
+        color={theme.colors.textMuted}
         style={styles.cardChevron}
       />
     </TouchableOpacity>
@@ -616,31 +608,29 @@ function InboxCard({
 
 const styles = StyleSheet.create({
   headerSupportBtn: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
+
+  // Practitioner intro card
   introCard: {
-    marginHorizontal: 14,
-    marginTop: 12,
-    marginBottom: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
     borderWidth: 1,
     borderRadius: 16,
-    elevation: 1,
-    shadowColor: "#24564F",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
   },
   introRow: {
     alignItems: "center",
     gap: 12,
   },
   introIconWrap: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -650,47 +640,86 @@ const styles = StyleSheet.create({
   },
   introTitle: {
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 19,
   },
   introSubtitle: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
     marginTop: 2,
   },
-  tabsBar: {
-    flexWrap: "wrap",
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingTop: 12,
+
+  // Filter Tabs
+  filterScrollWrap: {
+    paddingTop: 8,
     paddingBottom: 4,
   },
+  tabsBar: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
   tabBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingVertical: 7,
-    paddingHorizontal: 13,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 20,
   },
   tabLabel: {
+    fontSize: 13,
+  },
+
+  // Support Action Bar
+  supportActionRow: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+    gap: 10,
+  },
+  supportActionLabelGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  supportActionTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  supportActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  supportActionButtonText: {
     fontSize: 12,
   },
+
+  // Content Area
   contentArea: {
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 24,
+    paddingBottom: 32,
     gap: 12,
   },
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginHorizontal: 14,
-    marginTop: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 12,
   },
   errorBannerText: {
     fontSize: 13,
@@ -706,100 +735,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
+
+  // Empty states
   tabEmptyState: {
     alignItems: "center",
     paddingVertical: 48,
     gap: 12,
   },
+  tabEmptyIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   tabEmptyText: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
     paddingHorizontal: 32,
     lineHeight: 20,
   },
+
+  // Support CTA card inside empty tab
   supportCtaCard: {
-    padding: 16,
-    gap: 10,
+    padding: 20,
+    gap: 12,
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 8,
     borderWidth: 1,
     borderRadius: 18,
   },
   supportCtaIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   supportCtaTitle: {
-    fontSize: 15,
+    fontSize: 16,
+    lineHeight: 22,
   },
   supportCtaDesc: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 19,
   },
   supportCtaBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
     marginTop: 4,
   },
   supportCtaBtnText: {
-    fontSize: 12,
+    fontSize: 13,
   },
-  supportActionRow: {
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 10,
-  },
-  supportActionTitle: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  supportActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  supportActionButtonText: {
-    fontSize: 11,
-  },
+
+  // Inbox Card
   card: {
     borderWidth: 1,
-    borderRadius: 20,
+    borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 14,
     gap: 12,
-    elevation: 2,
-    shadowColor: "#24564F",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    alignItems: "center",
   },
   cardAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   cardAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
   },
   cardBody: {
     flex: 1,
@@ -809,69 +825,59 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   cardTitle: {
-    fontSize: 14.5,
-    fontWeight: "700",
-    lineHeight: 19,
+    fontSize: 15,
+    lineHeight: 21,
     width: "100%",
   },
   cardPreviewText: {
-    fontSize: 12.5,
-    lineHeight: 17.5,
+    fontSize: 13,
+    lineHeight: 18,
     marginTop: 2,
     marginBottom: 2,
-    color: "#6F7E78",
-  },
-  sourceBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-  },
-  sourceBadgeText: {
-    fontSize: 9,
-    fontWeight: "600",
-  },
-  cardMeta: {
-    fontSize: 11,
-    lineHeight: 16,
   },
   cardBottomRow: {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    marginTop: 2,
+    marginTop: 4,
   },
   metadataGroup: {
     alignItems: "center",
     gap: 6,
   },
-  cardTime: {
+  sourceBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  sourceBadgeText: {
     fontSize: 10,
+  },
+  cardTime: {
+    fontSize: 11,
   },
   statusPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 999,
+    borderRadius: 8,
     borderWidth: 1,
   },
   statusPillText: {
-    fontSize: 9,
-    fontWeight: "600",
+    fontSize: 10,
   },
   badge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
   },
   badgeText: {
-    fontSize: 8.5,
+    fontSize: 10,
   },
   cardChevron: {
     marginHorizontal: 2,
-  },
-  paginationLoader: {
-    paddingVertical: 14,
   },
 });

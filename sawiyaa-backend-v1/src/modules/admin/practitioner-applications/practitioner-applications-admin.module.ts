@@ -54,6 +54,7 @@ import { GetAdminPractitionerDetailsUseCase } from './use-cases/get-admin-practi
 import { PractitionerRequiredDocumentsService } from '@modules/practitioners/services/practitioner-required-documents.service';
 import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
+import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -116,6 +117,7 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
     GetAdminPractitionerDetailsUseCase,
     PractitionerRequiredDocumentsService,
     PractitionerReviewCaseService,
+    PractitionerTimezoneChangeGuardService,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

@@ -63,6 +63,37 @@ export default function PublicLayout() {
           ),
         }}
       />
+      {/* Discovery routes — publicly accessible to all users */}
+      <Tabs.Screen
+        name="discovery/index"
+        options={{
+          href: null,
+          title: t("publicTabs.practitioners"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="people" size={MOBILE_TAB_ICON_SIZE} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="discovery/[slug]"
+        options={{
+          href: null,
+          title: t("publicTabs.practitioners"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="people" size={MOBILE_TAB_ICON_SIZE} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="discovery/filters"
+        options={{
+          href: null,
+          title: t("publicTabs.practitioners"),
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="people" size={MOBILE_TAB_ICON_SIZE} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="specialties"
         options={{

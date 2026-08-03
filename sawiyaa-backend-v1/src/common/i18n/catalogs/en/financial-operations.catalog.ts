@@ -18,7 +18,8 @@ export const enFinancialOperationsCatalog = {
     invalidSettlementPayoutState:
       'The settlement is in an invalid state for payout recording.',
     invalidPayoutAmount: 'Paid amount is invalid.',
-    payoutOverrideReasonRequired: 'A reason is required when the actual transfer differs materially from the calculated amount.',
+    payoutOverrideReasonRequired:
+      'A reason is required when the actual transfer differs materially from the calculated amount.',
     exchangeRateRequired: 'An exchange rate is required for a cross-currency payout.',
     payoutAmountExceedsDue: 'Paid amount exceeds the remaining due.',
     partialPayoutNotSupported:
@@ -32,5 +33,57 @@ export const enFinancialOperationsCatalog = {
       'You are not allowed to access this finance operation scope.',
     resourceNotFoundInScope:
       'Finance operation resource was not found in your allowed scope.',
+    // Wallet
+    practitionerWalletNotFound: 'Practitioner wallet was not found.',
+    practitionerWalletRequired:
+      'A practitioner wallet is required to complete this operation.',
+    practitionerWalletCurrencyUnresolved:
+      'Could not resolve the practitioner wallet currency.',
+    walletCurrencyChangeRequiresSettlement:
+      'Wallet currency cannot be changed while there are pending settlement balances.',
+    // Settlement
+    invalidSettlementAmount: 'Settlement amount is invalid.',
+    settlementAlreadyClosed: 'The settlement batch is already closed.',
+    approvedSettlementImmutable: 'An approved settlement item cannot be modified.',
+    legacySettlementAssignmentDisabled:
+      'Legacy settlement assignment is disabled.',
+    // Ledger
+    practitionerEarningRequiresSettlement:
+      'Practitioner earning requires an associated settlement.',
+    practitionerEarningRequiresAudit:
+      'Practitioner earning requires an associated audit record.',
+    unbalancedJournalEntry:
+      'Journal entry is unbalanced — debit total must equal credit total.',
+    currencyRequired: 'A currency is required to complete this operation.',
+    // Payout flows
+    legacyPayoutPathBlocked:
+      'The legacy payout path is blocked. Please use the new settlement payout flow.',
+    payoutAmountInvalid: 'Payout amount is invalid.',
+    payoutSettlementRequired:
+      'A settlement item must be specified to complete the payout.',
+    payoutSettlementInvalid: 'The specified settlement item is invalid.',
+    payoutAmountExceedsSettlement:
+      'The requested payout amount exceeds the settlement item value.',
+    manualPayoutAlreadyRecorded:
+      'A manual payout has already been recorded for this settlement.',
+    // Package settlement
+    packageSettlementCurrencyMissing: 'Currency is missing on the package settlement.',
+    packageSettlementNotFound: 'Package settlement was not found.',
+    packageSettlementNotReady: 'Package settlement is not yet ready for this action.',
+    packageSettlementEmpty: 'Package settlement contains no items.',
+    packageSettlementInvalidAmount: 'Package settlement amount is invalid.',
+    packageSettlementSnapshotMissing:
+      'Required package settlement snapshot is missing.',
+    // Session earning reviews
+    sessionEarningReviewFinalAmountsRequired:
+      'Final amounts are required for the session earning review.',
+    sessionEarningReviewReasonRequired:
+      'A reason is required for the session earning review.',
+    // Recovery
+    recoveryAlreadyResolved: 'The recovery request has already been resolved.',
+    recoveryAmountInvalid: 'Recovery amount is invalid.',
+    recoveryAmountExceedsRemaining:
+      'Recovery amount exceeds the remaining balance.',
+    recoveryReasonRequired: 'A reason is required for the recovery.',
   },
 } as const;

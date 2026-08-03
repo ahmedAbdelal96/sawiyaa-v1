@@ -1,14 +1,33 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { I18nManager, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  I18nManager,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { formatMoney as formatCentralMoney, parseMoney } from "../../../src/lib/money";
+import {
+  formatMoney as formatCentralMoney,
+  parseMoney,
+} from "../../../src/lib/money";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Button, Card, Header, Screen, ScreenHeading, Text } from "../../../src/components/ui";
+import {
+  Button,
+  Card,
+  Header,
+  Screen,
+  ScreenHeading,
+  Text,
+} from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useGetPublicPractitionerDetails } from "../../../src/features/patient/discovery/api";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { usePublicPractitionerPackagePlans, usePackagePlanQuote } from "../../../src/features/patient/package-plans/hooks";
+import {
+  usePublicPractitionerPackagePlans,
+  usePackagePlanQuote,
+} from "../../../src/features/patient/package-plans/hooks";
 import { usePublicAvailabilityWindows } from "../../../src/features/patient/sessions/hooks";
 import type {
   AvailabilityWindow,
@@ -25,8 +44,15 @@ import {
   RollingDateScheduleTable,
   type SelectTimeDateColumn,
 } from "../../../src/features/patient/sessions/components/SelectTimePanels";
-import { formatViewerDateTime } from "../../../src/lib/time-formatting";
+import {
+  formatViewerDate,
+  formatViewerDateTime,
+  getDatePartsInTimeZone,
+  getEffectiveViewerTimeZone,
+} from "../../../src/lib/time-formatting";
 import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
+import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
+import { resolvePatientDisplayTimeZone } from "../../../src/lib/time-formatting";
 
 const VISIBLE_DATE_COLUMNS = 5;
 type ScheduleSlot = {
@@ -35,7 +61,8 @@ type ScheduleSlot = {
 };
 
 function toDayKey(date: Date) {
-  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  const parts = getDatePartsInTimeZone(date, getEffectiveViewerTimeZone());
+  return parts ? `${parts.year}-${parts.month}-${parts.day}` : "invalid";
 }
 
 function buildSlotsFromDurationWindows(
@@ -47,7 +74,10 @@ function buildSlotsFromDurationWindows(
   const slots: ScheduleSlot[] = [];
 
   for (const window of windows) {
-    if (window.durationMinutes !== null && window.durationMinutes !== durationMinutes) {
+    if (
+      window.durationMinutes !== null &&
+      window.durationMinutes !== durationMinutes
+    ) {
       continue;
     }
 
@@ -106,8 +136,6 @@ function toDateColumns(
     else map.set(dayKey, [slot]);
   }
 
-  const dayNameFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
-  const dayNumberFormatter = new Intl.DateTimeFormat(locale, { day: "numeric" });
   const columns: SelectTimeDateColumn[] = [];
   for (let idx = 0; idx < VISIBLE_DATE_COLUMNS; idx += 1) {
     const date = new Date(from);
@@ -115,15 +143,27 @@ function toDateColumns(
     const dayKey = toDayKey(date);
     columns.push({
       dayKey,
-      dayLabelShort: dayNameFormatter.format(date),
-      dayNumber: dayNumberFormatter.format(date),
+      dayLabelShort: formatViewerDate(date, {
+        locale,
+        weekday: "short",
+        fallbackText: "-",
+      }),
+      dayNumber: formatViewerDate(date, {
+        locale,
+        day: "numeric",
+        fallbackText: "-",
+      }),
       slots: map.get(dayKey) ?? [],
     });
   }
   return columns;
 }
 
-function formatMoney(amount: string | null | undefined, currency: string, locale: string) {
+function formatMoney(
+  amount: string | null | undefined,
+  currency: string,
+  locale: string,
+) {
   const money = parseMoney(amount, currency);
   return money ? formatCentralMoney(money, locale) : null;
 }
@@ -136,7 +176,10 @@ export default function SelectSessionTimeScreen() {
   const isArabicUi = i18n.language?.startsWith("ar") ?? false;
   const isRtl = isArabicUi || I18nManager.isRTL;
   const locale = isArabicUi ? "ar-SA" : "en-US";
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const patientProfileQuery = usePatientProfile();
+  const timezone =
+    resolvePatientDisplayTimeZone(patientProfileQuery.data?.profile.timezone) ??
+    "UTC";
 
   const params = useLocalSearchParams<{
     slug: string;
@@ -145,22 +188,32 @@ export default function SelectSessionTimeScreen() {
     practitionerAvatarUrl?: string;
   }>();
 
-  const [bookingType, setBookingType] = useState<BookingTypeValue>("appointment");
-  const [appointmentDuration, setAppointmentDuration] = useState<DurationValue>(30);
+  const [bookingType, setBookingType] =
+    useState<BookingTypeValue>("appointment");
+  const [appointmentDuration, setAppointmentDuration] =
+    useState<DurationValue>(30);
   const [packageDuration, setPackageDuration] = useState<DurationValue>(30);
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [showBooked, setShowBooked] = useState(false);
   const [footerHeight, setFooterHeight] = useState(96);
 
-  const [selectedAppointmentSlot, setSelectedAppointmentSlot] = useState<string | null>(null);
-  const [selectedPackagePlanCode, setSelectedPackagePlanCode] = useState<string | null>(null);
-  const [selectedPackageSlots, setSelectedPackageSlots] = useState<string[]>([]);
+  const [selectedAppointmentSlot, setSelectedAppointmentSlot] = useState<
+    string | null
+  >(null);
+  const [selectedPackagePlanCode, setSelectedPackagePlanCode] = useState<
+    string | null
+  >(null);
+  const [selectedPackageSlots, setSelectedPackageSlots] = useState<string[]>(
+    [],
+  );
 
   const continueLockRef = useRef(false);
   const canShowBookedSlots = true;
 
-  const practitionerQuery = useGetPublicPractitionerDetails(params.slug ?? null);
+  const practitionerQuery = useGetPublicPractitionerDetails(
+    params.slug ?? null,
+  );
   const practitioner = practitionerQuery.data?.data.item ?? null;
 
   const packageSupport30Query = usePublicPractitionerPackagePlans(
@@ -179,18 +232,28 @@ export default function SelectSessionTimeScreen() {
     },
     { enabled: Boolean(params.slug) },
   );
-  const supportsPackages30 = (packageSupport30Query.data?.items?.length ?? 0) > 0;
-  const supportsPackages60 = (packageSupport60Query.data?.items?.length ?? 0) > 0;
+  const supportsPackages30 =
+    (packageSupport30Query.data?.items?.length ?? 0) > 0;
+  const supportsPackages60 =
+    (packageSupport60Query.data?.items?.length ?? 0) > 0;
   const supportsPackagesByPlans = supportsPackages30 || supportsPackages60;
   const isPackageSupportChecking =
     Boolean(params.slug) &&
     !supportsPackagesByPlans &&
     (packageSupport30Query.isLoading || packageSupport60Query.isLoading);
   const practitionerAcceptsPackages =
-    (practitioner as { acceptsPackage?: boolean; acceptsPackages?: boolean } | null)
-      ?.acceptsPackage ??
-    (practitioner as { acceptsPackage?: boolean; acceptsPackages?: boolean } | null)
-      ?.acceptsPackages ??
+    (
+      practitioner as {
+        acceptsPackage?: boolean;
+        acceptsPackages?: boolean;
+      } | null
+    )?.acceptsPackage ??
+    (
+      practitioner as {
+        acceptsPackage?: boolean;
+        acceptsPackages?: boolean;
+      } | null
+    )?.acceptsPackages ??
     null;
   const supportsPackages =
     practitionerAcceptsPackages === false ? false : supportsPackagesByPlans;
@@ -217,7 +280,8 @@ export default function SelectSessionTimeScreen() {
     return { from, to, fromIso: from.toISOString(), toIso: to.toISOString() };
   }, [dateWindowOffsetDays]);
 
-  const effectiveDuration = bookingType === "appointment" ? appointmentDuration : packageDuration;
+  const effectiveDuration =
+    bookingType === "appointment" ? appointmentDuration : packageDuration;
   const windowsQuery = usePublicAvailabilityWindows(
     params.slug ?? null,
     dateWindow.fromIso,
@@ -225,7 +289,7 @@ export default function SelectSessionTimeScreen() {
     showBooked,
   );
   const windows = windowsQuery.data?.windows ?? [];
-  const bookedSlots = showBooked ? windowsQuery.data?.bookedSlots ?? [] : [];
+  const bookedSlots = showBooked ? (windowsQuery.data?.bookedSlots ?? []) : [];
   const durationSlots = useMemo(
     () =>
       buildSlotsFromDurationWindows(windows, bookedSlots, effectiveDuration),
@@ -261,7 +325,10 @@ export default function SelectSessionTimeScreen() {
 
   const selectedPackagePlan = useMemo<PackagePlanQuotedItem | null>(() => {
     if (!selectedPackagePlanCode) return null;
-    return packagePlans.find((plan) => plan.item.code === selectedPackagePlanCode) ?? null;
+    return (
+      packagePlans.find((plan) => plan.item.code === selectedPackagePlanCode) ??
+      null
+    );
   }, [packagePlans, selectedPackagePlanCode]);
 
   const packageQuoteQuery = usePackagePlanQuote(
@@ -274,8 +341,10 @@ export default function SelectSessionTimeScreen() {
         }
       : null,
   );
-  const packageQuote = packageQuoteQuery.data?.item?.quote ?? selectedPackagePlan?.quote ?? null;
-  const requiredPackageSlots = packageQuote?.sessionCount ?? selectedPackagePlan?.item.sessionCount ?? 0;
+  const packageQuote =
+    packageQuoteQuery.data?.item?.quote ?? selectedPackagePlan?.quote ?? null;
+  const requiredPackageSlots =
+    packageQuote?.sessionCount ?? selectedPackagePlan?.item.sessionCount ?? 0;
 
   useEffect(() => {
     setSelectedAppointmentSlot(null);
@@ -307,7 +376,8 @@ export default function SelectSessionTimeScreen() {
     params.practitionerTitle ??
     (getProfessionalTitleLabel(practitioner?.professionalTitle, isArabicUi) ||
       t("patientSessionsFlow.common.professionalFallback"));
-  const practitionerAvatarUrl = params.practitionerAvatarUrl ?? practitioner?.avatarUrl ?? "";
+  const practitionerAvatarUrl =
+    params.practitionerAvatarUrl ?? practitioner?.avatarUrl ?? "";
 
   const selectedAppointmentLabel = selectedAppointmentSlot
     ? formatViewerDateTime(selectedAppointmentSlot, {
@@ -327,7 +397,9 @@ export default function SelectSessionTimeScreen() {
           total: requiredPackageSlots || 0,
         });
 
-  const canContinueAppointment = Boolean(selectedAppointmentSlot && params.slug);
+  const canContinueAppointment = Boolean(
+    selectedAppointmentSlot && params.slug,
+  );
   const canContinuePackage =
     Boolean(params.slug) &&
     Boolean(selectedPackagePlanCode) &&
@@ -351,7 +423,8 @@ export default function SelectSessionTimeScreen() {
 
   const onTogglePackageSlot = (slot: string) => {
     setSelectedPackageSlots((current) => {
-      if (current.includes(slot)) return current.filter((value) => value !== slot);
+      if (current.includes(slot))
+        return current.filter((value) => value !== slot);
       if (current.length >= requiredPackageSlots) return current;
       return [...current, slot].sort();
     });
@@ -400,7 +473,11 @@ export default function SelectSessionTimeScreen() {
   };
 
   return (
-    <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+    <Screen
+      bg="background"
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+    >
       <Header showBack />
 
       <ScrollView
@@ -453,9 +530,15 @@ export default function SelectSessionTimeScreen() {
               fromIso={dateWindow.fromIso}
               toIso={dateWindow.toIso}
               dateColumns={dateColumns}
-              onPrevWindow={() => setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)}
-              onNextWindow={() => setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)}
-              selectedSlots={selectedAppointmentSlot ? [selectedAppointmentSlot] : []}
+              onPrevWindow={() =>
+                setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)
+              }
+              onNextWindow={() =>
+                setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)
+              }
+              selectedSlots={
+                selectedAppointmentSlot ? [selectedAppointmentSlot] : []
+              }
               onToggleSlot={onToggleAppointmentSlot}
               maxSelectedCount={1}
               isLoading={windowsQuery.isLoading}
@@ -470,7 +553,10 @@ export default function SelectSessionTimeScreen() {
         ) : (
           <>
             <Card variant="elevated" padding="sm" style={styles.compactCard}>
-              <Text color={theme.colors.textSecondary} style={styles.packageIntro}>
+              <Text
+                color={theme.colors.textSecondary}
+                style={styles.packageIntro}
+              >
                 {t("patientSessionsFlow.selectTime.packageIntro")}
               </Text>
 
@@ -482,7 +568,10 @@ export default function SelectSessionTimeScreen() {
                 onChange={setPackageDuration}
               />
 
-              <Text weight="600" style={[styles.blockTitle, styles.blockTitleSpaced]}>
+              <Text
+                weight="600"
+                style={[styles.blockTitle, styles.blockTitleSpaced]}
+              >
                 {t("patientSessionsFlow.selectTime.packagePlansTitle")}
               </Text>
               <PackagePlanSelector
@@ -499,7 +588,9 @@ export default function SelectSessionTimeScreen() {
               !packagePlansQuery.isError &&
               packagePlans.length === 0 ? (
                 <Text color={theme.colors.textMuted} style={styles.noPlansText}>
-                  {t("patientSessionsFlow.selectTime.packageDurationUnavailable")}
+                  {t(
+                    "patientSessionsFlow.selectTime.packageDurationUnavailable",
+                  )}
                 </Text>
               ) : null}
             </Card>
@@ -509,27 +600,49 @@ export default function SelectSessionTimeScreen() {
                 {t("patientSessionsFlow.selectTime.quoteTitle")}
               </Text>
               {packageQuoteQuery.isLoading ? (
-                <Text color={theme.colors.textSecondary} style={styles.quoteText}>
+                <Text
+                  color={theme.colors.textSecondary}
+                  style={styles.quoteText}
+                >
                   {t("patientSessionsFlow.common.loading")}
                 </Text>
               ) : packageQuoteQuery.isError || !packageQuote ? (
                 <View style={styles.inlineState}>
-                  <Text color={theme.colors.textSecondary}>{t("patientSessionsFlow.selectTime.packageQuoteError")}</Text>
-                  <Button title={t("patientSessionsFlow.common.retry")} onPress={() => packageQuoteQuery.refetch()} style={styles.retryButton} />
+                  <Text color={theme.colors.textSecondary}>
+                    {t("patientSessionsFlow.selectTime.packageQuoteError")}
+                  </Text>
+                  <Button
+                    title={t("patientSessionsFlow.common.retry")}
+                    onPress={() => packageQuoteQuery.refetch()}
+                    style={styles.retryButton}
+                  />
                 </View>
               ) : (
                 <View style={styles.quoteStack}>
                   <Text style={styles.quoteText}>
                     {t("patientSessionsFlow.selectTime.quoteRegularTotal")}:{" "}
-                    {formatMoney(packageQuote.undiscountedTotal, packageQuote.selectedCurrencyCode, locale) ?? "-"}
+                    {formatMoney(
+                      packageQuote.undiscountedTotal,
+                      packageQuote.selectedCurrencyCode,
+                      locale,
+                    ) ?? "-"}
                   </Text>
                   <Text style={styles.quoteText}>
                     {t("patientSessionsFlow.selectTime.quoteDiscount")}:{" "}
-                    {formatMoney(packageQuote.discountAmount, packageQuote.selectedCurrencyCode, locale) ?? "-"} ({Number(packageQuote.discountPercent)}%)
+                    {formatMoney(
+                      packageQuote.discountAmount,
+                      packageQuote.selectedCurrencyCode,
+                      locale,
+                    ) ?? "-"}{" "}
+                    ({Number(packageQuote.discountPercent)}%)
                   </Text>
                   <Text weight="600" style={styles.quoteText}>
                     {t("patientSessionsFlow.selectTime.quotePayable")}:{" "}
-                    {formatMoney(packageQuote.patientPayableTotal, packageQuote.selectedCurrencyCode, locale) ?? "-"}
+                    {formatMoney(
+                      packageQuote.patientPayableTotal,
+                      packageQuote.selectedCurrencyCode,
+                      locale,
+                    ) ?? "-"}
                   </Text>
                 </View>
               )}
@@ -551,8 +664,12 @@ export default function SelectSessionTimeScreen() {
               fromIso={dateWindow.fromIso}
               toIso={dateWindow.toIso}
               dateColumns={dateColumns}
-              onPrevWindow={() => setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)}
-              onNextWindow={() => setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)}
+              onPrevWindow={() =>
+                setDateWindowOffsetDays((prev) => prev - VISIBLE_DATE_COLUMNS)
+              }
+              onNextWindow={() =>
+                setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)
+              }
               selectedSlots={selectedPackageSlots}
               onToggleSlot={onTogglePackageSlot}
               maxSelectedCount={requiredPackageSlots || 0}
@@ -608,7 +725,9 @@ export default function SelectSessionTimeScreen() {
             style={[
               styles.packageFooterButton,
               {
-                backgroundColor: packageCtaEnabled ? theme.colors.primary : theme.colors.borderStrong,
+                backgroundColor: packageCtaEnabled
+                  ? theme.colors.primary
+                  : theme.colors.borderStrong,
               },
             ]}
           >
@@ -628,7 +747,12 @@ export default function SelectSessionTimeScreen() {
 
 const styles = StyleSheet.create({
   screen: { paddingHorizontal: 0 },
-  scrollContent: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 170, gap: 8 },
+  scrollContent: {
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 170,
+    gap: 8,
+  },
   compactCard: { borderRadius: 12 },
   packageIntro: { fontSize: 12, lineHeight: 18 },
   blockTitle: { fontSize: 15, lineHeight: 21 },
@@ -656,5 +780,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  packageFooterButtonText: { fontSize: 15, lineHeight: 20, textAlign: "center" },
+  packageFooterButtonText: {
+    fontSize: 15,
+    lineHeight: 20,
+    textAlign: "center",
+  },
 });

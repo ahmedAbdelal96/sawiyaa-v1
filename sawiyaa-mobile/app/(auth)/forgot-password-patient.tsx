@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -8,9 +9,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Input, Screen, Text, OtpInput } from "../../src/components/ui";
+import { Button, Card, Input, Screen, Text, OtpInput } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
-import { useTheme } from "../../src/providers/ThemeProvider";
+import { usePublicTheme } from "../../src/features/public/theme/public-theme";
+import { useAppDirection } from "../../src/i18n/direction";
 import { useTranslation } from "react-i18next";
 import { extractApiErrorMessage } from "../../src/lib/api";
 
@@ -79,16 +81,9 @@ function mapPatientResetErrorMessage(
   const errorCode =
     (typeof responseData?.error === "string" ? responseData.error : null) ??
     (typeof data?.error === "string" ? data.error : null);
-  const message =
-    (typeof responseData?.message === "string" ? responseData.message : null) ??
-    (typeof data?.message === "string" ? data.message : null);
 
   if (errorCode === "PASSWORD_RESET_ACCOUNT_NOT_FOUND") {
     return t("auth.patientForgotPassword.errors.patientAccountNotFound");
-  }
-
-  if (typeof message === "string" && message.startsWith("auth.errors.")) {
-    return fallback;
   }
 
   return extractApiErrorMessage(error);
@@ -98,9 +93,11 @@ type Step = "email" | "otp" | "password";
 
 export default function PatientForgotPasswordScreen() {
   const router = useRouter();
-  const { theme } = useTheme();
+  const { publicTheme } = usePublicTheme();
   const { t, i18n } = useTranslation();
+  const { textAlign, arrowBack } = useAppDirection();
   const isRtl = i18n.language?.startsWith("ar") ?? false;
+  const logoAccessibilityLabel = isRtl ? "شعار سويّـة" : "Sawiyaa logo";
   const {
     requestPatientPasswordReset,
     verifyPatientPasswordResetOtp,
@@ -258,8 +255,6 @@ export default function PatientForgotPasswordScreen() {
     }
   }
 
-  const labelAlign = isRtl ? "right" : "left";
-
   const handleChangeEmail = () => {
     setStep("email");
     setCode("");
@@ -270,47 +265,65 @@ export default function PatientForgotPasswordScreen() {
   };
 
   return (
-    <Screen safeArea bg="background" style={styles.screen}>
+    <Screen safeArea bg="background" style={[styles.screen, { backgroundColor: publicTheme.canvas }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brandRow}>
-          <View
-            style={[
-              styles.brandIcon,
-              { backgroundColor: theme.colors.primaryLight },
-            ]}
+        {/* Header Navigation Bar with Back Button */}
+        <View style={styles.navHeader}>
+          <TouchableOpacity
+            onPress={() => router.push("/(public)")}
+            style={[styles.backButton, { backgroundColor: publicTheme.raisedSurface, borderColor: publicTheme.subtleBorder }]}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={isRtl ? "الرجوع للصفحة الرئيسية" : "Back to Home"}
           >
-            <Ionicons name="water" size={16} color={theme.colors.primary} />
+            <Ionicons name={arrowBack} size={20} color={publicTheme.primaryText} />
+          </TouchableOpacity>
+
+          <View style={styles.headerLogoContainer}>
+            <Image
+              source={require("../../assets/logo_transparent.png")}
+              style={styles.brandLogo}
+              resizeMode="contain"
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={logoAccessibilityLabel}
+            />
           </View>
-          <Text
-            style={[styles.brandName, { color: theme.colors.primary }]}
-            weight="600"
-          >
-            Sawiyaa
-          </Text>
+
+          <View style={styles.headerPlaceholder} />
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+        <Card
+          variant="elevated"
+          padding="lg"
+          style={[
+            styles.card,
+            {
+              backgroundColor: publicTheme.raisedSurface,
+              borderColor: publicTheme.subtleBorder,
+            },
+          ]}
+        >
           <View
             style={[
               styles.iconWrap,
-              { backgroundColor: theme.colors.primaryLight },
+              { backgroundColor: publicTheme.accentMint },
             ]}
           >
             <Ionicons
               name="lock-closed"
-              size={22}
-              color={theme.colors.primary}
+              size={24}
+              color={publicTheme.primaryText}
             />
           </View>
 
           <View style={styles.header}>
             <Text
-              style={styles.title}
-              color={theme.colors.textPrimary}
+              style={[styles.title, { color: publicTheme.primaryText, textAlign }]}
               weight="bold"
             >
               {step === "email"
@@ -319,7 +332,7 @@ export default function PatientForgotPasswordScreen() {
                   ? t("auth.patientForgotPassword.step2Title")
                   : t("auth.patientForgotPassword.step3Title")}
             </Text>
-            <Text style={styles.subtitle} color={theme.colors.textSecondary}>
+            <Text style={[styles.subtitle, { color: publicTheme.secondaryText, textAlign }]}>
               {step === "email"
                 ? t("auth.patientForgotPassword.subtitle")
                 : step === "otp"
@@ -335,9 +348,9 @@ export default function PatientForgotPasswordScreen() {
                 autoComplete="email"
                 keyboardType="email-address"
                 label={t("auth.fields.email")}
-                labelDirection={labelAlign}
+                labelDirection={textAlign}
                 placeholder={t("auth.placeholders.email")}
-                placeholderDirection="left"
+                placeholderDirection={textAlign}
                 onChangeText={setEmail}
                 value={email}
                 error={emailError ?? undefined}
@@ -347,17 +360,17 @@ export default function PatientForgotPasswordScreen() {
                 <View
                   style={[
                     styles.errorBox,
-                    { backgroundColor: theme.colors.errorLight },
+                    { backgroundColor: "rgba(186, 26, 26, 0.1)" },
                   ]}
                 >
                   <Ionicons
                     name="alert-circle"
-                    size={16}
-                    color={theme.colors.error}
+                    size={18}
+                    color="#BA1A1A"
                   />
                   <Text
-                    style={[styles.errorText, { textAlign: labelAlign }]}
-                    color={theme.colors.error}
+                    style={[styles.errorText, { textAlign }]}
+                    color="#BA1A1A"
                   >
                     {errorText}
                   </Text>
@@ -368,12 +381,8 @@ export default function PatientForgotPasswordScreen() {
                 title={t("auth.patientForgotPassword.sendCode")}
                 onPress={submitRequest}
                 disabled={!email || !!emailError || isSubmitting}
-                style={styles.primaryButton}
-              >
-                {isSubmitting && (
-                  <ActivityIndicator size="small" color="white" />
-                )}
-              </Button>
+                style={[styles.primaryButton, { backgroundColor: publicTheme.primaryText }]}
+              />
             </>
           ) : null}
 
@@ -383,20 +392,20 @@ export default function PatientForgotPasswordScreen() {
                 style={[
                   styles.infoBox,
                   {
-                    borderColor: theme.colors.borderLight,
-                    backgroundColor: theme.colors.surfaceSecondary,
+                    borderColor: publicTheme.subtleBorder,
+                    backgroundColor: publicTheme.accentMint,
                   },
                 ]}
               >
                 <Text
-                  style={[styles.infoLabel, { textAlign: labelAlign }]}
-                  color={theme.colors.textSecondary}
+                  style={[styles.infoLabel, { textAlign }]}
+                  color={publicTheme.secondaryText}
                 >
                   {t("auth.patientForgotPassword.otpEmailInfoLabel")}
                 </Text>
                 <Text
-                  style={[styles.infoValue, { textAlign: "left" }]}
-                  color={theme.colors.textPrimary}
+                  style={[styles.infoValue, { textAlign }]}
+                  color={publicTheme.primaryText}
                 >
                   {email}
                 </Text>
@@ -414,17 +423,17 @@ export default function PatientForgotPasswordScreen() {
                 <View
                   style={[
                     styles.errorBox,
-                    { backgroundColor: theme.colors.errorLight },
+                    { backgroundColor: "rgba(186, 26, 26, 0.1)" },
                   ]}
                 >
                   <Ionicons
                     name="alert-circle"
-                    size={16}
-                    color={theme.colors.error}
+                    size={18}
+                    color="#BA1A1A"
                   />
                   <Text
-                    style={[styles.errorText, { textAlign: labelAlign }]}
-                    color={theme.colors.error}
+                    style={[styles.errorText, { textAlign }]}
+                    color="#BA1A1A"
                   >
                     {errorText}
                   </Text>
@@ -435,17 +444,13 @@ export default function PatientForgotPasswordScreen() {
                 title={t("auth.patientForgotPassword.verifyOtp")}
                 onPress={submitVerifyOtp}
                 disabled={code.trim().length < 6 || isSubmitting}
-                style={styles.primaryButton}
-              >
-                {isSubmitting && (
-                  <ActivityIndicator size="small" color="white" />
-                )}
-              </Button>
+                style={[styles.primaryButton, { backgroundColor: publicTheme.primaryText }]}
+              />
 
               <View style={styles.resendWrap}>
                 {cooldown.active ? (
                   <Text
-                    color={theme.colors.textMuted}
+                    color={publicTheme.secondaryText}
                     style={{ textAlign: "center", fontSize: 13 }}
                   >
                     {t("auth.patientForgotPassword.cooldownMessage", {
@@ -460,10 +465,10 @@ export default function PatientForgotPasswordScreen() {
                   <Text
                     color={
                       cooldown.active || isSubmitting
-                        ? theme.colors.textMuted
-                        : theme.colors.primary
+                        ? publicTheme.secondaryText
+                        : publicTheme.primaryText
                     }
-                    style={{ textAlign: "center", fontSize: 13 }}
+                    style={{ textAlign: "center", fontSize: 13, fontWeight: "700" }}
                   >
                     {cooldown.active
                       ? formatCountdown(cooldown.remainingSeconds)
@@ -475,12 +480,8 @@ export default function PatientForgotPasswordScreen() {
                   disabled={isSubmitting}
                 >
                   <Text
-                    color={
-                      isSubmitting
-                        ? theme.colors.textMuted
-                        : theme.colors.textSecondary
-                    }
-                    style={{ textAlign: "center", fontSize: 13 }}
+                    color={publicTheme.secondaryText}
+                    style={{ textAlign: "center", fontSize: 13, textDecorationLine: "underline" }}
                   >
                     {t("auth.patientForgotPassword.changeEmail")}
                   </Text>
@@ -495,20 +496,20 @@ export default function PatientForgotPasswordScreen() {
                 style={[
                   styles.infoBox,
                   {
-                    borderColor: theme.colors.borderLight,
-                    backgroundColor: theme.colors.surfaceSecondary,
+                    borderColor: publicTheme.subtleBorder,
+                    backgroundColor: publicTheme.accentMint,
                   },
                 ]}
               >
                 <Text
-                  style={[styles.infoLabel, { textAlign: labelAlign }]}
-                  color={theme.colors.textSecondary}
+                  style={[styles.infoLabel, { textAlign }]}
+                  color={publicTheme.secondaryText}
                 >
                   {t("auth.patientForgotPassword.passwordEmailInfoLabel")}
                 </Text>
                 <Text
-                  style={[styles.infoValue, { textAlign: "left" }]}
-                  color={theme.colors.textPrimary}
+                  style={[styles.infoValue, { textAlign }]}
+                  color={publicTheme.primaryText}
                 >
                   {email}
                 </Text>
@@ -518,17 +519,17 @@ export default function PatientForgotPasswordScreen() {
                 <View
                   style={[
                     styles.successBox,
-                    { backgroundColor: theme.colors.successLight },
+                    { backgroundColor: "rgba(36, 86, 79, 0.1)" },
                   ]}
                 >
                   <Ionicons
                     name="checkmark-circle"
                     size={20}
-                    color={theme.colors.success}
+                    color={publicTheme.primaryText}
                   />
                   <Text
-                    style={[styles.successText, { textAlign: labelAlign }]}
-                    color={theme.colors.success}
+                    style={[styles.successText, { textAlign }]}
+                    color={publicTheme.primaryText}
                   >
                     {successText}
                   </Text>
@@ -537,9 +538,9 @@ export default function PatientForgotPasswordScreen() {
 
               <Input
                 label={t("auth.fields.newPassword")}
-                labelDirection={labelAlign}
+                labelDirection={textAlign}
                 placeholder={t("auth.placeholders.newPassword")}
-                placeholderDirection="left"
+                placeholderDirection={textAlign}
                 secureTextEntry={!showPassword}
                 onChangeText={setNewPassword}
                 value={newPassword}
@@ -551,19 +552,17 @@ export default function PatientForgotPasswordScreen() {
                     <Ionicons
                       name={showPassword ? "eye-off" : "eye"}
                       size={20}
-                      color={theme.colors.textMuted}
+                      color={publicTheme.secondaryText}
                     />
                   </TouchableOpacity>
                 }
               />
 
               <Input
-                label={t("auth.patientForgotPassword.confirmPassword")}
-                labelDirection={labelAlign}
-                placeholder={t(
-                  "auth.patientForgotPassword.confirmPasswordPlaceholder",
-                )}
-                placeholderDirection="left"
+                label={t("auth.fields.confirmPassword")}
+                labelDirection={textAlign}
+                placeholder={t("auth.placeholders.confirmPassword")}
+                placeholderDirection={textAlign}
                 secureTextEntry={!showConfirmPassword}
                 onChangeText={setConfirmPassword}
                 value={confirmPassword}
@@ -575,7 +574,7 @@ export default function PatientForgotPasswordScreen() {
                     <Ionicons
                       name={showConfirmPassword ? "eye-off" : "eye"}
                       size={20}
-                      color={theme.colors.textMuted}
+                      color={publicTheme.secondaryText}
                     />
                   </TouchableOpacity>
                 }
@@ -585,17 +584,17 @@ export default function PatientForgotPasswordScreen() {
                 <View
                   style={[
                     styles.errorBox,
-                    { backgroundColor: theme.colors.errorLight },
+                    { backgroundColor: "rgba(186, 26, 26, 0.1)" },
                   ]}
                 >
                   <Ionicons
                     name="alert-circle"
-                    size={16}
-                    color={theme.colors.error}
+                    size={18}
+                    color="#BA1A1A"
                   />
                   <Text
-                    style={[styles.errorText, { textAlign: labelAlign }]}
-                    color={theme.colors.error}
+                    style={[styles.errorText, { textAlign }]}
+                    color="#BA1A1A"
                   >
                     {errorText}
                   </Text>
@@ -606,33 +605,29 @@ export default function PatientForgotPasswordScreen() {
                 title={t("auth.patientForgotPassword.resetPassword")}
                 onPress={submitConfirmReset}
                 disabled={!newPassword || !confirmPassword || isSubmitting}
-                style={styles.primaryButton}
-              >
-                {isSubmitting && (
-                  <ActivityIndicator size="small" color="white" />
-                )}
-              </Button>
+                style={[styles.primaryButton, { backgroundColor: publicTheme.primaryText }]}
+              />
             </>
           ) : null}
 
           <View style={styles.rowWrap}>
-            <Text color={theme.colors.textSecondary}>
+            <Text color={publicTheme.secondaryText}>
               {t("auth.patientForgotPassword.rememberPassword")}
             </Text>
             <TouchableOpacity
               onPress={() => router.replace("/(auth)/signin/patient")}
             >
-              <Text color={theme.colors.primary} weight="600">
+              <Text style={[styles.linkText, { color: publicTheme.primaryText }]}>
                 {t("auth.patientForgotPassword.goToSignIn")}
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Card>
 
         {isSubmitting && (
           <ActivityIndicator
             style={styles.loader}
-            color={theme.colors.primary}
+            color={publicTheme.primaryText}
           />
         )}
       </ScrollView>
@@ -646,38 +641,52 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingTop: 12,
+    paddingBottom: 28,
+    gap: 16,
   },
-  brandRow: {
+  navHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    gap: 8,
+    justifyContent: "space-between",
+    minHeight: 48,
+    marginBottom: 4,
   },
-  brandIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerLogoContainer: {
     alignItems: "center",
     justifyContent: "center",
   },
-  brandName: {
-    fontSize: 15,
-    letterSpacing: 0.3,
+  brandLogo: {
+    width: 120,
+    height: 38,
+  },
+  headerPlaceholder: {
+    width: 40,
   },
   card: {
     borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    gap: 18,
+    borderWidth: 1,
+    padding: 22,
+    gap: 16,
+    shadowColor: "rgba(5, 63, 56, 0.12)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -688,18 +697,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    lineHeight: 30,
+    lineHeight: 32,
     textAlign: "center",
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
     maxWidth: 300,
   },
   errorBox: {
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
@@ -707,12 +716,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
   },
   successBox: {
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     flexDirection: "row",
     alignItems: "center",
@@ -720,31 +728,32 @@ const styles = StyleSheet.create({
   },
   successText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
   },
   infoBox: {
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 4,
   },
   infoLabel: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 12.5,
   },
   infoValue: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "800",
   },
   primaryButton: {
-    marginTop: 2,
+    marginTop: 4,
+    borderRadius: 16,
+    minHeight: 52,
+    justifyContent: "center",
   },
   eyeButton: {
-    paddingHorizontal: 6,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
   resendWrap: {
     marginTop: 8,
@@ -752,14 +761,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rowWrap: {
-    marginTop: 8,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
     flexWrap: "wrap",
   },
+  linkText: {
+    fontWeight: "800",
+    textDecorationLine: "underline",
+    fontSize: 14,
+  },
   loader: {
-    marginTop: 12,
+    marginTop: 10,
   },
 });

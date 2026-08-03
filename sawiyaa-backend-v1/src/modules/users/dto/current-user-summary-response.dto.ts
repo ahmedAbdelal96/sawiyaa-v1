@@ -77,6 +77,12 @@ export class CurrentUserSummaryResponseDto {
   @ApiProperty({ nullable: true })
   locale!: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    description: 'Persisted IANA viewer timezone',
+  })
+  timezone!: string | null;
+
   @ApiProperty({ nullable: true })
   avatarUrl!: string | null;
 

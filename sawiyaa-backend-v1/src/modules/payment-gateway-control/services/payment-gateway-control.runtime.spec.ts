@@ -3,8 +3,8 @@ import { PaymentGatewayControlRuntimeService } from './payment-gateway-control.r
 
 describe('PaymentGatewayControlRuntimeService', () => {
   it('merges runtime control values from the config engine', async () => {
-    const resolveConfigValueUseCase = {
-      execute: jest.fn(async (key: string) => {
+    const configRuntimeService = {
+      resolveValue: jest.fn((key: string) => {
         switch (key) {
           case 'payment.provider.paymob.enabled':
             return { value: true, source: 'database', dataType: 'BOOLEAN' };
@@ -99,7 +99,7 @@ describe('PaymentGatewayControlRuntimeService', () => {
           apiBaseUrl: null,
         },
       } as unknown as ReturnType<typeof paymentConfig>,
-      resolveConfigValueUseCase as never,
+      configRuntimeService as never,
     );
 
     const snapshot = await service.refreshPaymobSnapshot();

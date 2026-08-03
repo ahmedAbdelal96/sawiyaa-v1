@@ -33,7 +33,7 @@ export function sanitizePractitionerPromoCodeInput(value: string) {
   return normalizePractitionerPromoCodeInput(value).replace(/[^A-Z0-9_-]/g, "");
 }
 
-const MAX_COUPON_PERCENT = 20;
+const MAX_COUPON_PERCENT = 25;
 
 export function normalizePercentageInput(value: string): string {
   if (value.startsWith("-")) return "";
@@ -79,6 +79,34 @@ export function parseOptionalDateValue(value: string) {
   }
 
   return trimmed;
+}
+
+export function ensureIsoDateTime(
+  value: string | undefined | null,
+  field: "startsAt" | "endsAt",
+): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  // If it already has "T" (like 2026-08-18T00:00:00.000Z), keep it
+  if (trimmed.includes("T")) {
+    return trimmed;
+  }
+
+  // Check if it's a valid date
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  // simple YYYY-MM-DD date, append correct ISO time component
+  const timePart = field === "startsAt" ? "T00:00:00.000Z" : "T23:59:59.999Z";
+  return trimmed + timePart;
 }
 
 export function parsePractitionerPromoCodeDate(value: string) {
@@ -185,8 +213,8 @@ export function buildCreatePractitionerCouponRequest(
   const discountValue = normalizePercentageInput(values.discountValue).trim();
   const usageLimitTotal = parseOptionalPositiveInteger(values.usageLimitTotal);
   const usageLimitPerPatient = parseOptionalPositiveInteger(values.usageLimitPerPatient);
-  const startsAt = parseOptionalDateValue(values.startsAt);
-  const endsAt = parseOptionalDateValue(values.endsAt);
+  const startsAt = ensureIsoDateTime(values.startsAt, "startsAt");
+  const endsAt = ensureIsoDateTime(values.endsAt, "endsAt");
 
   const payload: CreatePractitionerCouponRequest = {
     code,
@@ -223,8 +251,8 @@ export function buildUpdatePractitionerCouponRequest(
   const discountValue = normalizePercentageInput(values.discountValue).trim();
   const usageLimitTotal = parseOptionalPositiveInteger(values.usageLimitTotal);
   const usageLimitPerPatient = parseOptionalPositiveInteger(values.usageLimitPerPatient);
-  const startsAt = parseOptionalDateValue(values.startsAt);
-  const endsAt = parseOptionalDateValue(values.endsAt);
+  const startsAt = ensureIsoDateTime(values.startsAt, "startsAt");
+  const endsAt = ensureIsoDateTime(values.endsAt, "endsAt");
 
   const payload: UpdatePractitionerCouponRequest = {
     isActive: values.isActive,

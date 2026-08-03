@@ -3,12 +3,7 @@ import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  EmptyState,
-  Header,
-  Screen,
-  Text,
-} from "../../../components/ui";
+import { EmptyState, Header, Screen, Text } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../i18n/direction";
 import {
@@ -20,6 +15,7 @@ import {
 import { apiClient } from "../../../lib/api";
 import { useArticleBySlug } from "../hooks";
 import { resolveArticleLocale } from "../types";
+import { formatViewerDate } from "../../../lib/time-formatting";
 
 // ─── URL resolution ────────────────────────────────────────────────────────────────
 function resolveCoverUri(url?: string | null): string | null {
@@ -62,15 +58,20 @@ function parseContent(markdown: string): Block[] {
 
   while (i < lines.length) {
     const line = lines[i].trim();
-    if (!line) { i++; continue; }
+    if (!line) {
+      i++;
+      continue;
+    }
 
     if (line.startsWith("## ")) {
       blocks.push({ kind: "h2", text: stripMarkdown(line) });
-      i++; continue;
+      i++;
+      continue;
     }
     if (line.startsWith("### ")) {
       blocks.push({ kind: "h3", text: stripMarkdown(line) });
-      i++; continue;
+      i++;
+      continue;
     }
     if (line.match(/^[-*]\s/)) {
       const items: string[] = [];
@@ -92,7 +93,8 @@ function parseContent(markdown: string): Block[] {
     }
     if (line === "---") {
       blocks.push({ kind: "hr" });
-      i++; continue;
+      i++;
+      continue;
     }
 
     const paraLines: string[] = [];
@@ -123,8 +125,13 @@ function ContentBlock({ block }: { block: Block }) {
     case "h2":
       return (
         <View style={[s.h2Container, { flexDirection: rowDirection }]}>
-          <View style={[s.h2AccentBar, { backgroundColor: theme.colors.primary }]} />
-          <Text weight="700" style={[s.h2Text, { color: theme.colors.textPrimary, textAlign }]}>
+          <View
+            style={[s.h2AccentBar, { backgroundColor: theme.colors.primary }]}
+          />
+          <Text
+            weight="700"
+            style={[s.h2Text, { color: theme.colors.textPrimary, textAlign }]}
+          >
             {block.text}
           </Text>
         </View>
@@ -132,7 +139,10 @@ function ContentBlock({ block }: { block: Block }) {
 
     case "h3":
       return (
-        <Text weight="600" style={[s.h3, { color: theme.colors.textPrimary, textAlign }]}>
+        <Text
+          weight="600"
+          style={[s.h3, { color: theme.colors.textPrimary, textAlign }]}
+        >
           {block.text}
         </Text>
       );
@@ -141,9 +151,17 @@ function ContentBlock({ block }: { block: Block }) {
       return (
         <View style={s.list}>
           {block.items.map((item, idx) => (
-            <View key={idx} style={[s.listItem, { flexDirection: rowDirection }]}>
+            <View
+              key={idx}
+              style={[s.listItem, { flexDirection: rowDirection }]}
+            >
               <Text style={[s.bullet, { color: theme.colors.primary }]}>•</Text>
-              <Text style={[s.listText, { color: theme.colors.textSecondary, textAlign }]}>
+              <Text
+                style={[
+                  s.listText,
+                  { color: theme.colors.textSecondary, textAlign },
+                ]}
+              >
                 {item}
               </Text>
             </View>
@@ -155,11 +173,24 @@ function ContentBlock({ block }: { block: Block }) {
       return (
         <View style={s.list}>
           {block.items.map((item, idx) => (
-            <View key={idx} style={[s.listItem, { flexDirection: rowDirection }]}>
-              <Text style={[s.number, { color: theme.colors.primary, textAlign: textAlign }]}>
+            <View
+              key={idx}
+              style={[s.listItem, { flexDirection: rowDirection }]}
+            >
+              <Text
+                style={[
+                  s.number,
+                  { color: theme.colors.primary, textAlign: textAlign },
+                ]}
+              >
                 {idx + 1}.
               </Text>
-              <Text style={[s.listText, { color: theme.colors.textSecondary, textAlign }]}>
+              <Text
+                style={[
+                  s.listText,
+                  { color: theme.colors.textSecondary, textAlign },
+                ]}
+              >
                 {item}
               </Text>
             </View>
@@ -169,7 +200,9 @@ function ContentBlock({ block }: { block: Block }) {
 
     case "p":
       return (
-        <Text style={[s.para, { color: theme.colors.textSecondary, textAlign }]}>
+        <Text
+          style={[s.para, { color: theme.colors.textSecondary, textAlign }]}
+        >
           {block.text}
         </Text>
       );
@@ -216,7 +249,9 @@ export function ArticleDetailScreen({
     setCoverImageError(true);
   }, []);
 
-  const coverUri = coverImageError ? null : resolveCoverUri(article?.coverImageUrl);
+  const coverUri = coverImageError
+    ? null
+    : resolveCoverUri(article?.coverImageUrl);
   const blocks = article?.content ? parseContent(article.content) : [];
 
   const publishedLabel = article?.publishedAt
@@ -240,11 +275,27 @@ export function ArticleDetailScreen({
           showsVerticalScrollIndicator={false}
         >
           <View style={s.loadingInner}>
-            <View style={[s.loadingChip, { backgroundColor: theme.colors.divider }]} />
-            <View style={[s.loadingTitle, { backgroundColor: theme.colors.divider }]} />
-            <View style={[s.loadingLine, { backgroundColor: theme.colors.divider }]} />
-            <View style={[s.loadingLine, { backgroundColor: theme.colors.divider }]} />
-            <View style={[s.loadingLineShort, { backgroundColor: theme.colors.divider }]} />
+            <View
+              style={[s.loadingChip, { backgroundColor: theme.colors.divider }]}
+            />
+            <View
+              style={[
+                s.loadingTitle,
+                { backgroundColor: theme.colors.divider },
+              ]}
+            />
+            <View
+              style={[s.loadingLine, { backgroundColor: theme.colors.divider }]}
+            />
+            <View
+              style={[s.loadingLine, { backgroundColor: theme.colors.divider }]}
+            />
+            <View
+              style={[
+                s.loadingLineShort,
+                { backgroundColor: theme.colors.divider },
+              ]}
+            />
           </View>
         </ScrollView>
       </Screen>
@@ -295,7 +346,9 @@ export function ArticleDetailScreen({
           {/* Category + Date + Author row */}
           <View style={[s.metaRow, { flexDirection: rowDirection }]}>
             {categoryLabel ? (
-              <View style={[s.chip, { backgroundColor: theme.colors.primaryLight }]}>
+              <View
+                style={[s.chip, { backgroundColor: theme.colors.primaryLight }]}
+              >
                 <Text style={[s.chipText, { color: theme.colors.primary }]}>
                   {categoryLabel}
                 </Text>
@@ -333,13 +386,23 @@ export function ArticleDetailScreen({
 
           {/* Excerpt/lead */}
           {article.excerpt ? (
-            <Text style={[s.excerpt, { color: theme.colors.textSecondary, textAlign }]}>
+            <Text
+              style={[
+                s.excerpt,
+                { color: theme.colors.textSecondary, textAlign },
+              ]}
+            >
               {article.excerpt}
             </Text>
           ) : null}
 
           {/* Elegant Divider line separating intro and body */}
-          <View style={[s.sectionDivider, { backgroundColor: theme.colors.divider }]} />
+          <View
+            style={[
+              s.sectionDivider,
+              { backgroundColor: theme.colors.divider },
+            ]}
+          />
 
           {/* Body Content blocks rendering parsed markdown */}
           {blocks.length > 0 ? (
@@ -349,7 +412,12 @@ export function ArticleDetailScreen({
                 return (
                   <React.Fragment key={`${block.kind}-${idx}`}>
                     {showDivider && (
-                      <View style={[s.sectionHeaderDivider, { backgroundColor: theme.colors.divider }]} />
+                      <View
+                        style={[
+                          s.sectionHeaderDivider,
+                          { backgroundColor: theme.colors.divider },
+                        ]}
+                      />
                     )}
                     <ContentBlock block={block} />
                   </React.Fragment>
@@ -367,20 +435,23 @@ export function ArticleDetailScreen({
 }
 
 function formatDate(dateString: string, locale: string): string {
-  try {
-    return new Date(dateString).toLocaleDateString(
-      locale === "ar" ? "ar-SA" : "en-US",
-      { year: "numeric", month: "long", day: "numeric" },
-    );
-  } catch {
-    return dateString;
-  }
+  return formatViewerDate(dateString, {
+    locale: locale === "ar" ? "ar-SA" : "en-US",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    fallbackText: dateString,
+  });
 }
 
 // ─── Styles — flat and editorial, no boxy card panels ───────────────────────
 const s = StyleSheet.create({
   screen: { flex: 1 },
-  scrollContent: { paddingBottom: 0, paddingTop: MOBILE_SECTION_GAP, paddingHorizontal: MOBILE_HORIZONTAL_PADDING },
+  scrollContent: {
+    paddingBottom: 0,
+    paddingTop: MOBILE_SECTION_GAP,
+    paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
+  },
 
   // Cover image
   coverWrapper: {
@@ -460,7 +531,13 @@ const s = StyleSheet.create({
     marginBottom: 8,
     opacity: 0.5,
   },
-  h3: { fontSize: 16, lineHeight: 24, fontWeight: "600", marginBottom: 8, marginTop: 10 },
+  h3: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginTop: 10,
+  },
   para: { fontSize: 15, lineHeight: 28, marginBottom: 14 },
   list: { marginBottom: 16, gap: 6, paddingStart: 14 },
   listItem: { alignItems: "flex-start", gap: 10 },

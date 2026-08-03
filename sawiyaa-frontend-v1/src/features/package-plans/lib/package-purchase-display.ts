@@ -1,4 +1,4 @@
-import { formatViewerDate, formatViewerDateTime } from "@/lib/time-formatting";
+import { formatPatientDateTime, formatViewerDate, formatViewerDateTime } from "@/lib/time-formatting";
 import type { SessionStatus } from "@/features/sessions/types/sessions.types";
 import type {
   PatientPackagePurchaseItem,
@@ -41,12 +41,16 @@ function toTimeValue(isoString: string | null): number {
   return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY;
 }
 
-export function formatDatetime(isoString: string | null, locale: string): string {
-  return formatViewerDateTime(isoString, { locale });
+export function formatDatetime(isoString: string | null, locale: string, timeZone?: string | null): string {
+  return timeZone !== undefined
+    ? formatPatientDateTime(isoString, timeZone, { locale })
+    : formatViewerDateTime(isoString, { locale });
 }
 
-export function formatDate(isoString: string | null, locale: string): string {
-  return formatViewerDate(isoString, { locale });
+export function formatDate(isoString: string | null, locale: string, timeZone?: string | null): string {
+  return timeZone !== undefined
+    ? formatPatientDateTime(isoString, timeZone, { locale, dateStyle: "medium", timeStyle: undefined })
+    : formatViewerDate(isoString, { locale });
 }
 
 export function isPackagePurchasePaymentExpired(

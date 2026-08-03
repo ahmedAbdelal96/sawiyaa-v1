@@ -16,6 +16,7 @@ import { GetCurrentUserSummaryUseCase } from './use-cases/get-current-user-summa
 import { GetCurrentUserUseCase } from './use-cases/get-current-user.use-case';
 import { ListCurrentUserRolesUseCase } from './use-cases/list-current-user-roles.use-case';
 import { PatchCurrentUserProfileUseCase } from './use-cases/patch-current-user-profile.use-case';
+import { InitializeCurrentUserTimezoneUseCase } from './use-cases/initialize-current-user-timezone.use-case';
 import { RemoveCurrentUserAvatarUseCase } from './use-cases/remove-current-user-avatar.use-case';
 import { UpdateCurrentUserAvatarUseCase } from './use-cases/update-current-user-avatar.use-case';
 
@@ -40,6 +41,7 @@ import { UpdateCurrentUserAvatarUseCase } from './use-cases/update-current-user-
     GetCurrentUserSecurityStateUseCase,
     GetCurrentUserProfileLinksUseCase,
     PatchCurrentUserProfileUseCase,
+    InitializeCurrentUserTimezoneUseCase,
     UpdateCurrentUserAvatarUseCase,
     RemoveCurrentUserAvatarUseCase,
     GetCurrentUserAvatarFileUseCase,

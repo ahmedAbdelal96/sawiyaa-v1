@@ -1,7 +1,10 @@
 import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Image, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Screen, Text } from "../ui";
-import { useTheme } from "../../providers/ThemeProvider";
+import { usePublicTheme } from "../../features/public/theme/public-theme";
+import { useAppDirection } from "../../i18n/direction";
 
 interface AuthScaffoldProps {
   eyebrow: string;
@@ -9,6 +12,8 @@ interface AuthScaffoldProps {
   subtitle: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  showBackButton?: boolean;
+  onBackPress?: () => void;
 }
 
 export function AuthScaffold({
@@ -17,25 +22,65 @@ export function AuthScaffold({
   subtitle,
   children,
   footer,
+  showBackButton = true,
+  onBackPress,
 }: AuthScaffoldProps) {
-  const { theme } = useTheme();
+  const router = useRouter();
+  const { publicTheme } = usePublicTheme();
+  const { arrowBack, rowDirection } = useAppDirection();
+
+  const handleBack = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else {
+      router.push("/(public)");
+    }
+  };
 
   return (
-    <Screen safeArea bg="background">
+    <Screen safeArea bg="background" style={{ backgroundColor: publicTheme.canvas, flex: 1 }}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Safe-area Header with Back Navigation */}
+        <View style={[styles.navHeader, { flexDirection: rowDirection }]}>
+          {showBackButton ? (
+            <TouchableOpacity
+              onPress={handleBack}
+              style={[styles.backButton, { backgroundColor: publicTheme.raisedSurface, borderColor: publicTheme.subtleBorder }]}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Back to Home"
+            >
+              <Ionicons name={arrowBack} size={18} color={publicTheme.primaryText} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButtonPlaceholder} />
+          )}
+
+          <View style={styles.headerLogoContainer}>
+            <Image
+              source={require("../../../assets/logo_transparent.png")}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={styles.backButtonPlaceholder} />
+        </View>
+
+        {/* Hero Banner */}
         <View
-          style={[styles.hero, { backgroundColor: theme.colors.primaryLight }]}
+          style={[styles.hero, { backgroundColor: publicTheme.accentMint, borderColor: publicTheme.subtleBorder }]}
         >
           <View
-            style={[styles.badge, { borderColor: theme.colors.borderStrong }]}
+            style={[styles.badge, { backgroundColor: publicTheme.raisedSurface, borderColor: publicTheme.subtleBorder }]}
           >
             <Text
-              color={theme.colors.textBrand}
-              weight="600"
+              color={publicTheme.primaryText}
+              weight="700"
               style={styles.badgeText}
             >
               {eyebrow}
@@ -44,21 +89,22 @@ export function AuthScaffold({
           <Text
             weight="bold"
             style={styles.title}
-            color={theme.colors.textPrimary}
+            color={publicTheme.primaryText}
           >
             {title}
           </Text>
-          <Text style={styles.subtitle} color={theme.colors.textSecondary}>
+          <Text style={styles.subtitle} color={publicTheme.secondaryText}>
             {subtitle}
           </Text>
         </View>
 
+        {/* Form Card */}
         <View
           style={[
             styles.card,
             {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.borderLight,
+              backgroundColor: publicTheme.raisedSurface,
+              borderColor: publicTheme.subtleBorder,
             },
           ]}
         >
@@ -73,42 +119,73 @@ export function AuthScaffold({
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 22,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  navHeader: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 44,
+    marginBottom: 4,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backButtonPlaceholder: {
+    width: 36,
+  },
+  headerLogoContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  brandLogo: {
+    width: 110,
+    height: 34,
   },
   hero: {
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingTop: 20,
-    paddingBottom: 18,
-    marginTop: 10,
-    marginBottom: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    marginBottom: 12,
   },
   badge: {
     alignSelf: "flex-start",
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: 18,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 12,
+    paddingVertical: 4,
+    marginBottom: 8,
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 11.5,
   },
   title: {
-    fontSize: 24,
-    lineHeight: 31,
-    marginBottom: 8,
+    fontSize: 21,
+    lineHeight: 28,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   card: {
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    shadowColor: "rgba(5, 63, 56, 0.08)",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   footer: {
     marginTop: 12,

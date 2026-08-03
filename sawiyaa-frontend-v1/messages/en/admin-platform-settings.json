@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "title": "Platform Settings",
+    "description": "Manage system and operational platform configuration safely."
+  },
+  "page": {
+    "eyebrow": "Administration",
+    "title": "Platform Operational Settings",
+    "description": "Review and customize platform operational parameters. Every modification requires an audit reason. Sensitive keys and payment configurations remain isolated in dedicated control centers."
+  },
+  "stats": {
+    "total": "Total Settings",
+    "totalSub": "Platform system parameters",
+    "overridden": "Custom Overrides",
+    "overriddenSub": "Modified from defaults",
+    "readonly": "Read Only",
+    "readonlySub": "Protected system settings",
+    "categories": "Categories",
+    "categoriesSub": "Configuration domains"
+  },
+  "categories": {
+    "all": "All Categories",
+    "LOCALE": "Locales & Regional Options",
+    "SYSTEM": "System & Feature Flags",
+    "NOTIFICATION": "Notifications & Channels",
+    "BOOKING": "Booking & Session Plans",
+    "PAYMENT": "Payments & Gateway Options"
+  },
+  "filters": {
+    "label": "Settings Filters",
+    "search": "Search setting name, key, or description...",
+    "category": "Category",
+    "allCategories": "All Categories",
+    "state": "State",
+    "allStates": "All States"
+  },
+  "states": {
+    "loading": "Loading platform settings...",
+    "error": "Could not load platform settings. Please check your connection.",
+    "empty": "No settings match your search or filter criteria.",
+    "editable": "Editable",
+    "readonly": "Read Only",
+    "changed": "Custom Override",
+    "default": "Catalog Default",
+    "saving": "Saving changes...",
+    "conflict": "Conflict: This setting was updated by another administrator. Reload the latest value before proceeding.",
+    "saved": "Setting saved successfully.",
+    "reset": "Setting reset to default successfully.",
+    "reloading": "Reloading latest values..."
+  },
+  "actions": {
+    "edit": "Edit Setting",
+    "save": "Save Changes",
+    "cancel": "Cancel",
+    "reset": "Reset to Default",
+    "history": "Change History",
+    "close": "Close",
+    "openPaymentControl": "Open Payment Controls ↗",
+    "reloadLatest": "Reload Latest",
+    "copyKey": "Copy Key",
+    "keyCopied": "Key Copied!"
+  },
+  "editor": {
+    "title": "Edit Platform Setting",
+    "subtitle": "Specify the new value and provide a mandatory operational change reason.",
+    "value": "New Value",
+    "reason": "Change Reason (Required for Audit Log)",
+    "reasonPlaceholder": "Enter reason or details for this operational change...",
+    "booleanEnabled": "Currently Enabled (True)",
+    "booleanDisabled": "Currently Disabled (False)",
+    "arrayAddPlaceholder": "Add item...",
+    "dedicatedNotice": "This setting is managed via the dedicated Payment Control workspace."
+  },
+  "enumValues": {
+    "platform": {
+      "defaultLocale": {
+        "ar": "Arabic",
+        "en": "English"
+      }
+    }
+  },
+  "history": {
+    "title": "Audit & Change History",
+    "subtitle": "Track historical modifications made to this setting along with actor details and audit reasons.",
+    "empty": "No previous change history recorded for this setting.",
+    "noReason": "No reason recorded.",
+    "by": "By:",
+    "at": "Date:"
+  }
+}

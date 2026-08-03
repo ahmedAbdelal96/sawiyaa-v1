@@ -34,6 +34,7 @@ export class FinancialOperationsPractitionerRepository {
     id: true,
     publicSlug: true,
     professionalTitle: true,
+    preferredPayoutCurrencyCode: true,
     payoutDestination: {
       select: {
         methodType: true,

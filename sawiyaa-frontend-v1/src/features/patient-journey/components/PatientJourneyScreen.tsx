@@ -27,33 +27,14 @@ import type {
   PatientJourney,
   PatientJourneyNextStepType,
 } from "../types/patient-journey.types";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { formatPatientDateTime } from "@/lib/time-formatting";
 
 type StepConfig = {
   href: string | null;
   ctaKey: string | null;
   supported: boolean;
 };
-
-function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
-}
-
-function formatDate(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleDateString(numLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 function formatAmount(amount: string, currency: string, numLocale: string): string {
   return new Intl.NumberFormat(numLocale, {
@@ -241,6 +222,8 @@ export default function PatientJourneyScreen() {
   const tSessions = useTranslations("sessions");
   const tPayments = useTranslations("payments");
   const locale = useLocale();
+  const patientProfileQuery = usePatientProfile();
+  const patientTimeZone = patientProfileQuery.data?.profile.timezone;
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const { data: journey, isLoading, isError, refetch } = usePatientJourney();
 
@@ -321,7 +304,7 @@ export default function PatientJourneyScreen() {
     summaryBadges.push(
       <PatientStatusBadge key="nextSession">
         {t("summary.chips.nextSessionAt", {
-          date: formatDatetime(journey.summary.nextSessionAt, numLocale),
+          date: formatPatientDateTime(journey.summary.nextSessionAt, patientTimeZone, { locale: numLocale }),
         })}
       </PatientStatusBadge>,
     );
@@ -337,7 +320,7 @@ export default function PatientJourneyScreen() {
     summaryBadges.push(
       <PatientStatusBadge key="lastAssessment">
         {t("summary.chips.lastAssessment", {
-          date: formatDate(journey.summary.lastAssessmentTakenAt, numLocale),
+          date: formatPatientDateTime(journey.summary.lastAssessmentTakenAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
         })}
       </PatientStatusBadge>,
     );
@@ -496,7 +479,7 @@ export default function PatientJourneyScreen() {
                 </p>
                 {upcomingSession.scheduledStartAt ? (
                   <p className="mt-1 text-xs text-text-secondary">
-                    {formatDatetime(upcomingSession.scheduledStartAt, numLocale)}
+                    {formatPatientDateTime(upcomingSession.scheduledStartAt, patientTimeZone, { locale: numLocale })}
                   </p>
                 ) : null}
                 <Link
@@ -528,7 +511,7 @@ export default function PatientJourneyScreen() {
                     {t("upcoming.instantBooking.duration", { n: instantRequest.durationMinutes })}
                   </span>
                   <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-text-muted border border-border-light">
-                    {t("upcoming.instantBooking.expiresAt", { date: formatDatetime(instantRequest.expiresAt, numLocale) })}
+          {t("upcoming.instantBooking.expiresAt", { date: formatPatientDateTime(instantRequest.expiresAt, patientTimeZone, { locale: numLocale }) })}
                   </span>
                 </div>
               </div>
@@ -763,7 +746,7 @@ export default function PatientJourneyScreen() {
                   </PatientStatusBadge>
                   <span className="inline-flex items-center rounded-full bg-surface-tertiary border border-border-soft px-3 py-1.5 text-xs font-medium text-text-secondary">
                     {t("support.updatedAt", {
-                      date: formatDate(journey.support.latestOpenTicket.updatedAt, numLocale),
+                      date: formatPatientDateTime(journey.support.latestOpenTicket.updatedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
                     })}
                   </span>
                 </div>
@@ -836,7 +819,7 @@ export default function PatientJourneyScreen() {
                         </p>
                         {session.scheduledStartAt && (
                           <p className="mt-0.5 text-[10px] text-text-secondary">
-                            {formatDatetime(session.scheduledStartAt, numLocale)}
+                            {formatPatientDateTime(session.scheduledStartAt, patientTimeZone, { locale: numLocale })}
                           </p>
                         )}
                       </div>
@@ -872,7 +855,7 @@ export default function PatientJourneyScreen() {
                         </span>
                       </div>
                       <div className="mt-2 flex items-center justify-between text-[10px] text-text-secondary">
-                        <span>{formatDate(payment.createdAt, numLocale)}</span>
+                        <span>{formatPatientDateTime(payment.createdAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined })}</span>
                         {payment.sessionId && (
                           <Link
                             href={`/patient/sessions/${payment.sessionId}` as any}
@@ -909,7 +892,7 @@ export default function PatientJourneyScreen() {
                         {assessment.completedAt && (
                           <span>
                             {t("recent.assessments.completedAt", {
-                              date: formatDate(assessment.completedAt, numLocale),
+                              date: formatPatientDateTime(assessment.completedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
                             })}
                           </span>
                         )}
@@ -953,7 +936,7 @@ export default function PatientJourneyScreen() {
                         {matching.completedAt && (
                           <span>
                             {t("recent.matching.completedAt", {
-                              date: formatDate(matching.completedAt, numLocale),
+                              date: formatPatientDateTime(matching.completedAt, patientTimeZone, { locale: numLocale, dateStyle: "medium", timeStyle: undefined }),
                             })}
                           </span>
                         )}

@@ -7,6 +7,7 @@ import {
   getCurrentUserPermissions,
   removeCurrentUserAvatar,
   uploadCurrentUserAvatar,
+  initializeCurrentUserTimezone,
 } from "../api/users.api";
 import { usersQueryKeys } from "../constants/query-keys";
 
@@ -21,6 +22,17 @@ export function useCurrentUser(enabled = true) {
     enabled,
     staleTime: 60_000,
     gcTime: 10 * 60_000,
+  });
+}
+
+export function useInitializeCurrentUserTimezone() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: initializeCurrentUserTimezone,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersQueryKeys.me() });
+    },
   });
 }
 

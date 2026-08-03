@@ -9,20 +9,10 @@ import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import type { SessionStatus } from "@/features/sessions/types/sessions.types";
 import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
+import { formatPatientDateTime } from "@/lib/time-formatting";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatDatetime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
-}
 
 const SESSION_STATUS_CLASS: Partial<Record<SessionStatus, string>> = {
   PENDING_PAYMENT:
@@ -51,6 +41,8 @@ export default function PatientHubPanel() {
   const tStatus = useTranslations("sessions");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const patientProfileQuery = usePatientProfile();
+  const patientTimeZone = patientProfileQuery.data?.profile.timezone;
 
   const { data: sessionsData, isLoading: sessionsLoading } = usePatientSessions({ limit: 5 });
   const { data: paymentsData } = usePatientPayments({ limit: 3 });
@@ -121,7 +113,7 @@ export default function PatientHubPanel() {
           {upcomingSession.scheduledStartAt && (
             <p className="mt-0.5 flex items-center gap-1 text-xs text-text-secondary">
               <Clock size={11} />
-              {formatDatetime(upcomingSession.scheduledStartAt, numLocale)}
+              {formatPatientDateTime(upcomingSession.scheduledStartAt, patientTimeZone, { locale: numLocale })}
             </p>
           )}
           <Link
@@ -182,7 +174,7 @@ export default function PatientHubPanel() {
                   </p>
                   {session.scheduledStartAt && (
                     <p className="mt-0.5 text-xs text-text-muted">
-                      {formatDatetime(session.scheduledStartAt, numLocale)}
+                    {formatPatientDateTime(session.scheduledStartAt, patientTimeZone, { locale: numLocale })}
                     </p>
                   )}
                   <SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} />

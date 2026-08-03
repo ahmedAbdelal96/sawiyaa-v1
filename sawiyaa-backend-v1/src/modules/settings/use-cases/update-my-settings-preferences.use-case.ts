@@ -9,12 +9,14 @@ import {
 import { PatchMySettingsPreferencesDto } from '../dto/settings.dto';
 import { SettingsRepository } from '../repositories/settings.repository';
 import { ValidateSettingsContractInputService } from '../services/validate-settings-contract-input.service';
+import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
 
 @Injectable()
 export class UpdateMySettingsPreferencesUseCase {
   constructor(
     private readonly settingsRepository: SettingsRepository,
     private readonly validateSettingsContractInputService: ValidateSettingsContractInputService,
+    private readonly practitionerTimezoneChangeGuardService: PractitionerTimezoneChangeGuardService,
   ) {}
 
   async execute(input: {
@@ -48,6 +50,13 @@ export class UpdateMySettingsPreferencesUseCase {
 
     const shouldPersist =
       input.dto.locale !== undefined || input.dto.timezone !== undefined;
+
+    if (input.dto.timezone !== undefined) {
+      await this.practitionerTimezoneChangeGuardService.assertCanChange({
+        userId: input.authenticatedUser.id,
+        requestedTimezone: nextTimezone,
+      });
+    }
 
     const persistedPreferences = shouldPersist
       ? await this.settingsRepository.updateUserPreferences({

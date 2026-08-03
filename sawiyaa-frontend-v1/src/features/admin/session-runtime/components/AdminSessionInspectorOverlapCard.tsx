@@ -10,6 +10,7 @@ import {
   formatDurationSeconds,
   formatInspectorDateTime,
 } from "../lib/inspector-utils";
+import { useRuntimeViewerTimeZone } from "../lib/runtime-time";
 
 export default function AdminSessionInspectorOverlapCard({
   overlap,
@@ -20,6 +21,7 @@ export default function AdminSessionInspectorOverlapCard({
 }) {
   const t = useTranslations("admin-session-runtime");
   const locale = useLocale();
+  const viewerTimeZone = useRuntimeViewerTimeZone();
 
   const confidenceFlags = overlap.confidenceFlags ?? [];
   const hasUnreliableFlag = confidenceFlags.includes(
@@ -104,7 +106,7 @@ export default function AdminSessionInspectorOverlapCard({
               {t("inspector.meeting.startedAt")}
             </p>
             <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
-              {formatInspectorDateTime(meeting.meetingStartedAt, locale)}
+              {formatInspectorDateTime(meeting.meetingStartedAt, locale, viewerTimeZone)}
             </p>
           </div>
           <div>
@@ -112,7 +114,7 @@ export default function AdminSessionInspectorOverlapCard({
               {t("inspector.meeting.endedAt")}
             </p>
             <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
-              {formatInspectorDateTime(meeting.meetingEndedAt, locale)}
+              {formatInspectorDateTime(meeting.meetingEndedAt, locale, viewerTimeZone)}
             </p>
           </div>
           <div>
@@ -120,10 +122,7 @@ export default function AdminSessionInspectorOverlapCard({
               {t("inspector.meeting.firstJoinedAt")}
             </p>
             <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
-              {formatInspectorDateTime(
-                meeting.firstAnyParticipantJoinedAt,
-                locale,
-              )}
+              {formatInspectorDateTime(meeting.firstAnyParticipantJoinedAt, locale, viewerTimeZone)}
             </p>
           </div>
           <div>
@@ -131,10 +130,7 @@ export default function AdminSessionInspectorOverlapCard({
               {t("inspector.meeting.lastLeftAt")}
             </p>
             <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/95">
-              {formatInspectorDateTime(
-                meeting.lastAnyParticipantLeftAt,
-                locale,
-              )}
+              {formatInspectorDateTime(meeting.lastAnyParticipantLeftAt, locale, viewerTimeZone)}
             </p>
           </div>
         </div>

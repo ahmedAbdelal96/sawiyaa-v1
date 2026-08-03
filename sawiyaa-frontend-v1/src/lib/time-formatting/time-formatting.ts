@@ -41,7 +41,8 @@ function toDate(value: DateLike): Date | null {
     return null;
   }
 
-  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  const date =
+    value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -81,14 +82,20 @@ function canonicalizeTimeZone(timeZone: string): string | null {
   const supportedZones = getSupportedIanaZones();
   if (supportedZones?.has(trimmed)) {
     try {
-      return new Intl.DateTimeFormat("en-US", { timeZone: trimmed }).resolvedOptions().timeZone ?? trimmed;
+      return (
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: trimmed,
+        }).resolvedOptions().timeZone ?? trimmed
+      );
     } catch {
       return trimmed;
     }
   }
 
   try {
-    const resolved = new Intl.DateTimeFormat("en-US", { timeZone: trimmed }).resolvedOptions().timeZone;
+    const resolved = new Intl.DateTimeFormat("en-US", {
+      timeZone: trimmed,
+    }).resolvedOptions().timeZone;
     if (!resolved) {
       return null;
     }
@@ -122,7 +129,9 @@ function formatDateTime(
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -147,7 +156,9 @@ function formatDateOnly(
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -173,7 +184,9 @@ function formatTimeOnly(
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -183,7 +196,9 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
   return normalizeIanaTimeZone(timeZone) !== null;
 }
 
-export function normalizeIanaTimeZone(timeZone: string | null | undefined): string | null {
+export function normalizeIanaTimeZone(
+  timeZone: string | null | undefined,
+): string | null {
   if (timeZone == null) {
     return null;
   }
@@ -191,21 +206,155 @@ export function normalizeIanaTimeZone(timeZone: string | null | undefined): stri
   return canonicalizeTimeZone(timeZone);
 }
 
-// Viewer-local helpers intentionally leave the timezone implicit, so the browser or
-// current rendering environment controls the display timezone.
-export function formatViewerDateTime(value: DateLike, options: TimeFormattingOptions = {}): string {
-  const locale = options.locale ?? "en-US";
-  return formatDateTime(value, locale, options);
+function resolveBrowserTimeZone(): string | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return normalizeIanaTimeZone(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
+  } catch {
+    return null;
+  }
 }
 
-export function formatViewerDate(value: DateLike, options: TimeFormattingOptions = {}): string {
-  const locale = options.locale ?? "en-US";
-  return formatDateOnly(value, locale, options);
+/**
+ * Resolves the only timezone that Web display code may use for a viewer.
+ * Profile data wins; browser data is an unauthenticated fallback; UTC keeps
+ * SSR and malformed-profile rendering deterministic.
+ */
+export function resolveEffectiveViewerTimeZone(
+  persistedTimeZone?: string | null,
+  browserTimeZone?: string | null,
+): string {
+  const persisted = normalizeIanaTimeZone(persistedTimeZone);
+  if (persisted) return persisted;
+
+  const fallback =
+    normalizeIanaTimeZone(browserTimeZone) ?? resolveBrowserTimeZone();
+  if (fallback) return fallback;
+
+  return UTC_TIME_ZONE;
 }
 
-export function formatViewerTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function resolvePatientDisplayTimeZone(
+  persistedTimeZone: string | null | undefined,
+  fallbackTimeZone?: string | null,
+): string {
+  return resolveEffectiveViewerTimeZone(persistedTimeZone, fallbackTimeZone);
+}
+
+export function formatPatientDateTime(
+  value: DateLike,
+  persistedTimeZone: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  const timeZone = resolvePatientDisplayTimeZone(persistedTimeZone);
+  return formatDateTime(value, options.locale ?? "en-US", options, timeZone);
+}
+
+export function formatEffectiveViewerDateTime(
+  value: DateLike,
+  persistedTimeZone: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  return formatDateTime(
+    value,
+    options.locale ?? "en-US",
+    options,
+    resolveEffectiveViewerTimeZone(persistedTimeZone),
+  );
+}
+
+export function formatEffectiveViewerDate(
+  value: DateLike,
+  persistedTimeZone: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  return formatDateOnly(
+    value,
+    options.locale ?? "en-US",
+    options,
+    resolveEffectiveViewerTimeZone(persistedTimeZone),
+  );
+}
+
+export function formatEffectiveViewerTime(
+  value: DateLike,
+  persistedTimeZone: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  return formatTimeOnly(
+    value,
+    options.locale ?? "en-US",
+    options,
+    resolveEffectiveViewerTimeZone(persistedTimeZone),
+  );
+}
+
+// Viewer helpers always select the canonical effective timezone. They never
+// depend on the runtime's implicit DateTimeFormat timezone.
+export function formatViewerDateTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
-  return formatTimeOnly(value, locale, options);
+  return formatDateTime(
+    value,
+    locale,
+    options,
+    resolveEffectiveViewerTimeZone(),
+  );
+}
+
+export function formatViewerDate(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
+  const locale = options.locale ?? "en-US";
+  return formatDateOnly(
+    value,
+    locale,
+    options,
+    resolveEffectiveViewerTimeZone(),
+  );
+}
+
+export function formatViewerTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
+  const locale = options.locale ?? "en-US";
+  return formatTimeOnly(
+    value,
+    locale,
+    options,
+    resolveEffectiveViewerTimeZone(),
+  );
+}
+
+/** Formats a date-only API value without allowing a timezone shift. */
+export function formatCalendarDate(
+  value: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return getFallbackText(options);
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return getFallbackText(options);
+  }
+
+  const locale = options.locale ?? "en-US";
+  return formatDateOnly(date, locale, options, UTC_TIME_ZONE);
 }
 
 // Practitioner-local helpers require a validated IANA timezone and never fall back
@@ -253,17 +402,26 @@ export function formatPractitionerTime(
 }
 
 // UTC/audit helpers always pin the display timezone to UTC for operational or audit surfaces.
-export function formatUtcAuditDateTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditDateTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatDateTime(value, locale, options, UTC_TIME_ZONE);
 }
 
-export function formatUtcAuditDate(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditDate(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatDateOnly(value, locale, options, UTC_TIME_ZONE);
 }
 
-export function formatUtcAuditTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatTimeOnly(value, locale, options, UTC_TIME_ZONE);
 }
@@ -274,7 +432,11 @@ export function formatMinuteOfDay(
   minuteOfDay: number,
   options: Omit<TimeFormattingOptions, "timeZoneName"> = {},
 ): string {
-  if (!Number.isInteger(minuteOfDay) || minuteOfDay < 0 || minuteOfDay >= 24 * 60) {
+  if (
+    !Number.isInteger(minuteOfDay) ||
+    minuteOfDay < 0 ||
+    minuteOfDay >= 24 * 60
+  ) {
     return getFallbackText(options);
   }
 
@@ -333,7 +495,8 @@ export function formatTimeZoneLabel(
     return normalizedTimeZone;
   }
 
-  const referenceDate = options.referenceDate ?? new Date(Date.UTC(2024, 0, 1, 0, 0, 0));
+  const referenceDate =
+    options.referenceDate ?? new Date(Date.UTC(2024, 0, 1, 0, 0, 0));
   const resolvedLocale = resolveLocale(options.locale);
 
   try {
@@ -344,7 +507,9 @@ export function formatTimeZoneLabel(
       minute: "2-digit",
       hourCycle: "h23",
     }).formatToParts(referenceDate);
-    const offsetLabel = parts.find((part) => part.type === "timeZoneName")?.value?.trim();
+    const offsetLabel = parts
+      .find((part) => part.type === "timeZoneName")
+      ?.value?.trim();
     if (offsetLabel) {
       return `${normalizedTimeZone} (${offsetLabel})`;
     }

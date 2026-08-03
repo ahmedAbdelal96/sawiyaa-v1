@@ -186,10 +186,92 @@
     "metaDescription": "Manual review of attendance and runtime evidence. No automatic decision is taken from this screen.",
     "page": {
       "eyebrow": "Operations / Review",
-      "title": "Session Evidence Review",
-      "subtitle": "This page shows attendance and runtime evidence to support manual admin review. No decision is executed automatically here.",
+      "title": "Session Review",
+      "subtitle": "Review attendance and evidence, then take the appropriate action.",
       "advisoryNotice": "Review recommendation only — final decision is manual",
       "backToReadiness": "Back to runtime readiness check"
+    },
+    "header": {
+      "backToSessions": "Back to sessions"
+    },
+    "tabs": {
+      "label": "Session workspace sections",
+      "overview": "Overview",
+      "attendance": "Attendance & Evidence",
+      "package": "Package & Entitlement",
+      "decisions": "Admin Decisions",
+      "support": "Support",
+      "diagnostics": "Advanced Diagnostics"
+    },
+    "summary": {
+      "eyebrow": "Session at a glance",
+      "title": "Session summary",
+      "scheduledStart": "Scheduled start",
+      "scheduledEnd": "Scheduled end",
+      "readiness": "Readiness",
+      "ready": "Ready",
+      "blocked": "Blocked",
+      "recommendation": "Evidence outcome",
+      "patient": "Patient",
+      "practitioner": "Practitioner",
+      "viewerTime": "Admin viewer time",
+      "modeDuration": "Mode and duration",
+      "minutes": "{minutes} min",
+      "package": "Package session",
+      "noPackage": "No package",
+      "noPackageNote": "This session is not linked to a package entitlement.",
+      "support": "Support issue linked",
+      "noSupport": "No linked support issue"
+    },
+    "statusStrip": {
+      "label": "Operational status",
+      "unknown": "Unavailable",
+      "attendance": {
+        "label": "Attendance",
+        "none": "No attendance",
+        "patientMissing": "Patient missing",
+        "practitionerMissing": "Practitioner missing",
+        "sufficient": "Evidence sufficient",
+        "review": "Review needed"
+      },
+      "technical": {
+        "label": "Technical",
+        "clear": "No confirmed issue",
+        "review": "Technical review"
+      },
+      "package": {
+        "label": "Package / payment",
+        "linked": "Package linked",
+        "none": "No package"
+      },
+      "action": {
+        "label": "Admin action",
+        "required": "Review required",
+        "none": "No action flagged"
+      }
+    },
+    "evidenceSummary": {
+      "title": "Evidence Summary",
+      "openAttendance": "View attendance and evidence",
+      "meaningfulOverlap": "Both participants attended with {minutes} minutes of meaningful overlap.",
+      "patientAbsent": "The practitioner attended, but patient attendance is not confirmed.",
+      "practitionerAbsent": "The patient attended, but practitioner attendance is not confirmed.",
+      "insufficient": "There is not enough attendance evidence to confirm the session.",
+      "technical": "A technical risk indicator requires review before the session is resolved.",
+      "review": "The evidence is mixed or incomplete and requires manual review.",
+      "status": {
+        "sufficient": "Sufficient evidence",
+        "insufficient": "Insufficient evidence",
+        "absence": "Attendance gap",
+        "technical": "Technical risk",
+        "review": "Manual review"
+      }
+    },
+    "diagnostics": {
+      "title": "Advanced diagnostics",
+      "subtitle": "Technical details for support and engineering review.",
+      "internalId": "Internal session ID",
+      "blockedReason": "Blocked reason"
     },
     "notAvailable": "Not available",
     "caseSummary": {
@@ -383,7 +465,7 @@
         "lastUpdated": "Updated {date}"
       }
     },
-  
+
     "packageEntitlement": {
       "title": "Package entitlement decision",
       "subtitle": "Decide whether this package-covered cancelled or no-show session returns to the package or counts as used.",
@@ -468,7 +550,7 @@
         "REFUNDED": "Refunded"
       }
     },
-  "emptyExtended": {
+    "emptyExtended": {
       "title": "No computed evidence available",
       "note": "The extended attendance summary has not been emitted for this session yet."
     },
@@ -535,6 +617,7 @@
       "notFound": "No session found for this ID."
     },
     "manualDecision": {
+      "selectDecisionFirst": "Select the action first to show its reason and confirmation fields.",
       "title": "Manual admin decision",
       "subtitle": "Record a manual decision after reviewing the evidence",
       "safetyNotice": "This is a manual admin decision after evidence review. This screen does not create automatic refunds or payouts.",

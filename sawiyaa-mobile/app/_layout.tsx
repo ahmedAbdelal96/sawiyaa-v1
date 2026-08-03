@@ -4,6 +4,7 @@ import { ThemeProvider } from "../src/providers/ThemeProvider";
 import { AuthProvider } from "../src/providers/AuthProvider";
 import { AuthGatewayProvider } from "../src/providers/AuthGatewayProvider";
 import { NavigationHistoryProvider } from "../src/providers/NavigationHistoryProvider";
+import { ViewerTimeZoneProvider } from "../src/providers/ViewerTimeZoneProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as SplashScreen from "expo-splash-screen";
 import "../src/i18n";
@@ -19,11 +20,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <AuthGatewayProvider>
-              <NavigationHistoryProvider>
-                <Slot />
-              </NavigationHistoryProvider>
-            </AuthGatewayProvider>
+            <ViewerTimeZoneProvider>
+              <AuthGatewayProvider>
+                <NavigationHistoryProvider>
+                  <Slot />
+                </NavigationHistoryProvider>
+              </AuthGatewayProvider>
+            </ViewerTimeZoneProvider>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

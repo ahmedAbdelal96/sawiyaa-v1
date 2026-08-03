@@ -31,6 +31,7 @@ import {
 } from "../../../src/features/patient/assessments/types";
 import { AssessmentStatusCard } from "../../../src/features/patient/assessments/components/AssessmentStatusCard";
 import { getAssessmentCompatibility } from "../../../src/features/patient/assessments/compatibility";
+import { formatViewerDate } from "../../../src/lib/time-formatting";
 
 type ListFilter = "all" | "current" | "history";
 
@@ -372,17 +373,14 @@ export default function PatientAssessmentsListScreen() {
                     footerNote={
                       isCompleted && latest?.completedAt
                         ? t("assessments.list.completedAt", {
-                            date: new Date(
-                              latest.completedAt,
-                            ).toLocaleDateString(
-                              i18n.language.startsWith("ar")
+                            date: formatViewerDate(latest.completedAt, {
+                              locale: i18n.language.startsWith("ar")
                                 ? "ar-SA"
                                 : "en-US",
-                              {
-                                day: "numeric",
-                                month: "long",
-                              },
-                            ),
+                              day: "numeric",
+                              month: "long",
+                              fallbackText: "-",
+                            }),
                           })
                         : isUnavailableOnMobile
                           ? compatibilityNote

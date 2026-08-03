@@ -113,12 +113,11 @@ export async function buildAvatarFormData(
 }
 
 function resolveAvatarBaseUrl(): string {
-  const configured = (
-    process.env as Record<string, string | undefined>
-  ).EXPO_PUBLIC_API_URL?.trim();
-  if (configured) return configured;
-  if (Platform.OS === "android") return "http://10.0.2.2:7000/api/v1";
-  return "http://localhost:7000/api/v1";
+  const configured = apiClient.defaults.baseURL?.trim();
+  if (!configured) {
+    throw new Error("API base URL is not configured.");
+  }
+  return configured;
 }
 
 export async function uploadPatientAvatar(

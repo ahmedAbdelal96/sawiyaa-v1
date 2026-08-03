@@ -1,12 +1,12 @@
 import 'dotenv/config';
-import {
-  ConfigChangeAction,
-  ConfigScopeType,
-  PrismaClient,
-} from '@prisma/client';
+import { ConfigScopeType, PrismaClient } from '@prisma/client';
+import type { PrismaService } from '../../src/common/prisma/prisma.service';
+import { CONFIG_KEYS } from '../../src/modules/config/registry/config-key.constants';
+import { ConfigurationAuthorizationService } from '../../src/modules/config/services/configuration-authorization.service';
+import { ConfigurationManagementService } from '../../src/modules/config/services/configuration-management.service';
 
 const prisma = new PrismaClient();
-const key = 'payment.routing.currencyRoutes';
+const key = CONFIG_KEYS.payment.routing.currencyRoutes;
 const productionRoute = {
   currencyCode: 'EGP',
   paymentMethod: 'CARD',
@@ -30,7 +30,9 @@ async function main(): Promise<void> {
 
   const appEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development';
   if (appEnv !== 'production' && appEnv !== 'staging') {
-    throw new Error('This operator script is limited to production or staging environments.');
+    throw new Error(
+      'This operator script is limited to production or staging environments.',
+    );
   }
 
   const catalog = await prisma.configKeyCatalog.findUnique({ where: { key } });
@@ -47,39 +49,43 @@ async function main(): Promise<void> {
   });
 
   if (active.length > 1) {
-    throw new Error(`Refusing bootstrap: ${active.length} active routing records already exist.`);
+    throw new Error(
+      `Refusing bootstrap: ${active.length} active routing records already exist.`,
+    );
   }
 
   if (active.length === 1) {
-    const routes = Array.isArray(active[0].valueJson) ? active[0].valueJson : [];
+    const routes = Array.isArray(active[0].valueJson)
+      ? active[0].valueJson
+      : [];
     if (routes.length === 1 && sameRoute(routes[0])) {
-      console.log('Payment route bootstrap already satisfied; no changes made.');
+      console.log(
+        'Payment route bootstrap already satisfied; no changes made.',
+      );
       return;
     }
-    throw new Error('Refusing bootstrap: an existing active routing record conflicts with the EGP-only target.');
+    throw new Error(
+      'Refusing bootstrap: an existing active routing record conflicts with the EGP-only target.',
+    );
   }
 
-  await prisma.$transaction(async (tx) => {
-    const value = await tx.configValue.create({
-      data: {
-        configKeyId: catalog.id,
-        scopeType: ConfigScopeType.GLOBAL,
-        valueJson: [productionRoute],
-        priority: 0,
-        isActive: true,
-      },
-    });
-    await tx.configChangeLog.create({
-      data: {
-        configKeyId: catalog.id,
-        configValueId: value.id,
-        changeAction: ConfigChangeAction.CREATED,
-        newValueSnapshot: [productionRoute],
-        reason: 'Explicit operator bootstrap of the production EGP payment route.',
-      },
-    });
+  const management = new ConfigurationManagementService(
+    prisma as unknown as PrismaService,
+    new ConfigurationAuthorizationService(),
+  );
+  await management.update({
+    key,
+    value: [productionRoute],
+    scopeType: ConfigScopeType.GLOBAL,
+    scopeRefId: null,
+    actorType: 'DEPLOYMENT',
+    actor: { type: 'DEPLOYMENT', permissions: ['configuration.system.write'] },
+    reason: 'Explicit operator bootstrap of the production EGP payment route.',
+    expectedUpdatedAt: null,
   });
-  console.log('Created one production EGP payment route. No USD route was created.');
+  console.log(
+    'Created one production EGP payment route. No USD route was created.',
+  );
 }
 
-main().finally(() => prisma.$disconnect());
+void main().finally(() => prisma.$disconnect());

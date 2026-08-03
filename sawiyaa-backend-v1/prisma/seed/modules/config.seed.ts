@@ -3,438 +3,220 @@ import {
   ConfigDataType,
   ConfigKind,
   ConfigScopeType,
+  Prisma,
   PrismaClient,
 } from '@prisma/client';
+import { CONFIG_DEFINITIONS } from '../../../src/modules/config/registry/config.definitions';
+import { ConfigKey } from '../../../src/modules/config/registry/config-key.constants';
+import { ConfigDefinition } from '../../../src/modules/config/registry/config-definition.types';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo, daysFromNow } from '../shared/seed.utils';
 
-/**
- * Config seed module provides realistic defaults and active values for runtime resolution tests.
- */
+type ConfigSeedDb = Pick<PrismaClient, '$transaction'> & {
+  configKeyCatalog: {
+    findUnique: (args: {
+      where: { key: string };
+    }) => Promise<CatalogRow | null>;
+    create: (args: {
+      data: Prisma.ConfigKeyCatalogCreateInput;
+    }) => Promise<CatalogRow>;
+  };
+  configValue: {
+    findFirst: (args: {
+      where: {
+        configKeyId: string;
+        scopeType: ConfigScopeType;
+        scopeRefId: null;
+      };
+    }) => Promise<Record<string, unknown> | null>;
+    create: (args: {
+      data: Prisma.ConfigValueUncheckedCreateInput;
+    }) => Promise<Record<string, unknown>>;
+  };
+};
+
+type CatalogRow = {
+  id: string;
+  key: string;
+  slug: string;
+  configKind: ConfigKind;
+  dataType: ConfigDataType;
+  category: ConfigCategory;
+  isSensitive: boolean;
+  isRequired: boolean;
+  supportsOverride: boolean;
+};
+
+export type ConfigSeedSummary = {
+  catalog: { created: number; metadataSynchronized: number; preserved: number };
+  initialValues: {
+    created: number;
+    skippedExisting: number;
+    preserved: number;
+    overwritten: 0;
+    deleted: 0;
+  };
+};
+
+function toPrismaDataType(valueType: string): ConfigDataType {
+  if (valueType === 'STRING_ARRAY') return ConfigDataType.STRING_ARRAY;
+  if (valueType === 'BOOLEAN') return ConfigDataType.BOOLEAN;
+  if (valueType === 'JSON') return ConfigDataType.JSON;
+  return valueType === 'STRING' ? ConfigDataType.STRING : ConfigDataType.NUMBER;
+}
+
+function supportsOverride(definition: ConfigDefinition): boolean {
+  return !definition.owner.startsWith('ENV_');
+}
+
+function assertCatalogCompatibility(
+  row: CatalogRow,
+  definition: ConfigDefinition,
+): void {
+  const expected = {
+    slug: definition.catalog.slug,
+    configKind: definition.catalog.configKind,
+    dataType: toPrismaDataType(definition.valueType),
+    category: definition.category,
+    isSensitive: definition.sensitive,
+    isRequired: definition.required,
+    supportsOverride: supportsOverride(definition),
+  };
+  for (const field of Object.keys(expected) as Array<keyof typeof expected>) {
+    if (row[field] !== expected[field]) {
+      throw new Error(
+        `Config catalog conflict for "${definition.key}" (${field})`,
+      );
+    }
+  }
+}
+
+function buildInitialValue(
+  definition: ConfigDefinition,
+): Omit<Prisma.ConfigValueUncheckedCreateInput, 'configKeyId'> {
+  if (definition.seed.createInitialValue !== true) {
+    throw new Error(`Definition "${definition.key}" is not seed-enabled`);
+  }
+  const { value, priority } = definition.seed;
+  const dateFields = {
+    ...(definition.seed.effectiveFrom === 'DAYS_AGO_2'
+      ? { effectiveFrom: daysAgo(2) }
+      : {}),
+    ...(definition.seed.effectiveTo === 'DAYS_FROM_NOW_365'
+      ? { effectiveTo: daysFromNow(365) }
+      : {}),
+  };
+  const base = {
+    scopeType: ConfigScopeType.GLOBAL,
+    scopeRefId: null,
+    priority,
+    isActive: true,
+    ...dateFields,
+  };
+  if (typeof value === 'boolean') return { ...base, valueBoolean: value };
+  if (typeof value === 'number') return { ...base, valueNumber: value };
+  if (typeof value === 'string') return { ...base, valueString: value };
+  return { ...base, valueJson: value as Prisma.InputJsonValue };
+}
+
+async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
+  const summary: ConfigSeedSummary = {
+    catalog: { created: 0, metadataSynchronized: 0, preserved: 0 },
+    initialValues: {
+      created: 0,
+      skippedExisting: 0,
+      preserved: 0,
+      overwritten: 0,
+      deleted: 0,
+    },
+  };
+  const keyRows = new Map<ConfigKey, CatalogRow>();
+
+  for (const definition of CONFIG_DEFINITIONS) {
+    const existing = await db.configKeyCatalog.findUnique({
+      where: { key: definition.key },
+    });
+    if (existing) {
+      assertCatalogCompatibility(existing, definition);
+      keyRows.set(definition.key, existing);
+      summary.catalog.preserved += 1;
+      continue;
+    }
+    const created = await db.configKeyCatalog.create({
+      data: {
+        key: definition.key,
+        slug: definition.catalog.slug,
+        displayName: definition.catalog.displayName,
+        description: definition.catalog.description,
+        configKind: definition.catalog.configKind,
+        dataType: toPrismaDataType(definition.valueType),
+        category: definition.category,
+        isSensitive: definition.sensitive,
+        isRequired: definition.required,
+        supportsOverride: supportsOverride(definition),
+        defaultValueJson:
+          'defaultValue' in definition
+            ? (definition.defaultValue as Prisma.InputJsonValue)
+            : undefined,
+      },
+    });
+    keyRows.set(definition.key, created);
+    summary.catalog.created += 1;
+  }
+
+  for (const definition of CONFIG_DEFINITIONS) {
+    if (definition.seed.createInitialValue !== true) continue;
+    const row = keyRows.get(definition.key);
+    if (!row)
+      throw new Error(`Config catalog row missing for "${definition.key}"`);
+    const existing = await db.configValue.findFirst({
+      where: {
+        configKeyId: row.id,
+        scopeType: ConfigScopeType.GLOBAL,
+        scopeRefId: null,
+      },
+    });
+    if (existing) {
+      summary.initialValues.skippedExisting += 1;
+      summary.initialValues.preserved += 1;
+      continue;
+    }
+    await db.configValue.create({
+      data: { configKeyId: row.id, ...buildInitialValue(definition) },
+    });
+    summary.initialValues.created += 1;
+  }
+  return summary;
+}
+
+function isRetryableTransactionError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error.code === 'P2034' || error.code === 'P2002')
+  );
+}
+
+export async function seedConfigData(
+  prisma: PrismaClient,
+): Promise<ConfigSeedSummary> {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(
+        (tx) => seedConfigOnce(tx as unknown as ConfigSeedDb),
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (error) {
+      if (!isRetryableTransactionError(error) || attempt === 3) throw error;
+    }
+  }
+  throw new Error('Config seed exhausted its retry budget');
+}
+
 export const configSeedModule: SeedModule = {
   name: 'config',
   async run(prisma: PrismaClient): Promise<void> {
-    const keySeed = [
-      {
-        key: 'platform.defaultLocale',
-        slug: 'platform-default-locale',
-        displayName: 'Platform Default Locale',
-        description: 'Fallback locale when request locale is missing',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING,
-        category: ConfigCategory.LOCALE,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: true,
-        defaultValueJson: 'en',
-      },
-      {
-        key: 'auth.otp.loginTtlMinutes',
-        slug: 'auth-otp-login-ttl-minutes',
-        displayName: 'Practitioner Login OTP TTL Minutes',
-        description: 'OTP validity window in minutes for login flow',
-        configKind: ConfigKind.LIMIT,
-        dataType: ConfigDataType.NUMBER,
-        category: ConfigCategory.SECURITY,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: false,
-        defaultValueJson: 10,
-      },
-      {
-        key: 'auth.passwordReset.otpTtlMinutes',
-        slug: 'auth-password-reset-otp-ttl-minutes',
-        displayName: 'Password Reset OTP TTL Minutes',
-        description: 'OTP validity window in minutes for password reset',
-        configKind: ConfigKind.LIMIT,
-        dataType: ConfigDataType.NUMBER,
-        category: ConfigCategory.SECURITY,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: false,
-        defaultValueJson: 15,
-      },
-      {
-        key: 'security.jwt.accessTokenTtlMinutes',
-        slug: 'security-jwt-access-token-ttl-minutes',
-        displayName: 'Access Token TTL Minutes',
-        description: 'JWT access token lifetime in minutes',
-        configKind: ConfigKind.POLICY,
-        dataType: ConfigDataType.NUMBER,
-        category: ConfigCategory.SECURITY,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: false,
-        defaultValueJson: 30,
-      },
-      {
-        key: 'features.practitionerApplicationAdminReviewEnabled',
-        slug: 'features-practitioner-application-admin-review-enabled',
-        displayName: 'Practitioner Admin Review Feature',
-        description: 'Feature flag controlling admin review operations',
-        configKind: ConfigKind.FEATURE_DEFAULT,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.SYSTEM,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: true,
-        defaultValueJson: true,
-      },
-      {
-        key: 'notifications.channels.default',
-        slug: 'notifications-channels-default',
-        displayName: 'Default Notification Channels',
-        description: 'Default enabled notification channels',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING_ARRAY,
-        category: ConfigCategory.NOTIFICATION,
-        isSensitive: false,
-        isRequired: true,
-        supportsOverride: true,
-        defaultValueJson: ['EMAIL', 'IN_APP'],
-      },
-      {
-        key: 'packages.enabled',
-        slug: 'packages-enabled',
-        displayName: 'Package Plans Enabled',
-        description: 'Controls whether standardized package plans are visible',
-        configKind: ConfigKind.FEATURE_DEFAULT,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.BOOKING,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-        defaultValueJson: true,
-      },
-      {
-        key: 'packages.purchaseEnabled',
-        slug: 'packages-purchase-enabled',
-        displayName: 'Package Purchases Enabled',
-        description: 'Controls whether package quote and purchase flows are enabled',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.BOOKING,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-        defaultValueJson: true,
-      },
-      {
-        key: 'payment.provider.paymob.enabled',
-        slug: 'payment-provider-paymob-enabled',
-        displayName: 'Paymob Provider Enabled',
-        description: 'Controls whether Paymob can be used for payment routing',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.paymob.checkoutFlow',
-        slug: 'payment-provider-paymob-checkout-flow',
-        displayName: 'Paymob Checkout Flow',
-        description: 'Selects the active Paymob checkout flow',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.paymob.defaultMethod',
-        slug: 'payment-provider-paymob-default-method',
-        displayName: 'Paymob Default Method',
-        description: 'Selects the preferred Paymob checkout method',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.paymob.methodRegistry',
-        slug: 'payment-provider-paymob-method-registry',
-        displayName: 'Paymob Method Registry',
-        description: 'Typed registry for Paymob enabled payment methods',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.JSON,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.paymob.maintenanceMode',
-        slug: 'payment-provider-paymob-maintenance-mode',
-        displayName: 'Paymob Maintenance Mode',
-        description: 'Temporarily disables Paymob checkout availability',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.paymob.allowedCountries',
-        slug: 'payment-provider-paymob-allowed-countries',
-        displayName: 'Paymob Allowed Countries',
-        description: 'Allowed country ISO codes for Paymob enabled methods',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING_ARRAY,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.stripe.enabled',
-        slug: 'payment-provider-stripe-enabled',
-        displayName: 'Stripe Provider Enabled',
-        description: 'Controls whether Stripe can be used for payment routing',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.stripe.maintenanceMode',
-        slug: 'payment-provider-stripe-maintenance-mode',
-        displayName: 'Stripe Maintenance Mode',
-        description: 'Temporarily disables Stripe checkout availability',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.BOOLEAN,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.provider.stripe.allowedCountries',
-        slug: 'payment-provider-stripe-allowed-countries',
-        displayName: 'Stripe Allowed Countries',
-        description: 'Allowed country ISO codes for Stripe availability',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING_ARRAY,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.routing.defaultProvider',
-        slug: 'payment-routing-default-provider',
-        displayName: 'Payment Routing Default Provider',
-        description: 'Preferred provider when multiple providers are available',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.routing.priorityOrder',
-        slug: 'payment-routing-priority-order',
-        displayName: 'Payment Routing Priority Order',
-        description: 'Provider priority order for runtime fallback selection',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING_ARRAY,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.routing.fallbackProvider',
-        slug: 'payment-routing-fallback-provider',
-        displayName: 'Payment Routing Fallback Provider',
-        description:
-          'Fallback provider used when the default provider is unavailable',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.STRING,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      {
-        key: 'payment.routing.currencyRoutes',
-        slug: 'payment-routing-currency-routes',
-        displayName: 'Payment Routing Currency Routes',
-        description: 'Currency and payment-method-specific provider routes',
-        configKind: ConfigKind.SETTING,
-        dataType: ConfigDataType.JSON,
-        category: ConfigCategory.PAYMENT,
-        isSensitive: false,
-        isRequired: false,
-        supportsOverride: true,
-      },
-      ];
-
-    for (const key of keySeed) {
-      await prisma.configKeyCatalog.upsert({
-        where: { key: key.key },
-        create: key,
-        update: {
-          slug: key.slug,
-          displayName: key.displayName,
-          description: key.description,
-          configKind: key.configKind,
-          dataType: key.dataType,
-          category: key.category,
-          isSensitive: key.isSensitive,
-          isRequired: key.isRequired,
-          supportsOverride: key.supportsOverride,
-          defaultValueJson: key.defaultValueJson,
-        },
-      });
-    }
-
-    const keyMap = new Map(
-      (
-        await prisma.configKeyCatalog.findMany({
-          where: {
-            key: {
-              in: keySeed.map((item) => item.key),
-            },
-          },
-          select: {
-            id: true,
-            key: true,
-          },
-        })
-      ).map((row) => [row.key, row.id] as const),
-    );
-
-    const valuesByKey: Record<
-      string,
-      Array<{
-        scopeType: ConfigScopeType;
-        valueString?: string;
-        valueNumber?: number;
-        valueBoolean?: boolean;
-        valueJson?: unknown;
-        priority: number;
-        isActive: boolean;
-        effectiveFrom?: Date | null;
-        effectiveTo?: Date | null;
-      }>
-    > = {
-      'platform.defaultLocale': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueString: 'ar',
-          priority: 100,
-          isActive: true,
-        },
-      ],
-      'auth.otp.loginTtlMinutes': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueNumber: 7,
-          priority: 90,
-          isActive: false,
-          effectiveFrom: daysAgo(30),
-          effectiveTo: daysAgo(10),
-        },
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueNumber: 8,
-          priority: 100,
-          isActive: true,
-          effectiveFrom: daysAgo(1),
-        },
-      ],
-      'auth.passwordReset.otpTtlMinutes': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueNumber: 12,
-          priority: 100,
-          isActive: true,
-        },
-      ],
-      'security.jwt.accessTokenTtlMinutes': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueNumber: 20,
-          priority: 100,
-          isActive: true,
-        },
-      ],
-      'features.practitionerApplicationAdminReviewEnabled': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueBoolean: true,
-          priority: 100,
-          isActive: true,
-          effectiveFrom: daysAgo(2),
-          effectiveTo: daysFromNow(365),
-        },
-      ],
-      'notifications.channels.default': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueJson: ['EMAIL', 'IN_APP'],
-          priority: 100,
-          isActive: true,
-        },
-      ],
-      'packages.enabled': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueBoolean: true,
-          priority: 100,
-          isActive: true,
-        },
-      ],
-      'packages.purchaseEnabled': [
-        {
-          scopeType: ConfigScopeType.GLOBAL,
-          valueBoolean: true,
-          priority: 100,
-          isActive: true,
-        },
-      ],
-    };
-
-    for (const [key, values] of Object.entries(valuesByKey)) {
-      const configKeyId = keyMap.get(key);
-      if (!configKeyId) {
-        continue;
-      }
-
-      await prisma.configValue.deleteMany({
-        where: {
-          configKeyId,
-          scopeType: ConfigScopeType.GLOBAL,
-          scopeRefId: null,
-        },
-      });
-
-      for (const value of values) {
-        await prisma.configValue.create({
-          data: {
-            configKeyId,
-            scopeType: value.scopeType,
-            valueString: value.valueString,
-            valueNumber:
-              value.valueNumber === undefined ? undefined : value.valueNumber,
-            valueBoolean: value.valueBoolean,
-            valueJson: value.valueJson as object | undefined,
-            priority: value.priority,
-            isActive: value.isActive,
-            effectiveFrom: value.effectiveFrom ?? null,
-            effectiveTo: value.effectiveTo ?? null,
-          },
-        });
-      }
-    }
+    await seedConfigData(prisma);
   },
 };

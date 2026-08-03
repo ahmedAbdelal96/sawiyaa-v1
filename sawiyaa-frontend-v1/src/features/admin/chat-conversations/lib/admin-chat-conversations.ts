@@ -3,42 +3,47 @@ import type {
   AdminChatConversationPreviewType,
   AdminChatConversationStatus,
 } from "../types/admin-chat-conversations.types";
+import {
+  formatEffectiveViewerDate,
+  formatEffectiveViewerDateTime,
+  formatEffectiveViewerTime,
+} from "@/lib/time-formatting";
 
 type ToneClass = "primary" | "success" | "warning" | "danger" | "neutral";
 
-export function formatChatConversationDateTime(value: string | null, locale: string) {
+export function formatChatConversationDateTime(
+  value: string | null,
+  locale: string,
+  timeZone?: string | null,
+) {
   if (!value) return "-";
-
-  return new Date(value).toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatEffectiveViewerDateTime(value, timeZone, { locale });
 }
 
-export function formatChatConversationDate(value: string | null, locale: string) {
+export function formatChatConversationDate(
+  value: string | null,
+  locale: string,
+  timeZone?: string | null,
+) {
   if (!value) return "-";
-
-  return new Date(value).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatEffectiveViewerDate(value, timeZone, { locale });
 }
 
-export function formatChatConversationTime(value: string | null, locale: string) {
+export function formatChatConversationTime(
+  value: string | null,
+  locale: string,
+  timeZone?: string | null,
+) {
   if (!value) return "-";
-
-  return new Date(value).toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatEffectiveViewerTime(value, timeZone, { locale });
 }
 
-export function formatChatConversationFileSize(size: number | null, locale: string) {
-  if (!size || size <= 0) return locale.startsWith("ar") ? "غير محدد" : "Unknown";
+export function formatChatConversationFileSize(
+  size: number | null,
+  locale: string,
+) {
+  if (!size || size <= 0)
+    return locale.startsWith("ar") ? "غير محدد" : "Unknown";
 
   const units = ["B", "KB", "MB", "GB"];
   let nextValue = size;
@@ -71,7 +76,9 @@ export function getChatConversationPreviewTypeTone(
   }
 }
 
-export function getChatConversationStatusTone(status: AdminChatConversationStatus): ToneClass {
+export function getChatConversationStatusTone(
+  status: AdminChatConversationStatus,
+): ToneClass {
   switch (status) {
     case "ACTIVE":
       return "success";

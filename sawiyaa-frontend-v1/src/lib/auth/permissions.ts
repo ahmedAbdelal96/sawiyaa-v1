@@ -17,6 +17,10 @@
 // Keep in sync with: sawiyaa-backend-v1/src/common/enums/permission-key.enum.ts
 // ──────────────────────────────────────────────────────────────────
 export const PermissionKey = {
+  CONFIGURATION_VIEW: "configuration.view",
+  CONFIGURATION_EDIT_OPERATIONAL: "configuration.edit.operational",
+  CONFIGURATION_EDIT_FINANCIAL: "configuration.edit.financial",
+  CONFIGURATION_HISTORY_VIEW: "configuration.history.view",
   FINANCE_EVENTS_READ: "finance.events.read",
   ACCOUNTING_READ: "finance.accounting.read",
   ACCOUNTING_WRITE: "finance.accounting.write",

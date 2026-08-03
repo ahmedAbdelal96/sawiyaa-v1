@@ -32,7 +32,10 @@ export function useUpdatePatientProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updatePatientProfile,
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Apply the server response immediately so profile forms cannot render
+      // the pre-mutation timezone while the canonical queries revalidate.
+      queryClient.setQueryData(patientsQueryKeys.me(), response);
       queryClient.invalidateQueries({ queryKey: patientsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["auth"] });

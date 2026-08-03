@@ -1,6 +1,8 @@
 # Payments Testing Guide
 
-This guide covers local/dev payment setup for Stripe and Paymob with env-driven configuration only.
+This guide covers local/dev payment setup for Stripe and Paymob. Provider
+availability and routing are database Config settings; credentials and
+infrastructure remain ENV-owned.
 
 ## 1) Development setup
 
@@ -21,7 +23,6 @@ This guide covers local/dev payment setup for Stripe and Paymob with env-driven 
 
 ### Stripe
 
-- `PAYMENT_STRIPE_ENABLED`
 - `STRIPE_MODE`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_SECRET_KEY`
@@ -30,7 +31,6 @@ This guide covers local/dev payment setup for Stripe and Paymob with env-driven 
 
 ### Paymob
 
-- `PAYMENT_PAYMOB_ENABLED`
 - `PAYMOB_MODE`
 - `PAYMOB_API_KEY`
 - `PAYMOB_INTEGRATION_ID_CARD`
@@ -38,6 +38,10 @@ This guide covers local/dev payment setup for Stripe and Paymob with env-driven 
 - `PAYMOB_HMAC_SECRET`
 - `PAYMOB_BASE_URL`
 - `PAYMOB_INTEGRATION_ID_WALLET` (optional for future wallet flow)
+
+Enable providers and configure routing through the Admin payment gateway
+control flow or the typed database Config bootstrap. Do not add provider
+enablement, checkout flow, or method registry values to ENV.
 
 ### Redirect URLs
 

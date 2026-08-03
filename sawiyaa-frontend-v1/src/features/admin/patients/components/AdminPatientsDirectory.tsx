@@ -3,21 +3,38 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { Search, Eye, Users, CheckCircle2, AlertCircle, Globe } from "lucide-react";
+import {
+  Search,
+  Eye,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Globe,
+} from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
-import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared/admin/AdminOperationalListShell";
+import AdminOperationalListShell, {
+  AdminSummaryCard,
+} from "@/components/shared/admin/AdminOperationalListShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import InputField from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import Label from "@/components/form/Label";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import {
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+} from "@/constants/pagination";
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import type { AdminPatientListItem } from "../types/admin-patients.types";
-import { useAdminCountries, useAdminPatients } from "../hooks/use-admin-patients";
+import {
+  useAdminCountries,
+  useAdminPatients,
+} from "../hooks/use-admin-patients";
 import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
 import { AdminPatientCountryChangeModal } from "./AdminPatientCountryChangeModal";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
+import { formatEffectiveViewerDate } from "@/lib/time-formatting";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
 
@@ -44,7 +61,9 @@ function StatusPill({ status, t }: { status: string; t: any }) {
   }
 
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${tone}`}
+    >
       {label}
     </span>
   );
@@ -54,28 +73,41 @@ export default function AdminPatientsDirectory() {
   const tNav = useTranslations("navigation");
   const t = useTranslations("admin-patients");
   const locale = useLocale();
+  const settingsQuery = useMySettings();
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"" | "active" | "inactive" | "suspended" | "pending">("");
-  const [onboarding, setOnboarding] = useState<"all" | "completed" | "incomplete">("all");
+  const [status, setStatus] = useState<
+    "" | "active" | "inactive" | "suspended" | "pending"
+  >("");
+  const [onboarding, setOnboarding] = useState<
+    "all" | "completed" | "incomplete"
+  >("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
-  const [countryChangePatient, setCountryChangePatient] = useState<AdminPatientListItem | null>(null);
+  const [countryChangePatient, setCountryChangePatient] =
+    useState<AdminPatientListItem | null>(null);
 
-  const statusOptions = useMemo(() => [
-    { value: "", label: t("filters.statusAll") },
-    { value: "active", label: t("filters.statusActive") },
-    { value: "pending", label: t("filters.statusPending") },
-    { value: "suspended", label: t("filters.statusSuspended") },
-    { value: "inactive", label: t("filters.statusInactive") }
-  ], [t]);
+  const statusOptions = useMemo(
+    () => [
+      { value: "", label: t("filters.statusAll") },
+      { value: "active", label: t("filters.statusActive") },
+      { value: "pending", label: t("filters.statusPending") },
+      { value: "suspended", label: t("filters.statusSuspended") },
+      { value: "inactive", label: t("filters.statusInactive") },
+    ],
+    [t],
+  );
 
-  const onboardingOptions = useMemo(() => [
-    { value: "all", label: t("filters.onboardingAll") },
-    { value: "completed", label: t("filters.onboardingCompleted") },
-    { value: "incomplete", label: t("filters.onboardingIncomplete") }
-  ], [t]);
+  const onboardingOptions = useMemo(
+    () => [
+      { value: "all", label: t("filters.onboardingAll") },
+      { value: "completed", label: t("filters.onboardingCompleted") },
+      { value: "incomplete", label: t("filters.onboardingIncomplete") },
+    ],
+    [t],
+  );
 
   const debouncedSearch = useDebouncedValue(search, 300);
 
@@ -95,7 +127,8 @@ export default function AdminPatientsDirectory() {
   const items = data?.items ?? [];
   const pagination = data?.pagination;
   const stats = data?.stats;
-  const hasActiveFilters = Boolean(search.trim()) || Boolean(status) || onboarding !== "all";
+  const hasActiveFilters =
+    Boolean(search.trim()) || Boolean(status) || onboarding !== "all";
   const statusFilterLabel =
     status === "active"
       ? t("filters.statusActive")
@@ -113,16 +146,26 @@ export default function AdminPatientsDirectory() {
         ? t("filters.onboardingIncomplete")
         : null;
   const activeFilterChips = [
-    search.trim() ? { id: "search", label: `${t("filters.search")}: ${search.trim()}` } : null,
-    statusFilterLabel ? { id: "status", label: `${t("filters.status")}: ${statusFilterLabel}` } : null,
+    search.trim()
+      ? { id: "search", label: `${t("filters.search")}: ${search.trim()}` }
+      : null,
+    statusFilterLabel
+      ? { id: "status", label: `${t("filters.status")}: ${statusFilterLabel}` }
+      : null,
     onboardingFilterLabel
-      ? { id: "onboarding", label: `${t("filters.onboarding")}: ${onboardingFilterLabel}` }
+      ? {
+          id: "onboarding",
+          label: `${t("filters.onboarding")}: ${onboardingFilterLabel}`,
+        }
       : null,
   ].filter(Boolean) as Array<{ id: string; label: string }>;
-  
+
   const openDetails = (patientId: string) => {
     // next-intl router auto-prefixes the active locale (localePrefix: 'always')
-    if (typeof window !== "undefined" && localStorage.getItem("debug.adminPatients") === "1") {
+    if (
+      typeof window !== "undefined" &&
+      localStorage.getItem("debug.adminPatients") === "1"
+    ) {
       // eslint-disable-next-line no-console
       console.debug("[adminPatients] navigate to patient", {
         from: window.location.pathname,
@@ -137,14 +180,15 @@ export default function AdminPatientsDirectory() {
       {
         id: "name",
         header: t("table.name"),
-        accessor: (row) => row.displayName ?? row.primaryEmail ?? row.primaryPhone ?? row.userId,
+        accessor: (row) =>
+          row.displayName ?? row.primaryEmail ?? row.primaryPhone ?? row.userId,
         align: "start",
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary">
+            <p className="text-text-primary truncate text-sm font-semibold">
               {row.displayName ?? t("table.unknownName")}
             </p>
-            <p className="mt-1 truncate text-xs text-text-muted">
+            <p className="text-text-muted mt-1 truncate text-xs">
               {row.primaryEmail ?? row.primaryPhone ?? row.userId}
             </p>
           </div>
@@ -153,10 +197,11 @@ export default function AdminPatientsDirectory() {
       {
         id: "country",
         header: t("table.country"),
-        accessor: (row) => resolveCountryLabel(row.countryCode, countries, locale),
+        accessor: (row) =>
+          resolveCountryLabel(row.countryCode, countries, locale),
         align: "center",
         cell: (row) => (
-          <span className="text-sm text-text-primary">
+          <span className="text-text-primary text-sm">
             {resolveCountryLabel(row.countryCode, countries, locale)}
           </span>
         ),
@@ -165,16 +210,17 @@ export default function AdminPatientsDirectory() {
       {
         id: "onboarding",
         header: t("table.onboarding"),
-        accessor: (row) => (row.onboardingCompletedAt ? "COMPLETED" : "INCOMPLETE"),
+        accessor: (row) =>
+          row.onboardingCompletedAt ? "COMPLETED" : "INCOMPLETE",
         align: "center",
         cell: (row) =>
           row.onboardingCompletedAt ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-status-success-border bg-status-success-soft px-2 py-0.5 text-xs font-semibold text-status-success">
+            <span className="border-status-success-border bg-status-success-soft text-status-success inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.completed")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-xs font-semibold text-status-warning">
+            <span className="border-status-warning-border bg-status-warning-soft text-status-warning inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold">
               <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
               {t("states.incomplete")}
             </span>
@@ -194,14 +240,16 @@ export default function AdminPatientsDirectory() {
         accessor: (row) => row.createdAt,
         align: "center",
         cell: (row) => (
-          <span className="text-sm text-text-secondary">
-            {new Date(row.createdAt).toLocaleDateString(locale)}
+          <span className="text-text-secondary text-sm">
+            {formatEffectiveViewerDate(row.createdAt, viewerTimeZone, {
+              locale,
+            })}
           </span>
         ),
         hideOnMobile: true,
       },
     ],
-    [locale, t, countries],
+    [locale, t, countries, viewerTimeZone],
   );
 
   const resetToFirstPage = () => setPage(1);
@@ -241,12 +289,12 @@ export default function AdminPatientsDirectory() {
         }
         filters={
           <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-end gap-2 border-b border-border-light/70 pb-5">
+            <div className="border-border-light/70 flex flex-wrap items-center justify-end gap-2 border-b pb-5">
               {activeFilterChips.length > 0
                 ? activeFilterChips.map((chip) => (
                     <span
                       key={chip.id}
-                      className="app-chip rounded-full px-3 py-1.5 text-xs text-text-secondary"
+                      className="app-chip text-text-secondary rounded-full px-3 py-1.5 text-xs"
                     >
                       {chip.label}
                     </span>
@@ -268,7 +316,7 @@ export default function AdminPatientsDirectory() {
               {isError ? (
                 <button
                   type="button"
-                  className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-2 text-sm font-semibold text-text-primary transition hover:bg-surface-tertiary"
+                  className="border-border-light bg-surface-secondary text-text-primary hover:bg-surface-tertiary rounded-2xl border px-4 py-2 text-sm font-semibold transition"
                   onClick={() => refetch()}
                 >
                   {t("actions.retry")}
@@ -280,7 +328,7 @@ export default function AdminPatientsDirectory() {
               <div className="flex flex-col gap-2">
                 <Label>{t("filters.search")}</Label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-text-muted">
+                  <span className="text-text-muted pointer-events-none absolute start-3 top-1/2 -translate-y-1/2">
                     <Search className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <InputField
@@ -290,7 +338,7 @@ export default function AdminPatientsDirectory() {
                       resetToFirstPage();
                     }}
                     placeholder={t("filters.searchPlaceholder")}
-                    className="ps-10 bg-surface-tertiary dark:bg-surface-tertiary"
+                    className="bg-surface-tertiary dark:bg-surface-tertiary ps-10"
                   />
                 </div>
               </div>

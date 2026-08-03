@@ -17,6 +17,8 @@ import {
   Button,
   LoadingState,
   ErrorState,
+  Avatar,
+  StatusChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { getAppDirection } from "../../../src/i18n/direction";
@@ -195,36 +197,42 @@ export default function SessionDetailScreen() {
   };
 
   const showPaymentSection = needsPayment || cancellationEligible;
+  const rowDirection = isRtl ? "row-reverse" : "row";
+  const alignSelfStart = isRtl ? "flex-end" : "flex-start";
+  const practitionerName =
+    session.practitioner.displayName ??
+    t("patientSessionsFlow.common.practitionerFallback");
 
   return (
     <Screen bg="background">
       <Header showBack title={t("patientSessionsFlow.detail.title")} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Lifecycle Stepper */}
+        <SessionProgressStepper status={session.status} t={t} isRtl={isRtl} />
+
+        {/* Summary Card */}
         <Card
-          variant="elevated"
+          variant="outlined"
           padding="md"
           style={[
             styles.summaryCard,
-            isRtl
-              ? {
-                  borderLeftWidth: 3,
-                  borderLeftColor: theme.colors.primary,
-                  borderRightWidth: 0,
-                }
-              : { borderRightColor: theme.colors.primary },
+            {
+              borderColor: "#E8DED0",
+              backgroundColor: "#FFFFFF",
+            },
           ]}
         >
-          <View style={[styles.summaryHeader, directionRowStyle(direction)]}>
-            <View style={styles.summaryTitleWrap}>
-              <Text color={theme.colors.textMuted} style={styles.summaryEyebrow}>
+          <View style={[styles.summaryHeader, { flexDirection: rowDirection, alignItems: "center" }]}>
+            <Avatar name={practitionerName} size={56} label={practitionerName} />
+            <View style={[styles.summaryTitleWrap, { alignItems: alignSelfStart, flex: 1, paddingHorizontal: 12 }]}>
+              <Text color="#6F7E78" style={styles.summaryEyebrow}>
                 {t("patientSessionsFlow.detail.summary")}
               </Text>
-              <Text weight="bold" style={styles.summaryName}>
-                {session.practitioner.displayName ??
-                  t("patientSessionsFlow.common.practitionerFallback")}
+              <Text weight="700" style={styles.summaryName} color="#1F332F" numberOfLines={1}>
+                {practitionerName}
               </Text>
-              <Text color={theme.colors.textMuted} style={styles.summaryMeta}>
+              <Text color="#8F9E98" style={styles.summaryMeta}>
                 {t("patientSessionsFlow.detail.sessionAt", {
                   datetime: session.scheduledStartAt
                     ? formatLocalizedDateTime(session.scheduledStartAt, locale)
@@ -233,31 +241,30 @@ export default function SessionDetailScreen() {
               </Text>
             </View>
 
-            <View
-              style={[
-                styles.statusPill,
-                { backgroundColor: theme.colors.primaryLight },
-              ]}
-            >
-              <Text color={theme.colors.primary} weight="600">
-                {presentationStatusText}
-              </Text>
+            <View style={styles.cardStatusWrap}>
+              <StatusChip
+                label={presentationStatusText}
+                tone={resolveSessionTone(session.status)}
+                showDot={false}
+              />
             </View>
           </View>
 
-          <View style={styles.summaryStack}>
-            <Text color={theme.colors.textSecondary} style={styles.summaryMeta}>
+          <View style={styles.newSummaryDivider} />
+
+          <View style={[styles.summaryStack, { alignItems: alignSelfStart }]}>
+            <Text color="#6F7E78" style={styles.summaryMeta}>
               {t("patientSessionsFlow.detail.heroMode", {
                 mode: formatModeLabel(t, session.sessionMode),
               })}
             </Text>
-            <Text color={theme.colors.textSecondary} style={styles.summaryMeta}>
+            <Text color="#6F7E78" style={styles.summaryMeta}>
               {t("patientSessionsFlow.common.duration")}:{" "}
               {t("patientSessionsFlow.detail.durationValue", {
                 minutes: session.durationMinutes,
               })}
             </Text>
-            <Text color={theme.colors.textMuted} style={styles.codeText}>
+            <Text color="#8F9E98" style={styles.codeText}>
               {t("patientSessionsFlow.detail.sessionCodeLabel", {
                 sessionCode: session.sessionCode,
               })}
@@ -580,7 +587,7 @@ function getActionStateText(
     case "CANCELLED":
       return t("patientSessionsFlow.detail.stateNote.CANCELLED");
     case "UPCOMING":
-      return joinAvailableAtText ?? t("patientSessionsFlow.detail.stateNote.UPCOMING");
+      return t("patientSessionsFlow.detail.stateNote.UPCOMING");
     case "EXPIRED":
     default:
       return t("patientSessionsFlow.detail.stateNote.UNAVAILABLE");
@@ -713,25 +720,159 @@ function DetailRow({ direction, theme, icon, label, value }: DetailRowProps) {
   );
 }
 
+function resolveSessionTone(status: string) {
+  switch (status) {
+    case "READY_TO_JOIN":
+    case "IN_PROGRESS":
+      return "success" as const;
+    case "DRAFT":
+    case "PENDING_PRACTITIONER_CONFIRMATION":
+    case "PENDING_PAYMENT":
+    case "UPCOMING":
+      return "warning" as const;
+    case "COMPLETED":
+      return "default" as const;
+    case "CANCELLED":
+    case "EXPIRED":
+    case "PATIENT_NO_SHOW":
+      return "error" as const;
+    default:
+      return "default" as const;
+  }
+}
+
+function SessionProgressStepper({
+  status,
+  t,
+  isRtl,
+}: {
+  status: string;
+  t: any;
+  isRtl: boolean;
+}) {
+  const rowDir = isRtl ? "row-reverse" : "row";
+
+  let step1Done = true;
+  let step2Active = false;
+  let step2Done = false;
+  let step3Active = false;
+  let step3Done = false;
+  let step4Active = false;
+  let step4Done = false;
+
+  const isCancelled = status === "CANCELLED";
+
+  if (isCancelled) {
+    step1Done = true;
+  } else {
+    if (status === "PENDING_PRACTITIONER_CONFIRMATION") {
+      step2Active = true;
+    } else if (
+      status === "UPCOMING" ||
+      status === "READY_TO_JOIN" ||
+      status === "IN_PROGRESS" ||
+      status === "AWAITING_COMPLETION_CONFIRMATION" ||
+      status === "COMPLETED"
+    ) {
+      step2Done = true;
+    }
+
+    if (status === "READY_TO_JOIN" || status === "IN_PROGRESS") {
+      step3Active = true;
+    } else if (status === "AWAITING_COMPLETION_CONFIRMATION" || status === "COMPLETED") {
+      step3Done = true;
+    }
+
+    if (status === "AWAITING_COMPLETION_CONFIRMATION") {
+      step4Active = true;
+    } else if (status === "COMPLETED") {
+      step4Done = true;
+    }
+  }
+
+  const renderDot = (active: boolean, done: boolean, text: string, isError = false) => {
+    let bg = "#F5F5F5";
+    let border = "#E8DED0";
+    let textColor = "#6F7E78";
+
+    if (done) {
+      bg = "#EEF4EF";
+      border = "#24564F";
+      textColor = "#24564F";
+    } else if (active) {
+      if (isError) {
+        bg = "#FEF3F2";
+        border = "#DC2626";
+        textColor = "#DC2626";
+      } else {
+        bg = "#FCFAF6";
+        border = "#F5EBDD";
+        textColor = "#24564F";
+      }
+    }
+
+    return (
+      <View style={styles.stepperItem}>
+        <View style={[styles.stepperDot, { backgroundColor: bg, borderColor: border }]}>
+          {done ? (
+            <Ionicons name="checkmark" size={12} color="#24564F" />
+          ) : isError ? (
+            <Ionicons name="close" size={12} color="#DC2626" />
+          ) : (
+            <View style={[styles.stepperDotInner, { backgroundColor: active ? "#24564F" : "#C7D3CF" }]} />
+          )}
+        </View>
+        <Text weight={active || done ? "700" : "600"} style={[styles.stepperText, { color: textColor }]}>
+          {text}
+        </Text>
+      </View>
+    );
+  };
+
+  return (
+    <Card variant="outlined" padding="md" style={styles.stepperCard}>
+      <View style={[styles.stepperRow, { flexDirection: rowDir }]}>
+        {isCancelled ? (
+          <>
+            {renderDot(false, true, "طلب الجلسة")}
+            <View style={styles.stepperLineActiveError} />
+            {renderDot(true, false, t("patientSessionsFlow.statuses.CANCELLED"), true)}
+          </>
+        ) : (
+          <>
+            {renderDot(false, step1Done, "طلب الجلسة")}
+            <View style={[styles.stepperLine, step2Done ? styles.stepperLineActive : null]} />
+            {renderDot(step2Active, step2Done, "تأكيد الموعد")}
+            <View style={[styles.stepperLine, step3Done ? styles.stepperLineActive : null]} />
+            {renderDot(step3Active, step3Done, "وقت الجلسة")}
+            <View style={[styles.stepperLine, step4Done ? styles.stepperLineActive : null]} />
+            {renderDot(step4Active, step4Done, "اكتمال الجلسة")}
+          </>
+        )}
+      </View>
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 28,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 16,
   },
   summaryCard: {
-    borderRightWidth: 3,
-    borderRightColor: "#3f7dcf",
+    borderRadius: 20,
+    borderWidth: 1.5,
+    padding: 16,
+    gap: 12,
   },
   summaryHeader: {
-    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 12,
   },
   summaryTitleWrap: {
-    flex: 1,
-    gap: 4,
+    gap: 2,
   },
   summaryEyebrow: {
     fontSize: 12,
@@ -739,19 +880,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   summaryName: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 18,
+    lineHeight: 24,
   },
   summaryMeta: {
     fontSize: 13,
     lineHeight: 20,
   },
+  newSummaryDivider: {
+    height: 1.2,
+    backgroundColor: "#EEF4EF",
+    width: "100%",
+    marginVertical: 4,
+  },
   summaryStack: {
-    marginTop: 14,
     gap: 4,
   },
   codeText: {
-    marginTop: 4,
+    marginTop: 2,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -761,34 +907,41 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     alignSelf: "flex-start",
   },
+  cardStatusWrap: {
+    flexShrink: 0,
+    alignItems: "flex-end",
+  },
   sectionCard: {
-    borderWidth: 1,
-    borderColor: "#e7ecf2",
-    gap: 10,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#E8DED0",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    gap: 12,
   },
   sectionHeader: {
     alignItems: "center",
     justifyContent: "space-between",
   },
   sectionTitle: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
   },
   sectionBody: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13.5,
+    lineHeight: 20,
   },
   primaryAction: {
-    borderRadius: 14,
+    borderRadius: 12,
     marginTop: 2,
   },
   secondaryButton: {
-    borderRadius: 14,
+    borderRadius: 12,
     marginTop: 4,
   },
   joinHint: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12.5,
+    lineHeight: 18,
     marginTop: -2,
   },
   roomClosedCard: {
@@ -827,7 +980,7 @@ const styles = StyleSheet.create({
   },
   secondaryActionRow: {
     minHeight: 48,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -851,8 +1004,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   secondaryActionTitle: {
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 14.5,
+    lineHeight: 19,
   },
   secondaryActionHelper: {
     fontSize: 12,
@@ -868,12 +1021,12 @@ const styles = StyleSheet.create({
   detailRow: {
     alignItems: "center",
     gap: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   detailIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -883,11 +1036,65 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   detailLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11.5,
+    lineHeight: 15,
   },
   detailValue: {
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  stepperCard: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#E8DED0",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+  },
+  stepperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  stepperItem: {
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+    zIndex: 3,
+  },
+  stepperDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepperDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stepperText: {
+    fontSize: 9.5,
+    lineHeight: 13,
+    textAlign: "center",
+  },
+  stepperLine: {
+    height: 3,
+    backgroundColor: "#E8DED0",
+    flex: 1,
+    marginTop: -18,
+    zIndex: 1,
+  },
+  stepperLineActive: {
+    backgroundColor: "#24564F",
+  },
+  stepperLineActiveError: {
+    height: 3,
+    backgroundColor: "#DC2626",
+    flex: 1,
+    marginTop: -18,
+    zIndex: 1,
   },
 });

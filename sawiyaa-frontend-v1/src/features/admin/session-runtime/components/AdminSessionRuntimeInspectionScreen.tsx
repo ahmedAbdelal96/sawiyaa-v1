@@ -4,8 +4,13 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Activity, Compass, MonitorPlay, Radar } from "lucide-react";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import {
+  ListStateSkeleton,
+  StateCard,
+} from "@/components/shared/ContentStates";
 import { formatUtcAuditDateTime } from "@/lib/time-formatting";
+import { PermissionKey } from "@/lib/auth/permissions";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import { getAdminSessionRuntimeErrorKey } from "../lib/admin-session-runtime-errors";
 import { useAdminSessionRuntimeInspection } from "../hooks/use-admin-session-runtime";
@@ -18,15 +23,22 @@ import type {
 } from "../types/admin-session-runtime.types";
 
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
-  PENDING_PAYMENT: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
-  UPCOMING: "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
-  READY_TO_JOIN: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-  IN_PROGRESS: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
+  PENDING_PAYMENT:
+    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
+  UPCOMING:
+    "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
+  READY_TO_JOIN:
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
+  IN_PROGRESS:
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   COMPLETED: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
   CANCELLED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  PATIENT_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  PRACTITIONER_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
-  BOTH_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  PATIENT_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  PRACTITIONER_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  BOTH_NO_SHOW:
+    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
   AWAITING_COMPLETION_CONFIRMATION:
     "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
 };
@@ -46,10 +58,10 @@ function DetailRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
+    <div className="border-border-light flex items-start justify-between gap-4 border-b py-3 last:border-b-0 dark:border-white/8">
+      <span className="text-text-muted text-xs font-medium">{label}</span>
       <span
-        className={`text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
+        className={`text-text-primary text-sm dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
       >
         {value}
       </span>
@@ -68,8 +80,12 @@ function SectionCard({
 }) {
   return (
     <section className="app-panel rounded-[28px] p-5 sm:p-6">
-      <h2 className="text-base font-semibold text-text-primary dark:text-white/95">{title}</h2>
-      {note ? <p className="mt-1 text-sm leading-6 text-text-secondary">{note}</p> : null}
+      <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
+        {title}
+      </h2>
+      {note ? (
+        <p className="text-text-secondary mt-1 text-sm leading-6">{note}</p>
+      ) : null}
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -81,7 +97,7 @@ function RuntimeSummary({ item }: { item: AdminSessionRuntimeInspectionItem }) {
 
   return (
     <SectionCard title={t("sections.summary.title")}>
-      <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
+      <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
         <DetailRow label={t("fields.id")} value={item.id} mono />
         <DetailRow
           label={t("fields.status")}
@@ -104,12 +120,16 @@ function RuntimeSummary({ item }: { item: AdminSessionRuntimeInspectionItem }) {
   );
 }
 
-function ProviderSummary({ item }: { item: AdminSessionRuntimeInspectionItem }) {
+function ProviderSummary({
+  item,
+}: {
+  item: AdminSessionRuntimeInspectionItem;
+}) {
   const t = useTranslations("admin-session-runtime");
 
   return (
     <SectionCard title={t("sections.provider.title")}>
-      <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
+      <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
         <DetailRow
           label={t("fields.provider")}
           value={t(`providers.${item.provider}` as Parameters<typeof t>[0])}
@@ -136,12 +156,11 @@ function ReadinessSummary({
 }) {
   const t = useTranslations("admin-session-runtime");
   const blockedReason =
-    item.blockedReason ??
-    ("NONE" as AdminSessionJoinBlockedReason | "NONE");
+    item.blockedReason ?? ("NONE" as AdminSessionJoinBlockedReason | "NONE");
 
   return (
     <SectionCard title={t("sections.readiness.title")}>
-      <div className="rounded-[24px] border border-border-light px-4 dark:border-white/8">
+      <div className="border-border-light rounded-[24px] border px-4 dark:border-white/8">
         <DetailRow
           label={t("fields.canPrepareRuntime")}
           value={item.canPrepareRuntime ? t("labels.yes") : t("labels.no")}
@@ -171,8 +190,24 @@ export default function AdminSessionRuntimeInspectionScreen({
   const [sessionId, setSessionId] = useState(initialSessionId ?? "");
   const [submittedId, setSubmittedId] = useState(initialSessionId ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
+  const {
+    data: permissionData,
+    isLoading: permissionsLoading,
+    isError: permissionsError,
+  } = useCurrentUserPermissions(true);
+  const hasPackageWritePermission =
+    !permissionsLoading &&
+    !permissionsError &&
+    Boolean(
+      permissionData?.permissions?.includes(
+        PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE,
+      ),
+    );
 
-  const inspection = useAdminSessionRuntimeInspection(submittedId, Boolean(submittedId));
+  const inspection = useAdminSessionRuntimeInspection(
+    submittedId,
+    Boolean(submittedId),
+  );
   const item = inspection.data?.item;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -192,7 +227,7 @@ export default function AdminSessionRuntimeInspectionScreen({
       <section className="app-panel rounded-[32px] p-6 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
+            <h1 className="text-text-primary text-2xl font-semibold tracking-tight sm:text-3xl dark:text-white/95">
               {t("page.title")}
             </h1>
           </div>
@@ -205,21 +240,21 @@ export default function AdminSessionRuntimeInspectionScreen({
       <section className="app-panel rounded-[28px] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+            <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
               {t("lookup.heading")}
             </h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/admin/payments"
-              className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
+              className="border-border-light text-text-secondary hover:border-primary/30 hover:text-primary inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition"
             >
               <DirectionalArrowIcon direction="back" className="h-3.5 w-3.5" />
               {t("lookup.backToPayments")}
             </Link>
             <Link
               href="/admin/sessions/runtime-inspector"
-              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary-light px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15"
+              className="border-primary/30 bg-primary-light text-primary hover:bg-primary/15 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition"
             >
               <Compass className="h-3.5 w-3.5" />
               {t("lookup.openInspector")}
@@ -227,21 +262,24 @@ export default function AdminSessionRuntimeInspectionScreen({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-4 flex flex-col gap-3 sm:flex-row"
+        >
           <label className="flex-1">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
               {t("lookup.fieldLabel")}
             </span>
             <input
               value={sessionId}
               onChange={(event) => setSessionId(event.target.value)}
               placeholder={t("lookup.placeholder")}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
+              className="border-border-light text-text-primary focus:border-primary/35 w-full rounded-2xl border bg-white px-4 py-3 text-sm transition outline-none dark:bg-white/5 dark:text-white"
             />
           </label>
           <button
             type="submit"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
+            className="bg-primary hover:bg-primary-hover inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white transition"
           >
             <Radar className="h-4 w-4" />
             {t("lookup.submit")}
@@ -249,13 +287,15 @@ export default function AdminSessionRuntimeInspectionScreen({
         </form>
 
         {localError ? (
-          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{localError}</p>
+          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+            {localError}
+          </p>
         ) : null}
       </section>
 
       {!submittedId ? (
         <StateCard
-          icon={<MonitorPlay className="h-5 w-5 text-primary" />}
+          icon={<MonitorPlay className="text-primary h-5 w-5" />}
           title={t("states.empty.heading")}
           note={t("states.empty.note")}
           className="rounded-[28px] p-8"
@@ -264,9 +304,13 @@ export default function AdminSessionRuntimeInspectionScreen({
         <ListStateSkeleton items={3} heightClass="h-24" />
       ) : inspection.isError ? (
         <StateCard
-          icon={<Activity className="h-5 w-5 text-primary" />}
+          icon={<Activity className="text-primary h-5 w-5" />}
           title={t("states.error.heading")}
-          note={t(getAdminSessionRuntimeErrorKey(inspection.error) as Parameters<typeof t>[0])}
+          note={t(
+            getAdminSessionRuntimeErrorKey(inspection.error) as Parameters<
+              typeof t
+            >[0],
+          )}
           action={{
             label: t("states.error.retry"),
             onClick: () => inspection.refetch(),
@@ -278,10 +322,10 @@ export default function AdminSessionRuntimeInspectionScreen({
           <section className="app-panel rounded-[28px] p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                <p className="text-primary mb-2 text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("result.eyebrow")}
                 </p>
-                <h2 className="text-xl font-semibold tracking-tight text-text-primary dark:text-white/95">
+                <h2 className="text-text-primary text-xl font-semibold tracking-tight dark:text-white/95">
                   {t("result.title")}
                 </h2>
               </div>
@@ -295,8 +339,11 @@ export default function AdminSessionRuntimeInspectionScreen({
                   {t(`statuses.${item.status}` as Parameters<typeof t>[0])}
                 </span>
                 <Link
-                  href={{ pathname: "/admin/sessions/runtime-inspector", query: { sessionId: item.id } }}
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+                  href={{
+                    pathname: "/admin/sessions/runtime-inspector",
+                    query: { sessionId: item.id },
+                  }}
+                  className="border-primary/30 bg-primary-light text-primary hover:bg-primary/15 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
                 >
                   <Compass className="h-3.5 w-3.5" />
                   {t("lookup.openInspector")}
@@ -305,7 +352,10 @@ export default function AdminSessionRuntimeInspectionScreen({
             </div>
           </section>
 
-          <AdminSessionAttendanceSection sessionId={item.id} enabled={Boolean(submittedId)} />
+          <AdminSessionAttendanceSection
+            sessionId={item.id}
+            enabled={Boolean(submittedId)}
+          />
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.9fr)]">
             <div className="space-y-5">
@@ -318,17 +368,19 @@ export default function AdminSessionRuntimeInspectionScreen({
 
           <ProviderSummary item={item} />
 
-          <AdminSessionPackageEntitlementPanel item={item} />
+          <AdminSessionPackageEntitlementPanel
+            item={item}
+            hasWritePermission={hasPackageWritePermission}
+          />
         </div>
       ) : (
         <StateCard
-          icon={<MonitorPlay className="h-5 w-5 text-primary" />}
+          icon={<MonitorPlay className="text-primary h-5 w-5" />}
           title={t("states.notFound.heading")}
           note={t("states.notFound.note")}
           className="rounded-[28px] p-8"
         />
       )}
-
     </div>
   );
 }

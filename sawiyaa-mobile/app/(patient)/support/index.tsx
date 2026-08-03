@@ -12,7 +12,6 @@ import {
   LoadingState,
   ErrorState,
   FilterChip,
-  StatusBadge,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { usePatientSupportTickets } from "../../../src/features/patient/support/hooks";
@@ -20,6 +19,7 @@ import type {
   SupportTicketItemDto,
   SupportTicketStatus,
 } from "../../../src/features/patient/support/types";
+import { formatViewerDate } from "../../../src/lib/time-formatting";
 
 type TabFilter = "active" | "resolved";
 
@@ -73,11 +73,12 @@ export default function SupportListScreen() {
   });
 
   function formatDate(dateStr: string) {
-    const date = new Date(dateStr);
     const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-    return date.toLocaleDateString(locale, {
+    return formatViewerDate(dateStr, {
+      locale,
       day: "numeric",
       month: "short",
+      fallbackText: "-",
     });
   }
 
@@ -86,15 +87,13 @@ export default function SupportListScreen() {
       <TouchableOpacity
         key={ticket.id}
         onPress={() =>
-          router.push(
-            {
-              pathname: "/(patient)/support/[id]",
-              params: {
-                id: ticket.id,
-                returnTo: returnToRoute ?? "",
-              },
-            } as any,
-          )
+          router.push({
+            pathname: "/(patient)/support/[id]",
+            params: {
+              id: ticket.id,
+              returnTo: returnToRoute ?? "",
+            },
+          } as any)
         }
         activeOpacity={0.8}
       >
@@ -157,12 +156,10 @@ export default function SupportListScreen() {
         rightElement={
           <TouchableOpacity
             onPress={() =>
-              router.push(
-                {
-                  pathname: "/(patient)/support/new",
-                  params: { returnTo: returnToRoute ?? "" },
-                } as any,
-              )
+              router.push({
+                pathname: "/(patient)/support/new",
+                params: { returnTo: returnToRoute ?? "" },
+              } as any)
             }
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -216,12 +213,10 @@ export default function SupportListScreen() {
                 { backgroundColor: theme.colors.primary },
               ]}
               onPress={() =>
-                router.push(
-                  {
-                    pathname: "/(patient)/support/new",
-                    params: { returnTo: returnToRoute ?? "" },
-                  } as any,
-                )
+                router.push({
+                  pathname: "/(patient)/support/new",
+                  params: { returnTo: returnToRoute ?? "" },
+                } as any)
               }
               activeOpacity={0.85}
             >
@@ -313,4 +308,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-

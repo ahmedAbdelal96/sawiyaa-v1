@@ -11,13 +11,15 @@ import {
   updateSupportTicketStatus,
   getAdminSupportTicket,
 } from "@/features/messages-shell/api/messages-shell.api";
+import { getAdminCareChatRequests } from "@/features/care-chat/api/care-chat.api";
 import UnifiedConversationThread from "./UnifiedConversationThread";
 import SupportSafeContextPanel from "./SupportSafeContextPanel";
 import NewSupportRequestModal from "./NewSupportRequestModal";
+import CareChatConversationPanel from "@/features/care-chat/components/CareChatConversationPanel";
 import type { CanonicalConversation } from "@/features/messages-shell/types/messages-shell.types";
 
 // Icons
-import { Search, PlusCircle, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Search, PlusCircle, AlertCircle, Loader2, ArrowLeft, Heart } from "lucide-react";
 
 type Props = {
   role: "patient" | "practitioner" | "admin";
@@ -38,8 +40,8 @@ export default function MessagesWorkspace({ role }: Props) {
   const [isContextPanelOpen, setIsContextPanelOpen] = useState(true);
   const [isResolving, setIsResolving] = useState(false);
 
-  // Active support queue filter tab (Admin only)
-  // Default is NEEDS_SUPPORT_REPLY for admins
+  // Active queue/lane tab for Admin
+  // Values: "NEEDS_SUPPORT_REPLY" | "WAITING_FOR_USER" | "RESOLVED" | "CARE"
   const defaultAdminQueue = "NEEDS_SUPPORT_REPLY";
   const activeAdminQueue = searchParams.get("queue") || defaultAdminQueue;
 
@@ -60,7 +62,16 @@ export default function MessagesWorkspace({ role }: Props) {
   const adminConversationsQuery = useQuery({
     queryKey: ["admin-canonical-conversations"],
     queryFn: () => listCanonicalConversations({ page: 1, limit: 50 }),
-    enabled: role === "admin",
+    enabled: role === "admin" && activeAdminQueue !== "CARE",
+    staleTime: 10000,
+    refetchInterval: 15000,
+  });
+
+  // 1b2. Fetch care chat requests for Admin when CARE queue tab is selected
+  const adminCareChatRequestsQuery = useQuery({
+    queryKey: ["admin-care-chat-requests"],
+    queryFn: () => getAdminCareChatRequests({ limit: 50 }),
+    enabled: role === "admin" && activeAdminQueue === "CARE",
     staleTime: 10000,
     refetchInterval: 15000,
   });
@@ -77,8 +88,12 @@ export default function MessagesWorkspace({ role }: Props) {
       );
 
       if (!item) {
-        const legacyResult = await getAdminSupportTicket(selectedId!);
-        return { item: legacyResult.item };
+        try {
+          const legacyResult = await getAdminSupportTicket(selectedId!);
+          return { item: legacyResult.item };
+        } catch {
+          return { item: null };
+        }
       }
 
       return { item };
@@ -89,8 +104,46 @@ export default function MessagesWorkspace({ role }: Props) {
 
   const conversations = useMemo(() => {
     if (role === "admin") {
-      const tickets = (adminConversationsQuery.data?.items ?? []).filter(
-        (conversation) => conversation.supportQueueState === activeAdminQueue,
+      if (activeAdminQueue === "CARE") {
+        const requests = adminCareChatRequestsQuery.data?.items ?? [];
+        return requests
+          .filter((r) => Boolean(r.linkedConversationId))
+          .map((r) => ({
+            id: r.linkedConversationId!,
+            conversationId: r.linkedConversationId!,
+            supportTicketId: null,
+            type: "CARE" as const,
+            title: `${r.patient?.displayName || (isAr ? "مريض" : "Patient")} & ${r.practitioner?.displayName || (isAr ? "مختص" : "Practitioner")}`,
+            subject: r.reason || (isAr ? "طلب محادثة رعاية" : "Care Chat Request"),
+            contextLabel: isAr ? "رعاية" : "Care",
+            contextId: r.id,
+            status: r.status,
+            isResolved: r.status !== "APPROVED",
+            isReadOnly: true,
+            canSend: false,
+            sendDisabledReason: null,
+            unreadCount: r.unreadCount || 0,
+            lastMessage: null,
+            participants: [],
+            otherParty: {
+              userId: r.patient?.id || "patient",
+              displayName: r.patient?.displayName || (isAr ? "مريض سويّة" : "Patient"),
+              avatarUrl: null,
+              publicRoleLabel: "Patient" as const,
+            },
+            supportQueueState: null,
+            createdAt: r.requestedAt,
+            updatedAt: r.requestedAt,
+            lastActivityAt: r.requestedAt,
+          }));
+      }
+
+      const allItems = adminConversationsQuery.data?.items ?? [];
+      // Show support tickets by queue state
+      const tickets = allItems.filter(
+        (conversation) =>
+          conversation.type !== "CARE" &&
+          conversation.supportQueueState === activeAdminQueue,
       );
       return tickets.map((t) => ({
         id: t.supportTicketId ?? t.conversationId,
@@ -122,7 +175,7 @@ export default function MessagesWorkspace({ role }: Props) {
       }));
     }
     return conversationsQuery.data?.items ?? [];
-  }, [role, adminConversationsQuery.data?.items, activeAdminQueue, conversationsQuery.data?.items, isAr]);
+  }, [role, adminConversationsQuery.data?.items, adminCareChatRequestsQuery.data?.items, activeAdminQueue, conversationsQuery.data?.items, isAr]);
 
   // 3. Filter & Search logic
   const filteredConversations = useMemo(() => {
@@ -249,6 +302,16 @@ export default function MessagesWorkspace({ role }: Props) {
     router.replace(`${pathname}?${params.toString()}`);
   };
 
+  // For CARE conversations (admin), navigate directly to the conversation page
+  const handleConversationClick = useCallback((c: (typeof conversations)[number]) => {
+    if (role === "admin" && activeAdminQueue === "CARE") {
+      // Keep conversationId in URL so detail pane renders it inline
+      updateActiveConversationUrl(c.conversationId);
+      return;
+    }
+    updateActiveConversationUrl(c.conversationId);
+  }, [role, activeAdminQueue, updateActiveConversationUrl]);
+
   const handleStartSupport = () => {
     if (activeSupportConversation) {
       updateActiveConversationUrl(activeSupportConversation.conversationId);
@@ -280,8 +343,19 @@ export default function MessagesWorkspace({ role }: Props) {
     }
   };
 
-  const listQueryLoading = role === "admin" ? adminConversationsQuery.isLoading : conversationsQuery.isLoading;
-  const listQueryError = role === "admin" ? adminConversationsQuery.isError : conversationsQuery.isError;
+  const listQueryLoading =
+    role === "admin"
+      ? activeAdminQueue === "CARE"
+        ? adminCareChatRequestsQuery.isLoading
+        : adminConversationsQuery.isLoading
+      : conversationsQuery.isLoading;
+
+  const listQueryError =
+    role === "admin"
+      ? activeAdminQueue === "CARE"
+        ? adminCareChatRequestsQuery.isError
+        : adminConversationsQuery.isError
+      : conversationsQuery.isError;
   const isThreadLoading = role === "admin" && Boolean(selectedId) ? resolvedTicketQuery.isLoading : false;
 
   const showDetailPane = Boolean(selectedId);
@@ -329,28 +403,44 @@ export default function MessagesWorkspace({ role }: Props) {
 
               {/* Admin Queue Tabs */}
               {role === "admin" && (
-                <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 dark:bg-white/5 p-1">
-                  {[
-                    { key: "NEEDS_SUPPORT_REPLY", label: isAr ? "تحتاج إلى رد" : "Needs reply" },
-                    { key: "WAITING_FOR_USER", label: isAr ? "في انتظار المستخدم" : "Waiting" },
-                    { key: "RESOLVED", label: isAr ? "تم الحل" : "Resolved" },
-                  ].map((tab) => {
-                    const isActive = activeAdminQueue === tab.key;
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => handleQueueChange(tab.key)}
-                        className={cn(
-                          "py-1.5 rounded-lg text-[10px] font-bold text-center transition-all",
-                          isActive
-                            ? "bg-teal-600 text-white shadow-sm"
-                            : "text-text-secondary dark:text-slate-400 hover:text-text-primary"
-                        )}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
+                <div className="space-y-1.5">
+                  {/* Support queue tabs */}
+                  <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 dark:bg-white/5 p-1">
+                    {[
+                      { key: "NEEDS_SUPPORT_REPLY", label: isAr ? "يحتاج رد" : "Needs reply" },
+                      { key: "WAITING_FOR_USER", label: isAr ? "انتظار" : "Waiting" },
+                      { key: "RESOLVED", label: isAr ? "محلول" : "Resolved" },
+                    ].map((tab) => {
+                      const isActive = activeAdminQueue === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => handleQueueChange(tab.key)}
+                          className={cn(
+                            "py-1.5 rounded-lg text-[10px] font-bold text-center transition-all",
+                            isActive
+                              ? "bg-teal-600 text-white shadow-sm"
+                              : "text-text-secondary dark:text-slate-400 hover:text-text-primary"
+                          )}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Care Chat tab */}
+                  <button
+                    onClick={() => handleQueueChange("CARE")}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-bold text-center transition-all border",
+                      activeAdminQueue === "CARE"
+                        ? "bg-indigo-600 text-white shadow-sm border-indigo-600"
+                        : "border-indigo-200/60 text-indigo-600 dark:text-indigo-400 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    )}
+                  >
+                    <Heart className="h-3 w-3" />
+                    {isAr ? "محادثات الرعاية" : "Care Chats"}
+                  </button>
                 </div>
               )}
             </div>
@@ -396,7 +486,7 @@ export default function MessagesWorkspace({ role }: Props) {
                   return (
                     <button
                       key={c.conversationId}
-                      onClick={() => updateActiveConversationUrl(c.conversationId)}
+                      onClick={() => handleConversationClick(c)}
                       className={cn(
                         "relative w-full rounded-2xl border p-3 text-start transition-all duration-200 flex items-start justify-between gap-3",
                         isActive
@@ -473,7 +563,17 @@ export default function MessagesWorkspace({ role }: Props) {
                   </button>
                 </div>
                 <div className="flex-1 flex flex-col min-h-0">
-                  {isThreadLoading ? (
+                  {/* CARE lane: render the care conversation panel inline */}
+                  {role === "admin" && activeAdminQueue === "CARE" && selectedId ? (
+                    <div className="flex-1 h-full min-h-0 overflow-hidden">
+                      <CareChatConversationPanel
+                        conversationId={selectedId}
+                        scope="admin"
+                        backHref={pathname}
+                        variant="embedded"
+                      />
+                    </div>
+                  ) : isThreadLoading ? (
                     <div className="flex-1 flex items-center justify-center text-text-muted animate-pulse font-semibold text-xs">
                       <span>{isAr ? "جاري تحميل تفاصيل المحادثة..." : "Loading conversation details..."}</span>
                     </div>

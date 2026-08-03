@@ -10,14 +10,12 @@ function buildValidEnv(overrides: Record<string, unknown> = {}) {
     JWT_ACCESS_SECRET: 'this_is_a_long_access_secret_123',
     JWT_REFRESH_SECRET: 'this_is_a_long_refresh_secret_123',
     STRIPE_MODE: 'test',
-    PAYMENT_STRIPE_ENABLED: 'true',
     STRIPE_SECRET_KEY: 'sk_test_example',
     STRIPE_WEBHOOK_SECRET: 'whsec_example',
     STRIPE_API_BASE_URL: 'https://api.stripe.com',
     PAYMENT_SUCCESS_URL: 'http://localhost:3000/payment/success',
     PAYMENT_FAILED_URL: 'http://localhost:3000/payment/failed',
     PAYMENT_PENDING_URL: 'http://localhost:3000/payment/pending',
-    PAYMENT_PAYMOB_ENABLED: 'false',
     ...overrides,
   };
 }
@@ -42,9 +40,7 @@ describe('env.schema payment validation', () => {
 
   it('rejects a non-boolean practitioner OTP configuration value', () => {
     expect(() =>
-      validate(
-        buildValidEnv({ PRACTITIONER_LOGIN_OTP_REQUIRED: 'maybe' }),
-      ),
+      validate(buildValidEnv({ PRACTITIONER_LOGIN_OTP_REQUIRED: 'maybe' })),
     ).toThrow(/PRACTITIONER_LOGIN_OTP_REQUIRED/);
   });
 
@@ -71,6 +67,15 @@ describe('env.schema payment validation', () => {
     const env = validate(buildValidEnv());
     expect(env.AVAILABILITY_FUTURE_WEEKS_ALLOWED).toBe(4);
     expect(env.AVAILABILITY_RETENTION_MONTHS).toBe(12);
+  });
+
+  it('validates the session runtime preparation lead window', () => {
+    expect(validate(buildValidEnv()).SESSION_RUNTIME_PREPARE_LEAD_MINUTES).toBe(
+      1440,
+    );
+    expect(() =>
+      validate(buildValidEnv({ SESSION_RUNTIME_PREPARE_LEAD_MINUTES: '0' })),
+    ).toThrow(/SESSION_RUNTIME_PREPARE_LEAD_MINUTES/);
   });
 
   it('accepts availability environment overrides', () => {
@@ -103,48 +108,106 @@ describe('env.schema payment validation', () => {
     ).toThrow(/STRIPE_MODE must be test/);
   });
 
-  it('rejects missing redirect URL variables when payments are enabled', () => {
+  it('accepts payment redirect URLs as optional infrastructure values', () => {
     expect(() =>
       validate(
         buildValidEnv({
-          PAYMENT_SUCCESS_URL: '',
+          PAYMENT_SUCCESS_URL: undefined,
         }),
       ),
-    ).toThrow(/PAYMENT_SUCCESS_URL is required/);
+    ).not.toThrow();
   });
 
-  it('rejects missing paymob iframe when paymob is enabled', () => {
+  it('does not require database-owned provider settings in ENV', () => {
     expect(() =>
       validate(
         buildValidEnv({
-          PAYMENT_PAYMOB_ENABLED: 'true',
           PAYMOB_MODE: 'test',
-          PAYMOB_API_KEY: 'paymob_api',
-          PAYMOB_HMAC_SECRET: 'paymob_hmac',
-          PAYMOB_INTEGRATION_ID_CARD: '12345',
-          PAYMOB_BASE_URL: 'https://accept.paymob.com/api',
           PAYMOB_IFRAME_ID: '',
         }),
       ),
-    ).toThrow(/PAYMOB_IFRAME_ID is required/);
+    ).not.toThrow();
   });
 
-  it('rejects missing paymob intention config when intention flow is enabled', () => {
+  it('still rejects live payment modes outside production', () => {
     expect(() =>
       validate(
         buildValidEnv({
-          PAYMENT_PAYMOB_ENABLED: 'true',
-          PAYMOB_CHECKOUT_FLOW: 'intention',
-          PAYMOB_MODE: 'test',
-          PAYMOB_API_KEY: 'paymob_api',
-          PAYMOB_HMAC_SECRET: 'paymob_hmac',
-          PAYMOB_INTEGRATION_ID_CARD: '12345',
-          PAYMOB_BASE_URL: 'https://accept.paymob.com/api',
-          PAYMOB_CHECKOUT_BASE_URL: '',
-          PAYMOB_INTENTION_BASE_URL: '',
-          PAYMOB_PUBLIC_KEY: '',
+          PAYMOB_MODE: 'live',
         }),
       ),
-    ).toThrow(/PAYMOB_PUBLIC_KEY is required/);
+    ).toThrow(/PAYMOB_MODE must be test/);
+  });
+
+  it('does not retain APP_DEFAULT_LOCALE as an ENV runtime setting', () => {
+    const env = validate(buildValidEnv({ APP_DEFAULT_LOCALE: 'en' }));
+    expect((env as Record<string, unknown>).APP_DEFAULT_LOCALE).toBeUndefined();
+  });
+
+  it('requires the selected Brevo provider contract in production', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          MAIL_PROVIDER: 'brevo',
+          MAIL_FROM: 'noreply@example.com',
+          BREVO_API_KEY: 'brevo-key',
+          BREVO_API_URL: 'https://api.brevo.com',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+        }),
+      ),
+    ).not.toThrow();
+
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          MAIL_PROVIDER: 'brevo',
+          MAIL_FROM: 'noreply@example.com',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+        }),
+      ),
+    ).toThrow(/BREVO_API_KEY/);
+  });
+
+  it('rejects unsafe production OTP controls and development URLs', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          DEV_OTP_EMAIL_REDIRECT: 'qa@example.com',
+          MAIL_PROVIDER: 'smtp',
+          MAIL_FROM: 'noreply@example.com',
+          MAIL_HOST: 'smtp.example.com',
+          MAIL_USER: 'smtp-user',
+          MAIL_PASS: 'smtp-pass',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'http://localhost:4444',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+        }),
+      ),
+    ).toThrow(/production|HTTPS/i);
   });
 });

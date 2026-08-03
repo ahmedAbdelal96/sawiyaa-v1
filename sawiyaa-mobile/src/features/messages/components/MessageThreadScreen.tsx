@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,12 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
-import {
-  ErrorState,
-  Header,
-  Screen,
-  Text,
-} from "../../../components/ui";
+import { ErrorState, Header, Screen, Text } from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useAppDirection } from "../../../i18n/direction";
 import {
@@ -35,15 +36,17 @@ import type {
   CanonicalMessage,
   GeneralChatConversationDetailItemDto,
 } from "../types";
-import {
-  useCanonicalConversation,
-  useUnifiedMessages,
-} from "../hooks";
+import { useCanonicalConversation, useUnifiedMessages } from "../hooks";
 import {
   ConversationBubble,
   ConversationComposer,
   ConversationEmptyState,
 } from "./ConversationPrimitives";
+import {
+  formatViewerDate,
+  getDatePartsInTimeZone,
+  getEffectiveViewerTimeZone,
+} from "../../../lib/time-formatting";
 
 type MessageThreadScreenProps = {
   role: MessagesRole;
@@ -62,28 +65,39 @@ type ThreadMessageRow = {
 // Helper function to format date cleanly like WhatsApp
 function getMessageDateString(sentAt: string, locale: string): string {
   const date = new Date(sentAt);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const isSameDay = (d1: Date, d2: Date) =>
-    d1.getFullYear() === d2.getFullYear() &&
-    d1.getMonth() === d2.getMonth() &&
-    d1.getDate() === d2.getDate();
+  const timeZone = getEffectiveViewerTimeZone();
+  const target = getDatePartsInTimeZone(date, timeZone);
+  const today = getDatePartsInTimeZone(new Date(), timeZone);
+  const dayKey = (parts: ReturnType<typeof getDatePartsInTimeZone>) =>
+    parts ? `${parts.year}-${parts.month}-${parts.day}` : null;
+  const targetKey = dayKey(target);
+  const todayKey = dayKey(today);
+  const targetDay = target
+    ? Date.UTC(target.year, target.month - 1, target.day)
+    : NaN;
+  const todayDay = today
+    ? Date.UTC(today.year, today.month - 1, today.day)
+    : NaN;
 
   const isArabic = locale.startsWith("ar");
 
-  if (isSameDay(date, today)) {
+  if (targetKey && targetKey === todayKey) {
     return isArabic ? "اليوم" : "Today";
   }
-  if (isSameDay(date, yesterday)) {
+  if (
+    Number.isFinite(targetDay) &&
+    Number.isFinite(todayDay) &&
+    todayDay - targetDay === 86_400_000
+  ) {
     return isArabic ? "أمس" : "Yesterday";
   }
 
-  return date.toLocaleDateString(locale, {
+  return formatViewerDate(date, {
+    locale,
     day: "numeric",
     month: "long",
     year: "numeric",
+    fallbackText: "-",
   });
 }
 
@@ -139,12 +153,19 @@ export function MessageThreadScreen({
         userId: m.sender.userId,
         displayName: m.sender.displayName,
         avatarUrl: m.sender.avatarUrl,
-        role: m.sender.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
-        subtitle: m.sender.publicRoleLabel === "Support team" || m.sender.publicRoleLabel === "Admin"
-          ? t("messages.thread.supportRoleLabel")
-          : (m.sender.publicRoleLabel === "Patient"
-               ? (isRtl ? "المريض" : "Patient")
-               : (isRtl ? "المختص" : "Practitioner")),
+        role:
+          m.sender.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+        subtitle:
+          m.sender.publicRoleLabel === "Support team" ||
+          m.sender.publicRoleLabel === "Admin"
+            ? t("messages.thread.supportRoleLabel")
+            : m.sender.publicRoleLabel === "Patient"
+              ? isRtl
+                ? "المريض"
+                : "Patient"
+              : isRtl
+                ? "المختص"
+                : "Practitioner",
         status: null,
         verificationStatus: null,
       },
@@ -162,87 +183,93 @@ export function MessageThreadScreen({
     }));
   }, [messages, isRtl, t]);
 
-  const legacyConversation = useMemo<GeneralChatConversationDetailItemDto | null>(() => {
-    if (!conversation) return null;
-    return {
-      conversationId: conversation.conversationId,
-      conversationRef: conversation.conversationId,
-      status: conversation.status,
-      linkedSessionId: conversation.contextId,
-      participants: conversation.participants.map((p) => ({
-        userId: p.userId,
-        role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
-        identity: {
-          participantId: p.userId,
+  const legacyConversation =
+    useMemo<GeneralChatConversationDetailItemDto | null>(() => {
+      if (!conversation) return null;
+      return {
+        conversationId: conversation.conversationId,
+        conversationRef: conversation.conversationId,
+        status: conversation.status,
+        linkedSessionId: conversation.contextId,
+        participants: conversation.participants.map((p) => ({
           userId: p.userId,
-          displayName: p.displayName,
-          avatarUrl: p.avatarUrl,
           role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
-          subtitle: p.publicRoleLabel,
-          status: null,
-          verificationStatus: null,
+          identity: {
+            participantId: p.userId,
+            userId: p.userId,
+            displayName: p.displayName,
+            avatarUrl: p.avatarUrl,
+            role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+            subtitle: p.publicRoleLabel,
+            status: null,
+            verificationStatus: null,
+          },
+        })),
+        createdAt: conversation.createdAt,
+        latestActivityAt: conversation.lastActivityAt,
+        latestMessage: null,
+        unreadCount: conversation.unreadCount,
+        hasUnread: conversation.unreadCount > 0,
+        lastReadMessageId: null,
+        lastReadAt: null,
+        chatAvailability: {
+          canRead: true,
+          canSend: conversation.canSend,
+          readOnly: conversation.isReadOnly || conversation.isResolved,
+          reason: (conversation.sendDisabledReason as any) || "ALLOWED",
         },
-      })),
-      createdAt: conversation.createdAt,
-      latestActivityAt: conversation.lastActivityAt,
-      latestMessage: null,
-      unreadCount: conversation.unreadCount,
-      hasUnread: conversation.unreadCount > 0,
-      lastReadMessageId: null,
-      lastReadAt: null,
-      chatAvailability: {
-        canRead: true,
-        canSend: conversation.canSend,
-        readOnly: conversation.isReadOnly || conversation.isResolved,
-        reason: conversation.sendDisabledReason as any || "ALLOWED",
-      },
-      hasMessages: true,
-    };
-  }, [conversation]);
+        hasMessages: true,
+      };
+    }, [conversation]);
 
   const messageRows = useMemo<ThreadMessageRow[]>(() => {
-    return legacyMessages.map((message: GeneralChatMessageItemDto, index: number) => {
-      const previous = index > 0 ? legacyMessages[index - 1] : null;
+    return legacyMessages.map(
+      (message: GeneralChatMessageItemDto, index: number) => {
+        const previous = index > 0 ? legacyMessages[index - 1] : null;
 
-      let showDateSeparator = false;
-      let dateSeparatorText = "";
+        let showDateSeparator = false;
+        let dateSeparatorText = "";
 
-      if (!previous) {
-        showDateSeparator = true;
-        dateSeparatorText = getMessageDateString(message.sentAt, locale);
-      } else {
-        const prevDate = new Date(previous.sentAt);
-        const currDate = new Date(message.sentAt);
-        const isDifferentDay =
-          prevDate.getFullYear() !== currDate.getFullYear() ||
-          prevDate.getMonth() !== currDate.getMonth() ||
-          prevDate.getDate() !== currDate.getDate();
-
-        if (isDifferentDay) {
+        if (!previous) {
           showDateSeparator = true;
           dateSeparatorText = getMessageDateString(message.sentAt, locale);
-        }
-      }
+        } else {
+          const prevDate = new Date(previous.sentAt);
+          const currDate = new Date(message.sentAt);
+          const isDifferentDay =
+            prevDate.getFullYear() !== currDate.getFullYear() ||
+            prevDate.getMonth() !== currDate.getMonth() ||
+            prevDate.getDate() !== currDate.getDate();
 
-      return {
-        message,
-        isGroupStart: !previous || !isSameSenderMessage(previous, message),
-        senderLabel: getMessageSenderLabel(message, user?.id, role, locale),
-        senderRoleLabel: getMessageSenderRoleLabel(
+          if (isDifferentDay) {
+            showDateSeparator = true;
+            dateSeparatorText = getMessageDateString(message.sentAt, locale);
+          }
+        }
+
+        return {
           message,
-          user?.id,
-          role,
-          locale,
-        ),
-        showDateSeparator,
-        dateSeparatorText,
-      };
-    });
+          isGroupStart: !previous || !isSameSenderMessage(previous, message),
+          senderLabel: getMessageSenderLabel(message, user?.id, role, locale),
+          senderRoleLabel: getMessageSenderRoleLabel(
+            message,
+            user?.id,
+            role,
+            locale,
+          ),
+          showDateSeparator,
+          dateSeparatorText,
+        };
+      },
+    );
   }, [locale, legacyMessages, role, user?.id]);
 
   const headerPresentation = useMemo(() => {
     if (!conversation) {
-      return { title: t("messages.thread.sessionTitle", "Session chat"), subtitle: undefined };
+      return {
+        title: t("messages.thread.sessionTitle", "Session chat"),
+        subtitle: undefined,
+      };
     }
     const result = getConversationHeaderPresentation(conversation, role, t);
     return { title: result.title, subtitle: result.subtitle || undefined };
@@ -257,11 +284,7 @@ export function MessageThreadScreen({
   const isRefreshing = conversationQuery.isRefetching && !isLoadingMore;
 
   const maybeAutoFillOlderMessages = useCallback(async () => {
-    if (
-      autoFillInFlightRef.current ||
-      isLoadingMore ||
-      !hasMore
-    ) {
+    if (autoFillInFlightRef.current || isLoadingMore || !hasMore) {
       return;
     }
 
@@ -282,7 +305,11 @@ export function MessageThreadScreen({
   }, [isLoadingMore, hasMore, loadMore]);
 
   const lastIncomingMessage = useMemo(() => {
-    return [...legacyMessages].reverse().find((msg) => msg.senderUserId !== currentUserId) || null;
+    return (
+      [...legacyMessages]
+        .reverse()
+        .find((msg) => msg.senderUserId !== currentUserId) || null
+    );
   }, [legacyMessages, currentUserId]);
 
   useEffect(() => {
@@ -337,20 +364,29 @@ export function MessageThreadScreen({
       });
     } catch {
       setComposerError(
-        t("messages.thread.sendError", "Could not send this message right now."),
+        t(
+          "messages.thread.sendError",
+          "Could not send this message right now.",
+        ),
       );
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleRetryMessage = useCallback((clientMessageId: string) => {
-    void retryMessage(clientMessageId).catch(() => {
-      setComposerError(
-        t("messages.thread.sendError", "Could not send this message right now."),
-      );
-    });
-  }, [retryMessage, t]);
+  const handleRetryMessage = useCallback(
+    (clientMessageId: string) => {
+      void retryMessage(clientMessageId).catch(() => {
+        setComposerError(
+          t(
+            "messages.thread.sendError",
+            "Could not send this message right now.",
+          ),
+        );
+      });
+    },
+    [retryMessage, t],
+  );
 
   if (isInitialError || !conversation) {
     return (
@@ -372,11 +408,7 @@ export function MessageThreadScreen({
 
   return (
     <Screen bg="background">
-      <Header
-        showBack
-        title={headerTitle}
-        subtitle={headerSubtitle}
-      />
+      <Header showBack title={headerTitle} subtitle={headerSubtitle} />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -453,7 +485,11 @@ export function MessageThreadScreen({
               {item.showDateSeparator && item.dateSeparatorText ? (
                 <View style={styles.dateSeparatorWrap}>
                   <View style={styles.dateSeparatorBubble}>
-                    <Text style={styles.dateSeparatorText} color="#6F7E78" weight="600">
+                    <Text
+                      style={styles.dateSeparatorText}
+                      color="#6F7E78"
+                      weight="600"
+                    >
                       {item.dateSeparatorText}
                     </Text>
                   </View>
@@ -462,15 +498,20 @@ export function MessageThreadScreen({
               <MessageBubble
                 message={item.message}
                 locale={locale}
-                isMine={Boolean(user?.id && item.message.senderUserId === user.id)}
+                isMine={Boolean(
+                  user?.id && item.message.senderUserId === user.id,
+                )}
                 showIdentity={item.isGroupStart}
                 senderLabel={item.senderLabel}
                 senderRoleLabel={item.senderRoleLabel}
-                onRetry={item.message.deliveryState === "failed" &&
-                  item.message.deliveryErrorCode !== "MESSAGE_IDEMPOTENCY_CONFLICT" &&
+                onRetry={
+                  item.message.deliveryState === "failed" &&
+                  item.message.deliveryErrorCode !==
+                    "MESSAGE_IDEMPOTENCY_CONFLICT" &&
                   item.message.clientMessageId
-                  ? () => handleRetryMessage(item.message.clientMessageId!)
-                  : undefined}
+                    ? () => handleRetryMessage(item.message.clientMessageId!)
+                    : undefined
+                }
                 retryLabel={t("messages.common.retryNext", "Try again")}
               />
             </View>
@@ -488,8 +529,18 @@ export function MessageThreadScreen({
                 },
               ]}
             >
-              <Text weight="600" color="#1F332F" style={[styles.readOnlyTitle, { textAlign: isRtl ? "right" : "left" }]}>
-                {t("messages.thread.availabilityLoadingTitle", "Loading availability...")}
+              <Text
+                weight="600"
+                color="#1F332F"
+                style={[
+                  styles.readOnlyTitle,
+                  { textAlign: isRtl ? "right" : "left" },
+                ]}
+              >
+                {t(
+                  "messages.thread.availabilityLoadingTitle",
+                  "Loading availability...",
+                )}
               </Text>
             </View>
           ) : showReadOnlyNotice ? (
@@ -508,25 +559,47 @@ export function MessageThreadScreen({
               ]}
             >
               {conversation?.type === "SESSION" && (
-                <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                <Text
+                  color="#6F7E78"
+                  style={{
+                    fontSize: 14,
+                    textAlign: isRtl ? "right" : "left",
+                    lineHeight: 20,
+                  }}
+                >
                   {t("messages.thread.endedSessionNotice")}
                 </Text>
               )}
               {conversation?.type === "CARE" && (
-                <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                <Text
+                  color="#6F7E78"
+                  style={{
+                    fontSize: 14,
+                    textAlign: isRtl ? "right" : "left",
+                    lineHeight: 20,
+                  }}
+                >
                   {t("messages.thread.expiredCareNotice")}
                 </Text>
               )}
               {conversation?.type === "SUPPORT" && (
                 <View style={{ gap: 12 }}>
-                  <Text color="#6F7E78" style={{ fontSize: 14, textAlign: isRtl ? "right" : "left", lineHeight: 20 }}>
+                  <Text
+                    color="#6F7E78"
+                    style={{
+                      fontSize: 14,
+                      textAlign: isRtl ? "right" : "left",
+                      lineHeight: 20,
+                    }}
+                  >
                     {t("messages.thread.resolvedSupportNotice")}
                   </Text>
                   <TouchableOpacity
                     onPress={() => {
-                      const pathname = role === "patient"
-                        ? "/(patient)/support/new"
-                        : "/(practitioner)/support/new";
+                      const pathname =
+                        role === "patient"
+                          ? "/(patient)/support/new"
+                          : "/(practitioner)/support/new";
                       router.push(pathname as any);
                     }}
                     style={{
@@ -622,11 +695,7 @@ function MessageBubble({
       header={
         showIdentity && !isMine ? (
           <View style={styles.identityHeader}>
-            <Text
-              weight="600"
-              color="#1F332F"
-              style={styles.identityName}
-            >
+            <Text weight="600" color="#1F332F" style={styles.identityName}>
               {senderLabel}
             </Text>
             <Text color="#6F7E78" style={styles.identityRole}>
@@ -645,7 +714,10 @@ function MessageBubble({
   );
 }
 
-function resolveMessageText(message: GeneralChatMessageItemDto, locale?: string) {
+function resolveMessageText(
+  message: GeneralChatMessageItemDto,
+  locale?: string,
+) {
   const isArabic = locale?.startsWith("ar") ?? false;
   const text = message.contentText?.trim();
   if (text) {

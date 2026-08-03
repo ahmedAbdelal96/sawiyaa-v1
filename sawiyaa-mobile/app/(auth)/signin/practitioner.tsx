@@ -11,42 +11,15 @@ import { Button, Input, Text, OtpInput } from "../../../src/components/ui";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useTranslation } from "react-i18next";
+import { formatViewerDateTime } from "../../../src/lib/time-formatting";
 import { getAuthLockoutErrorMessage } from "../../../src/features/auth/auth-lockout-messages";
-import type {
-  PractitionerOtpChallengeResponse,
-} from "../../../src/features/auth/contracts";
+import type { PractitionerOtpChallengeResponse } from "../../../src/features/auth/contracts";
 
 function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
 }
 
-const DEV_ACCOUNTS = [
-  {
-    label: "dr.mohamed",
-    email: "amohamef206@gmail.com",
-    password: "Practitioner2@12345",
-  },
-  {
-    label: "dr.youssef",
-    email: "dr.youssef@hesba.local",
-    password: "Practitioner5@12345",
-  },
-  {
-    label: "dr.karim",
-    email: "dr.karim@hesba.local",
-    password: "Practitioner6@12345",
-  },
-  {
-    label: "dr.sara",
-    email: "dr.sara@hesba.local",
-    password: "Practitioner7@12345",
-  },
-  {
-    label: "dr.nour",
-    email: "dr.nour@hesba.local",
-    password: "Practitioner8@12345",
-  },
-];
+const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> = [];
 
 export default function PractitionerSignInScreen() {
   const router = useRouter();
@@ -63,8 +36,12 @@ export default function PractitionerSignInScreen() {
   const [infoText, setInfoText] = useState<string | null>(null);
 
   const isArabic = i18n.language?.startsWith("ar");
-  const practitionerEyebrow = isArabic ? "دخول المختص" : t("auth.practitionerSignIn.eyebrow");
-  const practitionerTitle = isArabic ? "ادخل إلى مساحة عملك كمختص" : t("auth.practitionerSignIn.title");
+  const practitionerEyebrow = isArabic
+    ? "دخول المختص"
+    : t("auth.practitionerSignIn.eyebrow");
+  const practitionerTitle = isArabic
+    ? "ادخل إلى مساحة عملك كمختص"
+    : t("auth.practitionerSignIn.title");
   const practitionerSubtitle = isArabic
     ? "في وضع التطوير الحالي، إذا رجع السيرفر جلسة مباشرة سيتم الدخول فورًا بدون OTP."
     : t("auth.practitionerSignIn.subtitle");
@@ -87,7 +64,10 @@ export default function PractitionerSignInScreen() {
         email: email.trim(),
         password,
       });
-      if (response.nextStep === "OTP_REQUIRED" && isOtpChallengeResponse(response)) {
+      if (
+        response.nextStep === "OTP_REQUIRED" &&
+        isOtpChallengeResponse(response)
+      ) {
         setChallenge(response);
         setOtpCode("");
         setErrorText(null);
@@ -99,7 +79,9 @@ export default function PractitionerSignInScreen() {
       }
       setInfoText(response.message);
     } catch (error) {
-      setErrorText(getAuthLockoutErrorMessage(error, "practitioner-password", t));
+      setErrorText(
+        getAuthLockoutErrorMessage(error, "practitioner-password", t),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -226,13 +208,17 @@ export default function PractitionerSignInScreen() {
 
           <View style={styles.rowWrap}>
             <Text color={theme.colors.textSecondary}>
-              {isArabic ? "ليس لديك حساب مختص؟" : t("auth.practitionerSignIn.noAccount")}
+              {isArabic
+                ? "ليس لديك حساب مختص؟"
+                : t("auth.practitionerSignIn.noAccount")}
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(auth)/signup/practitioner")}
             >
               <Text color={theme.colors.textBrand} weight="600">
-                {isArabic ? "سجل عبر الويب" : t("auth.practitionerSignIn.createAccount")}
+                {isArabic
+                  ? "سجل عبر الويب"
+                  : t("auth.practitionerSignIn.createAccount")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -267,7 +253,10 @@ export default function PractitionerSignInScreen() {
             <Text color={theme.colors.textMuted} style={styles.challengeMeta}>
               {t("auth.practitionerSignIn.challengeExpires", {
                 expiresAt: challenge.expiresAt
-                  ? new Date(challenge.expiresAt).toLocaleString()
+                  ? formatViewerDateTime(challenge.expiresAt, {
+                      locale: i18n.language,
+                      fallbackText: "-",
+                    })
                   : "—",
               })}
             </Text>

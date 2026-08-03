@@ -19,6 +19,7 @@ import type {
   CareChatRequestItemDto,
   ChatApprovalStatus,
 } from "../../../src/features/patient/care-chat/types";
+import { formatViewerDate } from "../../../src/lib/time-formatting";
 
 type TabFilter = "active" | "history";
 
@@ -66,9 +67,11 @@ export default function CareChatListScreen() {
 
   function formatDate(dateStr: string) {
     const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-    return new Date(dateStr).toLocaleDateString(locale, {
+    return formatViewerDate(dateStr, {
+      locale,
       day: "numeric",
       month: "short",
+      fallbackText: "-",
     });
   }
 
@@ -145,13 +148,12 @@ export default function CareChatListScreen() {
               >
                 {" · "}
                 {t("careChat.expiresOn", {
-                  date: new Date(req.expiresAt).toLocaleDateString(
-                    i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-                    {
+                  date: formatViewerDate(req.expiresAt, {
+                    locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
                     day: "numeric",
                     month: "short",
-                    },
-                  ),
+                    fallbackText: "-",
+                  }),
                 })}
               </Text>
             ) : null}
@@ -315,4 +317,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-

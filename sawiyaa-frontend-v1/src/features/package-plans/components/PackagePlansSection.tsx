@@ -65,6 +65,10 @@ export default function PackagePlansSection({ slug, profile }: Props) {
   const packagesDisabled = profile.acceptsPackage === false;
   const plans = packagePlansQuery.data?.items ?? [];
 
+  if (!packagePlansQuery.isLoading && plans.length === 0) {
+    return null;
+  }
+
   if (packagesDisabled) {
     return null;
   }

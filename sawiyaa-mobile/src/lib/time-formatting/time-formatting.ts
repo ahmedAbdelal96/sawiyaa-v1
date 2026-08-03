@@ -5,6 +5,12 @@ export interface TimeFormattingOptions {
   fallbackText?: string;
   dateStyle?: Intl.DateTimeFormatOptions["dateStyle"];
   timeStyle?: Intl.DateTimeFormatOptions["timeStyle"];
+  weekday?: Intl.DateTimeFormatOptions["weekday"];
+  year?: Intl.DateTimeFormatOptions["year"];
+  month?: Intl.DateTimeFormatOptions["month"];
+  day?: Intl.DateTimeFormatOptions["day"];
+  hour?: Intl.DateTimeFormatOptions["hour"];
+  minute?: Intl.DateTimeFormatOptions["minute"];
   hourCycle?: Intl.DateTimeFormatOptions["hourCycle"];
   timeZoneName?: Intl.DateTimeFormatOptions["timeZoneName"];
 }
@@ -33,6 +39,8 @@ const FIXED_OFFSET_TIME_ZONE_PATTERN =
   /^(?:[+-]\d{1,2}(?::?\d{2})?|UTC[+-]\d{1,2}(?::?\d{2})?|GMT[+-]\d{1,2}(?::?\d{2})?|Etc\/GMT[+-]\d{1,2})$/i;
 
 let cachedIanaZones: Set<string> | null | undefined;
+let authenticatedProfileTimeZone: string | null = null;
+let deviceTimeZoneOverride: string | null | undefined;
 
 function resolveLocale(locale?: string): string {
   if (!locale) {
@@ -51,7 +59,8 @@ function toDate(value: DateLike): Date | null {
     return null;
   }
 
-  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+  const date =
+    value instanceof Date ? new Date(value.getTime()) : new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -60,9 +69,11 @@ function getSupportedIanaZones(): Set<string> | null {
     return cachedIanaZones;
   }
 
-  const supportedValuesOf = (Intl as unknown as {
-    supportedValuesOf?: (key: "timeZone") => string[];
-  }).supportedValuesOf;
+  const supportedValuesOf = (
+    Intl as unknown as {
+      supportedValuesOf?: (key: "timeZone") => string[];
+    }
+  ).supportedValuesOf;
 
   if (typeof supportedValuesOf !== "function") {
     cachedIanaZones = null;
@@ -96,8 +107,9 @@ function canonicalizeTimeZone(timeZone: string): string | null {
   if (supportedZones?.has(trimmed)) {
     try {
       return (
-        new Intl.DateTimeFormat("en-US", { timeZone: trimmed }).resolvedOptions().timeZone ??
-        trimmed
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: trimmed,
+        }).resolvedOptions().timeZone ?? trimmed
       );
     } catch {
       return trimmed;
@@ -105,8 +117,9 @@ function canonicalizeTimeZone(timeZone: string): string | null {
   }
 
   try {
-    const resolved = new Intl.DateTimeFormat("en-US", { timeZone: trimmed }).resolvedOptions()
-      .timeZone;
+    const resolved = new Intl.DateTimeFormat("en-US", {
+      timeZone: trimmed,
+    }).resolvedOptions().timeZone;
     if (!resolved) {
       return null;
     }
@@ -131,16 +144,28 @@ function formatDateTime(
   }
 
   const resolvedLocale = resolveLocale(locale);
+  const hasDateParts = Boolean(
+    options.weekday || options.year || options.month || options.day,
+  );
+  const hasTimeParts = Boolean(options.hour || options.minute);
   const formatterOptions: Intl.DateTimeFormatOptions = {
-    dateStyle: options.dateStyle ?? "medium",
-    timeStyle: options.timeStyle ?? "short",
+    ...(hasDateParts ? {} : { dateStyle: options.dateStyle ?? "medium" }),
+    ...(hasTimeParts ? {} : { timeStyle: options.timeStyle ?? "short" }),
+    ...(options.weekday ? { weekday: options.weekday } : null),
+    ...(options.year ? { year: options.year } : null),
+    ...(options.month ? { month: options.month } : null),
+    ...(options.day ? { day: options.day } : null),
+    ...(options.hour ? { hour: options.hour } : null),
+    ...(options.minute ? { minute: options.minute } : null),
     ...(options.hourCycle ? { hourCycle: options.hourCycle } : null),
     ...(options.timeZoneName ? { timeZoneName: options.timeZoneName } : null),
     ...(timeZone ? { timeZone } : null),
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -158,14 +183,23 @@ function formatDateOnly(
   }
 
   const resolvedLocale = resolveLocale(locale);
+  const hasDateParts = Boolean(
+    options.weekday || options.year || options.month || options.day,
+  );
   const formatterOptions: Intl.DateTimeFormatOptions = {
-    dateStyle: options.dateStyle ?? "medium",
+    ...(hasDateParts ? {} : { dateStyle: options.dateStyle ?? "medium" }),
+    ...(options.weekday ? { weekday: options.weekday } : null),
+    ...(options.year ? { year: options.year } : null),
+    ...(options.month ? { month: options.month } : null),
+    ...(options.day ? { day: options.day } : null),
     ...(options.timeZoneName ? { timeZoneName: options.timeZoneName } : null),
     ...(timeZone ? { timeZone } : null),
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -183,15 +217,20 @@ function formatTimeOnly(
   }
 
   const resolvedLocale = resolveLocale(locale);
+  const hasTimeParts = Boolean(options.hour || options.minute);
   const formatterOptions: Intl.DateTimeFormatOptions = {
-    timeStyle: options.timeStyle ?? "short",
+    ...(hasTimeParts ? {} : { timeStyle: options.timeStyle ?? "short" }),
+    ...(options.hour ? { hour: options.hour } : null),
+    ...(options.minute ? { minute: options.minute } : null),
     ...(options.hourCycle ? { hourCycle: options.hourCycle } : null),
     ...(options.timeZoneName ? { timeZoneName: options.timeZoneName } : null),
     ...(timeZone ? { timeZone } : null),
   };
 
   try {
-    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(date);
+    return new Intl.DateTimeFormat(resolvedLocale, formatterOptions).format(
+      date,
+    );
   } catch {
     return getFallbackText(options);
   }
@@ -222,7 +261,9 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
   return normalizeIanaTimeZone(timeZone) !== null;
 }
 
-export function normalizeIanaTimeZone(timeZone: string | null | undefined): string | null {
+export function normalizeIanaTimeZone(
+  timeZone: string | null | undefined,
+): string | null {
   if (timeZone == null) {
     return null;
   }
@@ -230,21 +271,129 @@ export function normalizeIanaTimeZone(timeZone: string | null | undefined): stri
   return canonicalizeTimeZone(timeZone);
 }
 
+export function resolvePatientDisplayTimeZone(
+  persistedTimeZone: string | null | undefined,
+  fallbackTimeZone?: string | null,
+): string | null {
+  return resolveEffectiveViewerTimeZone(persistedTimeZone, fallbackTimeZone);
+}
+
+export function resolveDeviceTimeZone(): string | null {
+  if (deviceTimeZoneOverride !== undefined) {
+    return normalizeIanaTimeZone(deviceTimeZoneOverride);
+  }
+
+  try {
+    return normalizeIanaTimeZone(
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
+  } catch {
+    return null;
+  }
+}
+
+export function isMissingPersistedTimeZone(
+  timeZone: string | null | undefined,
+): boolean {
+  return timeZone == null || timeZone.trim().length === 0;
+}
+
+export function resolveEffectiveViewerTimeZone(
+  persistedProfileTimeZone?: string | null,
+  deviceTimeZone?: string | null,
+): string {
+  const profile = normalizeIanaTimeZone(persistedProfileTimeZone);
+  if (profile) return profile;
+
+  const device = normalizeIanaTimeZone(
+    deviceTimeZone ?? resolveDeviceTimeZone(),
+  );
+  return device ?? UTC_TIME_ZONE;
+}
+
+export function setMobileTimeZoneContext({
+  profileTimeZone,
+  deviceTimeZone,
+}: {
+  profileTimeZone?: string | null;
+  deviceTimeZone?: string | null;
+}): void {
+  authenticatedProfileTimeZone = normalizeIanaTimeZone(profileTimeZone);
+  deviceTimeZoneOverride =
+    deviceTimeZone === undefined
+      ? undefined
+      : normalizeIanaTimeZone(deviceTimeZone);
+}
+
+export function getEffectiveViewerTimeZone(): string {
+  return resolveEffectiveViewerTimeZone(
+    authenticatedProfileTimeZone,
+    deviceTimeZoneOverride,
+  );
+}
+
+export function formatPatientDateTime(
+  value: DateLike,
+  persistedTimeZone: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  const timeZone = resolvePatientDisplayTimeZone(persistedTimeZone);
+  return timeZone
+    ? formatDateTime(value, options.locale ?? "en-US", options, timeZone)
+    : formatViewerDateTime(value, options);
+}
+
 // Viewer-local helpers intentionally leave the timezone implicit, so the device/runtime
 // controls the display timezone for patient history and normal browsing surfaces.
-export function formatViewerDateTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatViewerDateTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
-  return formatDateTime(value, locale, options);
+  return formatDateTime(value, locale, options, getEffectiveViewerTimeZone());
 }
 
-export function formatViewerDate(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatViewerDate(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
-  return formatDateOnly(value, locale, options);
+  return formatDateOnly(value, locale, options, getEffectiveViewerTimeZone());
 }
 
-export function formatViewerTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatViewerTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
-  return formatTimeOnly(value, locale, options);
+  return formatTimeOnly(value, locale, options, getEffectiveViewerTimeZone());
+}
+
+export function formatCalendarDate(
+  value: string | null | undefined,
+  options: TimeFormattingOptions = {},
+): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return getFallbackText(options);
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return getFallbackText(options);
+  }
+
+  return formatDateOnly(
+    date,
+    options.locale ?? "en-US",
+    options,
+    UTC_TIME_ZONE,
+  );
 }
 
 // Practitioner-local helpers require a validated IANA timezone and never fall back
@@ -256,7 +405,7 @@ export function formatPractitionerDateTime(
 ): string {
   const normalizedTimeZone = normalizeIanaTimeZone(timeZone);
   if (!normalizedTimeZone) {
-    return getFallbackText(options);
+    return formatViewerDateTime(value, options);
   }
 
   const locale = options.locale ?? "en-US";
@@ -270,7 +419,7 @@ export function formatPractitionerDate(
 ): string {
   const normalizedTimeZone = normalizeIanaTimeZone(timeZone);
   if (!normalizedTimeZone) {
-    return getFallbackText(options);
+    return formatViewerDate(value, options);
   }
 
   const locale = options.locale ?? "en-US";
@@ -284,7 +433,7 @@ export function formatPractitionerTime(
 ): string {
   const normalizedTimeZone = normalizeIanaTimeZone(timeZone);
   if (!normalizedTimeZone) {
-    return getFallbackText(options);
+    return formatViewerTime(value, options);
   }
 
   const locale = options.locale ?? "en-US";
@@ -293,17 +442,26 @@ export function formatPractitionerTime(
 
 // UTC/audit helpers pin the display timezone to UTC for technical or audit surfaces only.
 // backend-state-only: these helpers format output, they must not drive join/payment unlock decisions.
-export function formatUtcAuditDateTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditDateTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatDateTime(value, locale, options, UTC_TIME_ZONE);
 }
 
-export function formatUtcAuditDate(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditDate(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatDateOnly(value, locale, options, UTC_TIME_ZONE);
 }
 
-export function formatUtcAuditTime(value: DateLike, options: TimeFormattingOptions = {}): string {
+export function formatUtcAuditTime(
+  value: DateLike,
+  options: TimeFormattingOptions = {},
+): string {
   const locale = options.locale ?? "en-US";
   return formatTimeOnly(value, locale, options, UTC_TIME_ZONE);
 }
@@ -313,7 +471,11 @@ export function formatMinuteOfDay(
   minuteOfDay: number,
   options: Omit<TimeFormattingOptions, "timeZoneName"> = {},
 ): string {
-  if (!Number.isInteger(minuteOfDay) || minuteOfDay < 0 || minuteOfDay >= 24 * 60) {
+  if (
+    !Number.isInteger(minuteOfDay) ||
+    minuteOfDay < 0 ||
+    minuteOfDay >= 24 * 60
+  ) {
     return getFallbackText(options);
   }
 
@@ -371,7 +533,8 @@ export function formatTimeZoneLabel(
     return normalizedTimeZone;
   }
 
-  const referenceDate = options.referenceDate ?? new Date(Date.UTC(2024, 0, 1, 0, 0, 0));
+  const referenceDate =
+    options.referenceDate ?? new Date(Date.UTC(2024, 0, 1, 0, 0, 0));
   const resolvedLocale = resolveLocale(options.locale);
 
   try {
@@ -382,7 +545,9 @@ export function formatTimeZoneLabel(
       minute: "2-digit",
       hourCycle: "h23",
     }).formatToParts(referenceDate);
-    const offsetLabel = parts.find((part) => part.type === "timeZoneName")?.value?.trim();
+    const offsetLabel = parts
+      .find((part) => part.type === "timeZoneName")
+      ?.value?.trim();
     if (offsetLabel) {
       return `${normalizedTimeZone} (${offsetLabel})`;
     }
@@ -427,7 +592,9 @@ export function getDatePartsInTimeZone(
         .map((part) => [part.type, part.value]),
     ) as Partial<Record<Intl.DateTimeFormatPartTypes, string>>;
 
-    const weekdayIndex = lookup.weekday ? parseWeekdayIndex(lookup.weekday) : null;
+    const weekdayIndex = lookup.weekday
+      ? parseWeekdayIndex(lookup.weekday)
+      : null;
     const year = lookup.year ? Number(lookup.year) : NaN;
     const month = lookup.month ? Number(lookup.month) : NaN;
     const day = lookup.day ? Number(lookup.day) : NaN;

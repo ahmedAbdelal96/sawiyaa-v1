@@ -3,6 +3,7 @@ import {
   FlatList,
   Linking,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   View,
   Image,
@@ -45,13 +46,6 @@ import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { formatViewerDateTime } from "../../../src/lib/time-formatting";
 
 type SessionFilterKey = "all" | "upcoming" | "ready" | "live" | "closed";
-
-type SessionSummary = {
-  upcoming: number;
-  ready: number;
-  live: number;
-  closed: number;
-};
 
 function mapFilterKeyToPresentationFilter(
   filter: SessionFilterKey,
@@ -167,16 +161,19 @@ export default function PractitionerSessionsScreen() {
 
   const filterOptions = useMemo(
     () => [
-      { key: "all" as const, label: t("practitioner.sessions.filters.all") },
+      { key: "all" as const, label: t("practitioner.sessions.filters.all", { defaultValue: isArabic ? "الكل" : "All" }) },
+      {
+        key: "ready" as const,
+        label: t("practitioner.sessions.filters.ready", { defaultValue: isArabic ? "جاهزة للانضمام" : "Ready to Join" }),
+      },
       {
         key: "upcoming" as const,
-        label: t("practitioner.sessions.filters.upcoming"),
+        label: t("practitioner.sessions.filters.upcoming", { defaultValue: isArabic ? "القادمة" : "Upcoming" }),
       },
-      { key: "ready" as const, label: t("practitioner.sessions.filters.ready") },
-      { key: "live" as const, label: t("practitioner.sessions.filters.live") },
-      { key: "closed" as const, label: t("practitioner.sessions.filters.closed") },
+      { key: "live" as const, label: t("practitioner.sessions.filters.live", { defaultValue: isArabic ? "الجارية" : "Live" }) },
+      { key: "closed" as const, label: t("practitioner.sessions.filters.closed", { defaultValue: isArabic ? "المكتملة" : "Closed" }) },
     ],
-    [t],
+    [t, isArabic],
   );
 
   const loadNextPage = useCallback(() => {
@@ -283,9 +280,8 @@ export default function PractitionerSessionsScreen() {
           />
         </View>
 
-        {/* Action icons group: messages, notifications, logout */}
+        {/* Action icons group */}
         <View style={[styles.headerActions, { flexDirection: rowDirection }]}>
-          {/* Messages Quick Button */}
           <TouchableOpacity
             onPress={() => router.push("/(practitioner)/messages")}
             style={[
@@ -308,7 +304,6 @@ export default function PractitionerSessionsScreen() {
             ) : null}
           </TouchableOpacity>
 
-          {/* Notifications Quick Button */}
           <TouchableOpacity
             onPress={() => router.push("/(practitioner)/notifications")}
             style={[
@@ -331,7 +326,6 @@ export default function PractitionerSessionsScreen() {
             ) : null}
           </TouchableOpacity>
 
-          {/* Logout Button */}
           <TouchableOpacity
             onPress={signOut}
             style={[
@@ -409,17 +403,23 @@ export default function PractitionerSessionsScreen() {
       {/* Page Title & Scroll Greeting Row */}
       <View style={styles.paddedHeaderSection}>
         <View style={styles.titleWrapper}>
-          <Text weight="700" style={[styles.mainScrollTitle, { textAlign }]}>
-            {t("practitioner.sessions.workspace.titleShort", isArabic ? "الجلسات" : "Sessions")}
+          <Text weight="bold" style={[styles.mainScrollTitle, { textAlign }]}>
+            {isArabic ? "الجلسات المجدولة" : "Scheduled Sessions"}
           </Text>
           <Text color={theme.colors.textSecondary} style={[styles.mainScrollSubtitle, { textAlign }]}>
-            {t("practitioner.sessions.workspace.listSubtitle")}
+            {isArabic
+              ? "تابع مواعيد الجلسات، انضم للجلسات المباشرة، واستعرض السجل كاملاً"
+              : "Track session schedules, join live sessions, and view your complete record"}
           </Text>
         </View>
       </View>
 
-      {/* Filter Toolbar Chip Row */}
-      <View style={styles.filterToolbar}>
+      {/* Horizontal Scrollable Filter Toolbar */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.filterScrollContent, { flexDirection: rowDirection }]}
+      >
         {filterOptions.map((item) => (
           <FilterChip
             key={item.key}
@@ -428,7 +428,7 @@ export default function PractitionerSessionsScreen() {
             onPress={() => setSelectedFilter(item.key)}
           />
         ))}
-      </View>
+      </ScrollView>
 
       {feedback ? (
         <View style={styles.paddedHeaderSection}>
@@ -482,9 +482,9 @@ export default function PractitionerSessionsScreen() {
           listEmpty && !prioritySession ? (
             <View style={styles.cardPadding}>
               <EmptyState
-                title={t("practitioner.sessions.workspace.emptyFilteredTitle")}
-                description={t("practitioner.sessions.workspace.emptyFilteredBody")}
-                actionLabel={t("practitioner.sessions.workspace.emptyFilteredAction")}
+                title={t("practitioner.sessions.workspace.emptyFilteredTitle", { defaultValue: isArabic ? "لا توجد جلسات تطابق التصفية" : "No sessions match filter" })}
+                description={t("practitioner.sessions.workspace.emptyFilteredBody", { defaultValue: isArabic ? "جرب اختيار فلتر آخر أو استعرض كل الجلسات." : "Try selecting another filter." })}
+                actionLabel={t("practitioner.sessions.workspace.emptyFilteredAction", { defaultValue: isArabic ? "عرض كل الجلسات" : "Show all sessions" })}
                 onAction={() => setSelectedFilter("all")}
                 icon={
                   <Ionicons
@@ -506,6 +506,7 @@ export default function PractitionerSessionsScreen() {
               onRetryNextPage: loadNextPage,
               theme,
               t,
+              isArabic,
             })}
           </View>
         }
@@ -532,6 +533,7 @@ function renderSessionsFooter({
   onRetryNextPage,
   theme,
   t,
+  isArabic,
 }: {
   hasNextPage?: boolean;
   isFetchingNextPage: boolean;
@@ -539,12 +541,13 @@ function renderSessionsFooter({
   onRetryNextPage: () => void;
   theme: ReturnType<typeof useTheme>["theme"];
   t: (key: string, options?: Record<string, unknown>) => string;
+  isArabic: boolean;
 }) {
   if (isFetchingNextPage) {
     return (
       <Card variant="flat" padding="md" style={styles.footerCard}>
         <Text color={theme.colors.textSecondary}>
-          {t("practitioner.sessions.workspace.loadingMore")}
+          {t("practitioner.sessions.workspace.loadingMore", { defaultValue: isArabic ? "جاري تحميل المزيد من الجلسات..." : "Loading more sessions..." })}
         </Text>
       </Card>
     );
@@ -554,14 +557,14 @@ function renderSessionsFooter({
     return (
       <Card variant="flat" padding="md" style={styles.footerCard}>
         <Text weight="600" color={theme.colors.textPrimary}>
-          {t("practitioner.sessions.workspace.loadMoreErrorTitle")}
+          {t("practitioner.sessions.workspace.loadMoreErrorTitle", { defaultValue: isArabic ? "تعذر تحميل باقي الجلسات" : "Failed to load more sessions" })}
         </Text>
         <Text color={theme.colors.textSecondary} style={styles.footerBody}>
-          {t("practitioner.sessions.workspace.loadMoreErrorSubtitle")}
+          {t("practitioner.sessions.workspace.loadMoreErrorSubtitle", { defaultValue: isArabic ? "يرجى المحاولة مرة أخرى." : "Please try again." })}
         </Text>
         <View style={styles.footerAction}>
           <Button
-            title={t("practitioner.sessions.workspace.retry")}
+            title={t("practitioner.sessions.workspace.retry", { defaultValue: isArabic ? "إعادة المحاولة" : "Retry" })}
             onPress={onRetryNextPage}
             variant="secondary"
           />
@@ -574,7 +577,7 @@ function renderSessionsFooter({
     return (
       <Card variant="flat" padding="md" style={styles.footerCard}>
         <Text color={theme.colors.textSecondary}>
-          {t("practitioner.sessions.workspace.endOfList")}
+          {t("practitioner.sessions.workspace.endOfList", { defaultValue: isArabic ? "لقد وصلت إلى نهاية قائمة الجلسات." : "You have reached the end of the list." })}
         </Text>
       </Card>
     );
@@ -607,94 +610,134 @@ function SessionWorkspaceCard({
   const statusTone = mapSessionPresentationTone(session.presentationStatus);
   const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
+  const isArabic = direction === "rtl";
   const patientName =
-    session.patient?.displayName ?? t("practitioner.sessions.unknownPatient");
+    session.patient?.displayName ??
+    t("practitioner.sessions.unknownPatient", {
+      defaultValue: isArabic ? "مريض غير معروف" : "Unknown Patient",
+    });
+
+  const statusLabelKey = `practitioner.presentationStatus.${session.presentationStatus}`;
+  const translatedStatus = t(statusLabelKey);
+  const statusLabel = translatedStatus.includes("presentationStatus.")
+    ? session.presentationStatus === "READY_TO_JOIN"
+      ? (isArabic ? "جاهزة للانضمام" : "Ready to Join")
+      : session.presentationStatus
+    : translatedStatus;
 
   return (
-    <Card
-      variant="outlined"
-      padding="md"
-      onPress={() => onViewDetails(session.id)}
-      accessibilityRole="button"
-      accessibilityLabel={t(
-        "practitioner.sessions.workspace.viewDetailsWithName",
-        { name: patientName },
-      )}
-      style={styles.sessionCard}
-    >
-      <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
-        <View style={styles.patientInfoGroup}>
-          <View style={[styles.patientNameBadgeRow, { flexDirection: rowDirection }]}>
-            <Text
-              weight="700"
-              style={styles.patientName}
-              color={theme.colors.textPrimary}
-              numberOfLines={1}
-            >
-              {patientName}
-            </Text>
-            <StatusChip
-              label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
-              tone={statusTone}
-            />
+    <Card variant="outlined" padding="md" style={styles.sessionCard}>
+      {/* Clickable Header & Details Section */}
+      <TouchableOpacity
+        onPress={() => onViewDetails(session.id)}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel={t(
+          "practitioner.sessions.workspace.viewDetailsWithName",
+          { name: patientName, defaultValue: `تفاصيل جلسة ${patientName}` },
+        )}
+        style={styles.cardHeaderArea}
+      >
+        <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+          {/* Patient Avatar Circle */}
+          <View style={[styles.avatarCircle, { backgroundColor: "rgba(5, 63, 56, 0.08)" }]}>
+            <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
           </View>
-          <Text color={theme.colors.textMuted} style={[styles.sessionCode, { textAlign }]}>
-            {session.sessionCode}
-          </Text>
-        </View>
 
-        <Ionicons
-          name={direction === "rtl" ? "chevron-back" : "chevron-forward"}
-          size={16}
-          color={theme.colors.textMuted}
-          style={styles.cardChevron}
-        />
-      </View>
-
-      {/* Meta Row: Calendar date, Mode, Duration */}
-      <View style={[styles.cardMetaRow, { flexDirection: rowDirection }]}>
-        <View style={[styles.metaItem, { flexDirection: rowDirection }]}>
-          <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
-          <Text color={theme.colors.textSecondary} style={styles.metaTextValue}>
-            {session.scheduledStartAt
-              ? formatViewerDateTime(session.scheduledStartAt, {
-                  locale,
-                  fallbackText: "-",
-                })
-              : t("practitioner.sessions.noSchedule")}
-          </Text>
-        </View>
-
-        <View style={[styles.metaInlineRow, { flexDirection: rowDirection }]}>
-          <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
-            <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-              {t("practitioner.sessions.duration", {
-                minutes: session.durationMinutes,
-              })}
+          <View style={styles.patientInfoGroup}>
+            <View style={[styles.patientNameBadgeRow, { flexDirection: rowDirection }]}>
+              <Text
+                weight="700"
+                style={[styles.patientName, { color: theme.colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {patientName}
+              </Text>
+              <StatusChip label={statusLabel} tone={statusTone} />
+            </View>
+            <Text color={theme.colors.textMuted} style={[styles.sessionCode, { textAlign }]}>
+              {session.sessionCode}
             </Text>
           </View>
-          <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
-            <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-              {t(`practitioner.detail.modeValue.${session.sessionMode}`)}
+
+          <Ionicons
+            name={isArabic ? "chevron-back" : "chevron-forward"}
+            size={16}
+            color={theme.colors.textMuted}
+            style={styles.cardChevron}
+          />
+        </View>
+
+        {/* Divider line */}
+        <View style={styles.cardDivider} />
+
+        {/* Meta Row: Calendar date, Mode, Duration */}
+        <View style={[styles.cardMetaRow, { flexDirection: rowDirection }]}>
+          <View style={[styles.metaItem, { flexDirection: rowDirection }]}>
+            <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
+            <Text color={theme.colors.textSecondary} style={styles.metaTextValue}>
+              {session.scheduledStartAt
+                ? formatViewerDateTime(session.scheduledStartAt, {
+                    locale,
+                    fallbackText: "-",
+                  })
+                : t("practitioner.sessions.noSchedule")}
             </Text>
           </View>
-        </View>
-      </View>
 
+          <View style={[styles.metaInlineRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Ionicons name="time-outline" size={12} color={theme.colors.textSecondary} />
+              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
+                {t("practitioner.sessions.duration", {
+                  minutes: session.durationMinutes,
+                  defaultValue: `${session.durationMinutes} دقيقة`,
+                })}
+              </Text>
+            </View>
+
+            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
+              <Ionicons name="videocam-outline" size={12} color={theme.colors.textSecondary} />
+              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
+                {t(`practitioner.detail.modeValue.${session.sessionMode}`, {
+                  defaultValue: session.sessionMode === "VIDEO" ? "فيديو" : session.sessionMode,
+                })}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {/* Action Button: Separated outside TouchableOpacity to avoid HTML nested button warnings */}
       {isJoinable ? (
         <View style={styles.joinActionWrapper}>
           <Button
             title={
               isJoining
-                ? t("practitioner.detail.joining")
-                : t("practitioner.detail.join")
+                ? t("practitioner.detail.joining", {
+                    defaultValue: isArabic ? "جاري الانضمام..." : "Joining...",
+                  })
+                : t("practitioner.detail.join", {
+                    defaultValue: isArabic ? "🎥 الانضمام للجلسة الآن ➔" : "🎥 Join Session Now ➔",
+                  })
             }
             onPress={() => void onJoin(session)}
             disabled={isJoining}
             style={styles.joinButton}
           />
         </View>
-      ) : null}
+      ) : (
+        <TouchableOpacity
+          onPress={() => onViewDetails(session.id)}
+          style={[styles.secondaryDetailBtn, { flexDirection: rowDirection }]}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.secondaryDetailText} color={theme.colors.primary} weight="700">
+            {isArabic ? "عرض تفاصيل الجلسة" : "View Session Details"}
+          </Text>
+          <Ionicons name={isArabic ? "arrow-back" : "arrow-forward"} size={14} color={theme.colors.primary} />
+        </TouchableOpacity>
+      )}
     </Card>
   );
 }
@@ -722,113 +765,133 @@ function PrioritySessionCard({
   const textAlign = direction === "rtl" ? "right" : "left";
   const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
+  const isArabic = direction === "rtl";
   const patientName =
-    session.patient?.displayName ?? t("practitioner.sessions.unknownPatient");
+    session.patient?.displayName ??
+    t("practitioner.sessions.unknownPatient", {
+      defaultValue: isArabic ? "مريض غير معروف" : "Unknown Patient",
+    });
   const statusTone = mapSessionPresentationTone(session.presentationStatus);
+
+  const statusLabelKey = `practitioner.presentationStatus.${session.presentationStatus}`;
+  const translatedStatus = t(statusLabelKey);
+  const statusLabel = translatedStatus.includes("presentationStatus.")
+    ? session.presentationStatus === "READY_TO_JOIN"
+      ? (isArabic ? "جاهزة للانضمام" : "Ready to Join")
+      : session.presentationStatus
+    : translatedStatus;
 
   return (
     <View style={styles.priorityWrap}>
       <Card
-        variant="outlined"
+        variant="elevated"
         padding="md"
-        onPress={() => onViewDetails(session.id)}
-        accessibilityRole="button"
-        accessibilityLabel={t(
-          "practitioner.sessions.workspace.viewDetailsWithName",
-          { name: patientName },
-        )}
         style={[
           styles.priorityCard,
           {
-            backgroundColor: theme.colors.primaryLight + "15",
-            borderColor: theme.colors.primary + "30",
+            backgroundColor: "#E6F4F1",
+            borderColor: "#24564F",
           },
         ]}
       >
-        <View style={[styles.priorityHeader, { flexDirection: rowDirection }]}>
-          <View style={[styles.priorityIndicator, { flexDirection: rowDirection }]}>
-            <Ionicons
-              name={isJoinable ? "flash" : "time"}
-              size={14}
-              color={theme.colors.primary}
-            />
-            <Text weight="700" style={styles.priorityLabel} color={theme.colors.primary}>
+        <TouchableOpacity
+          onPress={() => onViewDetails(session.id)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={t(
+            "practitioner.sessions.workspace.viewDetailsWithName",
+            { name: patientName, defaultValue: `تفاصيل جلسة ${patientName}` },
+          )}
+          style={styles.cardHeaderArea}
+        >
+          {/* Top Priority Badge Bar */}
+          <View style={[styles.priorityBadgeBar, { flexDirection: rowDirection }]}>
+            <Ionicons name="sparkles" size={14} color="#053F38" />
+            <Text weight="bold" style={styles.priorityBadgeText}>
               {isJoinable
-                ? t("practitioner.sessions.workspace.priorityHeading", { defaultValue: direction === "rtl" ? "جلسة نشطة الآن" : "Live Session Now" })
-                : t("practitioner.sessions.workspace.nextSession", { defaultValue: direction === "rtl" ? "الجلسة التالية" : "Next Session" })}
-            </Text>
-          </View>
-        </View>
-
-        <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
-          <View style={styles.patientInfoGroup}>
-            <View style={[styles.patientNameBadgeRow, { flexDirection: rowDirection }]}>
-              <Text
-                weight="700"
-                style={styles.patientName}
-                color={theme.colors.textPrimary}
-                numberOfLines={1}
-              >
-                {patientName}
-              </Text>
-              <StatusChip
-                label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
-                tone={statusTone}
-              />
-            </View>
-            <Text color={theme.colors.textMuted} style={[styles.sessionCode, { textAlign }]}>
-              {session.sessionCode}
+                ? (isArabic ? "⚡ الأولوية الآن — جلسة نشطة جاهزة للانضمام" : "⚡ Priority — Live Session Ready")
+                : (isArabic ? "📅 الجلسة القادمة التالية" : "📅 Next Scheduled Session")}
             </Text>
           </View>
 
-          <Ionicons
-            name={direction === "rtl" ? "chevron-back" : "chevron-forward"}
-            size={16}
-            color={theme.colors.primary}
-            style={styles.cardChevron}
-          />
-        </View>
+          <View style={[styles.cardHeaderRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.priorityAvatarCircle, { backgroundColor: "#053F38" }]}>
+              <Ionicons name="person" size={22} color="#FFFFFF" />
+            </View>
 
-        <View style={[styles.cardMetaRow, { flexDirection: rowDirection }]}>
-          <View style={[styles.metaItem, { flexDirection: rowDirection }]}>
-            <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
-            <Text color={theme.colors.textSecondary} style={styles.metaTextValue}>
-              {session.scheduledStartAt
-                ? formatViewerDateTime(session.scheduledStartAt, {
-                    locale,
-                    fallbackText: "-",
-                  })
-                : t("practitioner.sessions.noSchedule")}
-            </Text>
-          </View>
-
-          <View style={[styles.metaInlineRow, { flexDirection: rowDirection }]}>
-            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-                {t("practitioner.sessions.duration", {
-                  minutes: session.durationMinutes,
-                })}
+            <View style={styles.patientInfoGroup}>
+              <View style={[styles.patientNameBadgeRow, { flexDirection: rowDirection }]}>
+                <Text
+                  weight="bold"
+                  style={[styles.priorityPatientName, { color: "#053F38" }]}
+                  numberOfLines={1}
+                >
+                  {patientName}
+                </Text>
+                <StatusChip label={statusLabel} tone={statusTone} />
+              </View>
+              <Text style={[styles.sessionCode, { textAlign, color: "#404847" }]}>
+                {session.sessionCode}
               </Text>
             </View>
-            <View style={[styles.metaBadge, { backgroundColor: theme.colors.surfaceSecondary }]}>
-              <Text color={theme.colors.textSecondary} style={styles.metaTiny}>
-                {t(`practitioner.detail.modeValue.${session.sessionMode}`)}
+
+            <Ionicons
+              name={isArabic ? "chevron-back" : "chevron-forward"}
+              size={18}
+              color="#053F38"
+            />
+          </View>
+
+          {/* Meta Information Bar */}
+          <View style={[styles.cardMetaRow, { flexDirection: rowDirection }]}>
+            <View style={[styles.metaItem, { flexDirection: rowDirection }]}>
+              <Ionicons name="calendar-outline" size={14} color="#053F38" />
+              <Text style={[styles.metaTextValue, { color: "#053F38", fontWeight: "700" }]}>
+                {session.scheduledStartAt
+                  ? formatViewerDateTime(session.scheduledStartAt, {
+                      locale,
+                      fallbackText: "-",
+                    })
+                  : t("practitioner.sessions.noSchedule")}
               </Text>
             </View>
-          </View>
-        </View>
 
+            <View style={[styles.metaInlineRow, { flexDirection: rowDirection }]}>
+              <View style={[styles.metaBadge, { backgroundColor: "#FFFFFF" }]}>
+                <Text style={[styles.metaTiny, { color: "#053F38", fontWeight: "700" }]}>
+                  {t("practitioner.sessions.duration", {
+                    minutes: session.durationMinutes,
+                    defaultValue: `${session.durationMinutes} دقيقة`,
+                  })}
+                </Text>
+              </View>
+              <View style={[styles.metaBadge, { backgroundColor: "#FFFFFF" }]}>
+                <Text style={[styles.metaTiny, { color: "#053F38", fontWeight: "700" }]}>
+                  {t(`practitioner.detail.modeValue.${session.sessionMode}`, {
+                    defaultValue: session.sessionMode === "VIDEO" ? "فيديو" : session.sessionMode,
+                  })}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Primary Action Button */}
         {isJoinable ? (
-          <View style={styles.joinActionWrapper}>
+          <View style={styles.priorityJoinActionWrapper}>
             <Button
               title={
                 isJoining
-                  ? t("practitioner.detail.joining")
-                  : t("practitioner.detail.join")
+                  ? t("practitioner.detail.joining", {
+                      defaultValue: isArabic ? "جاري الانضمام للجلسة..." : "Joining...",
+                    })
+                  : t("practitioner.detail.join", {
+                      defaultValue: isArabic ? "🎥 الانضمام للجلسة المباشرة الآن ➔" : "🎥 Join Live Session Now ➔",
+                    })
               }
               onPress={() => void onJoin(session)}
               disabled={isJoining}
-              style={styles.joinButton}
+              style={styles.priorityJoinButton}
             />
           </View>
         ) : null}
@@ -837,75 +900,101 @@ function PrioritySessionCard({
   );
 }
 
-function buildSessionSummary(sessions: PractitionerSessionListItem[]): SessionSummary {
-  return {
-    upcoming: sessions.filter((session) =>
-      ["UPCOMING"].includes(session.status),
-    ).length,
-    ready: sessions.filter((session) => session.status === "READY_TO_JOIN").length,
-    live: sessions.filter((session) => session.presentationStatus === "IN_PROGRESS").length,
-    closed: sessions.filter((session) =>
-      ["COMPLETED", "CANCELLED", "PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW", "EXPIRED", "AWAITING_COMPLETION_CONFIRMATION"].includes(session.status),
-    ).length,
-  };
-}
-
-function pickPrioritySession(sessions: PractitionerSessionListItem[]) {
-  return (
-    sessions.find((session) => isSessionJoinableNow(session)) ??
-    sessions.find((session) => session.presentationStatus === "IN_PROGRESS") ??
-    sessions.find((session) =>
-      ["UPCOMING"].includes(session.status),
-    ) ??
-    null
+function buildSessionSummary(sessions: PractitionerSessionListItem[]): {
+  upcoming: number;
+  ready: number;
+  live: number;
+  closed: number;
+} {
+  return sessions.reduce(
+    (acc, item) => {
+      switch (item.presentationStatus) {
+        case "UPCOMING":
+          acc.upcoming += 1;
+          break;
+        case "READY_TO_JOIN":
+          acc.ready += 1;
+          break;
+        case "IN_PROGRESS":
+          acc.live += 1;
+          break;
+        case "COMPLETED":
+        case "CANCELLED":
+        case "EXPIRED":
+        case "PATIENT_NO_SHOW":
+        case "PRACTITIONER_NO_SHOW":
+        case "BOTH_NO_SHOW":
+          acc.closed += 1;
+          break;
+        default:
+          break;
+      }
+      return acc;
+    },
+    { upcoming: 0, ready: 0, live: 0, closed: 0 },
   );
 }
 
 function sortSessionsByStartTime(
-  sessions: PractitionerSessionListItem[],
-  direction: "asc" | "desc",
-) {
-  return [...sessions].sort((left, right) => {
-    const leftTimestamp = getSessionSortTimestamp(left);
-    const rightTimestamp = getSessionSortTimestamp(right);
+  items: PractitionerSessionListItem[],
+  direction: "asc" | "desc" = "asc",
+): PractitionerSessionListItem[] {
+  const multiplier = direction === "desc" ? -1 : 1;
+  return [...items].sort((left, right) => {
+    const leftTime = left.scheduledStartAt
+      ? new Date(left.scheduledStartAt).getTime()
+      : Number.POSITIVE_INFINITY;
+    const rightTime = right.scheduledStartAt
+      ? new Date(right.scheduledStartAt).getTime()
+      : Number.POSITIVE_INFINITY;
 
-    if (leftTimestamp === null && rightTimestamp === null) {
+    if (leftTime === rightTime) {
       return 0;
     }
 
-    if (leftTimestamp === null) {
-      return 1;
-    }
-
-    if (rightTimestamp === null) {
-      return -1;
-    }
-
-    return direction === "asc"
-      ? leftTimestamp - rightTimestamp
-      : rightTimestamp - leftTimestamp;
+    return (leftTime - rightTime) * multiplier;
   });
 }
 
-function getSessionSortTimestamp(session: PractitionerSessionListItem) {
-  const rawDate = session.scheduledStartAt ?? session.scheduledEndAt;
-  if (!rawDate) {
+function pickPrioritySession(
+  items: PractitionerSessionListItem[],
+): PractitionerSessionListItem | null {
+  if (items.length === 0) {
     return null;
   }
 
-  const date = new Date(rawDate);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
+  const joinable = items.find((item) => isSessionJoinableNow(item));
+  if (joinable) {
+    return joinable;
+  }
+
+  const upcoming = items.find(
+    (item) => item.presentationStatus === "UPCOMING",
+  );
+  return upcoming ?? null;
 }
 
 function isSessionJoinableNow(session: PractitionerSessionListItem) {
-  return session.joinAvailability?.canJoin === true;
+  return (
+    session.presentationStatus === "READY_TO_JOIN" ||
+    session.presentationStatus === "IN_PROGRESS" ||
+    !!session.joinAvailability?.canJoin
+  );
 }
 
 function canAttemptPrepare(session: PractitionerSessionListItem) {
   return (
-    session.sessionMode === "VIDEO" &&
-    ["UPCOMING", "UPCOMING", "READY_TO_JOIN"].includes(session.status)
+    session.status === "UPCOMING" ||
+    session.status === "READY_TO_JOIN" ||
+    session.status === "IN_PROGRESS"
   );
+}
+
+function buildJoinUrl(contract: PractitionerSessionJoinContract): string | null {
+  if (contract.roomUrl) {
+    return contract.roomUrl;
+  }
+  return null;
 }
 
 function mapSessionPresentationTone(status: SessionPresentationStatus) {
@@ -914,32 +1003,18 @@ function mapSessionPresentationTone(status: SessionPresentationStatus) {
     case "IN_PROGRESS":
       return "success" as const;
     case "UPCOMING":
-    case "AWAITING_COMPLETION_CONFIRMATION":
-    case "PENDING_PRACTITIONER_CONFIRMATION":
       return "warning" as const;
     case "COMPLETED":
       return "default" as const;
-    case "EXPIRED":
     case "CANCELLED":
+    case "EXPIRED":
     case "PATIENT_NO_SHOW":
+    case "PRACTITIONER_NO_SHOW":
+    case "BOTH_NO_SHOW":
       return "error" as const;
     default:
       return "default" as const;
   }
-}
-
-function buildJoinUrl(joinContract: PractitionerSessionJoinContract | null) {
-  if (!joinContract?.canJoin || !joinContract.roomUrl) {
-    return null;
-  }
-
-  if (joinContract.joinToken && joinContract.provider === "DAILY") {
-    return `${joinContract.roomUrl}${
-      joinContract.roomUrl.includes("?") ? "&" : "?"
-    }t=${encodeURIComponent(joinContract.joinToken)}`;
-  }
-
-  return joinContract.roomUrl;
 }
 
 const styles = StyleSheet.create({
@@ -997,66 +1072,93 @@ const styles = StyleSheet.create({
   paddedHeaderSection: {
     paddingHorizontal: 16,
   },
-  scaffoldContent: {
-    flex: 1,
-  },
   listContent: {
     paddingTop: 12,
     paddingBottom: 32,
   },
   itemSeparator: {
-    height: 12,
+    height: 10,
   },
   headerStack: {
-    gap: 16,
-    marginBottom: 16,
+    gap: 12,
+    marginBottom: 12,
   },
   titleWrapper: {
     paddingVertical: 4,
     gap: 2,
   },
   mainScrollTitle: {
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 30,
   },
   mainScrollSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
-  filterToolbar: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  filterScrollContent: {
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 2,
-    alignItems: "center",
+    paddingVertical: 4,
   },
   feedbackCard: {
     gap: 8,
   },
   priorityWrap: {
-    gap: 8,
-    marginBottom: 8,
+    width: "100%",
   },
   priorityCard: {
     gap: 12,
-    borderRadius: 14,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
   },
-  priorityHeader: {
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  priorityIndicator: {
+  priorityBadgeBar: {
     alignItems: "center",
     gap: 6,
+    marginBottom: 4,
   },
-  priorityLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+  priorityBadgeText: {
+    fontSize: 12.5,
+    color: "#053F38",
+  },
+  priorityAvatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  priorityPatientName: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  priorityJoinActionWrapper: {
+    marginTop: 4,
+    width: "100%",
+  },
+  priorityJoinButton: {
+    width: "100%",
+    backgroundColor: "#053F38",
+    borderRadius: 14,
+    minHeight: 48,
+    justifyContent: "center",
   },
   sessionCard: {
     gap: 12,
-    borderRadius: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  cardHeaderArea: {
+    gap: 10,
+    width: "100%",
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardHeaderRow: {
     alignItems: "center",
@@ -1072,16 +1174,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   patientName: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15.5,
+    lineHeight: 20,
     flexShrink: 1,
   },
   sessionCode: {
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 15,
   },
   cardChevron: {
     padding: 2,
+  },
+  cardDivider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    width: "100%",
   },
   cardMetaRow: {
     alignItems: "center",
@@ -1093,7 +1200,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metaTextValue: {
-    fontSize: 12,
+    fontSize: 12.5,
     lineHeight: 16,
   },
   metaInlineRow: {
@@ -1101,21 +1208,37 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   metaBadge: {
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   metaTiny: {
-    fontSize: 11,
+    fontSize: 11.5,
     lineHeight: 15,
   },
   joinActionWrapper: {
     marginTop: 4,
+    width: "100%",
   },
   joinButton: {
     width: "100%",
-    borderRadius: 10,
-    minHeight: 40,
+    borderRadius: 12,
+    minHeight: 44,
+  },
+  secondaryDetailBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
+    marginTop: 2,
+  },
+  secondaryDetailText: {
+    fontSize: 13,
   },
   footerCard: {
     alignItems: "center",

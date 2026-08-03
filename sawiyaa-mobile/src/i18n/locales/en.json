@@ -330,13 +330,16 @@
       "professionalTitle": "Professional title",
       "countryCode": "Country code",
       "yearsOfExperience": "Years of experience",
-      "bio": "Professional bio"
+      "bio": "Professional bio",
+      "confirmPassword": "Confirm Password"
     },
     "placeholders": {
       "displayName": "How should we address you?",
       "email": "name@example.com",
+      "phone": "Phone number",
       "otpEmail": "Optional if OTP should go elsewhere",
       "password": "Enter your password",
+      "confirmPassword": "Confirm your password",
       "newPassword": "Choose a stronger password",
       "otpCode": "Enter the OTP code",
       "resetCode": "Enter the reset code",
@@ -689,6 +692,21 @@
       "EXPIRED": "Expired",
       "REFUND_PENDING": "Refund pending",
       "REFUNDED": "Refunded"
+    },
+    "presentationStatus": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PRACTITIONER_CONFIRMATION": "Awaiting confirmation",
+      "UPCOMING": "Upcoming",
+      "READY_TO_JOIN": "Ready to join",
+      "IN_PROGRESS": "In progress",
+      "AWAITING_COMPLETION_CONFIRMATION": "Awaiting confirmation",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "PATIENT_NO_SHOW": "Patient no-show",
+      "PRACTITIONER_NO_SHOW": "Practitioner no-show",
+      "BOTH_NO_SHOW": "Both no-show",
+      "EXPIRED": "Expired"
     },
     "selectTime": {
       "title": "Choose session time",
@@ -2176,7 +2194,7 @@
     "promoCodes": {
       "title": "Promo Codes",
       "subtitle": "Create promo codes for your sessions and share them with your patients.",
-      "financialNote": "Promo-code discounts cannot exceed 20%. The discount cost is split equally between the platform and the practitioner.",
+      "financialNote": "Promo-code discounts cannot exceed 25%. The discount cost is split equally between the platform and the practitioner.",
       "cardBadge": "Promo codes",
       "quickAccess": "Promo Codes",
       "openAction": "Open promo codes",
@@ -2230,7 +2248,7 @@
       "form": {
         "createTitle": "Create promo code",
         "editTitle": "Edit promo code",
-        "subtitle": "Keep the code percentage-only, session-only, and within the 20% limit.",
+        "subtitle": "Keep the code percentage-only, session-only, and within the 25% limit.",
         "note": "Backend validation still decides the final result. The mobile form only helps you prepare a safe request.",
         "codeLabel": "Code",
         "codePlaceholder": "DR_AHMED20",
@@ -2238,7 +2256,7 @@
         "codeReadOnlyHint": "The code is read-only after creation.",
         "discountLabel": "Discount percentage",
         "discountPlaceholder": "10",
-        "discountHint": "Maximum discount is 20%.",
+        "discountHint": "Maximum discount is 25%.",
         "discountReadOnlyHint": "This discount is read-only because the code has already been redeemed.",
         "totalLimitLabel": "Usage limit total",
         "totalLimitPlaceholder": "Optional",
@@ -2258,7 +2276,7 @@
         "errors": {
           "required": "This field is required.",
           "invalid": "Enter a valid value.",
-          "tooHigh": "Practitioner promo codes cannot exceed 20%.",
+          "tooHigh": "Practitioner promo codes cannot exceed 25%.",
           "invalidRange": "The end date must be after the start date.",
           "locked": "The discount can no longer be changed because this code has already been redeemed."
         }
@@ -2285,7 +2303,7 @@
         "generic": "Could not save the promo code right now.",
         "duplicateCode": "That promo code already exists.",
         "invalidCode": "Enter a code with only letters, numbers, dash, or underscore.",
-        "discountTooHigh": "Practitioner promo codes cannot exceed 20%.",
+        "discountTooHigh": "Practitioner promo codes cannot exceed 25%.",
         "percentageOnly": "Practitioner promo codes are percentage-only.",
         "invalidDateRange": "The promo code date range is invalid.",
         "usageLimitBelowCurrentUsage": "The usage limit cannot be lower than the number of redemptions already recorded.",
@@ -2334,19 +2352,22 @@
   "publicHome": {
     "signIn": "Sign In",
     "brandName": "Sawiyaa",
-    "header": { "signIn": "Sign In", "languageEnglish": "Switch to English", "languageArabic": "Switch to Arabic" },
+    "header": { "signIn": "Sign In", "practitionerSignIn": "Practitioner Sign In", "languageEnglish": "Switch to English", "languageArabic": "Switch to Arabic" },
     "hero": {
       "title": "The right support starts with a simple step",
-      "subtitle": "Find the right specialist and begin with clear steps.",
+      "subtitle": "Find the right specialist and begin with clarity and comfort.",
       "primaryCta": "Create Patient Account",
-      "secondaryCta": "Sign In"
+      "secondaryCta": "Sign In",
+      "startJourney": "Get Started",
+      "chooseSpecialist": "Start choosing a specialist",
+      "helpChoose": "Help me choose the right one"
     },
     "trust": {
       "clearChoice": "Clear choices",
       "simpleBooking": "Simple booking",
       "privacyPriority": "Privacy-conscious"
     },
-    "practitioner": { "label": "Are you a practitioner?", "button": "Practitioner Sign In" },
+    "practitioner": { "label": "Are you a practitioner?", "button": "Practitioner Sign In", "viewAll": "Explore all specialists" },
     "placeholders": {
       "comingSoon": "Coming Soon",
       "comingSoonDesc": "This feature will be available in the next phase. Stay tuned!",

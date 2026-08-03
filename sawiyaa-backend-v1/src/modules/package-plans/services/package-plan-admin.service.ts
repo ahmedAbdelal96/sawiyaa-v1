@@ -4,13 +4,21 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigChangeAction, ConfigScopeType, Prisma } from '@prisma/client';
+import { ConfigScopeType } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { CONFIG_KEYS } from '@modules/config/registry/config-key.constants';
+import { ConfigurationManagementService } from '@modules/config/services/configuration-management.service';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
+import { UpdateConfigurationCommand } from '@modules/config/types/configuration-write.types';
 import { findStandardPackagePlan } from '../package-plan.catalog';
 
 @Injectable()
 export class PackagePlanAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configurationManagementService: ConfigurationManagementService,
+    private readonly configRuntimeService: ConfigRuntimeService,
+  ) {}
 
   async updatePlan(input: {
     code: string;
@@ -69,7 +77,21 @@ export class PackagePlanAdminService {
   }
 
   async getSettings() {
-    return this.readSettingsFromClient(this.prisma);
+    const [packagesEnabled, packagesPurchaseEnabled] = await Promise.all([
+      this.configRuntimeService.getBoolean(CONFIG_KEYS.packages.enabled),
+      this.configRuntimeService.getBoolean(
+        CONFIG_KEYS.packages.purchaseEnabled,
+      ),
+    ]);
+
+    if (packagesEnabled === null || packagesPurchaseEnabled === null) {
+      throw new InternalServerErrorException({
+        messageKey: 'packagePlans.errors.settingsUnavailable',
+        error: 'PACKAGE_PLAN_SETTINGS_UNAVAILABLE',
+      });
+    }
+
+    return { packagesEnabled, packagesPurchaseEnabled };
   }
 
   async updateSettings(input: {
@@ -87,35 +109,42 @@ export class PackagePlanAdminService {
       });
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const tasks: Array<Promise<unknown>> = [];
+    const actor = input.changedByUserId
+      ? {
+          type: 'USER' as const,
+          id: input.changedByUserId,
+          permissions: ['configuration.edit.operational'] as const,
+        }
+      : {
+          type: 'SYSTEM' as const,
+          permissions: ['configuration.system.write'] as const,
+        };
+    const commands: UpdateConfigurationCommand[] = [];
 
-      if (input.packagesEnabled !== undefined) {
-        tasks.push(
-          this.upsertGlobalBooleanConfigValue(tx, {
-            key: 'packages.enabled',
-            value: input.packagesEnabled,
-            changedByUserId: input.changedByUserId ?? null,
-            reason: 'Updated package plan feature toggle',
-          }),
-        );
-      }
+    if (input.packagesEnabled !== undefined) {
+      commands.push(
+        await this.buildBooleanCommand({
+          key: CONFIG_KEYS.packages.enabled,
+          value: input.packagesEnabled,
+          actor,
+          reason: 'Updated package plan feature toggle',
+        }),
+      );
+    }
 
-      if (input.packagesPurchaseEnabled !== undefined) {
-        tasks.push(
-          this.upsertGlobalBooleanConfigValue(tx, {
-            key: 'packages.purchaseEnabled',
-            value: input.packagesPurchaseEnabled,
-            changedByUserId: input.changedByUserId ?? null,
-            reason: 'Updated package purchase feature toggle',
-          }),
-        );
-      }
+    if (input.packagesPurchaseEnabled !== undefined) {
+      commands.push(
+        await this.buildBooleanCommand({
+          key: CONFIG_KEYS.packages.purchaseEnabled,
+          value: input.packagesPurchaseEnabled,
+          actor,
+          reason: 'Updated package purchase feature toggle',
+        }),
+      );
+    }
 
-      await Promise.all(tasks);
-
-      return this.readSettingsFromClient(tx);
-    });
+    await this.configurationManagementService.updateMany(commands);
+    return this.getSettings();
   }
 
   private assertManageableCode(code: string): void {
@@ -127,139 +156,29 @@ export class PackagePlanAdminService {
     }
   }
 
-  private async upsertGlobalBooleanConfigValue(
-    tx: Prisma.TransactionClient,
-    input: {
-      key: string;
-      value: boolean;
-      changedByUserId: string | null;
-      reason: string;
-    },
-  ) {
-    const configKey = await tx.configKeyCatalog.findUnique({
-      where: { key: input.key },
-    });
-
-    if (!configKey) {
-      throw new InternalServerErrorException(
-        `Config key "${input.key}" was not found`,
-      );
-    }
-
-    const now = new Date();
-    const existingActive = await tx.configValue.findFirst({
-      where: {
-        configKeyId: configKey.id,
-        scopeType: ConfigScopeType.GLOBAL,
-        scopeRefId: null,
-        isActive: true,
-      },
-      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
-    });
-
-    if (existingActive) {
-      await tx.configValue.update({
-        where: { id: existingActive.id },
-        data: {
-          isActive: false,
-          effectiveTo: now,
-        },
-      });
-    }
-
-    const created = await tx.configValue.create({
-      data: {
-        configKeyId: configKey.id,
-        scopeType: ConfigScopeType.GLOBAL,
-        scopeRefId: null,
-        valueBoolean: input.value,
-        priority: existingActive ? existingActive.priority + 1 : 100,
-        isActive: true,
-        effectiveFrom: now,
-        effectiveTo: null,
-      },
-    });
-
-    await tx.configChangeLog.create({
-      data: {
-        configKeyId: configKey.id,
-        configValueId: created.id,
-        changedByUserId: input.changedByUserId,
-        changeAction: existingActive
-          ? ConfigChangeAction.UPDATED
-          : ConfigChangeAction.CREATED,
-        oldValueSnapshot: existingActive
-          ? ({
-              scopeType: existingActive.scopeType,
-              scopeRefId: existingActive.scopeRefId,
-              valueBoolean: existingActive.valueBoolean,
-              isActive: existingActive.isActive,
-            } as Prisma.InputJsonValue)
-          : undefined,
-        newValueSnapshot: {
-          scopeType: ConfigScopeType.GLOBAL,
-          scopeRefId: null,
-          valueBoolean: created.valueBoolean,
-          isActive: created.isActive,
-        } as Prisma.InputJsonValue,
-        reason: input.reason,
-      },
-    });
-
-    return created;
-  }
-
-  private async readSettingsFromClient(
-    client: PrismaService | Prisma.TransactionClient,
-  ): Promise<{
-    packagesEnabled: boolean;
-    packagesPurchaseEnabled: boolean;
-  }> {
-    const [packagesEnabled, packagesPurchaseEnabled] = await Promise.all([
-      this.resolveBooleanSetting(client, 'packages.enabled'),
-      this.resolveBooleanSetting(client, 'packages.purchaseEnabled'),
-    ]);
-
-    if (packagesEnabled === null || packagesPurchaseEnabled === null) {
-      throw new InternalServerErrorException({
-        messageKey: 'packagePlans.errors.settingsUnavailable',
-        error: 'PACKAGE_PLAN_SETTINGS_UNAVAILABLE',
-      });
-    }
+  private async buildBooleanCommand(input: {
+    key:
+      | typeof CONFIG_KEYS.packages.enabled
+      | typeof CONFIG_KEYS.packages.purchaseEnabled;
+    value: boolean;
+    actor: UpdateConfigurationCommand['actor'];
+    reason: string;
+  }): Promise<UpdateConfigurationCommand> {
+    const current = await this.configurationManagementService.getCurrentVersion(
+      input.key,
+      ConfigScopeType.GLOBAL,
+      null,
+    );
 
     return {
-      packagesEnabled,
-      packagesPurchaseEnabled,
-    };
-  }
-
-  private async resolveBooleanSetting(
-    client: PrismaService | Prisma.TransactionClient,
-    key: string,
-  ): Promise<boolean | null> {
-    const configKey = await client.configKeyCatalog.findUnique({
-      where: { key },
-    });
-
-    if (!configKey) {
-      throw new InternalServerErrorException(
-        `Config key "${key}" was not found`,
-      );
-    }
-
-    const active = await client.configValue.findFirst({
-      where: {
-        configKeyId: configKey.id,
-        scopeType: ConfigScopeType.GLOBAL,
-        scopeRefId: null,
-        isActive: true,
-      },
-      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
-      select: {
-        valueBoolean: true,
-      },
-    });
-
-    return active?.valueBoolean ?? null;
+      key: input.key,
+      value: input.value,
+      scopeType: ConfigScopeType.GLOBAL,
+      scopeRefId: null,
+      actor: input.actor,
+      actorType: input.actor.type,
+      reason: input.reason,
+      expectedUpdatedAt: current?.updatedAt,
+    } as UpdateConfigurationCommand;
   }
 }
