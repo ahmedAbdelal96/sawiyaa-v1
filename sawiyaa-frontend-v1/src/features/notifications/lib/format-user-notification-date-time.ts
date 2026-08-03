@@ -1,8 +1,9 @@
-import { formatViewerDateTime } from "@/lib/time-formatting";
+import { formatEffectiveViewerDateTime } from "@/lib/time-formatting";
 
 export function formatUserNotificationDateTime(
   value: string,
   locale: string,
+  timeZone?: string | null,
 ): string {
-  return formatViewerDateTime(value, { locale, fallbackText: value });
+  return formatEffectiveViewerDateTime(value, timeZone, { locale, fallbackText: value });
 }

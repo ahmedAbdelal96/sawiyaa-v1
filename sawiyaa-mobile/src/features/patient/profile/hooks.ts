@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
 import { paymentQueryKeys } from "../payments/hooks";
-import { packagePlanQueryKeys, packagePurchaseQueryKeys } from "../package-plans/hooks";
+import {
+  packagePlanQueryKeys,
+  packagePurchaseQueryKeys,
+} from "../package-plans/hooks";
 import { academyQueryKeys } from "../academy/hooks";
 import {
   getPatientProfile,
@@ -10,7 +13,7 @@ import {
   uploadPatientAvatar,
 } from "./api";
 
-const patientProfileQueryKeys = {
+export const patientProfileQueryKeys = {
   all: ["patient-profile"] as const,
   me: () => [...patientProfileQueryKeys.all, "me"] as const,
 };

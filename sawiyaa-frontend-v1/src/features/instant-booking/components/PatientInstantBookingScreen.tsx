@@ -45,28 +45,10 @@ import type {
   SessionMode,
 } from "../types/instant-booking.types";
 import { mapInstantBookingDiscoveryMoney } from "../lib/instant-booking-money";
-
-function formatDateTime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-
-  return new Date(isoString).toLocaleString(numLocale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
-}
+import { formatPatientDateTime, formatViewerTime } from "@/lib/time-formatting";
 
 function formatTime(isoString: string | null, numLocale: string): string {
-  if (!isoString) return "";
-
-  return new Date(isoString).toLocaleTimeString(numLocale, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !numLocale.startsWith("ar"),
-  });
+  return formatViewerTime(isoString, { locale: numLocale, fallbackText: "" });
 }
 
 function getPractitionerInitials(displayName: string | null | undefined): string {
@@ -96,6 +78,7 @@ function RequestStateCard({
   request,
   locale,
   numLocale,
+  timeZone,
   onReset,
   onPay,
   onCancel,
@@ -104,6 +87,7 @@ function RequestStateCard({
   request: InstantBookingRequest;
   locale: string;
   numLocale: string;
+  timeZone: string | null | undefined;
   onReset: () => void;
   onPay: () => void;
   onCancel: () => void;
@@ -117,7 +101,7 @@ function RequestStateCard({
     minutes: request.requestedDurationMinutes,
   });
   const modeLabel = t(`request.sessionModes.${request.sessionMode}` as Parameters<typeof t>[0]);
-  const expiresLabel = formatDateTime(request.expiresAt, numLocale);
+  const expiresLabel = formatPatientDateTime(request.expiresAt, timeZone, { locale: numLocale, fallbackText: "" });
   const tone = requestStatusTone(request.status);
 
   const stateStyles =
@@ -590,6 +574,7 @@ export default function PatientInstantBookingScreen() {
           request={activeRequest}
           locale={locale}
           numLocale={numLocale}
+          timeZone={patientProfileQuery.data?.profile.timezone}
           onReset={() => navigateWithRequestId(null)}
           onPay={() => {
             if (!activeRequest.createdSessionId) return;

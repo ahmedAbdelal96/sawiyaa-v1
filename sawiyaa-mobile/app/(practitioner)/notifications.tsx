@@ -2,6 +2,7 @@ import React from "react";
 import {
   ActivityIndicator,
   Alert,
+  I18nManager,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -37,10 +38,25 @@ import {
 
 type NotificationFilter = "all" | "unread" | "read";
 
+const getNotificationIcon = (typeSlug: string) => {
+  const slug = typeSlug.toLowerCase();
+  if (slug.includes("session")) {
+    return "calendar-outline" as const;
+  }
+  if (slug.includes("message") || slug.includes("chat")) {
+    return "chatbubble-ellipses-outline" as const;
+  }
+  if (slug.includes("payment") || slug.includes("wallet")) {
+    return "card-outline" as const;
+  }
+  return "notifications-outline" as const;
+};
+
 export default function PractitionerNotificationsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
+  const isRTL = i18n.language?.startsWith("ar");
   const { user } = useAuth();
   const [filter, setFilter] = React.useState<NotificationFilter>("all");
   const [pendingNotificationId, setPendingNotificationId] = React.useState<
@@ -156,7 +172,7 @@ export default function PractitionerNotificationsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Card variant="outlined" padding="sm" style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
+            <View style={[styles.summaryRow, isRTL ? styles.rowRtl : styles.rowLtr]}>
               <View
                 style={[
                   styles.summaryIcon,
@@ -176,13 +192,13 @@ export default function PractitionerNotificationsScreen() {
                 />
               </View>
 
-              <View style={styles.summaryTextWrap}>
-                <Text weight="700" style={styles.summaryTitle}>
+              <View style={[styles.summaryTextWrap, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
+                <Text weight="700" style={[styles.summaryTitle, { textAlign: isRTL ? "right" : "left" }]}>
                   {t("practitionerNotifications.centerTitle")}
                 </Text>
                 <Text
                   color={theme.colors.textSecondary}
-                  style={styles.summaryBody}
+                  style={[styles.summaryBody, { textAlign: isRTL ? "right" : "left" }]}
                 >
                   {unreadCount > 0
                     ? t("practitionerNotifications.summaryBody", {
@@ -249,22 +265,57 @@ export default function PractitionerNotificationsScreen() {
           </Card>
 
           {hasNotifications ? (
-            <View style={styles.filterRow}>
-              <FilterChip
-                label={t("practitionerNotifications.filters.all")}
-                selected={filter === "all"}
+            <View style={styles.filterTabsRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={() => setFilter("all")}
-              />
-              <FilterChip
-                label={t("practitionerNotifications.filters.unread")}
-                selected={filter === "unread"}
+                style={[
+                  styles.filterTabButton,
+                  filter === "all" ? styles.filterTabButtonSelected : null,
+                ]}
+              >
+                <Text
+                  weight={filter === "all" ? "700" : "600"}
+                  color={filter === "all" ? "#FFFFFF" : theme.colors.textSecondary}
+                  style={styles.filterTabText}
+                >
+                  {t("practitionerNotifications.filters.all")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={() => setFilter("unread")}
-              />
-              <FilterChip
-                label={t("practitionerNotifications.filters.read")}
-                selected={filter === "read"}
+                style={[
+                  styles.filterTabButton,
+                  filter === "unread" ? styles.filterTabButtonSelected : null,
+                ]}
+              >
+                <Text
+                  weight={filter === "unread" ? "700" : "600"}
+                  color={filter === "unread" ? "#FFFFFF" : theme.colors.textSecondary}
+                  style={styles.filterTabText}
+                >
+                  {t("practitionerNotifications.filters.unread")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={() => setFilter("read")}
-              />
+                style={[
+                  styles.filterTabButton,
+                  filter === "read" ? styles.filterTabButtonSelected : null,
+                ]}
+              >
+                <Text
+                  weight={filter === "read" ? "700" : "600"}
+                  color={filter === "read" ? "#FFFFFF" : theme.colors.textSecondary}
+                  style={styles.filterTabText}
+                >
+                  {t("practitionerNotifications.filters.read")}
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : null}
 
@@ -303,6 +354,7 @@ export default function PractitionerNotificationsScreen() {
           ) : (
             <View style={styles.list}>
               {filteredNotifications.map((notification) => {
+                const isRTL = i18n.language?.startsWith("ar");
                 const isUnread = notification.readAt === null;
                 const presentation =
                   resolvePractitionerNotificationPresentation(
@@ -337,20 +389,54 @@ export default function PractitionerNotificationsScreen() {
                       padding="sm"
                       style={[
                         styles.notificationCard,
-                        {
-                          borderColor: isUnread
-                            ? theme.colors.primary + "38"
-                            : theme.colors.borderLight,
-                          backgroundColor: isUnread
-                            ? theme.colors.primaryLight + "18"
-                            : theme.colors.surface,
-                          opacity: isPending ? 0.72 : 1,
-                        },
+                        isUnread
+                          ? {
+                              backgroundColor: "#EEF4EF",
+                              borderColor: theme.colors.primary + "28",
+                            }
+                          : {
+                              backgroundColor: "#FFFFFF",
+                              borderColor: "#E8DED0",
+                            },
+                        { opacity: isPending ? 0.72 : 1 },
                       ]}
                     >
-                      <View style={styles.itemTopRow}>
+                      <View style={[styles.itemContentLayout, isRTL ? styles.rowRtl : styles.rowLtr]}>
+                        {/* Leading Icon wrapper */}
+                        <View style={styles.iconContainerWrap}>
+                          <View
+                            style={[
+                              styles.iconWrap,
+                              {
+                                backgroundColor: isUnread
+                                  ? theme.colors.primarySoft
+                                  : theme.colors.iconContainerMuted,
+                              },
+                            ]}
+                          >
+                            <Ionicons
+                              name={getNotificationIcon(notification.typeSlug)}
+                              size={18}
+                              color={
+                                isUnread
+                                  ? theme.colors.primary
+                                  : theme.colors.textMuted
+                              }
+                            />
+                          </View>
+                          {isUnread ? (
+                            <View
+                              style={[
+                                styles.unreadDotIndicator,
+                                { backgroundColor: theme.colors.primary },
+                              ]}
+                            />
+                          ) : null}
+                        </View>
+
+                        {/* Content column */}
                         <View style={styles.itemTextWrap}>
-                          <View style={styles.itemTitleRow}>
+                          <View style={[styles.itemTitleRow, isRTL ? styles.rowRtl : styles.rowLtr]}>
                             <Text
                               weight={isUnread ? "700" : "600"}
                               style={[
@@ -359,6 +445,7 @@ export default function PractitionerNotificationsScreen() {
                                   color: isUnread
                                     ? theme.colors.textPrimary
                                     : theme.colors.textSecondary,
+                                  textAlign: isRTL ? "right" : "left",
                                 },
                               ]}
                             >
@@ -399,7 +486,7 @@ export default function PractitionerNotificationsScreen() {
                                   ? theme.colors.textSecondary
                                   : theme.colors.textMuted
                               }
-                              style={styles.itemBody}
+                              style={[styles.itemBody, { textAlign: isRTL ? "right" : "left" }]}
                               numberOfLines={3}
                             >
                               {presentation.body}
@@ -408,7 +495,7 @@ export default function PractitionerNotificationsScreen() {
                         </View>
                       </View>
 
-                      <View style={styles.itemFooter}>
+                      <View style={[styles.itemFooter, isRTL ? styles.rowRtl : styles.rowLtr]}>
                         <Text
                           color={theme.colors.textMuted}
                           style={styles.itemDate}
@@ -420,7 +507,7 @@ export default function PractitionerNotificationsScreen() {
                         </Text>
 
                         <Ionicons
-                          name="chevron-forward"
+                          name={isRTL ? "chevron-back" : "chevron-forward"}
                           size={16}
                           color={actionRoute ? theme.colors.primary : theme.colors.textMuted}
                         />
@@ -440,11 +527,16 @@ export default function PractitionerNotificationsScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 28,
+    paddingTop: 16,
+    paddingBottom: 32,
   },
   summaryCard: {
-    marginBottom: 12,
+    marginBottom: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#E8DED0",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
   },
   summaryRow: {
     flexDirection: "row",
@@ -457,7 +549,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   summaryTextWrap: {
     flex: 1,
@@ -478,17 +570,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   summaryCountText: {
     fontSize: 13,
     lineHeight: 18,
   },
   summaryAction: {
-    marginTop: 10,
+    marginTop: 12,
     minHeight: 36,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -502,27 +594,74 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  filterRow: {
+  filterTabsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 6,
+    backgroundColor: "#FCFAF6",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#E8DED0",
+    padding: 4,
+    gap: 4,
+    marginBottom: 14,
+  },
+  filterTabButton: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "transparent",
+  },
+  filterTabButtonSelected: {
+    backgroundColor: "#24564F",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  filterTabText: {
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   list: {
-    gap: 10,
-    paddingTop: 4,
+    gap: 12,
   },
   notificationCard: {
-    borderRadius: 18,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    padding: 14,
+    gap: 10,
   },
-  itemTopRow: {
+  itemContentLayout: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
     gap: 12,
+    alignItems: "flex-start",
+  },
+  iconContainerWrap: {
+    position: "relative",
+    flexShrink: 0,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unreadDotIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    position: "absolute",
+    top: -2,
+    right: -2,
+    borderWidth: 1.5,
+    borderColor: "#EEF4EF",
   },
   itemTextWrap: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   itemTitleRow: {
     flexDirection: "row",
@@ -530,24 +669,30 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
+  rowLtr: {
+    flexDirection: "row",
+  },
+  rowRtl: {
+    flexDirection: "row-reverse",
+  },
   itemTitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14.5,
+    lineHeight: 19,
     flexShrink: 1,
   },
   itemBody: {
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 19,
   },
   itemFooter: {
-    marginTop: 12,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
   },
   itemDate: {
-    fontSize: 11,
+    fontSize: 10,
     lineHeight: 14,
   },
   unreadPill: {

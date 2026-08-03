@@ -133,6 +133,7 @@ interface AuthContextValue {
     payload: PractitionerConfirmPasswordResetRequest,
   ) => ReturnType<typeof practitionerConfirmPasswordReset>;
   signOut: () => Promise<void>;
+  setPendingRedirect: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -200,6 +201,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     "phone-not-saved" | null
   >(null);
   const sessionRef = useRef<PersistedAuthSession | null>(null);
+  const pendingRedirectRef = useRef<string | null>(null);
   const lastHandledNotificationIdentifierRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -546,7 +548,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (session.role === "patient" && (inAuthGroup || inPractitionerGroup)) {
-      router.replace("/(patient)");
+      const redirect = pendingRedirectRef.current;
+      pendingRedirectRef.current = null;
+      router.replace((redirect ?? "/(patient)") as any);
       return;
     }
 
@@ -691,6 +695,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       verifyPractitionerPasswordResetOtp: practitionerVerifyPasswordResetOtp,
       confirmPractitionerPasswordReset: practitionerConfirmPasswordReset,
       signOut,
+      setPendingRedirect: (url) => { pendingRedirectRef.current = url; },
     }),
     [
       isBootstrapping,

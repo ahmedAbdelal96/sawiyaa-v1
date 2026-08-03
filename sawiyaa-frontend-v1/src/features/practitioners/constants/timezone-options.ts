@@ -1,57 +1,31 @@
-import type { SupportedCountryCode } from "./country-options";
+import { normalizeIanaTimeZone } from "@/lib/time-formatting/time-formatting";
+import { buildTimeZoneOptions } from "@/features/timezone/timezone-options";
 
-export type TimezoneOption = {
-  value: string;
-  countries: SupportedCountryCode[];
-  label: {
-    ar: string;
-    en: string;
-  };
-};
-
-export const PRACTITIONER_TIMEZONE_OPTIONS: TimezoneOption[] = [
-  {
-    value: "Africa/Cairo",
-    countries: ["EG"],
-    label: { ar: "القاهرة — مصر", en: "Cairo — Egypt" },
-  },
-  {
-    value: "Asia/Riyadh",
-    countries: ["SA"],
-    label: { ar: "الرياض — السعودية", en: "Riyadh — Saudi Arabia" },
-  },
-  {
-    value: "Asia/Dubai",
-    countries: ["AE"],
-    label: { ar: "دبي — الإمارات", en: "Dubai — United Arab Emirates" },
-  },
-  {
-    value: "Asia/Kuwait",
-    countries: ["KW"],
-    label: { ar: "الكويت — الكويت", en: "Kuwait City — Kuwait" },
-  },
-  {
-    value: "Asia/Amman",
-    countries: ["JO"],
-    label: { ar: "عمّان — الأردن", en: "Amman — Jordan" },
-  },
-];
-
-export function getLocalizedTimezoneOptions(locale: string, countryCode?: string): Array<{ value: string; label: string }> {
-  const normalizedLocale = locale === "ar" ? "ar" : "en";
-  const normalizedCountry = (countryCode ?? "").trim().toUpperCase() as SupportedCountryCode | "";
-
-  const filtered = normalizedCountry
-    ? PRACTITIONER_TIMEZONE_OPTIONS.filter((option) => option.countries.includes(normalizedCountry))
-    : PRACTITIONER_TIMEZONE_OPTIONS;
-
-  return filtered.map((option) => ({
-    value: option.value,
-    label: option.label[normalizedLocale],
-  }));
+/**
+ * Compatibility exports for older practitioner feature imports. New UI must
+ * render the role-agnostic TimeZonePicker directly.
+ */
+export function getLocalizedTimezoneOptions(
+  locale: string,
+): Array<{ value: string; label: string }> {
+  return buildTimeZoneOptions({ locale: locale === "ar" ? "ar" : "en" }).map(
+    ({ value, label }) => ({ value, label }),
+  );
 }
 
-export function isTimezoneSupported(value: string) {
-  return PRACTITIONER_TIMEZONE_OPTIONS.some((option) => option.value === value);
+export function getLocalizedTimezoneLabel(
+  value: string,
+  locale: string,
+): string | null {
+  return (
+    buildTimeZoneOptions({
+      locale: locale === "ar" ? "ar" : "en",
+      selectedTimeZone: value,
+    }).find((option) => option.value === normalizeIanaTimeZone(value))?.label ??
+    null
+  );
 }
 
+export function isTimezoneSupported(value: string): boolean {
+  return normalizeIanaTimeZone(value) !== null;
+}

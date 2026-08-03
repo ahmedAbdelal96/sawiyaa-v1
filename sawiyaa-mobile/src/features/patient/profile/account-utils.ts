@@ -1,3 +1,5 @@
+import { formatViewerDate } from "../../../lib/time-formatting";
+
 export function getInitials(name: string | null | undefined) {
   if (!name?.trim()) {
     return "P";
@@ -68,11 +70,8 @@ export function formatProfileDate(
     return null;
   }
 
-  try {
-    return new Date(value).toLocaleDateString(
-      locale.startsWith("ar") ? "ar-EG" : "en-GB",
-    );
-  } catch {
-    return value;
-  }
+  return formatViewerDate(value, {
+    locale: locale.startsWith("ar") ? "ar-EG" : "en-GB",
+    fallbackText: value,
+  });
 }

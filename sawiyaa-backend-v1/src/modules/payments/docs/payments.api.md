@@ -50,7 +50,7 @@ Provider selection is backend-controlled through centralized routing policy. Fro
 
 ### Provider Availability Guardrails
 
-- `PAYMENT_STRIPE_ENABLED` and `PAYMENT_PAYMOB_ENABLED` control runtime availability
+- Database Config provider `enabled` values control runtime availability
 - enabled provider must have required credentials
 - if routing selects an unavailable provider, initiation fails explicitly (`PAYMENT_PROVIDER_UNAVAILABLE`)
 - provider mode is env-driven:

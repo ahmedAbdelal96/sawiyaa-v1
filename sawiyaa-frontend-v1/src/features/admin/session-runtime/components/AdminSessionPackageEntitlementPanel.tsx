@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { AlertTriangle, CheckCircle2, Info, Loader2 } from "lucide-react";
 import { formatInspectorDateTime } from "../lib/inspector-utils";
+import { useRuntimeViewerTimeZone } from "../lib/runtime-time";
 import { getAdminSessionPackageEntitlementErrorKey } from "../lib/admin-session-runtime-errors";
 import { useCreateAdminSessionPackageEntitlementDecision } from "../hooks/use-admin-session-runtime";
 import type {
@@ -59,10 +60,10 @@ function SummaryRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
+    <div className="border-border-light flex items-start justify-between gap-4 border-b py-3 last:border-b-0 dark:border-white/8">
+      <span className="text-text-muted text-xs font-medium">{label}</span>
       <span
-        className={`text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
+        className={`text-text-primary text-sm dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}
       >
         {value}
       </span>
@@ -70,7 +71,9 @@ function SummaryRow({
   );
 }
 
-function getDecisionTone(decisionType: AdminSessionPackageEntitlementDecisionType | null) {
+function getDecisionTone(
+  decisionType: AdminSessionPackageEntitlementDecisionType | null,
+) {
   if (decisionType === "RESTORE_TO_PACKAGE") {
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
   }
@@ -81,7 +84,10 @@ function getDecisionTone(decisionType: AdminSessionPackageEntitlementDecisionTyp
 }
 
 function makeIdempotencyKey() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return `pkg-entitlement-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -96,12 +102,17 @@ export default function AdminSessionPackageEntitlementPanel({
 }) {
   const t = useTranslations("admin-session-runtime");
   const locale = useLocale();
+  const viewerTimeZone = useRuntimeViewerTimeZone();
   const mutation = useCreateAdminSessionPackageEntitlementDecision();
-  const [decisionType, setDecisionType] = useState<AdminSessionPackageEntitlementDecisionType | null>(null);
-  const [reasonCode, setReasonCode] = useState<AdminSessionPackageEntitlementReasonCode | "">("");
+  const [decisionType, setDecisionType] =
+    useState<AdminSessionPackageEntitlementDecisionType | null>(null);
+  const [reasonCode, setReasonCode] = useState<
+    AdminSessionPackageEntitlementReasonCode | ""
+  >("");
   const [adminNote, setAdminNote] = useState("");
   const [successVisible, setSuccessVisible] = useState(false);
-  const [lastSubmittedDecisionType, setLastSubmittedDecisionType] = useState<AdminSessionPackageEntitlementDecisionType | null>(null);
+  const [lastSubmittedDecisionType, setLastSubmittedDecisionType] =
+    useState<AdminSessionPackageEntitlementDecisionType | null>(null);
 
   const packagePurchase = item.packagePurchase ?? null;
   const existingDecision = item.packageEntitlementDecision ?? null;
@@ -110,18 +121,23 @@ export default function AdminSessionPackageEntitlementPanel({
   const statusKey = packagePurchase
     ? `inspector.packageEntitlement.purchaseStatuses.${packagePurchase.status}`
     : null;
-  const statusLabel = packagePurchase && statusKey
-    ? safeLabel(
-        t,
-        locale,
-        statusKey,
-        "\u062d\u0627\u0644\u0629 \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641\u0629",
-        "Unknown status",
-      )
-    : t("inspector.notAvailable");
+  const statusLabel =
+    packagePurchase && statusKey
+      ? safeLabel(
+          t,
+          locale,
+          statusKey,
+          "\u062d\u0627\u0644\u0629 \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641\u0629",
+          "Unknown status",
+        )
+      : t("inspector.notAvailable");
 
   const errorMessage = mutation.error
-    ? t(getAdminSessionPackageEntitlementErrorKey(mutation.error) as Parameters<typeof t>[0])
+    ? t(
+        getAdminSessionPackageEntitlementErrorKey(mutation.error) as Parameters<
+          typeof t
+        >[0],
+      )
     : null;
 
   const submitDisabled = !decisionType || !reasonCode || mutation.isPending;
@@ -166,19 +182,19 @@ export default function AdminSessionPackageEntitlementPanel({
     <section className="app-panel rounded-[28px] p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light">
+          <span className="bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light inline-flex h-9 w-9 items-center justify-center rounded-2xl">
             <Info className="h-4 w-4" />
           </span>
           <div>
-            <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+            <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
               {t("inspector.packageEntitlement.title")}
             </h2>
-            <p className="text-xs text-text-secondary">
+            <p className="text-text-secondary text-xs">
               {t("inspector.packageEntitlement.subtitle")}
             </p>
           </div>
         </div>
-        <span className="rounded-full bg-surface-tertiary px-2.5 py-1 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/80">
+        <span className="bg-surface-tertiary text-text-muted rounded-full px-2.5 py-1 text-[11px] font-semibold dark:bg-white/10 dark:text-white/80">
           {t("inspector.packageEntitlement.summary.tag")}
         </span>
       </div>
@@ -202,7 +218,9 @@ export default function AdminSessionPackageEntitlementPanel({
             <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
               {lastSubmittedDecisionType === "COUNT_AS_USED"
                 ? t("inspector.packageEntitlement.success.countAsUsedNote")
-                : t("inspector.packageEntitlement.success.restoreToPackageNote")}
+                : t(
+                    "inspector.packageEntitlement.success.restoreToPackageNote",
+                  )}
             </p>
           </div>
         </div>
@@ -211,11 +229,13 @@ export default function AdminSessionPackageEntitlementPanel({
       {errorMessage ? (
         <div className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
-          <p className="text-xs leading-6 text-rose-800 dark:text-rose-200">{errorMessage}</p>
+          <p className="text-xs leading-6 text-rose-800 dark:text-rose-200">
+            {errorMessage}
+          </p>
         </div>
       ) : null}
 
-      <div className="mt-5 rounded-[24px] border border-border-light px-4 dark:border-white/8">
+      <div className="border-border-light mt-5 rounded-[24px] border px-4 dark:border-white/8">
         <SummaryRow
           label={t("inspector.packageEntitlement.current.plan")}
           value={packagePurchase.packagePlan.title}
@@ -226,7 +246,9 @@ export default function AdminSessionPackageEntitlementPanel({
         />
         <SummaryRow
           label={t("inspector.packageEntitlement.current.currency")}
-          value={packagePurchase.selectedCurrencyCode ?? t("inspector.notAvailable")}
+          value={
+            packagePurchase.selectedCurrencyCode ?? t("inspector.notAvailable")
+          }
         />
         <SummaryRow
           label={t("inspector.packageEntitlement.current.payableSnapshot")}
@@ -243,17 +265,19 @@ export default function AdminSessionPackageEntitlementPanel({
       </div>
 
       {existingDecision ? (
-        <div className="mt-5 space-y-4 rounded-[24px] border border-border-light bg-surface-secondary/50 p-4 dark:border-white/8 dark:bg-white/[0.03]">
+        <div className="border-border-light bg-surface-secondary/50 mt-5 space-y-4 rounded-[24px] border p-4 dark:border-white/8 dark:bg-white/[0.03]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <p className="text-text-muted text-[11px] font-semibold tracking-[0.18em] uppercase">
                 {t("inspector.packageEntitlement.recorded.title")}
               </p>
-              <p className="mt-1 text-sm text-text-secondary">
+              <p className="text-text-secondary mt-1 text-sm">
                 {t("inspector.packageEntitlement.recorded.note")}
               </p>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getDecisionTone(existingDecision.decisionType)}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${getDecisionTone(existingDecision.decisionType)}`}
+            >
               {safeLabel(
                 t,
                 locale,
@@ -264,7 +288,7 @@ export default function AdminSessionPackageEntitlementPanel({
             </span>
           </div>
 
-          <div className="rounded-[20px] border border-border-light px-4 dark:border-white/8">
+          <div className="border-border-light rounded-[20px] border px-4 dark:border-white/8">
             <SummaryRow
               label={t("inspector.packageEntitlement.recorded.decisionType")}
               value={safeLabel(
@@ -300,11 +324,17 @@ export default function AdminSessionPackageEntitlementPanel({
             />
             <SummaryRow
               label={t("inspector.packageEntitlement.recorded.decidedAt")}
-              value={formatInspectorDateTime(existingDecision.decidedAt, locale)}
+              value={formatInspectorDateTime(
+                existingDecision.decidedAt,
+                locale,
+                viewerTimeZone,
+              )}
             />
             {existingDecision.resultingSessionEarningReviewId ? (
               <SummaryRow
-                label={t("inspector.packageEntitlement.recorded.resultingReview")}
+                label={t(
+                  "inspector.packageEntitlement.recorded.resultingReview",
+                )}
                 value={existingDecision.resultingSessionEarningReviewId}
                 mono
               />
@@ -312,9 +342,12 @@ export default function AdminSessionPackageEntitlementPanel({
           </div>
         </div>
       ) : canWrite ? (
-        <form onSubmit={handleSubmit} className="mt-5 space-y-5 rounded-[24px] border border-border-light bg-white p-4 dark:border-white/8 dark:bg-white/[0.03]">
+        <form
+          onSubmit={handleSubmit}
+          className="border-border-light mt-5 space-y-5 rounded-[24px] border bg-white p-4 dark:border-white/8 dark:bg-white/[0.03]"
+        >
           <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <label className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
               {t("inspector.packageEntitlement.decisionType.label")}
             </label>
             <div className="space-y-2">
@@ -338,9 +371,11 @@ export default function AdminSessionPackageEntitlementPanel({
                           : "border-border-light dark:border-white/20"
                       }`}
                     >
-                      {selected ? <span className="h-2 w-2 rounded-full bg-white" /> : null}
+                      {selected ? (
+                        <span className="h-2 w-2 rounded-full bg-white" />
+                      ) : null}
                     </span>
-                    <span className="text-sm font-medium text-text-secondary dark:text-white/80">
+                    <span className="text-text-secondary text-sm font-medium dark:text-white/80">
                       {safeLabel(
                         t,
                         locale,
@@ -356,11 +391,11 @@ export default function AdminSessionPackageEntitlementPanel({
           </div>
 
           {decisionType ? (
-            <div className="rounded-2xl border border-border-light bg-surface-tertiary p-4 dark:border-white/8 dark:bg-white/[0.03]">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <div className="border-border-light bg-surface-tertiary rounded-2xl border p-4 dark:border-white/8 dark:bg-white/[0.03]">
+              <p className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
                 {t("inspector.packageEntitlement.decisionPreview.label")}
               </p>
-              <p className="mt-1 text-sm font-medium text-text-secondary dark:text-white/80">
+              <p className="text-text-secondary mt-1 text-sm font-medium dark:text-white/80">
                 {safeLabel(
                   t,
                   locale,
@@ -375,17 +410,24 @@ export default function AdminSessionPackageEntitlementPanel({
           <div>
             <label
               htmlFor={`package-reason-${item.id}`}
-              className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
+              className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase"
             >
               {t("inspector.packageEntitlement.reasonCode.label")}
             </label>
             <select
               id={`package-reason-${item.id}`}
               value={reasonCode}
-              onChange={(event) => setReasonCode(event.target.value as AdminSessionPackageEntitlementReasonCode | "")}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
+              onChange={(event) =>
+                setReasonCode(
+                  event.target.value as
+                    AdminSessionPackageEntitlementReasonCode | "",
+                )
+              }
+              className="border-border-light text-text-primary focus:border-primary/35 w-full rounded-2xl border bg-white px-4 py-3 text-sm transition outline-none dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
             >
-              <option value="">{t("inspector.packageEntitlement.reasonCode.placeholder")}</option>
+              <option value="">
+                {t("inspector.packageEntitlement.reasonCode.placeholder")}
+              </option>
               {REASON_CODES.map((code) => (
                 <option key={code} value={code}>
                   {safeLabel(
@@ -404,23 +446,30 @@ export default function AdminSessionPackageEntitlementPanel({
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <label
                 htmlFor={`package-note-${item.id}`}
-                className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
+                className="text-text-muted block text-xs font-semibold tracking-[0.18em] uppercase"
               >
                 {t("inspector.packageEntitlement.adminNote.label")}
               </label>
-              <span className="text-[11px] text-text-muted">
-                {2000 - adminNote.length} {t("inspector.packageEntitlement.adminNote.remaining", { count: 2000 - adminNote.length })}
+              <span className="text-text-muted text-[11px]">
+                {2000 - adminNote.length}{" "}
+                {t("inspector.packageEntitlement.adminNote.remaining", {
+                  count: 2000 - adminNote.length,
+                })}
               </span>
             </div>
             <textarea
               id={`package-note-${item.id}`}
               value={adminNote}
-              onChange={(event) => setAdminNote(event.target.value.slice(0, 2000))}
-              placeholder={t("inspector.packageEntitlement.adminNote.placeholder")}
+              onChange={(event) =>
+                setAdminNote(event.target.value.slice(0, 2000))
+              }
+              placeholder={t(
+                "inspector.packageEntitlement.adminNote.placeholder",
+              )}
               rows={3}
-              className="w-full resize-none rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
+              className="border-border-light text-text-primary focus:border-primary/35 w-full resize-none rounded-2xl border bg-white px-4 py-3 text-sm transition outline-none dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
             />
-            <p className="mt-1.5 text-[11px] text-text-muted">
+            <p className="text-text-muted mt-1.5 text-[11px]">
               {t("inspector.packageEntitlement.adminNote.noSensitiveData")}
             </p>
           </div>
@@ -430,8 +479,8 @@ export default function AdminSessionPackageEntitlementPanel({
             disabled={submitDisabled}
             className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition ${
               !submitDisabled
-                ? "bg-primary text-white hover:bg-primary-hover"
-                : "cursor-not-allowed bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/40"
+                ? "bg-primary hover:bg-primary-hover text-white"
+                : "bg-surface-tertiary text-text-muted cursor-not-allowed dark:bg-white/10 dark:text-white/40"
             }`}
           >
             {mutation.isPending ? (
@@ -445,11 +494,11 @@ export default function AdminSessionPackageEntitlementPanel({
           </button>
         </form>
       ) : (
-        <div className="mt-5 rounded-[24px] border border-border-light bg-surface-secondary/50 p-4 dark:border-white/8 dark:bg-white/[0.03]">
-          <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+        <div className="border-border-light bg-surface-secondary/50 mt-5 rounded-[24px] border p-4 dark:border-white/8 dark:bg-white/[0.03]">
+          <p className="text-text-primary text-sm font-semibold dark:text-white/95">
             {t("inspector.packageEntitlement.noPermission.title")}
           </p>
-          <p className="mt-1 text-sm text-text-secondary">
+          <p className="text-text-secondary mt-1 text-sm">
             {t("inspector.packageEntitlement.noPermission.note")}
           </p>
         </div>

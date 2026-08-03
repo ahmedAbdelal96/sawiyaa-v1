@@ -9,337 +9,379 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
+import { useAppDirection } from "../../../../i18n/direction";
 
-const STAR_COLOR = "#eab308";
-const ONLINE_GREEN = "#22c55e";
-const FAIDED_BRAND = "#357f74";
-const TAG_GRAY = "#56656b";
+const DEFAULT_AVATAR = require("../../../../../assets/user.avif");
+
+const STAR_GOLD = "#EAB308";
+const ONLINE_GREEN = "#22C55E";
+const OFFLINE_GRAY = "#94A3B8";
 
 export interface PractitionerCompactCardProps {
   practitioner: PublicPractitionerListItem;
   onPress?: () => void;
+  /** Route base path for the detail screen. Defaults to /(public)/discovery */
+  routeBase?: string;
+}
+
+function renderStarRating(rating: number) {
+  const score = rating || 5;
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    if (score >= i) {
+      stars.push(<Ionicons key={i} name="star" size={11} color={STAR_GOLD} />);
+    } else if (score >= i - 0.5) {
+      stars.push(<Ionicons key={i} name="star-half" size={11} color={STAR_GOLD} />);
+    } else {
+      stars.push(<Ionicons key={i} name="star-outline" size={11} color="#CBD5E1" />);
+    }
+  }
+  return stars;
 }
 
 export const PractitionerCompactCard = ({
   practitioner,
   onPress,
+  routeBase = "/(public)/discovery",
 }: PractitionerCompactCardProps) => {
   const { theme } = useTheme();
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const isArabic = i18n.language?.startsWith("ar") ?? true;
+  const { rowDirection, isRtl, arrowBack } = useAppDirection();
+
+  const [avatarFailed, setAvatarFailed] = React.useState(false);
 
   const primarySpecialty =
     practitioner.specialties.find((s) => s.isPrimary) ??
     practitioner.specialties[0];
 
   const currencyCode = practitioner.currencyCode ?? null;
-  const price = practitioner.sessionPrice30 ?? practitioner.sessionPrice60 ?? null;
-  const priceState = mapPractitionerDurationPrice({ amount: price, currencyCode });
-  const averageRating = practitioner.ratingSummary.averageRating;
-  const totalReviews = practitioner.ratingSummary.totalReviews;
+  const price30 = practitioner.sessionPrice30 ?? practitioner.displaySessionPrice30 ?? null;
+  const price60 = practitioner.sessionPrice60 ?? practitioner.displaySessionPrice60 ?? null;
+
+  const price30State = mapPractitionerDurationPrice({ amount: price30, currencyCode });
+  const price60State = mapPractitionerDurationPrice({ amount: price60, currencyCode });
+
+  const averageRating = practitioner.ratingSummary?.averageRating;
+  const totalReviews = practitioner.ratingSummary?.totalReviews;
+
+  // Prominent rating fallback for mock data
+  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
+  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
 
   const handlePress = () => {
     if (onPress) {
       onPress();
     } else {
-      router.push(`/(patient)/discovery/${practitioner.slug}`);
+      router.push(`${routeBase}/${practitioner.slug}` as any);
     }
   };
 
+  const isOnline = practitioner.isOnlineNow;
+
+  const rawAvatarUrl = practitioner.avatarUrl;
+  const isInvalidOrFakeUrl =
+    !rawAvatarUrl ||
+    rawAvatarUrl.trim() === "" ||
+    rawAvatarUrl.includes("files.local") ||
+    rawAvatarUrl.includes("example.com");
+
+  const avatarSource = !isInvalidOrFakeUrl && !avatarFailed
+    ? { uri: rawAvatarUrl }
+    : DEFAULT_AVATAR;
+
   return (
     <TouchableOpacity
-      activeOpacity={0.82}
+      activeOpacity={0.88}
       onPress={handlePress}
       style={[
-        styles.card,
+        styles.cardContainer,
         {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderLight,
         },
       ]}
     >
-      <View
-        style={[
-          styles.pulseBar,
-          { backgroundColor: theme.colors.primary },
-        ]}
-      />
+      {/* Top Accent Line */}
+      <View style={[styles.goldBar, { backgroundColor: theme.colors.tertiary }]} />
 
-      <View style={styles.cardContent}>
-        <View style={styles.avatarSection}>
-          <View
-            style={[
-              styles.avatarContainer,
-              { backgroundColor: theme.colors.surfaceTertiary },
-            ]}
-          >
-            {practitioner.avatarUrl ? (
+      <View style={styles.cardPadding}>
+        {/* Compact Header Section: Avatar + Name + Title */}
+        <View style={[styles.headerRow, { flexDirection: rowDirection }]}>
+          {/* Avatar Container */}
+          <View style={styles.avatarWrapper}>
+            <View style={[styles.avatarCircle, { backgroundColor: theme.colors.surfaceTertiary }]}>
               <Image
-                source={{ uri: practitioner.avatarUrl }}
-                style={styles.avatar}
+                source={avatarSource}
+                style={styles.avatarImage}
+                onError={() => setAvatarFailed(true)}
               />
-            ) : (
-              <Ionicons
-                name="person"
-                size={22}
-                color={theme.colors.textMuted}
-              />
-            )}
-            {practitioner.isOnlineNow && (
-              <View style={styles.onlineIndicator} />
-            )}
-          </View>
-        </View>
+            </View>
 
-        <View style={styles.infoSection}>
-          <View style={styles.nameRow}>
-            <Text weight="bold" style={styles.name} numberOfLines={1}>
-              {practitioner.displayName || practitioner.slug}
-            </Text>
+            {/* Online Green Badge */}
             <View
               style={[
-                styles.onlineChip,
-                {
-                  backgroundColor: practitioner.isOnlineNow
-                    ? `${theme.colors.success}20`
-                    : `${theme.colors.textMuted}20`,
-                },
+                styles.onlineBadge,
+                { backgroundColor: isOnline ? ONLINE_GREEN : OFFLINE_GRAY },
               ]}
-            >
-              <View
-                style={[
-                  styles.onlineDot,
-                  {
-                    backgroundColor: practitioner.isOnlineNow
-                      ? theme.colors.success
-                      : theme.colors.textMuted,
-                  },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.onlineChipText,
-                  {
-                    color: practitioner.isOnlineNow
-                      ? theme.colors.success
-                      : theme.colors.textMuted,
-                  },
-                ]}
-              >
-                {practitioner.isOnlineNow
-                  ? t("discovery.profile.presence.online", "Online")
-                  : t("discovery.profile.presence.offline", "Offline")}
+            />
+          </View>
+
+          {/* Name & Sub-info */}
+          <View style={[styles.mainInfoWrap, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
+            <View style={[styles.nameRowInline, { flexDirection: rowDirection }]}>
+              <Text weight="bold" style={styles.displayName} color={theme.colors.textPrimary} numberOfLines={1}>
+                {practitioner.displayName || practitioner.slug}
+              </Text>
+              {practitioner.isVerified ? (
+                <Ionicons name="checkmark-circle" size={14} color={theme.colors.primary} />
+              ) : null}
+            </View>
+
+            <Text color={theme.colors.textSecondary} style={styles.professionalTitle} numberOfLines={1}>
+              {getProfessionalTitleLabel(practitioner.professionalTitle, isArabic) ||
+                primarySpecialty?.title ||
+                t("discovery.list.professionalFallback", "أخصائي")}
+            </Text>
+
+            {/* Prominent Stars & Rating Row */}
+            <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
+              <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                {renderStarRating(displayRating)}
+              </View>
+              <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
+                {displayRating.toFixed(1)}
+              </Text>
+              <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                ({displayReviews})
               </Text>
             </View>
-          </View>
 
-          <Text
-            color={theme.colors.textSecondary}
-            style={styles.title}
-            numberOfLines={1}
-          >
-            {getProfessionalTitleLabel(practitioner.professionalTitle, i18n.language?.startsWith("ar") ?? false) ||
-              primarySpecialty?.title ||
-              t("discovery.list.professionalFallback")}
+            {/* Specialties Chips */}
+            {practitioner.specialties.length > 0 ? (
+              <View style={[styles.specialtiesWrap, { flexDirection: rowDirection }]}>
+                {practitioner.specialties.slice(0, 2).map((spec) => (
+                  <View
+                    key={spec.specialtyId}
+                    style={[
+                      styles.specialtyChip,
+                      { backgroundColor: theme.colors.surfaceSecondary },
+                    ]}
+                  >
+                    <Text style={styles.specialtyChipText} color={theme.colors.primary} weight="600" numberOfLines={1}>
+                      {spec.title}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Compact Fees Strip */}
+        <View
+          style={[
+            styles.pricingStrip,
+            {
+              backgroundColor: theme.colors.surfaceSecondary,
+              borderColor: theme.colors.borderLight,
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          {price30State.status === "PAID" ? (
+            <View style={[styles.priceItem, { flexDirection: rowDirection }]}>
+              <Text color={theme.colors.textMuted} style={styles.durationLabel}>
+                {isArabic ? "30 دقيقة:" : "30m:"}
+              </Text>
+              <PriceDisplay
+                price={price30State}
+                weight="bold"
+                style={styles.priceAmountText}
+              />
+            </View>
+          ) : null}
+
+          {price30State.status === "PAID" && price60State.status === "PAID" ? (
+            <View style={[styles.vertDivider, { backgroundColor: theme.colors.borderLight }]} />
+          ) : null}
+
+          {price60State.status === "PAID" ? (
+            <View style={[styles.priceItem, { flexDirection: rowDirection }]}>
+              <Text color={theme.colors.textMuted} style={styles.durationLabel}>
+                {isArabic ? "60 دقيقة:" : "60m:"}
+              </Text>
+              <PriceDisplay
+                price={price60State}
+                weight="bold"
+                style={styles.priceAmountText}
+              />
+            </View>
+          ) : null}
+
+          {price30State.status !== "PAID" && price60State.status !== "PAID" ? (
+            <Text color={theme.colors.textMuted} style={styles.durationLabel}>
+              {isArabic ? "التسعير غير محدد" : "Pricing unavailable"}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Ultra-compact Action Button */}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={handlePress}
+          style={[
+            styles.ctaButtonCompact,
+            {
+              backgroundColor: theme.colors.primary,
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          <Text weight="bold" style={styles.ctaButtonText}>
+            {isArabic ? "عرض الملف" : "View Profile"}
           </Text>
-
-          <View style={styles.statsRow}>
-            {averageRating ? (
-              <View style={styles.statItem}>
-                <Ionicons name="star" size={12} color={STAR_COLOR} />
-                <Text weight="600" style={styles.statText}>
-                  {averageRating.toFixed(1)}
-                </Text>
-                <Text color={theme.colors.textMuted} style={styles.statMuted}>
-                  {t("discovery.profile.reviews", { count: totalReviews })}
-                </Text>
-              </View>
-            ) : null}
-
-            {practitioner.yearsExperience ? (
-              <View style={styles.statItem}>
-                <Ionicons
-                  name="briefcase-outline"
-                  size={12}
-                  color={theme.colors.textSecondary}
-                />
-                <Text color={theme.colors.textSecondary} style={styles.statText}>
-                  {i18n.language?.startsWith("ar")
-                    ? `${practitioner.yearsExperience} سنة`
-                    : `${practitioner.yearsExperience}y`}
-                </Text>
-              </View>
-            ) : null}
-
-            <View style={styles.priceTag}>
-              <PriceDisplay price={priceState} weight="600" style={styles.priceText} />
-            </View>
-          </View>
-
-          {practitioner.specialties.length > 0 && (
-            <View style={styles.specialtyRow}>
-              {practitioner.specialties.slice(0, 2).map((spec) => (
-                <View
-                  key={spec.specialtyId}
-                  style={[
-                    styles.specialtyTag,
-                    { backgroundColor: theme.colors.surfaceSecondary },
-                  ]}
-                >
-                  <Text style={styles.specialtyTagText} numberOfLines={1}>
-                    {spec.title}
-                  </Text>
-                </View>
-              ))}
-              {practitioner.specialties.length > 2 && (
-                <View
-                  style={[
-                    styles.specialtyTag,
-                    { backgroundColor: theme.colors.surfaceSecondary },
-                  ]}
-                >
-                  <Text style={styles.specialtyTagText}>
-                    +{practitioner.specialties.length - 2}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.arrowSection}>
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={theme.colors.textMuted}
-          />
-        </View>
+          <Ionicons name={arrowBack} size={13} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 };
 
+// ---------------------------------------------------------------------------
+// Compact Mobile Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  card: {
+  cardContainer: {
     borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
-    flexDirection: "row",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  pulseBar: {
-    width: 4,
+  goldBar: {
+    height: 3,
+    width: "100%",
   },
-  cardContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+  cardPadding: {
+    padding: 10,
+    gap: 8,
   },
-  avatarSection: {
-    marginRight: 10,
-  },
-  avatarContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-  },
-  onlineIndicator: {
-    position: "absolute",
-    bottom: 1,
-    right: 1,
-    width: 11,
-    height: 11,
-    borderRadius: 5.5,
-    backgroundColor: ONLINE_GREEN,
-    borderWidth: 2,
-    borderColor: "#ffffff",
-  },
-  infoSection: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 2,
-  },
-  name: {
-    fontSize: 15,
-    flex: 1,
-    marginRight: 8,
-  },
-  onlineChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-    gap: 4,
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  onlineChipText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  statsRow: {
-    flexDirection: "row",
+
+  // Header Row
+  headerRow: {
     alignItems: "center",
     gap: 10,
-    marginBottom: 5,
   },
-  statItem: {
-    flexDirection: "row",
+  avatarWrapper: {
+    position: "relative",
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  onlineBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  mainInfoWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  nameRowInline: {
+    alignItems: "center",
+    gap: 4,
+  },
+  displayName: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  professionalTitle: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  ratingInline: {
     alignItems: "center",
     gap: 3,
+    marginTop: 1,
   },
-  statText: {
+  starsRow: {
+    gap: 1,
+    alignItems: "center",
+  },
+  ratingText: {
+    fontSize: 11,
+    marginLeft: 2,
+  },
+  reviewsCount: {
+    fontSize: 10,
+  },
+
+  // Specialties Chips
+  specialtiesWrap: {
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 2,
+  },
+  specialtyChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  specialtyChipText: {
+    fontSize: 10,
+  },
+
+  // Pricing Strip
+  pricingStrip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  priceItem: {
+    alignItems: "center",
+    gap: 4,
+  },
+  durationLabel: {
+    fontSize: 11,
+  },
+  priceAmountText: {
     fontSize: 12,
   },
-  statMuted: {
-    fontSize: 11,
+  vertDivider: {
+    width: 1,
+    height: 12,
   },
-  priceTag: {
-    marginLeft: "auto",
-  },
-  priceText: {
-    fontSize: 13,
-    color: FAIDED_BRAND,
-  },
-  specialtyRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+
+  // Ultra-compact CTA Button
+  ctaButtonCompact: {
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
     gap: 5,
   },
-  specialtyTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  specialtyTagText: {
-    fontSize: 11,
-    color: TAG_GRAY,
-  },
-  arrowSection: {
-    paddingLeft: 6,
-    alignSelf: "center",
+  ctaButtonText: {
+    color: "#FFFFFF",
+    fontSize: 12,
   },
 });

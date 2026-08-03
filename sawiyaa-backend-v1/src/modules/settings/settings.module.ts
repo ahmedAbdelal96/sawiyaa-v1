@@ -8,6 +8,7 @@ import { GetMySettingsNotificationPreferencesUseCase } from './use-cases/get-my-
 import { GetMySettingsUseCase } from './use-cases/get-my-settings.use-case';
 import { UpdateMySettingsNotificationPreferencesUseCase } from './use-cases/update-my-settings-notification-preferences.use-case';
 import { UpdateMySettingsPreferencesUseCase } from './use-cases/update-my-settings-preferences.use-case';
+import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
 
 @Module({
   controllers: [MySettingsController],
@@ -20,6 +21,7 @@ import { UpdateMySettingsPreferencesUseCase } from './use-cases/update-my-settin
     UpdateMySettingsPreferencesUseCase,
     GetMySettingsNotificationPreferencesUseCase,
     UpdateMySettingsNotificationPreferencesUseCase,
+    PractitionerTimezoneChangeGuardService,
   ],
 })
 export class SettingsModule {}

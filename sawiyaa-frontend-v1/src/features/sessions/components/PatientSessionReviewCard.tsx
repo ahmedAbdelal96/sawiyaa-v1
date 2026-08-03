@@ -11,6 +11,8 @@ import {
 } from "@/features/reviews";
 import { getPatientReviewErrorKey } from "@/features/reviews/lib/reviews-errors";
 import type { PatientReviewItem } from "@/features/reviews/types/reviews.types";
+import { formatPatientDateTime } from "@/lib/time-formatting";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 
 type Props = {
   sessionId: string;
@@ -20,23 +22,6 @@ type Props = {
   onCancel?: () => void;
   hideHeader?: boolean;
 };
-
-function formatCompletedAt(locale: string, value: string | null): string | null {
-  if (!value) return null;
-
-  try {
-    return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: locale !== "ar",
-    }).format(new Date(value));
-  } catch {
-    return new Date(value).toLocaleString(locale === "ar" ? "ar-EG" : "en-US");
-  }
-}
 
 export default function PatientSessionReviewCard({
   sessionId,
@@ -49,6 +34,7 @@ export default function PatientSessionReviewCard({
   const t = useTranslations("reviews");
   const locale = useLocale();
   const isRtl = locale === "ar";
+  const patientProfileQuery = usePatientProfile();
 
   const { user } = useAuthState();
   const reviewListQuery = usePatientReviews(
@@ -123,7 +109,9 @@ export default function PatientSessionReviewCard({
 
   const displayRating = hoverRating !== null ? hoverRating : overallRating;
   const hasPractitionerName = Boolean(practitionerName?.trim());
-  const completedAtLabel = formatCompletedAt(locale, completedAt);
+  const completedAtLabel = completedAt
+    ? formatPatientDateTime(completedAt, patientProfileQuery.data?.profile.timezone, { locale: locale === "ar" ? "ar-SA" : "en-US" })
+    : null;
   const sessionContextLabel = hasPractitionerName && completedAtLabel
     ? t("patient.ratingModal.sessionContext", {
         name: practitionerName!.trim(),

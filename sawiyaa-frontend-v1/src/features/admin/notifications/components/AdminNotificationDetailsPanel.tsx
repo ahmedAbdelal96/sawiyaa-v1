@@ -8,6 +8,7 @@ import { getNotificationVisualProps, mapNotificationErrorCode } from "../lib/not
 import { formatAdminNotificationDateTime, DetailField } from "./admin-notification-utils";
 import { getAdminNotificationStatusTone, getDeliveryAttemptTone } from "../lib/admin-notification-status";
 import type { AdminNotificationDetailItem } from "../types/admin-notifications.types";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 
 interface AdminNotificationDetailsPanelProps {
   item: AdminNotificationDetailItem;
@@ -95,6 +96,8 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
   const t = useTranslations("admin-notifications");
   const locale = useLocale();
   const isAr = locale.startsWith("ar");
+  const settingsQuery = useMySettings(true);
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const [copied, setCopied] = useState(false);
   const [showTechnical, setShowTechnical] = useState(false);
 
@@ -106,6 +109,7 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
     locale,
     item.context,
     item.primaryAction,
+    viewerTimeZone,
   );
   
   const visual = {
@@ -266,7 +270,7 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
         <div>
           <span className="font-semibold block">{isAr ? "تاريخ الإنشاء" : "Created At"}</span>
           <span className="font-mono text-text-secondary dark:text-white/70 block mt-0.5">
-            {formatAdminNotificationDateTime(item.createdAt, locale)}
+            {formatAdminNotificationDateTime(item.createdAt, locale, viewerTimeZone)}
           </span>
         </div>
         <div>
@@ -274,7 +278,7 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
             {item.scheduledFor ? t("notifications.fields.scheduledFor") : (isAr ? "آخر تحديث" : "Last Updated")}
           </span>
           <span className="font-mono text-text-secondary dark:text-white/70 block mt-0.5">
-            {formatAdminNotificationDateTime(item.scheduledFor || item.updatedAt, locale)}
+            {formatAdminNotificationDateTime(item.scheduledFor || item.updatedAt, locale, viewerTimeZone)}
           </span>
         </div>
       </div>
@@ -290,7 +294,7 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
       <div className="grid gap-3 sm:grid-cols-2 text-xs">
         {renderContextField(isAr ? "المريض" : "Patient", item.context.patientName)}
         {renderContextField(isAr ? "المختص" : "Practitioner", item.context.practitionerName)}
-        {renderContextField(isAr ? "موعد الجلسة" : "Session Time", item.context.sessionStartAt ? formatAdminNotificationDateTime(item.context.sessionStartAt, locale) : null)}
+        {renderContextField(isAr ? "موعد الجلسة" : "Session Time", item.context.sessionStartAt ? formatAdminNotificationDateTime(item.context.sessionStartAt, locale, viewerTimeZone) : null)}
         {renderContextField(isAr ? "حالة الجلسة" : "Session Status", mapSessionStatus(item.context.sessionStatus, locale))}
         {renderContextField(isAr ? "المرسل" : "Sender", item.context.senderName)}
         {renderContextField(isAr ? "المستلم" : "Recipient", item.context.recipientName)}
@@ -358,7 +362,7 @@ export default function AdminNotificationDetailsPanel({ item, isDrawer = false }
                       {t(`notifications.deliveryStatuses.${attempt.status}` as Parameters<typeof t>[0])}
                     </span>
                     <span className="text-[10px] text-text-muted font-mono ml-auto rtl:ml-0 rtl:mr-auto">
-                      {formatAdminNotificationDateTime(attempt.attemptedAt, locale)}
+                      {formatAdminNotificationDateTime(attempt.attemptedAt, locale, viewerTimeZone)}
                     </span>
                   </div>
                   {attempt.errorCode && (

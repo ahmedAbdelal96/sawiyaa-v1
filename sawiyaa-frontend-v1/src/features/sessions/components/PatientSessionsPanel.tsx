@@ -36,14 +36,11 @@ import {
   SurfaceCard,
   SurfaceToolbar,
 } from "@/components/shared/SurfaceShell";
-import { formatViewerDateTime } from "@/lib/time-formatting";
+import { formatPatientDateTime } from "@/lib/time-formatting";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import Avatar from "@/components/ui/avatar/Avatar";
 import { Skeleton } from "@/components/shared/LoadingStates";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
-
-function formatScheduledAt(isoString: string | null, numLocale: string): string {
-  return formatViewerDateTime(isoString, { locale: numLocale });
-}
 
 type SessionReviewVisualState =
   | {
@@ -363,6 +360,8 @@ export default function PatientSessionsPanel() {
   const ratingCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: summary } = usePatientSessionSummary();
+  const patientProfileQuery = usePatientProfile();
+  const patientTimezone = patientProfileQuery.data?.profile.timezone;
   const pendingReviewsQuery = usePendingPatientReviews(
     { page: 1, limit: 100 },
     reviewQueriesEnabled,
@@ -546,7 +545,7 @@ export default function PatientSessionsPanel() {
         header: copy.table.scheduledAt,
         cell: (row) => (
           <span className="text-sm text-text-secondary">
-            {row.scheduledStartAt ? formatScheduledAt(row.scheduledStartAt, numLocale) : copy.table.noSchedule}
+            {row.scheduledStartAt ? formatPatientDateTime(row.scheduledStartAt, patientTimezone, { locale: numLocale }) : copy.table.noSchedule}
           </span>
         ),
       },

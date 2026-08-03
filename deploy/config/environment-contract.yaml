@@ -1,0 +1,264 @@
+# Phase 0A hybrid operational contract.
+# Backend names/types/defaults remain owned by env.schema.ts and are derived by
+# validate-environment-contract.js. This file stores deployment metadata and
+# cross-service exceptions only; it is not a second backend schema.
+version: 1
+derivedSources:
+  backendSchema: sawiyaa-backend-v1/src/config/validation/env.schema.ts
+  backendReferences: sawiyaa-backend-v1/src/config
+  frontendReferences: sawiyaa-frontend-v1/src
+  frontendConfig: sawiyaa-frontend-v1/next.config.ts
+  compose: docker-compose.prod.yml
+statuses:
+  [
+    PRESENT,
+    MISSING,
+    EMPTY,
+    PLACEHOLDER,
+    INVALID,
+    UNKNOWN,
+    CONFLICT,
+    DEPRECATED,
+    NOT_REQUIRED,
+  ]
+allowedUntrackedPaths:
+  - deploy/certs/
+  - deploy/certbot-logs/
+  - deploy-build.pid
+  - "*.before-*"
+variables:
+  - name: APP_ENV
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + preflight policy
+    description: Runtime environment identity.
+  - name: NODE_ENV
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Node runtime mode.
+  - name: APP_URL
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Canonical public application URL.
+  - name: DATABASE_URL
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + Prisma
+    description: PostgreSQL connection URL; status only, never print it.
+  - name: JWT_ACCESS_SECRET
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Access-token signing secret.
+    placeholderPatterns: [change-me, your_, placeholder, example]
+  - name: JWT_REFRESH_SECRET
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Refresh-token signing secret.
+    placeholderPatterns: [change-me, your_, placeholder, example]
+  - name: GEOIP_ENABLED
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: false
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + preflight file check
+    description: Enables trusted GeoIP country resolution.
+  - name: GEOIP_DATABASE_PATH
+    service: backend
+    required: "GEOIP_ENABLED == true"
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + preflight file check
+    description: Readable GeoLite MMDB path.
+  - name: PAYMENT_PROVIDER_ROUTES_JSON
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: forbidden by database-authoritative routing policy
+    description: Forbidden legacy configuration; database owns payment routes.
+    deprecated: true
+  - name: PAYMOB_MODE
+    service: backend
+    required: "database payment.provider.paymob.enabled == true"
+    secret: false
+    phase: runtime
+    environments: [staging, production]
+    safeDefault: test
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + operator approval
+    description: Paymob provider mode, independent from APP_ENV.
+  - name: PAYMOB_API_KEY
+    service: backend
+    required: "database payment.provider.paymob.enabled == true"
+    secret: true
+    phase: runtime
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Paymob API credential.
+  - name: PAYMOB_HMAC_SECRET
+    service: backend
+    required: "database payment.provider.paymob.enabled == true"
+    secret: true
+    phase: runtime
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema
+    description: Paymob webhook verification secret.
+  - name: PAYMOB_EGP_CARD_INTEGRATION_ID
+    service: backend
+    required: "database payment.provider.paymob.enabled == true and no method registry/legacy card route"
+    secret: true
+    phase: runtime
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: database-authoritative payment routing policy
+    deprecatedAliases: [PAYMOB_INTEGRATION_ID_CARD, PAYMOB_INTEGRATION_ID]
+    description: Explicit EGP card alias; database route remains authoritative.
+  - name: PAYMOB_USD_CARD_INTEGRATION_ID
+    service: backend
+    required: false
+    secret: true
+    phase: runtime
+    environments: [staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: database-authoritative payment routing policy
+    description: Optional USD card integration; empty is allowed when USD route is disabled.
+  - name: NEXT_PUBLIC_API_URL
+    service: frontend
+    required: true
+    secret: false
+    phase: build
+    environments: [local, staging, production]
+    safeDefault: /api/v1
+    restartRequired: true
+    rebuildRequired: true
+    validationOwner: frontend source + Dockerfile
+    description: Public API base URL baked into the Next.js build.
+  - name: NEXT_PUBLIC_APP_URL
+    service: frontend
+    required: true
+    secret: false
+    phase: build
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: true
+    validationOwner: frontend source + Dockerfile
+    description: Public frontend URL baked into the bundle.
+  - name: API_PROXY_TARGET
+    service: frontend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: http://backend:7000
+    restartRequired: true
+    rebuildRequired: true
+    validationOwner: Next config + Compose
+    description: Server-side Next proxy target.
+  - name: POSTGRES_DB
+    service: database
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: Compose/PostgreSQL
+    description: Database name.
+  - name: POSTGRES_USER
+    service: database
+    required: true
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: Compose/PostgreSQL
+    description: Database user.
+  - name: POSTGRES_PASSWORD
+    service: database
+    required: true
+    secret: true
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: Compose/PostgreSQL
+    description: Database password; never print or interpolate into diagnostics.
+  - name: PERMISSION_SYNC_ADMIN_PASSWORD
+    service: deployment
+    required: false
+    secret: true
+    phase: deployment
+    environments: [production]
+    safeDefault: null
+    restartRequired: false
+    rebuildRequired: false
+    validationOwner: deployment operator
+    description: One-shot permission sync secret; not stored in repository env files.

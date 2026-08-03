@@ -2,9 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
+import { formatEffectiveViewerDateTime } from "@/lib/time-formatting";
 import { CircleAlert, Headset } from "lucide-react";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
-import type { SupportTicketStatus, SupportTicketSummary } from "@/features/support/types/support.types";
+import type {
+  SupportTicketStatus,
+  SupportTicketSummary,
+} from "@/features/support/types/support.types";
 import SupportMessagingScaffold from "./SupportMessagingScaffold";
 import SupportStartMessagePanel from "./SupportStartMessagePanel";
 import SupportConversationCard from "./SupportConversationCard";
@@ -31,16 +38,13 @@ const STATUS_FILTERS: Array<SupportTicketStatus | "ALL"> = [
   "CLOSED",
 ];
 
-function formatDateTime(iso: string | null, locale: string) {
+function formatDateTime(
+  iso: string | null,
+  locale: string,
+  timeZone?: string | null,
+) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString(locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  });
+  return formatEffectiveViewerDateTime(iso, timeZone, { locale });
 }
 
 export default function SupportInboxView({
@@ -57,7 +61,19 @@ export default function SupportInboxView({
 }: Props) {
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
-  const t = useTranslations(scope === "patient" ? "support" : "support.practitioner");
+  const patientProfileQuery = usePatientProfile(scope === "patient");
+  const practitionerProfileQuery = usePractitionerProfile(
+    scope === "practitioner",
+  );
+  const settingsQuery = useMySettings(false);
+  const viewerTimeZone =
+    scope === "patient"
+      ? patientProfileQuery.data?.profile.timezone
+      : (practitionerProfileQuery.data?.profile.timezone ??
+        settingsQuery.data?.item.preferences.timezone);
+  const t = useTranslations(
+    scope === "patient" ? "support" : "support.practitioner",
+  );
   const tRoot = useTranslations("support");
 
   const [draft, setDraft] = useState("");
@@ -79,7 +95,8 @@ export default function SupportInboxView({
   };
 
   const listCountLabel = useMemo(() => {
-    if (typeof totalItems === "number") return t("list.count", { value: totalItems });
+    if (typeof totalItems === "number")
+      return t("list.count", { value: totalItems });
     return t("list.countLoading");
   }, [t, totalItems]);
 
@@ -90,12 +107,12 @@ export default function SupportInboxView({
       title={t("home.title")}
       note={t("home.note")}
       actions={
-        <div className="app-panel-soft rounded-2xl px-4 py-3 text-sm text-text-secondary">
-          <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
-            <Headset className="h-4 w-4 text-primary" />
+        <div className="app-panel-soft text-text-secondary rounded-2xl px-4 py-3 text-sm">
+          <div className="text-text-primary flex items-center gap-2 dark:text-white/90">
+            <Headset className="text-primary h-4 w-4" />
             <span className="font-medium">{t("home.assuranceTitle")}</span>
           </div>
-          <p className="mt-1 max-w-xs text-xs leading-5 text-text-muted">
+          <p className="text-text-muted mt-1 max-w-xs text-xs leading-5">
             {t("home.assuranceNote")}
           </p>
         </div>
@@ -110,26 +127,56 @@ export default function SupportInboxView({
         compact={density === "compact"}
       />
 
-      <section className={density === "compact" ? "app-panel rounded-[28px] p-4 sm:p-5" : "app-panel rounded-[32px] p-5 sm:p-7"}>
+      <section
+        className={
+          density === "compact"
+            ? "app-panel rounded-[28px] p-4 sm:p-5"
+            : "app-panel rounded-[32px] p-5 sm:p-7"
+        }
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className={density === "compact" ? "text-base font-semibold text-text-primary dark:text-white/95" : "text-lg font-semibold text-text-primary dark:text-white/95"}>
+            <h2
+              className={
+                density === "compact"
+                  ? "text-text-primary text-base font-semibold dark:text-white/95"
+                  : "text-text-primary text-lg font-semibold dark:text-white/95"
+              }
+            >
               {t("list.heading")}
             </h2>
-            <p className={density === "compact" ? "mt-1 text-xs text-text-secondary" : "mt-1 text-sm text-text-secondary"}>{t("list.note")}</p>
+            <p
+              className={
+                density === "compact"
+                  ? "text-text-secondary mt-1 text-xs"
+                  : "text-text-secondary mt-1 text-sm"
+              }
+            >
+              {t("list.note")}
+            </p>
           </div>
-          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">{listCountLabel}</span>
+          <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+            {listCountLabel}
+          </span>
         </div>
 
-        <div className={density === "compact" ? "mt-3 flex flex-wrap items-end justify-between gap-2.5" : "mt-4 flex flex-wrap items-end justify-between gap-3"}>
+        <div
+          className={
+            density === "compact"
+              ? "mt-3 flex flex-wrap items-end justify-between gap-2.5"
+              : "mt-4 flex flex-wrap items-end justify-between gap-3"
+          }
+        >
           <label className="block min-w-[220px]">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
               {t("filters.all")}
             </span>
             <select
               value={statusFilter}
               onChange={(event) =>
-                onStatusFilterChange(event.target.value as SupportTicketStatus | "ALL")
+                onStatusFilterChange(
+                  event.target.value as SupportTicketStatus | "ALL",
+                )
               }
               className="app-control w-full px-4 py-3"
             >
@@ -149,35 +196,77 @@ export default function SupportInboxView({
         </div>
 
         {isLoading ? (
-          <div className={density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"}>
+          <div
+            className={
+              density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"
+            }
+          >
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className={density === "compact" ? "h-24 animate-pulse rounded-[22px] bg-surface-tertiary dark:bg-white/10" : "h-28 animate-pulse rounded-[24px] bg-surface-tertiary dark:bg-white/10"}
+                className={
+                  density === "compact"
+                    ? "bg-surface-tertiary h-24 animate-pulse rounded-[22px] dark:bg-white/10"
+                    : "bg-surface-tertiary h-28 animate-pulse rounded-[24px] dark:bg-white/10"
+                }
               />
             ))}
           </div>
         ) : isError ? (
-          <div className={density === "compact" ? "app-panel-soft mt-4 rounded-[22px] p-4" : "app-panel-soft mt-5 rounded-[24px] p-5"}>
-            <div className="flex items-center gap-2 text-text-primary dark:text-white/90">
+          <div
+            className={
+              density === "compact"
+                ? "app-panel-soft mt-4 rounded-[22px] p-4"
+                : "app-panel-soft mt-5 rounded-[24px] p-5"
+            }
+          >
+            <div className="text-text-primary flex items-center gap-2 dark:text-white/90">
               <CircleAlert className="h-4 w-4 text-rose-500" />
-              <p className="text-sm font-semibold">{t("states.listError.heading")}</p>
+              <p className="text-sm font-semibold">
+                {t("states.listError.heading")}
+              </p>
             </div>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{t("states.listError.note")}</p>
+            <p className="text-text-secondary mt-2 text-sm leading-6">
+              {t("states.listError.note")}
+            </p>
           </div>
         ) : items.length > 0 ? (
-          <div className={density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"}>
+          <div
+            className={
+              density === "compact" ? "mt-4 space-y-2.5" : "mt-5 space-y-3"
+            }
+          >
             {items.map((row) => (
               <SupportConversationCard
                 key={row.id}
-                href={scope === "patient" ? `/patient/messages?lane=support&id=${row.id}` : `/practitioner/messages?lane=support&id=${row.id}`}
+                href={
+                  scope === "patient"
+                    ? `/patient/messages?lane=support&id=${row.id}`
+                    : `/practitioner/messages?lane=support&id=${row.id}`
+                }
                 subject={row.subject}
-                categoryLabel={tRoot(`categories.${row.category}` as Parameters<typeof tRoot>[0])}
-                statusLabel={t(`statuses.${row.status}` as Parameters<typeof t>[0])}
-                createdAtLabel={t("list.createdAt", { date: formatDateTime(row.createdAt, numLocale) })}
+                categoryLabel={tRoot(
+                  `categories.${row.category}` as Parameters<typeof tRoot>[0],
+                )}
+                statusLabel={t(
+                  `statuses.${row.status}` as Parameters<typeof t>[0],
+                )}
+                createdAtLabel={t("list.createdAt", {
+                  date: formatDateTime(
+                    row.createdAt,
+                    numLocale,
+                    viewerTimeZone,
+                  ),
+                })}
                 lastReplyAtLabel={
                   row.lastMessageAt
-                    ? t("list.lastReplyAt", { date: formatDateTime(row.lastMessageAt, numLocale) })
+                    ? t("list.lastReplyAt", {
+                        date: formatDateTime(
+                          row.lastMessageAt,
+                          numLocale,
+                          viewerTimeZone,
+                        ),
+                      })
                     : null
                 }
                 unreadCount={row.unreadCount}
@@ -186,11 +275,19 @@ export default function SupportInboxView({
             ))}
           </div>
         ) : (
-          <div className={density === "compact" ? "app-panel-soft mt-4 rounded-[22px] p-4" : "app-panel-soft mt-5 rounded-[24px] p-5"}>
-            <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+          <div
+            className={
+              density === "compact"
+                ? "app-panel-soft mt-4 rounded-[22px] p-4"
+                : "app-panel-soft mt-5 rounded-[24px] p-5"
+            }
+          >
+            <p className="text-text-primary text-sm font-semibold dark:text-white/95">
               {t("states.empty.heading")}
             </p>
-            <p className="mt-2 text-sm leading-6 text-text-secondary">{t("states.empty.note")}</p>
+            <p className="text-text-secondary mt-2 text-sm leading-6">
+              {t("states.empty.note")}
+            </p>
           </div>
         )}
       </section>

@@ -3,6 +3,8 @@ import {
   formatViewerDate,
   formatViewerDateTime,
   formatViewerTime,
+  getDatePartsInTimeZone,
+  getEffectiveViewerTimeZone,
 } from "../../../lib/time-formatting";
 
 export interface SelectableSlot {
@@ -66,23 +68,28 @@ export function buildSlotsFromWindows(windows: AvailabilityWindow[]) {
 export function groupSlotsByDay(
   slots: SelectableSlot[],
   locale: string,
-  splitByTimeOfDay = false,
+  _splitByTimeOfDay = false,
 ) {
   const map = new Map<string, DayGroup>();
-  const dayFormatter = new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+  const timeZone = getEffectiveViewerTimeZone();
 
   for (const slot of slots) {
     const slotDate = new Date(slot.startsAt);
-    const dayKey = `${slotDate.getFullYear()}-${slotDate.getMonth() + 1}-${slotDate.getDate()}`;
+    const parts = getDatePartsInTimeZone(slotDate, timeZone);
+    const dayKey = parts
+      ? `${parts.year}-${parts.month}-${parts.day}`
+      : "invalid";
 
     if (!map.has(dayKey)) {
       map.set(dayKey, {
         dayKey,
-        dayLabel: dayFormatter.format(slotDate),
+        dayLabel: formatViewerDate(slotDate, {
+          locale,
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          fallbackText: "-",
+        }),
         slots: [],
       });
     }
@@ -107,7 +114,11 @@ export function splitDaySlotsByPart(daySlots: SelectableSlot[]) {
   const evening: SelectableSlot[] = [];
 
   for (const slot of daySlots) {
-    const hour = new Date(slot.startsAt).getHours();
+    const parts = getDatePartsInTimeZone(
+      slot.startsAt,
+      getEffectiveViewerTimeZone(),
+    );
+    const hour = parts?.hour ?? -1;
     if (hour < 12) {
       morning.push(slot);
     } else if (hour < 17) {

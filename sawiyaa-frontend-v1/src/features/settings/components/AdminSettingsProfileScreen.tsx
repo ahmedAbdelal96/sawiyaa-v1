@@ -18,6 +18,7 @@ import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
+import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
 import {
   useCurrentUser,
@@ -31,7 +32,10 @@ import {
   usePatchMySettingsPreferences,
   usePutMySettingsNotificationPreferences,
 } from "../hooks/use-settings";
-import type { MySettingsNotificationPreferenceItem, SettingsLocale } from "../types/settings.types";
+import type {
+  MySettingsNotificationPreferenceItem,
+  SettingsLocale,
+} from "../types/settings.types";
 
 type PreferencesFormState = {
   locale: SettingsLocale;
@@ -49,11 +53,14 @@ type AvatarDraftState = {
 
 function formatDateValue(value: string | null | undefined, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString(
+    locale.startsWith("ar") ? "ar-EG" : "en-GB",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  );
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -66,13 +73,13 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function normalizePreferenceRows(items: MySettingsNotificationPreferenceItem[]) {
-  return items
-    .slice()
-    .sort((a, b) => {
-      if (a.typeSlug !== b.typeSlug) return a.typeSlug.localeCompare(b.typeSlug);
-      return a.channel.localeCompare(b.channel);
-    });
+function normalizePreferenceRows(
+  items: MySettingsNotificationPreferenceItem[],
+) {
+  return items.slice().sort((a, b) => {
+    if (a.typeSlug !== b.typeSlug) return a.typeSlug.localeCompare(b.typeSlug);
+    return a.channel.localeCompare(b.channel);
+  });
 }
 
 export default function AdminSettingsProfileScreen() {
@@ -90,22 +97,33 @@ export default function AdminSettingsProfileScreen() {
   const removeAvatar = useRemoveCurrentUserAvatar();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [activeTab, setActiveTab] = useState<"profile" | "notifications">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "notifications">(
+    "profile",
+  );
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [feedback, setFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
+    useState(false);
+  const [feedback, setFeedback] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
   const [preferencesForm, setPreferencesForm] = useState<PreferencesFormState>({
     locale: "ar",
     timezone: "Africa/Cairo",
   });
-  const [accountForm, setAccountForm] = useState<AccountFormState>({ displayName: "" });
+  const [accountForm, setAccountForm] = useState<AccountFormState>({
+    displayName: "",
+  });
   const [avatarDraft, setAvatarDraft] = useState<AvatarDraftState | null>(null);
-  const [notificationDraft, setNotificationDraft] = useState<MySettingsNotificationPreferenceItem[]>([]);
+  const [notificationDraft, setNotificationDraft] = useState<
+    MySettingsNotificationPreferenceItem[]
+  >([]);
 
   const currentUser = userQuery.data;
   const settings = settingsQuery.data?.item;
-  const notificationState = notificationQuery.data?.item ?? settings?.notificationPreferences;
+  const notificationState =
+    notificationQuery.data?.item ?? settings?.notificationPreferences;
   const notificationRows = useMemo(
     () => normalizePreferenceRows(notificationState?.items ?? []),
     [notificationState?.items],
@@ -114,10 +132,15 @@ export default function AdminSettingsProfileScreen() {
   const roleLabels = useMemo(() => {
     const roles = currentUser?.roles.roles ?? [];
     if (roles.length === 0) return "-";
-    return roles.map((role) => t(`roles.${role}` as Parameters<typeof t>[0])).join(" | ");
+    return roles
+      .map((role) => t(`roles.${role}` as Parameters<typeof t>[0]))
+      .join(" | ");
   }, [currentUser?.roles.roles, t]);
 
-  const canRender = !userQuery.isLoading && !settingsQuery.isLoading && !notificationQuery.isLoading;
+  const canRender =
+    !userQuery.isLoading &&
+    !settingsQuery.isLoading &&
+    !notificationQuery.isLoading;
 
   const openAccountModal = () => {
     if (!currentUser) return;
@@ -176,12 +199,18 @@ export default function AdminSettingsProfileScreen() {
       {
         onSuccess: () => {
           setIsPreferencesModalOpen(false);
-          setFeedback({ tone: "success", message: t("feedback.preferencesSaved") });
+          setFeedback({
+            tone: "success",
+            message: t("feedback.preferencesSaved"),
+          });
         },
         onError: (error) => {
           setFeedback({
             tone: "error",
-            message: getErrorMessage(error, t("feedback.preferencesSaveFailed")),
+            message: getErrorMessage(
+              error,
+              t("feedback.preferencesSaveFailed"),
+            ),
           });
         },
       },
@@ -210,12 +239,18 @@ export default function AdminSettingsProfileScreen() {
       {
         onSuccess: () => {
           setIsNotificationsModalOpen(false);
-          setFeedback({ tone: "success", message: t("feedback.notificationsSaved") });
+          setFeedback({
+            tone: "success",
+            message: t("feedback.notificationsSaved"),
+          });
         },
         onError: (error) => {
           setFeedback({
             tone: "error",
-            message: getErrorMessage(error, t("feedback.notificationsSaveFailed")),
+            message: getErrorMessage(
+              error,
+              t("feedback.notificationsSaveFailed"),
+            ),
           });
         },
       },
@@ -268,7 +303,10 @@ export default function AdminSettingsProfileScreen() {
         setFeedback({ tone: "success", message: t("feedback.avatarUpdated") });
       },
       onError: (error) =>
-        setFeedback({ tone: "error", message: getErrorMessage(error, t("feedback.avatarUpdateFailed")) }),
+        setFeedback({
+          tone: "error",
+          message: getErrorMessage(error, t("feedback.avatarUpdateFailed")),
+        }),
     });
   };
 
@@ -282,9 +320,13 @@ export default function AdminSettingsProfileScreen() {
   const handleRemoveAvatar = () => {
     setFeedback(null);
     removeAvatar.mutate(undefined, {
-      onSuccess: () => setFeedback({ tone: "success", message: t("feedback.avatarRemoved") }),
+      onSuccess: () =>
+        setFeedback({ tone: "success", message: t("feedback.avatarRemoved") }),
       onError: (error) =>
-        setFeedback({ tone: "error", message: getErrorMessage(error, t("feedback.avatarRemoveFailed")) }),
+        setFeedback({
+          tone: "error",
+          message: getErrorMessage(error, t("feedback.avatarRemoveFailed")),
+        }),
     });
   };
 
@@ -308,15 +350,21 @@ export default function AdminSettingsProfileScreen() {
   if (!currentUser || !settings || !notificationState) {
     return (
       <section className="app-panel rounded-[30px] p-6 sm:p-7">
-        <h1 className="text-2xl font-semibold text-text-primary sm:text-3xl">{t("page.title")}</h1>
-        <p className="mt-3 text-sm text-error-600">{t("errors.loadFailed")}</p>
+        <h1 className="text-text-primary text-2xl font-semibold sm:text-3xl">
+          {t("page.title")}
+        </h1>
+        <p className="text-error-600 mt-3 text-sm">{t("errors.loadFailed")}</p>
       </section>
     );
   }
 
   const displayName = currentUser.displayName ?? "-";
-  const userInitial = (currentUser.displayName ?? "U").trim().charAt(0).toUpperCase();
-  const avatarSrc = avatarDraft?.previewUrl ?? currentUser.avatarDataUrl ?? null;
+  const userInitial = (currentUser.displayName ?? "U")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+  const avatarSrc =
+    avatarDraft?.previewUrl ?? currentUser.avatarDataUrl ?? null;
   const hasAvatarDraft = Boolean(avatarDraft);
   const hasExistingAvatar = Boolean(currentUser.avatarDataUrl);
   const primaryEmail =
@@ -336,21 +384,35 @@ export default function AdminSettingsProfileScreen() {
             <div className="relative">
               {avatarSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarSrc} alt={displayName} className="h-16 w-16 rounded-full object-cover" />
+                <img
+                  src={avatarSrc}
+                  alt={displayName}
+                  className="h-16 w-16 rounded-full object-cover"
+                />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-light text-lg font-semibold text-primary">
+                <div className="bg-primary-light text-primary flex h-16 w-16 items-center justify-center rounded-full text-lg font-semibold">
                   {userInitial}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-semibold text-text-primary sm:text-2xl">{displayName}</h1>
-              <p className="mt-1 truncate text-sm text-text-secondary">{primaryEmail}</p>
+              <h1 className="text-text-primary truncate text-xl font-semibold sm:text-2xl">
+                {displayName}
+              </h1>
+              <p className="text-text-secondary mt-1 truncate text-sm">
+                {primaryEmail}
+              </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
-                  {t(`accountStatus.${currentUser.accountStatus}` as Parameters<typeof t>[0])}
+                  {t(
+                    `accountStatus.${currentUser.accountStatus}` as Parameters<
+                      typeof t
+                    >[0],
+                  )}
                 </span>
-                <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">{roleLabels}</span>
+                <span className="app-chip rounded-full px-3 py-1 text-xs font-medium">
+                  {roleLabels}
+                </span>
               </div>
             </div>
           </div>
@@ -387,7 +449,11 @@ export default function AdminSettingsProfileScreen() {
 
             {hasAvatarDraft ? (
               <>
-                <Button size="sm" onClick={handleSaveAvatar} disabled={uploadAvatar.isPending}>
+                <Button
+                  size="sm"
+                  onClick={handleSaveAvatar}
+                  disabled={uploadAvatar.isPending}
+                >
                   {t("actions.savePhoto")}
                 </Button>
                 <Button
@@ -411,7 +477,12 @@ export default function AdminSettingsProfileScreen() {
               </Button>
             ) : null}
 
-            <Button variant="outline" size="sm" onClick={openAccountModal} startIcon={<PencilLine className="h-4 w-4" />}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openAccountModal}
+              startIcon={<PencilLine className="h-4 w-4" />}
+            >
               {t("actions.edit")}
             </Button>
           </div>
@@ -422,7 +493,9 @@ export default function AdminSettingsProfileScreen() {
             type="button"
             onClick={() => setActiveTab("profile")}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-              activeTab === "profile" ? "bg-primary text-white" : "bg-surface-tertiary text-text-primary hover:bg-primary-light"
+              activeTab === "profile"
+                ? "bg-primary text-white"
+                : "bg-surface-tertiary text-text-primary hover:bg-primary-light"
             }`}
           >
             {t("tabs.profile")}
@@ -458,25 +531,43 @@ export default function AdminSettingsProfileScreen() {
           <section className="grid gap-5 lg:grid-cols-2">
             <article className="app-panel rounded-[28px] p-5 sm:p-6">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold text-text-primary">{t("sections.account.title")}</h2>
+                <ShieldCheck className="text-primary h-5 w-5" />
+                <h2 className="text-text-primary text-lg font-semibold">
+                  {t("sections.account.title")}
+                </h2>
               </div>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.account.fields.displayName")}</dt>
-                  <dd className="font-medium text-text-primary">{displayName}</dd>
+                  <dt className="text-text-secondary">
+                    {t("sections.account.fields.displayName")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {displayName}
+                  </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.account.fields.email")}</dt>
-                  <dd className="font-medium text-text-primary">{primaryEmail}</dd>
+                  <dt className="text-text-secondary">
+                    {t("sections.account.fields.email")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {primaryEmail}
+                  </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.account.fields.phone")}</dt>
-                  <dd className="font-medium text-text-primary">{primaryPhone}</dd>
+                  <dt className="text-text-secondary">
+                    {t("sections.account.fields.phone")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {primaryPhone}
+                  </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.account.fields.createdAt")}</dt>
-                  <dd className="font-medium text-text-primary">{formatDateValue(currentUser.createdAt, locale)}</dd>
+                  <dt className="text-text-secondary">
+                    {t("sections.account.fields.createdAt")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {formatDateValue(currentUser.createdAt, locale)}
+                  </dd>
                 </div>
               </dl>
             </article>
@@ -484,8 +575,10 @@ export default function AdminSettingsProfileScreen() {
             <article className="app-panel rounded-[28px] p-5 sm:p-6">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Globe2 className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-text-primary">{t("sections.preferences.title")}</h2>
+                  <Globe2 className="text-primary h-5 w-5" />
+                  <h2 className="text-text-primary text-lg font-semibold">
+                    {t("sections.preferences.title")}
+                  </h2>
                 </div>
                 <Button
                   variant="outline"
@@ -498,14 +591,24 @@ export default function AdminSettingsProfileScreen() {
               </div>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.preferences.fields.locale")}</dt>
-                  <dd className="font-medium text-text-primary">
-                    {t(`locales.${settings.preferences.locale ?? "ar"}` as Parameters<typeof t>[0])}
+                  <dt className="text-text-secondary">
+                    {t("sections.preferences.fields.locale")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {t(
+                      `locales.${settings.preferences.locale ?? "ar"}` as Parameters<
+                        typeof t
+                      >[0],
+                    )}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <dt className="text-text-secondary">{t("sections.preferences.fields.timezone")}</dt>
-                  <dd className="font-medium text-text-primary">{settings.preferences.timezone ?? "-"}</dd>
+                  <dt className="text-text-secondary">
+                    {t("sections.preferences.fields.timezone")}
+                  </dt>
+                  <dd className="text-text-primary font-medium">
+                    {settings.preferences.timezone ?? "-"}
+                  </dd>
                 </div>
               </dl>
             </article>
@@ -515,18 +618,24 @@ export default function AdminSettingsProfileScreen() {
             <details className="group">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                 <span className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
-                  <span className="text-lg font-semibold text-text-primary">{t("sections.advanced.title")}</span>
+                  <CheckCircle2 className="text-primary h-5 w-5" />
+                  <span className="text-text-primary text-lg font-semibold">
+                    {t("sections.advanced.title")}
+                  </span>
                 </span>
-                <span className="text-sm font-semibold text-text-secondary group-open:text-text-primary">
+                <span className="text-text-secondary group-open:text-text-primary text-sm font-semibold">
                   {t("actions.edit")}
                 </span>
               </summary>
 
-              <div className="mt-4 rounded-2xl border border-border-light bg-white px-4 py-3">
-                <p className="text-xs font-semibold text-text-secondary">{t("sections.advanced.fields.userId")}</p>
+              <div className="border-border-light mt-4 rounded-2xl border bg-white px-4 py-3">
+                <p className="text-text-secondary text-xs font-semibold">
+                  {t("sections.advanced.fields.userId")}
+                </p>
                 <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className="min-w-0 truncate font-mono text-xs text-text-primary">{currentUser.userId}</p>
+                  <p className="text-text-primary min-w-0 truncate font-mono text-xs">
+                    {currentUser.userId}
+                  </p>
                   <Button
                     variant="outline"
                     size="sm"
@@ -544,8 +653,12 @@ export default function AdminSettingsProfileScreen() {
         <section className="app-panel rounded-[28px] p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-text-primary">{t("sections.notifications.title")}</h2>
-              <p className="mt-1 text-sm text-text-secondary">{t("sections.notifications.subtitle")}</p>
+              <h2 className="text-text-primary text-lg font-semibold">
+                {t("sections.notifications.title")}
+              </h2>
+              <p className="text-text-secondary mt-1 text-sm">
+                {t("sections.notifications.subtitle")}
+              </p>
             </div>
             <Button
               variant="outline"
@@ -561,17 +674,21 @@ export default function AdminSettingsProfileScreen() {
             {notificationRows.map((item) => (
               <div
                 key={`${item.typeSlug}:${item.channel}`}
-                className="flex items-center justify-between rounded-2xl border border-border-light bg-white px-4 py-3"
+                className="border-border-light flex items-center justify-between rounded-2xl border bg-white px-4 py-3"
               >
                 <div>
-                  <p className="text-sm font-semibold text-text-primary">{item.typeSlug}</p>
-                  <p className="text-xs text-text-secondary">
+                  <p className="text-text-primary text-sm font-semibold">
+                    {item.typeSlug}
+                  </p>
+                  <p className="text-text-secondary text-xs">
                     {t(`channels.${item.channel}` as Parameters<typeof t>[0])}
                   </p>
                 </div>
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    item.enabled ? "bg-success-50 text-success-700" : "bg-surface-tertiary text-text-secondary"
+                    item.enabled
+                      ? "bg-success-50 text-success-700"
+                      : "bg-surface-tertiary text-text-secondary"
                   }`}
                 >
                   {item.enabled ? t("states.enabled") : t("states.disabled")}
@@ -596,19 +713,27 @@ export default function AdminSettingsProfileScreen() {
       >
         <div className="space-y-4">
           <div>
-            <Label htmlFor="admin-displayName">{t("sections.account.fields.displayName")}</Label>
+            <Label htmlFor="admin-displayName">
+              {t("sections.account.fields.displayName")}
+            </Label>
             <Input
               id="admin-displayName"
               value={accountForm.displayName}
-              onChange={(event) => setAccountForm({ displayName: event.target.value })}
+              onChange={(event) =>
+                setAccountForm({ displayName: event.target.value })
+              }
               placeholder={t("sections.account.fields.displayName")}
               className="mt-2"
             />
           </div>
 
-          <div className="rounded-2xl border border-border-light bg-white px-4 py-3">
-            <p className="text-xs font-semibold text-text-secondary">{t("sections.account.fields.email")}</p>
-            <p className="mt-1 text-sm font-semibold text-text-primary">{primaryEmail}</p>
+          <div className="border-border-light rounded-2xl border bg-white px-4 py-3">
+            <p className="text-text-secondary text-xs font-semibold">
+              {t("sections.account.fields.email")}
+            </p>
+            <p className="text-text-primary mt-1 text-sm font-semibold">
+              {primaryEmail}
+            </p>
           </div>
         </div>
       </FormModal>
@@ -627,7 +752,9 @@ export default function AdminSettingsProfileScreen() {
       >
         <div className="space-y-4">
           <div>
-            <Label htmlFor="settings-locale">{t("sections.preferences.fields.locale")}</Label>
+            <Label htmlFor="settings-locale">
+              {t("sections.preferences.fields.locale")}
+            </Label>
             <select
               id="settings-locale"
               value={preferencesForm.locale}
@@ -645,18 +772,16 @@ export default function AdminSettingsProfileScreen() {
           </div>
 
           <div>
-            <Label htmlFor="settings-timezone">{t("sections.preferences.fields.timezone")}</Label>
-            <Input
+            <Label htmlFor="settings-timezone">
+              {t("sections.preferences.fields.timezone")}
+            </Label>
+            <TimeZonePicker
               id="settings-timezone"
               value={preferencesForm.timezone}
-              onChange={(event) =>
-                setPreferencesForm((current) => ({
-                  ...current,
-                  timezone: event.target.value,
-                }))
+              onChange={(timezone) =>
+                setPreferencesForm((current) => ({ ...current, timezone }))
               }
               placeholder={t("modals.preferences.timezonePlaceholder")}
-              className="mt-2"
             />
           </div>
         </div>
@@ -678,18 +803,20 @@ export default function AdminSettingsProfileScreen() {
           {notificationDraft.map((item, index) => (
             <label
               key={`${item.typeSlug}:${item.channel}`}
-              className="flex cursor-pointer items-center justify-between rounded-2xl border border-border-light bg-white px-4 py-3"
+              className="border-border-light flex cursor-pointer items-center justify-between rounded-2xl border bg-white px-4 py-3"
             >
               <div>
-                <p className="text-sm font-semibold text-text-primary">{item.typeSlug}</p>
-                <p className="text-xs text-text-secondary">
+                <p className="text-text-primary text-sm font-semibold">
+                  {item.typeSlug}
+                </p>
+                <p className="text-text-secondary text-xs">
                   {t(`channels.${item.channel}` as Parameters<typeof t>[0])}
                 </p>
               </div>
-              <span className="flex items-center gap-2 text-sm text-text-primary">
+              <span className="text-text-primary flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 accent-primary"
+                  className="accent-primary h-4 w-4"
                   checked={item.enabled}
                   onChange={() => handleToggleNotification(index)}
                 />
@@ -700,8 +827,12 @@ export default function AdminSettingsProfileScreen() {
         </div>
       </FormModal>
 
-      {(patchAccount.isPending || patchPreferences.isPending || putNotifications.isPending || uploadAvatar.isPending || removeAvatar.isPending) && (
-        <div className="pointer-events-none fixed bottom-6 end-6 z-20 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-theme-lg">
+      {(patchAccount.isPending ||
+        patchPreferences.isPending ||
+        putNotifications.isPending ||
+        uploadAvatar.isPending ||
+        removeAvatar.isPending) && (
+        <div className="bg-primary shadow-theme-lg pointer-events-none fixed end-6 bottom-6 z-20 rounded-full px-4 py-2 text-sm font-semibold text-white">
           <span className="inline-flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t("feedback.saving")}

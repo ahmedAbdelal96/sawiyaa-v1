@@ -41,6 +41,7 @@ export interface CurrentUserSummary {
   userId: string;
   displayName: string | null;
   locale: string | null;
+  timezone: string | null;
   avatarUrl: string | null;
   avatarDataUrl: string | null;
   accountStatus: UserStatus;
@@ -49,6 +50,11 @@ export interface CurrentUserSummary {
   roles: CurrentUserRoleSummary;
   securityState: CurrentUserSecurityState;
   profileLinks: CurrentUserProfileLinks;
+}
+
+export interface InitializeCurrentUserTimezoneResponse {
+  timezone: string | null;
+  initialized: boolean;
 }
 
 export interface CurrentUserRolesResponse {

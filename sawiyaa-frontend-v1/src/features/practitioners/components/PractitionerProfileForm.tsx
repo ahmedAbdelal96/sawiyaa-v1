@@ -20,8 +20,12 @@ import type {
 } from "../types/practitioners.types";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
-import { getLocalizedProfessionalTitleOptions, getProfessionalTitleLabel } from "@/constants/reference-data";
+import {
+  getLocalizedProfessionalTitleOptions,
+  getProfessionalTitleLabel,
+} from "@/constants/reference-data";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
+import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
 import {
   getLocalizedBankOptions,
@@ -90,7 +94,9 @@ const PAYOUT_METHOD_TYPES: PractitionerPayoutMethodType[] = [
   "OTHER",
 ];
 
-function parseOptionalMoneyInput(value: string | undefined): number | null | undefined {
+function parseOptionalMoneyInput(
+  value: string | undefined,
+): number | null | undefined {
   if (value === undefined) return undefined;
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -117,7 +123,11 @@ export default function PractitionerProfileForm({
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
 
   const { data, isLoading, isError, refetch } = usePractitionerProfile();
-  const { mutate, isPending, isError: isMutateError } = useUpdatePractitionerProfile();
+  const {
+    mutate,
+    isPending,
+    isError: isMutateError,
+  } = useUpdatePractitionerProfile();
   const updateAvatar = useUpdatePractitionerAvatar();
   const removeAvatar = useRemovePractitionerAvatar();
 
@@ -126,56 +136,69 @@ export default function PractitionerProfileForm({
   const profileSchema = useMemo(
     () =>
       z.object({
-        displayName: z.string().max(80, { message: t("profile.validation.displayNameMax") }).optional(),
+        displayName: z
+          .string()
+          .max(80, { message: t("profile.validation.displayNameMax") })
+          .optional(),
         professionalTitle: z.string().optional(),
         bio: z.string().optional(),
         yearsOfExperience: z
           .string()
           .optional()
+          .refine((v) => !v || (!isNaN(Number(v)) && Number(v) >= 0), {
+            message: t("profile.validation.yearsMin"),
+          })
+          .refine((v) => !v || Number(v) <= 60, {
+            message: t("profile.validation.yearsMax"),
+          }),
+        sessionPrice30Egp: z
+          .string()
+          .optional()
           .refine(
-            (v) => !v || (!isNaN(Number(v)) && Number(v) >= 0),
-            { message: t("profile.validation.yearsMin") }
-          )
-          .refine(
-            (v) => !v || Number(v) <= 60,
-            { message: t("profile.validation.yearsMax") }
+            (value) => {
+              if (!value) return true;
+              const trimmed = value.trim();
+              if (!trimmed) return true;
+              return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+            },
+            { message: t("profile.validation.sessionPriceInvalid") },
           ),
-        sessionPrice30Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") }
-        ),
-        sessionPrice30Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") }
-        ),
-        sessionPrice60Egp: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") }
-        ),
-        sessionPrice60Usd: z.string().optional().refine(
-          (value) => {
-            if (!value) return true;
-            const trimmed = value.trim();
-            if (!trimmed) return true;
-            return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
-          },
-          { message: t("profile.validation.sessionPriceInvalid") }
-        ),
+        sessionPrice30Usd: z
+          .string()
+          .optional()
+          .refine(
+            (value) => {
+              if (!value) return true;
+              const trimmed = value.trim();
+              if (!trimmed) return true;
+              return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+            },
+            { message: t("profile.validation.sessionPriceInvalid") },
+          ),
+        sessionPrice60Egp: z
+          .string()
+          .optional()
+          .refine(
+            (value) => {
+              if (!value) return true;
+              const trimmed = value.trim();
+              if (!trimmed) return true;
+              return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+            },
+            { message: t("profile.validation.sessionPriceInvalid") },
+          ),
+        sessionPrice60Usd: z
+          .string()
+          .optional()
+          .refine(
+            (value) => {
+              if (!value) return true;
+              const trimmed = value.trim();
+              if (!trimmed) return true;
+              return /^(\d+)(\.\d{1,2})?$/.test(trimmed) && Number(trimmed) > 0;
+            },
+            { message: t("profile.validation.sessionPriceInvalid") },
+          ),
         practitionerType: z.string().optional(),
         practitionerGender: z.string().optional(),
         countryCode: z.string().optional(),
@@ -190,7 +213,7 @@ export default function PractitionerProfileForm({
         payoutWalletIdentifier: z.string().optional(),
         payoutOtherDetails: z.string().optional(),
       }),
-    [t]
+    [t],
   );
 
   const {
@@ -227,6 +250,7 @@ export default function PractitionerProfileForm({
       payoutOtherDetails: "",
     },
   });
+  const timezoneValue = useWatch({ control, name: "timezone" }) ?? "";
 
   useEffect(() => {
     if (profile) {
@@ -234,51 +258,97 @@ export default function PractitionerProfileForm({
         displayName: profile.displayName ?? "",
         professionalTitle: profile.professionalTitle ?? "",
         bio: profile.bio ?? "",
-        yearsOfExperience: profile.yearsOfExperience != null ? String(profile.yearsOfExperience) : "",
-        sessionPrice30Egp: profile.pricing.session30.egp != null ? String(profile.pricing.session30.egp) : "",
-        sessionPrice30Usd: profile.pricing.session30.usd != null ? String(profile.pricing.session30.usd) : "",
-        sessionPrice60Egp: profile.pricing.session60.egp != null ? String(profile.pricing.session60.egp) : "",
-        sessionPrice60Usd: profile.pricing.session60.usd != null ? String(profile.pricing.session60.usd) : "",
+        yearsOfExperience:
+          profile.yearsOfExperience != null
+            ? String(profile.yearsOfExperience)
+            : "",
+        sessionPrice30Egp:
+          profile.pricing.session30.egp != null
+            ? String(profile.pricing.session30.egp)
+            : "",
+        sessionPrice30Usd:
+          profile.pricing.session30.usd != null
+            ? String(profile.pricing.session30.usd)
+            : "",
+        sessionPrice60Egp:
+          profile.pricing.session60.egp != null
+            ? String(profile.pricing.session60.egp)
+            : "",
+        sessionPrice60Usd:
+          profile.pricing.session60.usd != null
+            ? String(profile.pricing.session60.usd)
+            : "",
         practitionerType: profile.practitionerType ?? "",
         practitionerGender: profile.practitionerGender ?? "",
         countryCode: profile.countryCode ?? "",
-        payoutCountryCode: profile.payoutDestination?.countryCode ?? profile.countryCode ?? "",
+        payoutCountryCode:
+          profile.payoutDestination?.countryCode ?? profile.countryCode ?? "",
         timezone: profile.timezone ?? "",
         payoutMethodType: profile.payoutDestination?.methodType ?? "",
-        payoutAccountHolderName: profile.payoutDestination?.accountHolderName ?? "",
-        payoutBankName: normalizeBankValue(profile.payoutDestination?.bankName ?? ""),
-        payoutBankAccountNumber: profile.payoutDestination?.bankAccountNumber ?? "",
+        payoutAccountHolderName:
+          profile.payoutDestination?.accountHolderName ?? "",
+        payoutBankName: normalizeBankValue(
+          profile.payoutDestination?.bankName ?? "",
+        ),
+        payoutBankAccountNumber:
+          profile.payoutDestination?.bankAccountNumber ?? "",
         payoutIban: profile.payoutDestination?.iban ?? "",
-        payoutWalletProvider: normalizeWalletProviderValue(profile.payoutDestination?.walletProvider ?? ""),
-        payoutWalletIdentifier: profile.payoutDestination?.walletIdentifier ?? "",
+        payoutWalletProvider: normalizeWalletProviderValue(
+          profile.payoutDestination?.walletProvider ?? "",
+        ),
+        payoutWalletIdentifier:
+          profile.payoutDestination?.walletIdentifier ?? "",
         payoutOtherDetails: profile.payoutDestination?.otherDetails ?? "",
       });
     }
   }, [profile, reset]);
 
   const watchedCountryCode = useWatch({ control, name: "countryCode" });
-  const watchedProfessionalTitle = useWatch({ control, name: "professionalTitle" });
-  const watchedPayoutCountryCode = useWatch({ control, name: "payoutCountryCode" });
-  const watchedPayoutMethodType = useWatch({ control, name: "payoutMethodType" });
+  const watchedProfessionalTitle = useWatch({
+    control,
+    name: "professionalTitle",
+  });
+  const watchedPayoutCountryCode = useWatch({
+    control,
+    name: "payoutCountryCode",
+  });
+  const watchedPayoutMethodType = useWatch({
+    control,
+    name: "payoutMethodType",
+  });
   const watchedPayoutBankName = useWatch({ control, name: "payoutBankName" });
-  const watchedPayoutWalletProvider = useWatch({ control, name: "payoutWalletProvider" });
+  const watchedPayoutWalletProvider = useWatch({
+    control,
+    name: "payoutWalletProvider",
+  });
   const countriesQuery = usePractitionerCountries();
   const payoutCountryOptions = useMemo(
-    () => (countriesQuery.data ?? []).map((country) => ({
-      value: country.isoCode,
-      label: `${locale === "ar" ? country.nativeName || country.name : country.name} (${country.isoCode})`,
-      description: country.nativeName,
-      searchText: `${country.name} ${country.nativeName ?? ""} ${country.isoCode}`,
-    })),
+    () =>
+      (countriesQuery.data ?? []).map((country) => ({
+        value: country.isoCode,
+        label: `${locale === "ar" ? country.nativeName || country.name : country.name} (${country.isoCode})`,
+        description: country.nativeName,
+        searchText: `${country.name} ${country.nativeName ?? ""} ${country.isoCode}`,
+      })),
     [countriesQuery.data, locale],
   );
 
   const payoutBankOptions = useMemo(
-    () => getLocalizedBankOptions(locale, watchedPayoutCountryCode, watchedPayoutBankName),
+    () =>
+      getLocalizedBankOptions(
+        locale,
+        watchedPayoutCountryCode,
+        watchedPayoutBankName,
+      ),
     [locale, watchedPayoutCountryCode, watchedPayoutBankName],
   );
   const payoutWalletProviderOptions = useMemo(
-    () => getLocalizedWalletProviderOptions(locale, watchedPayoutCountryCode, watchedPayoutWalletProvider),
+    () =>
+      getLocalizedWalletProviderOptions(
+        locale,
+        watchedPayoutCountryCode,
+        watchedPayoutWalletProvider,
+      ),
     [locale, watchedPayoutCountryCode, watchedPayoutWalletProvider],
   );
 
@@ -296,7 +366,10 @@ export default function PractitionerProfileForm({
     if (formData.bio !== undefined) {
       payload.bio = formData.bio || null;
     }
-    if (formData.yearsOfExperience !== undefined && formData.yearsOfExperience !== "") {
+    if (
+      formData.yearsOfExperience !== undefined &&
+      formData.yearsOfExperience !== ""
+    ) {
       payload.yearsOfExperience = Number(formData.yearsOfExperience);
     } else if (formData.yearsOfExperience === "") {
       payload.yearsOfExperience = null;
@@ -305,7 +378,8 @@ export default function PractitionerProfileForm({
       payload.practitionerType = formData.practitionerType as PractitionerType;
     }
     if (formData.practitionerGender) {
-      payload.practitionerGender = formData.practitionerGender as PractitionerGender;
+      payload.practitionerGender =
+        formData.practitionerGender as PractitionerGender;
     }
     if (formData.countryCode !== undefined) {
       payload.countryCode = formData.countryCode || null;
@@ -314,52 +388,90 @@ export default function PractitionerProfileForm({
       payload.timezone = formData.timezone || undefined;
     }
     if (formData.sessionPrice30Egp !== undefined) {
-      payload.sessionPrice30Egp = parseOptionalMoneyInput(formData.sessionPrice30Egp);
+      payload.sessionPrice30Egp = parseOptionalMoneyInput(
+        formData.sessionPrice30Egp,
+      );
     }
     if (formData.sessionPrice30Usd !== undefined) {
-      payload.sessionPrice30Usd = parseOptionalMoneyInput(formData.sessionPrice30Usd);
+      payload.sessionPrice30Usd = parseOptionalMoneyInput(
+        formData.sessionPrice30Usd,
+      );
     }
     if (formData.sessionPrice60Egp !== undefined) {
-      payload.sessionPrice60Egp = parseOptionalMoneyInput(formData.sessionPrice60Egp);
+      payload.sessionPrice60Egp = parseOptionalMoneyInput(
+        formData.sessionPrice60Egp,
+      );
     }
     if (formData.sessionPrice60Usd !== undefined) {
-      payload.sessionPrice60Usd = parseOptionalMoneyInput(formData.sessionPrice60Usd);
+      payload.sessionPrice60Usd = parseOptionalMoneyInput(
+        formData.sessionPrice60Usd,
+      );
     }
     if (formData.payoutMethodType) {
-      const ownerError = validateAccountHolderName(formData.payoutAccountHolderName);
+      const ownerError = validateAccountHolderName(
+        formData.payoutAccountHolderName,
+      );
       if (ownerError) {
-        setError("payoutAccountHolderName", { message: t(`profile.validation.${ownerError}`) });
+        setError("payoutAccountHolderName", {
+          message: t(`profile.validation.${ownerError}`),
+        });
         return;
       }
-      if (!formData.payoutCountryCode?.trim() && formData.payoutMethodType !== "OTHER") {
-        setError("payoutCountryCode", { message: t("profile.validation.payoutCountryRequired") });
+      if (
+        !formData.payoutCountryCode?.trim() &&
+        formData.payoutMethodType !== "OTHER"
+      ) {
+        setError("payoutCountryCode", {
+          message: t("profile.validation.payoutCountryRequired"),
+        });
         return;
       }
 
-      const destination: NonNullable<UpdatePractitionerProfileRequest["payoutDestination"]> = {
+      const destination: NonNullable<
+        UpdatePractitionerProfileRequest["payoutDestination"]
+      > = {
         methodType: formData.payoutMethodType as PractitionerPayoutMethodType,
-        countryCode: formData.payoutCountryCode?.trim().toUpperCase() || undefined,
-        accountHolderName: normalizeAccountHolderName(formData.payoutAccountHolderName),
+        countryCode:
+          formData.payoutCountryCode?.trim().toUpperCase() || undefined,
+        accountHolderName: normalizeAccountHolderName(
+          formData.payoutAccountHolderName,
+        ),
       };
       if (formData.payoutMethodType === "BANK_ACCOUNT") {
-        destination.bankName = normalizeBankValue(formData.payoutBankName ?? "");
-        destination.bankAccountNumber = formData.payoutBankAccountNumber?.trim() || undefined;
+        destination.bankName = normalizeBankValue(
+          formData.payoutBankName ?? "",
+        );
+        destination.bankAccountNumber =
+          formData.payoutBankAccountNumber?.trim() || undefined;
       } else if (formData.payoutMethodType === "IBAN") {
-        const ibanResult = validateIban(formData.payoutIban, formData.payoutCountryCode);
+        const ibanResult = validateIban(
+          formData.payoutIban,
+          formData.payoutCountryCode,
+        );
         if (!ibanResult.valid) {
-          setError("payoutIban", { message: t(`profile.validation.${ibanResult.code}`) });
+          setError("payoutIban", {
+            message: t(`profile.validation.${ibanResult.code}`),
+          });
           return;
         }
         destination.iban = ibanResult.canonical;
       } else if (formData.payoutMethodType === "WALLET") {
-        destination.walletProvider = normalizeWalletProviderValue(formData.payoutWalletProvider ?? "");
-        destination.walletIdentifier = normalizeWalletIdentifier(formData.payoutWalletIdentifier, formData.payoutCountryCode ?? "");
+        destination.walletProvider = normalizeWalletProviderValue(
+          formData.payoutWalletProvider ?? "",
+        );
+        destination.walletIdentifier = normalizeWalletIdentifier(
+          formData.payoutWalletIdentifier,
+          formData.payoutCountryCode ?? "",
+        );
         if (!destination.walletIdentifier) {
-          setError("payoutWalletIdentifier", { message: t("profile.validation.payoutWalletInvalid") });
+          setError("payoutWalletIdentifier", {
+            message: t("profile.validation.payoutWalletInvalid"),
+          });
           return;
         }
       } else {
-        destination.otherDetails = formData.payoutOtherDetails?.trim() || undefined;
+        destination.otherDetails =
+          formData.payoutOtherDetails?.trim() || undefined;
       }
       payload.payoutDestination = destination;
     }
@@ -431,8 +543,18 @@ export default function PractitionerProfileForm({
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
-            <svg className="h-7 w-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+            <svg
+              className="h-7 w-7 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"
+              />
             </svg>
           </div>
           <p className="mb-4 text-sm font-medium text-gray-800 dark:text-white">
@@ -441,7 +563,7 @@ export default function PractitionerProfileForm({
           <button
             type="button"
             onClick={() => refetch()}
-            className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="shadow-theme-xs inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             {t("profile.feedback.retry")}
           </button>
@@ -472,7 +594,9 @@ export default function PractitionerProfileForm({
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {/* Display Name */}
             <div className="sm:col-span-2">
-              <Label htmlFor="displayName">{t("profile.fields.displayName.label")}</Label>
+              <Label htmlFor="displayName">
+                {t("profile.fields.displayName.label")}
+              </Label>
               <Input
                 id="displayName"
                 type="text"
@@ -481,35 +605,57 @@ export default function PractitionerProfileForm({
                 {...register("displayName")}
               />
               {errors.displayName && (
-                <p className="mt-1.5 text-xs text-error-500">{errors.displayName.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.displayName.message}
+                </p>
               )}
             </div>
 
             {/* Professional Title */}
             <div>
-              <Label htmlFor="professionalTitle">{t("profile.fields.professionalTitle.label")}</Label>
+              <Label htmlFor="professionalTitle">
+                {t("profile.fields.professionalTitle.label")}
+              </Label>
               <select
                 id="professionalTitle"
                 {...register("professionalTitle")}
-                className="h-11 w-full rounded-xl border border-border-light bg-surface-tertiary px-4 text-sm text-text-primary"
+                className="border-border-light bg-surface-tertiary text-text-primary h-11 w-full rounded-xl border px-4 text-sm"
               >
-                <option value="">{t("profile.fields.professionalTitle.placeholder")}</option>
-                {watchedProfessionalTitle && !getLocalizedProfessionalTitleOptions(locale).some((option) => option.value === watchedProfessionalTitle) ? (
+                <option value="">
+                  {t("profile.fields.professionalTitle.placeholder")}
+                </option>
+                {watchedProfessionalTitle &&
+                !getLocalizedProfessionalTitleOptions(locale).some(
+                  (option) => option.value === watchedProfessionalTitle,
+                ) ? (
                   <option value={watchedProfessionalTitle}>
-                    {getProfessionalTitleLabel(watchedProfessionalTitle, locale)}
+                    {getProfessionalTitleLabel(
+                      watchedProfessionalTitle,
+                      locale,
+                    )}
                   </option>
                 ) : null}
                 {getLocalizedProfessionalTitleOptions(locale).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Practitioner Type */}
             <div>
-              <Label htmlFor="practitionerType">{t("profile.fields.practitionerType.label")}</Label>
-              <select id="practitionerType" className={selectClasses} {...register("practitionerType")}>
-                <option value="">{t("profile.fields.practitionerType.placeholder")}</option>
+              <Label htmlFor="practitionerType">
+                {t("profile.fields.practitionerType.label")}
+              </Label>
+              <select
+                id="practitionerType"
+                className={selectClasses}
+                {...register("practitionerType")}
+              >
+                <option value="">
+                  {t("profile.fields.practitionerType.placeholder")}
+                </option>
                 {PRACTITIONER_TYPES.map((type) => (
                   <option key={type} value={type}>
                     {t(`profile.practitionerType.${type}`)}
@@ -520,7 +666,11 @@ export default function PractitionerProfileForm({
 
             <div>
               <Label htmlFor="practitionerGender">Gender</Label>
-              <select id="practitionerGender" className={selectClasses} {...register("practitionerGender")}>
+              <select
+                id="practitionerGender"
+                className={selectClasses}
+                {...register("practitionerGender")}
+              >
                 <option value="">Select gender</option>
                 {PRACTITIONER_GENDERS.map((gender) => (
                   <option key={gender} value={gender}>
@@ -543,7 +693,9 @@ export default function PractitionerProfileForm({
 
             {/* Years of Experience */}
             <div>
-              <Label htmlFor="yearsOfExperience">{t("profile.fields.yearsOfExperience.label")}</Label>
+              <Label htmlFor="yearsOfExperience">
+                {t("profile.fields.yearsOfExperience.label")}
+              </Label>
               <Input
                 id="yearsOfExperience"
                 type="number"
@@ -552,7 +704,9 @@ export default function PractitionerProfileForm({
                 {...register("yearsOfExperience")}
               />
               {errors.yearsOfExperience && (
-                <p className="mt-1.5 text-xs text-error-500">{errors.yearsOfExperience.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.yearsOfExperience.message}
+                </p>
               )}
             </div>
           </div>
@@ -565,7 +719,9 @@ export default function PractitionerProfileForm({
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <Label htmlFor="sessionPrice30Egp">{t("profile.fields.sessionPrice30Egp.label")}</Label>
+              <Label htmlFor="sessionPrice30Egp">
+                {t("profile.fields.sessionPrice30Egp.label")}
+              </Label>
               <Input
                 id="sessionPrice30Egp"
                 type="number"
@@ -576,12 +732,16 @@ export default function PractitionerProfileForm({
                 {...register("sessionPrice30Egp")}
               />
               {errors.sessionPrice30Egp ? (
-                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Egp.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.sessionPrice30Egp.message}
+                </p>
               ) : null}
             </div>
 
             <div>
-              <Label htmlFor="sessionPrice30Usd">{t("profile.fields.sessionPrice30Usd.label")}</Label>
+              <Label htmlFor="sessionPrice30Usd">
+                {t("profile.fields.sessionPrice30Usd.label")}
+              </Label>
               <Input
                 id="sessionPrice30Usd"
                 type="number"
@@ -592,12 +752,16 @@ export default function PractitionerProfileForm({
                 {...register("sessionPrice30Usd")}
               />
               {errors.sessionPrice30Usd ? (
-                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice30Usd.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.sessionPrice30Usd.message}
+                </p>
               ) : null}
             </div>
 
             <div>
-              <Label htmlFor="sessionPrice60Egp">{t("profile.fields.sessionPrice60Egp.label")}</Label>
+              <Label htmlFor="sessionPrice60Egp">
+                {t("profile.fields.sessionPrice60Egp.label")}
+              </Label>
               <Input
                 id="sessionPrice60Egp"
                 type="number"
@@ -608,12 +772,16 @@ export default function PractitionerProfileForm({
                 {...register("sessionPrice60Egp")}
               />
               {errors.sessionPrice60Egp ? (
-                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Egp.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.sessionPrice60Egp.message}
+                </p>
               ) : null}
             </div>
 
             <div>
-              <Label htmlFor="sessionPrice60Usd">{t("profile.fields.sessionPrice60Usd.label")}</Label>
+              <Label htmlFor="sessionPrice60Usd">
+                {t("profile.fields.sessionPrice60Usd.label")}
+              </Label>
               <Input
                 id="sessionPrice60Usd"
                 type="number"
@@ -624,7 +792,9 @@ export default function PractitionerProfileForm({
                 {...register("sessionPrice60Usd")}
               />
               {errors.sessionPrice60Usd ? (
-                <p className="mt-1.5 text-xs text-error-500">{errors.sessionPrice60Usd.message}</p>
+                <p className="text-error-500 mt-1.5 text-xs">
+                  {errors.sessionPrice60Usd.message}
+                </p>
               ) : null}
             </div>
           </div>
@@ -636,7 +806,7 @@ export default function PractitionerProfileForm({
           </h2>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto,1fr] sm:items-start">
-            <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border border-border-light bg-surface-secondary sm:mx-0">
+            <div className="border-border-light bg-surface-secondary mx-auto h-24 w-24 overflow-hidden rounded-full border sm:mx-0">
               {profile.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -645,7 +815,7 @@ export default function PractitionerProfileForm({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+                <div className="text-text-muted flex h-full w-full items-center justify-center text-xs">
                   {t("profile.avatar.empty")}
                 </div>
               )}
@@ -653,16 +823,20 @@ export default function PractitionerProfileForm({
 
             <div className="space-y-3">
               <div>
-                <Label htmlFor="avatarUrl">{t("profile.avatar.fieldLabel")}</Label>
-              <Input
-                id="avatarUrl"
-                type="url"
-                placeholder={t("profile.avatar.placeholder")}
-                value={avatarUrlInput ?? profile.avatarUrl ?? ""}
-                onChange={(event) => setAvatarUrlInput(event.target.value)}
-                error={!!avatarError}
-              />
-                <p className="mt-1.5 text-xs text-text-muted">{t("profile.avatar.hint")}</p>
+                <Label htmlFor="avatarUrl">
+                  {t("profile.avatar.fieldLabel")}
+                </Label>
+                <Input
+                  id="avatarUrl"
+                  type="url"
+                  placeholder={t("profile.avatar.placeholder")}
+                  value={avatarUrlInput ?? profile.avatarUrl ?? ""}
+                  onChange={(event) => setAvatarUrlInput(event.target.value)}
+                  error={!!avatarError}
+                />
+                <p className="text-text-muted mt-1.5 text-xs">
+                  {t("profile.avatar.hint")}
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -670,7 +844,7 @@ export default function PractitionerProfileForm({
                   type="button"
                   onClick={handleAvatarUpdate}
                   disabled={updateAvatar.isPending}
-                  className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bg-primary hover:bg-primary-hover inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {updateAvatar.isPending
                     ? t("profile.avatar.actions.saving")
@@ -680,7 +854,7 @@ export default function PractitionerProfileForm({
                   type="button"
                   onClick={handleAvatarRemove}
                   disabled={removeAvatar.isPending || !profile.avatarUrl}
-                  className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-error-400 hover:text-error-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800"
+                  className="border-border-light text-text-secondary hover:border-error-400 hover:text-error-600 inline-flex items-center justify-center rounded-xl border bg-white px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-800"
                 >
                   {removeAvatar.isPending
                     ? t("profile.avatar.actions.removing")
@@ -689,11 +863,15 @@ export default function PractitionerProfileForm({
               </div>
 
               {avatarSuccess ? (
-                <p className="text-sm font-medium text-success-600 dark:text-success-400">
+                <p className="text-success-600 dark:text-success-400 text-sm font-medium">
                   {avatarSuccess}
                 </p>
               ) : null}
-              {avatarError ? <p className="text-sm font-medium text-error-500">{avatarError}</p> : null}
+              {avatarError ? (
+                <p className="text-error-500 text-sm font-medium">
+                  {avatarError}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -707,7 +885,9 @@ export default function PractitionerProfileForm({
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {/* Country Code */}
             <div>
-              <Label htmlFor="countryCode">{t("profile.fields.countryCode.label")}</Label>
+              <Label htmlFor="countryCode">
+                {t("profile.fields.countryCode.label")}
+              </Label>
               <Input
                 id="countryCode"
                 type="text"
@@ -719,13 +899,16 @@ export default function PractitionerProfileForm({
 
             {/* Timezone */}
             <div>
-              <Label htmlFor="timezone">{t("profile.fields.timezone.label")}</Label>
-              <Input
+              <TimeZonePicker
                 id="timezone"
-                type="text"
+                label={t("profile.fields.timezone.label")}
                 placeholder={t("profile.fields.timezone.placeholder")}
+                value={timezoneValue}
+                onChange={(value) =>
+                  setValue("timezone", value, { shouldDirty: true })
+                }
+                disabled={!isEditable}
                 error={!!errors.timezone}
-                {...register("timezone")}
               />
             </div>
           </div>
@@ -744,10 +927,21 @@ export default function PractitionerProfileForm({
                 className={selectClasses}
                 {...register("payoutMethodType", {
                   onChange: (event) => {
-                    for (const field of ["payoutBankName", "payoutBankAccountNumber", "payoutIban", "payoutWalletProvider", "payoutWalletIdentifier", "payoutOtherDetails"] as const) {
+                    for (const field of [
+                      "payoutBankName",
+                      "payoutBankAccountNumber",
+                      "payoutIban",
+                      "payoutWalletProvider",
+                      "payoutWalletIdentifier",
+                      "payoutOtherDetails",
+                    ] as const) {
                       setValue(field, "", { shouldDirty: true });
                     }
-                    setValue("payoutMethodType", event.target.value as PractitionerPayoutMethodType | "", { shouldDirty: true });
+                    setValue(
+                      "payoutMethodType",
+                      event.target.value as PractitionerPayoutMethodType | "",
+                      { shouldDirty: true },
+                    );
                   },
                 })}
               >
@@ -766,9 +960,15 @@ export default function PractitionerProfileForm({
                 <SearchableCombobox
                   options={payoutCountryOptions}
                   value={watchedPayoutCountryCode || null}
-                  onChange={(value) => setValue("payoutCountryCode", value, { shouldDirty: true })}
-                  placeholder={t("profile.fields.payoutCountryCode.placeholder")}
-                  searchPlaceholder={t("profile.fields.payoutCountryCode.placeholder")}
+                  onChange={(value) =>
+                    setValue("payoutCountryCode", value, { shouldDirty: true })
+                  }
+                  placeholder={t(
+                    "profile.fields.payoutCountryCode.placeholder",
+                  )}
+                  searchPlaceholder={t(
+                    "profile.fields.payoutCountryCode.placeholder",
+                  )}
                   error={Boolean(errors.payoutCountryCode)}
                   hint={errors.payoutCountryCode?.message}
                 />
@@ -776,18 +976,32 @@ export default function PractitionerProfileForm({
             ) : null}
 
             <div>
-              <Label htmlFor="payoutAccountHolderName">Account holder name</Label>
-              <Input id="payoutAccountHolderName" type="text" {...register("payoutAccountHolderName")} />
-              <p className="mt-2 text-sm leading-6 text-text-secondary">
+              <Label htmlFor="payoutAccountHolderName">
+                Account holder name
+              </Label>
+              <Input
+                id="payoutAccountHolderName"
+                type="text"
+                {...register("payoutAccountHolderName")}
+              />
+              <p className="text-text-secondary mt-2 text-sm leading-6">
                 {t("profile.fields.payoutAccountHolderName.warning")}
               </p>
             </div>
             {watchedPayoutMethodType === "BANK_ACCOUNT" ? (
               <>
                 <div>
-                  <Label htmlFor="payoutBankName">{t("profile.fields.payoutBankName.label")}</Label>
-                  <select id="payoutBankName" className={selectClasses} {...register("payoutBankName")}>
-                    <option value="">{t("profile.fields.payoutBankName.placeholder")}</option>
+                  <Label htmlFor="payoutBankName">
+                    {t("profile.fields.payoutBankName.label")}
+                  </Label>
+                  <select
+                    id="payoutBankName"
+                    className={selectClasses}
+                    {...register("payoutBankName")}
+                  >
+                    <option value="">
+                      {t("profile.fields.payoutBankName.placeholder")}
+                    </option>
                     {payoutBankOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -796,27 +1010,58 @@ export default function PractitionerProfileForm({
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="payoutBankAccountNumber">Bank account number</Label>
-                  <Input id="payoutBankAccountNumber" type="text" {...register("payoutBankAccountNumber")} />
+                  <Label htmlFor="payoutBankAccountNumber">
+                    Bank account number
+                  </Label>
+                  <Input
+                    id="payoutBankAccountNumber"
+                    type="text"
+                    {...register("payoutBankAccountNumber")}
+                  />
                 </div>
               </>
             ) : null}
             {watchedPayoutMethodType === "IBAN" ? (
               <div>
                 <Label htmlFor="payoutIban">IBAN</Label>
-                <Input id="payoutIban" dir="ltr" autoComplete="iban" type="text" {...register("payoutIban", {
-                  onChange: (event) => setValue("payoutIban", formatIbanForDisplay(event.target.value), { shouldDirty: true }),
-                })} />
-                <p className="mt-2 text-sm text-text-secondary">{t("profile.fields.payoutIban.helper")}</p>
-                {errors.payoutIban?.message ? <p className="mt-1 text-sm text-error-600">{errors.payoutIban.message}</p> : null}
+                <Input
+                  id="payoutIban"
+                  dir="ltr"
+                  autoComplete="iban"
+                  type="text"
+                  {...register("payoutIban", {
+                    onChange: (event) =>
+                      setValue(
+                        "payoutIban",
+                        formatIbanForDisplay(event.target.value),
+                        { shouldDirty: true },
+                      ),
+                  })}
+                />
+                <p className="text-text-secondary mt-2 text-sm">
+                  {t("profile.fields.payoutIban.helper")}
+                </p>
+                {errors.payoutIban?.message ? (
+                  <p className="text-error-600 mt-1 text-sm">
+                    {errors.payoutIban.message}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             {watchedPayoutMethodType === "WALLET" ? (
               <>
                 <div>
-                  <Label htmlFor="payoutWalletProvider">{t("profile.fields.payoutWalletProvider.label")}</Label>
-                  <select id="payoutWalletProvider" className={selectClasses} {...register("payoutWalletProvider")}>
-                    <option value="">{t("profile.fields.payoutWalletProvider.placeholder")}</option>
+                  <Label htmlFor="payoutWalletProvider">
+                    {t("profile.fields.payoutWalletProvider.label")}
+                  </Label>
+                  <select
+                    id="payoutWalletProvider"
+                    className={selectClasses}
+                    {...register("payoutWalletProvider")}
+                  >
+                    <option value="">
+                      {t("profile.fields.payoutWalletProvider.placeholder")}
+                    </option>
                     {payoutWalletProviderOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -825,14 +1070,24 @@ export default function PractitionerProfileForm({
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="payoutWalletIdentifier">{t("profile.fields.payoutWalletIdentifier.label")}</Label>
-                  <Input id="payoutWalletIdentifier" type="text" {...register("payoutWalletIdentifier")} />
+                  <Label htmlFor="payoutWalletIdentifier">
+                    {t("profile.fields.payoutWalletIdentifier.label")}
+                  </Label>
+                  <Input
+                    id="payoutWalletIdentifier"
+                    type="text"
+                    {...register("payoutWalletIdentifier")}
+                  />
                 </div>
               </>
             ) : null}
             <div className="sm:col-span-2">
               <Label htmlFor="payoutOtherDetails">Other payout details</Label>
-              <textarea id="payoutOtherDetails" className={textareaClasses} {...register("payoutOtherDetails")} />
+              <textarea
+                id="payoutOtherDetails"
+                className={textareaClasses}
+                {...register("payoutOtherDetails")}
+              />
             </div>
           </div>
         </div>
@@ -841,12 +1096,12 @@ export default function PractitionerProfileForm({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-h-[24px]">
             {saveSuccess && (
-              <p className="text-sm font-medium text-success-600 dark:text-success-400">
+              <p className="text-success-600 dark:text-success-400 text-sm font-medium">
                 {t("profile.feedback.success")}
               </p>
             )}
             {isMutateError && (
-              <p className="text-sm font-medium text-error-500">
+              <p className="text-error-500 text-sm font-medium">
                 {t("profile.feedback.error")}
               </p>
             )}
@@ -855,15 +1110,16 @@ export default function PractitionerProfileForm({
           <button
             type="submit"
             disabled={isPending || !isDirty}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-primary shadow-theme-xs hover:bg-primary-hover inline-flex items-center justify-center gap-2 rounded-xl px-6 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isPending && (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             )}
-            {isPending ? t("profile.actions.saving") : t("profile.actions.save")}
+            {isPending
+              ? t("profile.actions.saving")
+              : t("profile.actions.save")}
           </button>
         </div>
-
       </fieldset>
     </form>
   );

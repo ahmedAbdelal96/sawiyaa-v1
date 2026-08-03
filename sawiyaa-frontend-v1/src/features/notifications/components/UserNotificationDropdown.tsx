@@ -15,6 +15,9 @@ import {
 import { resolveNotificationClickTarget } from "../lib/resolve-notification-click-target";
 import { getMessagesPath } from "@/features/messages-shell/utils/messages-routes";
 import type { UserNotificationItem } from "../types/user-notifications.types";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
+import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 
 const TONE_CLASSES: Record<string, string> = {
   message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
@@ -44,6 +47,15 @@ export default function UserNotificationDropdown({
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
   const t = useTranslations("notifications");
+  const patientProfileQuery = usePatientProfile(role === "patient");
+  const practitionerProfileQuery = usePractitionerProfile(role === "practitioner");
+  const settingsQuery = useMySettings(role === "admin");
+  const viewerTimeZone =
+    role === "patient"
+      ? patientProfileQuery.data?.profile.timezone
+      : role === "practitioner"
+        ? practitionerProfileQuery.data?.profile.timezone
+        : settingsQuery.data?.item.preferences.timezone;
   const unreadCountQuery = useMyUnreadNotificationCount();
   const unreadCount = unreadCountQuery.data?.item.unreadCount ?? 0;
   const listQuery = useUserNotifications(
@@ -155,6 +167,7 @@ export default function UserNotificationDropdown({
                    locale,
                    item.context,
                    item.primaryAction,
+                   viewerTimeZone,
                  );
                  const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
 
@@ -172,7 +185,7 @@ export default function UserNotificationDropdown({
                            {visual.title}
                          </p>
                          <span className="shrink-0 text-[10px] text-text-muted mt-0.5 whitespace-nowrap">
-                           {formatUserNotificationDateTime(item.createdAt, locale)}
+                           {formatUserNotificationDateTime(item.createdAt, locale, viewerTimeZone)}
                          </span>
                        </div>
                        {visual.subtitle && (

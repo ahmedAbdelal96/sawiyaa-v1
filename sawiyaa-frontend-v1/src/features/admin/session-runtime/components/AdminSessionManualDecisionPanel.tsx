@@ -100,13 +100,19 @@ function getErrorMessage(
   if (code === "SESSION_DECISION_ALREADY_FINAL")
     return t("inspector.manualDecision.errors.SESSION_DECISION_ALREADY_FINAL");
   if (code === "SESSION_DECISION_REQUIRES_PAST_END")
-    return t("inspector.manualDecision.errors.SESSION_DECISION_REQUIRES_PAST_END");
+    return t(
+      "inspector.manualDecision.errors.SESSION_DECISION_REQUIRES_PAST_END",
+    );
   if (code === "SESSION_DECISION_NOT_ALLOWED_STATUS")
-    return t("inspector.manualDecision.errors.SESSION_DECISION_NOT_ALLOWED_STATUS");
+    return t(
+      "inspector.manualDecision.errors.SESSION_DECISION_NOT_ALLOWED_STATUS",
+    );
   if (code === "SESSION_DECISION_NOT_ELIGIBLE")
     return t("inspector.manualDecision.errors.SESSION_DECISION_NOT_ELIGIBLE");
   if (code === "SESSION_DECISION_CONFIRMATION_REQUIRED")
-    return t("inspector.manualDecision.errors.SESSION_DECISION_CONFIRMATION_REQUIRED");
+    return t(
+      "inspector.manualDecision.errors.SESSION_DECISION_CONFIRMATION_REQUIRED",
+    );
   if (code === "Forbidden" || code === "403")
     return t("inspector.manualDecision.errors.forbidden");
   if (code === "Unauthorized" || code === "401")
@@ -129,12 +135,15 @@ export default function AdminSessionManualDecisionPanel({
   latestFinalDecision: AdminSessionDecisionItem | null;
 }) {
   const t = useTranslations("admin-session-runtime");
-  const [decisionType, setDecisionType] = useState<SessionAdminDecisionType | null>(null);
+  const [decisionType, setDecisionType] =
+    useState<SessionAdminDecisionType | null>(null);
   const [reasonCode, setReasonCode] = useState<string>("");
   const [adminNote, setAdminNote] = useState("");
   const [confirmEvidenceReviewed, setConfirmEvidenceReviewed] = useState(false);
-  const [confirmNoAutomaticRefund, setConfirmNoAutomaticRefund] = useState(false);
-  const [confirmNoAutomaticPayout, setConfirmNoAutomaticPayout] = useState(false);
+  const [confirmNoAutomaticRefund, setConfirmNoAutomaticRefund] =
+    useState(false);
+  const [confirmNoAutomaticPayout, setConfirmNoAutomaticPayout] =
+    useState(false);
   const [supersedeChecked, setSupersedeChecked] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
@@ -142,7 +151,8 @@ export default function AdminSessionManualDecisionPanel({
   const statusImpact = getStatusImpact(decisionType, t);
   const latestFinalDecisionTypeKey = latestFinalDecision
     ? `inspector.manualDecision.decisionType.${
-        (latestFinalDecision as { decisionType?: string | null }).decisionType ?? ""
+        (latestFinalDecision as { decisionType?: string | null })
+          .decisionType ?? ""
       }`
     : "";
   const latestFinalReasonCodeKey = latestFinalDecision
@@ -199,12 +209,12 @@ export default function AdminSessionManualDecisionPanel({
   if (hasWritePermission === false) {
     return (
       <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <h2 className="mb-4 text-base font-semibold text-text-primary dark:text-white/95">
+        <h2 className="text-text-primary mb-4 text-base font-semibold dark:text-white/95">
           {t("inspector.manualDecision.title")}
         </h2>
-        <div className="flex items-start gap-3 rounded-2xl border border-border-light bg-surface-tertiary p-4 dark:border-white/8 dark:bg-white/[0.03]">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-text-muted" />
-          <p className="text-sm text-text-secondary dark:text-white/70">
+        <div className="border-border-light bg-surface-tertiary flex items-start gap-3 rounded-2xl border p-4 dark:border-white/8 dark:bg-white/[0.03]">
+          <AlertTriangle className="text-text-muted mt-0.5 h-4 w-4 shrink-0" />
+          <p className="text-text-secondary text-sm dark:text-white/70">
             {t("inspector.manualDecision.noPermission")}
           </p>
         </div>
@@ -216,10 +226,10 @@ export default function AdminSessionManualDecisionPanel({
     <section className="app-panel rounded-[28px] p-5 sm:p-6">
       {/* Header */}
       <div className="mb-5">
-        <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
+        <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
           {t("inspector.manualDecision.title")}
         </h2>
-        <p className="mt-1 text-xs text-text-secondary">
+        <p className="text-text-secondary mt-1 text-xs">
           {t("inspector.manualDecision.subtitle")}
         </p>
       </div>
@@ -262,7 +272,7 @@ export default function AdminSessionManualDecisionPanel({
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Decision type selector */}
         <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+          <label className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
             {t("inspector.manualDecision.decisionType.label")}
           </label>
           <div className="space-y-2">
@@ -301,7 +311,9 @@ export default function AdminSessionManualDecisionPanel({
                     }`}
                   >
                     {t(
-                      `inspector.manualDecision.decisionType.${dt}` as Parameters<typeof t>[0],
+                      `inspector.manualDecision.decisionType.${dt}` as Parameters<
+                        typeof t
+                      >[0],
                     )}
                   </span>
                 </button>
@@ -319,7 +331,7 @@ export default function AdminSessionManualDecisionPanel({
                 : "border-border-light bg-surface-tertiary dark:border-white/8 dark:bg-white/[0.03]"
             }`}
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <p className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
               {t("inspector.manualDecision.statusImpact.label")}
             </p>
             <p
@@ -334,155 +346,180 @@ export default function AdminSessionManualDecisionPanel({
           </div>
         ) : null}
 
-        {/* Reason code selector */}
-        <div>
-          <label
-            htmlFor="reasonCode"
-            className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
-          >
-            {t("inspector.manualDecision.reasonCode.label")}
-          </label>
-          <select
-            id="reasonCode"
-            value={reasonCode}
-            onChange={(e) => setReasonCode(e.target.value)}
-            className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
-          >
-            <option value="">
-              {t("inspector.manualDecision.reasonCode.placeholder")}
-            </option>
-            {REASON_CODES.map((code) => (
-              <option key={code} value={code}>
-                {t(
-                  `inspector.manualDecision.reasonCode.${code}` as Parameters<typeof t>[0],
-                )}
-              </option>
-            ))}
-          </select>
-        </div>
+        {decisionType ? (
+          <>
+            {/* Reason code selector */}
+            <div>
+              <label
+                htmlFor="reasonCode"
+                className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase"
+              >
+                {t("inspector.manualDecision.reasonCode.label")}
+              </label>
+              <select
+                id="reasonCode"
+                value={reasonCode}
+                onChange={(e) => setReasonCode(e.target.value)}
+                className="border-border-light text-text-primary focus:border-primary/35 w-full rounded-2xl border bg-white px-4 py-3 text-sm transition outline-none dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
+              >
+                <option value="">
+                  {t("inspector.manualDecision.reasonCode.placeholder")}
+                </option>
+                {REASON_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {t(
+                      `inspector.manualDecision.reasonCode.${code}` as Parameters<
+                        typeof t
+                      >[0],
+                    )}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* Admin note */}
-        <div>
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <label
-              htmlFor="adminNote"
-              className="block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
-            >
-              {t("inspector.manualDecision.adminNote.label")}
-            </label>
-            <span className="text-[11px] text-text-muted">
-              {MAX_NOTE_LENGTH - adminNote.length}{" "}
-              {t("inspector.manualDecision.adminNote.remaining", {
-                count: MAX_NOTE_LENGTH - adminNote.length,
-              })}
-            </span>
-          </div>
-          <textarea
-            id="adminNote"
-            value={adminNote}
-            onChange={(e) =>
-              setAdminNote(e.target.value.slice(0, MAX_NOTE_LENGTH))
-            }
-            placeholder={t("inspector.manualDecision.adminNote.placeholder")}
-            rows={3}
-            className="w-full resize-none rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
-          />
-          <p className="mt-1.5 text-[11px] text-text-muted">
-            {t("inspector.manualDecision.adminNote.noSensitiveData")}
-          </p>
-        </div>
-
-        {/* Supersede warning */}
-        {hasExistingFinal && latestFinalDecision ? (
-          <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-              <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                  {t("inspector.manualDecision.supersede.warningTitle")}
-                </p>
-                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                  {t("inspector.manualDecision.supersede.warningNote")}
-                </p>
+            {/* Admin note */}
+            <div>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <label
+                  htmlFor="adminNote"
+                  className="text-text-muted block text-xs font-semibold tracking-[0.18em] uppercase"
+                >
+                  {t("inspector.manualDecision.adminNote.label")}
+                </label>
+                <span className="text-text-muted text-[11px]">
+                  {MAX_NOTE_LENGTH - adminNote.length}{" "}
+                  {t("inspector.manualDecision.adminNote.remaining", {
+                    count: MAX_NOTE_LENGTH - adminNote.length,
+                  })}
+                </span>
               </div>
-            </div>
-            <div className="rounded-xl border border-amber-200/50 bg-amber-100/30 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700 dark:text-amber-300">
-                {t("inspector.manualDecision.supersede.currentFinal")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-amber-900 dark:text-amber-100">
-                {latestFinalDecisionTypeKey ? t(latestFinalDecisionTypeKey as Parameters<typeof t>[0]) : ""}
-              </p>
-              <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-                {latestFinalReasonCodeKey ? t(latestFinalReasonCodeKey as Parameters<typeof t>[0]) : ""}
-              </p>
-            </div>
-            <label className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={supersedeChecked}
-                onChange={(e) => setSupersedeChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-border-light accent-primary"
+              <textarea
+                id="adminNote"
+                value={adminNote}
+                onChange={(e) =>
+                  setAdminNote(e.target.value.slice(0, MAX_NOTE_LENGTH))
+                }
+                placeholder={t(
+                  "inspector.manualDecision.adminNote.placeholder",
+                )}
+                rows={3}
+                className="border-border-light text-text-primary focus:border-primary/35 w-full resize-none rounded-2xl border bg-white px-4 py-3 text-sm transition outline-none dark:bg-white/5 dark:text-white dark:placeholder:text-white/40"
               />
-              <span className="text-sm text-amber-800 dark:text-amber-200">
-                {t("inspector.manualDecision.supersede.checkboxLabel")}
-              </span>
-            </label>
-          </div>
-        ) : null}
+              <p className="text-text-muted mt-1.5 text-[11px]">
+                {t("inspector.manualDecision.adminNote.noSensitiveData")}
+              </p>
+            </div>
 
-        {/* Three required confirmations */}
-        <div className="space-y-3">
-          {[
-            {
-              checked: confirmEvidenceReviewed,
-              onChange: setConfirmEvidenceReviewed,
-              label: t("inspector.manualDecision.confirmations.evidenceReviewed"),
-            },
-            {
-              checked: confirmNoAutomaticRefund,
-              onChange: setConfirmNoAutomaticRefund,
-              label: t("inspector.manualDecision.confirmations.noAutomaticRefund"),
-            },
-            {
-              checked: confirmNoAutomaticPayout,
-              onChange: setConfirmNoAutomaticPayout,
-              label: t("inspector.manualDecision.confirmations.noAutomaticPayout"),
-            },
-          ].map(({ checked, onChange, label }, idx) => (
-            <label key={idx} className="flex cursor-pointer items-start gap-3">
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={(e) => onChange(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-border-light accent-primary"
-              />
-              <span className="text-sm text-text-secondary dark:text-white/70">
-                {label}
-              </span>
-            </label>
-          ))}
-        </div>
+            {/* Supersede warning */}
+            {hasExistingFinal && latestFinalDecision ? (
+              <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                      {t("inspector.manualDecision.supersede.warningTitle")}
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                      {t("inspector.manualDecision.supersede.warningNote")}
+                    </p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-amber-200/50 bg-amber-100/30 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
+                  <p className="text-[11px] font-semibold tracking-[0.18em] text-amber-700 uppercase dark:text-amber-300">
+                    {t("inspector.manualDecision.supersede.currentFinal")}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-amber-900 dark:text-amber-100">
+                    {latestFinalDecisionTypeKey
+                      ? t(latestFinalDecisionTypeKey as Parameters<typeof t>[0])
+                      : ""}
+                  </p>
+                  <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
+                    {latestFinalReasonCodeKey
+                      ? t(latestFinalReasonCodeKey as Parameters<typeof t>[0])
+                      : ""}
+                  </p>
+                </div>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={supersedeChecked}
+                    onChange={(e) => setSupersedeChecked(e.target.checked)}
+                    className="border-border-light accent-primary mt-0.5 h-4 w-4 rounded"
+                  />
+                  <span className="text-sm text-amber-800 dark:text-amber-200">
+                    {t("inspector.manualDecision.supersede.checkboxLabel")}
+                  </span>
+                </label>
+              </div>
+            ) : null}
 
-        {/* Submit button */}
-        <button
-          type="submit"
-          disabled={!isFormValid || isSubmitting}
-          className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition ${
-            isFormValid && !isSubmitting
-              ? "bg-primary text-white hover:bg-primary-hover"
-              : "cursor-not-allowed bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/40"
-          }`}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {t("inspector.manualDecision.actions.submitting")}
-            </>
-          ) : (
-            t("inspector.manualDecision.actions.submit")
-          )}
-        </button>
+            {/* Three required confirmations */}
+            <div className="space-y-3">
+              {[
+                {
+                  checked: confirmEvidenceReviewed,
+                  onChange: setConfirmEvidenceReviewed,
+                  label: t(
+                    "inspector.manualDecision.confirmations.evidenceReviewed",
+                  ),
+                },
+                {
+                  checked: confirmNoAutomaticRefund,
+                  onChange: setConfirmNoAutomaticRefund,
+                  label: t(
+                    "inspector.manualDecision.confirmations.noAutomaticRefund",
+                  ),
+                },
+                {
+                  checked: confirmNoAutomaticPayout,
+                  onChange: setConfirmNoAutomaticPayout,
+                  label: t(
+                    "inspector.manualDecision.confirmations.noAutomaticPayout",
+                  ),
+                },
+              ].map(({ checked, onChange, label }, idx) => (
+                <label
+                  key={idx}
+                  className="flex cursor-pointer items-start gap-3"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => onChange(e.target.checked)}
+                    className="border-border-light accent-primary mt-0.5 h-4 w-4 rounded"
+                  />
+                  <span className="text-text-secondary text-sm dark:text-white/70">
+                    {label}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={!isFormValid || isSubmitting}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition ${
+                isFormValid && !isSubmitting
+                  ? "bg-primary hover:bg-primary-hover text-white"
+                  : "bg-surface-tertiary text-text-muted cursor-not-allowed dark:bg-white/10 dark:text-white/40"
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("inspector.manualDecision.actions.submitting")}
+                </>
+              ) : (
+                t("inspector.manualDecision.actions.submit")
+              )}
+            </button>
+          </>
+        ) : (
+          <p className="border-border-light text-text-secondary rounded-2xl border border-dashed p-4 text-sm dark:border-white/10 dark:text-white/70">
+            {t("inspector.manualDecision.selectDecisionFirst")}
+          </p>
+        )}
       </form>
     </section>
   );

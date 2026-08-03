@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
@@ -40,6 +44,7 @@ describe('CreateScheduledSessionUseCase', () => {
   };
 
   const validateSessionBookingRequestService: any = {
+    assertScheduledStartHasExplicitTimezone: jest.fn(),
     assertUtcDateIsValid: jest.fn(),
     assertScheduledStartIsFuture: jest.fn(),
   };
@@ -93,12 +98,15 @@ describe('CreateScheduledSessionUseCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (
+      validateSessionBookingRequestService.assertScheduledStartHasExplicitTimezone as jest.Mock
+    ).mockImplementation(() => undefined);
     (sessionPatientRepository.findByUserId as jest.Mock).mockResolvedValue(
       patient,
     );
-    (sessionPractitionerRepository.findByPublicSlug as jest.Mock).mockResolvedValue(
-      practitioner,
-    );
+    (
+      sessionPractitionerRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValue(practitioner);
     (validateSessionDurationService.validate as jest.Mock).mockReturnValue(
       undefined,
     );
@@ -129,7 +137,9 @@ describe('CreateScheduledSessionUseCase', () => {
       sessionMode: SessionMode.VIDEO,
     });
     (sessionRepository.createEvent as jest.Mock).mockResolvedValue(undefined);
-    tx.practitionerProfile.findUnique.mockResolvedValue({ acceptsNormalBookings: true });
+    tx.practitionerProfile.findUnique.mockResolvedValue({
+      acceptsNormalBookings: true,
+    });
   });
 
   it('creates a pending-payment session on the happy path', async () => {
@@ -179,12 +189,12 @@ describe('CreateScheduledSessionUseCase', () => {
       .catch((caught: unknown) => caught);
 
     expect(error).toBeInstanceOf(ConflictException);
-    expect(JSON.stringify((error as ConflictException).getResponse())).not.toContain(
-      '23P01',
-    );
-    expect(JSON.stringify((error as ConflictException).getResponse())).not.toContain(
-      'Session_practitioner_time_no_overlap_excl',
-    );
+    expect(
+      JSON.stringify((error as ConflictException).getResponse()),
+    ).not.toContain('23P01');
+    expect(
+      JSON.stringify((error as ConflictException).getResponse()),
+    ).not.toContain('Session_practitioner_time_no_overlap_excl');
   });
 
   it('rejects missing patient records before attempting session creation', async () => {
@@ -204,30 +214,73 @@ describe('CreateScheduledSessionUseCase', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it('requires an explicit timezone on the scheduled start input', async () => {
+    (
+      validateSessionBookingRequestService.assertScheduledStartHasExplicitTimezone as jest.Mock
+    ).mockImplementation(() => {
+      throw new BadRequestException({
+        error: 'SESSION_SCHEDULED_START_TIMEZONE_REQUIRED',
+      });
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'patient-user-1',
+        locale: 'en',
+        practitionerSlug: 'dr-youssef',
+        scheduledStartAt: '2026-08-10T10:00:00',
+        durationMinutes: 30,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'SESSION_SCHEDULED_START_TIMEZONE_REQUIRED' },
+    });
+
+    expect(sessionPatientRepository.findByUserId).not.toHaveBeenCalled();
+  });
+
   it('rejects paused normal booking intake before any booking side effect', async () => {
-    (sessionPractitionerRepository.findByPublicSlug as jest.Mock).mockResolvedValueOnce({
+    (
+      sessionPractitionerRepository.findByPublicSlug as jest.Mock
+    ).mockResolvedValueOnce({
       ...practitioner,
       acceptsNormalBookings: false,
     });
 
-    await expect(useCase.execute({
-      userId: 'user-1', locale: 'en', practitionerSlug: 'dr-youssef',
-      scheduledStartAt: '2999-01-01T10:00:00.000Z', durationMinutes: 60,
-      sessionMode: SessionMode.VIDEO,
-    })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }) });
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        practitionerSlug: 'dr-youssef',
+        scheduledStartAt: '2999-01-01T10:00:00.000Z',
+        durationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }),
+    });
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(sessionRepository.createSession).not.toHaveBeenCalled();
   });
 
   it('re-checks normal booking intake inside the transaction for stale submissions', async () => {
-    tx.practitionerProfile.findUnique.mockResolvedValueOnce({ acceptsNormalBookings: false });
+    tx.practitionerProfile.findUnique.mockResolvedValueOnce({
+      acceptsNormalBookings: false,
+    });
 
-    await expect(useCase.execute({
-      userId: 'user-1', locale: 'en', practitionerSlug: 'dr-youssef',
-      scheduledStartAt: '2999-01-01T10:00:00.000Z', durationMinutes: 60,
-      sessionMode: SessionMode.VIDEO,
-    })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }) });
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        practitionerSlug: 'dr-youssef',
+        scheduledStartAt: '2999-01-01T10:00:00.000Z',
+        durationMinutes: 60,
+        sessionMode: SessionMode.VIDEO,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'NORMAL_BOOKINGS_PAUSED' }),
+    });
 
     expect(sessionRepository.createSession).not.toHaveBeenCalled();
   });

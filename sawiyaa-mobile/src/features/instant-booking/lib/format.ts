@@ -1,4 +1,8 @@
 import { formatMoney, parseMoney } from "../../../lib/money";
+import {
+  formatViewerDateTime,
+  formatViewerTime,
+} from "../../../lib/time-formatting";
 
 export function formatInstantBookingMoney(
   amount: string | null | undefined,
@@ -17,14 +21,15 @@ export function formatInstantBookingDateTime(
     return "-";
   }
 
-  return new Intl.DateTimeFormat(locale, {
+  return formatViewerDateTime(value, {
+    locale,
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "numeric",
     minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+    fallbackText: "-",
+  });
 }
 
 export function formatInstantBookingTime(
@@ -35,11 +40,12 @@ export function formatInstantBookingTime(
     return "-";
   }
 
-  return new Intl.DateTimeFormat(locale, {
+  return formatViewerTime(value, {
+    locale,
     hour: "numeric",
     minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  }).format(new Date(value));
+    fallbackText: "-",
+  });
 }
 
 export function formatInstantBookingExpiry(
@@ -55,7 +61,9 @@ export function formatInstantBookingExpiry(
   const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  const numberFormat = new Intl.NumberFormat(locale.startsWith("ar") ? "ar-EG" : "en-US");
+  const numberFormat = new Intl.NumberFormat(
+    locale.startsWith("ar") ? "ar-EG" : "en-US",
+  );
 
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
@@ -74,4 +82,3 @@ export function formatInstantBookingExpiry(
 
   return `Expires in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
 }
-

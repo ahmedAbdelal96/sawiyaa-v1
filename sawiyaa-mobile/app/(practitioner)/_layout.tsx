@@ -178,8 +178,12 @@ export default function PractitionerLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
-        name="promo-codes"
+        name="promo-codes/index"
         options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="promo-codes/[id]"
+        options={{ href: null, tabBarStyle: { display: "none" } }}
       />
       <Tabs.Screen
         name="sessions/[id]"

@@ -34,6 +34,10 @@ import {
   ConversationComposer,
   ConversationEmptyState,
 } from "../../../../features/messages/components/ConversationPrimitives";
+import {
+  formatViewerDate,
+  formatViewerTime,
+} from "../../../../lib/time-formatting";
 
 type PractitionerCareChatThreadScreenProps = {
   conversationId: string;
@@ -74,26 +78,30 @@ export function PractitionerCareChatThreadScreen({
     ? t(`practitioner.careChat.activityState.${conversation.activityState}`)
     : null;
   const lastActivityAt = conversation
-    ? conversation.messages[conversation.messages.length - 1]?.createdAt ??
+    ? (conversation.messages[conversation.messages.length - 1]?.createdAt ??
       conversation.expiresAt ??
-      null
+      null)
     : null;
 
   const detailStatusTone =
     conversation?.activityState === "ACTIVE" ? "success" : "default";
 
   function formatTime(dateStr: string) {
-    return new Date(dateStr).toLocaleTimeString(locale, {
+    return formatViewerTime(dateStr, {
+      locale,
       hour: "2-digit",
       minute: "2-digit",
+      fallbackText: "-",
     });
   }
 
   function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString(locale, {
+    return formatViewerDate(dateStr, {
+      locale,
       day: "numeric",
       month: "long",
       year: "numeric",
+      fallbackText: "-",
     });
   }
 
@@ -156,7 +164,11 @@ export function PractitionerCareChatThreadScreen({
                   />
                 </View>
                 <View style={styles.patientInfo}>
-                  <Text weight="600" style={styles.patientName} numberOfLines={1}>
+                  <Text
+                    weight="600"
+                    style={styles.patientName}
+                    numberOfLines={1}
+                  >
                     {patientName}
                   </Text>
                   <Text
@@ -204,16 +216,24 @@ export function PractitionerCareChatThreadScreen({
                 ]}
               >
                 <Ionicons
-                  name={isActive ? "information-circle-outline" : "alert-circle-outline"}
+                  name={
+                    isActive
+                      ? "information-circle-outline"
+                      : "alert-circle-outline"
+                  }
                   size={16}
-                  color={isActive ? theme.colors.warning ?? "#f59e0b" : theme.colors.textMuted}
+                  color={
+                    isActive
+                      ? (theme.colors.warning ?? "#f59e0b")
+                      : theme.colors.textMuted
+                  }
                 />
                 <Text
                   style={[
                     styles.noticeText,
                     {
                       color: isActive
-                        ? theme.colors.warning ?? "#f59e0b"
+                        ? (theme.colors.warning ?? "#f59e0b")
                         : theme.colors.textMuted,
                     },
                   ]}
@@ -259,7 +279,9 @@ export function PractitionerCareChatThreadScreen({
                   />
                   {lastActivityAt ? (
                     <DetailRow
-                      label={t("practitioner.careChat.conversation.lastUpdated")}
+                      label={t(
+                        "practitioner.careChat.conversation.lastUpdated",
+                      )}
                       value={formatDate(lastActivityAt)}
                     />
                   ) : null}
@@ -290,11 +312,7 @@ export function PractitionerCareChatThreadScreen({
                 ]}
               >
                 {t("practitioner.careChat.expiresOn", {
-                  date: new Date(conversation.expiresAt).toLocaleDateString(locale, {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }),
+                  date: formatDate(conversation.expiresAt),
                 })}
               </Text>
             </View>
@@ -315,20 +333,22 @@ export function PractitionerCareChatThreadScreen({
                 title={t("practitioner.careChat.conversation.empty")}
               />
             ) : (
-              conversation.messages.map((msg: CareChatMessageDto, idx: number) => {
-                const isMine =
-                  msg.senderRole === "PRACTITIONER" ||
-                  (msg.senderUserId && msg.senderUserId === user?.id);
+              conversation.messages.map(
+                (msg: CareChatMessageDto, idx: number) => {
+                  const isMine =
+                    msg.senderRole === "PRACTITIONER" ||
+                    (msg.senderUserId && msg.senderUserId === user?.id);
 
-                return (
-                  <ConversationBubble
-                    key={msg.id ?? idx}
-                    isMine={Boolean(isMine)}
-                    text={localizeCareChatMessageText(msg, t)}
-                    timeLabel={formatTime(msg.createdAt)}
-                  />
-                );
-              })
+                  return (
+                    <ConversationBubble
+                      key={msg.id ?? idx}
+                      isMine={Boolean(isMine)}
+                      text={localizeCareChatMessageText(msg, t)}
+                      timeLabel={formatTime(msg.createdAt)}
+                    />
+                  );
+                },
+              )
             )}
           </ScrollView>
         </View>
@@ -339,7 +359,9 @@ export function PractitionerCareChatThreadScreen({
             onChangeText={setDraft}
             onSend={() => void handleSend()}
             disabled={sendMessage.isPending || !draft.trim()}
-            placeholder={t("practitioner.careChat.conversation.inputPlaceholder")}
+            placeholder={t(
+              "practitioner.careChat.conversation.inputPlaceholder",
+            )}
             error={sendError}
           />
         ) : null}
@@ -348,13 +370,7 @@ export function PractitionerCareChatThreadScreen({
   );
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
   return (
     <View style={styles.detailRow}>

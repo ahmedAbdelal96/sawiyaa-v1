@@ -165,6 +165,37 @@ Run migrations manually as a release step, before exposing new traffic:
 docker compose -f docker-compose.prod.yml run --rm backend npm run prisma:migrate:deploy
 ```
 
+## Production Config bootstrap
+
+After the backup and successful migration, initialize only the canonical Config
+catalog and approved global initial values. The command is explicit and must be
+run as a one-off operator action:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm \
+  -e ALLOW_CONFIG_BOOTSTRAP=true \
+  backend npm run db:bootstrap:config
+```
+
+The production Compose `env_file` supplies `APP_ENV` and `DATABASE_URL`; the
+explicit flag is required by the bootstrap policy. The command does not run
+`prisma:seed`, create demo users/fixtures, overwrite or deactivate existing
+ConfigValue rows, or print configuration values. Expected output is a JSON
+summary containing `catalog.created`, `catalog.preserved`,
+`initialValues.created`, and `initialValues.preserved` counts.
+
+Required release order:
+
+1. `bash /opt/sawiyaa/deploy/scripts/backup-db.sh`
+2. `bash /opt/sawiyaa/deploy/scripts/validate-production-preflight.sh`
+3. `docker compose -f docker-compose.prod.yml run --rm backend npm run prisma:migrate:deploy`
+4. The Config bootstrap command above.
+5. Run `db:bootstrap:payment-routes` only for an empty route table with explicit operator approval.
+6. `docker compose -f docker-compose.prod.yml up -d backend frontend nginx`
+7. Verify the health endpoints and readiness logs.
+
+Never run the root `npm run prisma:seed` command in production.
+
 Synchronize canonical permissions separately from the full development seed:
 
 ```bash
@@ -353,7 +384,8 @@ CLOUDFLARE_COUNTRY_HEADER_ENABLED=false
 Payment currency/method routing is database-authoritative. Do not configure
 `PAYMENT_PROVIDER_ROUTES_JSON`; manage route rows through the admin workflow or
 the explicit operator bootstrap below. The provider remains independently
-controlled by `PAYMENT_PAYMOB_ENABLED` and its credential environment values.
+controlled by the database payment gateway control and its credential
+environment values.
 
 For an approved initial production/staging EGP route only, run the bootstrap
 explicitly inside the backend container with

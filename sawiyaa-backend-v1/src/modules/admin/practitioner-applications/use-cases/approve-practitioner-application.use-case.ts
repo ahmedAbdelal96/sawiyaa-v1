@@ -31,6 +31,7 @@ import { AdminUserRepository } from '../repositories/admin-user.repository';
 import { AdminPractitionerApplicationNotificationService } from '../services/admin-practitioner-application-notification.service';
 import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
 import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
+import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
 
 type SubmissionSnapshot = {
   applicant?: {
@@ -92,6 +93,7 @@ export class ApprovePractitionerApplicationUseCase {
     private readonly securityAuditService: SecurityAuditService,
     private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
     private readonly practitionerCurrencyLifecycleService: PractitionerCurrencyLifecycleService,
+    private readonly practitionerTimezoneChangeGuardService: PractitionerTimezoneChangeGuardService,
   ) {}
 
   async execute(input: {
@@ -196,8 +198,12 @@ export class ApprovePractitionerApplicationUseCase {
       hasRequiredCredentials:
         requestedCredentials.length > 0 &&
         (profile.status === PractitionerStatus.APPROVED
-          ? requestedCredentials.every((item) => item.reviewStatus !== 'REJECTED')
-          : requestedCredentials.every((item) => item.reviewStatus === 'APPROVED')),
+          ? requestedCredentials.every(
+              (item) => item.reviewStatus !== 'REJECTED',
+            )
+          : requestedCredentials.every(
+              (item) => item.reviewStatus === 'APPROVED',
+            )),
       hasPayoutDestination: Boolean(requestedPayoutDestination),
       status: existing.status,
     });
@@ -271,6 +277,11 @@ export class ApprovePractitionerApplicationUseCase {
         )?.payoutDestination;
 
         if (applicant) {
+          await this.practitionerTimezoneChangeGuardService.assertCanChange({
+            userId: latest.practitioner.userId,
+            requestedTimezone: applicant.timezone,
+            tx,
+          });
           await this.userRepository.updateProfilePreferences(
             latest.practitioner.userId,
             {
@@ -316,12 +327,14 @@ export class ApprovePractitionerApplicationUseCase {
             }
           }
 
-          await this.practitionerCurrencyLifecycleService.ensureForCountryChange({
-            practitionerId: latest.practitioner.id,
-            newCountryId: countryId ?? null,
-            actorUserId: input.adminUserId,
-            tx,
-          });
+          await this.practitionerCurrencyLifecycleService.ensureForCountryChange(
+            {
+              practitionerId: latest.practitioner.id,
+              newCountryId: countryId ?? null,
+              actorUserId: input.adminUserId,
+              tx,
+            },
+          );
 
           await this.profileRepository.updateProfileDetails(
             latest.practitioner.id,
@@ -449,11 +462,13 @@ export class ApprovePractitionerApplicationUseCase {
         if (reviewCase) {
           const blockingOpen = reviewCase.requirements.some(
             (requirement) =>
-              requirement.status === 'OPEN' && requirement.severity === 'BLOCKING',
+              requirement.status === 'OPEN' &&
+              requirement.severity === 'BLOCKING',
           );
           if (blockingOpen) {
             throw new BadRequestException({
-              messageKey: 'admin.practitionerApplications.errors.requirementsOpen',
+              messageKey:
+                'admin.practitionerApplications.errors.requirementsOpen',
               error: 'PRACTITIONER_REVIEW_REQUIREMENTS_OPEN',
             });
           }

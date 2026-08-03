@@ -11,6 +11,7 @@ import { formatAdminNotificationDateTime } from "@/features/admin/notifications/
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { getNotificationVisualProps } from "@/features/notifications/lib/notification-visual-mapper";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 
 const TONE_CLASSES: Record<string, string> = {
   message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
@@ -37,6 +38,8 @@ export default function NotificationDropdown() {
   const isAdminArea = pathWithoutLocale === "/admin" || pathWithoutLocale.startsWith("/admin/");
   const { data: permissionData } = useCurrentUserPermissions(isAdminArea);
   const canReadNotifications = permissionData?.permissions.includes(PermissionKey.NOTIFICATION_OPS_READ) ?? false;
+  const settingsQuery = useMySettings(isAdminArea);
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const notifications = useAdminNotifications(
     { page: 1, limit: 5 },
     { enabled: isAdminArea && canReadNotifications },
@@ -122,6 +125,7 @@ export default function NotificationDropdown() {
                   locale,
                   item.context,
                   item.primaryAction,
+                  viewerTimeZone,
                 );
                 const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
 

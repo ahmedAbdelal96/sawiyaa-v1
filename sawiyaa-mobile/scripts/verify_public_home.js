@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const ARTIFACT_DIR = 'C:/Users/IT/.gemini/antigravity/brain/7c27f882-2735-4866-b9a8-a2d420934ff8';
+const ARTIFACT_DIR = 'C:/Users/IT/.gemini/antigravity/brain/97209bd4-2498-490c-8f98-4967a78edb10';
 
 async function captureScreen(page, name, width = 390, height = 844, clip = null) {
   await page.setViewportSize({ width, height });

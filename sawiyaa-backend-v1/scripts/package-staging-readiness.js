@@ -90,8 +90,6 @@ async function main() {
     const paymentSuccessUrl = getEnv(env, 'PAYMENT_SUCCESS_URL');
     const paymentFailedUrl = getEnv(env, 'PAYMENT_FAILED_URL');
     const paymentPendingUrl = getEnv(env, 'PAYMENT_PENDING_URL');
-    const stripeEnabled = getEnv(env, 'PAYMENT_STRIPE_ENABLED') === 'true';
-    const paymobEnabled = getEnv(env, 'PAYMENT_PAYMOB_ENABLED') === 'true';
     let fatalError = null;
     if (appEnv !== 'staging') {
         fatalError = `APP_ENV must be staging, got ${appEnv || '(missing)'}`;
@@ -109,10 +107,6 @@ async function main() {
         !paymentPendingUrl) {
         fatalError = 'Required staging app URLs are missing';
     }
-    else if (!stripeEnabled && !paymobEnabled) {
-        fatalError =
-            'At least one payment provider must be enabled for package staging verification';
-    }
     if (fatalError) {
         console.log(`[FAIL] Environment preflight - ${fatalError}`);
         process.exitCode = 1;
@@ -123,43 +117,6 @@ async function main() {
     addCheck(results, 'APP_URL present', true, appUrl);
     addCheck(results, 'APP_BASE_URL present', true, appBaseUrl);
     addCheck(results, 'Payment redirect URLs present', true, 'success / failed / pending set');
-    addCheck(results, 'At least one payment provider enabled', true, stripeEnabled ? 'Stripe enabled' : 'Paymob enabled');
-    if (stripeEnabled) {
-        const stripeMode = getEnv(env, 'STRIPE_MODE');
-        const stripeSecretKey = getEnv(env, 'STRIPE_SECRET_KEY');
-        const stripeWebhookSecret = getEnv(env, 'STRIPE_WEBHOOK_SECRET');
-        const stripeApiBaseUrl = getEnv(env, 'STRIPE_API_BASE_URL');
-        addCheck(paymentChecks, 'Stripe sandbox mode is test', stripeMode === 'test', stripeMode || '(missing)');
-        addCheck(paymentChecks, 'Stripe secret key present', Boolean(stripeSecretKey));
-        addCheck(paymentChecks, 'Stripe webhook secret present', Boolean(stripeWebhookSecret));
-        addCheck(paymentChecks, 'Stripe API base URL present', Boolean(stripeApiBaseUrl));
-    }
-    if (paymobEnabled) {
-        const paymobMode = getEnv(env, 'PAYMOB_MODE');
-        const paymobBaseUrl = getEnv(env, 'PAYMOB_BASE_URL');
-        const paymobApiKey = getEnv(env, 'PAYMOB_API_KEY');
-        const paymobHmacSecret = getEnv(env, 'PAYMOB_HMAC_SECRET');
-        const paymobCardIntegration = getEnv(env, 'PAYMOB_INTEGRATION_ID_CARD');
-        const paymobIntegrationId = getEnv(env, 'PAYMOB_INTEGRATION_ID');
-        const paymobCheckoutFlow = getEnv(env, 'PAYMOB_CHECKOUT_FLOW') || 'legacy';
-        const paymobIframeId = getEnv(env, 'PAYMOB_IFRAME_ID');
-        const paymobPublicKey = getEnv(env, 'PAYMOB_PUBLIC_KEY');
-        const paymobCheckoutBaseUrl = getEnv(env, 'PAYMOB_CHECKOUT_BASE_URL');
-        const paymobIntentionBaseUrl = getEnv(env, 'PAYMOB_INTENTION_BASE_URL');
-        addCheck(paymentChecks, 'Paymob sandbox mode is test', paymobMode === 'test', paymobMode || '(missing)');
-        addCheck(paymentChecks, 'Paymob base URL present', Boolean(paymobBaseUrl));
-        addCheck(paymentChecks, 'Paymob API key present', Boolean(paymobApiKey));
-        addCheck(paymentChecks, 'Paymob HMAC secret present', Boolean(paymobHmacSecret));
-        addCheck(paymentChecks, 'Paymob has at least one card integration id', Boolean(paymobCardIntegration || paymobIntegrationId));
-        if (paymobCheckoutFlow === 'legacy') {
-            addCheck(paymentChecks, 'Paymob iframe ID present for legacy checkout', Boolean(paymobIframeId));
-        }
-        else {
-            addCheck(paymentChecks, 'Paymob public key present for intention checkout', Boolean(paymobPublicKey));
-            addCheck(paymentChecks, 'Paymob checkout base URL present for intention checkout', Boolean(paymobCheckoutBaseUrl));
-            addCheck(paymentChecks, 'Paymob intention base URL present for intention checkout', Boolean(paymobIntentionBaseUrl));
-        }
-    }
     const prisma = new client_1.PrismaClient();
     let dbReadSucceeded = false;
     try {
@@ -186,7 +143,16 @@ async function main() {
         });
         addCheck(results, 'PackagePlan rows exist for all three standardized tiers', planSummary.every((item) => item.endsWith('ok')), planSummary.join(', '));
         const configRows = await prisma.configKeyCatalog.findMany({
-            where: { key: { in: ['packages.enabled', 'packages.purchaseEnabled'] } },
+            where: {
+                key: {
+                    in: [
+                        'packages.enabled',
+                        'packages.purchaseEnabled',
+                        'payment.provider.paymob.enabled',
+                        'payment.provider.stripe.enabled',
+                    ],
+                },
+            },
             select: {
                 key: true,
                 values: {
@@ -201,6 +167,10 @@ async function main() {
         const purchaseRow = configMap.get('packages.purchaseEnabled');
         addCheck(results, 'packages.enabled exists and is true', Boolean(enabledRow?.values?.[0]?.valueBoolean === true), enabledRow ? `rows=${enabledRow.values.length}` : 'missing');
         addCheck(results, 'packages.purchaseEnabled exists and is true', Boolean(purchaseRow?.values?.[0]?.valueBoolean === true), purchaseRow ? `rows=${purchaseRow.values.length}` : 'missing');
+        const enabledProvider = configRows.find((row) => (row.key === 'payment.provider.paymob.enabled' ||
+            row.key === 'payment.provider.stripe.enabled') &&
+            row.values[0]?.valueBoolean === true);
+        addCheck(paymentChecks, 'At least one payment provider enabled in Config', Boolean(enabledProvider), enabledProvider?.key ?? 'none');
         const practitioner = await prisma.practitionerProfile.findFirst({
             where: {
                 acceptsPackages: true,

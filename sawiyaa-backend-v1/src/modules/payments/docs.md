@@ -16,10 +16,11 @@ each currency is independently capability-checked:
 
 `PAYMOB_USD_CARD_INTEGRATION_ID` must be a Paymob integration that is approved
 for USD. It must not be copied from the EGP integration without explicit
-provider confirmation. Alternatively, configure
-`PAYMOB_METHOD_REGISTRY_JSON` with separate enabled `CARD` entries whose
-`currencyCodes` are `['EGP']` and `['USD']` respectively; do not configure both
-the explicit integration variables and the method registry at the same time.
+provider confirmation. Configure the typed
+`payment.provider.paymob.methodRegistry` database setting with separate enabled
+`CARD` entries whose `currencyCodes` are `['EGP']` and `['USD']` respectively.
+Provider credentials and integration identifiers remain ENV-owned; the method
+registry itself is not read from ENV.
 
 The existing `PaymentProviderResolverService` remains the single provider
 selection point. Currency/method routes are configured only by the

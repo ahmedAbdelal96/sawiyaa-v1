@@ -5,6 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AuditEventSource,
+  ConfigScopeType,
+  NotificationCategory,
+  NotificationStatus,
   OtpChannel,
   OtpPurpose,
   PaymentProvider,
@@ -12,11 +16,15 @@ import {
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { ConfigKey } from '@modules/config/registry/config-key.constants';
+import { ConfigurationManagementService } from '@modules/config/services/configuration-management.service';
+import { UpdateConfigurationCommand } from '@modules/config/types/configuration-write.types';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { CreateOtpChallengeUseCase } from '@modules/verification/use-cases/create-otp-challenge.use-case';
 import { SendOtpChallengeUseCase } from '@modules/verification/use-cases/send-otp-challenge.use-case';
 import { VerifyOtpChallengeUseCase } from '@modules/verification/use-cases/verify-otp-challenge.use-case';
 import {
+  PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS,
   PAYMENT_GATEWAY_CONTROL_MANAGED_PROVIDERS,
   PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE,
   PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE,
@@ -27,7 +35,6 @@ import {
   PaymentGatewayControlManagedProvider,
   PaymentGatewayControlProvider,
   PaymentGatewayControlRuntimeSnapshot,
-  PaymentRoutingDraft,
   PaymentRoutingRuntimeSnapshot,
   PaymentRoutingValidationResult,
   PaymobGatewayControlMethodEntry,
@@ -60,11 +67,12 @@ export class PaymentGatewayControlService {
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
     private readonly verifyOtpChallengeUseCase: VerifyOtpChallengeUseCase,
     private readonly passwordConfirmationService: PaymentGatewayPasswordConfirmationService,
+    private readonly configurationManagementService: ConfigurationManagementService,
   ) {}
 
-  async listProviders(): Promise<{
+  listProviders(): {
     items: PaymentGatewayControlRuntimeSnapshot[];
-  }> {
+  } {
     return {
       items: [
         this.paymentGatewayControlRuntimeService.getPaymobSnapshot(),
@@ -73,9 +81,9 @@ export class PaymentGatewayControlService {
     };
   }
 
-  async getProvider(
-    provider: PaymentGatewayControlProvider,
-  ): Promise<{ item: PaymentGatewayControlRuntimeSnapshot }> {
+  getProvider(provider: PaymentGatewayControlProvider): {
+    item: PaymentGatewayControlRuntimeSnapshot;
+  } {
     this.assertSupportedProvider(provider);
     const managedProvider = provider as PaymentGatewayControlManagedProvider;
 
@@ -86,13 +94,13 @@ export class PaymentGatewayControlService {
     };
   }
 
-  async getRouting(): Promise<{ item: PaymentRoutingRuntimeSnapshot }> {
+  getRouting(): { item: PaymentRoutingRuntimeSnapshot } {
     return {
       item: this.paymentGatewayControlRuntimeService.getRoutingSnapshot(),
     };
   }
 
-  async getRoutingCapabilities() {
+  getRoutingCapabilities() {
     return {
       items: this.paymentGatewayControlRuntimeService.getPaymentRouteCatalog(),
     };
@@ -127,12 +135,12 @@ export class PaymentGatewayControlService {
     };
   }
 
-  async validateProviderDraft(
+  validateProviderDraft(
     provider: PaymentGatewayControlProvider,
     rawDraft: PaymobGatewayControlDraftInput | StripeGatewayControlDraftInput,
-  ): Promise<
-    PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult
-  > {
+  ):
+    | PaymobGatewayControlValidationResult
+    | StripeGatewayControlValidationResult {
     this.assertSupportedProvider(provider);
 
     if (provider === PaymentProvider.PAYMOB) {
@@ -154,18 +162,18 @@ export class PaymentGatewayControlService {
     );
   }
 
-  async validateDraft(
+  validateDraft(
     provider: PaymentGatewayControlProvider,
     rawDraft: PaymobGatewayControlDraftInput | StripeGatewayControlDraftInput,
-  ): Promise<
-    PaymobGatewayControlValidationResult | StripeGatewayControlValidationResult
-  > {
+  ):
+    | PaymobGatewayControlValidationResult
+    | StripeGatewayControlValidationResult {
     return this.validateProviderDraft(provider, rawDraft);
   }
 
-  async validateRoutingDraft(
+  validateRoutingDraft(
     rawDraft: PaymentRoutingDraftInput,
-  ): Promise<PaymentRoutingValidationResult> {
+  ): PaymentRoutingValidationResult {
     const normalized = this.normalizeRoutingDraft(rawDraft);
     return this.validateRoutingAgainstCurrent(
       this.paymentGatewayControlRuntimeService.getRoutingSnapshot(),
@@ -240,7 +248,7 @@ export class PaymentGatewayControlService {
       });
 
       const nextSnapshot = this.toPaymobRuntimeSnapshot(normalized, current);
-      const result = await this.paymentGatewayControlRepository.applySnapshot({
+      const result = await this.applyPaymentSnapshot({
         scope: 'provider',
         provider,
         actorUserId: input.actorUserId,
@@ -288,7 +296,7 @@ export class PaymentGatewayControlService {
     });
 
     const nextSnapshot = this.toStripeRuntimeSnapshot(normalized, current);
-    const result = await this.paymentGatewayControlRepository.applySnapshot({
+    const result = await this.applyPaymentSnapshot({
       scope: 'provider',
       provider,
       actorUserId: input.actorUserId,
@@ -346,7 +354,7 @@ export class PaymentGatewayControlService {
     });
 
     const nextSnapshot = this.toRoutingRuntimeSnapshot(normalized, current);
-    const result = await this.paymentGatewayControlRepository.applySnapshot({
+    const result = await this.applyPaymentSnapshot({
       scope: 'routing',
       provider: null,
       actorUserId: input.actorUserId,
@@ -451,7 +459,7 @@ export class PaymentGatewayControlService {
 
     const current =
       this.paymentGatewayControlRuntimeService.getProviderSnapshot(provider);
-    const result = await this.paymentGatewayControlRepository.applySnapshot({
+    const result = await this.applyPaymentSnapshot({
       scope: 'provider',
       provider,
       actorUserId: input.actorUserId,
@@ -539,7 +547,7 @@ export class PaymentGatewayControlService {
 
     const current =
       this.paymentGatewayControlRuntimeService.getRoutingSnapshot();
-    const result = await this.paymentGatewayControlRepository.applySnapshot({
+    const result = await this.applyPaymentSnapshot({
       scope: 'routing',
       provider: null,
       actorUserId: input.actorUserId,
@@ -559,6 +567,344 @@ export class PaymentGatewayControlService {
       auditEventId: result.auditEventId,
       changedKeys: result.changedKeys,
     };
+  }
+
+  private async applyPaymentSnapshot(input: {
+    scope: 'provider' | 'routing';
+    provider: PaymentGatewayControlManagedProvider | null;
+    actorUserId: string;
+    requestId: string;
+    reason: string;
+    action: 'UPDATED' | 'ROLLBACK';
+    beforeSnapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot;
+    afterSnapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot;
+    rollbackSourceEventId?: string | null;
+  }) {
+    const changedKeys = this.getChangedSnapshotKeys(
+      input.beforeSnapshot,
+      input.afterSnapshot,
+    );
+
+    if (changedKeys.length === 0) {
+      return {
+        revisionNumber: await this.getNextPaymentRevisionNumber(
+          input.scope,
+          input.provider,
+        ),
+        auditEventId: null,
+        configChangeLogIds: [],
+        changedKeys,
+      };
+    }
+
+    const commands = await Promise.all(
+      changedKeys.map(async (changedKey) => {
+        const key = this.mapControlKeyToConfigKey(
+          input.scope,
+          input.provider,
+          changedKey,
+        );
+        const current =
+          await this.configurationManagementService.getCurrentVersion(
+            key,
+            ConfigScopeType.GLOBAL,
+            null,
+          );
+
+        return {
+          key,
+          value: this.extractSnapshotValue(input.afterSnapshot, changedKey),
+          scopeType: ConfigScopeType.GLOBAL,
+          scopeRefId: null,
+          actor: {
+            type: 'USER' as const,
+            id: input.actorUserId,
+            permissions: ['configuration.edit.financial' as const],
+          },
+          actorType: 'USER' as const,
+          reason: input.reason,
+          expectedUpdatedAt: current?.updatedAt ?? null,
+        } as UpdateConfigurationCommand;
+      }),
+    );
+
+    return this.configurationManagementService.updateManyWithTransaction(
+      commands,
+      async (tx, results) => {
+        const revisionNumber =
+          (await tx.auditEvent.count({
+            where: {
+              targetEntityType:
+                input.scope === 'routing'
+                  ? PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE
+                  : PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE,
+              targetEntityId: input.scope === 'routing' ? null : input.provider,
+            },
+          })) + 1;
+
+        const auditEvent = await tx.auditEvent.create({
+          data: {
+            typeSlug: `payment-gateway-control.${input.scope}.${input.action.toLowerCase()}`,
+            eventFamily: 'payment-gateway-control',
+            category: NotificationCategory.SYSTEM,
+            status: NotificationStatus.SENT,
+            source: AuditEventSource.SYSTEM,
+            actorUserId: input.actorUserId,
+            targetEntityType:
+              input.scope === 'routing'
+                ? PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE
+                : PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE,
+            targetEntityId: input.scope === 'routing' ? null : input.provider,
+            titleSnapshot:
+              input.action === 'ROLLBACK'
+                ? 'Payment gateway control rollback'
+                : 'Payment gateway control update',
+            subjectSnapshot: 'Payment gateway control configuration change',
+            bodySnapshot: `${input.action} applied to ${input.scope}${input.provider ? `:${input.provider}` : ''}`,
+            metadataJson: {
+              scope: input.scope,
+              provider: input.provider,
+              requestId: input.requestId,
+              revisionNumber,
+              action: input.action,
+              reason: input.reason,
+              changedKeys,
+              beforeSnapshot: input.beforeSnapshot,
+              afterSnapshot: input.afterSnapshot,
+              configChangeLogIds: results.map((result) => result.changeLogId),
+              rollbackSourceEventId: input.rollbackSourceEventId ?? null,
+            } as unknown as Prisma.InputJsonValue,
+            occurredAt: new Date(),
+          },
+        });
+
+        return {
+          revisionNumber,
+          auditEventId: auditEvent.id,
+          configChangeLogIds: results.map((result) => result.changeLogId),
+          changedKeys,
+        };
+      },
+    );
+  }
+
+  private getChangedSnapshotKeys(
+    beforeSnapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+    afterSnapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+  ): string[] {
+    if (
+      this.isRoutingSnapshot(beforeSnapshot) &&
+      this.isRoutingSnapshot(afterSnapshot)
+    ) {
+      const keys: string[] = [];
+      if (beforeSnapshot.defaultProvider !== afterSnapshot.defaultProvider)
+        keys.push('defaultProvider');
+      if (
+        JSON.stringify(beforeSnapshot.priorityOrder) !==
+        JSON.stringify(afterSnapshot.priorityOrder)
+      )
+        keys.push('priorityOrder');
+      if (beforeSnapshot.fallbackProvider !== afterSnapshot.fallbackProvider)
+        keys.push('fallbackProvider');
+      if (
+        JSON.stringify(beforeSnapshot.currencyRoutes) !==
+        JSON.stringify(afterSnapshot.currencyRoutes)
+      )
+        keys.push('currencyRoutes');
+      return keys;
+    }
+
+    if (
+      this.isPaymobSnapshot(beforeSnapshot) &&
+      this.isPaymobSnapshot(afterSnapshot)
+    ) {
+      const keys: string[] = [];
+      if (beforeSnapshot.enabled !== afterSnapshot.enabled)
+        keys.push('enabled');
+      if (beforeSnapshot.checkoutFlow !== afterSnapshot.checkoutFlow)
+        keys.push('checkoutFlow');
+      if (beforeSnapshot.defaultMethod !== afterSnapshot.defaultMethod)
+        keys.push('defaultMethod');
+      if (beforeSnapshot.maintenanceMode !== afterSnapshot.maintenanceMode)
+        keys.push('maintenanceMode');
+      if (
+        JSON.stringify(beforeSnapshot.allowedCountryIsoCodes) !==
+        JSON.stringify(afterSnapshot.allowedCountryIsoCodes)
+      )
+        keys.push('allowedCountryIsoCodes');
+      if (
+        JSON.stringify(beforeSnapshot.methodRegistry) !==
+        JSON.stringify(afterSnapshot.methodRegistry)
+      )
+        keys.push('methodRegistry');
+      return keys;
+    }
+
+    if (
+      this.isStripeSnapshot(beforeSnapshot) &&
+      this.isStripeSnapshot(afterSnapshot)
+    ) {
+      const keys: string[] = [];
+      if (beforeSnapshot.enabled !== afterSnapshot.enabled)
+        keys.push('enabled');
+      if (beforeSnapshot.maintenanceMode !== afterSnapshot.maintenanceMode)
+        keys.push('maintenanceMode');
+      if (
+        JSON.stringify(beforeSnapshot.allowedCountryIsoCodes) !==
+        JSON.stringify(afterSnapshot.allowedCountryIsoCodes)
+      )
+        keys.push('allowedCountryIsoCodes');
+      return keys;
+    }
+
+    return [];
+  }
+
+  private extractSnapshotValue(
+    snapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+    key: string,
+  ): Prisma.JsonValue {
+    if (this.isRoutingSnapshot(snapshot)) {
+      return (key === 'defaultProvider'
+        ? snapshot.defaultProvider
+        : key === 'priorityOrder'
+          ? snapshot.priorityOrder
+          : key === 'fallbackProvider'
+            ? snapshot.fallbackProvider
+            : snapshot.currencyRoutes) as unknown as Prisma.JsonValue;
+    }
+
+    if (this.isStripeSnapshot(snapshot)) {
+      return (key === 'enabled'
+        ? snapshot.enabled
+        : key === 'maintenanceMode'
+          ? snapshot.maintenanceMode
+          : snapshot.allowedCountryIsoCodes) as unknown as Prisma.JsonValue;
+    }
+
+    return (key === 'enabled'
+      ? snapshot.enabled
+      : key === 'checkoutFlow'
+        ? snapshot.checkoutFlow
+        : key === 'defaultMethod'
+          ? snapshot.defaultMethod
+          : key === 'maintenanceMode'
+            ? snapshot.maintenanceMode
+            : key === 'allowedCountryIsoCodes'
+              ? snapshot.allowedCountryIsoCodes
+              : snapshot.methodRegistry) as unknown as Prisma.JsonValue;
+  }
+
+  private mapControlKeyToConfigKey(
+    scope: 'provider' | 'routing',
+    provider: PaymentGatewayControlManagedProvider | null,
+    key: string,
+  ): ConfigKey {
+    if (scope === 'routing') {
+      return {
+        defaultProvider:
+          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingDefaultProvider,
+        priorityOrder: PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingPriorityOrder,
+        fallbackProvider:
+          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingFallbackProvider,
+        currencyRoutes:
+          PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.routingCurrencyRoutes,
+      }[
+        key as
+          | 'defaultProvider'
+          | 'priorityOrder'
+          | 'fallbackProvider'
+          | 'currencyRoutes'
+      ] as ConfigKey;
+    }
+
+    const providerKeys =
+      provider === PaymentProvider.STRIPE
+        ? {
+            enabled: PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.stripeEnabled,
+            maintenanceMode:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.stripeMaintenanceMode,
+            allowedCountryIsoCodes:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.stripeAllowedCountries,
+          }
+        : {
+            enabled: PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobEnabled,
+            checkoutFlow:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobCheckoutFlow,
+            defaultMethod:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobDefaultMethod,
+            maintenanceMode:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobMaintenanceMode,
+            allowedCountryIsoCodes:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobAllowedCountries,
+            methodRegistry:
+              PAYMENT_GATEWAY_CONTROL_CONFIG_KEYS.paymobMethodRegistry,
+          };
+
+    return providerKeys[key as keyof typeof providerKeys] as ConfigKey;
+  }
+
+  private async getNextPaymentRevisionNumber(
+    scope: 'provider' | 'routing',
+    provider: PaymentGatewayControlManagedProvider | null,
+  ): Promise<number> {
+    return (
+      (await this.prisma.auditEvent.count({
+        where: {
+          targetEntityType:
+            scope === 'routing'
+              ? PAYMENT_GATEWAY_ROUTING_TARGET_ENTITY_TYPE
+              : PAYMENT_GATEWAY_CONTROL_PROVIDER_TARGET_ENTITY_TYPE,
+          targetEntityId: scope === 'routing' ? null : provider,
+        },
+      })) + 1
+    );
+  }
+
+  private isRoutingSnapshot(
+    snapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+  ): snapshot is PaymentRoutingRuntimeSnapshot {
+    return 'priorityOrder' in snapshot && 'currencyRoutes' in snapshot;
+  }
+
+  private isPaymobSnapshot(
+    snapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+  ): snapshot is PaymobGatewayControlRuntimeSnapshot {
+    return (
+      'provider' in snapshot && snapshot.provider === PaymentProvider.PAYMOB
+    );
+  }
+
+  private isStripeSnapshot(
+    snapshot:
+      | PaymobGatewayControlRuntimeSnapshot
+      | StripeGatewayControlRuntimeSnapshot
+      | PaymentRoutingRuntimeSnapshot,
+  ): snapshot is StripeGatewayControlRuntimeSnapshot {
+    return (
+      'provider' in snapshot && snapshot.provider === PaymentProvider.STRIPE
+    );
   }
 
   private normalizePaymobDraft(
@@ -723,7 +1069,8 @@ export class PaymentGatewayControlService {
       draft,
     );
     const routeCatalog =
-      this.paymentGatewayControlRuntimeService.getRoutingSnapshot().routeCatalog;
+      this.paymentGatewayControlRuntimeService.getRoutingSnapshot()
+        .routeCatalog;
     const currencyRoutes = draft.currencyRoutes.map((route) => ({
       ...route,
       source: 'DATABASE' as const,
@@ -1157,7 +1504,8 @@ export class PaymentGatewayControlService {
     if (
       !user.roles.some(
         (role) =>
-          role.role === UserRoleType.SUPER_ADMIN || role.role === UserRoleType.ADMIN,
+          role.role === UserRoleType.SUPER_ADMIN ||
+          role.role === UserRoleType.ADMIN,
       )
     ) {
       throw new ForbiddenException({

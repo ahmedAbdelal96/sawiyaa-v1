@@ -11,12 +11,14 @@ import { LocaleResolverService } from './locale-resolver.service';
 export class LocaleContextMiddleware implements NestMiddleware {
   constructor(private readonly localeResolverService: LocaleResolverService) {}
 
-  use(
+  async use(
     request: AuthenticatedRequest,
     _response: Response,
     next: NextFunction,
-  ): void {
-    request.locale = this.localeResolverService.resolveLocale(request.headers);
+  ): Promise<void> {
+    request.locale = await this.localeResolverService.resolveLocale(
+      request.headers,
+    );
     next();
   }
 }

@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { FinancialOperationsMapper } from '../mappers/financial-operations.mapper';
 import { FinancialOperationsPractitionerRepository } from '../repositories/financial-operations-practitioner.repository';
 import { PractitionerManualPayoutBalanceService } from '../services/practitioner-manual-payout-balance.service';
@@ -29,12 +29,12 @@ export class GetPractitionerWalletUseCase {
     const wallets = await this.walletRepository.findByPractitionerId(
       practitioner.id,
     );
-    const primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
+    let primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
     if (!primary) {
-      throw new NotFoundException({
-        messageKey: 'financialOperations.errors.practitionerWalletNotFound',
-        error: FINANCIAL_OPS_ERROR_CODES.practitionerWalletNotFound,
-      });
+      primary = await this.walletRepository.ensureActiveWallet(
+        practitioner.id,
+        practitioner.preferredPayoutCurrencyCode,
+      );
     }
     const currencyCode = primary.currencyCode;
     const balance = await this.balanceService.getBalance({

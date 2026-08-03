@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SUPPORTED_LOCALES, SupportedLocale } from '../types/locale.types';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
 
 /**
  * LocaleResolverService decides which locale should be attached to the request.
@@ -10,12 +10,18 @@ import { SUPPORTED_LOCALES, SupportedLocale } from '../types/locale.types';
  * 3. system default locale from config
  */
 @Injectable()
-export class LocaleResolverService {
-  constructor(private readonly configService: ConfigService) {}
+export class LocaleResolverService implements OnModuleInit {
+  private cachedDefaultLocale: SupportedLocale = 'ar';
 
-  resolveLocale(
+  constructor(private readonly configRuntimeService: ConfigRuntimeService) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.refreshDefaultLocale();
+  }
+
+  async resolveLocale(
     headers: Record<string, string | string[] | undefined>,
-  ): SupportedLocale {
+  ): Promise<SupportedLocale> {
     const headerValue = Array.isArray(headers['x-lang'])
       ? headers['x-lang'][0]
       : headers['x-lang'];
@@ -33,16 +39,27 @@ export class LocaleResolverService {
       return acceptLanguageLocale;
     }
 
-    return this.getDefaultLocale();
+    return this.refreshDefaultLocale();
   }
 
   getDefaultLocale(): SupportedLocale {
-    const configuredDefault = this.configService.get<string>(
-      'app.defaultLocale',
-      'ar',
-    );
+    return this.cachedDefaultLocale;
+  }
 
-    return this.normalizeLocale(configuredDefault) ?? 'ar';
+  private async refreshDefaultLocale(): Promise<SupportedLocale> {
+    try {
+      const configuredDefault =
+        await this.configRuntimeService.getRequiredString(
+          'platform.defaultLocale',
+        );
+      this.cachedDefaultLocale =
+        this.normalizeLocale(configuredDefault) ?? 'ar';
+    } catch {
+      // Keep the process usable while the catalog is unavailable during bootstrap.
+      this.cachedDefaultLocale = 'ar';
+    }
+
+    return this.cachedDefaultLocale;
   }
 
   private resolveFromAcceptLanguage(

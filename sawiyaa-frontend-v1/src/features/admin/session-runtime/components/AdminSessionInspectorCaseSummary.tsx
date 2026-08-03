@@ -5,6 +5,7 @@ import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
 import { formatInspectorDateTime } from "../lib/inspector-utils";
 import { OUTCOME_TONE_CLASS, type OutcomeTone } from "../lib/inspector-utils";
 import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
+import { useRuntimeViewerTimeZone } from "../lib/runtime-time";
 
 const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
   PENDING_PAYMENT:
@@ -61,6 +62,7 @@ export default function AdminSessionInspectorCaseSummary({
 }: CaseSummaryProps) {
   const t = useTranslations("admin-session-runtime");
   const locale = useLocale();
+  const viewerTimeZone = useRuntimeViewerTimeZone();
 
   const notAvailable = t("inspector.notAvailable");
   const patientDisplay = patientName?.trim() || notAvailable;
@@ -69,14 +71,7 @@ export default function AdminSessionInspectorCaseSummary({
   const scheduledLabel = formatInspectorDateTime(
     item.scheduledStartAt,
     locale,
-    {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: !locale.startsWith("ar"),
-    },
+    viewerTimeZone,
   );
 
   return (

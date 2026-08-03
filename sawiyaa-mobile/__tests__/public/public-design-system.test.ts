@@ -47,8 +47,8 @@ describe("Public Mobile Design System Validation", () => {
     const contentHero = fs.readFileSync(publicHeroPath, "utf8");
     const contentPractitioner = fs.readFileSync(publicPractitionerPath, "utf8");
 
-    // Header Sign In exact path
-    expect(contentHeader).toContain("/(auth)");
+    // Hero Sign In exact path
+    expect(contentHero).toContain("/(auth)");
 
     // Patient Sign In exact path
     expect(contentGateway).toContain("/(auth)/signin/patient");
@@ -172,7 +172,7 @@ describe("Public Mobile Design System Validation", () => {
   // 11. Guest route guard validations and signOut targets
   it("verifies unauthenticated route guards and logout targets statically", () => {
     const authProviderContent = fs.readFileSync(path.resolve(__dirname, "../../src/providers/AuthProvider.tsx"), "utf8");
-    const headerContent = fs.readFileSync(path.resolve(__dirname, "../../src/features/public/components/PublicHeader.tsx"), "utf8");
+    const heroContent = fs.readFileSync(path.resolve(__dirname, "../../src/features/public/components/PublicHero.tsx"), "utf8");
 
     expect(authProviderContent).toContain("!inAuthGroup && !inOnboardingGroup && !inPublicGroup");
     expect(authProviderContent).toContain('router.replace("/(public)")');
@@ -180,7 +180,7 @@ describe("Public Mobile Design System Validation", () => {
     expect(authProviderContent).toContain("signOut");
     expect(authProviderContent).toContain('router.replace("/(public)")');
 
-    expect(headerContent).toContain('router.push("/(auth)")');
+    expect(heroContent).toContain('router.push("/(auth');
   });
 
   // 12. Public Design, RTL direction helper, and i18n copy rules

@@ -22,7 +22,8 @@ import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import { Drawer, ModalBody, ModalHeader } from "@/components/ui/modal";
 import Pagination from "@/components/tables/Pagination";
 import { cn } from "@/lib/utils";
-import { formatUtcAuditDateTime, formatUtcAuditTime } from "@/lib/time-formatting";
+import { formatEffectiveViewerDateTime, formatEffectiveViewerTime } from "@/lib/time-formatting";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 import {
   buildUpdatedSearchParams,
   parseEnumParam,
@@ -74,14 +75,14 @@ type SessionTabValue =
   | "CANCELLED"
   | "PATIENT_NO_SHOW";
 
-function formatDateTime(value: string | null, locale: string, fallback = "-") {
+function formatDateTime(value: string | null, locale: string, timeZone: string | null | undefined, fallback = "-") {
   if (!value) return fallback;
-  return `UTC: ${formatUtcAuditDateTime(value, { locale })}`;
+  return formatEffectiveViewerDateTime(value, timeZone, { locale });
 }
 
-function formatTimeOnly(value: string | null, locale: string, fallback = "-") {
+function formatTimeOnly(value: string | null, locale: string, timeZone: string | null | undefined, fallback = "-") {
   if (!value) return fallback;
-  return `UTC: ${formatUtcAuditTime(value, { locale })}`;
+  return formatEffectiveViewerTime(value, timeZone, { locale });
 }
 
 function parseBooleanParam(value: string | null): boolean | undefined {
@@ -152,6 +153,8 @@ function getSessionModeDescription(mode: AdminSessionListItem["sessionMode"]) {
 export default function AdminSessionsListScreen() {
   const t = useTranslations("admin-sessions");
   const locale = useLocale();
+  const settingsQuery = useMySettings(true);
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -686,10 +689,10 @@ export default function AdminSessionsListScreen() {
                         <td className="px-4 py-4 sm:px-6">
                           <div className="min-w-[11rem] space-y-1">
                             <p className="text-sm font-semibold text-text-primary">
-                              {formatDateTime(row.scheduledStartAt, locale)}
+                              {formatDateTime(row.scheduledStartAt, locale, viewerTimeZone)}
                             </p>
                             <p className="text-sm text-text-secondary">
-                              {formatTimeOnly(row.scheduledStartAt, locale)}
+                              {formatTimeOnly(row.scheduledStartAt, locale, viewerTimeZone)}
                             </p>
                             <AdminSessionReference sessionId={row.id} sessionCode={row.sessionCode} variant="table" copyable />
                           </div>
@@ -810,7 +813,7 @@ export default function AdminSessionsListScreen() {
           }
           description={
             selectedSession
-              ? `${formatDateTime(selectedSession.scheduledStartAt, locale)} · ${getSafeText(selectedSession.practitioner.displayName, getSafeText(selectedSession.practitioner.slug))}`
+              ? `${formatDateTime(selectedSession.scheduledStartAt, locale, viewerTimeZone)} · ${getSafeText(selectedSession.practitioner.displayName, getSafeText(selectedSession.practitioner.slug))}`
               : undefined
           }
         />
@@ -880,11 +883,11 @@ export default function AdminSessionsListScreen() {
                       {locale === "ar" ? "الموعد" : "Scheduled"}
                     </p>
                     <p className="mt-2 text-sm font-semibold text-text-primary">
-                      {formatDateTime(selectedSession.scheduledStartAt, locale)}
+                      {formatDateTime(selectedSession.scheduledStartAt, locale, viewerTimeZone)}
                     </p>
                     <p className="text-sm text-text-secondary">
                       {selectedSession.scheduledEndAt
-                        ? `${locale === "ar" ? "ينتهي" : "Ends"} ${formatTimeOnly(selectedSession.scheduledEndAt, locale)}`
+                        ? `${locale === "ar" ? "ينتهي" : "Ends"} ${formatTimeOnly(selectedSession.scheduledEndAt, locale, viewerTimeZone)}`
                         : "-"}
                     </p>
                   </div>
@@ -974,7 +977,7 @@ export default function AdminSessionsListScreen() {
                     </p>
                     <p className="text-sm text-text-secondary">
                       {attendanceData?.summary.patientJoinedAt
-                        ? formatDateTime(attendanceData.summary.patientJoinedAt, locale)
+                        ? formatDateTime(attendanceData.summary.patientJoinedAt, locale, viewerTimeZone)
                         : "-"}
                     </p>
                   </div>
@@ -988,7 +991,7 @@ export default function AdminSessionsListScreen() {
                     </p>
                     <p className="text-sm text-text-secondary">
                       {attendanceData?.summary.practitionerJoinedAt
-                        ? formatDateTime(attendanceData.summary.practitionerJoinedAt, locale)
+                        ? formatDateTime(attendanceData.summary.practitionerJoinedAt, locale, viewerTimeZone)
                         : "-"}
                     </p>
                   </div>
@@ -1005,7 +1008,7 @@ export default function AdminSessionsListScreen() {
                           <p className="text-sm font-semibold text-text-primary">
                             {getSafeText(item.attendanceEventType)} · {getSafeText(item.participantRole)}
                           </p>
-                          <p className="text-xs text-text-muted">{formatDateTime(item.occurredAt, locale)}</p>
+                          <p className="text-xs text-text-muted">{formatDateTime(item.occurredAt, locale, viewerTimeZone)}</p>
                         </div>
                         <p className="mt-2 text-sm text-text-secondary">
                           {getSafeText(item.providerEventType)}

@@ -40,6 +40,9 @@ describe('UpdatePractitionerProfileUseCase', () => {
   const getPractitionerProfileUseCase = {
     execute: jest.fn(),
   } as never;
+  const practitionerTimezoneChangeGuardService = {
+    assertCanChange: jest.fn(),
+  } as never;
 
   const useCase = new UpdatePractitionerProfileUseCase(
     prisma,
@@ -54,6 +57,7 @@ describe('UpdatePractitionerProfileUseCase', () => {
     languageRepository,
     practitionerPayoutDestinationValidationService,
     getPractitionerProfileUseCase,
+    practitionerTimezoneChangeGuardService,
   );
 
   const baseProfile = {
@@ -226,6 +230,8 @@ describe('UpdatePractitionerProfileUseCase', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(practitionerProfileRepository.updateByUserId).not.toHaveBeenCalled();
-    expect(practitionerUserRepository.updateProfilePreferences).not.toHaveBeenCalled();
+    expect(
+      practitionerUserRepository.updateProfilePreferences,
+    ).not.toHaveBeenCalled();
   });
 });

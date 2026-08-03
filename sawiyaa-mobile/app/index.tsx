@@ -7,25 +7,21 @@ import { getLanguageHydrationPromise } from "../src/i18n";
 import { isOnboardingCompleted } from "../src/features/onboarding/services/onboarding-preferences";
 import { resolveInitialRoute } from "../src/app-startup/resolve-initial-destination";
 import type { OnboardingPreferenceResult } from "../src/app-startup/resolve-initial-destination";
+import PublicHomeScreen from "./(public)/index";
 
 /**
- * Bootstrap Coordinator
+ * Root Application Index Coordinator
  *
- * This screen coordinates application launch and initial destination routing.
- * It is completely visual-less (renders a blank view matching the native splash background),
- * keeping the native OS splash screen visible until:
- * 1. Authentication state is hydrated.
- * 2. i18n localization state is hydrated.
- * 3. Onboarding completion state is read.
- *
- * Once ready, it determines the initial route, performs a single replacement transition,
- * and guarantees the native splash screen is hidden.
+ * Serves as the sole canonical handler for the root URL `/`.
+ * Coordinates initial bootstrap, hides splash screen, and renders PublicHomeScreen directly
+ * for unauthenticated guests, avoiding duplicate route collisions across Expo Router route groups.
  */
 export default function AppEntry() {
   const router = useRouter();
   const { user, role, isLoading: isAuthLoading } = useAuth();
   const [onboardingState, setOnboardingState] = useState<OnboardingPreferenceResult | null>(null);
   const [isI18nReady, setIsI18nReady] = useState(false);
+  const [showPublicHome, setShowPublicHome] = useState(false);
   const navigationTriggered = useRef(false);
 
   // 1. Wait for i18n language hydration
@@ -36,7 +32,7 @@ export default function AppEntry() {
         if (active) setIsI18nReady(true);
       })
       .catch(() => {
-        if (active) setIsI18nReady(true); // Proceed anyway on hydration error
+        if (active) setIsI18nReady(true);
       });
     return () => {
       active = false;
@@ -56,7 +52,7 @@ export default function AppEntry() {
     };
   }, []);
 
-  // 3. Resolve route when all boot tasks are ready
+  // 3. Resolve route when boot tasks are ready
   const authReady = !isAuthLoading && isI18nReady;
   const initialRouteResult = resolveInitialRoute({
     authReady,
@@ -70,7 +66,6 @@ export default function AppEntry() {
       return;
     }
 
-    // Ensure we trigger navigation and splash hiding exactly once
     if (navigationTriggered.current) {
       return;
     }
@@ -78,18 +73,25 @@ export default function AppEntry() {
 
     const targetRoute = initialRouteResult.route;
 
-    async function navigateAndHideSplash() {
+    async function handleDestination() {
       try {
-        router.replace(targetRoute as any);
+        if (targetRoute === "/(public)") {
+          setShowPublicHome(true);
+        } else {
+          router.replace(targetRoute as any);
+        }
       } finally {
-        // Guarantee that the native splash screen is hidden, even if navigation fails
         await SplashScreen.hideAsync().catch(() => {});
       }
     }
 
-    void navigateAndHideSplash();
+    void handleDestination();
   }, [initialRouteResult, router]);
 
-  // Blank view matching the native splash background color to prevent flashes during routing
+  if (showPublicHome) {
+    return <PublicHomeScreen />;
+  }
+
+  // Blank splash background view while resolving initial state
   return <View style={{ flex: 1, backgroundColor: "#F7F4EE" }} />;
 }

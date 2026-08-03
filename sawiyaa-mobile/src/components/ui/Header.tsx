@@ -351,7 +351,6 @@ export const AppHeader = ({
               { flexDirection: isRTL ? "row-reverse" : "row" },
             ]}
           >
-            {rightElement}
             <View
               style={[
                 styles.brandGroup,
@@ -397,6 +396,7 @@ export const AppHeader = ({
           >
             {quickActions}
             {leftElement}
+            {rightElement}
           </View>
         </View>
       ) : null}
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   titleSide: {
-    width: 52,
+    minWidth: 44,
     justifyContent: "center",
   },
   leadingContainer: {

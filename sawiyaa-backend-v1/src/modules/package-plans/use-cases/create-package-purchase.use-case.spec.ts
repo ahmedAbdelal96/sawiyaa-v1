@@ -270,10 +270,23 @@ describe('CreatePackagePurchaseUseCase', () => {
     );
     expect(sessionRepository.createSession).toHaveBeenCalledTimes(4);
     const createSessionMock = sessionRepository.createSession as jest.Mock;
-    expect(createSessionMock.mock.calls[0][0].paymentCoverageType).toBe(
+    const firstSessionInput = (
+      createSessionMock.mock.calls[0] as unknown as [Record<string, unknown>]
+    )[0];
+    expect(firstSessionInput.paymentCoverageType).toBe(
       SessionPaymentCoverageType.PACKAGE,
     );
-    expect(createSessionMock.mock.calls[0][0].packageSessionIndex).toBe(1);
+    expect(firstSessionInput.packageSessionIndex).toBe(1);
+    expect(firstSessionInput.requestedStartAt).toEqual(
+      new Date('2999-01-01T10:00:00.000Z'),
+    );
+    expect(firstSessionInput.scheduledStartAt).toEqual(
+      new Date('2999-01-01T10:00:00.000Z'),
+    );
+    expect(firstSessionInput.scheduledEndAt).toEqual(
+      new Date('2999-01-01T11:00:00.000Z'),
+    );
+    expect(firstSessionInput.timezoneSnapshot).toBe('Africa/Cairo');
     expect('platformFinalShare' in result.item).toBe(false);
     expect(result.item.linkedSessionsCount).toBe(4);
   });
@@ -419,9 +432,9 @@ describe('CreatePackagePurchaseUseCase', () => {
     setHappyPathMocks();
     (sessionRepository.reserveNextSessionCode as jest.Mock).mockReset();
     (sessionRepository.createSession as jest.Mock).mockReset();
-    (sessionRepository.reserveNextSessionCode as jest.Mock).mockResolvedValueOnce(
-      'SES-2999-000001',
-    );
+    (
+      sessionRepository.reserveNextSessionCode as jest.Mock
+    ).mockResolvedValueOnce('SES-2999-000001');
     (sessionRepository.createSession as jest.Mock).mockRejectedValueOnce({
       code: '23P01',
       message:

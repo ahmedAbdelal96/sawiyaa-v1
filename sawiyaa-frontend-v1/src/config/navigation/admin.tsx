@@ -71,6 +71,13 @@ export const adminNavigation: NavigationConfig = [
         requiredPermissions: [PK.PRACTITIONER_APPLICATIONS_READ],
       },
       {
+        key: "careChat",
+        icon: <NavigationIcons.chat />,
+        path: "/care-chat",
+        namespace: "main",
+        requiredPermissions: [PK.CARE_CHAT_REQUEST_READ_ADMIN],
+      },
+      {
         key: "featuredPractitioners",
         icon: <NavigationIcons.practitioners />,
         path: "/practitioners/featured",
@@ -237,6 +244,13 @@ export const adminNavigation: NavigationConfig = [
         path: "/users",
         namespace: "workspace",
         requiredPermissions: [PK.ADMIN_USERS_READ],
+      },
+      {
+        key: "platformSettings",
+        icon: <NavigationIcons.settings />,
+        path: "/platform-settings",
+        namespace: "settings",
+        requiredPermissions: [PK.CONFIGURATION_VIEW],
       },
     ],
   },

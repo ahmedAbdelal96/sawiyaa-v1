@@ -1,4 +1,5 @@
 import type { AdminSessionInspectorRecommendedOutcome } from "../types/admin-session-runtime.types";
+import { formatRuntimeViewerDateTime } from "./runtime-time";
 
 export type OutcomeTone = "positive" | "warning" | "technical" | "neutral";
 
@@ -36,19 +37,16 @@ export const SOURCE_CONFIDENCE_TONE: Record<"HIGH" | "MEDIUM" | "LOW", string> =
 export function formatInspectorDateTime(
   value: string | null | undefined,
   locale: string,
-  options: Intl.DateTimeFormatOptions = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: !locale.startsWith("ar"),
-  },
+  timeZone?: string,
 ): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", options);
+  return formatRuntimeViewerDateTime(
+    date.toISOString(),
+    locale,
+    timeZone ?? "UTC",
+  );
 }
 
 export function formatDurationSeconds(

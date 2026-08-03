@@ -19,6 +19,7 @@ import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
+import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 import { FormSkeleton } from "@/components/shared/LoadingStates";
 import {
   useCurrentUser,
@@ -32,7 +33,10 @@ import {
   usePatchMySettingsPreferences,
   usePutMySettingsNotificationPreferences,
 } from "../hooks/use-settings";
-import type { MySettingsNotificationPreferenceItem, SettingsLocale } from "../types/settings.types";
+import type {
+  MySettingsNotificationPreferenceItem,
+  SettingsLocale,
+} from "../types/settings.types";
 import {
   ProfileWorkspaceShell,
   ProfileWorkspaceCard,
@@ -62,11 +66,14 @@ type AvatarDraftState = {
 
 function formatDateValue(value: string | null | undefined, locale: string) {
   if (!value) return "-";
-  return new Date(value).toLocaleDateString(locale.startsWith("ar") ? "ar-EG" : "en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString(
+    locale.startsWith("ar") ? "ar-EG" : "en-GB",
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    },
+  );
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -79,23 +86,32 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function normalizePreferenceRows(items: MySettingsNotificationPreferenceItem[]) {
-  return items
-    .slice()
-    .sort((a, b) => {
-      if (a.typeSlug !== b.typeSlug) return a.typeSlug.localeCompare(b.typeSlug);
-      return a.channel.localeCompare(b.channel);
-    });
+function normalizePreferenceRows(
+  items: MySettingsNotificationPreferenceItem[],
+) {
+  return items.slice().sort((a, b) => {
+    if (a.typeSlug !== b.typeSlug) return a.typeSlug.localeCompare(b.typeSlug);
+    return a.channel.localeCompare(b.channel);
+  });
 }
 
-function resolveAdminRoleLabel(role: string | null | undefined, t: any, locale?: string): string {
+function resolveAdminRoleLabel(
+  role: string | null | undefined,
+  t: any,
+  locale?: string,
+): string {
   const isAr = locale?.startsWith("ar");
   const fallbackLabel = isAr ? "مسؤول" : "Admin user";
 
   if (!role) {
     try {
       const trans = t("roles.fallback");
-      if (trans && typeof trans === "string" && !trans.includes("roles.") && !trans.includes("admin-settings.")) {
+      if (
+        trans &&
+        typeof trans === "string" &&
+        !trans.includes("roles.") &&
+        !trans.includes("admin-settings.")
+      ) {
         return trans;
       }
     } catch {
@@ -104,11 +120,21 @@ function resolveAdminRoleLabel(role: string | null | undefined, t: any, locale?:
     return fallbackLabel;
   }
 
-  const knownRoles = ["SUPER_ADMIN", "ADMIN", "SUPPORT_AGENT", "CONTENT_REVIEWER"];
+  const knownRoles = [
+    "SUPER_ADMIN",
+    "ADMIN",
+    "SUPPORT_AGENT",
+    "CONTENT_REVIEWER",
+  ];
   if (knownRoles.includes(role)) {
     try {
       const translated = t(`roles.${role}` as any);
-      if (translated && typeof translated === "string" && !translated.includes("roles.") && !translated.includes("admin-settings.")) {
+      if (
+        translated &&
+        typeof translated === "string" &&
+        !translated.includes("roles.") &&
+        !translated.includes("admin-settings.")
+      ) {
         return translated;
       }
     } catch {
@@ -118,7 +144,12 @@ function resolveAdminRoleLabel(role: string | null | undefined, t: any, locale?:
 
   try {
     const trans = t("roles.fallback");
-    if (trans && typeof trans === "string" && !trans.includes("roles.") && !trans.includes("admin-settings.")) {
+    if (
+      trans &&
+      typeof trans === "string" &&
+      !trans.includes("roles.") &&
+      !trans.includes("admin-settings.")
+    ) {
       return trans;
     }
   } catch {
@@ -146,19 +177,28 @@ export default function AdminProfileWorkspace() {
   const [activeTab, setActiveTab] = useState("account");
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [feedback, setFeedback] = useState<{ tone: "success" | "error"; message: string } | null>(null);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
+    useState(false);
+  const [feedback, setFeedback] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
   const [preferencesForm, setPreferencesForm] = useState<PreferencesFormState>({
     locale: "ar",
     timezone: "Africa/Cairo",
   });
-  const [accountForm, setAccountForm] = useState<AccountFormState>({ displayName: "" });
+  const [accountForm, setAccountForm] = useState<AccountFormState>({
+    displayName: "",
+  });
   const [avatarDraft, setAvatarDraft] = useState<AvatarDraftState | null>(null);
-  const [notificationDraft, setNotificationDraft] = useState<MySettingsNotificationPreferenceItem[]>([]);
+  const [notificationDraft, setNotificationDraft] = useState<
+    MySettingsNotificationPreferenceItem[]
+  >([]);
 
   const currentUser = userQuery.data;
   const settings = settingsQuery.data?.item;
-  const notificationState = notificationQuery.data?.item ?? settings?.notificationPreferences;
+  const notificationState =
+    notificationQuery.data?.item ?? settings?.notificationPreferences;
   const notificationRows = useMemo(
     () => normalizePreferenceRows(notificationState?.items ?? []),
     [notificationState?.items],
@@ -169,7 +209,10 @@ export default function AdminProfileWorkspace() {
     return resolveAdminRoleLabel(role, t, locale);
   }, [user?.role, currentUser?.roles?.roles, t, locale]);
 
-  const canRender = !userQuery.isLoading && !settingsQuery.isLoading && !notificationQuery.isLoading;
+  const canRender =
+    !userQuery.isLoading &&
+    !settingsQuery.isLoading &&
+    !notificationQuery.isLoading;
 
   const openAccountModal = () => {
     if (!currentUser) return;
@@ -228,12 +271,18 @@ export default function AdminProfileWorkspace() {
       {
         onSuccess: () => {
           setIsPreferencesModalOpen(false);
-          setFeedback({ tone: "success", message: t("feedback.preferencesSaved") });
+          setFeedback({
+            tone: "success",
+            message: t("feedback.preferencesSaved"),
+          });
         },
         onError: (error) => {
           setFeedback({
             tone: "error",
-            message: getErrorMessage(error, t("feedback.preferencesSaveFailed")),
+            message: getErrorMessage(
+              error,
+              t("feedback.preferencesSaveFailed"),
+            ),
           });
         },
       },
@@ -262,12 +311,18 @@ export default function AdminProfileWorkspace() {
       {
         onSuccess: () => {
           setIsNotificationsModalOpen(false);
-          setFeedback({ tone: "success", message: t("feedback.notificationsSaved") });
+          setFeedback({
+            tone: "success",
+            message: t("feedback.notificationsSaved"),
+          });
         },
         onError: (error) => {
           setFeedback({
             tone: "error",
-            message: getErrorMessage(error, t("feedback.notificationsSaveFailed")),
+            message: getErrorMessage(
+              error,
+              t("feedback.notificationsSaveFailed"),
+            ),
           });
         },
       },
@@ -320,7 +375,10 @@ export default function AdminProfileWorkspace() {
         setFeedback({ tone: "success", message: t("feedback.avatarUpdated") });
       },
       onError: (error) =>
-        setFeedback({ tone: "error", message: getErrorMessage(error, t("feedback.avatarUpdateFailed")) }),
+        setFeedback({
+          tone: "error",
+          message: getErrorMessage(error, t("feedback.avatarUpdateFailed")),
+        }),
     });
   };
 
@@ -334,13 +392,15 @@ export default function AdminProfileWorkspace() {
   const handleRemoveAvatar = () => {
     setFeedback(null);
     removeAvatar.mutate(undefined, {
-      onSuccess: () => setFeedback({ tone: "success", message: t("feedback.avatarRemoved") }),
+      onSuccess: () =>
+        setFeedback({ tone: "success", message: t("feedback.avatarRemoved") }),
       onError: (error) =>
-        setFeedback({ tone: "error", message: getErrorMessage(error, t("feedback.avatarRemoveFailed")) }),
+        setFeedback({
+          tone: "error",
+          message: getErrorMessage(error, t("feedback.avatarRemoveFailed")),
+        }),
     });
   };
-
-
 
   if (!canRender) {
     return (
@@ -353,14 +413,17 @@ export default function AdminProfileWorkspace() {
   if (!currentUser || !settings || !notificationState) {
     return (
       <ProfileWorkspaceCard className="p-6">
-        <h1 className="text-2xl font-semibold text-text-primary sm:text-3xl">{t("page.title")}</h1>
-        <p className="mt-3 text-sm text-error-600">{t("errors.loadFailed")}</p>
+        <h1 className="text-text-primary text-2xl font-semibold sm:text-3xl">
+          {t("page.title")}
+        </h1>
+        <p className="text-error-600 mt-3 text-sm">{t("errors.loadFailed")}</p>
       </ProfileWorkspaceCard>
     );
   }
 
   const displayName = currentUser.displayName ?? "-";
-  const avatarSrc = avatarDraft?.previewUrl ?? currentUser.avatarDataUrl ?? null;
+  const avatarSrc =
+    avatarDraft?.previewUrl ?? currentUser.avatarDataUrl ?? null;
   const hasAvatarDraft = Boolean(avatarDraft);
   const hasExistingAvatar = Boolean(currentUser.avatarDataUrl);
   const primaryEmail =
@@ -388,11 +451,19 @@ export default function AdminProfileWorkspace() {
 
       <ProfileWorkspaceCard>
         {/* Tabs Row */}
-        <div className="px-5 pt-2 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01]">
+        <div className="border-b border-slate-100 bg-slate-50/30 px-5 pt-2 dark:border-white/5 dark:bg-white/[0.01]">
           <ProfileTabs
             tabs={[
-              { id: "account", label: t("tabs.account"), icon: <User className="h-4 w-4" /> },
-              { id: "notifications", label: t("tabs.notifications"), icon: <Bell className="h-4 w-4" /> },
+              {
+                id: "account",
+                label: t("tabs.account"),
+                icon: <User className="h-4 w-4" />,
+              },
+              {
+                id: "notifications",
+                label: t("tabs.notifications"),
+                icon: <Bell className="h-4 w-4" />,
+              },
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}
@@ -401,21 +472,21 @@ export default function AdminProfileWorkspace() {
         </div>
 
         {/* Content Area: Grid */}
-        <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
+        <div className="grid grid-cols-1 items-start gap-5 p-5 lg:grid-cols-[280px_1fr]">
           {/* Summary Card */}
           <aside className="space-y-4">
             <ProfileSummaryCard>
-              <div className="relative group">
+              <div className="group relative">
                 <Avatar
                   src={avatarSrc}
                   name={displayName}
                   size="custom"
-                  className="h-24 w-24 border-2 border-primary/20 bg-surface-secondary"
+                  className="border-primary/20 bg-surface-secondary h-24 w-24 border-2"
                 />
                 <button
                   type="button"
                   onClick={handleChooseAvatar}
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   title={t("actions.changePhoto")}
                 >
                   <User className="h-5 w-5" />
@@ -433,30 +504,45 @@ export default function AdminProfileWorkspace() {
                 }}
               />
 
-              <h2 className="mt-3 text-lg font-bold text-text-primary dark:text-white/95 leading-tight">
+              <h2 className="text-text-primary mt-3 text-lg leading-tight font-bold dark:text-white/95">
                 {displayName}
               </h2>
-              <p className="mt-1 text-xs text-text-secondary dark:text-white/60 truncate max-w-[240px]">
+              <p className="text-text-secondary mt-1 max-w-[240px] truncate text-xs dark:text-white/60">
                 {primaryEmail}
               </p>
 
               <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-                <span className="rounded-full bg-success-50 px-2 py-0.5 font-semibold text-[10px] text-success-700 dark:bg-success-500/10 dark:text-success-300">
-                  {t(`accountStatus.${currentUser.accountStatus}` as Parameters<typeof t>[0])}
+                <span className="bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-300 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                  {t(
+                    `accountStatus.${currentUser.accountStatus}` as Parameters<
+                      typeof t
+                    >[0],
+                  )}
                 </span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-[10px] text-text-secondary dark:bg-white/5 truncate max-w-[200px]">
+                <span className="text-text-secondary max-w-[200px] truncate rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold dark:bg-white/5">
                   {roleLabel}
                 </span>
               </div>
 
               {(hasAvatarDraft || hasExistingAvatar) && (
-                <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-2">
+                <div className="mt-3.5 w-full space-y-2 border-t border-slate-100 pt-3.5 dark:border-white/5">
                   {hasAvatarDraft ? (
-                    <div className="flex flex-col gap-1.5 w-full">
-                      <Button size="sm" onClick={handleSaveAvatar} disabled={uploadAvatar.isPending} className="w-full">
+                    <div className="flex w-full flex-col gap-1.5">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveAvatar}
+                        disabled={uploadAvatar.isPending}
+                        className="w-full"
+                      >
                         {t("actions.savePhoto")}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleCancelAvatarDraft} disabled={uploadAvatar.isPending} className="w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelAvatarDraft}
+                        disabled={uploadAvatar.isPending}
+                        className="w-full"
+                      >
                         {t("actions.cancel")}
                       </Button>
                     </div>
@@ -485,7 +571,12 @@ export default function AdminProfileWorkspace() {
                 <ProfileInfoSection
                   title={t("sections.account.title")}
                   action={
-                    <Button variant="outline" size="sm" onClick={openAccountModal} startIcon={<PencilLine className="h-4 w-4" />}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openAccountModal}
+                      startIcon={<PencilLine className="h-4 w-4" />}
+                    >
                       {t("actions.edit")}
                     </Button>
                   }
@@ -515,7 +606,10 @@ export default function AdminProfileWorkspace() {
                 </ProfileInfoSection>
 
                 {/* Section 2: Role */}
-                <ProfileInfoSection title={locale === "ar" ? "الدور" : "Role"} icon={<ShieldCheck className="h-5 w-5" />}>
+                <ProfileInfoSection
+                  title={locale === "ar" ? "الدور" : "Role"}
+                  icon={<ShieldCheck className="h-5 w-5" />}
+                >
                   <ProfileInfoGrid columns={2}>
                     <ProfileInfoRow
                       label={locale === "ar" ? "الدور" : "Role"}
@@ -524,7 +618,11 @@ export default function AdminProfileWorkspace() {
                     />
                     <ProfileInfoRow
                       label={locale === "ar" ? "حالة الحساب" : "Account Status"}
-                      value={t(`accountStatus.${currentUser.accountStatus}` as Parameters<typeof t>[0])}
+                      value={t(
+                        `accountStatus.${currentUser.accountStatus}` as Parameters<
+                          typeof t
+                        >[0],
+                      )}
                       icon={<ShieldCheck className="h-4 w-4" />}
                     />
                   </ProfileInfoGrid>
@@ -547,7 +645,11 @@ export default function AdminProfileWorkspace() {
                   <ProfileInfoGrid columns={2}>
                     <ProfileInfoRow
                       label={t("sections.preferences.fields.locale")}
-                      value={t(`locales.${settings.preferences.locale ?? "ar"}` as Parameters<typeof t>[0])}
+                      value={t(
+                        `locales.${settings.preferences.locale ?? "ar"}` as Parameters<
+                          typeof t
+                        >[0],
+                      )}
                       icon={<Globe2 className="h-4 w-4" />}
                     />
                     <ProfileInfoRow
@@ -579,20 +681,30 @@ export default function AdminProfileWorkspace() {
                   {notificationRows.map((item) => (
                     <div
                       key={`${item.typeSlug}:${item.channel}`}
-                      className="flex items-center justify-between rounded-2xl border border-border-light bg-slate-50/30 px-4 py-3 dark:border-white/5"
+                      className="border-border-light flex items-center justify-between rounded-2xl border bg-slate-50/30 px-4 py-3 dark:border-white/5"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-text-primary">{item.typeSlug}</p>
-                        <p className="text-xs text-text-secondary mt-0.5">
-                          {t(`channels.${item.channel}` as Parameters<typeof t>[0])}
+                        <p className="text-text-primary text-sm font-semibold">
+                          {item.typeSlug}
+                        </p>
+                        <p className="text-text-secondary mt-0.5 text-xs">
+                          {t(
+                            `channels.${item.channel}` as Parameters<
+                              typeof t
+                            >[0],
+                          )}
                         </p>
                       </div>
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          item.enabled ? "bg-success-50 text-success-700" : "bg-surface-tertiary text-text-secondary"
+                          item.enabled
+                            ? "bg-success-50 text-success-700"
+                            : "bg-surface-tertiary text-text-secondary"
                         }`}
                       >
-                        {item.enabled ? t("states.enabled") : t("states.disabled")}
+                        {item.enabled
+                          ? t("states.enabled")
+                          : t("states.disabled")}
                       </span>
                     </div>
                   ))}
@@ -618,19 +730,27 @@ export default function AdminProfileWorkspace() {
       >
         <div className="space-y-4">
           <div>
-            <Label htmlFor="admin-displayName">{t("sections.account.fields.displayName")}</Label>
+            <Label htmlFor="admin-displayName">
+              {t("sections.account.fields.displayName")}
+            </Label>
             <Input
               id="admin-displayName"
               value={accountForm.displayName}
-              onChange={(event) => setAccountForm({ displayName: event.target.value })}
+              onChange={(event) =>
+                setAccountForm({ displayName: event.target.value })
+              }
               placeholder={t("sections.account.fields.displayName")}
               className="mt-2"
             />
           </div>
 
-          <div className="rounded-2xl border border-border-light bg-white px-4 py-3 dark:border-white/5 dark:bg-surface-secondary">
-            <p className="text-xs font-semibold text-text-secondary">{t("sections.account.fields.email")}</p>
-            <p className="mt-1 text-sm font-semibold text-text-primary">{primaryEmail}</p>
+          <div className="border-border-light dark:bg-surface-secondary rounded-2xl border bg-white px-4 py-3 dark:border-white/5">
+            <p className="text-text-secondary text-xs font-semibold">
+              {t("sections.account.fields.email")}
+            </p>
+            <p className="text-text-primary mt-1 text-sm font-semibold">
+              {primaryEmail}
+            </p>
           </div>
         </div>
       </FormModal>
@@ -650,7 +770,9 @@ export default function AdminProfileWorkspace() {
       >
         <div className="space-y-4">
           <div>
-            <Label htmlFor="settings-locale">{t("sections.preferences.fields.locale")}</Label>
+            <Label htmlFor="settings-locale">
+              {t("sections.preferences.fields.locale")}
+            </Label>
             <select
               id="settings-locale"
               value={preferencesForm.locale}
@@ -660,7 +782,7 @@ export default function AdminProfileWorkspace() {
                   locale: event.target.value as SettingsLocale,
                 }))
               }
-              className="app-control mt-2 h-11 w-full px-4 py-2.5 text-sm bg-white dark:bg-surface-secondary text-text-primary border border-border-light"
+              className="app-control dark:bg-surface-secondary text-text-primary border-border-light mt-2 h-11 w-full border bg-white px-4 py-2.5 text-sm"
             >
               <option value="ar">{t("locales.ar")}</option>
               <option value="en">{t("locales.en")}</option>
@@ -668,18 +790,16 @@ export default function AdminProfileWorkspace() {
           </div>
 
           <div>
-            <Label htmlFor="settings-timezone">{t("sections.preferences.fields.timezone")}</Label>
-            <Input
+            <Label htmlFor="settings-timezone">
+              {t("sections.preferences.fields.timezone")}
+            </Label>
+            <TimeZonePicker
               id="settings-timezone"
               value={preferencesForm.timezone}
-              onChange={(event) =>
-                setPreferencesForm((current) => ({
-                  ...current,
-                  timezone: event.target.value,
-                }))
+              onChange={(timezone) =>
+                setPreferencesForm((current) => ({ ...current, timezone }))
               }
               placeholder={t("modals.preferences.timezonePlaceholder")}
-              className="mt-2"
             />
           </div>
         </div>
@@ -702,18 +822,20 @@ export default function AdminProfileWorkspace() {
           {notificationDraft.map((item, index) => (
             <label
               key={`${item.typeSlug}:${item.channel}`}
-              className="flex cursor-pointer items-center justify-between rounded-2xl border border-border-light bg-white px-4 py-3 dark:border-white/5 dark:bg-surface-secondary"
+              className="border-border-light dark:bg-surface-secondary flex cursor-pointer items-center justify-between rounded-2xl border bg-white px-4 py-3 dark:border-white/5"
             >
               <div>
-                <p className="text-sm font-semibold text-text-primary">{item.typeSlug}</p>
-                <p className="text-xs text-text-secondary mt-0.5">
+                <p className="text-text-primary text-sm font-semibold">
+                  {item.typeSlug}
+                </p>
+                <p className="text-text-secondary mt-0.5 text-xs">
                   {t(`channels.${item.channel}` as Parameters<typeof t>[0])}
                 </p>
               </div>
-              <span className="flex items-center gap-2 text-sm text-text-primary">
+              <span className="text-text-primary flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 accent-primary"
+                  className="accent-primary h-4 w-4"
                   checked={item.enabled}
                   onChange={() => handleToggleNotification(index)}
                 />
@@ -724,8 +846,12 @@ export default function AdminProfileWorkspace() {
         </div>
       </FormModal>
 
-      {(patchAccount.isPending || patchPreferences.isPending || putNotifications.isPending || uploadAvatar.isPending || removeAvatar.isPending) && (
-        <div className="pointer-events-none fixed bottom-6 end-6 z-20 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-theme-lg">
+      {(patchAccount.isPending ||
+        patchPreferences.isPending ||
+        putNotifications.isPending ||
+        uploadAvatar.isPending ||
+        removeAvatar.isPending) && (
+        <div className="bg-primary shadow-theme-lg pointer-events-none fixed end-6 bottom-6 z-20 rounded-full px-4 py-2 text-sm font-semibold text-white">
           <span className="inline-flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t("feedback.saving")}

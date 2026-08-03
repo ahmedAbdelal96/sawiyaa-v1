@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   SessionEventType,
@@ -58,6 +62,10 @@ export class CreateScheduledSessionUseCase {
     durationMinutes: 30 | 60;
     sessionMode: SessionMode;
   }) {
+    this.validateSessionBookingRequestService.assertScheduledStartHasExplicitTimezone(
+      input.scheduledStartAt,
+    );
+
     const patient = await this.sessionPatientRepository.findByUserId(
       input.userId,
     );

@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
 import { useTheme } from '../../providers/ThemeProvider';
-import { getAppDirection } from '../../i18n/direction';
+import { useAppDirection } from '../../i18n/direction';
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -37,13 +37,13 @@ export const Input = ({
   placeholderDirection,
   ...props
 }: InputProps) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { i18n } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
-  const direction = getAppDirection(i18n.language);
-  const isRTL = direction === 'rtl';
-  const resolvedLabelDir = labelDirection ?? (isRTL ? "right" : "left");
-  const resolvedPlaceholderDir = placeholderDirection ?? (isRTL ? "right" : "left");
+  const { isRTL, textAlign, writingDirection, rowDirection } = useAppDirection();
+
+  const resolvedLabelDir = labelDirection ?? textAlign;
+  const resolvedPlaceholderDir = placeholderDirection ?? textAlign;
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
@@ -55,24 +55,26 @@ export const Input = ({
     onBlur?.(e);
   };
 
+  // High contrast input borders and background colors
   const borderColor = error
-    ? '#ef4444' // Error red
+    ? '#DC2626' // Crisp Error Red
     : isFocused
-    ? theme.colors.primary
-    : theme.colors.borderStrong;
+    ? theme.colors.primary // Brand Teal Active Border
+    : isDark
+    ? '#2D3A37'
+    : '#CBD5D1'; // Clean Crisp Soft Border
 
-  const bgColor = theme.colors.surface;
+  const bgColor = isDark ? '#1A2422' : '#FFFFFF'; // Crisp Pure White in Light Mode
 
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
         <Text
-          weight="500"
+          weight="600"
           style={[
             styles.label,
-            { textAlign: resolvedLabelDir, writingDirection: direction },
+            { textAlign: resolvedLabelDir, writingDirection, color: isDark ? '#E0ECE8' : '#053F38' },
           ]}
-          color={theme.colors.textSecondary}
         >
           {label}
         </Text>
@@ -83,35 +85,36 @@ export const Input = ({
           {
             borderColor,
             backgroundColor: bgColor,
-            flexDirection: isRTL ? 'row-reverse' : 'row',
+            flexDirection: rowDirection,
           },
+          isFocused ? styles.focusedShadow : null,
         ]}
       >
-        {leftElement && <View style={styles.leftElement}>{leftElement}</View>}
+        {leftElement && <View style={styles.elementSlot}>{leftElement}</View>}
         <TextInput
           style={[
-          styles.input,
-          {
-              color: theme.colors.textPrimary,
+            styles.input,
+            {
+              color: isDark ? '#F5FBF9' : '#053F38',
               textAlign: resolvedPlaceholderDir,
-              writingDirection: direction,
+              writingDirection,
             },
             style,
           ]}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={isDark ? '#7E918B' : '#71857F'}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
         />
-        {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
+        {rightElement && <View style={styles.elementSlot}>{rightElement}</View>}
       </View>
       {error ? (
         <Text
           style={[
             styles.errorText,
-            { textAlign: resolvedLabelDir, writingDirection: direction },
+            { textAlign: resolvedLabelDir, writingDirection },
           ]}
-          color="#ef4444"
+          color="#DC2626"
         >
           {error}
         </Text>
@@ -119,9 +122,9 @@ export const Input = ({
         <Text
           style={[
             styles.helperText,
-            { textAlign: resolvedLabelDir, writingDirection: direction },
+            { textAlign: resolvedLabelDir, writingDirection },
           ]}
-          color={theme.colors.textMuted}
+          color={isDark ? '#9EB2AB' : '#5C6E68'}
         >
           {helperText}
         </Text>
@@ -132,44 +135,50 @@ export const Input = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
     minWidth: 0,
   },
   label: {
-    fontSize: 14,
-    marginBottom: 8,
+    fontSize: 13.5,
+    marginBottom: 6,
+    letterSpacing: -0.1,
   },
   inputContainer: {
-    borderWidth: 1,
-    borderRadius: 12,
-    minHeight: 60,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    minHeight: 48,
     alignItems: 'center',
     overflow: 'hidden',
   },
+  focusedShadow: {
+    shadowColor: 'rgba(5, 63, 56, 0.15)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
+  },
   input: {
     flex: 1,
-    minHeight: 60,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    paddingVertical: 16,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    fontSize: 14.5,
+    paddingVertical: 10,
   },
-  leftElement: {
-    paddingHorizontal: 16,
+  elementSlot: {
+    paddingHorizontal: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  rightElement: {
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    minHeight: 48,
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
+    fontWeight: '600',
   },
   helperText: {
     fontSize: 12,
     marginTop: 4,
+    lineHeight: 17,
   },
 });

@@ -15,6 +15,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { useSessionRole } from "@/lib/auth/use-session-role";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
 import { listAdminSessions } from "@/features/admin/sessions/api/admin-sessions.api";
 import { adminSessionsQueryKeys } from "@/features/admin/sessions/constants/query-keys";
@@ -35,6 +36,10 @@ import { AdminDashboardChartCard } from "./dashboard/AdminDashboardChartCard";
 import { AdminDashboardKpiCard } from "./dashboard/AdminDashboardKpiCard";
 import { AdminDashboardQueueCard } from "./dashboard/AdminDashboardQueueCard";
 import { AdminDashboardFocusCard } from "./dashboard/AdminDashboardFocusCard";
+import {
+  formatEffectiveViewerDate,
+  formatEffectiveViewerDateTime,
+} from "@/lib/time-formatting";
 
 type LocaleCopy = {
   hero: {
@@ -119,11 +124,17 @@ const PRACTITIONER_TYPE: Record<string, { en: string; ar: string }> = {
   PSYCHOLOGIST: { en: "Psychologist", ar: "أخصائي نفسي" },
   PSYCHIATRIST: { en: "Psychiatrist", ar: "طبيب نفسي" },
   NUTRITIONIST: { en: "Nutritionist", ar: "أخصائي تغذية" },
-  WEIGHT_LOSS_SPECIALIST: { en: "Weight loss specialist", ar: "أخصائي إنقاص الوزن" },
+  WEIGHT_LOSS_SPECIALIST: {
+    en: "Weight loss specialist",
+    ar: "أخصائي إنقاص الوزن",
+  },
   COUNSELOR: { en: "Counselor", ar: "مرشد" },
 };
 
-const PRACTITIONER_APPLICATION_STATUS: Record<string, { en: string; ar: string }> = {
+const PRACTITIONER_APPLICATION_STATUS: Record<
+  string,
+  { en: string; ar: string }
+> = {
   DRAFT: { en: "Draft", ar: "مسودة" },
   SUBMITTED: { en: "Submitted", ar: "مُرسل" },
   UNDER_REVIEW: { en: "Under review", ar: "قيد المراجعة" },
@@ -167,7 +178,8 @@ const COPY: Record<"en" | "ar", LocaleCopy> = {
   en: {
     hero: {
       title: "Admin Dashboard",
-      subtitle: "Quick overview of sessions, support, applications, and payments.",
+      subtitle:
+        "Quick overview of sessions, support, applications, and payments.",
       today: "Today",
     },
     common: {
@@ -274,22 +286,25 @@ function formatNumber(locale: string, value: number) {
   return new Intl.NumberFormat(normalizeLocale(locale)).format(value);
 }
 
-function formatDateLabel(locale: string, iso: string | null) {
+function formatDateLabel(
+  locale: string,
+  iso: string | null,
+  timeZone?: string | null,
+) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString(normalizeLocale(locale), {
-    month: "short",
-    day: "numeric",
+  return formatEffectiveViewerDate(iso, timeZone, {
+    locale,
+    dateStyle: "medium",
   });
 }
 
-function formatDateTimeLabel(locale: string, iso: string | null) {
+function formatDateTimeLabel(
+  locale: string,
+  iso: string | null,
+  timeZone?: string | null,
+) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString(normalizeLocale(locale), {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatEffectiveViewerDateTime(iso, timeZone, { locale });
 }
 
 function buildLocalizedPath(locale: string, path: string) {
@@ -300,7 +315,10 @@ function buildLocalizedPath(locale: string, path: string) {
 function formatActivityType(slug: string, locale: string): string {
   const isAr = locale === "ar";
   if (!slug) return isAr ? "نشاط جديد" : "New activity";
-  const normalized = slug.trim().toLowerCase().replace(/[\s.-]+/g, " ");
+  const normalized = slug
+    .trim()
+    .toLowerCase()
+    .replace(/[\s.-]+/g, " ");
   const EVENT_SLUG_MAP: Record<string, { en: string; ar: string }> = {
     "sessions session join available": {
       en: "Session is ready to join",
@@ -372,6 +390,8 @@ function safeDeltaText(
 
 export default function AdminDashboard() {
   const locale = useLocale();
+  const settingsQuery = useMySettings();
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const isArabic = locale === "ar";
   const copy = COPY[isArabic ? "ar" : "en"];
   const role = useSessionRole();
@@ -380,13 +400,19 @@ export default function AdminDashboard() {
   const permissionSet = new Set(permissionData?.permissions ?? []);
   const hasPermission = (permission: string) => permissionSet.has(permission);
   const canReadSessions = hasPermission(PermissionKey.SESSIONS_READ_ADMIN);
-  const canReadSupport = hasPermission(PermissionKey.SUPPORT_TICKET_ASSIGN) || hasPermission(PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL);
+  const canReadSupport =
+    hasPermission(PermissionKey.SUPPORT_TICKET_ASSIGN) ||
+    hasPermission(PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL);
   const canReadCareChat =
     hasPermission(PermissionKey.CARE_CHAT_REQUEST_READ_ADMIN) ||
     hasPermission(PermissionKey.CARE_CHAT_CONVERSATION_READ_ADMIN) ||
     hasPermission(PermissionKey.CARE_CHAT_REQUEST_DECIDE);
-  const canReadApplications = hasPermission(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
-  const canReadNotifications = hasPermission(PermissionKey.NOTIFICATION_OPS_READ);
+  const canReadApplications = hasPermission(
+    PermissionKey.PRACTITIONER_APPLICATIONS_READ,
+  );
+  const canReadNotifications = hasPermission(
+    PermissionKey.NOTIFICATION_OPS_READ,
+  );
   const canReadModerationReports =
     role === "ADMIN" ||
     role === "SUPER_ADMIN" ||
@@ -400,42 +426,60 @@ export default function AdminDashboard() {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayRange = toIsoRange(yesterday);
 
-  const sessionsTodayQuery = useAdminSessions({
-    page: 1,
-    limit: 1,
-    scheduledFrom: today.start,
-    scheduledTo: today.end,
-  }, { enabled: canReadSessions });
-  const sessionsYesterdayQuery = useAdminSessions({
-    page: 1,
-    limit: 1,
-    scheduledFrom: yesterdayRange.start,
-    scheduledTo: yesterdayRange.end,
-  }, { enabled: canReadSessions });
+  const sessionsTodayQuery = useAdminSessions(
+    {
+      page: 1,
+      limit: 1,
+      scheduledFrom: today.start,
+      scheduledTo: today.end,
+    },
+    { enabled: canReadSessions },
+  );
+  const sessionsYesterdayQuery = useAdminSessions(
+    {
+      page: 1,
+      limit: 1,
+      scheduledFrom: yesterdayRange.start,
+      scheduledTo: yesterdayRange.end,
+    },
+    { enabled: canReadSessions },
+  );
 
-  const supportQuery = useAdminSupportTickets({
-    page: 1,
-    limit: 5,
-    status: "OPEN",
-  }, { enabled: canReadSupport });
-  const careQuery = useAdminCareChatRequests({
-    page: 1,
-    limit: 5,
-    status: "PENDING",
-  }, { enabled: canReadCareChat });
+  const supportQuery = useAdminSupportTickets(
+    {
+      page: 1,
+      limit: 5,
+      status: "OPEN",
+    },
+    { enabled: canReadSupport },
+  );
+  const careQuery = useAdminCareChatRequests(
+    {
+      page: 1,
+      limit: 5,
+      status: "PENDING",
+    },
+    { enabled: canReadCareChat },
+  );
   const applicationsQuery = useAdminPractitionerApplications(
     { page: 1, limit: 5, status: "SUBMITTED" },
     canReadApplications,
   );
-  const moderationQuery = useAdminModerationReports({
-    page: 1,
-    limit: 5,
-    status: "OPEN",
-  }, { enabled: canReadModerationReports });
-  const notificationsQuery = useAdminNotifications({
-    page: 1,
-    limit: 6,
-  }, { enabled: canReadNotifications });
+  const moderationQuery = useAdminModerationReports(
+    {
+      page: 1,
+      limit: 5,
+      status: "OPEN",
+    },
+    { enabled: canReadModerationReports },
+  );
+  const notificationsQuery = useAdminNotifications(
+    {
+      page: 1,
+      limit: 6,
+    },
+    { enabled: canReadNotifications },
+  );
 
   const trendDates = Array.from({ length: 14 }, (_, index) => {
     const date = new Date(now);
@@ -454,7 +498,10 @@ export default function AdminDashboard() {
             scheduledTo: range.end,
           } as const;
           return {
-            queryKey: [...adminSessionsQueryKeys.list(params), "trend"] as const,
+            queryKey: [
+              ...adminSessionsQueryKeys.list(params),
+              "trend",
+            ] as const,
             queryFn: () => listAdminSessions(params),
             staleTime: 30_000,
           };
@@ -463,7 +510,8 @@ export default function AdminDashboard() {
   });
 
   const sessionsToday = sessionsTodayQuery.data?.pagination.totalItems ?? 0;
-  const sessionsYesterday = sessionsYesterdayQuery.data?.pagination.totalItems ?? 0;
+  const sessionsYesterday =
+    sessionsYesterdayQuery.data?.pagination.totalItems ?? 0;
 
   const supportTotal = supportQuery.data?.pagination.totalItems ?? 0;
   const careTotal = careQuery.data?.pagination.totalItems ?? 0;
@@ -478,17 +526,31 @@ export default function AdminDashboard() {
         : ("neutral" as const);
 
   const sessionsTrendLabels = trendDates.map((date) =>
-    date.toLocaleDateString(normalizeLocale(locale), { month: "numeric", day: "numeric" }),
+    formatEffectiveViewerDate(date, viewerTimeZone, {
+      locale,
+      dateStyle: "short",
+    }),
   );
-  const sessionsTrendSeries = sessionsTrendQueries.map((q) => q.data?.pagination.totalItems ?? 0);
-  const sessionsMovingAverageSeries = sessionsTrendSeries.map((_, index, all) => {
-    const startIndex = Math.max(0, index - 2);
-    const window = all.slice(startIndex, index + 1);
-    return Number((window.reduce((s, v) => s + v, 0) / window.length).toFixed(2));
-  });
+  const sessionsTrendSeries = sessionsTrendQueries.map(
+    (q) => q.data?.pagination.totalItems ?? 0,
+  );
+  const sessionsMovingAverageSeries = sessionsTrendSeries.map(
+    (_, index, all) => {
+      const startIndex = Math.max(0, index - 2);
+      const window = all.slice(startIndex, index + 1);
+      return Number(
+        (window.reduce((s, v) => s + v, 0) / window.length).toFixed(2),
+      );
+    },
+  );
   const sessionsTrendLoading = sessionsTrendQueries.some((q) => q.isLoading);
 
-  const workloadSeries = [supportTotal, careTotal, applicationsTotal, moderationTotal];
+  const workloadSeries = [
+    supportTotal,
+    careTotal,
+    applicationsTotal,
+    moderationTotal,
+  ];
   const hasWorkloadData = workloadSeries.some((v) => v > 0);
 
   // Support items — translated enums in subtitles and badges
@@ -496,7 +558,7 @@ export default function AdminDashboard() {
     ? (supportQuery.data?.items ?? []).map((ticket) => ({
         id: ticket.id,
         title: ticket.subject,
-        subtitle: `${tEnum(SUPPORT_CATEGORY, ticket.category, locale)} · ${formatDateLabel(locale, ticket.createdAt)}`,
+        subtitle: `${tEnum(SUPPORT_CATEGORY, ticket.category, locale)} · ${formatDateLabel(locale, ticket.createdAt, viewerTimeZone)}`,
         href: `/admin/messages?lane=support&id=${ticket.id}`,
         badge: (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
@@ -511,11 +573,15 @@ export default function AdminDashboard() {
     ? (applicationsQuery.data?.applications ?? []).map((app) => ({
         id: app.applicationId,
         title: app.displayName ?? copy.common.unknown,
-        subtitle: `${tEnum(PRACTITIONER_TYPE, app.practitionerType, locale)} · ${formatDateLabel(locale, app.submittedAt)}`,
+        subtitle: `${tEnum(PRACTITIONER_TYPE, app.practitionerType, locale)} · ${formatDateLabel(locale, app.submittedAt, viewerTimeZone)}`,
         href: `/admin/practitioner-applications/${app.applicationId}`,
         badge: (
-          <span className="rounded-full bg-primary-light px-2 py-0.5 text-[11px] font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
-            {tEnum(PRACTITIONER_APPLICATION_STATUS, app.applicationStatus, locale)}
+          <span className="bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light rounded-full px-2 py-0.5 text-[11px] font-semibold">
+            {tEnum(
+              PRACTITIONER_APPLICATION_STATUS,
+              app.applicationStatus,
+              locale,
+            )}
           </span>
         ),
       }))
@@ -526,7 +592,7 @@ export default function AdminDashboard() {
     ? (notificationsQuery.data?.items ?? []).map((item) => ({
         id: item.id,
         title: formatActivityType(item.typeSlug, locale),
-        subtitle: `${formatActivityCategory(item.category, locale)} · ${formatDateTimeLabel(locale, item.updatedAt)}`,
+        subtitle: `${formatActivityCategory(item.category, locale)} · ${formatDateTimeLabel(locale, item.updatedAt, viewerTimeZone)}`,
         href: `/admin/notifications/${item.id}`,
         badge: (() => {
           const label = formatNotificationStatus(item.status, locale);
@@ -539,7 +605,7 @@ export default function AdminDashboard() {
           }
           if (item.status === "QUEUED") {
             return (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-text-muted dark:bg-white/10 dark:text-white/60">
+              <span className="text-text-muted rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold dark:bg-white/10 dark:text-white/60">
                 {label}
               </span>
             );
@@ -552,7 +618,7 @@ export default function AdminDashboard() {
             );
           }
           return (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-text-secondary dark:bg-white/5">
+            <span className="text-text-secondary rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold dark:bg-white/5">
               {label}
             </span>
           );
@@ -563,54 +629,120 @@ export default function AdminDashboard() {
   // Needs attention — only queues with count > 0
   const attentionItems = [
     ...(canReadSupport && supportTotal > 0
-      ? [{ id: "support", title: copy.attention.support, count: supportTotal, href: "/admin/messages?lane=support", icon: <Headset className="h-4 w-4" />, tone: "amber" as const }]
+      ? [
+          {
+            id: "support",
+            title: copy.attention.support,
+            count: supportTotal,
+            href: "/admin/messages?lane=support",
+            icon: <Headset className="h-4 w-4" />,
+            tone: "amber" as const,
+          },
+        ]
       : []),
     ...(canReadCareChat && careTotal > 0
-      ? [{ id: "care", title: copy.attention.careQueue, count: careTotal, href: "/admin/care-chat", icon: <MessageSquareMore className="h-4 w-4" />, tone: "violet" as const }]
+      ? [
+          {
+            id: "care",
+            title: copy.attention.careQueue,
+            count: careTotal,
+            href: "/admin/care-chat",
+            icon: <MessageSquareMore className="h-4 w-4" />,
+            tone: "violet" as const,
+          },
+        ]
       : []),
     ...(canReadApplications && applicationsTotal > 0
-      ? [{ id: "applications", title: copy.attention.applications, count: applicationsTotal, href: "/admin/practitioner-applications", icon: <Users className="h-4 w-4" />, tone: "emerald" as const }]
+      ? [
+          {
+            id: "applications",
+            title: copy.attention.applications,
+            count: applicationsTotal,
+            href: "/admin/practitioner-applications",
+            icon: <Users className="h-4 w-4" />,
+            tone: "emerald" as const,
+          },
+        ]
       : []),
     ...(canReadModerationReports && moderationTotal > 0
-      ? [{ id: "moderation", title: copy.attention.moderation, count: moderationTotal, href: "/admin/moderation/reports", icon: <ShieldAlert className="h-4 w-4" />, tone: "slate" as const }]
+      ? [
+          {
+            id: "moderation",
+            title: copy.attention.moderation,
+            count: moderationTotal,
+            href: "/admin/moderation/reports",
+            icon: <ShieldAlert className="h-4 w-4" />,
+            tone: "slate" as const,
+          },
+        ]
       : []),
   ].sort((a, b) => b.count - a.count);
 
-  const ATTENTION_TONE: Record<string, { bg: string; text: string; icon: string }> = {
-    amber: { bg: "bg-amber-50/85 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-300", icon: "text-amber-600 dark:text-amber-400" },
-    violet: { bg: "bg-violet-50/85 dark:bg-violet-500/10", text: "text-violet-700 dark:text-violet-300", icon: "text-violet-600 dark:text-violet-400" },
-    emerald: { bg: "bg-emerald-50/85 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-300", icon: "text-emerald-600 dark:text-emerald-400" },
-    slate: { bg: "bg-slate-100/85 dark:bg-white/[0.06]", text: "text-slate-700 dark:text-white/80", icon: "text-slate-500 dark:text-white/60" },
+  const ATTENTION_TONE: Record<
+    string,
+    { bg: string; text: string; icon: string }
+  > = {
+    amber: {
+      bg: "bg-amber-50/85 dark:bg-amber-500/10",
+      text: "text-amber-700 dark:text-amber-300",
+      icon: "text-amber-600 dark:text-amber-400",
+    },
+    violet: {
+      bg: "bg-violet-50/85 dark:bg-violet-500/10",
+      text: "text-violet-700 dark:text-violet-300",
+      icon: "text-violet-600 dark:text-violet-400",
+    },
+    emerald: {
+      bg: "bg-emerald-50/85 dark:bg-emerald-500/10",
+      text: "text-emerald-700 dark:text-emerald-300",
+      icon: "text-emerald-600 dark:text-emerald-400",
+    },
+    slate: {
+      bg: "bg-slate-100/85 dark:bg-white/[0.06]",
+      text: "text-slate-700 dark:text-white/80",
+      icon: "text-slate-500 dark:text-white/60",
+    },
   };
 
   const hasAnyAttention = attentionItems.length > 0;
 
-  const sessionsDeltaText = safeDeltaText(sessionsToday, sessionsYesterday, locale, {
-    upFromPrevious: "+",
-    downFromPrevious: "-",
-    unchanged: "0%",
-  });
+  const sessionsDeltaText = safeDeltaText(
+    sessionsToday,
+    sessionsYesterday,
+    locale,
+    {
+      upFromPrevious: "+",
+      downFromPrevious: "-",
+      unchanged: "0%",
+    },
+  );
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8 space-y-5">
+    <div className="mx-auto max-w-screen-2xl space-y-5 px-4 py-5 sm:px-6 lg:px-8">
       {/* ── Section 1: Command Header Card ── */}
-      <section className="rounded-3xl border border-slate-200/70 bg-white px-5 py-4 dark:border-white/5 dark:bg-white/[0.03] shadow-sm sm:px-6 sm:py-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <section className="rounded-3xl border border-slate-200/70 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5 dark:border-white/5 dark:bg-white/[0.03]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-text-primary dark:text-white/95 sm:text-2xl">
+            <h1 className="text-text-primary text-xl font-bold tracking-tight sm:text-2xl dark:text-white/95">
               {copy.hero.title}
             </h1>
-            <p className="mt-1 text-sm text-text-secondary">{copy.hero.subtitle}</p>
+            <p className="text-text-secondary mt-1 text-sm">
+              {copy.hero.subtitle}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:self-center">
             {hasHydrated && (
-              <span className="app-chip rounded-full bg-primary-light px-3.5 py-1.5 text-xs font-semibold text-text-brand dark:bg-primary/15 dark:text-primary-light">
-                {copy.hero.today} · {now.toLocaleDateString(normalizeLocale(locale), { weekday: "short", month: "short", day: "numeric" })}
+              <span className="app-chip bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light rounded-full px-3.5 py-1.5 text-xs font-semibold">
+                {copy.hero.today} ·{" "}
+                {formatEffectiveViewerDate(now, viewerTimeZone, {
+                  locale,
+                  dateStyle: "medium",
+                })}
               </span>
             )}
             <div className="flex items-center gap-1">
               <Link
                 href="/admin/sessions"
-                className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-text-secondary hover:bg-slate-50 transition-colors dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
+                className="text-text-secondary rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-slate-50 dark:border-white/5 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
               >
                 {isArabic ? "إدارة الجلسات" : "Manage Sessions"}
               </Link>
@@ -620,9 +752,9 @@ export default function AdminDashboard() {
       </section>
 
       {/* ── Section 2: Top Analytics Grid (2x2 KPIs on left, Focus Card on right) ── */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <section className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
         {/* Left column: 2x2 compact KPI cards */}
-        <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8">
           <AdminDashboardKpiCard
             label={copy.kpi.sessionsToday}
             value={formatNumber(locale, sessionsToday)}
@@ -664,7 +796,7 @@ export default function AdminDashboard() {
       </section>
 
       {/* ── Section 3: Main Charts Grid ── */}
-      <section className="grid gap-4 grid-cols-1 lg:grid-cols-12">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">
           <AdminDashboardChartCard title={copy.charts.sessionsTrend}>
             {sessionsTrendLoading ? (
@@ -688,8 +820,10 @@ export default function AdminDashboard() {
         <div className="lg:col-span-4">
           <AdminDashboardChartCard title={copy.charts.workload}>
             {!hasWorkloadData ? (
-              <div className="flex h-[260px] items-center justify-center rounded-[20px] border border-dashed border-border-light bg-surface-secondary/50 dark:border-white/10 dark:bg-white/[0.02]">
-                <p className="text-sm text-text-muted">{copy.charts.noDataYet}</p>
+              <div className="border-border-light bg-surface-secondary/50 flex h-[260px] items-center justify-center rounded-[20px] border border-dashed dark:border-white/10 dark:bg-white/[0.02]">
+                <p className="text-text-muted text-sm">
+                  {copy.charts.noDataYet}
+                </p>
               </div>
             ) : (
               <DonutDistributionChart
@@ -702,7 +836,12 @@ export default function AdminDashboard() {
                 ]}
                 values={workloadSeries}
                 height={260}
-                colors={[chartPalette[0], chartPalette[1], chartPalette[2], "#C6CED9"]}
+                colors={[
+                  chartPalette[0],
+                  chartPalette[1],
+                  chartPalette[2],
+                  "#C6CED9",
+                ]}
               />
             )}
           </AdminDashboardChartCard>
@@ -710,7 +849,7 @@ export default function AdminDashboard() {
       </section>
 
       {/* ── Section 5: Bottom Operations Grid ── */}
-      <section className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Support Queue */}
         {canReadSupport && (
           <AdminDashboardQueueCard

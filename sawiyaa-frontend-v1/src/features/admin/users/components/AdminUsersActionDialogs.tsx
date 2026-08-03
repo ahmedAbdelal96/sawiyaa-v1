@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import Label from "@/components/form/Label";
 import InputField from "@/components/form/input/InputField";
+import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 import { ConfirmModal, FormModal } from "@/components/ui/modal";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
@@ -24,11 +25,13 @@ import {
 } from "../types/admin-users.types";
 import { ADMIN_USER_ROLE_LABEL_KEYS } from "../utils/admin-users-format";
 
-export type AdminUsersActionType = "profile" | "status" | "roles" | "sessions" | "token-version";
+export type AdminUsersActionType =
+  "profile" | "status" | "roles" | "sessions" | "token-version";
 
-export type AdminUsersListAction =
-  | { type: AdminUsersActionType; userId: string }
-  | null;
+export type AdminUsersListAction = {
+  type: AdminUsersActionType;
+  userId: string;
+} | null;
 
 type Props = {
   action: AdminUsersListAction;
@@ -54,16 +57,23 @@ function isSuperAdminRole(role: AdminUserRole) {
   return role === "SUPER_ADMIN";
 }
 
-export default function AdminUsersActionDialogs({ action, onClose, onCompleted }: Props) {
+export default function AdminUsersActionDialogs({
+  action,
+  onClose,
+  onCompleted,
+}: Props) {
   const t = useTranslations("admin-users");
   const { data: currentUser } = useCurrentUser(Boolean(action));
   const stepUp = useAdminStepUp();
   const userQuery = useAdminUser(action?.userId ?? "", Boolean(action));
   const detail = userQuery.data?.item;
   const currentUserId = currentUser?.userId ?? null;
-  const currentUserIsSuperAdmin = currentUser?.roles.roles?.includes("SUPER_ADMIN") ?? false;
+  const currentUserIsSuperAdmin =
+    currentUser?.roles.roles?.includes("SUPER_ADMIN") ?? false;
   const canAssignSuperAdmin = currentUserIsSuperAdmin;
-  const showSelfWarning = Boolean(action?.userId && currentUserId && action.userId === currentUserId);
+  const showSelfWarning = Boolean(
+    action?.userId && currentUserId && action.userId === currentUserId,
+  );
 
   const profileMutation = useMutation({
     mutationFn: (input: Parameters<typeof updateAdminUserProfile>[1]) =>
@@ -85,8 +95,11 @@ export default function AdminUsersActionDialogs({ action, onClose, onCompleted }
   });
 
   const roleOptions = useMemo(
-    () => ADMIN_USER_INTERNAL_ROLES.filter((role) => canAssignSuperAdmin || !isSuperAdminRole(role)),
-    [canAssignSuperAdmin]
+    () =>
+      ADMIN_USER_INTERNAL_ROLES.filter(
+        (role) => canAssignSuperAdmin || !isSuperAdminRole(role),
+      ),
+    [canAssignSuperAdmin],
   );
 
   if (!action) return null;
@@ -97,8 +110,16 @@ export default function AdminUsersActionDialogs({ action, onClose, onCompleted }
       <ConfirmModal
         isOpen={Boolean(action)}
         onClose={onClose}
-        title={appError.statusCode === 404 ? t("errors.notFoundTitle") : t("errors.title")}
-        description={appError.statusCode === 404 ? t("errors.notFound") : appError.message || t("errors.loadFailed")}
+        title={
+          appError.statusCode === 404
+            ? t("errors.notFoundTitle")
+            : t("errors.title")
+        }
+        description={
+          appError.statusCode === 404
+            ? t("errors.notFound")
+            : appError.message || t("errors.loadFailed")
+        }
         confirmLabel={t("actions.back")}
         cancelLabel={t("actions.back")}
         onConfirm={onClose}
@@ -173,7 +194,9 @@ export default function AdminUsersActionDialogs({ action, onClose, onCompleted }
         showSelfWarning={showSelfWarning}
         canAssignSuperAdmin={canAssignSuperAdmin}
         roleOptions={roleOptions}
-        initialRoles={detail.roles.filter((role): role is AdminUserRole => role in ADMIN_USER_ROLE_LABEL_KEYS)}
+        initialRoles={detail.roles.filter(
+          (role): role is AdminUserRole => role in ADMIN_USER_ROLE_LABEL_KEYS,
+        )}
         stepUp={stepUp}
         onClose={onClose}
         onCompleted={onCompleted}
@@ -330,9 +353,10 @@ function ProfileDialog({
         </div>
         <div className="space-y-1.5">
           <Label>{t("edit.fields.timezone")}</Label>
-          <InputField
+          <TimeZonePicker
+            id="admin-user-timezone"
             value={timezone}
-            onChange={(event) => setTimezone(event.target.value)}
+            onChange={setTimezone}
             placeholder={t("edit.fields.timezonePlaceholder")}
           />
         </div>
@@ -386,7 +410,10 @@ function StatusDialog({
     }
 
     try {
-      await mutation.mutateAsync({ status, reason: trimmedReason || undefined });
+      await mutation.mutateAsync({
+        status,
+        reason: trimmedReason || undefined,
+      });
       onCompleted();
       handleClose();
       return true;
@@ -429,11 +456,15 @@ function StatusDialog({
     >
       <div className="space-y-3">
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-text-primary">{t("statusModal.fields.status")}</span>
+          <span className="text-text-primary text-sm font-medium">
+            {t("statusModal.fields.status")}
+          </span>
           <select
             value={status}
             onChange={(event) => {
-              setStatus(event.target.value as (typeof ADMIN_USER_STATUS_VALUES)[number]);
+              setStatus(
+                event.target.value as (typeof ADMIN_USER_STATUS_VALUES)[number],
+              );
               setError(null);
             }}
             className="app-control h-11 w-full rounded-2xl px-4"
@@ -447,7 +478,9 @@ function StatusDialog({
         </label>
         {reasonRequired ? (
           <label className="space-y-1.5">
-            <span className="text-sm font-medium text-text-primary">{t("statusModal.reason")}</span>
+            <span className="text-text-primary text-sm font-medium">
+              {t("statusModal.reason")}
+            </span>
             <textarea
               value={reason}
               onChange={(event) => setReason(event.target.value)}
@@ -457,7 +490,7 @@ function StatusDialog({
             />
           </label>
         ) : null}
-        {error ? <p className="text-sm text-error-600">{error}</p> : null}
+        {error ? <p className="text-error-600 text-sm">{error}</p> : null}
       </div>
     </FormModal>
   );
@@ -493,10 +526,13 @@ function RolesDialog({
   mutation: MutationWithVariables<Parameters<typeof updateAdminUserRoles>[1]>;
 }) {
   const t = useTranslations("admin-users");
-  const [selectedRoles, setSelectedRoles] = useState<AdminUserRole[]>(initialRoles);
+  const [selectedRoles, setSelectedRoles] =
+    useState<AdminUserRole[]>(initialRoles);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const removedRoles = initialRoles.filter((role) => !selectedRoles.includes(role));
+  const removedRoles = initialRoles.filter(
+    (role) => !selectedRoles.includes(role),
+  );
 
   const handleClose = () => {
     setSelectedRoles(initialRoles);
@@ -508,12 +544,16 @@ function RolesDialog({
 
   const toggleRole = (role: AdminUserRole) => {
     setSelectedRoles((current) =>
-      current.includes(role) ? current.filter((item) => item !== role) : [...current, role]
+      current.includes(role)
+        ? current.filter((item) => item !== role)
+        : [...current, role],
     );
   };
 
   const runUpdate = async () => {
-    const uniqueRoles = Array.from(new Set(selectedRoles)).filter(Boolean) as AdminUserRole[];
+    const uniqueRoles = Array.from(new Set(selectedRoles)).filter(
+      Boolean,
+    ) as AdminUserRole[];
 
     if (uniqueRoles.length === 0) {
       setError(t("rolesModal.validation.roles"));
@@ -532,7 +572,10 @@ function RolesDialog({
     }
 
     try {
-      await mutation.mutateAsync({ roles: uniqueRoles, reason: trimmedReason || undefined });
+      await mutation.mutateAsync({
+        roles: uniqueRoles,
+        reason: trimmedReason || undefined,
+      });
       onCompleted();
       handleClose();
       return true;
@@ -576,7 +619,7 @@ function RolesDialog({
     >
       <div className="space-y-4">
         {showSelfWarning ? (
-          <p className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-700">
+          <p className="border-warning-200 bg-warning-50 text-warning-700 rounded-2xl border px-4 py-3 text-sm">
             {t("rolesModal.selfWarning")}
           </p>
         ) : null}
@@ -584,7 +627,7 @@ function RolesDialog({
           {roleOptions.map((role) => (
             <label
               key={role}
-              className="flex items-center gap-2 rounded-2xl border border-border-light bg-white px-3 py-2 text-sm text-text-primary"
+              className="border-border-light text-text-primary flex items-center gap-2 rounded-2xl border bg-white px-3 py-2 text-sm"
             >
               <input
                 type="checkbox"
@@ -597,7 +640,9 @@ function RolesDialog({
         </div>
         {removedRoles.length > 0 ? (
           <label className="space-y-1.5">
-            <span className="text-sm font-medium text-text-primary">{t("rolesModal.fields.reason")}</span>
+            <span className="text-text-primary text-sm font-medium">
+              {t("rolesModal.fields.reason")}
+            </span>
             <textarea
               value={reason}
               onChange={(event) => setReason(event.target.value)}
@@ -607,7 +652,7 @@ function RolesDialog({
             />
           </label>
         ) : null}
-        {error ? <p className="text-sm text-error-600">{error}</p> : null}
+        {error ? <p className="text-error-600 text-sm">{error}</p> : null}
       </div>
     </FormModal>
   );
@@ -688,7 +733,7 @@ function ConfirmActionDialog({
       onCancel={handleClose}
       loading={mutation.isPending}
     >
-      {error ? <p className="text-sm text-error-600">{error}</p> : null}
+      {error ? <p className="text-error-600 text-sm">{error}</p> : null}
     </ConfirmModal>
   );
 }

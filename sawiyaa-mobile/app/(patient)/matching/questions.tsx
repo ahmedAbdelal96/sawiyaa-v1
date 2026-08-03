@@ -16,6 +16,7 @@ import {
   ErrorState,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { resolveDeviceTimeZone } from "../../../src/lib/time-formatting";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { listSpecialties } from "../../../src/features/specialties/api";
@@ -153,7 +154,7 @@ export default function MatchingQuestionsScreen() {
         preferredPractitionerGender: selectedGender,
         sessionMode: selectedMode,
         urgency: selectedUrgency,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        timezone: resolveDeviceTimeZone() ?? "UTC",
       },
       {
         onSuccess: (data) => {
@@ -172,7 +173,7 @@ export default function MatchingQuestionsScreen() {
   if (specialtiesQuery.isLoading) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header showBack />
         <LoadingState fullScreen message={t("matching.question.loading")} />
       </Screen>
     );
@@ -181,7 +182,7 @@ export default function MatchingQuestionsScreen() {
   if (specialtiesQuery.isError) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header showBack />
         <ErrorState
           fullScreen
           message={t("matching.question.loadError")}
@@ -194,7 +195,7 @@ export default function MatchingQuestionsScreen() {
   if (isError && !errorText) {
     return (
       <Screen bg="background">
-        <Header showBack  />
+        <Header showBack />
         <ErrorState
           title={t("matching.question.submitErrorTitle")}
           message={extractApiErrorMessage(error)}
@@ -208,7 +209,7 @@ export default function MatchingQuestionsScreen() {
 
   return (
     <Screen bg="background">
-      <Header showBack  />
+      <Header showBack />
 
       <View style={styles.progressContainer}>
         <View style={styles.progressMeta}>
@@ -576,4 +577,3 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
 });
-

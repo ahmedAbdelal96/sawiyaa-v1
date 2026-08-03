@@ -16,6 +16,7 @@ export class UserRepository {
         id: true,
         displayName: true,
         defaultLocale: true,
+        timezone: true,
         status: true,
         createdAt: true,
         emails: {
@@ -36,6 +37,29 @@ export class UserRepository {
         },
       },
     });
+  }
+
+  async initializeTimezone(input: {
+    userId: string;
+    timezone: string;
+  }): Promise<{
+    user: { id: string; timezone: string | null };
+    initialized: boolean;
+  } | null> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: input.userId,
+        OR: [{ timezone: null }, { timezone: '' }],
+      },
+      data: { timezone: input.timezone },
+    });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { id: true, timezone: true },
+    });
+
+    return user ? { user, initialized: result.count === 1 } : null;
   }
 
   async patchCurrentUserProfile(input: {

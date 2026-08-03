@@ -54,6 +54,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Run Phase 0A environment-contract tests
+        run: node --test deploy/scripts/validate-environment-contract.test.js
+
+      - name: Run Phase 0B backup and migration-safety tests
+        run: node --test deploy/scripts/backup-db.test.js deploy/scripts/check-migration-safety.test.js deploy/scripts/deploy-production-phase-0b.test.js
+
+      - name: Validate Phase 0A shell syntax when Bash is available
+        shell: bash
+        run: |
+          if command -v bash >/dev/null 2>&1; then
+            bash -n deploy/scripts/validate-production-preflight.sh
+            bash -n deploy/scripts/deploy-production.sh
+            bash -n deploy/scripts/backup-db.sh
+          else
+            echo "Bash unavailable; shell syntax check skipped."
+          fi
+
+      - name: Run ShellCheck when available
+        shell: bash
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck deploy/scripts/validate-production-preflight.sh deploy/scripts/deploy-production.sh deploy/scripts/backup-db.sh
+          else
+            echo "ShellCheck unavailable; shell lint skipped."
+          fi
+
       - name: Setup Node.js for backend
         uses: actions/setup-node@v4
         with:

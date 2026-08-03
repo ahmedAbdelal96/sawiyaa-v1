@@ -29,6 +29,10 @@ import {
   ConversationComposer,
   ConversationEmptyState,
 } from "../../../src/features/messages/components/ConversationPrimitives";
+import {
+  formatViewerDate,
+  formatViewerTime,
+} from "../../../src/lib/time-formatting";
 
 export default function CareChatConversationScreen() {
   const router = useRouter();
@@ -54,10 +58,10 @@ export default function CareChatConversationScreen() {
   const canSend = conversation?.canSendMessage ?? false;
 
   function formatTime(dateStr: string) {
-    return new Date(dateStr).toLocaleTimeString(
-      i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-      { hour: "2-digit", minute: "2-digit" },
-    );
+    return formatViewerTime(dateStr, {
+      locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+      fallbackText: "-",
+    });
   }
 
   async function handleSend() {
@@ -100,10 +104,7 @@ export default function CareChatConversationScreen() {
 
   return (
     <Screen bg="background">
-      <Header
-        title={t("messages.inbox.sourceFollowup", "المتابعة")}
-        showBack
-      />
+      <Header title={t("messages.inbox.sourceFollowup", "المتابعة")} showBack />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -124,10 +125,13 @@ export default function CareChatConversationScreen() {
               ]}
             >
               {t("careChat.expiresOn", {
-                date: new Date(conversation.expiresAt).toLocaleDateString(
-                  i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
-                  { day: "numeric", month: "long", year: "numeric" },
-                ),
+                date: formatViewerDate(conversation.expiresAt, {
+                  locale: i18n.language?.startsWith("ar") ? "ar-SA" : "en-US",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  fallbackText: "-",
+                }),
               })}
             </Text>
           </View>
@@ -161,20 +165,22 @@ export default function CareChatConversationScreen() {
           {conversation.messages.length === 0 ? (
             <ConversationEmptyState title={t("careChat.conversation.empty")} />
           ) : (
-            conversation.messages.map((msg: CareChatMessageDto, idx: number) => {
-              const isMine =
-                msg.senderRole === "PATIENT" ||
-                (msg.senderUserId && msg.senderUserId === user?.id);
+            conversation.messages.map(
+              (msg: CareChatMessageDto, idx: number) => {
+                const isMine =
+                  msg.senderRole === "PATIENT" ||
+                  (msg.senderUserId && msg.senderUserId === user?.id);
 
-              return (
-                <ConversationBubble
-                  key={msg.id ?? idx}
-                  isMine={Boolean(isMine)}
-                  text={localizeCareChatMessageText(msg, t)}
-                  timeLabel={formatTime(msg.createdAt)}
-                />
-              );
-            })
+                return (
+                  <ConversationBubble
+                    key={msg.id ?? idx}
+                    isMine={Boolean(isMine)}
+                    text={localizeCareChatMessageText(msg, t)}
+                    timeLabel={formatTime(msg.createdAt)}
+                  />
+                );
+              },
+            )
           )}
         </ScrollView>
 

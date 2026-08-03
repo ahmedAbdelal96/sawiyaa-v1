@@ -37,6 +37,7 @@ import type {
 } from "../types/package-purchases.types";
 import { DataTable } from "@/components/ui/data-table/DataTable";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 
 export default function PatientPackagePurchaseDetailPanel({
   purchaseId,
@@ -46,6 +47,8 @@ export default function PatientPackagePurchaseDetailPanel({
   const t = useTranslations("package-purchases");
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
+  const patientProfileQuery = usePatientProfile();
+  const patientTimeZone = patientProfileQuery.data?.profile.timezone;
   const { data, isLoading, isError, error, refetch } = useMyPackagePurchase(purchaseId);
 
   if (isLoading) {
@@ -177,7 +180,7 @@ export default function PatientPackagePurchaseDetailPanel({
       cell: (row: PatientPackagePurchaseSessionSummary) => (
         <span className="text-xs font-medium text-text-secondary">
           {row.scheduledStartAt
-            ? formatDatetime(row.scheduledStartAt, numLocale)
+            ? formatDatetime(row.scheduledStartAt, numLocale, patientTimeZone)
             : t("detail.sessionNotScheduled")}
         </span>
       ),
@@ -378,7 +381,7 @@ export default function PatientPackagePurchaseDetailPanel({
                 ? t("detail.paymentBlock.expiredNote")
                 : purchase.paymentExpiresAt
                   ? t("detail.paymentBlock.expiresAt", {
-                      date: formatDatetime(purchase.paymentExpiresAt, numLocale),
+                      date: formatDatetime(purchase.paymentExpiresAt, numLocale, patientTimeZone),
                     })
                   : t("detail.paymentBlock.noExpiry")}
             </p>

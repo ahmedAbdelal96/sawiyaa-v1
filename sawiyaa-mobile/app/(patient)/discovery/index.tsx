@@ -97,7 +97,12 @@ export default function DiscoveryListScreen() {
   const filters = useMemo<Omit<ListPublicPractitionersFilters, "page">>(
     () => ({
       search: flatParams.search || undefined,
-      specialtySlug: flatParams.specialtySlug || undefined,
+      specialtySlug:
+        flatParams.specialtySlug ||
+        flatParams.specialties ||
+        flatParams.category ||
+        flatParams.categorySlug ||
+        undefined,
       language: flatParams.language || undefined,
       languageCodes: normalizeSupportedLanguageCodes(
         (flatParams.languageCodes || "").split(","),
@@ -377,7 +382,7 @@ export default function DiscoveryListScreen() {
         <FlatList
           data={practitioners}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <PractitionerCompactCard practitioner={item} />}
+          renderItem={({ item }) => <PractitionerCompactCard practitioner={item} routeBase="/(patient)/discovery" />}
           contentContainerStyle={styles.listContent}
           style={styles.flatList}
           showsVerticalScrollIndicator={false}

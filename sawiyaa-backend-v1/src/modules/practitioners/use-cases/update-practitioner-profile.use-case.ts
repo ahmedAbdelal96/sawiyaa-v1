@@ -4,7 +4,8 @@ import {
   PractitionerStatus,
   SecurityAuditOutcome,
 } from '@prisma/client';
-import { ConfigResolverService } from '@modules/config/services/config-resolver.service';
+import { CONFIG_KEYS } from '@modules/config/registry/config-key.constants';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
@@ -28,6 +29,7 @@ import {
 import { PractitionerChangeReviewPolicy } from '../policies/practitioner-change-review.policy';
 import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
 import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
+import { PractitionerTimezoneChangeGuardService } from '../services/practitioner-timezone-change-guard.service';
 
 /**
  * Profile update orchestrates practitioner profile + user preference writes in one transaction.
@@ -38,7 +40,7 @@ export class UpdatePractitionerProfileUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
-    private readonly configResolverService: ConfigResolverService,
+    private readonly configRuntimeService: ConfigRuntimeService,
     private readonly createPractitionerProfileUseCase: CreatePractitionerProfileUseCase,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly practitionerUserRepository: PractitionerUserRepository,
@@ -48,10 +50,14 @@ export class UpdatePractitionerProfileUseCase {
     private readonly languageRepository: LanguageRepository,
     private readonly practitionerPayoutDestinationValidationService: PractitionerPayoutDestinationValidationService,
     private readonly getPractitionerProfileUseCase: GetPractitionerProfileUseCase,
-    @Optional() private readonly practitionerCurrencyLifecycleService?: PractitionerCurrencyLifecycleService,
+    private readonly practitionerTimezoneChangeGuardService: PractitionerTimezoneChangeGuardService,
+    @Optional()
+    private readonly practitionerCurrencyLifecycleService?: PractitionerCurrencyLifecycleService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
-    @Optional() private readonly changeReviewPolicy?: PractitionerChangeReviewPolicy,
-    @Optional() private readonly changeReviewService?: PractitionerChangeReviewService,
+    @Optional()
+    private readonly changeReviewPolicy?: PractitionerChangeReviewPolicy,
+    @Optional()
+    private readonly changeReviewService?: PractitionerChangeReviewService,
   ) {}
 
   private resolvePackageAvailabilityMissingRequirements(input: {
@@ -164,253 +170,271 @@ export class UpdatePractitionerProfileUseCase {
     }
 
     const [packagesEnabled, packagePurchasesEnabled] = await Promise.all([
-      this.configResolverService.getBoolean('packages.enabled'),
-      this.configResolverService.getBoolean('packages.purchaseEnabled'),
+      this.configRuntimeService.getBoolean(CONFIG_KEYS.packages.enabled),
+      this.configRuntimeService.getBoolean(
+        CONFIG_KEYS.packages.purchaseEnabled,
+      ),
     ]);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const profile = await this.createPractitionerProfileUseCase.execute(
-          input.userId,
-          tx,
-        );
+      const profile = await this.createPractitionerProfileUseCase.execute(
+        input.userId,
+        tx,
+      );
 
-        const wantsPackageAvailability =
-          normalizedInput.acceptsPackage === true &&
-          normalizedInput.acceptsPackage !== profile.acceptsPackages;
+      const wantsPackageAvailability =
+        normalizedInput.acceptsPackage === true &&
+        normalizedInput.acceptsPackage !== profile.acceptsPackages;
 
-        if (wantsPackageAvailability) {
-          const missingRequirements =
-            this.resolvePackageAvailabilityMissingRequirements({
-              profile,
-              currentUser: input.currentUser,
-              packagesEnabled,
-              packagePurchasesEnabled,
-              proposedPrices: {
-                sessionPrice30Egp:
-                  normalizedInput.sessionPrice30Egp === undefined
-                    ? profile.sessionPrice30Egp
-                    : normalizedInput.sessionPrice30Egp,
-                sessionPrice30Usd:
-                  normalizedInput.sessionPrice30Usd === undefined
-                    ? profile.sessionPrice30Usd
-                    : normalizedInput.sessionPrice30Usd,
-                sessionPrice60Egp:
-                  normalizedInput.sessionPrice60Egp === undefined
-                    ? profile.sessionPrice60Egp
-                    : normalizedInput.sessionPrice60Egp,
-                sessionPrice60Usd:
-                  normalizedInput.sessionPrice60Usd === undefined
-                    ? profile.sessionPrice60Usd
-                    : normalizedInput.sessionPrice60Usd,
-              },
-            });
+      if (wantsPackageAvailability) {
+        const missingRequirements =
+          this.resolvePackageAvailabilityMissingRequirements({
+            profile,
+            currentUser: input.currentUser,
+            packagesEnabled,
+            packagePurchasesEnabled,
+            proposedPrices: {
+              sessionPrice30Egp:
+                normalizedInput.sessionPrice30Egp === undefined
+                  ? profile.sessionPrice30Egp
+                  : normalizedInput.sessionPrice30Egp,
+              sessionPrice30Usd:
+                normalizedInput.sessionPrice30Usd === undefined
+                  ? profile.sessionPrice30Usd
+                  : normalizedInput.sessionPrice30Usd,
+              sessionPrice60Egp:
+                normalizedInput.sessionPrice60Egp === undefined
+                  ? profile.sessionPrice60Egp
+                  : normalizedInput.sessionPrice60Egp,
+              sessionPrice60Usd:
+                normalizedInput.sessionPrice60Usd === undefined
+                  ? profile.sessionPrice60Usd
+                  : normalizedInput.sessionPrice60Usd,
+            },
+          });
 
-          if (missingRequirements.length > 0) {
-            throw new BadRequestException({
-              messageKey:
-                'practitioners.errors.packageAvailabilityRequirementsNotMet',
-              error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
-              details: {
-                missingRequirements,
-              },
-            });
+        if (missingRequirements.length > 0) {
+          throw new BadRequestException({
+            messageKey:
+              'practitioners.errors.packageAvailabilityRequirementsNotMet',
+            error: 'PRACTITIONER_PACKAGE_AVAILABILITY_REQUIREMENTS_NOT_MET',
+            details: {
+              missingRequirements,
+            },
+          });
+        }
+      }
+
+      const profileUpdate = (() => {
+        const profileUpdate: Prisma.PractitionerProfileUncheckedUpdateInput = {
+          professionalTitle: normalizedInput.professionalTitle,
+          bio: normalizedInput.bio,
+          yearsOfExperience: normalizedInput.yearsOfExperience,
+          practitionerType: normalizedInput.practitionerType,
+          practitionerGender: normalizedInput.practitionerGender,
+          sessionPrice30Egp: normalizedInput.sessionPrice30Egp,
+          sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
+          sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
+          sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
+          instantBookingPrice30Egp: normalizedInput.instantBookingPrice30Egp,
+          instantBookingPrice30Usd: normalizedInput.instantBookingPrice30Usd,
+          instantBookingPrice60Egp: normalizedInput.instantBookingPrice60Egp,
+          instantBookingPrice60Usd: normalizedInput.instantBookingPrice60Usd,
+          acceptsPackages: normalizedInput.acceptsPackage,
+          countryId:
+            country === undefined ? undefined : country ? country.id : null,
+        };
+        if (profile.status === PractitionerStatus.APPROVED) {
+          for (const field of this.changeReviewPolicy?.getChangedProfileFields(
+            normalizedInput as unknown as Record<string, unknown>,
+          ) ?? []) {
+            if (field === 'countryCode') {
+              delete profileUpdate.countryId;
+            } else {
+              delete profileUpdate[field];
+            }
           }
         }
+        return profileUpdate;
+      })();
 
-        const profileUpdate = (() => {
-            const profileUpdate: Prisma.PractitionerProfileUncheckedUpdateInput = {
-            professionalTitle: normalizedInput.professionalTitle,
-            bio: normalizedInput.bio,
-            yearsOfExperience: normalizedInput.yearsOfExperience,
-            practitionerType: normalizedInput.practitionerType,
-            practitionerGender: normalizedInput.practitionerGender,
-            sessionPrice30Egp: normalizedInput.sessionPrice30Egp,
-            sessionPrice30Usd: normalizedInput.sessionPrice30Usd,
-            sessionPrice60Egp: normalizedInput.sessionPrice60Egp,
-            sessionPrice60Usd: normalizedInput.sessionPrice60Usd,
-            instantBookingPrice30Egp: normalizedInput.instantBookingPrice30Egp,
-            instantBookingPrice30Usd: normalizedInput.instantBookingPrice30Usd,
-            instantBookingPrice60Egp: normalizedInput.instantBookingPrice60Egp,
-            instantBookingPrice60Usd: normalizedInput.instantBookingPrice60Usd,
-            acceptsPackages: normalizedInput.acceptsPackage,
-            countryId:
-              country === undefined ? undefined : country ? country.id : null,
-            };
-            if (profile.status === PractitionerStatus.APPROVED) {
-              for (const field of (this.changeReviewPolicy?.getChangedProfileFields(
-                normalizedInput as unknown as Record<string, unknown>,
-              ) ?? [])) {
-                if (field === 'countryCode') {
-                  delete profileUpdate.countryId;
-                } else {
-                  delete profileUpdate[field];
-                }
-              }
-            }
-            return profileUpdate;
-          })();
-
-        if (profileUpdate.countryId !== undefined) {
-          await this.practitionerCurrencyLifecycleService?.ensureForCountryChange({
+      if (profileUpdate.countryId !== undefined) {
+        await this.practitionerCurrencyLifecycleService?.ensureForCountryChange(
+          {
             practitionerId: profile.id,
-            newCountryId: (profileUpdate.countryId as string | null | undefined) ?? null,
+            newCountryId:
+              (profileUpdate.countryId as string | null | undefined) ?? null,
             actorUserId: input.userId,
             tx,
-          });
-        }
+          },
+        );
+      }
 
-        await this.practitionerProfileRepository.updateByUserId(input.userId, profileUpdate, tx);
+      await this.practitionerProfileRepository.updateByUserId(
+        input.userId,
+        profileUpdate,
+        tx,
+      );
 
-        const changedReviewFields = this.changeReviewPolicy?.getChangedProfileFields(
+      await this.practitionerTimezoneChangeGuardService.assertCanChange({
+        userId: input.userId,
+        requestedTimezone: normalizedInput.timezone,
+        tx,
+      });
+
+      const changedReviewFields =
+        this.changeReviewPolicy?.getChangedProfileFields(
           normalizedInput as unknown as Record<string, unknown>,
         ) ?? [];
-        if (profile.status === PractitionerStatus.APPROVED && changedReviewFields.length > 0 && this.changeReviewService) {
-          await this.changeReviewService.upsert({
-            practitionerId: profile.id,
-            profile: Object.fromEntries(
-              [
-                ['practitionerType', normalizedInput.practitionerType],
-                ['practitionerGender', normalizedInput.practitionerGender],
-                ['professionalTitle', normalizedInput.professionalTitle],
-                ['bio', normalizedInput.bio],
-                ['yearsOfExperience', normalizedInput.yearsOfExperience],
-                ['countryCode', normalizedInput.countryCode],
-              ].filter(([, value]) => value !== undefined),
-            ) as Record<string, unknown>,
-            tx,
-          });
-        }
+      if (
+        profile.status === PractitionerStatus.APPROVED &&
+        changedReviewFields.length > 0 &&
+        this.changeReviewService
+      ) {
+        await this.changeReviewService.upsert({
+          practitionerId: profile.id,
+          profile: Object.fromEntries(
+            [
+              ['practitionerType', normalizedInput.practitionerType],
+              ['practitionerGender', normalizedInput.practitionerGender],
+              ['professionalTitle', normalizedInput.professionalTitle],
+              ['bio', normalizedInput.bio],
+              ['yearsOfExperience', normalizedInput.yearsOfExperience],
+              ['countryCode', normalizedInput.countryCode],
+            ].filter(([, value]) => value !== undefined),
+          ) as Record<string, unknown>,
+          tx,
+        });
+      }
 
-        await this.practitionerUserRepository.updateProfilePreferences(
-          input.userId,
-          {
-            displayName: normalizedInput.displayName,
-            defaultLocale: normalizedInput.locale,
-            timezone: normalizedInput.timezone,
-          },
+      await this.practitionerUserRepository.updateProfilePreferences(
+        input.userId,
+        {
+          displayName: normalizedInput.displayName,
+          defaultLocale: normalizedInput.locale,
+          timezone: normalizedInput.timezone,
+        },
+        tx,
+      );
+
+      if (resolvedLanguages !== undefined) {
+        await this.practitionerLanguageRepository.replaceAll(
+          profile.id,
+          resolvedLanguages.map((language, index) => ({
+            languageId: language.id,
+            isPrimary: index === 0,
+          })),
           tx,
         );
+      }
 
-        if (resolvedLanguages !== undefined) {
-          await this.practitionerLanguageRepository.replaceAll(
-            profile.id,
-            resolvedLanguages.map((language, index) => ({
-              languageId: language.id,
-              isPrimary: index === 0,
-            })),
-            tx,
-          );
-        }
-
-        if (normalizedInput.payoutDestination !== undefined) {
-          await this.practitionerPayoutDestinationRepository.upsert(
-            profile.id,
-            normalizedInput.payoutDestination,
-            tx,
-          );
-        }
-
-        const changedFields = Object.keys(normalizedInput).filter((field) =>
-          [
-            'displayName',
-            'professionalTitle',
-            'bio',
-            'yearsOfExperience',
-            'practitionerType',
-            'practitionerGender',
-            'sessionPrice30Egp',
-            'sessionPrice30Usd',
-            'sessionPrice60Egp',
-            'sessionPrice60Usd',
-            'instantBookingPrice30Egp',
-            'instantBookingPrice30Usd',
-            'instantBookingPrice60Egp',
-            'instantBookingPrice60Usd',
-            'acceptsPackage',
-            'countryCode',
-            'languageCodes',
-            'locale',
-            'timezone',
-            'payoutDestination',
-          ].includes(field),
+      if (normalizedInput.payoutDestination !== undefined) {
+        await this.practitionerPayoutDestinationRepository.upsert(
+          profile.id,
+          normalizedInput.payoutDestination,
+          tx,
         );
-        const pricingChanges: Record<
-          string,
-          { previous: string | null; next: string | null }
-        > = {};
-        const pricingInputs: Array<[string, unknown, unknown]> = [
-          [
-            'sessionPrice30Egp',
-            profile.sessionPrice30Egp,
-            normalizedInput.sessionPrice30Egp,
-          ],
-          [
-            'sessionPrice30Usd',
-            profile.sessionPrice30Usd,
-            normalizedInput.sessionPrice30Usd,
-          ],
-          [
-            'sessionPrice60Egp',
-            profile.sessionPrice60Egp,
-            normalizedInput.sessionPrice60Egp,
-          ],
-          [
-            'sessionPrice60Usd',
-            profile.sessionPrice60Usd,
-            normalizedInput.sessionPrice60Usd,
-          ],
-          [
-            'instantBookingPrice30Egp',
-            profile.instantBookingPrice30Egp,
-            normalizedInput.instantBookingPrice30Egp,
-          ],
-          [
-            'instantBookingPrice30Usd',
-            profile.instantBookingPrice30Usd,
-            normalizedInput.instantBookingPrice30Usd,
-          ],
-          [
-            'instantBookingPrice60Egp',
-            profile.instantBookingPrice60Egp,
-            normalizedInput.instantBookingPrice60Egp,
-          ],
-          [
-            'instantBookingPrice60Usd',
-            profile.instantBookingPrice60Usd,
-            normalizedInput.instantBookingPrice60Usd,
-          ],
-        ];
-        for (const [field, previous, next] of pricingInputs) {
-          if (next !== undefined) {
-            pricingChanges[field] = {
-              previous:
-                previous === null || previous === undefined
-                  ? null
-                  : String(previous),
-              next: next === null || next === undefined ? null : String(next),
-            };
-          }
+      }
+
+      const changedFields = Object.keys(normalizedInput).filter((field) =>
+        [
+          'displayName',
+          'professionalTitle',
+          'bio',
+          'yearsOfExperience',
+          'practitionerType',
+          'practitionerGender',
+          'sessionPrice30Egp',
+          'sessionPrice30Usd',
+          'sessionPrice60Egp',
+          'sessionPrice60Usd',
+          'instantBookingPrice30Egp',
+          'instantBookingPrice30Usd',
+          'instantBookingPrice60Egp',
+          'instantBookingPrice60Usd',
+          'acceptsPackage',
+          'countryCode',
+          'languageCodes',
+          'locale',
+          'timezone',
+          'payoutDestination',
+        ].includes(field),
+      );
+      const pricingChanges: Record<
+        string,
+        { previous: string | null; next: string | null }
+      > = {};
+      const pricingInputs: Array<[string, unknown, unknown]> = [
+        [
+          'sessionPrice30Egp',
+          profile.sessionPrice30Egp,
+          normalizedInput.sessionPrice30Egp,
+        ],
+        [
+          'sessionPrice30Usd',
+          profile.sessionPrice30Usd,
+          normalizedInput.sessionPrice30Usd,
+        ],
+        [
+          'sessionPrice60Egp',
+          profile.sessionPrice60Egp,
+          normalizedInput.sessionPrice60Egp,
+        ],
+        [
+          'sessionPrice60Usd',
+          profile.sessionPrice60Usd,
+          normalizedInput.sessionPrice60Usd,
+        ],
+        [
+          'instantBookingPrice30Egp',
+          profile.instantBookingPrice30Egp,
+          normalizedInput.instantBookingPrice30Egp,
+        ],
+        [
+          'instantBookingPrice30Usd',
+          profile.instantBookingPrice30Usd,
+          normalizedInput.instantBookingPrice30Usd,
+        ],
+        [
+          'instantBookingPrice60Egp',
+          profile.instantBookingPrice60Egp,
+          normalizedInput.instantBookingPrice60Egp,
+        ],
+        [
+          'instantBookingPrice60Usd',
+          profile.instantBookingPrice60Usd,
+          normalizedInput.instantBookingPrice60Usd,
+        ],
+      ];
+      for (const [field, previous, next] of pricingInputs) {
+        if (next !== undefined) {
+          pricingChanges[field] = {
+            previous:
+              previous === null || previous === undefined
+                ? null
+                : String(previous),
+            next: next === null || next === undefined ? null : String(next),
+          };
         }
-        await this.securityAuditService?.recordRequired(tx, {
-          action: 'security.practitioner.profile.update',
-          outcome: SecurityAuditOutcome.SUCCESS,
-          actorType: SecurityAuditActorType.USER,
-          source: SecurityAuditSource.HTTP_REQUEST,
-          actorUserId: input.userId,
-          actorRoles: input.currentUser.roles,
-          resourceType: 'PractitionerProfile',
-          resourceId: profile.id,
-          targetUserId: input.userId,
-          metadata: {
-            changedFields,
-            pricingChanged: changedFields.some((field) =>
-              field.toLowerCase().includes('price'),
-            ),
-            ...(Object.keys(pricingChanges).length > 0
-              ? { pricingChanges }
-              : {}),
-          },
-        });
+      }
+      await this.securityAuditService?.recordRequired(tx, {
+        action: 'security.practitioner.profile.update',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.userId,
+        actorRoles: input.currentUser.roles,
+        resourceType: 'PractitionerProfile',
+        resourceId: profile.id,
+        targetUserId: input.userId,
+        metadata: {
+          changedFields,
+          pricingChanged: changedFields.some((field) =>
+            field.toLowerCase().includes('price'),
+          ),
+          ...(Object.keys(pricingChanges).length > 0 ? { pricingChanges } : {}),
+        },
+      });
     });
 
     const updated = await this.getPractitionerProfileUseCase.execute({

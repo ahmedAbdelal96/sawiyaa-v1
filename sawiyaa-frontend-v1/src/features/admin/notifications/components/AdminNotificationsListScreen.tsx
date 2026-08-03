@@ -26,6 +26,7 @@ import type {
   AdminNotificationStatus,
   ListAdminNotificationsParams,
 } from "../types/admin-notifications.types";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 
 const STATUS_FILTERS: Array<AdminNotificationStatus | "DEFAULT" | "ALL"> = [
   "DEFAULT",
@@ -75,6 +76,8 @@ export default function AdminNotificationsListScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const settingsQuery = useMySettings(true);
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
 
   // Local state for active Drawer detail view
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -184,6 +187,7 @@ export default function AdminNotificationsListScreen() {
           locale,
           row.context,
           row.primaryAction,
+          viewerTimeZone,
         );
         const toneClass = TONE_CLASSES[visual.tone] || TONE_CLASSES.system;
         return (
@@ -273,8 +277,8 @@ export default function AdminNotificationsListScreen() {
       header: t("notifications.fields.dateHeader"),
       accessor: (row) =>
         row.scheduledFor
-          ? formatAdminNotificationDateTime(row.scheduledFor, locale)
-          : formatAdminNotificationDateTime(row.updatedAt, locale),
+          ? formatAdminNotificationDateTime(row.scheduledFor, locale, viewerTimeZone)
+          : formatAdminNotificationDateTime(row.updatedAt, locale, viewerTimeZone),
       hideOnMobile: true,
       sortable: true,
     },
@@ -299,7 +303,7 @@ export default function AdminNotificationsListScreen() {
         );
       },
     },
-  ], [locale, t]);
+  ], [locale, t, viewerTimeZone]);
 
   return (
     <>

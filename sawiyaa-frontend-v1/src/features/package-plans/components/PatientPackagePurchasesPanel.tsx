@@ -29,6 +29,7 @@ import type { PatientPackagePurchaseItem } from "../types/package-purchases.type
 import { MoneyText } from "@/components/money/MoneyText";
 import { mapPackagePurchaseSnapshotMoney } from "../lib/package-money";
 import { DataTable } from "@/components/ui/data-table/DataTable";
+import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 
 export default function PatientPackagePurchasesPanel() {
   const t = useTranslations("package-purchases");
@@ -38,6 +39,8 @@ export default function PatientPackagePurchasesPanel() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const patientProfileQuery = usePatientProfile();
+  const patientTimeZone = patientProfileQuery.data?.profile.timezone;
 
   const { data, isLoading, isError, error, refetch } = useMyPackagePurchases({
     page,
@@ -137,7 +140,7 @@ export default function PatientPackagePurchasesPanel() {
       accessor: (row: PatientPackagePurchaseItem) => row.createdAt,
       cell: (row: PatientPackagePurchaseItem) => (
         <span className="text-xs font-medium text-text-secondary">
-          {formatDate(row.createdAt, numLocale)}
+          {formatDate(row.createdAt, numLocale, patientTimeZone)}
         </span>
       ),
     },
@@ -211,7 +214,7 @@ export default function PatientPackagePurchasesPanel() {
         }
         return (
           <span className="text-xs font-medium text-text-secondary">
-            {formatDatetime(nextSession.scheduledStartAt, numLocale)}
+            {formatDatetime(nextSession.scheduledStartAt, numLocale, patientTimeZone)}
           </span>
         );
       },

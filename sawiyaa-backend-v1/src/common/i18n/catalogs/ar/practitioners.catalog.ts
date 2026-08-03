@@ -16,6 +16,8 @@ export const arPractitionersCatalog = {
     publicDetailsFetched: 'تم جلب ملف الممارس العام بنجاح',
   },
   errors: {
+    timezoneChangeBlocked:
+      'لا يمكن تغيير المنطقة الزمنية مع وجود أوقات متاحة أو مواعيد مستقبلية. احذف الأوقات المستقبلية أو تواصل مع الدعم.',
     professionalTitleRequired: 'اختر اللقب المهني',
     invalidProfessionalTitle: 'اختر لقبًا مهنيًا من القائمة المعتمدة',
     payoutAccountHolderRequired: '\u0623\u062f\u062e\u0644 \u0627\u0633\u0645 \u0635\u0627\u062d\u0628 \u0627\u0644\u062d\u0633\u0627\u0628 \u0623\u0648 \u0635\u0627\u062d\u0628 \u0627\u0644\u0645\u062d\u0641\u0638\u0629',

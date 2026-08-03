@@ -7,6 +7,7 @@ import {
   formatDurationSeconds,
   formatInspectorDateTime,
 } from "../lib/inspector-utils";
+import { useRuntimeViewerTimeZone } from "../lib/runtime-time";
 
 type Status = "JOINED" | "NOT_JOINED" | "UNCERTAIN";
 
@@ -29,6 +30,7 @@ export default function AdminSessionInspectorRoleCard({
 }) {
   const t = useTranslations("admin-session-runtime");
   const locale = useLocale();
+  const viewerTimeZone = useRuntimeViewerTimeZone();
   const isPatient = role === "patient";
   const heading = t(
     `inspector.role.${role}` as Parameters<typeof t>[0],
@@ -67,11 +69,8 @@ export default function AdminSessionInspectorRoleCard({
   if (summary.hasDuplicateLikeJoinEvents)
     notes.push(t("inspector.role.duplicateNote"));
 
-  const firstJoined = formatInspectorDateTime(
-    summary.firstJoinedAt,
-    locale,
-  );
-  const lastLeft = formatInspectorDateTime(summary.lastLeftAt, locale);
+  const firstJoined = formatInspectorDateTime(summary.firstJoinedAt, locale, viewerTimeZone);
+  const lastLeft = formatInspectorDateTime(summary.lastLeftAt, locale, viewerTimeZone);
 
   const notAvailable = t("inspector.notAvailable");
 

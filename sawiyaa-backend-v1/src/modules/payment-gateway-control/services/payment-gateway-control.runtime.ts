@@ -9,7 +9,8 @@ import { ConfigType } from '@nestjs/config';
 import { NotFoundException } from '@nestjs/common';
 import { ConfigDataType, PaymentProvider, Prisma } from '@prisma/client';
 import paymentConfig from '@config/payment.config';
-import { ResolveConfigValueUseCase } from '@modules/config/use-cases/resolve-config-value.use-case';
+import { ConfigRuntimeService } from '@modules/config/services/config-runtime.service';
+import { ConfigKey } from '@modules/config/registry/config-key.constants';
 import {
   PaymobCheckoutFlow,
   PaymobCheckoutFlowValue,
@@ -22,7 +23,6 @@ import {
   PaymentRouteCatalogEntry,
   PaymentRouteReadiness,
   PaymentRoutingRuntimeSnapshot,
-  PaymobGatewayControlMethodEntry,
   PaymobGatewayControlRuntimeSnapshot,
   StripeGatewayControlRuntimeSnapshot,
 } from '../types/payment-gateway-control.types';
@@ -53,7 +53,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   constructor(
     @Inject(paymentConfig.KEY)
     private readonly paymentCfg: ConfigType<typeof paymentConfig>,
-    private readonly resolveConfigValueUseCase: ResolveConfigValueUseCase,
+    private readonly configRuntimeService: ConfigRuntimeService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -83,7 +83,8 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   getRoutingSnapshot(): PaymentRoutingRuntimeSnapshot {
-    const snapshot = this.routingSnapshot ?? this.buildFallbackRoutingSnapshot();
+    const snapshot =
+      this.routingSnapshot ?? this.buildFallbackRoutingSnapshot();
     const routeCatalog = this.buildRouteCatalog();
     return {
       ...snapshot,
@@ -352,7 +353,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     const snapshot = this.getPaymobSnapshot();
 
     return {
-      enabled: this.paymentCfg.paymob.enabled && snapshot.enabled,
+      enabled: snapshot.enabled,
       mode: this.paymentCfg.paymob.mode,
       apiKey: this.toNullable(this.paymentCfg.paymob.apiKey),
       publicKey: this.toNullable(this.paymentCfg.paymob.publicKey),
@@ -390,7 +391,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     const snapshot = this.getStripeSnapshot();
 
     return {
-      enabled: this.paymentCfg.stripe.enabled && snapshot.enabled,
+      enabled: snapshot.enabled,
       mode: this.paymentCfg.stripe.mode,
       publishableKey: this.toNullable(this.paymentCfg.stripe.publishableKey),
       secretKey: this.toNullable(this.paymentCfg.stripe.secretKey),
@@ -668,25 +669,14 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   private buildPaymobEnvSnapshot(): PaymobGatewayControlRuntimeSnapshot {
-    const envMethods = this.parseMethodRegistry(
-      this.paymentCfg.paymob.methodRegistryJson,
-    );
-    const methodRegistry =
-      envMethods.length > 0
-        ? envMethods
-        : this.buildPaymobLegacyFallbackRegistry();
-
     return {
       provider: PaymentProvider.PAYMOB,
-      enabled: this.paymentCfg.paymob.enabled,
-      checkoutFlow: this.paymentCfg.paymob
-        .checkoutFlow as PaymobCheckoutFlowValue,
-      defaultMethod: this.toNullable(
-        this.paymentCfg.paymob.defaultCheckoutMethod,
-      ),
+      enabled: false,
+      checkoutFlow: 'legacy' as PaymobCheckoutFlowValue,
+      defaultMethod: null,
       maintenanceMode: false,
       allowedCountryIsoCodes: [],
-      methodRegistry,
+      methodRegistry: [],
       sources: {
         enabled: 'env',
         checkoutFlow: 'env',
@@ -703,7 +693,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   private buildStripeEnvSnapshot(): StripeGatewayControlRuntimeSnapshot {
     return {
       provider: PaymentProvider.STRIPE,
-      enabled: this.paymentCfg.stripe.enabled,
+      enabled: false,
       maintenanceMode: false,
       allowedCountryIsoCodes: [],
       validation: { healthy: true, issues: [] },
@@ -845,8 +835,14 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       );
     }
 
-    if (input.currencyRoutes?.value !== null && input.currencyRoutes?.value !== undefined) {
-      const parsed = this.parseCurrencyRoutes(input.currencyRoutes.value, 'DATABASE');
+    if (
+      input.currencyRoutes?.value !== null &&
+      input.currencyRoutes?.value !== undefined
+    ) {
+      const parsed = this.parseCurrencyRoutes(
+        input.currencyRoutes.value,
+        'DATABASE',
+      );
       if (parsed.length > 0 || input.currencyRoutes.source === 'database') {
         overrides.currencyRoutes = parsed;
       }
@@ -910,15 +906,12 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       allowedCountryIsoCodes,
       methodRegistry,
       sources: {
-        enabled: overrides.enabled === undefined ? 'env' : 'config',
-        checkoutFlow: overrides.checkoutFlow === undefined ? 'env' : 'config',
-        defaultMethod: overrides.defaultMethod === undefined ? 'env' : 'config',
-        maintenanceMode:
-          overrides.maintenanceMode === undefined ? 'env' : 'config',
-        allowedCountryIsoCodes:
-          overrides.allowedCountryIsoCodes === undefined ? 'env' : 'config',
-        methodRegistry:
-          overrides.methodRegistry === undefined ? 'env' : 'config',
+        enabled: 'config',
+        checkoutFlow: 'config',
+        defaultMethod: 'config',
+        maintenanceMode: 'config',
+        allowedCountryIsoCodes: 'config',
+        methodRegistry: 'config',
       },
       validation: { healthy: true, issues: [] },
       updatedAt: envSnapshot.updatedAt,
@@ -941,11 +934,9 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       maintenanceMode,
       allowedCountryIsoCodes,
       sources: {
-        enabled: overrides.enabled === undefined ? 'env' : 'config',
-        maintenanceMode:
-          overrides.maintenanceMode === undefined ? 'env' : 'config',
-        allowedCountryIsoCodes:
-          overrides.allowedCountryIsoCodes === undefined ? 'env' : 'config',
+        enabled: 'config',
+        maintenanceMode: 'config',
+        allowedCountryIsoCodes: 'config',
       },
       validation: { healthy: true, issues: [] },
       updatedAt: envSnapshot.updatedAt,
@@ -956,15 +947,6 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     envSnapshot: PaymentRoutingRuntimeSnapshot,
     overrides: Partial<PaymentRoutingRuntimeSnapshot>,
   ): PaymentRoutingRuntimeSnapshot {
-    const defaultProvider =
-      overrides.defaultProvider === undefined
-        ? envSnapshot.defaultProvider
-        : overrides.defaultProvider;
-    const priorityOrder = overrides.priorityOrder ?? envSnapshot.priorityOrder;
-    const fallbackProvider =
-      overrides.fallbackProvider === undefined
-        ? envSnapshot.fallbackProvider
-        : overrides.fallbackProvider;
     const currencyRoutes = this.mergeCurrencyRoutes(
       envSnapshot.currencyRoutes,
       overrides.currencyRoutes,
@@ -984,8 +966,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
         defaultProvider: 'config',
         priorityOrder: 'config',
         fallbackProvider: 'config',
-        currencyRoutes:
-          overrides.currencyRoutes === undefined ? 'env' : 'config',
+        currencyRoutes: 'config',
       },
       validation: { healthy: true, issues: [] },
       updatedAt: envSnapshot.updatedAt,
@@ -1022,7 +1003,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
           paymob.validation.healthy &&
           alias.configured,
         issues: [
-          ...(paymob.enabled ? [] : ['PAYMENT_PAYMOB_ENABLED']),
+          ...(paymob.enabled ? [] : ['PAYMENT_PROVIDER_DISABLED']),
           ...(paymob.maintenanceMode ? ['PAYMOB_MAINTENANCE_MODE'] : []),
           ...(alias.configured ? [] : [alias.variable]),
         ],
@@ -1032,9 +1013,12 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
         integrationKey: 'stripe-card',
         currencyCodes: ['EGP', 'USD'],
         paymentMethods: ['CARD'],
-        ready: stripe.enabled && !stripe.maintenanceMode && stripe.validation.healthy,
+        ready:
+          stripe.enabled &&
+          !stripe.maintenanceMode &&
+          stripe.validation.healthy,
         issues: [
-          ...(stripe.enabled ? [] : ['PAYMENT_STRIPE_ENABLED']),
+          ...(stripe.enabled ? [] : ['PAYMENT_PROVIDER_DISABLED']),
           ...(stripe.maintenanceMode ? ['STRIPE_MAINTENANCE_MODE'] : []),
           ...(!stripe.validation.healthy ? stripe.validation.issues : []),
         ],
@@ -1087,21 +1071,43 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     if (!Array.isArray(value)) return [];
 
     return value
-      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
+      .filter((item): item is Record<string, unknown> =>
+        Boolean(item && typeof item === 'object'),
+      )
       .map((item) => ({
-        currencyCode: String(item.currencyCode ?? '').trim().toUpperCase(),
-        paymentMethod: String(item.paymentMethod ?? '').trim().toUpperCase(),
-        provider: this.normalizeProviderKey(String(item.provider ?? '')) as PaymentRoute['provider'],
-        integrationKey: String(item.integrationKey ?? '').trim(),
+        currencyCode: (typeof item.currencyCode === 'string'
+          ? item.currencyCode
+          : ''
+        )
+          .trim()
+          .toUpperCase(),
+        paymentMethod: (typeof item.paymentMethod === 'string'
+          ? item.paymentMethod
+          : ''
+        )
+          .trim()
+          .toUpperCase(),
+        provider: this.normalizeProviderKey(
+          typeof item.provider === 'string' ? item.provider : '',
+        ) as PaymentRoute['provider'],
+        integrationKey:
+          typeof item.integrationKey === 'string'
+            ? item.integrationKey.trim()
+            : '',
         environment: this.normalizeEnvironment(item.environment),
         enabled: item.enabled !== false,
-        priority: Number.isFinite(Number(item.priority)) ? Number(item.priority) : -1,
+        priority: Number.isFinite(Number(item.priority))
+          ? Number(item.priority)
+          : -1,
         source,
       }))
-      .filter((route): route is PaymentRoute =>
-        (route.currencyCode === 'EGP' || route.currencyCode === 'USD') &&
-        Boolean(route.paymentMethod && route.integrationKey && route.provider) &&
-        route.priority >= 0,
+      .filter(
+        (route): route is PaymentRoute =>
+          (route.currencyCode === 'EGP' || route.currencyCode === 'USD') &&
+          Boolean(
+            route.paymentMethod && route.integrationKey && route.provider,
+          ) &&
+          route.priority >= 0,
       );
   }
 
@@ -1137,7 +1143,9 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   private normalizeEnvironment(value: unknown): PaymentRoute['environment'] {
-    return value === 'production' || value === 'staging' ? value : 'development';
+    return value === 'production' || value === 'staging'
+      ? value
+      : 'development';
   }
 
   private validatePaymobSnapshot(
@@ -1260,7 +1268,9 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       const key = `${route.currencyCode}:${route.paymentMethod}:${route.environment}`;
       const previous = activeRouteKeys.get(key);
       if (previous && previous.priority === route.priority) {
-        issues.push(`Ambiguous enabled payment routes for ${key} at priority ${route.priority}.`);
+        issues.push(
+          `Ambiguous enabled payment routes for ${key} at priority ${route.priority}.`,
+        );
       }
       activeRouteKeys.set(key, route);
     }
@@ -1328,46 +1338,6 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
       return left.label.localeCompare(right.label);
     });
-  }
-
-  private buildPaymobLegacyFallbackRegistry(): PaymobGatewayControlMethodEntry[] {
-    const methods: PaymobGatewayControlMethodEntry[] = [];
-
-    if (this.paymentCfg.paymob.integrationIdCard) {
-      methods.push({
-        key: PaymobCheckoutMethod.CARD,
-        label: 'Card',
-        type: 'CARD',
-        enabled: true,
-        priority: 100,
-        integrationId: this.paymentCfg.paymob.integrationIdCard,
-        supportedCheckoutFlows: [
-          PaymobCheckoutFlow.LEGACY,
-          PaymobCheckoutFlow.INTENTION,
-        ],
-        currencyCodes: [],
-        countryIsoCodes: [],
-      });
-    }
-
-    if (this.paymentCfg.paymob.integrationIdWallet) {
-      methods.push({
-        key: PaymobCheckoutMethod.WALLET,
-        label: 'Mobile Wallet',
-        type: 'WALLET',
-        enabled: true,
-        priority: 80,
-        integrationId: this.paymentCfg.paymob.integrationIdWallet,
-        supportedCheckoutFlows: [
-          PaymobCheckoutFlow.LEGACY,
-          PaymobCheckoutFlow.INTENTION,
-        ],
-        currencyCodes: [],
-        countryIsoCodes: [],
-      });
-    }
-
-    return methods;
   }
 
   private parseMethodRegistry(raw: unknown): PaymobMethodRegistryEntry[] {
@@ -1571,10 +1541,10 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   }
 
   private async resolveConfigValue(
-    key: string,
+    key: ConfigKey,
   ): Promise<ResolvedConfig | null> {
     try {
-      return (await this.resolveConfigValueUseCase.execute(
+      return (await this.configRuntimeService.resolveValue(
         key,
       )) as ResolvedConfig;
     } catch (error) {

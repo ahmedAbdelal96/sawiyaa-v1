@@ -4,15 +4,34 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { Eye, MessagesSquare, Paperclip, Search, ShieldCheck, ShieldX } from "lucide-react";
-import { DataTable, buildUpdatedSearchParams, parseEnumParam, parsePositiveIntParam, parseTextParam, type ColumnDef, type SortConfig } from "@/components/ui/data-table";
+import {
+  Eye,
+  MessagesSquare,
+  Paperclip,
+  Search,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
+import {
+  DataTable,
+  buildUpdatedSearchParams,
+  parseEnumParam,
+  parsePositiveIntParam,
+  parseTextParam,
+  type ColumnDef,
+  type SortConfig,
+} from "@/components/ui/data-table";
 import AdminOperationalListShell from "@/components/shared/admin/AdminOperationalListShell";
 import ActionIconButton from "@/components/ui/action-icon-button/ActionIconButton";
 import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import DateField from "@/components/form/input/DateField";
-import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
+import {
+  DEFAULT_PAGE_LIMIT,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+} from "@/constants/pagination";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 import { useAdminChatConversationsList } from "../hooks/use-admin-chat-conversations";
 import type {
   AdminChatConversationListItem,
@@ -34,7 +53,10 @@ const STATUS_FILTERS: Array<AdminChatConversationStatusFilter> = [
   "ARCHIVED",
 ];
 
-const SORT_DIRECTION_FILTERS: Array<AdminChatConversationSortDirection> = ["desc", "asc"];
+const SORT_DIRECTION_FILTERS: Array<AdminChatConversationSortDirection> = [
+  "desc",
+  "asc",
+];
 
 const DEFAULT_SORT_BY: AdminChatConversationSortBy = "lastMessageAt";
 const DEFAULT_SORT_DIRECTION: AdminChatConversationSortDirection = "desc";
@@ -66,7 +88,12 @@ function getStatusLabel(
 }
 
 function getLastActivityValue(item: AdminChatConversationListItem) {
-  return item.lastMessageAt ?? item.sessionDateTime ?? item.updatedAt ?? item.createdAt;
+  return (
+    item.lastMessageAt ??
+    item.sessionDateTime ??
+    item.updatedAt ??
+    item.createdAt
+  );
 }
 
 function ConversationPreviewBadge({
@@ -87,7 +114,9 @@ function ConversationPreviewBadge({
           : "bg-surface-secondary text-text-secondary";
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${toneClass}`}>
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${toneClass}`}
+    >
       {getPreviewTypeLabel(t, type)}
     </span>
   );
@@ -111,7 +140,9 @@ function StatusBadge({
           : "bg-surface-secondary text-text-secondary";
 
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${toneClass}`}>
+    <span
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${toneClass}`}
+    >
       {getStatusLabel(t, item)}
     </span>
   );
@@ -120,29 +151,41 @@ function StatusBadge({
 export default function AdminChatConversationsListScreen() {
   const t = useTranslations("admin-chat-conversations");
   const locale = useLocale();
+  const settingsQuery = useMySettings();
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: permissionData } = useCurrentUserPermissions(true);
   const permissions = new Set(permissionData?.permissions ?? []);
-  const canModerate = permissions.has(PermissionKey.CHAT_CONVERSATIONS_MODERATE);
-  const canReadAttachments = permissions.has(PermissionKey.CHAT_ATTACHMENTS_READ);
+  const canModerate = permissions.has(
+    PermissionKey.CHAT_CONVERSATIONS_MODERATE,
+  );
+  const canReadAttachments = permissions.has(
+    PermissionKey.CHAT_ATTACHMENTS_READ,
+  );
 
   const [searchInput, setSearchInput] = useState(
     parseTextParam(searchParams.get("search"), { maxLength: 120 }),
   );
 
   const page = parsePositiveIntParam(searchParams.get("page"), 1, { min: 1 });
-  const limit = parsePositiveIntParam(searchParams.get("limit"), DEFAULT_PAGE_LIMIT, {
-    min: 1,
-    max: 100,
-  });
+  const limit = parsePositiveIntParam(
+    searchParams.get("limit"),
+    DEFAULT_PAGE_LIMIT,
+    {
+      min: 1,
+      max: 100,
+    },
+  );
   const status = parseEnumParam<AdminChatConversationStatusFilter>(
     searchParams.get("status"),
     STATUS_FILTERS,
     "ALL",
   );
-  const fromDate = parseTextParam(searchParams.get("fromDate"), { maxLength: 32 });
+  const fromDate = parseTextParam(searchParams.get("fromDate"), {
+    maxLength: 32,
+  });
   const toDate = parseTextParam(searchParams.get("toDate"), { maxLength: 32 });
   const hasAttachmentsOnly = searchParams.get("hasAttachmentsOnly") === "true";
   const sortDirection = parseEnumParam<AdminChatConversationSortDirection>(
@@ -172,16 +215,29 @@ export default function AdminChatConversationsListScreen() {
       sortBy,
       sortDirection,
     }),
-    [fromDate, hasAttachmentsOnly, limit, page, searchInput, sortBy, sortDirection, status, toDate],
+    [
+      fromDate,
+      hasAttachmentsOnly,
+      limit,
+      page,
+      searchInput,
+      sortBy,
+      sortDirection,
+      status,
+      toDate,
+    ],
   );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       if ((searchParams.get("search") ?? "") === searchInput.trim()) return;
-      const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), {
-        search: searchInput.trim() || null,
-        page: 1,
-      });
+      const next = buildUpdatedSearchParams(
+        new URLSearchParams(searchParams.toString()),
+        {
+          search: searchInput.trim() || null,
+          page: 1,
+        },
+      );
       const query = next.toString();
       router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, 250);
@@ -192,10 +248,17 @@ export default function AdminChatConversationsListScreen() {
   const query = useAdminChatConversationsList(params, { enabled: true });
   const data = query.data;
 
-  const updateListQuery = (updates: Record<string, string | number | null | undefined>) => {
-    const next = buildUpdatedSearchParams(new URLSearchParams(searchParams.toString()), updates);
+  const updateListQuery = (
+    updates: Record<string, string | number | null | undefined>,
+  ) => {
+    const next = buildUpdatedSearchParams(
+      new URLSearchParams(searchParams.toString()),
+      updates,
+    );
     const queryString = next.toString();
-    router.push(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    router.push(queryString ? `${pathname}?${queryString}` : pathname, {
+      scroll: false,
+    });
   };
 
   const columns = useMemo<ColumnDef<AdminChatConversationListItem>[]>(
@@ -203,14 +266,17 @@ export default function AdminChatConversationsListScreen() {
       {
         id: "patient",
         header: t("columns.patient"),
-        accessor: (row) => row.patientName ?? row.patientEmail ?? row.conversationId,
+        accessor: (row) =>
+          row.patientName ?? row.patientEmail ?? row.conversationId,
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+            <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
               {row.patientName ?? t("common.unknownPatient")}
             </p>
             {row.patientEmail ? (
-              <p className="mt-1 truncate text-xs text-text-muted">{row.patientEmail}</p>
+              <p className="text-text-muted mt-1 truncate text-xs">
+                {row.patientEmail}
+              </p>
             ) : null}
           </div>
         ),
@@ -221,11 +287,13 @@ export default function AdminChatConversationsListScreen() {
         accessor: (row) => row.practitionerName ?? row.practitionerEmail ?? "",
         cell: (row) => (
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+            <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
               {row.practitionerName ?? t("common.unknownPractitioner")}
             </p>
             {row.practitionerEmail ? (
-              <p className="mt-1 truncate text-xs text-text-muted">{row.practitionerEmail}</p>
+              <p className="text-text-muted mt-1 truncate text-xs">
+                {row.practitionerEmail}
+              </p>
             ) : null}
           </div>
         ),
@@ -236,10 +304,16 @@ export default function AdminChatConversationsListScreen() {
         accessor: (row) => row.sessionDateTime ?? "",
         cell: (row) => (
           <div className="min-w-0">
-            <p className="text-sm font-medium text-text-primary">
-              {formatChatConversationDateTime(row.sessionDateTime, locale)}
+            <p className="text-text-primary text-sm font-medium">
+              {formatChatConversationDateTime(
+                row.sessionDateTime,
+                locale,
+                viewerTimeZone,
+              )}
             </p>
-            <p className="mt-1 truncate text-xs text-text-muted">{row.sessionCode}</p>
+            <p className="text-text-muted mt-1 truncate text-xs">
+              {row.sessionCode}
+            </p>
           </div>
         ),
       },
@@ -248,26 +322,37 @@ export default function AdminChatConversationsListScreen() {
         header: t("columns.lastActivity"),
         accessor: (row) => getLastActivityValue(row),
         sortable: true,
-        cell: (row) => formatChatConversationDateTime(getLastActivityValue(row), locale),
+        cell: (row) =>
+          formatChatConversationDateTime(
+            getLastActivityValue(row),
+            locale,
+            viewerTimeZone,
+          ),
       },
       {
         id: "lastMessagePreviewType",
         header: t("columns.lastMessageType"),
         accessor: (row) => row.lastMessagePreviewType,
-        cell: (row) => <ConversationPreviewBadge t={t} type={row.lastMessagePreviewType} />,
+        cell: (row) => (
+          <ConversationPreviewBadge t={t} type={row.lastMessagePreviewType} />
+        ),
       },
       {
         id: "messagesCount",
         header: t("columns.messages"),
         accessor: (row) => row.messagesCount,
-        cell: (row) => <span className="font-semibold text-text-primary">{row.messagesCount}</span>,
+        cell: (row) => (
+          <span className="text-text-primary font-semibold">
+            {row.messagesCount}
+          </span>
+        ),
       },
       {
         id: "attachmentsCount",
         header: t("columns.attachments"),
         accessor: (row) => row.attachmentsCount,
         cell: (row) => (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-secondary px-2.5 py-1 text-xs font-semibold text-text-secondary">
+          <span className="bg-surface-secondary text-text-secondary inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold">
             <Paperclip className="h-3.5 w-3.5" />
             {canReadAttachments ? row.attachmentsCount : "—"}
           </span>
@@ -280,7 +365,7 @@ export default function AdminChatConversationsListScreen() {
         cell: (row) => <StatusBadge t={t} item={row} />,
       },
     ],
-    [canReadAttachments, locale, t],
+    [canReadAttachments, locale, t, viewerTimeZone],
   );
 
   return (
@@ -292,11 +377,11 @@ export default function AdminChatConversationsListScreen() {
         <div className="space-y-4">
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,0.95fr)_auto]">
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
                 {t("filters.search")}
               </span>
               <div className="relative">
-                <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+                <Search className="text-text-muted pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
@@ -307,14 +392,15 @@ export default function AdminChatConversationsListScreen() {
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
                 {t("filters.status")}
               </span>
               <select
                 value={status}
                 onChange={(event) =>
                   updateListQuery({
-                    status: event.target.value === "ALL" ? null : event.target.value,
+                    status:
+                      event.target.value === "ALL" ? null : event.target.value,
                     page: 1,
                   })
                 }
@@ -322,50 +408,61 @@ export default function AdminChatConversationsListScreen() {
               >
                 {STATUS_FILTERS.map((item) => (
                   <option key={item} value={item}>
-                    {item === "ALL" ? t("filters.allStatuses") : t(`status.${item}` as Parameters<typeof t>[0])}
+                    {item === "ALL"
+                      ? t("filters.allStatuses")
+                      : t(`status.${item}` as Parameters<typeof t>[0])}
                   </option>
                 ))}
               </select>
             </label>
-
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <DateField
               label={t("filters.fromDate")}
               value={fromDate}
-              onChange={(value) => updateListQuery({ fromDate: value || null, page: 1 })}
+              onChange={(value) =>
+                updateListQuery({ fromDate: value || null, page: 1 })
+              }
               placeholder={t("filters.datePlaceholder")}
             />
 
             <DateField
               label={t("filters.toDate")}
               value={toDate}
-              onChange={(value) => updateListQuery({ toDate: value || null, page: 1 })}
+              onChange={(value) =>
+                updateListQuery({ toDate: value || null, page: 1 })
+              }
               placeholder={t("filters.datePlaceholder")}
             />
 
-            <label className="flex items-end gap-3 rounded-2xl border border-border-light bg-surface-secondary px-4 py-3">
+            <label className="border-border-light bg-surface-secondary flex items-end gap-3 rounded-2xl border px-4 py-3">
               <input
                 type="checkbox"
                 checked={hasAttachmentsOnly}
                 onChange={(event) =>
-                  updateListQuery({ hasAttachmentsOnly: event.target.checked ? "true" : null, page: 1 })
+                  updateListQuery({
+                    hasAttachmentsOnly: event.target.checked ? "true" : null,
+                    page: 1,
+                  })
                 }
-                className="mt-0.5 h-4 w-4 rounded border-border-light text-primary focus:ring-primary"
+                className="border-border-light text-primary focus:ring-primary mt-0.5 h-4 w-4 rounded"
               />
-              <span className="text-sm font-medium text-text-primary">{t("filters.hasAttachmentsOnly")}</span>
+              <span className="text-text-primary text-sm font-medium">
+                {t("filters.hasAttachmentsOnly")}
+              </span>
             </label>
 
             <label className="block">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <span className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase">
                 {t("filters.sort")}
               </span>
               <select
                 value={sortDirection}
                 onChange={(event) =>
                   updateListQuery({
-                    sortDirection: event.target.value === "asc" ? "asc" : "desc",
+                    sortDirection:
+                      event.target.value === "asc" ? "asc" : "desc",
                     page: 1,
                   })
                 }
@@ -373,7 +470,9 @@ export default function AdminChatConversationsListScreen() {
               >
                 {SORT_DIRECTION_FILTERS.map((direction) => (
                   <option key={direction} value={direction}>
-                    {direction === "desc" ? t("filters.sortNewest") : t("filters.sortOldest")}
+                    {direction === "desc"
+                      ? t("filters.sortNewest")
+                      : t("filters.sortOldest")}
                   </option>
                 ))}
               </select>
@@ -381,7 +480,7 @@ export default function AdminChatConversationsListScreen() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-text-secondary">
+            <p className="text-text-secondary text-sm">
               {data
                 ? t("list.count", { value: data.pagination.totalItems })
                 : t("list.countLoading")}
@@ -418,10 +517,12 @@ export default function AdminChatConversationsListScreen() {
             onClick: () => query.refetch(),
           },
         }}
-        sortConfig={{
-          column: "lastMessageAt",
-          direction: sortDirection,
-        } satisfies SortConfig}
+        sortConfig={
+          {
+            column: "lastMessageAt",
+            direction: sortDirection,
+          } satisfies SortConfig
+        }
         onSortChange={(nextSort) =>
           updateListQuery({
             sortDirection: nextSort.direction,
@@ -438,7 +539,9 @@ export default function AdminChatConversationsListScreen() {
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                router.push(`/admin/chat-conversations/${row.conversationId}` as never);
+                router.push(
+                  `/admin/chat-conversations/${row.conversationId}` as never,
+                );
               }}
             />
 
@@ -450,12 +553,16 @@ export default function AdminChatConversationsListScreen() {
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  router.push(`/admin/chat-conversations/${row.conversationId}?action=disable` as never);
+                  router.push(
+                    `/admin/chat-conversations/${row.conversationId}?action=disable` as never,
+                  );
                 }}
               />
             ) : null}
 
-            {canModerate && row.status === "SENDING_DISABLED" && row.closedBy === "ADMIN" ? (
+            {canModerate &&
+            row.status === "SENDING_DISABLED" &&
+            row.closedBy === "ADMIN" ? (
               <ActionIconButton
                 intent="publish"
                 label={t("actions.enableSending")}
@@ -463,13 +570,19 @@ export default function AdminChatConversationsListScreen() {
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  router.push(`/admin/chat-conversations/${row.conversationId}?action=enable` as never);
+                  router.push(
+                    `/admin/chat-conversations/${row.conversationId}?action=enable` as never,
+                  );
                 }}
               />
             ) : null}
           </div>
         )}
-        onRowClick={(row) => router.push(`/admin/chat-conversations/${row.conversationId}` as never)}
+        onRowClick={(row) =>
+          router.push(
+            `/admin/chat-conversations/${row.conversationId}` as never,
+          )
+        }
         pagination={
           data
             ? {
@@ -483,10 +596,12 @@ export default function AdminChatConversationsListScreen() {
             : undefined
         }
         onPageChange={(nextPage) => updateListQuery({ page: nextPage })}
-        onPageSizeChange={(nextLimit) => updateListQuery({ limit: nextLimit, page: 1 })}
+        onPageSizeChange={(nextLimit) =>
+          updateListQuery({ limit: nextLimit, page: 1 })
+        }
         pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
         emptyState={{
-          icon: <MessagesSquare className="h-5 w-5 text-primary" />,
+          icon: <MessagesSquare className="text-primary h-5 w-5" />,
           title: t("states.empty.title"),
           description: t("states.empty.description"),
         }}

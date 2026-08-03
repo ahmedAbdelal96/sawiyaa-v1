@@ -1,90 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { Activity, ArrowLeft, Database, MonitorPlay } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import {
-  Activity,
-  ArrowLeft,
-  Database,
-  MonitorPlay,
-  Radar,
-  ShieldCheck,
-} from "lucide-react";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+  ListStateSkeleton,
+  StateCard,
+} from "@/components/shared/ContentStates";
+import { resolveEffectiveViewerTimeZone } from "@/lib/time-formatting";
+import { PermissionKey } from "@/lib/auth/permissions";
+import {
+  useCurrentUser,
+  useCurrentUserPermissions,
+} from "@/features/users/hooks/use-users";
 import { getAdminSessionAttendanceErrorKey } from "../lib/admin-session-runtime-errors";
+import {
+  canWriteRuntimeInspector,
+  normalizeRuntimeInspectorTab,
+  RUNTIME_INSPECTOR_TABS,
+  type RuntimeInspectorTab,
+} from "../lib/runtime-inspector-state";
+import { RuntimeViewerTimeZoneProvider } from "../lib/runtime-time";
 import {
   useAdminSessionAttendance,
   useAdminSessionRuntimeInspection,
 } from "../hooks/use-admin-session-runtime";
-import {
-  useAdminSessionManualDecisions,
-} from "../hooks/use-admin-session-manual-decisions";
-import { PermissionKey } from "@/lib/auth/permissions";
-import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
-import AdminSessionInspectorCaseSummary from "./AdminSessionInspectorCaseSummary";
+import { useAdminSessionManualDecisions } from "../hooks/use-admin-session-manual-decisions";
 import AdminSessionInspectorEvidenceFlagsPanel from "./AdminSessionInspectorEvidenceFlagsPanel";
 import AdminSessionInspectorOverlapCard from "./AdminSessionInspectorOverlapCard";
 import AdminSessionInspectorRawEvidence from "./AdminSessionInspectorRawEvidence";
-import AdminSessionInspectorRecommendationPanel from "./AdminSessionInspectorRecommendationPanel";
 import AdminSessionInspectorRoleCard from "./AdminSessionInspectorRoleCard";
 import AdminSessionRoomCloseEvidencePanel from "./AdminSessionRoomCloseEvidencePanel";
 import AdminSessionInspectorTimeline from "./AdminSessionInspectorTimeline";
 import AdminSessionManualDecisionHistory from "./AdminSessionManualDecisionHistory";
 import AdminSessionPackageEntitlementPanel from "./AdminSessionPackageEntitlementPanel";
 import AdminSessionManualDecisionPanel from "./AdminSessionManualDecisionPanel";
-import { OUTCOME_TONE, type OutcomeTone } from "../lib/inspector-utils";
-import type { AdminSessionStatus } from "../types/admin-session-runtime.types";
-
-const STATUS_STYLES: Partial<Record<AdminSessionStatus, string>> = {
-  PENDING_PAYMENT:
-    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  UPCOMING:
-    "bg-primary-light text-text-brand dark:bg-primary/15 dark:text-primary-light",
-  READY_TO_JOIN:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  IN_PROGRESS:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  COMPLETED: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-white/70",
-  CANCELLED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  PATIENT_NO_SHOW: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  PRACTITIONER_NO_SHOW:
-    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  BOTH_NO_SHOW:
-    "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
-  AWAITING_COMPLETION_CONFIRMATION:
-    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-};
-
-function pickRiskCount(evidence: {
-  hasOpenIntervalsWithoutCloseBoundary: boolean;
-  hasOnlyPatientJoined: boolean;
-  hasOnlyPractitionerJoined: boolean;
-  hasNoParticipants: boolean;
-  hasReconnects: boolean;
-  hasMissingJoinEvent: boolean;
-  hasMissingLeaveEvent: boolean;
-  hasTechnicalRisk: boolean;
-  hasPrematureDecisionRisk: boolean;
-  hasDuplicateLikeJoinEvents: boolean;
-  hasOutOfOrderEvents: boolean;
-  unknownParticipantEventCount: number;
-}): number {
-  let n = 0;
-  if (evidence.hasOpenIntervalsWithoutCloseBoundary) n++;
-  if (evidence.hasOnlyPatientJoined) n++;
-  if (evidence.hasOnlyPractitionerJoined) n++;
-  if (evidence.hasNoParticipants) n++;
-  if (evidence.hasReconnects) n++;
-  if (evidence.hasMissingJoinEvent) n++;
-  if (evidence.hasMissingLeaveEvent) n++;
-  if (evidence.hasTechnicalRisk) n++;
-  if (evidence.hasPrematureDecisionRisk) n++;
-  if (evidence.hasDuplicateLikeJoinEvents) n++;
-  if (evidence.hasOutOfOrderEvents) n++;
-  if (evidence.unknownParticipantEventCount > 0) n++;
-  return n;
-}
+import AdminSessionRuntimeSummary from "./AdminSessionRuntimeSummary";
+import AdminSessionEvidenceSummary from "./AdminSessionEvidenceSummary";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 export default function AdminSessionRuntimeInspectorScreen({
   initialSessionId,
@@ -92,261 +47,326 @@ export default function AdminSessionRuntimeInspectorScreen({
   initialSessionId?: string;
 }) {
   const t = useTranslations("admin-session-runtime");
-  const locale = useLocale();
-  const [sessionId, setSessionId] = useState(initialSessionId ?? "");
-  const [submittedId, setSubmittedId] = useState(initialSessionId ?? "");
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  const inspection = useAdminSessionRuntimeInspection(
-    submittedId,
-  );
-  const attendance = useAdminSessionAttendance(
-    submittedId,
+  const searchParams = useSearchParams();
+  const submittedId = initialSessionId?.trim() ?? "";
+  const [activeTab, setActiveTab] = useState<RuntimeInspectorTab>(() =>
+    normalizeRuntimeInspectorTab(searchParams.get("tab")),
   );
 
-  // Phase 4B — decisions list + permission check
+  const inspection = useAdminSessionRuntimeInspection(submittedId);
+  const attendance = useAdminSessionAttendance(submittedId);
   const decisions = useAdminSessionManualDecisions(submittedId);
-  const { data: permissionData } = useCurrentUserPermissions(true);
-  const hasWritePermission = Boolean(
-    permissionData?.permissions?.includes(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE),
+  const currentUser = useCurrentUser(true);
+  const permissions = useCurrentUserPermissions(true);
+  const viewerTimeZone = resolveEffectiveViewerTimeZone(
+    currentUser.data?.timezone,
+  );
+  const hasWritePermission = canWriteRuntimeInspector(
+    permissions.data?.permissions,
+    permissions.isLoading || permissions.isError,
   );
   const decisionItems = decisions.data?.items ?? [];
-  const latestFinal = decisionItems.find((d: { isFinal: boolean }) => d.isFinal) ?? null;
-  const hasExistingFinal = latestFinal !== null;
-
+  const latestFinal =
+    decisionItems.find((decision: { isFinal: boolean }) => decision.isFinal) ??
+    null;
   const item = inspection.data?.item;
   const extended = attendance.data?.extendedSummary ?? null;
   const timeline = attendance.data?.timeline ?? [];
-  // Phase 3 — prefer the unified evidence timeline; fall back to the
-  // attendance-only timeline. Use the inspection participants first, then
-  // attendance participants (whichever loaded first).
   const evidenceTimeline = attendance.data?.evidenceTimeline ?? [];
-  const inspectorParticipants =
+  const participants =
     item?.participants ?? attendance.data?.participants ?? null;
-  const patientName = inspectorParticipants?.patient.displayName ?? null;
-  const practitionerName =
-    inspectorParticipants?.practitioner.displayName ?? null;
-  const hasEvidenceTimeline =
-    (attendance.data?.evidenceTimeline?.length ?? 0) > 0;
+  const patientName = participants?.patient.displayName ?? null;
+  const practitionerName = participants?.practitioner.displayName ?? null;
+  const relatedSupportTickets = item?.relatedSupportTickets ?? [];
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const changeTab = (tab: RuntimeInspectorTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(window.location.search);
+    if (tab === "overview") params.delete("tab");
+    else params.set("tab", tab);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${params.toString() ? `?${params}` : ""}`,
+    );
+  };
+
+  const handleTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const direction =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (!direction && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    const trimmed = sessionId.trim();
-    if (!trimmed) {
-      setLocalError(t("states.empty.heading"));
-      setSubmittedId("");
-      return;
-    }
-    setLocalError(null);
-    setSubmittedId(trimmed);
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? RUNTIME_INSPECTOR_TABS.length - 1
+          : (index + direction + RUNTIME_INSPECTOR_TABS.length) %
+            RUNTIME_INSPECTOR_TABS.length;
+    changeTab(RUNTIME_INSPECTOR_TABS[nextIndex]);
+    document
+      .getElementById(`runtime-tab-${RUNTIME_INSPECTOR_TABS[nextIndex]}`)
+      ?.focus();
   };
 
   const isLoading = inspection.isLoading || attendance.isLoading;
   const isError = inspection.isError || attendance.isError;
-
-  return (
-    <div className="space-y-6">
-      <section className="app-panel rounded-[32px] p-6 sm:p-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              {t("inspector.page.eyebrow")}
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
-              {t("inspector.page.title")}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-              {t("inspector.page.subtitle")}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-              <ShieldCheck className="h-3 w-3" />
-              {t("inspector.page.advisoryNotice")}
-            </span>
-            {item ? (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  STATUS_STYLES[item.status] ??
-                  "bg-surface-tertiary text-text-muted dark:bg-white/10 dark:text-white/70"
-                }`}
-              >
-                {t(`statuses.${item.status}` as Parameters<typeof t>[0])}
-              </span>
-            ) : null}
-          </div>
+  const content = !submittedId ? (
+    <div className="space-y-3">
+      <StateCard
+        icon={<MonitorPlay className="text-primary h-5 w-5" />}
+        title={t("states.empty.heading")}
+        note={t("states.empty.note")}
+        className="rounded-[28px] p-8"
+      />
+      <Link
+        href="/admin/sessions"
+        className="border-border-light text-text-secondary hover:border-primary/30 hover:text-primary mx-auto inline-flex rounded-full border px-4 py-2 text-xs font-semibold transition"
+      >
+        {t("inspector.header.backToSessions")}
+      </Link>
+    </div>
+  ) : isLoading ? (
+    <ListStateSkeleton items={3} heightClass="h-28" />
+  ) : isError ? (
+    <StateCard
+      icon={<Activity className="text-primary h-5 w-5" />}
+      title={t("states.error.heading")}
+      note={t(
+        getAdminSessionAttendanceErrorKey(
+          attendance.error ?? inspection.error,
+        ) as Parameters<typeof t>[0],
+      )}
+      action={{
+        label: t("states.error.retry"),
+        onClick: () => {
+          inspection.refetch();
+          attendance.refetch();
+        },
+      }}
+      className="rounded-[28px]"
+    />
+  ) : !item ? (
+    <StateCard
+      icon={<MonitorPlay className="text-primary h-5 w-5" />}
+      title={t("states.notFound.heading")}
+      note={t("states.notFound.note")}
+      className="rounded-[28px] p-8"
+    />
+  ) : (
+    <div className="space-y-5">
+      <AdminSessionRuntimeSummary
+        item={item}
+        extended={extended}
+        patientName={patientName}
+        practitionerName={practitionerName}
+      />
+      <nav
+        className="app-panel rounded-[24px] p-2"
+        aria-label={t("inspector.tabs.label")}
+        role="tablist"
+      >
+        <div className="flex flex-wrap gap-1">
+          {RUNTIME_INSPECTOR_TABS.map((tab, index) => (
+            <button
+              key={tab}
+              id={`runtime-tab-${tab}`}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={`runtime-panel-${tab}`}
+              tabIndex={activeTab === tab ? 0 : -1}
+              onClick={() => changeTab(tab)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              className={`rounded-2xl px-3 py-2 text-xs font-semibold transition ${activeTab === tab ? "bg-primary text-white" : "text-text-secondary hover:bg-surface-tertiary dark:hover:bg-white/10"}`}
+            >
+              {t(`inspector.tabs.${tab}` as Parameters<typeof t>[0])}
+            </button>
+          ))}
         </div>
-      </section>
-
-      <section className="app-panel rounded-[28px] p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-text-primary dark:text-white/95">
-              {t("inspector.lookup.heading")}
-            </h2>
-            <p className="mt-1 text-xs text-text-secondary">
-              {t("inspector.lookup.helper")}
-            </p>
-          </div>
-          <Link
-            href="/admin/sessions/runtime-inspection"
-            className="inline-flex items-center gap-2 rounded-full border border-border-light px-4 py-2 text-xs font-semibold text-text-secondary transition hover:border-primary/30 hover:text-primary"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
-            {t("lookup.backToReadiness")}
-          </Link>
+      </nav>
+      {extended && activeTab === "overview" ? (
+        <div id="runtime-panel-overview" role="tabpanel" className="space-y-5">
+          <AdminSessionEvidenceSummary item={item} extended={extended} />
         </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-4 flex flex-col gap-3 sm:flex-row"
+      ) : null}
+      {extended && activeTab === "attendance" ? (
+        <div
+          id="runtime-panel-attendance"
+          role="tabpanel"
+          className="space-y-5"
         >
-          <label className="flex-1">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("inspector.lookup.fieldLabel")}
-            </span>
-            <input
-              value={sessionId}
-              onChange={(event) => setSessionId(event.target.value)}
-              placeholder={t("inspector.lookup.placeholder")}
-              className="w-full rounded-2xl border border-border-light bg-white px-4 py-3 text-sm text-text-primary outline-none transition focus:border-primary/35 dark:bg-white/5 dark:text-white"
+          <AdminSessionInspectorEvidenceFlagsPanel
+            evidence={extended.evidence}
+          />
+          <AdminSessionInspectorTimeline
+            events={timeline}
+            evidenceTimeline={evidenceTimeline}
+            hasEvidenceTimeline={evidenceTimeline.length > 0}
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <AdminSessionInspectorRoleCard
+              role="patient"
+              summary={extended.patient}
             />
-          </label>
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-hover"
-          >
-            <Radar className="h-4 w-4" />
-            {t("inspector.lookup.submit")}
-          </button>
-        </form>
-
-        {localError ? (
-          <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
-            {localError}
-          </p>
-        ) : null}
-      </section>
-
-      {!submittedId ? (
-        <StateCard
-          icon={<MonitorPlay className="h-5 w-5 text-primary" />}
-          title={t("states.empty.heading")}
-          note={t("states.empty.note")}
-          className="rounded-[28px] p-8"
-        />
-      ) : isLoading ? (
-        <ListStateSkeleton items={3} heightClass="h-28" />
-      ) : isError ? (
-        <StateCard
-          icon={<Activity className="h-5 w-5 text-primary" />}
-          title={t("states.error.heading")}
-          note={t(
-            getAdminSessionAttendanceErrorKey(
-              attendance.error ?? inspection.error,
-            ) as Parameters<typeof t>[0],
-          )}
-          action={{
-            label: t("states.error.retry"),
-            onClick: () => {
-              inspection.refetch();
-              attendance.refetch();
-            },
-          }}
-          className="rounded-[28px]"
-        />
-      ) : !item ? (
-        <StateCard
-          icon={<MonitorPlay className="h-5 w-5 text-primary" />}
-          title={t("states.notFound.heading")}
-          note={t("states.notFound.note")}
-          className="rounded-[28px] p-8"
-        />
-      ) : !extended ? (
-        <StateCard
-          icon={<Database className="h-5 w-5 text-primary" />}
-          title={t("inspector.emptyExtended.title")}
-          note={t("inspector.emptyExtended.note")}
-          className="rounded-[28px] p-8"
-        />
-      ) : (
-        <div className="space-y-5">
-          <AdminSessionInspectorCaseSummary
-            item={item}
-            recommendedOutcomeLabel={t(
-              `inspector.outcomes.${extended.recommendation.recommendedOutcome}` as Parameters<typeof t>[0],
-            )}
-            recommendedOutcomeTone={
-              OUTCOME_TONE[extended.recommendation.recommendedOutcome] as OutcomeTone
-            }
-            evidenceConfidence={extended.meeting.sourceConfidence ?? "LOW"}
-            totalRiskFlags={pickRiskCount(extended.evidence)}
-            patientName={patientName}
-            practitionerName={practitionerName}
-          />
-
-          <AdminSessionRoomCloseEvidencePanel
-            videoRoomClose={attendance.data!.videoRoomClose}
-            relatedSupportTickets={attendance.data!.relatedSupportTickets}
-          />
-
-          <AdminSessionPackageEntitlementPanel
-            item={item}
-            hasWritePermission={hasWritePermission}
-          />
-
-          <AdminSessionInspectorRecommendationPanel
-            recommendation={extended.recommendation}
-          />
-
-          {/* Phase 4B — Manual Admin Decision panel */}
-          <AdminSessionManualDecisionPanel
-            sessionId={item.id}
-            hasWritePermission={hasWritePermission}
-            hasExistingFinal={hasExistingFinal}
-            latestFinalDecision={latestFinal}
-          />
-
-          {/* Phase 4B — Manual Decision History */}
-          <AdminSessionManualDecisionHistory sessionId={item.id} />
-
-          <section className="space-y-3">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
-              {t("inspector.role.patient")} ·{" "}
-              {t("inspector.role.practitioner")}
-            </h2>
-            <div className="grid gap-5 md:grid-cols-2">
-              <AdminSessionInspectorRoleCard
-                role="patient"
-                summary={extended.patient}
-              />
-              <AdminSessionInspectorRoleCard
-                role="practitioner"
-                summary={extended.practitioner}
-              />
-            </div>
-          </section>
-
+            <AdminSessionInspectorRoleCard
+              role="practitioner"
+              summary={extended.practitioner}
+            />
+          </div>
           <AdminSessionInspectorOverlapCard
             overlap={extended.overlap}
             meeting={extended.meeting}
           />
-
-          <AdminSessionInspectorEvidenceFlagsPanel
-            evidence={extended.evidence}
+        </div>
+      ) : null}
+      {activeTab === "package" ? (
+        <div id="runtime-panel-package" role="tabpanel" className="space-y-5">
+          {item.packagePurchase ? (
+            <AdminSessionPackageEntitlementPanel
+              item={item}
+              hasWritePermission={hasWritePermission}
+            />
+          ) : (
+            <StateCard
+              icon={<Database className="text-primary h-5 w-5" />}
+              title={t("inspector.summary.noPackage")}
+              note={t("inspector.summary.noPackageNote")}
+              className="rounded-[28px]"
+            />
+          )}
+        </div>
+      ) : null}
+      {activeTab === "decisions" ? (
+        <div id="runtime-panel-decisions" role="tabpanel" className="space-y-5">
+          <AdminSessionEvidenceSummary item={item} extended={extended} />
+          <AdminSessionManualDecisionPanel
+            sessionId={item.id}
+            hasWritePermission={hasWritePermission}
+            hasExistingFinal={latestFinal !== null}
+            latestFinalDecision={latestFinal}
           />
-
-          <AdminSessionInspectorTimeline
-            events={timeline}
-            evidenceTimeline={evidenceTimeline}
-            hasEvidenceTimeline={hasEvidenceTimeline}
+          <AdminSessionManualDecisionHistory sessionId={item.id} />
+        </div>
+      ) : null}
+      {activeTab === "support" ? (
+        <div id="runtime-panel-support" role="tabpanel">
+          <AdminSessionRoomCloseEvidencePanel
+            videoRoomClose={
+              attendance.data?.videoRoomClose ?? item.videoRoomClose
+            }
+            relatedSupportTickets={
+              attendance.data?.relatedSupportTickets ?? relatedSupportTickets
+            }
           />
-
+        </div>
+      ) : null}
+      {activeTab === "diagnostics" ? (
+        <div
+          id="runtime-panel-diagnostics"
+          role="tabpanel"
+          className="space-y-5"
+        >
+          <section className="app-panel rounded-[28px] p-5 sm:p-6">
+            <h2 className="text-text-primary text-base font-semibold dark:text-white/95">
+              {t("inspector.diagnostics.title")}
+            </h2>
+            <p className="text-text-secondary mt-1 text-sm">
+              {t("inspector.diagnostics.subtitle")}
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Diagnostic
+                label={t("inspector.diagnostics.internalId")}
+                value={item.id}
+              />
+              <Diagnostic
+                label={t("fields.providerRoomId")}
+                value={item.providerRoomId ?? t("inspector.notAvailable")}
+              />
+              <Diagnostic
+                label={t("fields.providerSessionRef")}
+                value={item.providerSessionRef ?? t("inspector.notAvailable")}
+              />
+              <Diagnostic
+                label={t("inspector.diagnostics.blockedReason")}
+                value={
+                  item.blockedReason
+                    ? t(
+                        `blockedReasons.${item.blockedReason}` as Parameters<
+                          typeof t
+                        >[0],
+                      )
+                    : t("inspector.notAvailable")
+                }
+              />
+            </div>
+          </section>
           {attendance.data ? (
             <AdminSessionInspectorRawEvidence data={attendance.data} />
           ) : null}
         </div>
-      )}
+      ) : null}
+    </div>
+  );
+
+  return (
+    <RuntimeViewerTimeZoneProvider timeZone={viewerTimeZone}>
+      <div className="space-y-6">
+        <section className="app-panel rounded-[24px] p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-text-primary text-2xl font-semibold tracking-tight sm:text-3xl dark:text-white/95">
+                {t("inspector.page.title")}
+              </h1>
+              <p className="text-text-secondary mt-1 max-w-2xl text-sm leading-6">
+                {t("inspector.page.subtitle")}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {item ? (
+                <AdminSessionReference
+                  sessionId={item.id}
+                  sessionCode={item.sessionCode}
+                  copyable
+                  variant="detail"
+                />
+              ) : null}
+              <Link
+                href="/admin/sessions"
+                className="border-border-light text-text-secondary hover:border-primary/30 hover:text-primary inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition"
+                aria-label={t("inspector.header.backToSessions")}
+              >
+                <ArrowLeft
+                  className="h-3.5 w-3.5 rtl:rotate-180"
+                  aria-hidden="true"
+                />
+                {t("inspector.header.backToSessions")}
+              </Link>
+            </div>
+          </div>
+        </section>
+        {content}
+      </div>
+    </RuntimeViewerTimeZoneProvider>
+  );
+}
+
+function Diagnostic({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-border-light rounded-2xl border p-3 dark:border-white/8">
+      <p className="text-text-muted text-[11px] font-semibold tracking-[0.14em] uppercase">
+        {label}
+      </p>
+      <p className="text-text-primary mt-1 font-mono text-xs break-all dark:text-white/90">
+        {value}
+      </p>
     </div>
   );
 }

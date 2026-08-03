@@ -1,6 +1,5 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { StyleSheet, View, TouchableOpacity, Image } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../../../components/ui";
@@ -9,10 +8,9 @@ import { useAppDirection } from "../../../i18n/direction";
 import { MOBILE_HORIZONTAL_PADDING } from "../../../components/mobile-shell";
 
 export function PublicHeader() {
-  const router = useRouter();
   const { t, i18n } = useTranslation();
   const { publicTheme } = usePublicTheme();
-  const { isRTL, rowDirection, textAlign } = useAppDirection();
+  const { isRTL, textAlign, rowDirection } = useAppDirection();
 
   const handleToggleLanguage = () => {
     const nextLang = i18n.language === "ar" ? "en" : "ar";
@@ -27,13 +25,19 @@ export function PublicHeader() {
       style={[
         styles.header,
         {
-          flexDirection: rowDirection,
           backgroundColor: publicTheme.canvas,
           borderBottomColor: publicTheme.subtleBorder,
+          flexDirection: rowDirection,
         },
       ]}
     >
-      <View style={styles.brandContainer}>
+      {/* Brand logo / wordmark */}
+      <View style={[styles.brandContainer, { flexDirection: rowDirection }]}>
+        <Image
+          source={require("../../../../assets/logo_transparent.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <Text
           variant="h2"
           style={[
@@ -48,30 +52,21 @@ export function PublicHeader() {
         </Text>
       </View>
 
+      {/* Header Actions - Pure Minimalist (Language Switcher Only) */}
       <View style={[styles.headerActions, { flexDirection: rowDirection }]}>
         <TouchableOpacity
           onPress={handleToggleLanguage}
-          style={styles.langBtn}
+          style={[styles.langBtn, { backgroundColor: publicTheme.raisedSurface, borderColor: publicTheme.subtleBorder }]}
+          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={isRTL ? t("publicHome.header.languageEnglish") : t("publicHome.header.languageArabic")}
         >
-          <View style={{ flexDirection: rowDirection, alignItems: "center", gap: 6 }}>
-            <Ionicons name="language-outline" size={16} color={publicTheme.secondaryText} importantForAccessibility="no" />
-            <Text style={[styles.langBtnText, { color: publicTheme.secondaryText }]}>
+          <View style={[styles.langInner, { flexDirection: rowDirection }]}>
+            <Ionicons name="globe-outline" size={15} color={publicTheme.primaryText} importantForAccessibility="no" />
+            <Text style={[styles.langBtnText, { color: publicTheme.primaryText }]}>
               {i18n.language === "ar" ? "EN" : "العربية"}
             </Text>
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)")}
-          style={[styles.signInBtn, { backgroundColor: publicTheme.primaryText }]}
-          accessibilityRole="button"
-          accessibilityLabel={t("publicHome.header.signIn")}
-        >
-          <Text style={styles.signInBtnText} color="#FFFFFF">
-            {t("publicHome.header.signIn")}
-          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -80,7 +75,7 @@ export function PublicHeader() {
 
 const styles = StyleSheet.create({
   header: {
-    height: 60,
+    height: 56,
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
     alignItems: "center",
     justifyContent: "space-between",
@@ -88,37 +83,36 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   brandContainer: {
-    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+  logoImage: {
+    width: 28,
+    height: 28,
   },
   brandText: {
     fontWeight: "800",
-    fontSize: 22,
-    letterSpacing: 0.5,
+    fontSize: 20,
+    letterSpacing: -0.3,
   },
   headerActions: {
     alignItems: "center",
-    gap: 12,
   },
   langBtn: {
-    minHeight: 48,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    minHeight: 36,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 8,
+  },
+  langInner: {
+    alignItems: "center",
+    gap: 4,
   },
   langBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  signInBtn: {
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 48,
-  },
-  signInBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
   },
 });

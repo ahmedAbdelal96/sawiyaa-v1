@@ -35,21 +35,6 @@ function normalizeDecimal(value: string | undefined, fallback = '0'): string {
   return normalized;
 }
 
-function normalizePaymobCheckoutMethod(
-  value: string | undefined,
-): string | null {
-  const normalized = value?.trim();
-
-  return normalized || null;
-}
-
-function normalizePaymobCheckoutFlow(
-  value: string | undefined,
-): 'legacy' | 'intention' {
-  const normalized = value?.trim().toLowerCase();
-  return normalized === 'intention' ? 'intention' : 'legacy';
-}
-
 export default registerAs('payment', () => ({
   appEnv: process.env.APP_ENV ?? process.env.NODE_ENV ?? 'development',
   isDevelopment:
@@ -74,7 +59,6 @@ export default registerAs('payment', () => ({
     ),
   },
   stripe: {
-    enabled: parseBooleanFlag(process.env.PAYMENT_STRIPE_ENABLED, false),
     mode: normalizeMode(process.env.STRIPE_MODE, 'test'),
     publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     secretKey: process.env.STRIPE_SECRET_KEY,
@@ -82,7 +66,6 @@ export default registerAs('payment', () => ({
     apiBaseUrl: normalizeBaseUrl(process.env.STRIPE_API_BASE_URL),
   },
   paymob: {
-    enabled: parseBooleanFlag(process.env.PAYMENT_PAYMOB_ENABLED, false),
     mode: normalizeMode(process.env.PAYMOB_MODE, 'test'),
     apiKey: process.env.PAYMOB_API_KEY,
     publicKey: process.env.PAYMOB_PUBLIC_KEY,
@@ -94,8 +77,6 @@ export default registerAs('payment', () => ({
     checkoutBaseUrl: normalizeBaseUrl(
       process.env.PAYMOB_CHECKOUT_BASE_URL ?? 'https://flashapi.paymob.com',
     ),
-    checkoutFlow: normalizePaymobCheckoutFlow(process.env.PAYMOB_CHECKOUT_FLOW),
-    methodRegistryJson: process.env.PAYMOB_METHOD_REGISTRY_JSON ?? null,
     egpCardIntegrationId:
       process.env.PAYMOB_EGP_CARD_INTEGRATION_ID ??
       process.env.PAYMOB_INTEGRATION_ID_CARD ??
@@ -107,8 +88,5 @@ export default registerAs('payment', () => ({
       process.env.PAYMOB_INTEGRATION_ID,
     integrationIdWallet: process.env.PAYMOB_INTEGRATION_ID_WALLET,
     iframeId: process.env.PAYMOB_IFRAME_ID,
-    defaultCheckoutMethod: normalizePaymobCheckoutMethod(
-      process.env.PAYMOB_DEFAULT_CHECKOUT_METHOD,
-    ),
   },
 }));

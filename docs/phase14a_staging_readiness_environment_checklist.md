@@ -140,7 +140,7 @@ Seeded domain data confirmed:
 - `AUTH_PRACTITIONER_LOGIN_OTP_BYPASS_IN_DEV`
 - `APP_URL`
 - `APP_BASE_URL`
-- `APP_DEFAULT_LOCALE`
+- `platform.defaultLocale` (Config DB; allowed values `ar`/`en`)
 - `APP_ENV`
 - `NODE_ENV`
 
@@ -172,13 +172,13 @@ Seeded domain data confirmed:
 - credentials handling must match the deployed frontend origin
 
 ### 6. Payments / Finance
-- `PAYMENT_STRIPE_ENABLED`
+- `payment.provider.stripe.enabled` (Config DB; dedicated Payment Control)
 - `STRIPE_MODE`
 - `STRIPE_PUBLISHABLE_KEY`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_API_BASE_URL`
-- `PAYMENT_PAYMOB_ENABLED`
+- `payment.provider.paymob.enabled` (Config DB; dedicated Payment Control)
 - `PAYMOB_MODE`
 - `PAYMOB_API_KEY`
 - `PAYMOB_PUBLIC_KEY`
@@ -430,4 +430,3 @@ Verify domain fixtures:
   - provision the QA seed identities and domain records
   - verify HTTPS frontend/backend URLs and CORS/cookie alignment
   - confirm upload and mobile smoke plans separately
-

@@ -1,16 +1,13 @@
 import type { ReactNode } from "react";
+import { formatEffectiveViewerDateTime } from "@/lib/time-formatting";
 
-export function formatAdminNotificationDateTime(iso: string | null, locale: string) {
+export function formatAdminNotificationDateTime(
+  iso: string | null,
+  locale: string,
+  timeZone?: string | null,
+) {
   if (!iso) return "—";
-
-  return new Date(iso).toLocaleString(locale === "ar" ? "ar-EG" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: locale !== "ar",
-  });
+  return formatEffectiveViewerDateTime(iso, timeZone, { locale });
 }
 
 export function DetailField({

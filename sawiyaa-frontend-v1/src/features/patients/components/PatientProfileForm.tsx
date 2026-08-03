@@ -4,7 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Camera, Loader2, PencilLine, Trash2, Upload, Wallet, Info, User, HelpCircle } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  PencilLine,
+  Trash2,
+  Upload,
+  Wallet,
+  Info,
+  User,
+  HelpCircle,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   usePatientProfile,
@@ -33,6 +43,7 @@ import {
 import Avatar from "@/components/ui/avatar/Avatar";
 import CollapsibleHelpCenter from "@/components/shared/CollapsibleHelpCenter";
 import { useAuthState } from "@/stores/auth-store";
+import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 
 type ProfileFormData = {
   displayName?: string;
@@ -63,10 +74,7 @@ function getInitials(name: string | null | undefined): string {
     return "P";
   }
 
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const words = name.trim().split(/\s+/).filter(Boolean);
 
   if (words.length === 0) {
     return "P";
@@ -78,19 +86,28 @@ function getInitials(name: string | null | undefined): string {
     .join("");
 }
 
-function formatDateValue(value: string | null | undefined, locale: string): string {
+function formatDateValue(
+  value: string | null | undefined,
+  locale: string,
+): string {
   if (!value) {
     return "-";
   }
 
   try {
-    return new Date(value).toLocaleDateString(locale.startsWith("ar") ? "ar-EG" : "en-GB");
+    return new Date(value).toLocaleDateString(
+      locale.startsWith("ar") ? "ar-EG" : "en-GB",
+    );
   } catch {
     return value;
   }
 }
 
-function formatMoney(value: string, currencyCode: string, locale: string): string {
+function formatMoney(
+  value: string,
+  currencyCode: string,
+  locale: string,
+): string {
   const numberLocale = locale.startsWith("ar") ? "ar-EG" : "en-US";
   return new Intl.NumberFormat(numberLocale, {
     style: "currency",
@@ -105,26 +122,32 @@ export default function PatientProfileForm() {
   const { user } = useAuthState();
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
-  const [avatarFeedback, setAvatarFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
-    null
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
+    null,
   );
+  const [avatarFeedback, setAvatarFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const [showPhotoPanel, setShowPhotoPanel] = useState(false);
 
   const { data, isLoading, isError, refetch } = usePatientProfile();
-  const { mutate, isPending, isError: isMutateError } = useUpdatePatientProfile();
+  const {
+    mutate,
+    isPending,
+    isError: isMutateError,
+  } = useUpdatePatientProfile();
   const uploadAvatar = useUploadPatientAvatar();
   const removeAvatar = useRemovePatientAvatar();
   const profile = data?.profile;
-  const { data: walletSummaryData, isLoading: walletSummaryLoading } = usePatientWalletSummary(
-    undefined,
-  );
+  const { data: walletSummaryData, isLoading: walletSummaryLoading } =
+    usePatientWalletSummary(undefined);
   const walletSummary = walletSummaryData?.item ?? null;
   const walletCurrencyCode = walletSummary?.currencyCode ?? null;
 
   const avatarPreviewUrl = useMemo(
     () => (selectedAvatarFile ? URL.createObjectURL(selectedAvatarFile) : null),
-    [selectedAvatarFile]
+    [selectedAvatarFile],
   );
 
   useEffect(() => {
@@ -137,13 +160,19 @@ export default function PatientProfileForm() {
   const profileSchema = useMemo(
     () =>
       z.object({
-        displayName: z.string().max(80, { message: t("validation.displayNameMax") }).optional(),
+        displayName: z
+          .string()
+          .max(80, { message: t("validation.displayNameMax") })
+          .optional(),
         dateOfBirth: z.string().optional(),
         gender: z.enum(["male", "female", ""]).optional(),
         locale: z.enum(["ar", "en", ""]).optional(),
-        timezone: z.string().max(60, { message: t("validation.timezoneMax") }).optional(),
+        timezone: z
+          .string()
+          .max(60, { message: t("validation.timezoneMax") })
+          .optional(),
       }),
-    [t]
+    [t],
   );
 
   const {
@@ -226,7 +255,9 @@ export default function PatientProfileForm() {
     });
   };
 
-  const handleAvatarFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0] ?? null;
     setAvatarFeedback(null);
 
@@ -235,15 +266,25 @@ export default function PatientProfileForm() {
       return;
     }
 
-    if (!ALLOWED_AVATAR_TYPES.includes(file.type as (typeof ALLOWED_AVATAR_TYPES)[number])) {
+    if (
+      !ALLOWED_AVATAR_TYPES.includes(
+        file.type as (typeof ALLOWED_AVATAR_TYPES)[number],
+      )
+    ) {
       setSelectedAvatarFile(null);
-      setAvatarFeedback({ type: "error", message: t("avatar.validation.invalidType") });
+      setAvatarFeedback({
+        type: "error",
+        message: t("avatar.validation.invalidType"),
+      });
       return;
     }
 
     if (file.size > MAX_AVATAR_SIZE) {
       setSelectedAvatarFile(null);
-      setAvatarFeedback({ type: "error", message: t("avatar.validation.fileTooLarge") });
+      setAvatarFeedback({
+        type: "error",
+        message: t("avatar.validation.fileTooLarge"),
+      });
       return;
     }
 
@@ -252,14 +293,20 @@ export default function PatientProfileForm() {
 
   const handleAvatarUpload = async () => {
     if (!selectedAvatarFile) {
-      setAvatarFeedback({ type: "error", message: t("avatar.validation.fileRequired") });
+      setAvatarFeedback({
+        type: "error",
+        message: t("avatar.validation.fileRequired"),
+      });
       return;
     }
 
     setAvatarFeedback(null);
     try {
       await uploadAvatar.mutateAsync(selectedAvatarFile);
-      setAvatarFeedback({ type: "success", message: t("avatar.feedback.uploadSuccess") });
+      setAvatarFeedback({
+        type: "success",
+        message: t("avatar.feedback.uploadSuccess"),
+      });
       setSelectedAvatarFile(null);
     } catch (error) {
       setAvatarFeedback({
@@ -283,7 +330,10 @@ export default function PatientProfileForm() {
     setAvatarFeedback(null);
     try {
       await removeAvatar.mutateAsync();
-      setAvatarFeedback({ type: "success", message: t("avatar.feedback.removeSuccess") });
+      setAvatarFeedback({
+        type: "success",
+        message: t("avatar.feedback.removeSuccess"),
+      });
     } catch (error) {
       setAvatarFeedback({
         type: "error",
@@ -294,7 +344,7 @@ export default function PatientProfileForm() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-6">
+      <div className="border-border-light rounded-2xl border bg-white p-6">
         <FormSkeleton />
       </div>
     );
@@ -302,9 +352,11 @@ export default function PatientProfileForm() {
 
   if (isError || !profile) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-6">
+      <div className="border-border-light rounded-2xl border bg-white p-6">
         <div className="flex flex-col items-center justify-center py-10 text-center">
-          <p className="mb-4 text-sm font-medium text-text-primary">{t("feedback.loadError")}</p>
+          <p className="text-text-primary mb-4 text-sm font-medium">
+            {t("feedback.loadError")}
+          </p>
           <Button size="sm" variant="outline" onClick={() => refetch()}>
             {t("actions.retry")}
           </Button>
@@ -319,14 +371,14 @@ export default function PatientProfileForm() {
   return (
     <ProfileWorkspaceShell>
       {saveSuccess ? (
-        <div className="rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-700">
+        <div className="border-success-200 bg-success-50 text-success-700 rounded-2xl border px-4 py-3 text-sm">
           {t("feedback.success")}
         </div>
       ) : null}
 
       <ProfileWorkspaceCard>
         {/* Content Area: Grid */}
-        <div className="p-5 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 items-start">
+        <div className="grid grid-cols-1 items-start gap-5 p-5 lg:grid-cols-[280px_1fr]">
           {/* Summary Card */}
           <aside className="space-y-4">
             <ProfileSummaryCard>
@@ -334,23 +386,25 @@ export default function PatientProfileForm() {
                 src={effectiveAvatarUrl}
                 name={profile.displayName ?? ""}
                 size="custom"
-                className="h-24 w-24 border-2 border-primary/20 bg-surface-secondary"
+                className="border-primary/20 bg-surface-secondary h-24 w-24 border-2"
               />
-              <h2 className="mt-3 text-lg font-bold text-text-primary dark:text-white/95 leading-tight">
+              <h2 className="text-text-primary mt-3 text-lg leading-tight font-bold dark:text-white/95">
                 {profile.displayName || t("page.title")}
               </h2>
-              <p className="mt-1 text-xs text-text-secondary dark:text-white/60 truncate max-w-[240px]">
+              <p className="text-text-secondary mt-1 max-w-[240px] truncate text-xs dark:text-white/60">
                 {user?.email || ""}
               </p>
-              
-              <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-1.5 text-xs text-text-muted">
+
+              <div className="text-text-muted mt-3.5 w-full space-y-1.5 border-t border-slate-100 pt-3.5 text-xs dark:border-white/5">
                 <div className="flex items-center justify-between">
                   <span>{t("fields.countryCode.label")}</span>
-                  <span className="font-semibold text-text-primary">{profile.countryCode || "-"}</span>
+                  <span className="text-text-primary font-semibold">
+                    {profile.countryCode || "-"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>{t("fields.locale.label")}</span>
-                  <span className="font-semibold text-text-primary">
+                  <span className="text-text-primary font-semibold">
                     {profile.locale === "ar"
                       ? t("fields.locale.options.ar")
                       : profile.locale === "en"
@@ -360,7 +414,7 @@ export default function PatientProfileForm() {
                 </div>
               </div>
 
-              <div className="mt-4 w-full border-t border-slate-100 dark:border-white/5 pt-3 space-y-2">
+              <div className="mt-4 w-full space-y-2 border-t border-slate-100 pt-3 dark:border-white/5">
                 <Button
                   size="sm"
                   onClick={openEditModal}
@@ -381,8 +435,8 @@ export default function PatientProfileForm() {
               </div>
 
               {showPhotoPanel && (
-                <div className="mt-3.5 w-full border-t border-slate-100 dark:border-white/5 pt-3.5 space-y-2.5">
-                  <div className="text-xs font-semibold text-text-primary">
+                <div className="mt-3.5 w-full space-y-2.5 border-t border-slate-100 pt-3.5 dark:border-white/5">
+                  <div className="text-text-primary text-xs font-semibold">
                     {t("avatar.title")}
                   </div>
                   <FileInput
@@ -391,8 +445,10 @@ export default function PatientProfileForm() {
                     className="file:bg-primary-light file:text-text-brand text-xs"
                   />
                   {selectedAvatarFile && (
-                    <p className="text-xs text-text-secondary truncate max-w-[200px]">
-                      {t("avatar.selectedFile", { fileName: selectedAvatarFile.name })}
+                    <p className="text-text-secondary max-w-[200px] truncate text-xs">
+                      {t("avatar.selectedFile", {
+                        fileName: selectedAvatarFile.name,
+                      })}
                     </p>
                   )}
                   <div className="flex gap-2">
@@ -409,13 +465,18 @@ export default function PatientProfileForm() {
                         )
                       }
                     >
-                      {uploadAvatar.isPending ? t("avatar.actions.uploading") : t("avatar.actions.upload")}
+                      {uploadAvatar.isPending
+                        ? t("avatar.actions.uploading")
+                        : t("avatar.actions.upload")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={handleAvatarRemove}
-                      disabled={isAvatarBusy || (!selectedAvatarFile && !profile.avatarUrl)}
+                      disabled={
+                        isAvatarBusy ||
+                        (!selectedAvatarFile && !profile.avatarUrl)
+                      }
                       className="flex-1 font-medium"
                       startIcon={
                         removeAvatar.isPending ? (
@@ -432,11 +493,15 @@ export default function PatientProfileForm() {
                           : t("avatar.actions.remove")}
                     </Button>
                   </div>
-                  <p className="text-[10px] text-text-muted leading-tight">{t("avatar.hint")}</p>
+                  <p className="text-text-muted text-[10px] leading-tight">
+                    {t("avatar.hint")}
+                  </p>
                   {avatarFeedback && (
                     <p
                       className={`text-xs font-medium ${
-                        avatarFeedback.type === "success" ? "text-success-600" : "text-error-500"
+                        avatarFeedback.type === "success"
+                          ? "text-success-600"
+                          : "text-error-500"
                       }`}
                     >
                       {avatarFeedback.message}
@@ -454,7 +519,11 @@ export default function PatientProfileForm() {
               title={t("summary.title")}
               subtitle={t("summary.subtitle")}
               action={
-                <Button size="sm" onClick={openEditModal} startIcon={<PencilLine className="h-4 w-4" />}>
+                <Button
+                  size="sm"
+                  onClick={openEditModal}
+                  startIcon={<PencilLine className="h-4 w-4" />}
+                >
                   {t("actions.edit")}
                 </Button>
               }
@@ -511,7 +580,11 @@ export default function PatientProfileForm() {
             </ProfileInfoSection>
 
             {/* 2. Wallet / Payments Section */}
-            <ProfileInfoSection title={t("wallet.title")} subtitle={t("wallet.hint")} icon={<Wallet className="h-5 w-5" />}>
+            <ProfileInfoSection
+              title={t("wallet.title")}
+              subtitle={t("wallet.hint")}
+              icon={<Wallet className="h-5 w-5" />}
+            >
               <ProfileInfoGrid columns={2}>
                 <ProfileInfoRow
                   label={t("wallet.availableLabel")}
@@ -519,8 +592,12 @@ export default function PatientProfileForm() {
                     walletSummaryLoading
                       ? t("wallet.loading")
                       : walletCurrencyCode
-                        ? formatMoney(walletSummary?.availableBalance ?? "0", walletCurrencyCode, locale)
-                        : walletSummary?.availableBalance ?? "0"
+                        ? formatMoney(
+                            walletSummary?.availableBalance ?? "0",
+                            walletCurrencyCode,
+                            locale,
+                          )
+                        : (walletSummary?.availableBalance ?? "0")
                   }
                 />
                 <ProfileInfoRow
@@ -529,8 +606,12 @@ export default function PatientProfileForm() {
                     walletSummaryLoading
                       ? t("wallet.loading")
                       : walletCurrencyCode
-                        ? formatMoney(walletSummary?.reservedBalance ?? "0", walletCurrencyCode, locale)
-                        : walletSummary?.reservedBalance ?? "0"
+                        ? formatMoney(
+                            walletSummary?.reservedBalance ?? "0",
+                            walletCurrencyCode,
+                            locale,
+                          )
+                        : (walletSummary?.reservedBalance ?? "0")
                   }
                 />
               </ProfileInfoGrid>
@@ -561,7 +642,9 @@ export default function PatientProfileForm() {
               {...register("displayName")}
             />
             {errors.displayName ? (
-              <p className="mt-1.5 text-xs text-error-500">{errors.displayName.message}</p>
+              <p className="text-error-500 mt-1.5 text-xs">
+                {errors.displayName.message}
+              </p>
             ) : null}
           </div>
 
@@ -583,16 +666,26 @@ export default function PatientProfileForm() {
 
           <div>
             <Label htmlFor="gender">{t("fields.gender.label")}</Label>
-            <select id="gender" className={selectClasses} {...register("gender")}>
+            <select
+              id="gender"
+              className={selectClasses}
+              {...register("gender")}
+            >
               <option value="">{t("fields.gender.placeholder")}</option>
               <option value="male">{t("fields.gender.options.male")}</option>
-              <option value="female">{t("fields.gender.options.female")}</option>
+              <option value="female">
+                {t("fields.gender.options.female")}
+              </option>
             </select>
           </div>
 
           <div>
             <Label htmlFor="locale">{t("fields.locale.label")}</Label>
-            <select id="locale" className={selectClasses} {...register("locale")}>
+            <select
+              id="locale"
+              className={selectClasses}
+              {...register("locale")}
+            >
               <option value="">{t("fields.locale.placeholder")}</option>
               <option value="ar">{t("fields.locale.options.ar")}</option>
               <option value="en">{t("fields.locale.options.en")}</option>
@@ -600,21 +693,33 @@ export default function PatientProfileForm() {
           </div>
 
           <div className="sm:col-span-2">
-            <Label htmlFor="timezone">{t("fields.timezone.label")}</Label>
-            <Input
-              id="timezone"
-              type="text"
-              placeholder={t("fields.timezone.placeholder")}
-              error={!!errors.timezone}
-              {...register("timezone")}
+            <Controller
+              name="timezone"
+              control={control}
+              render={({ field }) => (
+                <TimeZonePicker
+                  id="timezone"
+                  label={t("fields.timezone.label")}
+                  placeholder={t("fields.timezone.placeholder")}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  error={!!errors.timezone}
+                />
+              )}
             />
             {errors.timezone ? (
-              <p className="mt-1.5 text-xs text-error-500">{errors.timezone.message}</p>
+              <p className="text-error-500 mt-1.5 text-xs">
+                {errors.timezone.message}
+              </p>
             ) : null}
           </div>
         </div>
 
-        {isMutateError ? <p className="mt-4 text-sm font-medium text-error-500">{t("feedback.error")}</p> : null}
+        {isMutateError ? (
+          <p className="text-error-500 mt-4 text-sm font-medium">
+            {t("feedback.error")}
+          </p>
+        ) : null}
       </FormModal>
     </ProfileWorkspaceShell>
   );

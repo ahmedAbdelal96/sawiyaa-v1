@@ -41,14 +41,6 @@ import type {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Money formatter — outputs formatted amount with currency code from backend.
- * Uses simple digit grouping without Intl.NumberFormat (unreliable in Hermes).
- *
- * NOTE: currencyCode always comes from backend data. Never hardcode a currency
- * symbol or code in screen components.
- * locale param is reserved for future locale-aware digit formatting (e.g. Arabic numerals).
- */
 function formatMoney(amount: string, currencyCode: string, _locale = "en"): string {
   const num = Number(amount);
   if (!Number.isFinite(num)) return `${amount} ${currencyCode.toUpperCase()}`;
@@ -61,9 +53,6 @@ function formatMoney(amount: string, currencyCode: string, _locale = "en"): stri
 function formatDate(isoString: string, locale: string): string {
   return formatViewerDate(isoString, { locale });
 }
-
-// resolveRelevantDate was used by the legacy collapsible PaymentHistoryCard
-// which has been replaced by TransactionHistoryNavCard. Removed to avoid dead code.
 
 const STATUS_BADGE_MAP: Record<PaymentStatus, "success" | "warning" | "error" | "info" | "default"> = {
   CREATED: "default",
@@ -79,14 +68,6 @@ const STATUS_BADGE_MAP: Record<PaymentStatus, "success" | "warning" | "error" | 
   REFUNDED: "default",
 };
 
-/**
- * Payment action descriptor — the single source of truth for what CTA to show.
- * Uses the backend-computed `paymentAction` field from PaymentItem.
- *
- * NOTE: The backend's paymentAction.canPay is the authoritative signal.
- * Session state (expired, expiredAt, status) is already factored in by the backend.
- * Mobile must NOT infer payable state from status alone.
- */
 type PaymentAction =
   | { kind: "payable"; payment: PaymentItem }
   | { kind: "processing"; payment: PaymentItem }
@@ -98,7 +79,6 @@ type PaymentAction =
 function resolvePaymentAction(payments: PaymentItem[]): PaymentAction {
   if (payments.length === 0) return { kind: "calm" };
 
-  // Use backend-computed paymentAction as the single source of truth
   for (const p of payments) {
     if (p.paymentAction.canPay) return { kind: "payable", payment: p };
   }
@@ -178,15 +158,20 @@ function WalletBalanceCard({
       {/* Top label row */}
       <View style={[ss.heroTopRow, { flexDirection: rowDirection }]}>
         <View style={ss.heroIconWrap}>
-          <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.8)" />
+          <Ionicons name="wallet-outline" size={14} color="rgba(255,255,255,0.85)" />
         </View>
         <Text style={[ss.heroLabel, { textAlign }]}>
           {t("patientPaymentsFlow.wallet.balanceLabel")}
         </Text>
       </View>
 
-      {/* Main balance */}
-      <Text weight="700" style={[ss.heroAmount, { textAlign }]}>
+      {/* Main balance — with scalable size for large data */}
+      <Text
+        weight="bold"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={[ss.heroAmount, { textAlign }]}
+      >
         {formatMoney(wallet.availableBalance, wallet.currencyCode, locale)}
       </Text>
 
@@ -195,7 +180,7 @@ function WalletBalanceCard({
         {t("patientPaymentsFlow.wallet.availableHint")}
       </Text>
 
-      {/* Thin gold accent divider */}
+      {/* Gold accent line */}
       <View
         style={[
           ss.heroAccentLine,
@@ -419,8 +404,8 @@ function TransactionRow({
           ]}
         >
           <Ionicons
-            name={isCredit ? "arrow-down" : "arrow-up"}
-            size={13}
+            name={isCredit ? "arrow-down-outline" : "arrow-up-outline"}
+            size={14}
             color={isCredit ? theme.colors.success : theme.colors.textSecondary}
           />
         </View>
@@ -532,9 +517,6 @@ function TransactionsCard({
 
 // ---------------------------------------------------------------------------
 // TransactionHistoryNavCard
-// Replaces the legacy collapsible PaymentHistoryCard.
-// The collapsible only showed payments[].slice(0,3) with amount + status badge —
-// no hidden data. Navigation to the dedicated history screen is clearer UX.
 // ---------------------------------------------------------------------------
 
 function TransactionHistoryNavCard({ onPress }: { onPress: () => void }) {
@@ -578,7 +560,7 @@ function TransactionHistoryNavCard({ onPress }: { onPress: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// Screen
+// Main Screen
 // ---------------------------------------------------------------------------
 
 export default function PatientPaymentsScreen() {
@@ -623,7 +605,7 @@ export default function PatientPaymentsScreen() {
         <View style={[ss.pageHeading, { alignItems: isRtl ? "flex-end" : "flex-start" }]}>
           <Text
             variant="h2"
-            weight="600"
+            weight="bold"
             style={[ss.pageTitle, { textAlign }]}
           >
             {t("patientPaymentsFlow.wallet.title")}
@@ -672,7 +654,7 @@ export default function PatientPaymentsScreen() {
 
         {/* Trust footer */}
         <View style={[ss.trustFooter, { flexDirection: rowDirection }]}>
-          <Ionicons name="shield-checkmark-outline" size={13} color={theme.colors.textMuted} />
+          <Ionicons name="shield-checkmark-outline" size={14} color={theme.colors.textMuted} />
           <Text color={theme.colors.textMuted} style={[ss.trustText, { textAlign }]}>
             {t("patientPaymentsFlow.wallet.secureHint")}
           </Text>
@@ -683,81 +665,79 @@ export default function PatientPaymentsScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// Styles — static, no runtime theme references
+// Styles — balanced scale & typography
 // ---------------------------------------------------------------------------
 
 const ss = StyleSheet.create({
-  // ── Scroll container ──
   scrollContent: {
     paddingHorizontal: MOBILE_HORIZONTAL_PADDING,
     paddingTop: MOBILE_SECTION_GAP,
     paddingBottom: 40,
-    gap: MOBILE_SECTION_GAP,
+    gap: 14,
   },
 
-  // ── Page heading ──
-  pageHeading: { gap: 4 },
-  pageTitle: { fontSize: 22, lineHeight: 28, fontWeight: "600" },
+  // Page heading
+  pageHeading: { gap: 4, paddingHorizontal: 2 },
+  pageTitle: { fontSize: 22, lineHeight: 28 },
   pageSubtitle: { fontSize: 13, lineHeight: 19 },
 
-  // ── Hero card (teal background) ──
+  // Hero card (teal background)
   heroCard: {
-    borderRadius: 20,
+    borderRadius: 18,
     paddingHorizontal: 20,
-    paddingVertical: 22,
+    paddingVertical: 20,
     overflow: "hidden",
   },
   heroErrorWrap: { alignItems: "center", gap: 8, paddingVertical: 12 },
   heroErrorText: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.7)" },
   heroRetryText: { fontSize: 13, lineHeight: 18, color: "#FFFFFF" },
-  heroTopRow: { alignItems: "center", gap: 8, marginBottom: 12 },
+  heroTopRow: { alignItems: "center", gap: 8, marginBottom: 10 },
   heroIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 8,
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  heroLabel: { fontSize: 12, lineHeight: 17, color: "rgba(255,255,255,0.75)" },
+  heroLabel: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.85)" },
   heroAmount: {
-    fontSize: 34,
-    lineHeight: 42,
-    fontWeight: "700",
+    fontSize: 28,
+    lineHeight: 36,
     color: "#FFFFFF",
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
-  heroHint: { fontSize: 12, lineHeight: 17, color: "rgba(255,255,255,0.6)", marginTop: 2 },
+  heroHint: { fontSize: 12, lineHeight: 17, color: "rgba(255,255,255,0.7)", marginTop: 2 },
   heroAccentLine: {
     width: 28,
     height: 2,
     borderRadius: 1,
-    backgroundColor: "#C8A979", // Warm Gold — used only as a thin accent detail
+    backgroundColor: "#C8A979",
     marginTop: 14,
     marginBottom: 14,
   },
   heroStatsRow: { gap: 16 },
   heroStat: { gap: 2 },
-  heroStatLabel: { fontSize: 11, lineHeight: 16, color: "rgba(255,255,255,0.6)" },
-  heroStatValue: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.9)" },
+  heroStatLabel: { fontSize: 11, lineHeight: 16, color: "rgba(255,255,255,0.7)" },
+  heroStatValue: { fontSize: 13, lineHeight: 18, color: "rgba(255,255,255,0.95)" },
   heroStatValueGold: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#C8A979", // Warm Gold for the last updated value only — restrained accent
+    color: "#C8A979",
   },
 
-  // ── Reassurance banner ──
+  // Reassurance banner
   reassuranceBanner: {
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   reassuranceText: { fontSize: 14, lineHeight: 20, flex: 1 },
 
-  // ── Status card ──
-  statusCard: {},
+  // Status card
+  statusCard: { borderRadius: 16 },
   statusHeader: {
     alignItems: "center",
     justifyContent: "space-between",
@@ -770,30 +750,30 @@ const ss = StyleSheet.create({
     marginBottom: 6,
   },
   statusAmountContent: { flex: 1, gap: 2 },
-  statusAmount: { fontSize: 20, lineHeight: 26, fontWeight: "700" },
+  statusAmount: { fontSize: 20, lineHeight: 26 },
   statusProvider: { fontSize: 12, lineHeight: 17 },
   statusDate: { fontSize: 12, lineHeight: 17, marginTop: 2 },
   statusNote: { fontSize: 12, lineHeight: 17, marginTop: 6 },
   statusCtaBlock: { marginTop: 12 },
-  statusPrimaryBtn: { width: "100%" },
+  statusPrimaryBtn: { width: "100%", borderRadius: 12 },
   statusSecondaryLink: { marginTop: 10 },
   statusLinkText: { fontSize: 13, lineHeight: 19 },
 
-  // ── Shared section ──
-  sectionCard: {},
+  // Shared section
+  sectionCard: { borderRadius: 16 },
   sectionHeader: {
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 15, lineHeight: 21, fontWeight: "600" },
+  sectionTitle: { fontSize: 15, lineHeight: 21 },
   viewAllBtn: { alignItems: "center", gap: 4 },
   viewAllText: { fontSize: 13, lineHeight: 19 },
   emptyNote: { fontSize: 13, lineHeight: 19, marginTop: 4 },
 
-  // ── Transaction rows ──
+  // Transaction rows
   txList: { gap: 0 },
-  txRow: { alignItems: "center", gap: 10, paddingVertical: 11 },
+  txRow: { alignItems: "center", gap: 10, paddingVertical: 10 },
   txIcon: {
     width: 32,
     height: 32,
@@ -803,12 +783,12 @@ const ss = StyleSheet.create({
     flexShrink: 0,
   },
   txContent: { flex: 1, gap: 2 },
-  txTitle: { fontSize: 13, lineHeight: 18, fontWeight: "600" },
+  txTitle: { fontSize: 13, lineHeight: 18 },
   txDate: { fontSize: 12, lineHeight: 17 },
-  txAmount: { fontSize: 13, lineHeight: 18, fontWeight: "700", minWidth: 76 },
+  txAmount: { fontSize: 14, lineHeight: 20, minWidth: 80 },
   txDivider: { height: 1, opacity: 0.6 },
 
-  // ── History nav card ──
+  // History nav card
   historyNavCard: {
     borderRadius: 16,
     borderWidth: 1,
@@ -825,14 +805,14 @@ const ss = StyleSheet.create({
     flexShrink: 0,
   },
   historyNavText: { flex: 1, gap: 2 },
-  historyNavTitle: { fontSize: 14, lineHeight: 20, fontWeight: "600" },
+  historyNavTitle: { fontSize: 14, lineHeight: 20 },
   historyNavSubtitle: { fontSize: 12, lineHeight: 17 },
 
-  // ── Trust footer ──
+  // Trust footer
   trustFooter: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 6,
     paddingTop: 4,
   },
   trustText: { fontSize: 12, lineHeight: 17 },

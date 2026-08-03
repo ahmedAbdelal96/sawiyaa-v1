@@ -1,14 +1,14 @@
 const typography = {
-  display: { fontSize: 28, lineHeight: 36, fontWeight: "700" as const },
-  h1: { fontSize: 24, lineHeight: 30, fontWeight: "700" as const },
-  h2: { fontSize: 20, lineHeight: 26, fontWeight: "700" as const },
-  title: { fontSize: 18, lineHeight: 24, fontWeight: "600" as const },
-  subtitle: { fontSize: 16, lineHeight: 22, fontWeight: "500" as const },
-  body: { fontSize: 14, lineHeight: 21, fontWeight: "400" as const },
-  bodySmall: { fontSize: 13, lineHeight: 19, fontWeight: "400" as const },
-  caption: { fontSize: 12, lineHeight: 17, fontWeight: "400" as const },
-  button: { fontSize: 15, lineHeight: 20, fontWeight: "700" as const },
-  tabLabel: { fontSize: 12, lineHeight: 16, fontWeight: "500" as const },
+  display: { fontSize: 26, lineHeight: 34, fontWeight: "700" as const },
+  h1: { fontSize: 22, lineHeight: 28, fontWeight: "700" as const },
+  h2: { fontSize: 19, lineHeight: 25, fontWeight: "700" as const },
+  title: { fontSize: 17, lineHeight: 23, fontWeight: "600" as const },
+  subtitle: { fontSize: 14, lineHeight: 20, fontWeight: "500" as const },
+  body: { fontSize: 14, lineHeight: 20, fontWeight: "400" as const },
+  bodySmall: { fontSize: 13, lineHeight: 18, fontWeight: "400" as const },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: "400" as const },
+  button: { fontSize: 14.5, lineHeight: 20, fontWeight: "700" as const },
+  tabLabel: { fontSize: 11.5, lineHeight: 15, fontWeight: "600" as const },
 } as const;
 
 const spacing = {
@@ -21,16 +21,16 @@ const spacing = {
   "2xl": 32,
   "3xl": 40,
   "4xl": 48,
-  page: 20,
+  page: 18,
   gutter: 12,
 } as const;
 
 const radius = {
   xs: 8,
   sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 24,
+  md: 14,
+  lg: 18,
+  xl: 22,
   pill: 9999,
 } as const;
 
@@ -203,18 +203,18 @@ export type ThemeShape = {
 
 const lightColors = {
   background: "#F7F4EE",
-  surface: "#FCFAF6",
+  surface: "#FFFFFF",
   surfaceRaised: "#FFFFFF",
   surfaceMuted: "#EEF4EF",
   primary: "#24564F",
   primaryPressed: "#1F4A45",
-  primarySoft: "#D9E4DB",
-  textPrimary: "#1F332F",
-  textSecondary: "#6F7E78",
-  textMuted: "#7E8E88",
-  border: "#E8DED0",
-  divider: "#E8DED0",
-  focus: "#24564F",
+  primarySoft: "#DDEAE3",
+  textPrimary: "#053F38",
+  textSecondary: "#404847",
+  textMuted: "#71857F",
+  border: "#CBD5D1",
+  divider: "#DDEAE3",
+  focus: "#053F38",
   disabled: "#AAB6B1",
   overlay: "rgba(31, 51, 47, 0.42)",
   success: "#4D7C5E",

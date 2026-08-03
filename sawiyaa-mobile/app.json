@@ -37,6 +37,14 @@
       "expo-localization",
       "expo-notifications",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a8a9c548-07ee-4f0f-b04b-d493010124c7"
+      }
+    }
   }
 }

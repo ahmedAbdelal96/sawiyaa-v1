@@ -6,6 +6,7 @@ import type {
   CurrentUserSecurityStateResponse,
   CurrentUserPermissionsResponse,
   CurrentUserSummary,
+  InitializeCurrentUserTimezoneResponse,
 } from "../types/users.types";
 
 /**
@@ -13,7 +14,15 @@ import type {
  * This is the main frontend bootstrap payload after auth.
  */
 export async function getCurrentUser() {
-  const response = await httpClient.get<ApiPayload<CurrentUserSummary>>("/users/me");
+  const response =
+    await httpClient.get<ApiPayload<CurrentUserSummary>>("/users/me");
+  return extractData(response.data);
+}
+
+export async function initializeCurrentUserTimezone(timezone: string) {
+  const response = await httpClient.post<
+    ApiPayload<InitializeCurrentUserTimezoneResponse>
+  >("/users/me/timezone/initialize", { timezone });
   return extractData(response.data);
 }
 
@@ -21,9 +30,10 @@ export async function getCurrentUser() {
  * Fetches only role data for lightweight permission checks.
  */
 export async function getCurrentUserRoles() {
-  const response = await httpClient.get<ApiPayload<CurrentUserRolesResponse>>(
-    "/users/me/roles"
-  );
+  const response =
+    await httpClient.get<ApiPayload<CurrentUserRolesResponse>>(
+      "/users/me/roles",
+    );
   return extractData(response.data);
 }
 
@@ -31,26 +41,35 @@ export async function getCurrentUserRoles() {
  * Fetches account/security state flags used for gating banners and route protection.
  */
 export async function getCurrentUserSecurityState() {
-  const response = await httpClient.get<ApiPayload<CurrentUserSecurityStateResponse>>(
-    "/users/me/security-state"
-  );
+  const response = await httpClient.get<
+    ApiPayload<CurrentUserSecurityStateResponse>
+  >("/users/me/security-state");
   return extractData(response.data);
 }
 
 export async function patchCurrentUserProfile(input: { displayName?: string }) {
-  const response = await httpClient.patch<ApiPayload<{ message: string }>>("/users/me", input);
+  const response = await httpClient.patch<ApiPayload<{ message: string }>>(
+    "/users/me",
+    input,
+  );
   return extractData(response.data);
 }
 
 export async function uploadCurrentUserAvatar(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await httpClient.post<ApiPayload<{ message: string }>>("/users/me/avatar", formData);
+  const response = await httpClient.post<ApiPayload<{ message: string }>>(
+    "/users/me/avatar",
+    formData,
+  );
   return extractData(response.data);
 }
 
 export async function removeCurrentUserAvatar() {
-  const response = await httpClient.delete<ApiPayload<{ message: string }>>("/users/me/avatar");
+  const response =
+    await httpClient.delete<ApiPayload<{ message: string }>>(
+      "/users/me/avatar",
+    );
   return extractData(response.data);
 }
 
@@ -60,8 +79,8 @@ export async function removeCurrentUserAvatar() {
  * Backend guards remain authoritative — this is a UX read-hint only.
  */
 export async function getCurrentUserPermissions() {
-  const response = await httpClient.get<ApiPayload<CurrentUserPermissionsResponse>>(
-    "/users/me/permissions"
-  );
+  const response = await httpClient.get<
+    ApiPayload<CurrentUserPermissionsResponse>
+  >("/users/me/permissions");
   return extractData(response.data);
 }

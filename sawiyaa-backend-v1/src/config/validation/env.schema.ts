@@ -11,7 +11,6 @@ const baseEnvSchema = z.object({
   SERVICE_NAME: z.string().optional(),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
-  APP_DEFAULT_LOCALE: z.enum(['ar', 'en']).default('ar'),
   CORS_ORIGINS: z
     .string()
     .default(
@@ -34,9 +33,19 @@ const baseEnvSchema = z.object({
   LOG_MAX_FILE_SIZE: z.string().default('20m'),
 
   // Practitioner weekly session schedule
-  AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce.number().int().min(1).max(12).default(4),
+  AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(12)
+    .default(4),
   AVAILABILITY_RETENTION_MONTHS: z.coerce.number().int().positive().default(12),
-  AVAILABILITY_REPEAT_PREVIEW_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
+  AVAILABILITY_REPEAT_PREVIEW_TTL_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(60)
+    .default(10),
 
   // Trusted customer country resolution. GeoIP is optional and unknown always
   // falls back to USD through the central payment-region resolver.
@@ -65,12 +74,7 @@ const baseEnvSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
   JWT_ISSUER: z.string().default('sawiyaa-backend-v1'),
   AUTH_PASSWORD_SALT_ROUNDS: z.coerce.number().int().min(8).max(15).default(12),
-  AUTH_LOCKOUT_MAX_ATTEMPTS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(20)
-    .default(5),
+  AUTH_LOCKOUT_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20).default(5),
   AUTH_LOCKOUT_DURATION_MINUTES: z.coerce
     .number()
     .int()
@@ -131,9 +135,7 @@ const baseEnvSchema = z.object({
   // This is the primary control for the practitioner login OTP flow.
   PRACTITIONER_LOGIN_OTP_REQUIRED: z.enum(['true', 'false']).optional(),
   // Explicit local/test-only OTP capture. Disabled by default and rejected in production.
-  PRACTITIONER_OTP_QA_CAPTURE_ENABLED: z
-    .enum(['true', 'false'])
-    .optional(),
+  PRACTITIONER_OTP_QA_CAPTURE_ENABLED: z.enum(['true', 'false']).optional(),
   PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS: z.string().optional(),
 
   // Google Auth
@@ -142,8 +144,8 @@ const baseEnvSchema = z.object({
   GOOGLE_CALLBACK_URL: z.string().optional(),
 
   // Mail / SMS
-  MAIL_PROVIDER: z.string().optional(),
-  MAIL_FROM: z.string().optional(),
+  MAIL_PROVIDER: z.enum(['smtp', 'brevo']).default('smtp'),
+  MAIL_FROM: z.string().email().optional(),
   MAIL_HOST: z.string().optional(),
   MAIL_PORT: z.coerce.number().optional(),
   MAIL_USER: z.string().optional(),
@@ -159,7 +161,9 @@ const baseEnvSchema = z.object({
   BREVO_API_URL: z.string().url().optional(),
 
   // Video - Daily
+  VIDEO_PROVIDER_DEFAULT: z.enum(['DAILY']).default('DAILY'),
   DAILY_API_KEY: z.string().optional(),
+  DAILY_API_BASE_URL: z.string().url().optional(),
   DAILY_WEBHOOK_SECRET: z.string().optional(),
 
   // Video - Zoom
@@ -168,7 +172,6 @@ const baseEnvSchema = z.object({
   ZOOM_CLIENT_SECRET: z.string().optional(),
 
   // Payments - Stripe
-  PAYMENT_STRIPE_ENABLED: z.enum(['true', 'false']).default('false'),
   STRIPE_MODE: z.enum(['test', 'live']).default('test'),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
@@ -176,7 +179,6 @@ const baseEnvSchema = z.object({
   STRIPE_API_BASE_URL: z.string().url().optional(),
 
   // Payments - Paymob
-  PAYMENT_PAYMOB_ENABLED: z.enum(['true', 'false']).default('false'),
   PAYMOB_MODE: z.enum(['test', 'live']).default('test'),
   PAYMOB_API_KEY: z.string().optional(),
   PAYMOB_PUBLIC_KEY: z.string().optional(),
@@ -191,9 +193,6 @@ const baseEnvSchema = z.object({
   PAYMOB_BASE_URL: z.string().url().optional(),
   PAYMOB_INTENTION_BASE_URL: z.string().url().optional(),
   PAYMOB_CHECKOUT_BASE_URL: z.string().url().optional(),
-  PAYMOB_CHECKOUT_FLOW: z.enum(['legacy', 'intention']).default('legacy'),
-  PAYMOB_DEFAULT_CHECKOUT_METHOD: z.string().optional(),
-  PAYMOB_METHOD_REGISTRY_JSON: z.string().optional(),
   PAYMENT_SUCCESS_URL: z.string().url().optional(),
   PAYMENT_FAILED_URL: z.string().url().optional(),
   PAYMENT_PENDING_URL: z.string().url().optional(),
@@ -209,6 +208,12 @@ const baseEnvSchema = z.object({
     .min(1)
     .max(120)
     .default(15),
+  SESSION_RUNTIME_PREPARE_LEAD_MINUTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10080)
+    .default(1440),
 
   // Accounting reconciliation operations
   ACCOUNTING_RECONCILIATION_ENABLED: z.enum(['true', 'false']).default('false'),
@@ -228,14 +233,13 @@ const baseEnvSchema = z.object({
   ACCOUNTING_RECONCILIATION_ALERTS_ENABLED: z
     .enum(['true', 'false'])
     .default('false'),
+
+  CORPORATE_CODE_PEPPER: z.string().min(32).optional(),
 });
 
 export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   const effectiveAppEnv = env.APP_ENV ?? env.NODE_ENV;
-
-  const anyProviderEnabled =
-    env.PAYMENT_STRIPE_ENABLED === 'true' ||
-    env.PAYMENT_PAYMOB_ENABLED === 'true';
+  const isProduction = effectiveAppEnv === 'production';
 
   // Reject localhost/loopback addresses in production to prevent silent push to wrong domain
   if (effectiveAppEnv === 'production' && env.APP_URL) {
@@ -279,50 +283,13 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ['TRUSTED_PROXY_MODE'],
-      message: 'TRUSTED_PROXY_MODE=cloudflare is required when Cloudflare country headers are enabled',
+      message:
+        'TRUSTED_PROXY_MODE=cloudflare is required when Cloudflare country headers are enabled',
     });
   }
 
-  if (anyProviderEnabled) {
-    if (!env.APP_BASE_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['APP_BASE_URL'],
-        message:
-          'APP_BASE_URL is required when any payment provider is enabled',
-      });
-    }
-
-    if (!env.PAYMENT_SUCCESS_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMENT_SUCCESS_URL'],
-        message:
-          'PAYMENT_SUCCESS_URL is required when any payment provider is enabled',
-      });
-    }
-
-    if (!env.PAYMENT_FAILED_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMENT_FAILED_URL'],
-        message:
-          'PAYMENT_FAILED_URL is required when any payment provider is enabled',
-      });
-    }
-
-    if (!env.PAYMENT_PENDING_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMENT_PENDING_URL'],
-        message:
-          'PAYMENT_PENDING_URL is required when any payment provider is enabled',
-      });
-    }
-  }
-
-  if (effectiveAppEnv !== 'production') {
-    if (env.PAYMENT_STRIPE_ENABLED === 'true' && env.STRIPE_MODE === 'live') {
+  if (!isProduction) {
+    if (env.STRIPE_MODE === 'live') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['STRIPE_MODE'],
@@ -331,12 +298,112 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       });
     }
 
-    if (env.PAYMENT_PAYMOB_ENABLED === 'true' && env.PAYMOB_MODE === 'live') {
+    if (env.PAYMOB_MODE === 'live') {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PAYMOB_MODE'],
         message:
           'PAYMOB_MODE must be test when APP_ENV/NODE_ENV is non-production',
+      });
+    }
+  }
+
+  if (isProduction) {
+    const publicUrls = [
+      ['APP_URL', env.APP_URL],
+      ['APP_BASE_URL', env.APP_BASE_URL],
+      ['GOOGLE_CALLBACK_URL', env.GOOGLE_CALLBACK_URL],
+      ['PAYMENT_SUCCESS_URL', env.PAYMENT_SUCCESS_URL],
+      ['PAYMENT_FAILED_URL', env.PAYMENT_FAILED_URL],
+      ['PAYMENT_PENDING_URL', env.PAYMENT_PENDING_URL],
+      ['DAILY_API_BASE_URL', env.DAILY_API_BASE_URL],
+    ] as const;
+    for (const [name, value] of publicUrls) {
+      if (!value) continue;
+      const parsed = new URL(value);
+      if (parsed.protocol !== 'https:') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name],
+          message: `${name} must use HTTPS in production`,
+        });
+      }
+      if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(parsed.hostname)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [name],
+          message: `${name} cannot use a local host in production`,
+        });
+      }
+    }
+
+    if (env.MAIL_PROVIDER === 'brevo') {
+      if (!env.BREVO_API_KEY?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['BREVO_API_KEY'],
+          message: 'BREVO_API_KEY is required when MAIL_PROVIDER=brevo',
+        });
+      }
+      if (!env.MAIL_FROM) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['MAIL_FROM'],
+          message: 'MAIL_FROM is required when MAIL_PROVIDER=brevo',
+        });
+      }
+    } else {
+      for (const name of ['MAIL_HOST', 'MAIL_USER', 'MAIL_PASS'] as const) {
+        if (!env[name]?.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [name],
+            message: `${name} is required when MAIL_PROVIDER=smtp`,
+          });
+        }
+      }
+      if (!env.MAIL_FROM) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['MAIL_FROM'],
+          message: 'MAIL_FROM is required when MAIL_PROVIDER=smtp',
+        });
+      }
+    }
+
+    if (!env.DAILY_API_KEY?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DAILY_API_KEY'],
+        message: 'DAILY_API_KEY is required for the Daily video provider',
+      });
+    }
+    if (!env.DAILY_API_BASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DAILY_API_BASE_URL'],
+        message: 'DAILY_API_BASE_URL is required for the Daily video provider',
+      });
+    }
+    if (!env.CORPORATE_CODE_PEPPER?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CORPORATE_CODE_PEPPER'],
+        message: 'CORPORATE_CODE_PEPPER is required in production',
+      });
+    }
+  }
+
+  if (
+    env.DEV_OTP_EMAIL_REDIRECT?.trim() ||
+    env.DEV_OTP_BYPASS_DELIVERY_FAILURES === 'true'
+  ) {
+    if (isProduction) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DEV_OTP_EMAIL_REDIRECT'],
+        message:
+          'Development OTP delivery controls cannot be enabled in production',
       });
     }
   }
@@ -353,133 +420,8 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS'],
-        message: 'PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS is required when OTP QA capture is enabled',
-      });
-    }
-  }
-
-  if (env.PAYMENT_STRIPE_ENABLED === 'true') {
-    if (!env.STRIPE_API_BASE_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['STRIPE_API_BASE_URL'],
         message:
-          'STRIPE_API_BASE_URL is required when PAYMENT_STRIPE_ENABLED=true',
-      });
-    }
-
-    if (!env.STRIPE_SECRET_KEY?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['STRIPE_SECRET_KEY'],
-        message:
-          'STRIPE_SECRET_KEY is required when PAYMENT_STRIPE_ENABLED=true',
-      });
-    }
-
-    if (!env.STRIPE_WEBHOOK_SECRET?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['STRIPE_WEBHOOK_SECRET'],
-        message:
-          'STRIPE_WEBHOOK_SECRET is required when PAYMENT_STRIPE_ENABLED=true',
-      });
-    }
-  }
-
-  if (env.PAYMENT_PAYMOB_ENABLED === 'true') {
-    if (!env.PAYMOB_BASE_URL?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_BASE_URL'],
-        message: 'PAYMOB_BASE_URL is required when PAYMENT_PAYMOB_ENABLED=true',
-      });
-    }
-
-    if (!env.PAYMOB_API_KEY?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_API_KEY'],
-        message: 'PAYMOB_API_KEY is required when PAYMENT_PAYMOB_ENABLED=true',
-      });
-    }
-
-    if (!env.PAYMOB_HMAC_SECRET?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_HMAC_SECRET'],
-        message:
-          'PAYMOB_HMAC_SECRET is required when PAYMENT_PAYMOB_ENABLED=true',
-      });
-    }
-
-    const checkoutFlow = env.PAYMOB_CHECKOUT_FLOW ?? 'legacy';
-    const hasLegacyCardIntegration = Boolean(
-      env.PAYMOB_INTEGRATION_ID_CARD?.trim() ||
-      env.PAYMOB_INTEGRATION_ID?.trim(),
-    );
-    const hasExplicitEgpCardIntegration = Boolean(
-      env.PAYMOB_EGP_CARD_INTEGRATION_ID?.trim(),
-    );
-    const hasExplicitEgpWalletIntegration = Boolean(
-      env.PAYMOB_EGP_WALLET_INTEGRATION_ID?.trim(),
-    );
-    const hasExplicitUsdCardIntegration = Boolean(
-      env.PAYMOB_USD_CARD_INTEGRATION_ID?.trim(),
-    );
-    const rawRegistry = env.PAYMOB_METHOD_REGISTRY_JSON?.trim();
-    const hasRegistryJson = Boolean(rawRegistry);
-
-    if (checkoutFlow === 'intention') {
-      if (!env.PAYMOB_PUBLIC_KEY?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['PAYMOB_PUBLIC_KEY'],
-          message:
-            'PAYMOB_PUBLIC_KEY is required when PAYMOB_CHECKOUT_FLOW=intention',
-        });
-      }
-
-      if (!env.PAYMOB_CHECKOUT_BASE_URL?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['PAYMOB_CHECKOUT_BASE_URL'],
-          message:
-            'PAYMOB_CHECKOUT_BASE_URL is required when PAYMOB_CHECKOUT_FLOW=intention',
-        });
-      }
-
-      if (!env.PAYMOB_INTENTION_BASE_URL?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['PAYMOB_INTENTION_BASE_URL'],
-          message:
-            'PAYMOB_INTENTION_BASE_URL is required when PAYMOB_CHECKOUT_FLOW=intention',
-        });
-      }
-    }
-
-    if (
-      !hasExplicitEgpCardIntegration &&
-      !hasExplicitEgpWalletIntegration &&
-      !hasExplicitUsdCardIntegration &&
-      !hasLegacyCardIntegration &&
-      !hasRegistryJson
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_EGP_CARD_INTEGRATION_ID'],
-        message:
-          'At least one explicit Paymob currency/method integration id or a method registry is required when PAYMENT_PAYMOB_ENABLED=true',
-      });
-    }
-
-    if (checkoutFlow === 'legacy' && !env.PAYMOB_IFRAME_ID?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['PAYMOB_IFRAME_ID'],
-        message:
-          'PAYMOB_IFRAME_ID is required when PAYMENT_PAYMOB_ENABLED=true and PAYMOB_CHECKOUT_FLOW=legacy',
+          'PRACTITIONER_OTP_QA_CAPTURE_ACCOUNTS is required when OTP QA capture is enabled',
       });
     }
   }

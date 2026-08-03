@@ -9,6 +9,7 @@ export interface CurrentUserBasicsReadModel {
   id: string;
   displayName: string | null;
   locale: string | null;
+  timezone: string | null;
   accountStatus: UserStatus;
   createdAt: Date;
   primaryEmail: string | null;
@@ -44,6 +45,7 @@ export interface CurrentUserReadModel {
   userId: string;
   displayName: string | null;
   locale: string | null;
+  timezone: string | null;
   avatarUrl: string | null;
   avatarDataUrl: string | null;
   accountStatus: UserStatus;

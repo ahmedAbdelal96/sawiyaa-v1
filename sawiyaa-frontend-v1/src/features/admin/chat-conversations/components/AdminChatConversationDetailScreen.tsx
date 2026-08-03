@@ -18,7 +18,10 @@ import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
 import TextArea from "@/components/form/input/TextArea";
 import { FormModal } from "@/components/ui/modal";
-import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates";
+import {
+  ListStateSkeleton,
+  StateCard,
+} from "@/components/shared/ContentStates";
 import {
   AdminPageHeader,
   AdminSectionCard,
@@ -31,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { useMySettings } from "@/features/settings/hooks/use-settings";
 import { Link } from "@/i18n/navigation";
 import {
   useAdminChatConversation,
@@ -69,7 +73,10 @@ type DayGroup = {
   runs: MessageRun[];
 };
 
-function getStatusLabel(t: ReturnType<typeof useTranslations>, item: AdminChatConversationDetailItem) {
+function getStatusLabel(
+  t: ReturnType<typeof useTranslations>,
+  item: AdminChatConversationDetailItem,
+) {
   if (item.status === "SENDING_DISABLED") {
     if (item.moderationState.closedBy === "ADMIN") {
       return t("status.SENDING_DISABLED");
@@ -87,7 +94,9 @@ function getPreviewTypeLabel(
   t: ReturnType<typeof useTranslations>,
   item: AdminChatConversationDetailItem,
 ) {
-  return t(`previewType.${item.lastMessagePreviewType}` as Parameters<typeof t>[0]);
+  return t(
+    `previewType.${item.lastMessagePreviewType}` as Parameters<typeof t>[0],
+  );
 }
 
 function getSenderRoleLabel(
@@ -117,25 +126,28 @@ function getAttachmentTypeLabel(attachment: AdminChatConversationAttachment) {
   return subtype ? subtype.toUpperCase() : null;
 }
 
-function groupMessagesByDay(messages: AdminChatConversationMessage[], locale: string): DayGroup[] {
+function groupMessagesByDay(
+  messages: AdminChatConversationMessage[],
+  locale: string,
+  timeZone?: string | null,
+): DayGroup[] {
   const ordered = [...messages].sort(
     (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
   );
   const groups = new Map<string, DayGroup>();
 
   for (const message of ordered) {
-    const messageDate = new Date(message.sentAt);
-    const dateKey = [
-      messageDate.getFullYear(),
-      String(messageDate.getMonth() + 1).padStart(2, "0"),
-      String(messageDate.getDate()).padStart(2, "0"),
-    ].join("-");
+    const dateKey = formatChatConversationDate(
+      message.sentAt,
+      locale,
+      timeZone,
+    );
     let dayGroup = groups.get(dateKey);
 
     if (!dayGroup) {
       dayGroup = {
         dateKey,
-        label: formatChatConversationDate(message.sentAt, locale),
+        label: dateKey,
         runs: [],
       };
       groups.set(dateKey, dayGroup);
@@ -181,13 +193,17 @@ function AttachmentPill({
 
   if (!canReadAttachments) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-border-light bg-surface-secondary/80 px-3 py-2.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-tertiary text-text-muted">
+      <div className="border-border-light bg-surface-secondary/80 flex items-center gap-3 rounded-2xl border px-3 py-2.5">
+        <div className="bg-surface-tertiary text-text-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
           <FileText className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-text-primary">{t("detail.attachment.restricted")}</p>
-          <p className="mt-1 text-xs text-text-muted">{t("detail.attachment.restrictedHint")}</p>
+          <p className="text-text-primary truncate text-sm font-medium">
+            {t("detail.attachment.restricted")}
+          </p>
+          <p className="text-text-muted mt-1 text-xs">
+            {t("detail.attachment.restrictedHint")}
+          </p>
         </div>
       </div>
     );
@@ -198,23 +214,25 @@ function AttachmentPill({
       href={attachment.fileUrl}
       target="_blank"
       rel="noreferrer"
-      className="group flex items-center gap-3 rounded-2xl border border-border-light bg-white px-3 py-2.5 transition hover:border-primary/30 hover:bg-primary-light/20"
+      className="group border-border-light hover:border-primary/30 hover:bg-primary-light/20 flex items-center gap-3 rounded-2xl border bg-white px-3 py-2.5 transition"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-light text-text-brand transition group-hover:bg-primary-light-hover">
+      <div className="bg-primary-light text-text-brand group-hover:bg-primary-light-hover flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition">
         <FileText className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-text-primary">{name}</p>
+          <p className="text-text-primary truncate text-sm font-semibold">
+            {name}
+          </p>
           {typeLabel ? (
-            <span className="rounded-full border border-border-light bg-surface-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+            <span className="border-border-light bg-surface-secondary text-text-muted rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-[0.16em] uppercase">
               {typeLabel}
             </span>
           ) : null}
         </div>
-        <p className="mt-1 text-xs text-text-muted">{size}</p>
+        <p className="text-text-muted mt-1 text-xs">{size}</p>
       </div>
-      <ArrowDownToLine className="h-4 w-4 shrink-0 text-text-muted transition group-hover:text-primary" />
+      <ArrowDownToLine className="text-text-muted group-hover:text-primary h-4 w-4 shrink-0 transition" />
     </a>
   );
 }
@@ -222,17 +240,20 @@ function AttachmentPill({
 function MessageBubble({
   t,
   locale,
+  timeZone,
   canReadAttachments,
   message,
 }: {
   t: ReturnType<typeof useTranslations>;
   locale: string;
+  timeZone?: string | null;
   canReadAttachments: boolean;
   message: AdminChatConversationMessage;
 }) {
   const isSystem = message.senderRole === "SYSTEM";
   const isPatient = message.senderRole === "PATIENT";
-  const body = message.body.trim().length > 0 ? message.body : t("detail.noText");
+  const body =
+    message.body.trim().length > 0 ? message.body : t("detail.noText");
 
   const alignClass = isSystem
     ? "items-center"
@@ -255,12 +276,12 @@ function MessageBubble({
               bubbleClass,
             )}
           >
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
-              <span className="h-px w-8 bg-border-light" />
+            <div className="text-text-muted flex items-center justify-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
+              <span className="bg-border-light h-px w-8" />
               {t("senderRole.SYSTEM")}
-              <span className="h-px w-8 bg-border-light" />
+              <span className="bg-border-light h-px w-8" />
             </div>
-            <p className="mt-3 whitespace-pre-wrap text-center text-sm leading-7 text-text-secondary">
+            <p className="text-text-secondary mt-3 text-center text-sm leading-7 whitespace-pre-wrap">
               {body}
             </p>
           </div>
@@ -272,11 +293,13 @@ function MessageBubble({
             bubbleClass,
           )}
         >
-          <p className="whitespace-pre-wrap break-words text-sm leading-7">{body}</p>
+          <p className="text-sm leading-7 break-words whitespace-pre-wrap">
+            {body}
+          </p>
 
           {message.attachments.length > 0 ? (
             <div className="mt-3 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <p className="text-text-muted text-[11px] font-semibold tracking-[0.18em] uppercase">
                 {t("detail.attachment.heading")}
               </p>
               <div className="space-y-2">
@@ -296,12 +319,12 @@ function MessageBubble({
 
           <div
             className={cn(
-              "mt-3 flex items-center gap-1.5 text-[11px] text-text-muted",
+              "text-text-muted mt-3 flex items-center gap-1.5 text-[11px]",
               isPatient ? "justify-end" : "justify-start",
             )}
           >
             <Clock3 className="h-3.5 w-3.5" />
-            {formatChatConversationTime(message.sentAt, locale)}
+            {formatChatConversationTime(message.sentAt, locale, timeZone)}
           </div>
         </div>
       )}
@@ -312,11 +335,13 @@ function MessageBubble({
 function MessageRunBlock({
   t,
   locale,
+  timeZone,
   canReadAttachments,
   run,
 }: {
   t: ReturnType<typeof useTranslations>;
   locale: string;
+  timeZone?: string | null;
   canReadAttachments: boolean;
   run: MessageRun;
 }) {
@@ -329,22 +354,48 @@ function MessageRunBlock({
         : t("senderRole.SYSTEM");
 
   return (
-    <div className={cn("flex flex-col gap-2", isSystem ? "items-center" : run.senderRole === "PATIENT" ? "items-end" : "items-start")}>
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        isSystem
+          ? "items-center"
+          : run.senderRole === "PATIENT"
+            ? "items-end"
+            : "items-start",
+      )}
+    >
       {!isSystem ? (
-        <div className={cn("flex items-center gap-2 text-[11px] text-text-muted", run.senderRole === "PATIENT" ? "justify-end" : "justify-start")}>
-          <span className="rounded-full border border-border-light bg-white px-2.5 py-1 font-semibold uppercase tracking-[0.16em] text-text-muted">
+        <div
+          className={cn(
+            "text-text-muted flex items-center gap-2 text-[11px]",
+            run.senderRole === "PATIENT" ? "justify-end" : "justify-start",
+          )}
+        >
+          <span className="border-border-light text-text-muted rounded-full border bg-white px-2.5 py-1 font-semibold tracking-[0.16em] uppercase">
             {label}
           </span>
-          {run.senderName ? <span className="truncate font-medium">{run.senderName}</span> : null}
+          {run.senderName ? (
+            <span className="truncate font-medium">{run.senderName}</span>
+          ) : null}
         </div>
       ) : null}
 
-      <div className={cn("flex w-full flex-col gap-2", isSystem ? "items-center" : run.senderRole === "PATIENT" ? "items-end" : "items-start")}>
+      <div
+        className={cn(
+          "flex w-full flex-col gap-2",
+          isSystem
+            ? "items-center"
+            : run.senderRole === "PATIENT"
+              ? "items-end"
+              : "items-start",
+        )}
+      >
         {run.items.map((message, index) => (
           <MessageBubble
             key={message.messageId}
             t={t}
             locale={locale}
+            timeZone={timeZone}
             canReadAttachments={canReadAttachments}
             message={message}
           />
@@ -357,22 +408,24 @@ function MessageRunBlock({
 function TranscriptDayGroup({
   t,
   locale,
+  timeZone,
   canReadAttachments,
   group,
 }: {
   t: ReturnType<typeof useTranslations>;
   locale: string;
+  timeZone?: string | null;
   canReadAttachments: boolean;
   group: DayGroup;
 }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-border-light" />
-        <p className="rounded-full border border-border-light bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted shadow-[0_8px_18px_-18px_rgba(34,52,56,0.18)]">
+        <span className="bg-border-light h-px flex-1" />
+        <p className="border-border-light text-text-muted rounded-full border bg-white px-3 py-1 text-[11px] font-semibold tracking-[0.18em] uppercase shadow-[0_8px_18px_-18px_rgba(34,52,56,0.18)]">
           {group.label}
         </p>
-        <span className="h-px flex-1 bg-border-light" />
+        <span className="bg-border-light h-px flex-1" />
       </div>
 
       <div className="space-y-3">
@@ -381,6 +434,7 @@ function TranscriptDayGroup({
             key={run.key + run.items[0]?.messageId}
             t={t}
             locale={locale}
+            timeZone={timeZone}
             canReadAttachments={canReadAttachments}
             run={run}
           />
@@ -397,6 +451,8 @@ export default function AdminChatConversationDetailScreen({
 }) {
   const t = useTranslations("admin-chat-conversations");
   const locale = useLocale();
+  const settingsQuery = useMySettings();
+  const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -405,8 +461,12 @@ export default function AdminChatConversationDetailScreen({
     () => new Set(permissionData?.permissions ?? []),
     [permissionData?.permissions],
   );
-  const canModerate = permissions.has(PermissionKey.CHAT_CONVERSATIONS_MODERATE);
-  const canReadAttachments = permissions.has(PermissionKey.CHAT_ATTACHMENTS_READ);
+  const canModerate = permissions.has(
+    PermissionKey.CHAT_CONVERSATIONS_MODERATE,
+  );
+  const canReadAttachments = permissions.has(
+    PermissionKey.CHAT_ATTACHMENTS_READ,
+  );
 
   const conversationQuery = useAdminChatConversation(conversationId);
   const messagesQuery = useAdminChatConversationMessages(conversationId, {
@@ -432,7 +492,9 @@ export default function AdminChatConversationDetailScreen({
     const next = new URLSearchParams(searchParams.toString());
     next.delete("action");
     const query = next.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   }, [pathname, router, searchParams]);
 
   useEffect(() => {
@@ -463,12 +525,21 @@ export default function AdminChatConversationDetailScreen({
       }
       clearActionQuery();
     }
-  }, [action, adminLockActive, canModerate, clearActionQuery, conversationStatus]);
+  }, [
+    action,
+    adminLockActive,
+    canModerate,
+    clearActionQuery,
+    conversationStatus,
+  ]);
 
-  const messages = useMemo(() => messagesQuery.data?.items ?? [], [messagesQuery.data?.items]);
+  const messages = useMemo(
+    () => messagesQuery.data?.items ?? [],
+    [messagesQuery.data?.items],
+  );
   const groupedMessages = useMemo(
-    () => groupMessagesByDay(messages, locale),
-    [locale, messages],
+    () => groupMessagesByDay(messages, locale, viewerTimeZone),
+    [locale, messages, viewerTimeZone],
   );
 
   const conversationStatusBadge = conversation ? (
@@ -543,7 +614,7 @@ export default function AdminChatConversationDetailScreen({
           <>
             <Link
               href="/admin/chat-conversations"
-              className="inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-4 py-2.5 text-sm font-medium text-text-primary transition hover:border-primary/30 hover:text-primary"
+              className="border-border-light text-text-primary hover:border-primary/30 hover:text-primary inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-medium transition"
             >
               <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
               {t("actions.back")}
@@ -583,21 +654,28 @@ export default function AdminChatConversationDetailScreen({
         />
         <AdminSummaryCard
           label={t("summary.practitioner")}
-          value={conversation.practitioner.displayName ?? t("common.unknownPractitioner")}
+          value={
+            conversation.practitioner.displayName ??
+            t("common.unknownPractitioner")
+          }
           hint={conversation.practitioner.email ?? t("common.noEmail")}
           tone="neutral"
         />
         <AdminSummaryCard
           label={t("summary.session")}
           value={conversation.session.sessionCode}
-          hint={`${formatChatConversationDateTime(conversation.session.sessionDateTime, locale)} · ${t(
+          hint={`${formatChatConversationDateTime(conversation.session.sessionDateTime, locale, viewerTimeZone)} · ${t(
             `status.${conversation.status}` as Parameters<typeof t>[0],
           )}`}
           tone="primary"
         />
         <AdminSummaryCard
           label={t("summary.sending")}
-          value={conversation.canSendMessage ? t("summary.sendingAllowed") : t("summary.sendingBlocked")}
+          value={
+            conversation.canSendMessage
+              ? t("summary.sendingAllowed")
+              : t("summary.sendingBlocked")
+          }
           hint={getPreviewTypeLabel(t, conversation)}
           tone={sendingTone}
         />
@@ -611,42 +689,55 @@ export default function AdminChatConversationDetailScreen({
             description={t("detail.moderation.description")}
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("detail.moderation.canSend")}
                 </dt>
                 <dd className="mt-3">
-                  <AdminStatusBadge tone={conversation.canSendMessage ? "success" : "warning"}>
-                    {conversation.canSendMessage ? t("common.yes") : t("common.no")}
+                  <AdminStatusBadge
+                    tone={conversation.canSendMessage ? "success" : "warning"}
+                  >
+                    {conversation.canSendMessage
+                      ? t("common.yes")
+                      : t("common.no")}
                   </AdminStatusBadge>
                 </dd>
               </dl>
 
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("detail.moderation.adminLock")}
                 </dt>
                 <dd className="mt-3 space-y-2">
-                  <AdminStatusBadge tone={conversation.adminLockState.isActive ? "warning" : "neutral"}>
-                    {conversation.adminLockState.isActive ? t("common.yes") : t("common.no")}
+                  <AdminStatusBadge
+                    tone={
+                      conversation.adminLockState.isActive
+                        ? "warning"
+                        : "neutral"
+                    }
+                  >
+                    {conversation.adminLockState.isActive
+                      ? t("common.yes")
+                      : t("common.no")}
                   </AdminStatusBadge>
                   {conversation.adminLockState.disabledReason ? (
-                    <p className="text-sm leading-6 text-text-secondary">
+                    <p className="text-text-secondary text-sm leading-6">
                       {conversation.adminLockState.disabledReason}
                     </p>
                   ) : null}
                   {conversation.adminLockState.disabledAt ? (
-                    <p className="text-xs text-text-muted">
+                    <p className="text-text-muted text-xs">
                       {t("detail.moderation.disabledAt", {
                         value: formatChatConversationDateTime(
                           conversation.adminLockState.disabledAt,
                           locale,
+                          viewerTimeZone,
                         ),
                       })}
                     </p>
                   ) : null}
                   {conversation.adminLockState.disabledByUserId ? (
-                    <p className="text-xs font-mono text-text-muted">
+                    <p className="text-text-muted font-mono text-xs">
                       {t("detail.moderation.disabledBy", {
                         value: conversation.adminLockState.disabledByUserId,
                       })}
@@ -655,47 +746,65 @@ export default function AdminChatConversationDetailScreen({
                 </dd>
               </dl>
 
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("detail.moderation.practitionerLock")}
                 </dt>
                 <dd className="mt-3 space-y-2">
-                  <AdminStatusBadge tone={conversation.practitionerLockState.isActive ? "danger" : "neutral"}>
-                    {conversation.practitionerLockState.isActive ? t("common.yes") : t("common.no")}
+                  <AdminStatusBadge
+                    tone={
+                      conversation.practitionerLockState.isActive
+                        ? "danger"
+                        : "neutral"
+                    }
+                  >
+                    {conversation.practitionerLockState.isActive
+                      ? t("common.yes")
+                      : t("common.no")}
                   </AdminStatusBadge>
                   {conversation.practitionerLockState.disabledReason ? (
-                    <p className="text-sm leading-6 text-text-secondary">
+                    <p className="text-text-secondary text-sm leading-6">
                       {conversation.practitionerLockState.disabledReason}
                     </p>
                   ) : null}
                   {conversation.practitionerLockState.disabledAt ? (
-                    <p className="text-xs text-text-muted">
+                    <p className="text-text-muted text-xs">
                       {t("detail.moderation.disabledAt", {
                         value: formatChatConversationDateTime(
                           conversation.practitionerLockState.disabledAt,
                           locale,
+                          viewerTimeZone,
                         ),
                       })}
                     </p>
                   ) : null}
                   {conversation.practitionerLockState.disabledByUserId ? (
-                    <p className="text-xs font-mono text-text-muted">
+                    <p className="text-text-muted font-mono text-xs">
                       {t("detail.moderation.disabledBy", {
-                        value: conversation.practitionerLockState.disabledByUserId,
+                        value:
+                          conversation.practitionerLockState.disabledByUserId,
                       })}
                     </p>
                   ) : null}
                 </dd>
               </dl>
 
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4 sm:col-span-2 xl:col-span-1">
-                <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4 sm:col-span-2 xl:col-span-1">
+                <dt className="text-text-muted text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("detail.moderation.closedBy")}
                 </dt>
                 <dd className="mt-3">
-                  <AdminStatusBadge tone={getChatConversationClosedByTone(conversation.moderationState.closedBy)}>
+                  <AdminStatusBadge
+                    tone={getChatConversationClosedByTone(
+                      conversation.moderationState.closedBy,
+                    )}
+                  >
                     {conversation.moderationState.closedBy
-                      ? t(`closedBy.${conversation.moderationState.closedBy}` as Parameters<typeof t>[0])
+                      ? t(
+                          `closedBy.${conversation.moderationState.closedBy}` as Parameters<
+                            typeof t
+                          >[0],
+                        )
                       : t("common.notApplicable")}
                   </AdminStatusBadge>
                 </dd>
@@ -703,7 +812,7 @@ export default function AdminChatConversationDetailScreen({
             </div>
 
             {practitionerLockActive ? (
-              <div className="mt-4 rounded-[22px] border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-800">
+              <div className="border-warning-200 bg-warning-50 text-warning-800 mt-4 rounded-[22px] border px-4 py-3 text-sm leading-6">
                 {t("detail.moderation.practitionerLockNote")}
               </div>
             ) : null}
@@ -715,40 +824,56 @@ export default function AdminChatConversationDetailScreen({
             description={t("detail.history.description")}
           >
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
                   <CalendarDays className="h-3.5 w-3.5" />
                   {t("detail.history.lastMessageAt")}
                 </dt>
-                <dd className="mt-3 text-sm font-medium text-text-primary">
-                  {formatChatConversationDateTime(conversation.lastMessageAt, locale)}
+                <dd className="text-text-primary mt-3 text-sm font-medium">
+                  {formatChatConversationDateTime(
+                    conversation.lastMessageAt,
+                    locale,
+                    viewerTimeZone,
+                  )}
                 </dd>
               </dl>
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
                   <Clock3 className="h-3.5 w-3.5" />
                   {t("detail.history.createdAt")}
                 </dt>
-                <dd className="mt-3 text-sm font-medium text-text-primary">
-                  {formatChatConversationDateTime(conversation.createdAt, locale)}
+                <dd className="text-text-primary mt-3 text-sm font-medium">
+                  {formatChatConversationDateTime(
+                    conversation.createdAt,
+                    locale,
+                    viewerTimeZone,
+                  )}
                 </dd>
               </dl>
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
                   <Clock3 className="h-3.5 w-3.5" />
                   {t("detail.history.updatedAt")}
                 </dt>
-                <dd className="mt-3 text-sm font-medium text-text-primary">
-                  {formatChatConversationDateTime(conversation.updatedAt, locale)}
+                <dd className="text-text-primary mt-3 text-sm font-medium">
+                  {formatChatConversationDateTime(
+                    conversation.updatedAt,
+                    locale,
+                    viewerTimeZone,
+                  )}
                 </dd>
               </dl>
-              <dl className="rounded-[22px] bg-surface-secondary/70 p-4">
-                <dt className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <dl className="bg-surface-secondary/70 rounded-[22px] p-4">
+                <dt className="text-text-muted inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] uppercase">
                   <MessageSquareText className="h-3.5 w-3.5" />
                   {t("detail.history.preview")}
                 </dt>
                 <dd className="mt-3">
-                  <AdminStatusBadge tone={getChatConversationPreviewTypeTone(conversation.lastMessagePreviewType)}>
+                  <AdminStatusBadge
+                    tone={getChatConversationPreviewTypeTone(
+                      conversation.lastMessagePreviewType,
+                    )}
+                  >
                     {getPreviewTypeLabel(t, conversation)}
                   </AdminStatusBadge>
                 </dd>
@@ -759,18 +884,18 @@ export default function AdminChatConversationDetailScreen({
 
         <section
           data-admin-chat-transcript
-          className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-border-light bg-white shadow-[0_18px_42px_-32px_rgba(34,52,56,0.24)] xl:sticky xl:top-6 xl:h-[calc(100dvh-12rem)]"
+          className="border-border-light flex min-h-0 flex-col overflow-hidden rounded-[28px] border bg-white shadow-[0_18px_42px_-32px_rgba(34,52,56,0.24)] xl:sticky xl:top-6 xl:h-[calc(100dvh-12rem)]"
         >
-          <div className="border-b border-border-light px-4 py-4 sm:px-6">
+          <div className="border-border-light border-b px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                <p className="text-primary text-xs font-semibold tracking-[0.18em] uppercase">
                   {t("detail.sections.transcript")}
                 </p>
-                <h2 className="mt-1 text-[1.45rem] font-semibold tracking-[-0.02em] text-text-primary">
+                <h2 className="text-text-primary mt-1 text-[1.45rem] font-semibold tracking-[-0.02em]">
                   {t("detail.transcript.title")}
                 </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
+                <p className="text-text-secondary mt-2 max-w-3xl text-sm leading-6">
                   {t("detail.transcript.description", {
                     value: messagesPagination?.totalItems ?? messages.length,
                   })}
@@ -784,7 +909,11 @@ export default function AdminChatConversationDetailScreen({
                 <AdminStatusBadge tone="neutral">
                   {t("columns.attachments")}: {conversation.attachmentsCount}
                 </AdminStatusBadge>
-                <AdminStatusBadge tone={getChatConversationPreviewTypeTone(conversation.lastMessagePreviewType)}>
+                <AdminStatusBadge
+                  tone={getChatConversationPreviewTypeTone(
+                    conversation.lastMessagePreviewType,
+                  )}
+                >
                   {getPreviewTypeLabel(t, conversation)}
                 </AdminStatusBadge>
               </div>
@@ -795,7 +924,10 @@ export default function AdminChatConversationDetailScreen({
             data-admin-chat-transcript-scroll
             className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,rgba(247,249,251,0.9)_0%,rgba(255,255,255,1)_42%,rgba(255,255,255,1)_100%)] px-3 py-4 sm:px-5 sm:py-6"
           >
-            <div dir="ltr" className="mx-auto flex w-full max-w-[68rem] flex-col space-y-6 px-2 sm:px-4">
+            <div
+              dir="ltr"
+              className="mx-auto flex w-full max-w-[68rem] flex-col space-y-6 px-2 sm:px-4"
+            >
               {messagesQuery.isLoading ? (
                 <ListStateSkeleton items={4} heightClass="h-32" />
               ) : messagesQuery.isError ? (
@@ -814,19 +946,22 @@ export default function AdminChatConversationDetailScreen({
                     key={group.dateKey}
                     t={t}
                     locale={locale}
+                    timeZone={viewerTimeZone}
                     canReadAttachments={canReadAttachments}
                     group={group}
                   />
                 ))
               ) : (
-                <div className="flex min-h-[18rem] items-center justify-center rounded-[24px] border border-dashed border-border-light bg-white px-6 py-12 text-center">
+                <div className="border-border-light flex min-h-[18rem] items-center justify-center rounded-[24px] border border-dashed bg-white px-6 py-12 text-center">
                   <div className="max-w-md space-y-3">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-light text-text-brand">
+                    <div className="bg-primary-light text-text-brand mx-auto flex h-12 w-12 items-center justify-center rounded-full">
                       <MessageSquareText className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-text-primary">{t("detail.empty.title")}</p>
-                      <p className="mt-2 text-sm leading-6 text-text-secondary">
+                      <p className="text-text-primary text-sm font-semibold">
+                        {t("detail.empty.title")}
+                      </p>
+                      <p className="text-text-secondary mt-2 text-sm leading-6">
                         {t("detail.empty.description")}
                       </p>
                     </div>
@@ -836,7 +971,7 @@ export default function AdminChatConversationDetailScreen({
             </div>
 
             {messagesPagination && messagesPagination.totalPages > 1 ? (
-              <p className="mt-5 text-xs text-text-muted">
+              <p className="text-text-muted mt-5 text-xs">
                 {t("detail.pagination.note", {
                   value: messagesPagination.totalItems,
                 })}
@@ -861,13 +996,13 @@ export default function AdminChatConversationDetailScreen({
         onSubmit={() => void handleDisable()}
       >
         <div className="space-y-4">
-          <p className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-800">
+          <p className="border-warning-200 bg-warning-50 text-warning-800 rounded-2xl border px-4 py-3 text-sm leading-6">
             {t("modals.disable.warning")}
           </p>
           <div>
             <Label
               htmlFor="disable-reason"
-              className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
+              className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase"
             >
               {t("modals.disable.reason")}
             </Label>
@@ -882,7 +1017,7 @@ export default function AdminChatConversationDetailScreen({
           <div>
             <Label
               htmlFor="disable-note"
-              className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
+              className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase"
             >
               {t("modals.disable.note")}
             </Label>
@@ -912,14 +1047,14 @@ export default function AdminChatConversationDetailScreen({
       >
         <div className="space-y-4">
           {practitionerLockActive ? (
-            <p className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-800">
+            <p className="border-warning-200 bg-warning-50 text-warning-800 rounded-2xl border px-4 py-3 text-sm leading-6">
               {t("modals.enable.practitionerLockNote")}
             </p>
           ) : null}
           <div>
             <Label
               htmlFor="enable-note"
-              className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted"
+              className="text-text-muted mb-2 block text-xs font-semibold tracking-[0.18em] uppercase"
             >
               {t("modals.enable.note")}
             </Label>

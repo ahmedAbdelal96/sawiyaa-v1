@@ -11,6 +11,7 @@ import {
 import type { useTranslations } from "next-intl";
 
 import type { NotificationContext, NotificationPrimaryAction } from "../types/user-notifications.types";
+import { formatEffectiveViewerTime } from "@/lib/time-formatting";
 
 export type NotificationVisualProps = {
   icon: React.ReactNode;
@@ -29,7 +30,8 @@ export function getNotificationVisualProps(
   namespace: "admin" | "user" = "admin",
   locale: string = "en",
   context?: NotificationContext,
-  primaryAction?: NotificationPrimaryAction
+  primaryAction?: NotificationPrimaryAction,
+  viewerTimeZone?: string | null,
 ): NotificationVisualProps {
   const normalizedSlug = slug || "";
   // Translate slugs using safe keys where dots are replaced by hyphens
@@ -105,18 +107,7 @@ export function getNotificationVisualProps(
   const isAr = locale.startsWith("ar");
 
   const formatTime = (isoString?: string) => {
-    if (!isoString) return "";
-    try {
-      const date = new Date(isoString);
-      let hours = date.getHours();
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? (isAr ? "م" : "PM") : (isAr ? "ص" : "AM");
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-      return `${hours}:${minutes} ${ampm}`;
-    } catch {
-      return "";
-    }
+    return formatEffectiveViewerTime(isoString, viewerTimeZone, { locale, fallbackText: "" });
   };
 
   if (context) {

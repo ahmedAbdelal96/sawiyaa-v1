@@ -598,6 +598,7 @@ function SessionCard({
               weight="700"
               style={styles.sessionTitle}
               color={theme.colors.textPrimary}
+              numberOfLines={1}
             >
               {practitionerName}
             </Text>
@@ -609,13 +610,15 @@ function SessionCard({
           </View>
         </View>
 
-        <StatusChip
-          label={t(
-            `patientSessionsFlow.presentationStatus.${session.presentationStatus}`,
-          )}
-          tone={tone}
-          showDot={false}
-        />
+        <View style={styles.cardStatusWrap}>
+          <StatusChip
+            label={t(
+              `patientSessionsFlow.presentationStatus.${session.presentationStatus}`,
+            )}
+            tone={tone}
+            showDot={false}
+          />
+        </View>
       </View>
 
       {/* Details Box: Clean unified styling, no repeated labels */}
@@ -913,15 +916,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     gap: 4,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E8DED0",
+    backgroundColor: "#F9FAF9",
+    borderWidth: 1.5,
+    borderColor: "#EEF4EF",
   },
   overviewTileWarning: {
     backgroundColor: "#FCFAF6",
+    borderColor: "#F5EBDD",
   },
   overviewTileSuccess: {
     backgroundColor: "#EEF4EF",
+    borderColor: "#E8F1EA",
   },
   overviewIconWrap: {
     width: 28,
@@ -952,9 +957,13 @@ const styles = StyleSheet.create({
   },
   filterTabsRow: {
     flexDirection: "row",
-    gap: 8,
-    paddingVertical: 4,
-    marginBottom: 4,
+    backgroundColor: "#FCFAF6",
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#E8DED0",
+    padding: 4,
+    gap: 4,
+    marginBottom: 8,
   },
   rowLtr: {
     flexDirection: "row",
@@ -966,18 +975,21 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E8DED0",
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "transparent",
   },
   filterTabButtonSelected: {
     backgroundColor: "#24564F",
-    borderColor: "#24564F",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   filterTabText: {
-    fontSize: 12,
+    fontSize: 12.5,
+    lineHeight: 18,
   },
   sectionBlock: {
     gap: 12,
@@ -987,10 +999,10 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     padding: 16,
-    gap: 12,
+    gap: 14,
     borderRadius: 20,
     backgroundColor: "#FFFFFF",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#E8DED0",
   },
   cardTopRow: {
@@ -998,6 +1010,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
+    width: "100%",
   },
   cardIdentity: {
     flex: 1,
@@ -1016,6 +1029,10 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     marginTop: 1,
+  },
+  cardStatusWrap: {
+    flexShrink: 0,
+    alignItems: "flex-end",
   },
   sessionDetailsBox: {
     backgroundColor: "#FCFAF6",
@@ -1103,11 +1120,11 @@ const styles = StyleSheet.create({
   timelineCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1.5,
     borderColor: "#E8DED0",
-    padding: 12,
-    gap: 8,
+    padding: 14,
+    gap: 10,
   },
   timelineCardHeader: {
     flexDirection: "row",
