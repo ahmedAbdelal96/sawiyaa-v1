@@ -13,7 +13,7 @@ RUN npm ci
 
 FROM deps AS build
 COPY . .
-RUN npm run prisma:generate
+RUN DATABASE_URL=postgresql://prisma:prisma@127.0.0.1:5432/prisma npm run prisma:generate
 RUN npm run build
 
 FROM base AS runtime

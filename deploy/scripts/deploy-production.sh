@@ -73,12 +73,10 @@ git branch "$BACKUP_BRANCH" "$ACTIVE_HEAD" >/dev/null
 # is initialized by the backend_volume_init Compose service.
 install -d -o "$RUNTIME_UID" -g "$RUNTIME_GID" -m 0750 -- \
   "$PROJECT_DIR/logs/backend"
-if command -v runuser >/dev/null 2>&1; then
-  runuser -u "#$RUNTIME_UID" -- test -w "$PROJECT_DIR/logs/backend" || {
-    echo "Backend runtime UID $RUNTIME_UID cannot write $PROJECT_DIR/logs/backend" >&2
-    exit 1
-  }
-fi
+[[ -d "$PROJECT_DIR/logs/backend" ]] || {
+  echo "Backend log bind-mount directory is missing: $PROJECT_DIR/logs/backend" >&2
+  exit 1
+}
 
 cleanup_validation_worktree() {
   if (( WORKTREE_CREATED )); then
@@ -184,6 +182,13 @@ docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_F
 
 echo "Building backend and frontend images..."
 docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build backend frontend
+
+echo "Checking backend log bind-mount write access..."
+docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+  sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
+    echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
+    exit 1
+  }
 
 echo "Starting PostgreSQL..."
 docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" up -d postgres

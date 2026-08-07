@@ -34,6 +34,12 @@ test('deployment uses status-only contract/preflight diagnostics', () => {
   assert.doesNotMatch(script, /\benv\s+\|/);
 });
 
+test('deployment validates backend log access inside the container', () => {
+  assert.doesNotMatch(script, /runuser/);
+  assert.match(script, /run --rm --no-deps backend[\s\S]*touch \/app\/logs\/\.write-test/);
+  assert.match(script, /Backend container user cannot write to \/app\/logs/);
+});
+
 test('deployment uses the target validator and only the safe config bootstrap', () => {
   assert.match(
     script,
