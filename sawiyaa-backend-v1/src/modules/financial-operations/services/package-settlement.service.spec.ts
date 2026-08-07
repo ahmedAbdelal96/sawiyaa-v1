@@ -86,7 +86,12 @@ describe('PackageSettlementService', () => {
     } as unknown as RefreshPractitionerWalletService;
     const sessionEarningReviewService = {
       approveReview: jest.fn().mockResolvedValue({}),
+      approveFinancialDecision: jest.fn().mockResolvedValue({}),
+      creditPractitionerWallet: jest.fn().mockResolvedValue({}),
     } as unknown as SessionEarningReviewService;
+    const securityAuditService = {
+      recordRequired: jest.fn().mockResolvedValue(undefined),
+    };
 
     const service = new PackageSettlementService(
       prisma as never,
@@ -94,6 +99,7 @@ describe('PackageSettlementService', () => {
       packageSettlementRepository,
       refreshPractitionerWalletService,
       sessionEarningReviewService,
+      securityAuditService,
     );
 
     return {
@@ -104,6 +110,7 @@ describe('PackageSettlementService', () => {
       ledgerRepository,
       refreshPractitionerWalletService,
       sessionEarningReviewService,
+      securityAuditService,
     };
   }
 
@@ -391,7 +398,7 @@ describe('PackageSettlementService', () => {
     expect(settlement?.status).toBe('READY_TO_RELEASE');
   });
 
-  it('releases ready package settlements exactly once and refreshes the wallet', async () => {
+  it('fails closed when a legacy package release would release practitioner funds', async () => {
     const readySettlement = {
       id: 'settlement-1',
       purchaseId: 'purchase-1',
@@ -425,23 +432,25 @@ describe('PackageSettlementService', () => {
       releaseLedgerEntries: [],
     });
 
-    const released = await setup.service.releaseReadySettlement({
-      settlementId: 'settlement-1',
-      releasedByAdminId: 'admin-1',
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'LEGACY_PACKAGE_SETTLEMENT_RELEASE_DISABLED',
+      }),
     });
-
     expect(
       setup.ledgerRepository.createManyLedgerEntries,
-    ).toHaveBeenCalledTimes(1);
-    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
-      'practitioner-1',
-      expect.anything(),
-    );
-    expect(released.status).toBe('RELEASED');
-    expect(released.decision).toBe('FULL_COMPLETION_ADMIN_RELEASE');
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 
-  it('approves pending package session reviews during release when review rows exist', async () => {
+  it('fails closed when package review rows exist even if purchase sessions are missing', async () => {
     const readySettlement = {
       id: 'settlement-1',
       purchaseId: 'purchase-1',
@@ -473,27 +482,33 @@ describe('PackageSettlementService', () => {
     const setup = buildService({
       releaseSettlement: readySettlement,
     });
-    (setup.tx.sessionEarningReview.findMany as jest.Mock).mockResolvedValueOnce([
-      { id: 'review-1' },
-      { id: 'review-2' },
-    ]);
+    (setup.tx.sessionEarningReview.count as jest.Mock).mockResolvedValueOnce(2);
 
-    await setup.service.releaseReadySettlement({
-      settlementId: 'settlement-1',
-      releasedByAdminId: 'admin-1',
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'LEGACY_PACKAGE_SETTLEMENT_RELEASE_DISABLED',
+      }),
     });
-
     expect(
-      setup.sessionEarningReviewService.approveReview,
-    ).toHaveBeenCalledTimes(2);
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
-    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
-      'practitioner-1',
-      expect.anything(),
-    );
+      setup.sessionEarningReviewService.approveFinancialDecision,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.sessionEarningReviewService.creditPractitionerWallet,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(
+      setup.refreshPractitionerWalletService.refresh,
+    ).not.toHaveBeenCalled();
   });
 
-  it('releases package settlements without duplicating ledger entries when session review earnings already exist', async () => {
+  it('fails closed instead of replacing canonical review stages', async () => {
     const readySettlement = {
       id: 'settlement-1',
       purchaseId: 'purchase-1',
@@ -531,9 +546,21 @@ describe('PackageSettlementService', () => {
     const setup = buildService({
       releaseSettlement: readySettlement,
     });
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'LEGACY_PACKAGE_SETTLEMENT_RELEASE_DISABLED',
+      }),
+    });
+    return;
     (setup.tx.sessionEarningReview.count as jest.Mock).mockResolvedValueOnce(2);
     (
-      setup.ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
+      setup.ledgerRepository
+        .findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
     ).mockResolvedValueOnce([
       {
         id: 'entry-1',
@@ -556,15 +583,18 @@ describe('PackageSettlementService', () => {
       releasedByAdminId: 'admin-1',
     });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
     expect(
-      setup.refreshPractitionerWalletService.refresh,
-    ).toHaveBeenCalledWith('practitioner-1', expect.anything());
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
+      'practitioner-1',
+      expect.anything(),
+    );
     expect(released.status).toBe('RELEASED');
     expect(released.releasedPractitionerAmount.toString()).toBe('260');
   });
 
-  it('does not fall back to direct release entries when package session reviews exist but no practitioner payout is approved', async () => {
+  it('fails closed instead of falling back to direct release entries', async () => {
     const readySettlement = {
       id: 'settlement-1',
       purchaseId: 'purchase-1',
@@ -602,9 +632,21 @@ describe('PackageSettlementService', () => {
     const setup = buildService({
       releaseSettlement: readySettlement,
     });
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'LEGACY_PACKAGE_SETTLEMENT_RELEASE_DISABLED',
+      }),
+    });
+    return;
     (setup.tx.sessionEarningReview.count as jest.Mock).mockResolvedValueOnce(1);
     (
-      setup.ledgerRepository.findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
+      setup.ledgerRepository
+        .findSessionReviewPractitionerEarningEntriesBySessionIds as jest.Mock
     ).mockResolvedValueOnce([]);
 
     const released = await setup.service.releaseReadySettlement({
@@ -612,15 +654,18 @@ describe('PackageSettlementService', () => {
       releasedByAdminId: 'admin-1',
     });
 
-    expect(setup.ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
     expect(
-      setup.refreshPractitionerWalletService.refresh,
-    ).toHaveBeenCalledWith('practitioner-1', expect.anything());
+      setup.ledgerRepository.createManyLedgerEntries,
+    ).not.toHaveBeenCalled();
+    expect(setup.refreshPractitionerWalletService.refresh).toHaveBeenCalledWith(
+      'practitioner-1',
+      expect.anything(),
+    );
     expect(released.status).toBe('RELEASED');
     expect(released.releasedPractitionerAmount.toString()).toBe('0');
   });
 
-  it('marks release-required settlements as NEEDS_REVIEW when legacy package earnings already exist', async () => {
+  it('fails closed before legacy package earnings can be released', async () => {
     const readySettlement = {
       id: 'settlement-1',
       purchaseId: 'purchase-1',
@@ -667,6 +712,17 @@ describe('PackageSettlementService', () => {
         },
       ],
     });
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'LEGACY_PACKAGE_SETTLEMENT_RELEASE_DISABLED',
+      }),
+    });
+    return;
 
     const result = await setup.service.releaseReadySettlement({
       settlementId: 'settlement-1',
@@ -727,5 +783,101 @@ describe('PackageSettlementService', () => {
     expect(
       setup.refreshPractitionerWalletService.refresh,
     ).not.toHaveBeenCalled();
+  });
+
+  it('records package settlement release audit inside the transaction', async () => {
+    const setup = buildService({
+      releaseSettlement: {
+        id: 'settlement-1',
+        purchaseId: 'purchase-1',
+        practitionerId: 'practitioner-1',
+        patientId: 'patient-1',
+        currencyCode: 'EGP',
+        status: 'READY_TO_RELEASE',
+        sessionCount: 0,
+        completedSessionsCount: 0,
+        heldPractitionerAmount: new Prisma.Decimal(0),
+        heldPlatformAmount: new Prisma.Decimal('100.00'),
+        releasablePractitionerAmount: new Prisma.Decimal(0),
+        releasedPractitionerAmount: new Prisma.Decimal(0),
+        normalEquivalentUsedAmount: new Prisma.Decimal(0),
+        discountAppliedAmount: new Prisma.Decimal(0),
+        reviewedAt: null,
+        reviewedByAdminId: null,
+        releasedAt: null,
+        releasedByAdminId: null,
+        decision: null,
+        notes: null,
+        metadataJson: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        purchase: { paymentId: 'payment-1', sessions: [] },
+      },
+    });
+
+    const result = await setup.service.releaseReadySettlement({
+      settlementId: 'settlement-1',
+      releasedByAdminId: 'admin-1',
+      actorRoles: ['ADMIN'],
+    });
+
+    expect(result.status).toBe('RELEASED');
+    expect(setup.securityAuditService.recordRequired).toHaveBeenCalledWith(
+      setup.tx,
+      expect.objectContaining({
+        action: 'finance.package_settlement.release',
+        actorUserId: 'admin-1',
+        actorRoles: ['ADMIN'],
+        resourceType: 'PackageSettlement',
+        resourceId: 'settlement-1',
+        metadata: expect.objectContaining({
+          previousStatus: 'READY_TO_RELEASE',
+          newStatus: 'RELEASED',
+          amount: '0',
+          currencyCode: 'EGP',
+        }),
+      }),
+    );
+  });
+
+  it('does not complete package settlement release when required audit fails', async () => {
+    const setup = buildService({
+      releaseSettlement: {
+        id: 'settlement-1',
+        purchaseId: 'purchase-1',
+        practitionerId: 'practitioner-1',
+        patientId: 'patient-1',
+        currencyCode: 'EGP',
+        status: 'READY_TO_RELEASE',
+        sessionCount: 0,
+        completedSessionsCount: 0,
+        heldPractitionerAmount: new Prisma.Decimal(0),
+        heldPlatformAmount: new Prisma.Decimal('100.00'),
+        releasablePractitionerAmount: new Prisma.Decimal(0),
+        releasedPractitionerAmount: new Prisma.Decimal(0),
+        normalEquivalentUsedAmount: new Prisma.Decimal(0),
+        discountAppliedAmount: new Prisma.Decimal(0),
+        reviewedAt: null,
+        reviewedByAdminId: null,
+        releasedAt: null,
+        releasedByAdminId: null,
+        decision: null,
+        notes: null,
+        metadataJson: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        purchase: { paymentId: 'payment-1', sessions: [] },
+      },
+    });
+    setup.securityAuditService.recordRequired.mockRejectedValueOnce(
+      new Error('audit unavailable'),
+    );
+
+    await expect(
+      setup.service.releaseReadySettlement({
+        settlementId: 'settlement-1',
+        releasedByAdminId: 'admin-1',
+      }),
+    ).rejects.toThrow('audit unavailable');
   });
 });

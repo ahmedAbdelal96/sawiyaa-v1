@@ -15,7 +15,7 @@ export class GetAdminPractitionerAvatarFileUseCase {
       throw new NotFoundException({ error: 'ADMIN_PRACTITIONER_NOT_FOUND' });
     }
 
-    const avatar = await this.avatarStorage.getAvatarFile(profile.userId);
+    const avatar = await this.avatarStorage.getAvatarFile(profile.id);
     if (!avatar) {
       throw new NotFoundException({ error: 'ADMIN_PRACTITIONER_AVATAR_NOT_FOUND' });
     }

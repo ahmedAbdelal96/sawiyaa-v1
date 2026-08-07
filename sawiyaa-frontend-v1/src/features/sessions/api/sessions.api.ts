@@ -12,7 +12,22 @@ import type {
   SessionRuntimeResponseData,
   SessionSummary,
   SessionsListResponseData,
+  JoinBootstrapItem,
+  NextSession,
 } from "../types/sessions.types";
+
+export async function getMyNextSession(): Promise<NextSession | null> {
+  const response = await httpClient.get<NextSession | null>("/users/me/next-session");
+  return response.data;
+}
+
+export async function bootstrapSessionJoin(sessionId: string): Promise<JoinBootstrapItem> {
+  const response = await httpClient.post<ApiPayload<{ item: JoinBootstrapItem }>>(
+    `/sessions/${sessionId}/join-bootstrap`,
+    {},
+  );
+  return extractData(response.data).item;
+}
 
 /**
  * Creates a new scheduled session in PENDING_PAYMENT status.

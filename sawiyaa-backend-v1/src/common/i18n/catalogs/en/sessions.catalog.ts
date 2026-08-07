@@ -38,6 +38,25 @@ export const enSessionsCatalog = {
     sessionReminder15PractitionerTitle: 'Your session starts in 15 minutes',
     sessionReminder15PractitionerBody:
       'Open the session page when join time starts.',
+    sessionReminderBeforeStartTitle: 'Session reminder',
+    sessionReminderBeforeStartBody:
+      'Your session starts in {{offsetMinutes}} minutes.',
+    sessionReminderBeforeStartPractitionerTitle: 'Session reminder',
+    sessionReminderBeforeStartPractitionerBody:
+      'Your session starts in {{offsetMinutes}} minutes. Open the session page when join time starts.',
+    sessionStartingNowTitle: 'Your session is starting now',
+    sessionStartingNowBody: 'Your session is starting now. Open Sawiyaa to join securely.',
+    sessionStartingNowPractitionerTitle: 'Your session is starting now',
+    sessionStartingNowPractitionerBody: 'Your session is starting now. Open the session page to join securely.',
+    sessionLateJoinTitle: 'Your session is waiting for you',
+    sessionLateJoinBody: 'Your session started a few minutes ago. Open Sawiyaa to join securely.',
+    sessionLateJoinPractitionerTitle: 'Your session is waiting for you',
+    sessionLateJoinPractitionerBody: 'Your session started a few minutes ago. Open the session page to join securely.',
+    sessionReminderViewDetailsCta: 'View session details',
+    sessionReminderJoinCta: 'Join session',
+    sessionStartingNowCta: 'Your session is starting — Join now',
+    sessionLateJoinCta: 'The session has started — Join now',
+    sessionCancelledDetailsCta: 'View cancellation details',
     packageSessionContext:
       ' Session {{packageSessionIndex}} of {{packageSessionCount}} in your package.',
   },

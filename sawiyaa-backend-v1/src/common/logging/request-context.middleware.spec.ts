@@ -1,4 +1,5 @@
 import { RequestContextMiddleware } from './request-context.middleware';
+import { RequestContextService } from './request-context.service';
 
 describe('RequestContextMiddleware', () => {
   afterEach(() => {
@@ -6,7 +7,9 @@ describe('RequestContextMiddleware', () => {
   });
 
   it('reuses an incoming x-request-id header', () => {
-    const middleware = new RequestContextMiddleware();
+    const middleware = new RequestContextMiddleware(
+      new RequestContextService(),
+    );
     const response = { setHeader: jest.fn() } as never;
     const next = jest.fn();
     const request = {
@@ -21,7 +24,9 @@ describe('RequestContextMiddleware', () => {
   });
 
   it('generates a request id when the header is missing', () => {
-    const middleware = new RequestContextMiddleware();
+    const middleware = new RequestContextMiddleware(
+      new RequestContextService(),
+    );
     const response = { setHeader: jest.fn() } as never;
     const next = jest.fn();
     const request = {
@@ -34,7 +39,10 @@ describe('RequestContextMiddleware', () => {
     expect(request.requestId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
-    expect(response.setHeader).toHaveBeenCalledWith('x-request-id', request.requestId);
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'x-request-id',
+      request.requestId,
+    );
     expect(next).toHaveBeenCalled();
   });
 });

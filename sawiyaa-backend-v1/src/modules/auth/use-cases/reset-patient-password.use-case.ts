@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -8,6 +8,8 @@ import { InvalidateUserTokensUseCase } from './invalidate-user-tokens.use-case';
 import { AuthIdentityRepository } from '../repositories/auth-identity.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { VerifyOtpChallengeUseCase } from '../../verification/use-cases/verify-otp-challenge.use-case';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 /**
  * Reset password consumes a verified reset OTP and rotates the stored password hash.
@@ -24,6 +26,7 @@ export class ResetPatientPasswordUseCase {
     private readonly authIdentityRepository: AuthIdentityRepository,
     private readonly userEmailRepository: UserEmailRepository,
     private readonly invalidateUserTokensUseCase: InvalidateUserTokensUseCase,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -80,6 +83,16 @@ export class ResetPatientPasswordUseCase {
         challenge.user!.id,
         transaction,
       );
+    });
+
+    this.securityAuditService?.logAsync({
+      action: 'auth.patient.password-reset.success',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: challenge.user.id,
+      actorRoles: [UserRoleType.PATIENT],
+      resourceType: 'User',
+      resourceId: challenge.user.id,
+      reason: 'PASSWORD_RESET_COMPLETED',
     });
 
     return {

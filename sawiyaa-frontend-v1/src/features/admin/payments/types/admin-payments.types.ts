@@ -51,7 +51,7 @@ export type AdminIncomingPaymentItem = {
   refundCount: number;
   refundedAmount: string;
   session: { id: string; sessionCode: string | null; reference?: string | null; status?: string | null } | null;
-  settlement: { id: string; reference?: string | null; status: string } | null;
+  settlement: { id: string | null; reviewId: string; reviewStatus: string; financialStage: string; reference?: string | null; status: string } | null;
 };
 
 export type AdminIncomingPaymentsResponseData = {
@@ -142,7 +142,10 @@ export type AdminPaymentEventItem = {
 
 export type AdminPaymentOpsRelatedSettlement = {
   id: string;
+  reviewId: string;
   reference: string | null;
+  reviewStatus: string;
+  financialStage: string;
   status: string;
   practitionerName: string;
   originalAmount: string;

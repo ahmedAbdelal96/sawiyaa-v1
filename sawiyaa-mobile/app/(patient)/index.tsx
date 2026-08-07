@@ -10,6 +10,7 @@ import { usePatientHome } from "../../src/features/patient/journey/hooks";
 import { HomeActionCard } from "../../src/features/patient/journey/components/HomeActionCard";
 import { SpecialistHorizontalRail } from "../../src/features/patient/journey/components/SpecialistHorizontalRail";
 import { useAppDirection } from "../../src/i18n/direction";
+import { UpcomingSessionCard } from "../../src/features/sessions/UpcomingSessionCard";
 
 const HORIZONTAL_MARGIN = 20;
 
@@ -82,6 +83,8 @@ export default function PatientHomeScreen() {
               </Text>
             </View>
           </View>
+
+          <UpcomingSessionCard />
 
           <Card
             variant="elevated"

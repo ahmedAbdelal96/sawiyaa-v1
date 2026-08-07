@@ -223,11 +223,11 @@ export default function UnifiedConversationThread({
   }
 
   return (
-    <div className="border-border-light/80 to-primary-light/60 flex h-full min-h-0 flex-col rounded-2xl border bg-gradient-to-b from-white p-2 shadow-[0_16px_32px_-24px_rgba(68,161,148,0.38)] dark:border-white/10 dark:from-white/5 dark:to-white/3">
+    <div className="border-border-light/80 flex h-full min-h-0 flex-col rounded-2xl border bg-white p-3 shadow-xs dark:border-white/10 dark:bg-slate-900/40">
       {/* Header */}
-      <div className="border-border-light/70 mb-2 flex items-center justify-between gap-2 border-b pb-2 dark:border-white/10">
+      <div className="border-border-light/70 mb-2 flex items-center justify-between gap-2 border-b pb-2.5 dark:border-white/10">
         <div className="min-w-0">
-          <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
+          <p className="text-text-primary truncate text-sm font-bold dark:text-white/95">
             {conversation.title}
           </p>
           <p className="text-text-secondary truncate text-xs dark:text-white/65">
@@ -245,7 +245,7 @@ export default function UnifiedConversationThread({
           {onOpenFullChat && (
             <button
               onClick={onOpenFullChat}
-              className="px-2 py-1 text-xs font-semibold text-teal-600 hover:underline dark:text-teal-400"
+              className="px-2.5 py-1 text-xs font-bold text-primary hover:underline dark:text-primary-light"
             >
               {locale.startsWith("ar")
                 ? "عرض المحادثة الكاملة"
@@ -257,7 +257,7 @@ export default function UnifiedConversationThread({
 
       {/* Connection Banner */}
       {isOffline && (
-        <div className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-center text-xs font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+        <div className="mb-2 rounded-xl bg-amber-500/10 px-3 py-1.5 text-center text-xs font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
           {locale.startsWith("ar")
             ? "تم قطع الاتصال. جاري إعادة المحاولة..."
             : "Connection lost. Reconnecting..."}
@@ -267,10 +267,10 @@ export default function UnifiedConversationThread({
       {/* Message Timeline */}
       <div
         dir="ltr"
-        className="custom-scrollbar border-border-light/70 min-h-0 flex-1 space-y-4 overflow-y-auto rounded-xl border bg-gradient-to-b from-[#FBF9F5] to-[#F7F4EE] p-4 shadow-inner dark:border-white/10 dark:from-white/5 dark:to-white/3"
+        className="custom-scrollbar border-border-light/60 min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-xl border bg-surface-secondary/40 p-3 shadow-2xs dark:border-white/10 dark:bg-slate-950/40"
       >
         {isLoading ? (
-          <div className="text-text-muted flex animate-pulse items-center justify-center p-8 text-xs">
+          <div className="text-text-muted flex animate-pulse items-center justify-center p-8 text-xs font-bold">
             {locale.startsWith("ar") ? "جاري التحميل..." : "Loading..."}
           </div>
         ) : (
@@ -279,7 +279,7 @@ export default function UnifiedConversationThread({
               <button
                 onClick={loadMore}
                 disabled={isLoadingMore}
-                className="w-full py-1 text-center text-xs font-bold text-teal-600 hover:underline disabled:opacity-50"
+                className="w-full py-1 text-center text-xs font-bold text-primary hover:underline disabled:opacity-50 dark:text-primary-light"
               >
                 {isLoadingMore
                   ? locale.startsWith("ar")
@@ -292,7 +292,7 @@ export default function UnifiedConversationThread({
             )}
 
             {messages.length === 0 ? (
-              <div className="text-text-muted py-8 text-center text-xs">
+              <div className="text-text-muted py-8 text-center text-xs font-medium">
                 {locale.startsWith("ar")
                   ? "لا توجد رسائل بعد."
                   : "No messages yet."}
@@ -317,17 +317,17 @@ export default function UnifiedConversationThread({
                     dir="ltr"
                   >
                     <div
-                      className={`text-text-muted mb-1 flex items-center gap-1.5 text-[12px] ${
+                      className={`text-text-muted mb-0.5 flex items-center gap-1.5 text-[11px] ${
                         isMe ? "flex-row-reverse" : "flex-row"
                       }`}
                       dir="ltr"
                     >
-                      <span className="text-text-primary font-semibold dark:text-white/85">
+                      <span className="text-text-primary font-bold dark:text-white/85">
                         {msg.sender.displayName}
                       </span>
                       {msg.sender.publicRoleLabel &&
                         msg.sender.publicRoleLabel !== "System" && (
-                          <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-[10px] font-medium dark:bg-white/10 dark:text-white/60">
+                          <span className="bg-primary/10 text-primary rounded-full px-2 py-0.2 text-[9px] font-bold dark:bg-white/10 dark:text-white/60">
                             {locale.startsWith("ar") &&
                             msg.sender.publicRoleLabel === "Support team"
                               ? "فريق الدعم"
@@ -336,21 +336,21 @@ export default function UnifiedConversationThread({
                         )}
                     </div>
                     <div
-                      className={`flex max-w-[85%] items-end gap-2 ${
+                      className={`flex max-w-[70%] sm:max-w-[56%] items-end gap-1.5 ${
                         isMe ? "flex-row-reverse" : "flex-row"
                       }`}
                       dir="ltr"
                     >
                       {isMe ? null : (
-                        <span className="from-primary/12 to-primary/6 text-primary ring-primary/25 dark:text-primary-light relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[12px] font-bold ring-1">
+                        <span className="from-primary/20 to-primary/10 text-primary ring-primary/20 dark:text-primary-light relative flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-[10px] font-extrabold ring-1 shadow-2xs">
                           {msg.sender.displayName?.charAt(0).toUpperCase()}
                         </span>
                       )}
                       <div
-                        className={`rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm transition hover:shadow-md ${
+                        className={`rounded-2xl px-3 py-1.5 text-xs leading-normal shadow-2xs transition ${
                           isMe
-                            ? "bg-primary rounded-tr-none text-white"
-                            : "text-text-primary border-border-light rounded-tl-none border bg-white dark:border-white/5 dark:bg-white/10 dark:text-white/95"
+                            ? "bg-primary text-white rounded-te-xs shadow-xs"
+                            : "text-text-primary border-border-light/80 rounded-ts-xs border bg-white dark:border-white/10 dark:bg-slate-800 dark:text-white/95"
                         } ${isMessageFailed ? "ring-1 ring-rose-400/70" : ""}`}
                       >
                         <p
@@ -359,7 +359,7 @@ export default function UnifiedConversationThread({
                         >
                           {msg.body}
                         </p>
-                        <div className="mt-1 flex items-center justify-end gap-1 text-[11px] opacity-75 select-none">
+                        <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-75 select-none">
                           <span>
                             {formatEffectiveViewerTime(
                               msg.sentAt,
@@ -428,7 +428,7 @@ export default function UnifiedConversationThread({
 
       {/* Typing indicator */}
       {isTyping && (
-        <div className="text-text-muted animate-pulse px-3 py-1 text-xs">
+        <div className="text-text-muted animate-pulse px-3 py-1 text-xs font-semibold">
           {locale.startsWith("ar") ? "جاري الكتابة..." : "Typing..."}
         </div>
       )}
@@ -437,15 +437,15 @@ export default function UnifiedConversationThread({
       {conversation.canSend ? (
         <form
           onSubmit={handleSend}
-          className="relative mt-2 flex items-end gap-2"
+          className="relative mt-2.5 flex items-center gap-2"
         >
           {sendError && (
-            <div className="absolute start-0 end-0 mb-2 -translate-y-full rounded-lg bg-rose-500/10 px-3 py-2 text-center text-xs font-semibold text-rose-700 dark:text-rose-300">
+            <div className="absolute start-0 end-0 mb-2 -translate-y-full rounded-xl bg-rose-500/10 px-3 py-2 text-center text-xs font-semibold text-rose-700 shadow-xs dark:text-rose-300">
               {sendError}
             </div>
           )}
-          <div className="border-border-light relative flex flex-1 items-center rounded-xl border bg-white dark:border-white/12 dark:bg-white/5">
-            {/* Disabled paperclip button */}
+          <div className="border-border-light/90 relative flex flex-1 items-center gap-1.5 rounded-2xl border bg-white p-1.5 shadow-xs transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 dark:border-white/12 dark:bg-white/5">
+            {/* Attachment paperclip button */}
             <button
               type="button"
               disabled
@@ -459,9 +459,9 @@ export default function UnifiedConversationThread({
                   ? "إرسال المرفقات (ستتوفر قريباً)"
                   : "Attachments (coming soon)"
               }
-              className="inline-flex h-10 w-10 shrink-0 cursor-not-allowed items-center justify-center text-slate-400 opacity-50 focus:outline-none dark:text-slate-500"
+              className="inline-flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-xl text-slate-400 opacity-50 transition hover:bg-slate-100 focus:outline-none dark:text-slate-500 dark:hover:bg-white/10"
             >
-              <Paperclip className="h-4.5 w-4.5" />
+              <Paperclip className="h-4 w-4" />
             </button>
             <textarea
               value={message}
@@ -475,29 +475,29 @@ export default function UnifiedConversationThread({
                   ? "حقل كتابة الرسالة"
                   : "Message composer input"
               }
-              className="custom-scrollbar text-text-primary block max-h-[120px] min-h-[40px] w-full resize-none bg-transparent py-2.5 ps-1 pe-12 text-sm outline-none focus:ring-0 dark:text-white dark:placeholder-white/45"
+              className="custom-scrollbar text-text-primary block max-h-[100px] min-h-[36px] flex-1 resize-none bg-transparent py-2 px-1 text-xs outline-none focus:ring-0 dark:text-white dark:placeholder-white/45"
               rows={1}
             />
+            <button
+              type="submit"
+              disabled={isSending || !message.trim() || isOffline}
+              aria-label={
+                locale.startsWith("ar") ? "إرسال الرسالة" : "Send message"
+              }
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-xs transition-all hover:bg-primary-hover focus:ring-2 focus:ring-primary/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+            >
+              {isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizontal
+                  className={`h-4 w-4 ${locale.startsWith("ar") ? "" : "rotate-180"}`}
+                />
+              )}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={isSending || !message.trim() || isOffline}
-            aria-label={
-              locale.startsWith("ar") ? "إرسال الرسالة" : "Send message"
-            }
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white transition-all hover:bg-teal-700 focus:ring-2 focus:ring-teal-500/50 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <SendHorizontal
-                className={`h-4.5 w-4.5 ${locale.startsWith("ar") ? "" : "rotate-180"}`}
-              />
-            )}
-          </button>
         </form>
       ) : (
-        <div className="mt-2 rounded-xl bg-slate-100 p-3 text-center dark:bg-white/5">
+        <div className="mt-2.5 rounded-xl bg-slate-100 p-3 text-center dark:bg-white/5">
           <p className="text-text-secondary text-xs dark:text-white/70">
             {readonlyCopy}
           </p>
@@ -505,7 +505,7 @@ export default function UnifiedConversationThread({
             <button
               type="button"
               onClick={onNewSupportClick}
-              className="mt-2 rounded-lg bg-teal-600 px-4 py-1.5 text-xs font-bold text-white transition hover:bg-teal-700"
+              className="mt-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white transition hover:bg-primary-hover shadow-xs"
             >
               {locale.startsWith("ar")
                 ? "بدء طلب دعم جديد"

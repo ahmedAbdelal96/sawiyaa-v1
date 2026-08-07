@@ -6,6 +6,7 @@ import {
   SessionStatus,
 } from '@prisma/client';
 import { GetAdminSessionAttendanceUseCase } from './get-admin-session-attendance.use-case';
+import { SessionOutcomeEvaluator } from '../services/session-outcome-evaluator.service';
 
 describe('GetAdminSessionAttendanceUseCase', () => {
   function buildUseCase() {
@@ -63,6 +64,7 @@ describe('GetAdminSessionAttendanceUseCase', () => {
     const useCase = new GetAdminSessionAttendanceUseCase(
       prisma as never,
       sessionRepository as never,
+      new SessionOutcomeEvaluator(),
     );
 
     return { useCase, sessionRepository, prisma };
@@ -75,6 +77,28 @@ describe('GetAdminSessionAttendanceUseCase', () => {
 
     expect(result.sessionId).toBe('session_1');
     expect(result.timeline).toEqual([]);
+    expect(result.outcomeEvaluation.classification).toBe(
+      'NOT_READY_FOR_EVALUATION',
+    );
+    expect(result.outcomeEvaluation.eligibleForAutomaticFinalization).toBe(
+      false,
+    );
+    expect(result.outcomeEvaluation).toEqual(
+      expect.objectContaining({
+        confidence: expect.any(String),
+        recommendedTerminalStatus: null,
+        reasonCodes: expect.any(Array),
+        evidenceSummary: expect.any(Object),
+        policySnapshot: expect.any(Object),
+        evaluatedAt: expect.any(String),
+      }),
+    );
+    expect(JSON.stringify(result.outcomeEvaluation)).not.toContain(
+      'payloadJson',
+    );
+    expect(JSON.stringify(result.outcomeEvaluation)).not.toContain(
+      'DAILY_WEBHOOK_SECRET',
+    );
     expect(result.platformTimeline).toEqual([]);
     expect(result.evidenceTimeline).toEqual([]);
     expect(result.summary).toEqual({
@@ -213,7 +237,9 @@ describe('GetAdminSessionAttendanceUseCase', () => {
     const result = await setup.useCase.execute({ sessionId: 'session_1' });
     expect(result.participants.patient.displayName).toBe('Layla Hassan');
     expect(result.participants.patient.email).toBe('layla@example.com');
-    expect(result.participants.practitioner.displayName).toBe('Dr. Karim Saleh');
+    expect(result.participants.practitioner.displayName).toBe(
+      'Dr. Karim Saleh',
+    );
   });
 
   it('builds platformTimeline and evidenceTimeline from JOIN_ATTEMPTED / JOIN_BLOCKED platform events', async () => {
@@ -247,9 +273,9 @@ describe('GetAdminSessionAttendanceUseCase', () => {
     expect(result.platformTimeline).toHaveLength(2);
     expect(result.platformTimeline[0].eventType).toBe('JOIN_ATTEMPTED');
     expect(result.platformTimeline[1].eventType).toBe('JOIN_BLOCKED');
-    expect(
-      result.platformTimeline[1].safeMetadataSummary.blockedReason,
-    ).toBe('SESSION_NOT_JOINABLE_STATUS');
+    expect(result.platformTimeline[1].safeMetadataSummary.blockedReason).toBe(
+      'SESSION_NOT_JOINABLE_STATUS',
+    );
     expect(result.evidenceTimeline).toHaveLength(2);
   });
 

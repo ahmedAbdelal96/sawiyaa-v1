@@ -20,7 +20,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -40,8 +39,6 @@ import { ListPackageSettlementsDto } from '../dto/list-package-settlements.dto';
 import { GetAdminPackageSettlementUseCase } from '../use-cases/get-admin-package-settlement.use-case';
 import { ListAdminPackageSettlementsUseCase } from '../use-cases/list-admin-package-settlements.use-case';
 import { ReleasePackageSettlementUseCase } from '../use-cases/release-package-settlement.use-case';
-import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditOutcome } from '@prisma/client';
 
 @ApiTags('Admin - Package Settlements')
 @ApiBearerAuth()
@@ -54,7 +51,6 @@ export class AdminPackageSettlementsController {
     private readonly listAdminPackageSettlementsUseCase: ListAdminPackageSettlementsUseCase,
     private readonly getAdminPackageSettlementUseCase: GetAdminPackageSettlementUseCase,
     private readonly releasePackageSettlementUseCase: ReleasePackageSettlementUseCase,
-    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   @Get()
@@ -93,7 +89,6 @@ export class AdminPackageSettlementsController {
   }
 
   @Post(':id/release')
-  @RequireStepUp('finance.package-settlement.release')
   @ApiOperation({
     summary: 'Release ready package settlement',
     description:
@@ -111,7 +106,8 @@ export class AdminPackageSettlementsController {
   @ApiForbiddenResponse({ description: 'Admin active account is required' })
   @ApiNotFoundResponse({ description: 'Package settlement was not found' })
   @UseGuards(AdminGuard)
-  @Roles(AppRole.ADMIN)
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+  @Permissions(PermissionKey.FINANCIAL_PACKAGE_SETTLEMENT_RELEASE)
   async release(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() currentUser: AuthenticatedUser,
@@ -119,14 +115,7 @@ export class AdminPackageSettlementsController {
     const result = await this.releasePackageSettlementUseCase.execute({
       settlementId: id,
       releasedByAdminId: currentUser.id,
-    });
-    this.securityAuditService.logAsync({
-      action: 'finance.package_settlement.release',
-      outcome: SecurityAuditOutcome.SUCCESS,
-      actorUserId: currentUser.id,
       actorRoles: currentUser.roles,
-      resourceType: 'PackageSettlement',
-      resourceId: id,
     });
     return result;
   }

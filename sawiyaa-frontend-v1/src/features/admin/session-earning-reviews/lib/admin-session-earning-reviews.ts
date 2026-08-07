@@ -10,6 +10,7 @@ export const ADMIN_SESSION_EARNING_REVIEW_STATUS_STYLES: Record<
   string
 > = {
   PENDING_REVIEW: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  DECISION_APPROVED: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
   APPROVED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
   REJECTED: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
   EXCLUDED_FROM_PAYOUT:
@@ -45,8 +46,6 @@ export function getAdminSessionEarningReviewErrorKey(error: unknown) {
       return "errors.finalAmountsRequired";
     case "FINANCIAL_OPERATIONS_SESSION_EARNING_REVIEW_REASON_REQUIRED":
       return "errors.reasonRequired";
-    case "STEP_UP_REQUIRED":
-      return "errors.stepUpRequired";
     default:
       if (appError.statusCode === 403) {
         return "errors.forbidden";
@@ -62,6 +61,8 @@ export function getAdminSessionEarningReviewStatusKey(status: SessionEarningRevi
   switch (status) {
     case "PENDING_REVIEW":
       return "statuses.pendingReview";
+    case "DECISION_APPROVED":
+      return "statuses.decisionApproved";
     case "APPROVED":
       return "statuses.approved";
     case "REJECTED":

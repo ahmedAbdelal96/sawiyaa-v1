@@ -71,3 +71,17 @@ export async function listAdminPractitionerTransfers(
 
   return extractData(response.data);
 }
+
+export async function getAdminPractitionerTransferDetail(transferId: string) {
+  try {
+    const response = await httpClient.get<ApiPayload<AdminPractitionerTransferItem>>(
+      `/admin/payouts/${transferId}`,
+    );
+    return extractData(response.data);
+  } catch {
+    const list = await listAdminPractitionerTransfers({ limit: 100 });
+    const match = list.items.find((item) => item.id === transferId);
+    if (match) return match;
+    throw new Error("Transfer not found");
+  }
+}

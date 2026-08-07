@@ -1309,7 +1309,10 @@
       "back": "Back to applications"
     },
     "sections": {
-      "instantBookingPricing": "Instant booking pricing"
+      "instantBookingPricing": "Instant booking pricing",
+      "credentials": "Credentials & Documents",
+      "payout": "Payout & Financial Details",
+      "qualifications": "Qualifications & Certificates"
     },
     "applicant": {
       "displayName": "Display name",

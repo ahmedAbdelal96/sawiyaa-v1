@@ -31,6 +31,7 @@
     "session-codes:backfill": "ts-node --preferTsExts prisma/scripts/backfill-session-codes.ts",
     "session-codes:concurrency-test": "ts-node --preferTsExts prisma/scripts/verify-session-code-concurrency.ts",
     "prisma:seed": "ts-node --preferTsExts prisma/seed.ts",
+    "seed:session-access": "ts-node --preferTsExts prisma/scripts/seed-session-access.ts",
     "db:bootstrap:config": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/bootstrap-config.ts",
     "qa:settlement:fixture": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/create-settlement-qa-scenario.ts",
     "qa:finance:settlement-seed": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/create-settlement-qa-scenario.ts",
@@ -42,7 +43,8 @@
     "db:reconcile:practitioner-change-requests": "ts-node --preferTsExts prisma/scripts/reconcile-practitioner-change-requests.ts",
     "seed:practitioner-finance": "ts-node --preferTsExts prisma/seed/practitioner-finance.seed.ts",
     "seed:qa:testsprite": "ts-node --preferTsExts prisma/seed/qa.testsprite.seed.ts",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "logs:analyze": "ts-node --preferTsExts scripts/analyze-logs.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.19",

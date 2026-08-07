@@ -18,6 +18,7 @@ import { regionalBulkSeedModule } from './seed/modules/regional-bulk.seed';
 import { settlementsLabSeedModule } from './seed/modules/settlements-lab.seed';
 import { specialtiesSeedModule } from './seed/modules/specialties.seed';
 import { usersSeedModule } from './seed/modules/users.seed';
+import { sessionAccessSeedModule } from './seed/modules/session-access.seed';
 import { PrismaClient } from '@prisma/client';
 import { SeedModule } from './seed/shared/seed.types';
 import { assertLegacyFinancialFixtureSeedDisabled } from './seed/shared/financial-fixture-gate';
@@ -44,6 +45,7 @@ const curatedSeedModules: SeedModule[] = [
   notificationsSeedModule,
   configSeedModule,
   financialRulesSeedModule,
+  sessionAccessSeedModule,
   curatedDevSeedModule,
   articlesSeedModule,
 ];

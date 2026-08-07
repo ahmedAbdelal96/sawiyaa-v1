@@ -10,6 +10,10 @@ const dueReminderSelect = {
   recipientUserId: true,
   recipientRole: true,
   reminderType: true,
+  scheduleRevision: true,
+  offsetMinutesSnapshot: true,
+  recipientTimezoneSnapshot: true,
+  recipientLocaleSnapshot: true,
   dueAt: true,
   sentAt: true,
   cancelledAt: true,
@@ -19,6 +23,11 @@ const dueReminderSelect = {
       id: true,
       status: true,
       scheduledStartAt: true,
+      scheduledEndAt: true,
+      joinOpenAt: true,
+      joinCloseAt: true,
+      scheduleRevision: true,
+      schedulePolicySnapshotJson: true,
       patient: {
         select: {
           id: true,
@@ -52,7 +61,11 @@ export type SessionReminderQueueCreateInput = {
   recipientUserId: string;
   recipientRole: UserRoleType;
   reminderType: SessionReminderType;
+  scheduleRevision: number;
+  offsetMinutesSnapshot?: number | null;
   dueAt: Date;
+  recipientTimezoneSnapshot?: string | null;
+  recipientLocaleSnapshot?: string | null;
   idempotencyKey: string;
 };
 
@@ -136,5 +149,79 @@ export class SessionReminderQueueRepository {
         cancelledAt: input.cancelledAt,
       },
     });
+  }
+
+  async replaceSessionPlan(input: {
+    sessionId: string;
+    reminders: SessionReminderQueueCreateInput[];
+    cancelledAt: Date;
+    schedulePolicySnapshot?: Prisma.InputJsonValue | null;
+    joinOpenAt?: Date | null;
+    joinCloseAt?: Date | null;
+  }): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      if (
+        input.schedulePolicySnapshot !== undefined ||
+        input.joinOpenAt !== undefined ||
+        input.joinCloseAt !== undefined
+      ) {
+        await tx.session.update({
+          where: { id: input.sessionId },
+          data: {
+            ...(input.schedulePolicySnapshot !== undefined
+              ? {
+                  schedulePolicySnapshotJson:
+                    input.schedulePolicySnapshot === null
+                      ? Prisma.JsonNull
+                      : input.schedulePolicySnapshot,
+                }
+              : {}),
+            ...(input.joinOpenAt !== undefined ? { joinOpenAt: input.joinOpenAt } : {}),
+            ...(input.joinCloseAt !== undefined ? { joinCloseAt: input.joinCloseAt } : {}),
+          },
+        });
+      }
+      await tx.sessionReminderQueue.updateMany({
+        where: {
+          sessionId: input.sessionId,
+          sentAt: null,
+          cancelledAt: null,
+        },
+        data: { cancelledAt: input.cancelledAt },
+      });
+      if (input.reminders.length > 0) {
+        await tx.sessionReminderQueue.createMany({
+          data: input.reminders,
+          skipDuplicates: true,
+        });
+      }
+    });
+  }
+
+  hasParticipantJoined(input: {
+    sessionId: string;
+    recipientUserId: string;
+  }): Promise<boolean> {
+    return this.prisma.sessionEvent
+      .findFirst({
+        where: {
+          sessionId: input.sessionId,
+          actorUserId: input.recipientUserId,
+          eventType: 'JOIN_ALLOWED',
+        },
+        select: { id: true },
+      })
+      .then(async (joinAllowed) => {
+        if (joinAllowed) return true;
+        const attendance = await this.prisma.sessionAttendanceEvent.findFirst({
+          where: {
+            sessionId: input.sessionId,
+            participantUserId: input.recipientUserId,
+            attendanceEventType: 'JOINED',
+          },
+          select: { id: true },
+        });
+        return Boolean(attendance);
+      });
   }
 }

@@ -25,6 +25,8 @@ const sessionJoinNotificationCandidateSelect = {
   status: true,
   sessionMode: true,
   joinOpenAt: true,
+  joinCloseAt: true,
+  schedulePolicySnapshotJson: true,
   scheduledStartAt: true,
   scheduledEndAt: true,
   provider: true,
@@ -54,6 +56,7 @@ const sessionJoinNotificationCandidateSelect = {
         select: {
           id: true,
           defaultLocale: true,
+          timezone: true,
           emails: {
             where: {
               isPrimary: true,
@@ -74,6 +77,7 @@ const sessionJoinNotificationCandidateSelect = {
         select: {
           id: true,
           defaultLocale: true,
+          timezone: true,
           emails: {
             where: {
               isPrimary: true,
@@ -145,7 +149,11 @@ export class SessionRepository {
     data: Omit<Prisma.SessionUncheckedCreateInput, 'sessionCode'>,
     tx?: Prisma.TransactionClient,
     creationFlow = 'unknown',
-  ) {
+  ): Promise<
+    Prisma.SessionGetPayload<{
+      include: typeof SessionRepository.prototype.sessionInclude;
+    }>
+  > {
     if (!tx) {
       return this.prisma.$transaction((transaction) =>
         this.createSession(data, transaction, creationFlow),
@@ -200,10 +208,17 @@ export class SessionRepository {
           throw new SessionCodeGenerationError(
             'SESSION_CODE_GENERATION_FAILED',
             'The session-code generator exhausted its collision retries.',
-            { dateKey: allocation.dateKey, retryAttempt: attempt, creationFlow },
+            {
+              dateKey: allocation.dateKey,
+              retryAttempt: attempt,
+              creationFlow,
+            },
           );
         }
-        await this.sessionCodeGenerator.advanceAfterCollision(tx, allocation.dateKey);
+        await this.sessionCodeGenerator.advanceAfterCollision(
+          tx,
+          allocation.dateKey,
+        );
       }
     }
 
@@ -215,13 +230,16 @@ export class SessionRepository {
   }
 
   private isSessionCodeUniqueConflict(error: unknown): boolean {
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
       return false;
     }
     const target = error.meta?.target;
-    return Array.isArray(target)
-      ? target.includes('sessionCode')
-      : String(target ?? '').toLowerCase().includes('sessioncode');
+    if (Array.isArray(target)) return target.includes('sessionCode');
+    if (typeof target !== 'string') return false;
+    return target.toLowerCase().includes('sessioncode');
   }
 
   findById(sessionId: string, tx?: Prisma.TransactionClient) {
@@ -299,17 +317,14 @@ export class SessionRepository {
 
   listJoinNotificationCandidates(input: {
     now: Date;
-    windowStart: Date;
+    windowStart?: Date;
     take: number;
   }): Promise<SessionJoinNotificationCandidate[]> {
     return this.prisma.session.findMany({
       where: {
         sessionMode: SessionMode.VIDEO,
         status: {
-          in: [
-            SessionStatus.UPCOMING,
-            SessionStatus.READY_TO_JOIN,
-          ],
+          in: [SessionStatus.UPCOMING, SessionStatus.READY_TO_JOIN],
         },
         joinOpenAt: {
           not: null,
@@ -319,10 +334,16 @@ export class SessionRepository {
           not: null,
         },
         videoRoomClosedAt: null,
-        scheduledEndAt: {
-          not: null,
-          gte: input.windowStart,
-        },
+        OR: [
+          { joinCloseAt: { gte: input.now } },
+          {
+            joinCloseAt: null,
+            scheduledEndAt: {
+              not: null,
+              ...(input.windowStart ? { gte: input.windowStart } : {}),
+            },
+          },
+        ],
       },
       orderBy: [
         { joinOpenAt: 'asc' },
@@ -352,10 +373,7 @@ export class SessionRepository {
           gt: input.now,
         },
       },
-      orderBy: [
-        { scheduledStartAt: 'asc' },
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ scheduledStartAt: 'asc' }, { createdAt: 'asc' }],
       take: input.take,
       select: sessionReminderNotificationCandidateSelect,
     });
@@ -404,7 +422,9 @@ export class SessionRepository {
     userId: string;
     sessionIds: string[];
   }): Promise<Map<string, number>> {
-    const uniqueSessionIds = Array.from(new Set(input.sessionIds)).filter(Boolean);
+    const uniqueSessionIds = Array.from(new Set(input.sessionIds)).filter(
+      Boolean,
+    );
     if (uniqueSessionIds.length === 0) {
       return new Map<string, number>();
     }
@@ -450,7 +470,7 @@ export class SessionRepository {
     });
 
     const conversationIdToUnreadCount = new Map<string, number>(
-      unreadCounts.map((row) => [row.conversationId, row._count._all])
+      unreadCounts.map((row) => [row.conversationId, row._count._all]),
     );
 
     const sessionIdToUnreadCount = new Map<string, number>();
@@ -734,7 +754,10 @@ export class SessionRepository {
 
   updateRuntimeIfMissing(
     sessionId: string,
-    data: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>,
+    data: Omit<
+      Prisma.SessionUncheckedUpdateInput,
+      'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'
+    >,
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).session.updateMany({
@@ -937,36 +960,46 @@ export class SessionRepository {
     return this.getDb(tx).sessionEvent.create({ data });
   }
 
-  findSessionEventByProviderEventRef(input: {
-    sessionId: string;
-    eventType: SessionEventType;
-    providerEventRef: string | null;
-  }) {
-    return this.prisma.sessionEvent.findFirst({
+  findSessionEventByProviderEventRef(
+    input: {
+      sessionId: string;
+      eventType: SessionEventType;
+      providerEventRef: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionEvent.findFirst({
       where: {
         sessionId: input.sessionId,
         eventType: input.eventType,
-        metadataJson: input.providerEventRef === null
-          ? { equals: Prisma.JsonNull }
-          : {
-              path: ['providerEventRef'],
-              equals: input.providerEventRef,
-            },
+        metadataJson:
+          input.providerEventRef === null
+            ? { equals: Prisma.JsonNull }
+            : {
+                path: ['providerEventRef'],
+                equals: input.providerEventRef,
+              },
       },
     });
   }
 
-  findAttendanceEventByIngestionKey(ingestionKey: string) {
-    return this.prisma.sessionAttendanceEvent.findUnique({
+  findAttendanceEventByIngestionKey(
+    ingestionKey: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAttendanceEvent.findUnique({
       where: { ingestionKey },
     });
   }
 
-  findAttendanceEventByProviderEventRef(input: {
-    provider: SessionProvider;
-    providerEventRef: string;
-  }) {
-    return this.prisma.sessionAttendanceEvent.findFirst({
+  findAttendanceEventByProviderEventRef(
+    input: {
+      provider: SessionProvider;
+      providerEventRef: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAttendanceEvent.findFirst({
       where: {
         provider: input.provider,
         providerEventRef: input.providerEventRef,
@@ -982,8 +1015,11 @@ export class SessionRepository {
     return this.getDb(tx).sessionAttendanceEvent.create({ data });
   }
 
-  listAttendanceEventsBySessionId(sessionId: string) {
-    return this.prisma.sessionAttendanceEvent.findMany({
+  listAttendanceEventsBySessionId(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAttendanceEvent.findMany({
       where: { sessionId },
       orderBy: [{ occurredAt: 'asc' }, { ingestedAt: 'asc' }],
     });
@@ -992,7 +1028,10 @@ export class SessionRepository {
   /** Updates runtime metadata without exposing the lifecycle status writer. */
   updateRuntimeFields(
     sessionId: string,
-    data: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>,
+    data: Omit<
+      Prisma.SessionUncheckedUpdateInput,
+      'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'
+    >,
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).session.update({
@@ -1002,10 +1041,7 @@ export class SessionRepository {
     });
   }
 
-  async findByIdForUpdate(
-    sessionId: string,
-    tx: Prisma.TransactionClient,
-  ) {
+  async findByIdForUpdate(sessionId: string, tx: Prisma.TransactionClient) {
     await tx.$queryRaw`
       SELECT "id" FROM "Session" WHERE "id" = ${sessionId}::uuid FOR UPDATE
     `;
@@ -1024,6 +1060,7 @@ export class SessionRepository {
           in: [
             SessionStatus.UPCOMING,
             SessionStatus.READY_TO_JOIN,
+            SessionStatus.IN_PROGRESS,
           ],
         },
         scheduledEndAt: { not: null, lte: input.now },
@@ -1048,23 +1085,46 @@ export class SessionRepository {
     });
   }
 
+  listSessionsAwaitingReconciliation(input: { take: number }) {
+    return this.prisma.session.findMany({
+      where: {
+        status: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        scheduledStartAt: { not: null },
+        scheduledEndAt: { not: null },
+        provider: SessionProvider.DAILY,
+      },
+      orderBy: [{ scheduledEndAt: 'asc' }, { id: 'asc' }],
+      take: input.take,
+      select: { id: true },
+    });
+  }
+
   async tryLockDueSessionForCompletionConfirmation(
     input: { sessionId: string; now: Date },
     tx: Prisma.TransactionClient,
-  ): Promise<{ id: string; status: SessionStatus } | null> {
+  ): Promise<{
+    id: string;
+    status: SessionStatus;
+    scheduledEndAt: Date;
+  } | null> {
     const eligibleStatuses = [
       SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
+      SessionStatus.IN_PROGRESS,
     ];
-    const rows = await tx.$queryRaw<Array<{ id: string; status: SessionStatus }>>(
+    const rows = await tx.$queryRaw<
+      Array<{ id: string; status: SessionStatus; scheduledEndAt: Date }>
+    >(
       Prisma.sql`
-        SELECT "id", "status"
+        SELECT "id", "status", "scheduledEndAt"
         FROM "Session"
         WHERE "id" = ${input.sessionId}::uuid
           AND "scheduledEndAt" IS NOT NULL
           AND "scheduledEndAt" <= ${input.now}
           AND "status" IN (${Prisma.join(
-            eligibleStatuses.map((status) => Prisma.sql`${status}::"SessionStatus"`),
+            eligibleStatuses.map(
+              (status) => Prisma.sql`${status}::"SessionStatus"`,
+            ),
           )})
         FOR UPDATE SKIP LOCKED
       `,
@@ -1081,28 +1141,29 @@ export class SessionRepository {
       };
     }
 
-    const [capturedPayments, packageCoveredSessions, reviews] = await Promise.all([
-      this.prisma.payment.findMany({
-        where: {
-          sessionId: { in: uniqueSessionIds },
-          status: PaymentStatus.CAPTURED,
-        },
-        select: { sessionId: true },
-        distinct: ['sessionId'],
-      }),
-      this.prisma.session.findMany({
-        where: {
-          id: { in: uniqueSessionIds },
-          paymentCoverageType: 'PACKAGE',
-          packagePurchaseId: { not: null },
-        },
-        select: { id: true },
-      }),
-      this.prisma.sessionReview.findMany({
-        where: { sessionId: { in: uniqueSessionIds } },
-        select: { sessionId: true },
-      }),
-    ]);
+    const [capturedPayments, packageCoveredSessions, reviews] =
+      await Promise.all([
+        this.prisma.payment.findMany({
+          where: {
+            sessionId: { in: uniqueSessionIds },
+            status: PaymentStatus.CAPTURED,
+          },
+          select: { sessionId: true },
+          distinct: ['sessionId'],
+        }),
+        this.prisma.session.findMany({
+          where: {
+            id: { in: uniqueSessionIds },
+            paymentCoverageType: 'PACKAGE',
+            packagePurchaseId: { not: null },
+          },
+          select: { id: true },
+        }),
+        this.prisma.sessionReview.findMany({
+          where: { sessionId: { in: uniqueSessionIds } },
+          select: { sessionId: true },
+        }),
+      ]);
 
     return {
       capturedPaymentSessionIds: new Set(
@@ -1157,8 +1218,11 @@ export class SessionRepository {
     return Boolean(joinAllowedEvent || attendanceJoinEvent);
   }
 
-  listSessionEventsBySessionId(sessionId: string) {
-    return this.prisma.sessionEvent.findMany({
+  listSessionEventsBySessionId(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionEvent.findMany({
       where: { sessionId },
       orderBy: { createdAt: 'asc' },
     });
@@ -1214,36 +1278,35 @@ export class SessionRepository {
   findLatestActiveSessionAdminDecisionsForSessions(
     sessionIds: string[],
   ): Promise<Map<string, SessionAdminDecisionType>> {
-    if (sessionIds.length === 0) return Promise.resolve(new Map());
-    return this.prisma.sessionAdminDecision.groupBy({
-      by: ['sessionId'],
-      where: {
-        sessionId: { in: sessionIds },
-        isFinal: true,
-      },
-      _max: { createdAt: true },
-    }).then(async (groups) => {
-      if (groups.length === 0) return new Map<string, SessionAdminDecisionType>();
-      const decisions = await this.prisma.sessionAdminDecision.findMany({
-        where: {
-          isFinal: true,
-          sessionId: { in: sessionIds },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      // Deduplicate: keep only the latest per sessionId
-      const seen = new Set<string>();
-      const filtered = decisions.filter(d => {
-        if (seen.has(d.sessionId)) return false;
-        seen.add(d.sessionId);
-        return true;
-      });
-      const map = new Map<string, SessionAdminDecisionType>();
-      for (const d of filtered) {
-        map.set(d.sessionId, d.decisionType);
-      }
-      return map;
+    if (sessionIds.length === 0) {
+      return Promise.resolve(new Map<string, SessionAdminDecisionType>());
+    }
+    return this.loadLatestActiveSessionAdminDecisions(sessionIds);
+  }
+
+  private async loadLatestActiveSessionAdminDecisions(
+    sessionIds: string[],
+  ): Promise<Map<string, SessionAdminDecisionType>> {
+    const existing = await this.prisma.sessionAdminDecision.findFirst({
+      where: { isFinal: true, sessionId: { in: sessionIds } },
+      select: { id: true },
     });
+    if (!existing) return new Map<string, SessionAdminDecisionType>();
+
+    const decisions = await this.prisma.sessionAdminDecision.findMany({
+      where: {
+        isFinal: true,
+        sessionId: { in: sessionIds },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    const map = new Map<string, SessionAdminDecisionType>();
+    for (const decision of decisions) {
+      if (!map.has(decision.sessionId)) {
+        map.set(decision.sessionId, decision.decisionType);
+      }
+    }
+    return map;
   }
 
   findSessionAdminDecisionById(decisionId: string) {
@@ -1321,6 +1384,95 @@ export class SessionRepository {
         },
       ],
     };
+  }
+
+  findOutcomePolicySnapshot(sessionId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).sessionOutcomePolicySnapshot.findUnique({
+      where: { sessionId },
+    });
+  }
+
+  findLatestAttendanceReconciliation(
+    sessionId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAttendanceReconciliation.findFirst({
+      where: { sessionId },
+      orderBy: [{ observationVersion: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  findDueAutomaticCompletionSessions(input: { now: Date; batchSize: number }) {
+    return this.prisma.session.findMany({
+      where: {
+        status: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        scheduledEndAt: { not: null, lte: input.now },
+      },
+      orderBy: [{ scheduledEndAt: 'asc' }, { id: 'asc' }],
+      take: input.batchSize,
+      select: { id: true, status: true, scheduledEndAt: true },
+    });
+  }
+
+  upsertAttendanceReconciliation(
+    data: Prisma.SessionAttendanceReconciliationUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const db = this.getDb(tx);
+    return db.sessionAttendanceReconciliation.upsert({
+      where: {
+        sessionId_provider_observationVersion: {
+          sessionId: data.sessionId,
+          provider: data.provider,
+          observationVersion: data.observationVersion,
+        },
+      },
+      create: data,
+      update: {
+        status: data.status,
+        roomFound: data.roomFound,
+        meetingStarted: data.meetingStarted,
+        meetingEnded: data.meetingEnded,
+        patientIdentityConfirmed: data.patientIdentityConfirmed,
+        patientJoined: data.patientJoined,
+        patientTotalPresenceSeconds: data.patientTotalPresenceSeconds,
+        patientFirstJoinedAt: data.patientFirstJoinedAt,
+        patientLastLeftAt: data.patientLastLeftAt,
+        practitionerIdentityConfirmed: data.practitionerIdentityConfirmed,
+        practitionerJoined: data.practitionerJoined,
+        practitionerTotalPresenceSeconds: data.practitionerTotalPresenceSeconds,
+        practitionerFirstJoinedAt: data.practitionerFirstJoinedAt,
+        practitionerLastLeftAt: data.practitionerLastLeftAt,
+        unknownParticipantCount: data.unknownParticipantCount,
+        providerMeetingId: data.providerMeetingId,
+        reconciledAt: data.reconciledAt,
+        providerDataObservedUntil: data.providerDataObservedUntil,
+        confidence: data.confidence,
+        reasonCodesJson: data.reasonCodesJson,
+        attemptNumber: data.attemptNumber,
+        requestStatus: data.requestStatus,
+        failureCategory: data.failureCategory,
+        eligibleForAutomaticFinalization: data.eligibleForAutomaticFinalization,
+      },
+    });
+  }
+
+  markAttendanceReconciliationStale(
+    sessionId: string,
+    occurredAt: Date,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).sessionAttendanceReconciliation.updateMany({
+      where: {
+        sessionId,
+        evaluationStale: false,
+        reconciledAt: { lt: occurredAt },
+      },
+      data: {
+        evaluationStale: true,
+        staleReason: 'LATE_TRUSTED_ATTENDANCE_EVENT',
+      },
+    });
   }
 
   private readonly lateCandidateStatuses: SessionStatus[] = [
@@ -1509,6 +1661,7 @@ export class SessionRepository {
     paymentCoverageType: true,
     scheduledStartAt: true,
     scheduledEndAt: true,
+    cancelledAt: true,
     durationMinutes: true,
     joinOpenAt: true,
     provider: true,

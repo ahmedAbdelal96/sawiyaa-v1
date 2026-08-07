@@ -107,6 +107,11 @@ export class UpdateAdminUserPermissionOverridesUseCase {
     const operations = input.operations.slice(0, 100);
 
     await this.prisma.$transaction(async (tx) => {
+      const beforeOverrides = await this.repo.listPermissionOverrides(
+        input.userId,
+        tx,
+      );
+
       for (const op of operations) {
         const permission = await tx.permission.findUnique({
           where: { key: op.permissionKey as unknown as string },
@@ -152,6 +157,16 @@ export class UpdateAdminUserPermissionOverridesUseCase {
         resourceId: input.userId,
         targetUserId: input.userId,
         metadata: {
+          before: beforeOverrides.map((override) => ({
+            permissionKey: override.permission.key,
+            effect: override.effect,
+            reason: override.reason,
+          })),
+          after: operations.map((op) => ({
+            permissionKey: op.permissionKey,
+            effect: op.effect ?? null,
+            reason: op.reason ?? null,
+          })),
           operations: operations.map((op) => ({
             permissionKey: op.permissionKey,
             effect: op.effect ?? null,

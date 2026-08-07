@@ -42,11 +42,16 @@ export class SessionCompletionConfirmationSweeperService
   ) {}
 
   onApplicationBootstrap(): void {
-    if (process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED !== 'true') {
+    if (
+      process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED !== 'true'
+    ) {
       return;
     }
     void this.sweepOnce();
-    this.intervalHandle = setInterval(() => void this.sweepOnce(), SWEEP_INTERVAL_MS);
+    this.intervalHandle = setInterval(
+      () => void this.sweepOnce(),
+      SWEEP_INTERVAL_MS,
+    );
     this.intervalHandle.unref?.();
   }
 
@@ -66,51 +71,72 @@ export class SessionCompletionConfirmationSweeperService
     if (this.isSweeping) return empty;
     this.isSweeping = true;
     try {
-      const batchSize = this.readPositiveInt('SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE', DEFAULT_BATCH_SIZE);
-      const maxRows = this.readPositiveInt('SESSION_COMPLETION_CONFIRMATION_SWEEPER_MAX_ROWS', DEFAULT_MAX_ROWS);
-      const graceMinutes = this.readPositiveInt('SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES', DEFAULT_GRACE_MINUTES);
+      const batchSize = this.readPositiveInt(
+        'SESSION_COMPLETION_CONFIRMATION_SWEEPER_BATCH_SIZE',
+        DEFAULT_BATCH_SIZE,
+      );
+      const maxRows = this.readPositiveInt(
+        'SESSION_COMPLETION_CONFIRMATION_SWEEPER_MAX_ROWS',
+        DEFAULT_MAX_ROWS,
+      );
+      const graceMinutes = this.readPositiveInt(
+        'SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES',
+        DEFAULT_GRACE_MINUTES,
+      );
       const result: SessionCompletionSweepResult = { ...empty };
       const failedIds = new Set<string>();
       let cursor: { scheduledEndAt: Date; id: string } | undefined;
       const cutoff = new Date(now.getTime() - graceMinutes * 60_000);
       while (true) {
         if (result.scanned >= maxRows) break;
-        const sessions = await this.sessionRepository.listSessionsDueForCompletionConfirmation({
-          now: cutoff,
-          take: Math.min(batchSize, maxRows - result.scanned),
-          excludeIds: [...failedIds],
-          cursor,
-        });
+        const sessions =
+          await this.sessionRepository.listSessionsDueForCompletionConfirmation(
+            {
+              now: cutoff,
+              take: Math.min(batchSize, maxRows - result.scanned),
+              excludeIds: [...failedIds],
+              cursor,
+            },
+          );
         if (sessions.length === 0) break;
         result.batches += 1;
         for (const session of sessions) {
           result.scanned += 1;
           try {
-            const transitionResult = await this.prisma.$transaction(async (tx) => {
-              // Claim and transition the same row in one transaction. SKIP
-              // LOCKED lets another worker continue without waiting on us.
-              const claimed = await this.sessionRepository
-                .tryLockDueSessionForCompletionConfirmation(
-                  { sessionId: session.id, now: cutoff },
+            const transitionResult = await this.prisma.$transaction(
+              async (tx) => {
+                // Claim and transition the same row in one transaction. SKIP
+                // LOCKED lets another worker continue without waiting on us.
+                const claimed =
+                  await this.sessionRepository.tryLockDueSessionForCompletionConfirmation(
+                    { sessionId: session.id, now: cutoff },
+                    tx,
+                  );
+                if (!claimed) {
+                  return { outcome: 'skipped' as const, session: null };
+                }
+                return this.lifecycle.transitionIfCurrentStatus({
+                  sessionId: claimed.id,
+                  expectedStatuses: [
+                    SessionStatus.UPCOMING,
+                    SessionStatus.READY_TO_JOIN,
+                    SessionStatus.IN_PROGRESS,
+                  ],
+                  to: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+                  actorType: SecurityAuditActorType.SCHEDULED_JOB,
+                  source: SecurityAuditSource.SCHEDULED_JOB,
+                  at: now,
+                  metadata: {
+                    source: 'scheduledEndSweep',
+                    evaluationDueAt: new Date(
+                      (claimed.scheduledEndAt?.getTime?.() ?? now.getTime()) +
+                        graceMinutes * 60_000,
+                    ).toISOString(),
+                  },
                   tx,
-                );
-              if (!claimed) {
-                return { outcome: 'skipped' as const, session: null };
-              }
-              return this.lifecycle.transitionIfCurrentStatus({
-                sessionId: claimed.id,
-                expectedStatuses: [
-                  SessionStatus.UPCOMING,
-                  SessionStatus.READY_TO_JOIN,
-                ],
-                to: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
-                actorType: SecurityAuditActorType.SCHEDULED_JOB,
-                source: SecurityAuditSource.SCHEDULED_JOB,
-                at: now,
-                metadata: { source: 'scheduledEndSweep' },
-                tx,
-              });
-            });
+                });
+              },
+            );
             if (transitionResult.outcome === 'transitioned') {
               result.transitioned += 1;
             } else {
@@ -121,9 +147,11 @@ export class SessionCompletionConfirmationSweeperService
             failedIds.add(session.id);
             this.logger.error(
               {
-                message: 'Failed to move elapsed session to awaiting confirmation',
+                message:
+                  'Failed to move elapsed session to awaiting confirmation',
                 sessionId: session.id,
-                error: error instanceof Error ? error : new Error(String(error)),
+                error:
+                  error instanceof Error ? error : new Error(String(error)),
               },
               undefined,
               'Sessions',

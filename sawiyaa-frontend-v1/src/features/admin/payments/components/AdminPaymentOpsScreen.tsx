@@ -26,6 +26,8 @@ import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIco
 import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 import Button from "@/components/ui/button/Button";
 import { toAppError } from "@/lib/api/errors";
+import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
+import { PermissionKey } from "@/lib/auth/permissions";
 import { getAdminPaymentErrorKey, ADMIN_PAYMENT_STATUS_STYLES, ADMIN_REFUND_STATUS_STYLES } from "../lib/admin-payment-status";
 import { useAdminPaymentOpsDetails, useRequestAdminPaymentRefund, useRetryAdminPaymentRefund } from "../hooks/use-admin-payments";
 import { formatAdminMoneyForLocale as formatMoney } from "@/features/admin/finance/lib/finance-formatters";
@@ -170,10 +172,12 @@ function RefundTimeline({
   paymentId,
   refunds,
   currency,
+  canRetry,
 }: {
   paymentId: string;
   refunds: AdminPaymentRefundItem[];
   currency: string;
+  canRetry: boolean;
 }) {
   const t = useTranslations("admin-area");
   const locale = useLocale();
@@ -237,7 +241,7 @@ function RefundTimeline({
                 </p>
               </div>
 
-              {isRetryable ? (
+              {isRetryable && canRetry ? (
                 <Button
                   type="button"
                   size="sm"
@@ -544,6 +548,10 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
   }
 
   const item = payment.data.item;
+  const permissionQuery = useCurrentUserPermissions(true);
+  const permissions = permissionQuery.data?.permissions ?? [];
+  const canRequestRefund = permissions.includes(PermissionKey.REFUNDS_APPROVE);
+  const canRetryRefund = permissions.includes(PermissionKey.REFUNDS_RETRY);
   const refundControlState = getRefundControlState(item);
 
   return (
@@ -661,7 +669,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
             ) : (
               <div className="space-y-4">
                 <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 rounded-[20px] border border-border-light bg-surface-secondary/35 p-5 dark:border-white/8 dark:bg-white/[0.005]">
-                  <DetailRow label={locale === "ar" ? "رقم التسوية" : "Settlement ID"} value={item.relatedSettlement.id} mono />
+                  <DetailRow label={locale === "ar" ? "رقم المراجعة المحاسبية" : "Accounting review ID"} value={item.relatedSettlement.reviewId} mono />
                   <DetailRow label={t("payments.settlementFields.status")} value={item.relatedSettlement.status} />
                   <DetailRow label={t("payments.settlementFields.practitioner")} value={item.relatedSettlement.practitionerName} />
                   <DetailRow label={locale === "ar" ? "المبلغ الأصلي للجلسة" : "Session amount"} value={formatMoney(locale, item.relatedSettlement.originalAmount, item.relatedSettlement.originalCurrency)} />
@@ -671,7 +679,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
                 
                 <div className="flex justify-end">
                   <Link
-                    href={`/admin/settlements/${item.relatedSettlement.id}`}
+                    href={`/admin/settlements/${item.relatedSettlement.reviewId}`}
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover shadow-sm"
                   >
                     <CheckCircle className="h-3.5 w-3.5 text-white/90" />
@@ -701,7 +709,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
           </SectionCard>
 
           {/* Refund request controls */}
-          {refundControlState === "requestAvailable" ? (
+          {refundControlState === "requestAvailable" && canRequestRefund ? (
             <RefundRequestPanel paymentId={paymentId} />
           ) : (
             <SectionCard title={t("payments.refundForm.heading")} icon={<AlertCircle className="h-5 w-5" />}>
@@ -714,7 +722,7 @@ export default function AdminPaymentOpsScreen({ paymentId }: Props) {
 
           {/* Refund activity timeline */}
           <SectionCard title={t("payments.sections.refunds")} icon={<RotateCcw className="h-5 w-5" />}>
-            <RefundTimeline paymentId={paymentId} refunds={item.refunds} currency={item.payment.currency} />
+          <RefundTimeline paymentId={paymentId} refunds={item.refunds} currency={item.payment.currency} canRetry={canRetryRefund} />
           </SectionCard>
 
           {/* Section 5: Events Timeline */}

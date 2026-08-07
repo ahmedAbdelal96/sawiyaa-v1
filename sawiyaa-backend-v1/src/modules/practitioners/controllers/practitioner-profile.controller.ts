@@ -81,6 +81,7 @@ import {
 } from '../dto/practitioner-booking-settings.dto';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
 import { CountryRepository } from '../../patients/repositories/country.repository';
+import { PractitionerProfileRepository } from '../repositories/practitioner-profile.repository';
 
 /**
  * Practitioners controller provides only the current practitioner's own baseline profile/readiness/application surfaces.
@@ -112,6 +113,7 @@ export class PractitionerProfileController {
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
     private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
+    private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly securityAuditService: SecurityAuditService,
     private readonly countryRepository: CountryRepository,
     private readonly getMyBookingSettingsUseCase: GetMyBookingSettingsUseCase,
@@ -267,9 +269,10 @@ export class PractitionerProfileController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const avatar = await this.practitionerAvatarStorageService.getAvatarFile(
-      currentUser.id,
-    );
+    const profile = await this.practitionerProfileRepository.findByUserId(currentUser.id);
+    const avatar = profile
+      ? await this.practitionerAvatarStorageService.getAvatarFile(profile.id)
+      : null;
 
     if (!avatar) {
       throw new NotFoundException({

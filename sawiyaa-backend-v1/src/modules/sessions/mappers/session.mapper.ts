@@ -41,6 +41,8 @@ export class SessionMapper {
       sessionMode: session.sessionMode,
       scheduledStartAt: session.scheduledStartAt,
       scheduledEndAt: session.scheduledEndAt,
+      joinOpenAt: session.joinOpenAt,
+      joinCloseAt: session.joinCloseAt,
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,

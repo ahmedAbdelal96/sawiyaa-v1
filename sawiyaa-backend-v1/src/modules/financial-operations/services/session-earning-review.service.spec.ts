@@ -152,8 +152,8 @@ describe('SessionEarningReviewService', () => {
           reviewDecision: 'AUTO_CREATED',
           paymentAmount: new Prisma.Decimal('100'),
           paymentCurrencyCode: 'USD',
-          suggestedPractitionerAmount: new Prisma.Decimal('70'),
-          suggestedPlatformAmount: new Prisma.Decimal('30'),
+           suggestedPractitionerAmount: new Prisma.Decimal('0'),
+           suggestedPlatformAmount: new Prisma.Decimal('100'),
           suggestedCurrencyCode: 'USD',
           finalPractitionerAmount: null,
           finalPlatformAmount: null,
@@ -522,7 +522,7 @@ describe('SessionEarningReviewService', () => {
     expect(tx.sessionEarningReview.upsert).not.toHaveBeenCalled();
   });
 
-  it('keeps finalized approvals idempotent without rewriting the record', async () => {
+  it('fails closed for finalized approvals through the legacy method', async () => {
     const { service, tx, ledgerRepository } = buildService();
     const existingReview = {
       id: 'review-1',
@@ -533,16 +533,13 @@ describe('SessionEarningReviewService', () => {
     };
     tx.sessionEarningReview.findUnique.mockResolvedValue(existingReview);
 
-    const result = await service.approveReview({
+    await expect(service.approveReview({
       reviewId: 'review-1',
       reviewerUserId: 'admin-1',
       action: 'APPROVE_AS_IS',
       tx: tx as never,
-    });
-
-    expect(result).toEqual({
-      item: existingReview,
-      wasAlreadyPosted: true,
+    })).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'LEGACY_COMBINED_APPROVAL_DISABLED' }),
     });
     expect(tx.sessionEarningReview.update).not.toHaveBeenCalled();
     expect(ledgerRepository.createManyLedgerEntries).not.toHaveBeenCalled();
@@ -683,69 +680,16 @@ describe('SessionEarningReviewService', () => {
     expect(audit.recordRequired).not.toHaveBeenCalled();
   });
 
-  it('reconciles pending approvals from the posted ledger rows', async () => {
-    const {
-      service,
-      tx,
-      approvePractitionerSettlementService,
-    } = buildService();
-    tx.sessionEarningReview.findUnique.mockResolvedValue({
-      id: 'review-1',
-      reviewStatus: 'PENDING_REVIEW',
-      reviewDecision: 'AUTO_CREATED',
-      sourceType: 'DIRECT_SESSION',
-      practitionerId: 'practitioner-1',
-      sessionId: 'session-1',
-      paymentId: 'payment-1',
-      suggestedPractitionerAmount: new Prisma.Decimal('1.00'),
-      suggestedPlatformAmount: new Prisma.Decimal('1.00'),
-      suggestedCurrencyCode: 'USD',
-      ledgerEntries: [],
-    });
-    tx.ledgerEntry.findMany.mockResolvedValue([
-      {
-        entryType: LedgerEntryType.PRACTITIONER_EARNING,
-        direction: LedgerDirection.CREDIT,
-        amount: new Prisma.Decimal('70.00'),
-        currencyCode: 'USD',
-      },
-      {
-        entryType: LedgerEntryType.PLATFORM_COMMISSION,
-        direction: LedgerDirection.CREDIT,
-        amount: new Prisma.Decimal('30.00'),
-        currencyCode: 'USD',
-      },
-    ]);
-    tx.sessionEarningReview.update.mockImplementation(async (args) => ({
-      id: 'review-1',
-      ...args.data,
-    }));
+  it('fails closed when a legacy approval attempts to post ledger effects', async () => {
+    const { service, approvePractitionerSettlementService } = buildService();
 
-    const result = await service.approveReview({
+    await expect(service.approveReview({
       reviewId: 'review-1',
       reviewerUserId: 'admin-1',
       action: 'APPROVE_AS_IS',
-      tx: tx as never,
+    })).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'LEGACY_COMBINED_APPROVAL_DISABLED' }),
     });
-
-    expect(approvePractitionerSettlementService.approveAndCredit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        db: tx,
-        sessionEarningReviewId: 'review-1',
-        actorUserId: 'admin-1',
-        finalWalletCredit: new Prisma.Decimal('1'),
-      }),
-    );
-    const updateArgs = tx.sessionEarningReview.update.mock.calls[0][0];
-    expect(updateArgs.where).toEqual({ id: 'review-1' });
-    expect(updateArgs.data.reviewStatus).toBe('APPROVED');
-    expect(updateArgs.data.finalPractitionerAmount.toString()).toBe('70');
-    expect(updateArgs.data.finalPlatformAmount.toString()).toBe('30');
-    expect(updateArgs.data.finalCurrencyCode).toBe('USD');
-    expect(updateArgs.data.settlementId).toBe('settlement-1');
-    expect(updateArgs.data.approvedByUserId).toBe('admin-1');
-    expect(result.item.finalPractitionerAmount.toString()).toBe('70');
-    expect(result.item.finalPlatformAmount.toString()).toBe('30');
-    expect(result.item.finalCurrencyCode).toBe('USD');
+    expect(approvePractitionerSettlementService.approveAndCredit).not.toHaveBeenCalled();
   });
 });

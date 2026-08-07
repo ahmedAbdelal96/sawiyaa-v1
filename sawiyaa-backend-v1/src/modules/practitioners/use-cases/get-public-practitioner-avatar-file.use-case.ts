@@ -17,7 +17,7 @@ export class GetPublicPractitionerAvatarFileUseCase {
       });
     }
 
-    const avatar = await this.avatarStorage.getAvatarFile(profile.userId);
+    const avatar = await this.avatarStorage.getAvatarFile(profile.id);
     if (!avatar) {
       throw new NotFoundException({
         error: 'PUBLIC_PRACTITIONER_AVATAR_NOT_FOUND',

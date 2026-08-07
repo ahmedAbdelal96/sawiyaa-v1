@@ -25,6 +25,9 @@ describe('ListAdminSessionEarningReviewsUseCase', () => {
     practitionerProfile: {
       findMany: jest.fn(),
     },
+    practitionerWallet: {
+      findMany: jest.fn(),
+    },
     patientProfile: {
       findMany: jest.fn(),
     },
@@ -143,6 +146,7 @@ describe('ListAdminSessionEarningReviewsUseCase', () => {
 
     (prisma.patientPackagePurchase.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.packageSettlement.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.practitionerWallet.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.user.findMany as jest.Mock).mockResolvedValue([
       {
         id: 'admin-1',
@@ -203,6 +207,7 @@ describe('ListAdminSessionEarningReviewsUseCase', () => {
     (paymentRepository.sumSucceededRefundAmountsByPaymentIds as jest.Mock).mockResolvedValue([]);
     (prisma.patientPackagePurchase.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.packageSettlement.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.practitionerWallet.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
 
     await useCase.execute({

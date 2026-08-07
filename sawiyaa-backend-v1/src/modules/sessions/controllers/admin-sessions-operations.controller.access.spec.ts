@@ -36,7 +36,11 @@ describe('AdminSessionsOperationsController access contract', () => {
       ROLES_KEY,
       AdminSessionsOperationsController,
     ) as unknown as AppRole[] | undefined;
-    expect(classRoles).toEqual([AppRole.ADMIN, AppRole.SUPPORT_AGENT]);
+    expect(classRoles).toEqual([
+      AppRole.ADMIN,
+      AppRole.SUPER_ADMIN,
+      AppRole.SUPPORT_AGENT,
+    ]);
   });
 
   it('enforces auth and roles guards at controller level', () => {
@@ -67,7 +71,7 @@ describe('AdminSessionsOperationsController access contract', () => {
   // ─── POST /admin/sessions/:id/manual-decision authorization contract ─────────
 
   describe('createManualDecision authorization', () => {
-    it('is decorated with @Roles(AppRole.ADMIN) — SUPPORT_AGENT explicitly excluded', () => {
+    it('is decorated with @Roles(ADMIN, SUPER_ADMIN) — SUPPORT_AGENT explicitly excluded', () => {
       // Method-level @Roles(ADMIN) override replaces class-level @Roles(ADMIN, SUPPORT_AGENT).
       // Source: admin-sessions-operations.controller.ts line 162
       // Compiled JS: roles_decorator_1.Roles(app_role_enum_1.AppRole.ADMIN)
@@ -87,7 +91,7 @@ describe('AdminSessionsOperationsController access contract', () => {
         // ROLES_KEY constant value — this is a compile-time proof of the decorator.
         expect(methodRoles ?? []).not.toContain(AppRole.SUPPORT_AGENT);
       } else {
-        expect(methodRoles).toEqual([AppRole.ADMIN]);
+        expect(methodRoles).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN]);
       }
     });
 
@@ -103,7 +107,9 @@ describe('AdminSessionsOperationsController access contract', () => {
       ) as PermissionKey[] | undefined;
 
       if (methodPermissions !== undefined) {
-        expect(methodPermissions).toContain(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE);
+        expect(methodPermissions).toContain(
+          PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE,
+        );
       } else {
         // Metadata reading fails in this environment (ESM + reflect-metadata quirks).
         // Compile-time contract: SESSIONS_MANUAL_DECISIONS_WRITE is defined in
@@ -124,11 +130,15 @@ describe('AdminSessionsOperationsController access contract', () => {
       // Support bundle permissions are defined statically in auth.seed.ts.
       // We import the source file directly via relative path from src/.
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { rolePermissionBundles } = require('../../../../prisma/seed/modules/auth.seed');
+      const {
+        rolePermissionBundles,
+      } = require('../../../../prisma/seed/modules/auth.seed');
       const supportBundle = rolePermissionBundles.find(
         (b: { role: string }) => b.role === 'SUPPORT',
       );
-      expect(supportBundle?.permissions).not.toContain('sessions.manualDecisions.write');
+      expect(supportBundle?.permissions).not.toContain(
+        'sessions.manualDecisions.write',
+      );
     });
   });
 
@@ -145,7 +155,7 @@ describe('AdminSessionsOperationsController access contract', () => {
       if (methodRoles === undefined) {
         expect(methodRoles ?? []).not.toContain(AppRole.SUPPORT_AGENT);
       } else {
-        expect(methodRoles).toEqual([AppRole.ADMIN]);
+        expect(methodRoles).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN]);
       }
     });
 
@@ -157,7 +167,9 @@ describe('AdminSessionsOperationsController access contract', () => {
       ) as PermissionKey[] | undefined;
 
       if (methodPermissions !== undefined) {
-        expect(methodPermissions).toContain(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE);
+        expect(methodPermissions).toContain(
+          PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE,
+        );
       } else {
         expect(Object.values(PermissionKey)).toContain(
           PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE,

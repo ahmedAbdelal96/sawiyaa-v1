@@ -48,6 +48,14 @@ export class SessionEarningReviewRepository {
     });
   }
 
+  findAdminReviewBySettlementId(settlementId: string, tx?: Prisma.TransactionClient) {
+    return this.getDb(tx).sessionEarningReview.findFirst({
+      where: { settlementId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      select: this.adminDetailSelect,
+    });
+  }
+
   findBySessionAndSourceType(input: {
     sessionId: string;
     sourceType: SessionEarningReviewSourceType;
@@ -161,9 +169,11 @@ export class SessionEarningReviewRepository {
   private readonly adminListSelect = {
     id: true,
     sessionId: true,
+    earningEntitlementId: true,
     paymentId: true,
     packagePurchaseId: true,
     packageSettlementId: true,
+    settlementId: true,
     practitionerId: true,
     patientId: true,
     sourceType: true,
@@ -174,6 +184,14 @@ export class SessionEarningReviewRepository {
     suggestedPractitionerAmount: true,
     suggestedPlatformAmount: true,
     suggestedCurrencyCode: true,
+    suggestedPractitionerPercentage: true,
+    accountantApprovedSourceAmount: true,
+    accountingAdjustmentAmount: true,
+    accountingAdjustmentType: true,
+    accountingAdjustmentReason: true,
+    accountingNotes: true,
+    calculatedPractitionerAmount: true,
+    overrideReason: true,
     finalPractitionerAmount: true,
     finalPlatformAmount: true,
     finalCurrencyCode: true,
@@ -185,6 +203,7 @@ export class SessionEarningReviewRepository {
     practitionerFacingNote: true,
     createdAt: true,
     updatedAt: true,
+    settlement: { select: { status: true } },
   } satisfies Prisma.SessionEarningReviewSelect;
 
   private readonly adminDetailSelect = {
@@ -200,6 +219,21 @@ export class SessionEarningReviewRepository {
         referenceType: true,
         referenceId: true,
         createdAt: true,
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    },
+    adjustments: {
+      select: {
+        id: true,
+        type: true,
+        category: true,
+        description: true,
+        amount: true,
+        currencyCode: true,
+        reason: true,
+        createdByUserId: true,
+        createdAt: true,
+        createdByUser: { select: { id: true, displayName: true } },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },

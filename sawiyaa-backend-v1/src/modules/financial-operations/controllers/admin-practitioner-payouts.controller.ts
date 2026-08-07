@@ -31,7 +31,6 @@ import { createReadStream } from 'fs';
 import { Response } from 'express';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -134,7 +133,6 @@ export class AdminPractitionerPayoutsController {
   }
 
   @Post()
-  @RequireStepUp('finance.practitioner-payout.record')
   @ApiOperation({
     summary: 'Record practitioner payout',
     description:
@@ -156,7 +154,7 @@ export class AdminPractitionerPayoutsController {
     description: 'Practitioner profile or due row was not found',
   })
   @UseGuards(AdminGuard)
-  @Roles(AppRole.ADMIN)
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
   @Permissions(PermissionKey.FINANCIAL_PAYOUT_EXECUTE)
   async record(
     @Param('practitionerId', new ParseUUIDPipe()) practitionerId: string,

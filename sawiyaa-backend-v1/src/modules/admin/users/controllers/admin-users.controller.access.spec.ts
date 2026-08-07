@@ -4,7 +4,6 @@ import {
   ROLES_KEY,
   THROTTLE_POLICY_KEY,
 } from '@common/constants/auth-metadata.constants';
-import { STEP_UP_POLICY_KEY } from '@common/decorators/step-up.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
@@ -57,21 +56,18 @@ describe('AdminUsersController access contract', () => {
     ]);
   });
 
-  it('requires step-up + create permission for create', () => {
+  it('requires create permission for create', () => {
     const create = getControllerMethod('create');
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, create)).toEqual([
       PermissionKey.ADMIN_USERS_CREATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, create)).toBe(
-      'security.adminUsers.create',
-    );
     expect(Reflect.getMetadata(THROTTLE_POLICY_KEY, create)).toBe(
       'admin-users-create',
     );
   });
 
-  it('requires step-up + permissions for sensitive mutations', () => {
+  it('requires permissions for sensitive mutations', () => {
     const patch = getControllerMethod('patch');
     const updateStatus = getControllerMethod('updateStatus');
     const updateRoles = getControllerMethod('updateRoles');
@@ -82,44 +78,26 @@ describe('AdminUsersController access contract', () => {
     expect(Reflect.getMetadata(PERMISSIONS_KEY, patch)).toEqual([
       PermissionKey.ADMIN_USERS_UPDATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, patch)).toBe(
-      'security.adminUsers.update',
-    );
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateStatus)).toEqual([
       PermissionKey.ADMIN_USERS_STATUS_UPDATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, updateStatus)).toBe(
-      'security.adminUsers.status.update',
-    );
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateRoles)).toEqual([
       PermissionKey.ADMIN_USERS_ROLES_UPDATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, updateRoles)).toBe(
-      'security.adminUsers.roles.update',
-    );
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateOverrides)).toEqual([
       PermissionKey.ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, updateOverrides)).toBe(
-      'security.adminUsers.permissionOverrides.update',
-    );
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, revokeSessions)).toEqual([
       PermissionKey.ADMIN_USERS_SESSIONS_REVOKE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, revokeSessions)).toBe(
-      'security.adminUsers.sessions.revoke',
-    );
 
     expect(Reflect.getMetadata(PERMISSIONS_KEY, invalidateTokens)).toEqual([
       PermissionKey.ADMIN_USERS_TOKEN_VERSION_INVALIDATE,
     ]);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, invalidateTokens)).toBe(
-      'security.adminUsers.tokenVersion.invalidate',
-    );
   });
 
   it('requires override read permission for listing overrides', () => {

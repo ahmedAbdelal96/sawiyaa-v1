@@ -97,10 +97,33 @@ export class CancelSessionUseCase {
     let refundIdToPost: string | null = null;
 
     const updatedSession = await this.prisma.$transaction(async (tx) => {
+      const lockedSession = await this.sessionRepository.findByIdForUpdate(
+        session.id,
+        tx,
+      );
+      if (!lockedSession) {
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
+      }
+      if (lockedSession.status === SessionStatus.CANCELLED) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.sessionAlreadyCancelled',
+          error: 'SESSION_ALREADY_CANCELLED',
+        });
+      }
+      if (lockedSession.status === SessionStatus.COMPLETED) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.cancellationNotAllowedByPolicy',
+          error: 'SESSION_CANCELLATION_AFTER_COMPLETION',
+        });
+      }
+
       const financialEffect =
         await this.applySessionCancellationFinancialEffectsService.apply({
           tx,
-          session,
+          session: lockedSession,
           evaluation,
           cancellationReason: input.reason ?? null,
         });
@@ -108,7 +131,7 @@ export class CancelSessionUseCase {
       refundIdToPost = financialEffect.generatedRefundId;
 
       const cancelledSession = await this.sessionLifecycleService.transition({
-        session,
+        session: lockedSession,
         to: SessionStatus.CANCELLED,
         at: cancelledAt,
         actorUserId: input.userId,
@@ -117,26 +140,26 @@ export class CancelSessionUseCase {
           cancellationReason: input.reason ?? null,
         },
         metadata: {
-            reason: input.reason ?? null,
-            cancellationPolicy: {
-              bookingType: evaluation.bookingType,
-              policyId: evaluation.policyId,
-              policyVersion: evaluation.policyVersion,
-              ruleId: evaluation.ruleId,
-              ruleCode: evaluation.ruleCode,
-              refundMode: evaluation.refundMode,
-              refundPercent: evaluation.refundPercent,
-              refundDestination: evaluation.refundDestination,
-              hoursBeforeStart: Number(evaluation.hoursBeforeStart.toFixed(2)),
-            },
-            financialEffects: financialEffect.actions,
-          } as Prisma.InputJsonObject,
+          reason: input.reason ?? null,
+          cancellationPolicy: {
+            bookingType: evaluation.bookingType,
+            policyId: evaluation.policyId,
+            policyVersion: evaluation.policyVersion,
+            ruleId: evaluation.ruleId,
+            ruleCode: evaluation.ruleCode,
+            refundMode: evaluation.refundMode,
+            refundPercent: evaluation.refundPercent,
+            refundDestination: evaluation.refundDestination,
+            hoursBeforeStart: Number(evaluation.hoursBeforeStart.toFixed(2)),
+          },
+          financialEffects: financialEffect.actions,
+        } as Prisma.InputJsonObject,
         tx,
       });
 
       await this.sessionCancellationPolicyRepository.createCancellationRecord(
         {
-          sessionId: session.id,
+          sessionId: lockedSession.id,
           cancelledByUserId: input.userId,
           policyId: evaluation.policyId,
           policyRuleId: evaluation.ruleId,

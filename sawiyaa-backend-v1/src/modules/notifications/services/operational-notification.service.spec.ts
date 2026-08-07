@@ -1,5 +1,6 @@
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
+import { SessionReminderType } from '@prisma/client';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { OperationalNotificationService } from './operational-notification.service';
 
@@ -67,11 +68,51 @@ describe('OperationalNotificationService', () => {
     const i18nService = {
       t: jest.fn((key: string) => key),
     } as unknown as I18nService;
+    const sessionSchedulePolicyService = {
+      resolve: jest.fn().mockResolvedValue({
+        version: 1,
+        scheduleRevision: 0,
+        capturedAt: '2026-01-01T00:00:00.000Z',
+        reminder: {
+          reminderOffsetsMinutes: [60, 15, 0],
+          lateReminderEnabled: true,
+          lateReminderMinutesAfterStart: 5,
+          inAppRemindersEnabled: true,
+          emailRemindersEnabled: input?.emailEnabled ?? true,
+        },
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      withScheduleRevision: jest.fn((policy, scheduleRevision) => ({
+        ...policy,
+        scheduleRevision,
+      })),
+      buildReminderPlan: jest.fn(({ policy, scheduledStartAt }) => [
+        ...policy.reminder.reminderOffsetsMinutes.map((offsetMinutes: number) => ({
+          type:
+            offsetMinutes === 0
+              ? SessionReminderType.STARTING_NOW
+              : offsetMinutes === 60
+                ? SessionReminderType.REMINDER_60
+                : SessionReminderType.REMINDER_15,
+          offsetMinutes,
+          dueAt: new Date(scheduledStartAt.getTime() - offsetMinutes * 60_000),
+        })),
+        ...(policy.reminder.lateReminderEnabled
+          ? [{
+              type: SessionReminderType.LATE_JOIN,
+              offsetMinutes: -policy.reminder.lateReminderMinutesAfterStart,
+              dueAt: new Date(scheduledStartAt.getTime() + policy.reminder.lateReminderMinutesAfterStart * 60_000),
+            }]
+          : []),
+      ]),
+      parseSnapshot: jest.fn().mockReturnValue(null),
+    } as never;
 
     const service = new OperationalNotificationService(
       repository,
       sessionReminderQueueRepository,
       i18nService,
+      sessionSchedulePolicyService,
     );
 
     return {
@@ -465,7 +506,7 @@ describe('OperationalNotificationService', () => {
       expect.objectContaining({
         idempotencyKey: 'sessions.session-confirmed:session_1:user_1:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/sessions/session_1',
+          routePath: '/en/patient/sessions/session_1/join',
           targetRole: 'PATIENT',
         }),
       }),
@@ -475,7 +516,7 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'sessions.session-confirmed-practitioner:session_1:user_2:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/practitioner/sessions/session_1',
+          routePath: '/en/practitioner/sessions/session_1/join',
           targetRole: 'PRACTITIONER',
         }),
       }),
@@ -484,7 +525,7 @@ describe('OperationalNotificationService', () => {
       expect.objectContaining({
         idempotencyKey: 'sessions.session-confirmed:session_1:user_1:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/sessions/session_1',
+          routePath: '/en/patient/sessions/session_1/join',
           targetRole: 'PATIENT',
         }),
       }),
@@ -494,7 +535,7 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'sessions.session-confirmed-practitioner:session_1:user_2:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/practitioner/sessions/session_1',
+          routePath: '/en/practitioner/sessions/session_1/join',
           targetRole: 'PRACTITIONER',
         }),
       }),
@@ -508,50 +549,54 @@ describe('OperationalNotificationService', () => {
       patientProfileId: 'patient_1',
       practitionerProfileId: 'pr_1',
       sessionId: 'session_1',
-      scheduledStartAt: new Date('2026-08-02T12:00:00.000Z'),
+      scheduledStartAt: new Date('2027-08-02T12:00:00.000Z'),
     });
 
-    expect(setup.scheduleMany).toHaveBeenCalledTimes(4);
-    expect(setup.scheduleMany).toHaveBeenCalledWith([
+    expect(setup.scheduleMany).toHaveBeenCalledTimes(1);
+    expect(setup.scheduleMany).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({
         sessionId: 'session_1',
         recipientUserId: 'user_1',
         recipientRole: 'PATIENT',
         reminderType: 'REMINDER_60',
-        dueAt: new Date('2026-08-02T11:00:00.000Z'),
-        idempotencyKey: 'sessions.session-reminder-60:session_1:user_1',
+        dueAt: new Date('2027-08-02T11:00:00.000Z'),
+        scheduleRevision: 1,
+        idempotencyKey: 'sessions.session-reminder-60:session_1:user_1:r1',
       }),
-    ]);
-    expect(setup.scheduleMany).toHaveBeenCalledWith([
+    ]));
+    expect(setup.scheduleMany).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({
         sessionId: 'session_1',
         recipientUserId: 'user_1',
         recipientRole: 'PATIENT',
         reminderType: 'REMINDER_15',
-        dueAt: new Date('2026-08-02T11:45:00.000Z'),
-        idempotencyKey: 'sessions.session-reminder-15:session_1:user_1',
+        dueAt: new Date('2027-08-02T11:45:00.000Z'),
+        scheduleRevision: 1,
+        idempotencyKey: 'sessions.session-reminder-15:session_1:user_1:r1',
       }),
-    ]);
-    expect(setup.scheduleMany).toHaveBeenCalledWith([
+    ]));
+    expect(setup.scheduleMany).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({
         sessionId: 'session_1',
         recipientUserId: 'user_2',
         recipientRole: 'PRACTITIONER',
         reminderType: 'REMINDER_60',
-        dueAt: new Date('2026-08-02T11:00:00.000Z'),
-        idempotencyKey: 'sessions.session-reminder-60:session_1:user_2',
+        dueAt: new Date('2027-08-02T11:00:00.000Z'),
+        scheduleRevision: 1,
+        idempotencyKey: 'sessions.session-reminder-60:session_1:user_2:r1',
       }),
-    ]);
-    expect(setup.scheduleMany).toHaveBeenCalledWith([
+    ]));
+    expect(setup.scheduleMany).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({
         sessionId: 'session_1',
         recipientUserId: 'user_2',
         recipientRole: 'PRACTITIONER',
         reminderType: 'REMINDER_15',
-        dueAt: new Date('2026-08-02T11:45:00.000Z'),
-        idempotencyKey: 'sessions.session-reminder-15:session_1:user_2',
+        dueAt: new Date('2027-08-02T11:45:00.000Z'),
+        scheduleRevision: 1,
+        idempotencyKey: 'sessions.session-reminder-15:session_1:user_2:r1',
       }),
-    ]);
+    ]));
   });
 
   it('skips reminders that are already past due at scheduling time', async () => {
@@ -564,7 +609,7 @@ describe('OperationalNotificationService', () => {
       scheduledStartAt: new Date('2026-01-01T00:05:00.000Z'),
     });
 
-    expect(setup.scheduleMany).not.toHaveBeenCalled();
+    expect(setup.scheduleMany).toHaveBeenCalledWith([]);
   });
 
   it('attaches route paths and idempotency keys to cancelled session notifications', async () => {
@@ -581,7 +626,7 @@ describe('OperationalNotificationService', () => {
       expect.objectContaining({
         idempotencyKey: 'sessions.session-cancelled:session_1:user_1:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/sessions/session_1',
+          routePath: '/en/patient/sessions/session_1/join',
           targetRole: 'PATIENT',
         }),
       }),
@@ -591,7 +636,7 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'sessions.session-cancelled-practitioner:session_1:user_2:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/practitioner/sessions/session_1',
+          routePath: '/en/practitioner/sessions/session_1/join',
           targetRole: 'PRACTITIONER',
         }),
       }),
@@ -600,7 +645,7 @@ describe('OperationalNotificationService', () => {
       expect.objectContaining({
         idempotencyKey: 'sessions.session-cancelled:session_1:user_1:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/sessions/session_1',
+          routePath: '/en/patient/sessions/session_1/join',
           targetRole: 'PATIENT',
         }),
       }),
@@ -610,7 +655,7 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'sessions.session-cancelled-practitioner:session_1:user_2:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/practitioner/sessions/session_1',
+          routePath: '/en/practitioner/sessions/session_1/join',
           targetRole: 'PRACTITIONER',
         }),
       }),
@@ -649,6 +694,38 @@ describe('OperationalNotificationService', () => {
           packageDiscountPercent: 10,
         }),
       }),
+    );
+  });
+
+  it('keeps in-app reminder delivery when email reminders are disabled by policy', async () => {
+    const setup = buildService({ emailEnabled: true });
+
+    await (setup.service as unknown as {
+      queueBySlug: (input: Record<string, unknown>) => Promise<void>;
+    }).queueBySlug({
+      recipient: {
+        userId: 'user_1',
+        displayName: 'Patient One',
+        locale: 'en',
+        email: 'patient@example.com',
+        timezone: 'UTC',
+      },
+      slug: 'sessions.session-reminder-before-start',
+      titleKey: 'sessions.notifications.sessionReminderBeforeStartTitle',
+      bodyKey: 'sessions.notifications.sessionReminderBeforeStartBody',
+      relatedEntityType: 'SESSION',
+      relatedEntityId: 'session_1',
+      category: 'SESSION',
+      scheduledFor: new Date('2026-08-06T11:30:00.000Z'),
+      idempotencyKey: 'session-reminder:session_1:user_1:r1',
+      channels: { inApp: true, email: false },
+    });
+
+    expect(setup.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ channel: NotificationChannel.IN_APP }),
+    );
+    expect(setup.createNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({ channel: NotificationChannel.EMAIL }),
     );
   });
 

@@ -139,6 +139,9 @@ export type AdminPractitionerWalletDetail = {
   recentSettlements: Array<{ id: string; settlementReference: string; sessionId: string | null; sessionCode: string | null; sessionReference: string | null; amountCredited: string; currencyCode: string; status: string; approvedAt: string | null }>;
   recentTransfers: Array<{ id: string; transferReference: string; settlementId: string; settlementReference: string; sessionCode: string | null; sessionReference: string | null; amount: string; currencyCode: string; transferMethod: string; externalReference: string | null; transferredAt: string; executedBy: string | null; status: string }>;
 };
+export type AdminPractitionerWalletLedgerEntryItem = AdminPractitionerWalletDetail["recentLedgerEntries"][number];
+export type AdminPractitionerWalletSettlementItem = AdminPractitionerWalletDetail["recentSettlements"][number];
+export type AdminPractitionerWalletTransferItem = AdminPractitionerWalletDetail["recentTransfers"][number];
 export type AdminPractitionerWalletDetailResponseData = AdminPractitionerWalletDetail;
 
 export type RecordAdminPractitionerManualPayoutRequest = {

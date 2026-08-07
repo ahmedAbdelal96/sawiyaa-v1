@@ -646,7 +646,7 @@ export default function PatientInstantBookingScreen() {
                 href: (
                   <Link
                     href="/patient/practitioners"
-                    className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
+                    className="app-btn-primary"
                   >
                     {t("empty.action")}
                   </Link>

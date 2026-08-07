@@ -111,6 +111,7 @@ export class SessionReminderNotificationSweeperService
     const shouldCancelAllForSession =
       reason === 'SESSION_NOT_FOUND' ||
       reason === 'SESSION_SCHEDULED_START_MISSING' ||
+      reason === 'SESSION_SCHEDULE_REVISION_STALE' ||
       reason?.startsWith('SESSION_STATUS_') === true;
 
     if (shouldCancelAllForSession) {
@@ -123,7 +124,8 @@ export class SessionReminderNotificationSweeperService
 
     if (
       reason === 'SESSION_RECIPIENT_PROFILE_MISSING' ||
-      reason === 'SESSION_RECIPIENT_NOT_FOUND'
+      reason === 'SESSION_RECIPIENT_NOT_FOUND' ||
+      reason === 'PARTICIPANT_ALREADY_JOINED'
     ) {
       await this.sessionReminderQueueRepository.cancelReminder({
         reminderId: candidate.id,

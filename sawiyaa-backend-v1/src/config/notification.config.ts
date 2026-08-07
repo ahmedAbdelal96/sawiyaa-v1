@@ -1,6 +1,13 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('notification', () => ({
+  web: {
+    // Development is an explicit local-testing environment. Every deployed
+    // environment must configure this to the public Sawiyaa web origin.
+    publicUrl:
+      process.env.WEB_APP_URL ??
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null),
+  },
   mail: {
     provider: process.env.MAIL_PROVIDER,
     from: process.env.MAIL_FROM,

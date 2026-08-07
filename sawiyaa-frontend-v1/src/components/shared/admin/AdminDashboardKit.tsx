@@ -30,6 +30,7 @@ import {
   Edit3,
   Wifi,
   CircleOff,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
@@ -126,9 +127,9 @@ export type AdminPageShellProps = {
 
 export function AdminPageShell({ children, className }: AdminPageShellProps) {
   return (
-    <div className={cn("min-h-screen bg-surface-page", className)}>
-      <div className="mx-auto max-w-screen-2xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="space-y-4">{children}</div>
+    <div className={cn("min-h-screen bg-surface-page w-full", className)}>
+      <div className="w-full max-w-full px-3 py-3 sm:px-4 lg:px-5">
+        <div className="space-y-3.5">{children}</div>
       </div>
     </div>
   );
@@ -227,6 +228,17 @@ export type AdminMetricCardProps = {
   className?: string;
   metricKey?: string;
   semantic?: string;
+  currencyBuckets?: Array<{
+    currency: string;
+    amount: string | number;
+    count?: number;
+  }>;
+  secondaryItems?: Array<{
+    label: string;
+    value: ReactNode;
+    tone?: "default" | "positive" | "warning" | "negative";
+  }>;
+  tooltip?: string;
 };
 
 function getFallbackIcon({
@@ -317,6 +329,21 @@ function getFallbackIcon({
   return <Grid className="h-4 w-4" />;
 }
 
+function formatCurrencyValue(amount: string | number, currency: string, locale: string) {
+  const numeric = typeof amount === "string" ? Number(amount) : amount;
+  const formattedAmount = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: numeric % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(numeric);
+
+  if (locale === "ar") {
+    const currencyName = currency === "USD" ? "دولار أمريكي" : "جنيه مصري";
+    return `${formattedAmount} ${currencyName}`;
+  } else {
+    return currency === "USD" ? `$${formattedAmount} USD` : `EGP ${formattedAmount}`;
+  }
+}
+
 export function AdminMetricCard({
   label,
   value,
@@ -326,6 +353,9 @@ export function AdminMetricCard({
   className,
   metricKey,
   semantic,
+  currencyBuckets,
+  secondaryItems,
+  tooltip,
 }: AdminMetricCardProps) {
   const styles = TONE_STYLES[tone];
   const locale = useLocale();
@@ -336,37 +366,84 @@ export function AdminMetricCard({
   return (
     <article
       className={cn(
-        "relative isolate overflow-hidden rounded-xl border px-4 py-3.5",
+        "relative isolate overflow-hidden rounded-xl border px-3.5 py-2.5 shadow-2xs",
         styles.shell,
         className,
       )}
     >
-      {/* Subtle decorative accent — much smaller than before */}
+      {/* Subtle decorative accent */}
       <span
         aria-hidden="true"
         className="pointer-events-none absolute -end-4 -top-4 h-10 w-10 rounded-full bg-current opacity-[0.06]"
       />
 
       <div className="relative z-10 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p
-            className={cn(
-              "text-[10px] font-semibold text-current",
-              styles.label,
-              !isRtl && "uppercase tracking-[0.14em]",
-            )}
-          >
-            {label}
-          </p>
-          <p
-            className={cn(
-              "mt-1.5 text-xl font-semibold tracking-tight tabular-nums",
-              styles.value,
-            )}
-          >
-            {value}
-          </p>
-          {hint ? (
+        <div className="min-w-0 w-full">
+          <div className="flex items-center gap-1.5">
+            <p
+              className={cn(
+                "text-[11px] font-bold text-current",
+                styles.label,
+                !isRtl && "uppercase tracking-[0.12em]",
+              )}
+            >
+              {label}
+            </p>
+            {tooltip ? (
+              <span title={tooltip} className="cursor-help text-text-muted hover:text-text-secondary">
+                <Info className="h-3 w-3" />
+              </span>
+            ) : null}
+          </div>
+
+          {currencyBuckets && currencyBuckets.length > 0 ? (
+            <div className="mt-1.5 space-y-0.5">
+              {currencyBuckets.map((bucket: { currency: string; amount: string | number; count?: number }) => (
+                <div key={bucket.currency} className="flex items-center justify-between gap-3 text-xs py-0.5 border-b border-border-light/10 last:border-b-0">
+                  <span className="font-bold text-text-primary tabular-nums" dir="ltr">
+                    <bdi>{formatCurrencyValue(bucket.amount, bucket.currency, locale)}</bdi>
+                  </span>
+                  {bucket.count !== undefined ? (
+                    <span className="text-[10px] text-text-muted font-medium">
+                      {bucket.count} {locale === "ar" ? "سجل" : "records"}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            value !== undefined && (
+              <p
+                className={cn(
+                  "mt-1 text-lg font-bold tracking-tight tabular-nums sm:text-xl",
+                  styles.value,
+                )}
+              >
+                {value}
+              </p>
+            )
+          )}
+
+          {secondaryItems && secondaryItems.length > 0 ? (
+            <div className="mt-2.5 pt-2 border-t border-border-light/40 space-y-1">
+              {secondaryItems.map((item: { label: string; value: ReactNode; tone?: "default" | "positive" | "warning" | "negative" }, idx: number) => {
+                const toneStyles: Record<"default" | "positive" | "warning" | "negative", string> = {
+                  default: "text-text-secondary",
+                  positive: "text-status-success",
+                  warning: "text-status-warning",
+                  negative: "text-status-danger",
+                };
+                return (
+                  <div key={idx} className="flex items-center justify-between text-[10px] leading-4">
+                    <span className="text-text-muted">{item.label}</span>
+                    <span className={cn("font-semibold", toneStyles[item.tone ?? "default"])}>
+                      {item.value}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : hint ? (
             <p className={cn("mt-1 text-[11px] leading-4", styles.hint)}>{hint}</p>
           ) : null}
         </div>
@@ -375,7 +452,7 @@ export function AdminMetricCard({
           <span
             aria-hidden="true"
             className={cn(
-              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+              "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg self-start",
               styles.iconShell,
             )}
           >
@@ -412,14 +489,14 @@ export function AdminFilterCard({
       )}
     >
       {(title || description || actions) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-light/70 px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border-light/70 px-3.5 py-2">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
             {title ? (
-              <p className="text-sm font-semibold text-text-primary">{title}</p>
+              <p className="text-xs font-bold text-text-primary">{title}</p>
             ) : null}
             {description ? (
-              <p className="text-xs text-text-secondary">{description}</p>
+              <p className="text-[11px] text-text-secondary">{description}</p>
             ) : null}
           </div>
           {actions ? (
@@ -427,7 +504,7 @@ export function AdminFilterCard({
           ) : null}
         </div>
       )}
-      <div className="px-5 py-4">{children}</div>
+      <div className="px-3.5 py-2.5">{children}</div>
     </section>
   );
 }
@@ -616,7 +693,7 @@ export function AdminTableTabs<T extends string>({
   return (
     <div
       className={cn(
-        "inline-flex flex-wrap gap-1 rounded-2xl bg-surface-tertiary/90 p-1",
+        "inline-flex flex-wrap gap-1 rounded-xl bg-surface-tertiary/90 p-0.5",
         className,
       )}
     >
@@ -628,9 +705,9 @@ export function AdminTableTabs<T extends string>({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-[14px] px-3 py-1.5 text-sm font-medium transition",
+              "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition",
               active
-                ? "bg-surface-secondary text-text-brand border border-border-light"
+                ? "bg-surface-secondary text-text-brand border border-border-light shadow-2xs"
                 : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary",
             )}
           >
@@ -638,7 +715,7 @@ export function AdminTableTabs<T extends string>({
             {tab.count ? (
               <span
                 className={cn(
-                  "rounded-full border px-1.5 py-px text-[10px] font-semibold",
+                  "rounded-full border px-1.5 py-px text-[9px] font-bold",
                   active
                     ? "border-primary/15 bg-primary-light text-text-brand"
                     : "border-border-light bg-surface-tertiary text-text-secondary",
@@ -677,52 +754,32 @@ export function AdminTableToolbar({
   const t = useTranslations("common.dataTable");
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-border-light bg-surface-secondary text-text-secondary">
-            <Filter className="h-3.5 w-3.5" />
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-text-muted">{t("filters")}</p>
-            <p className="text-xs text-text-secondary">{t("refineList")}</p>
-          </div>
-        </div>
-
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        ) : null}
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.25fr)_auto]">
+    <div className={cn("flex flex-wrap items-center justify-between gap-2", className)}>
+      <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
         {search ? (
-          <label className="relative block">
-            <Search className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <label className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input
               type="search"
               value={search.value}
               onChange={(event) => search.onChange(event.target.value)}
               placeholder={search.placeholder}
               aria-label={search.ariaLabel ?? search.placeholder}
-              className="app-control w-full rounded-[18px] py-2.5 pe-4 ps-11 text-sm"
+              className="app-control w-full rounded-xl py-1.5 pe-3 ps-8.5 text-xs"
             />
           </label>
         ) : null}
 
-        <div className="flex items-center justify-start gap-2 xl:justify-end">
-          {filters ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-[18px] border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-secondary">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              <div className="flex flex-wrap items-center gap-2">{filters}</div>
-            </div>
-          ) : (
-            <span className="inline-flex items-center gap-2 rounded-[18px] border border-border-light bg-surface-secondary px-3 py-2 text-sm text-text-secondary">
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              {t("filters")}
-            </span>
-          )}
-        </div>
+        {filters ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {filters}
+          </div>
+        ) : null}
       </div>
+
+      {actions ? (
+        <div className="flex items-center gap-1.5 shrink-0">{actions}</div>
+      ) : null}
     </div>
   );
 }

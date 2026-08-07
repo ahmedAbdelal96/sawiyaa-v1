@@ -5,6 +5,7 @@ import {
   createAdminPractitionerDirectly,
   deleteAdminPractitionerApplicationCredential,
   getAdminPractitionerApplicationDetails,
+  viewAdminPractitionerApplicationCredentialFile,
   listAdminPractitionerApplications,
   rejectAdminPractitionerApplication,
   requestChangesAdminPractitionerApplication,
@@ -203,6 +204,13 @@ export function useViewAdminDirectPractitionerCredentialFile() {
   return useMutation({
     mutationFn: ({ credentialId, mimeType }: { credentialId: string; mimeType: string }) =>
       viewAdminDirectPractitionerCredentialFile(credentialId, mimeType),
+  });
+}
+
+export function useViewAdminPractitionerApplicationCredentialFile() {
+  return useMutation({
+    mutationFn: ({ applicationId, credentialId }: { applicationId: string; credentialId: string }) =>
+      viewAdminPractitionerApplicationCredentialFile(applicationId, credentialId),
   });
 }
 

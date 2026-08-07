@@ -7,13 +7,6 @@ describe('OrchestrateSessionPaymentStatusService', () => {
       $transaction: jest.fn((fn: (tx: never) => unknown) => fn({} as never)),
     };
     const sessionRepository = {
-      updateStatus: jest.fn().mockResolvedValue({
-        id: 'session_1',
-        status: SessionStatus.CONFIRMED,
-        scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
-        patient: { id: 'patient_1' },
-        practitioner: { id: 'pr_1' },
-      }),
       createEvent: jest.fn().mockResolvedValue({}),
       findById: jest.fn().mockResolvedValue({
         id: 'session_1',
@@ -24,10 +17,13 @@ describe('OrchestrateSessionPaymentStatusService', () => {
       }),
     };
     const sessionLifecycleService = {
-      transition: jest.fn().mockResolvedValue({
-        id: 'session_1',
-        status: SessionStatus.UPCOMING,
-        scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+      transitionIfCurrentStatus: jest.fn().mockResolvedValue({
+        outcome: 'transitioned',
+        session: {
+          id: 'session_1',
+          status: SessionStatus.UPCOMING,
+          scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+        },
       }),
     };
     const expireUnpaidSessionUseCase = {
@@ -37,12 +33,24 @@ describe('OrchestrateSessionPaymentStatusService', () => {
       notifySessionConfirmed: jest.fn().mockResolvedValue(undefined),
     };
 
+    const sessionSchedulePolicyService = {
+      resolve: jest.fn().mockResolvedValue({
+        reminderOffsetsMinutes: [1440, 60, 15],
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      withScheduleRevision: jest.fn().mockReturnValue({
+        reminderOffsetsMinutes: [1440, 60, 15],
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+    };
+
     const service = new OrchestrateSessionPaymentStatusService(
       prisma as never,
       sessionRepository as never,
       sessionLifecycleService as never,
       expireUnpaidSessionUseCase as never,
       operationalNotificationService as never,
+      sessionSchedulePolicyService as never,
     );
 
     return {
@@ -67,12 +75,41 @@ describe('OrchestrateSessionPaymentStatusService', () => {
     expect(
       setup.operationalNotificationService.notifySessionConfirmed,
     ).toHaveBeenCalledTimes(1);
-    expect(setup.sessionLifecycleService.transition).toHaveBeenCalledWith(
+    expect(
+      setup.sessionLifecycleService.transitionIfCurrentStatus,
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
+        sessionId: 'session_1',
+        expectedStatuses: [SessionStatus.PENDING_PAYMENT],
         to: SessionStatus.UPCOMING,
-        data: { joinOpenAt: new Date('2026-04-02T09:58:00.000Z') },
-        tx: expect.anything(),
+        data: expect.objectContaining({ joinOpenAt: new Date('2026-04-02T09:45:00.000Z') }),
+        tx: expect.anything() as unknown,
       }),
     );
+  });
+
+  it('does not append a payment event or notify again for a replayed callback', async () => {
+    const setup = buildService();
+    setup.sessionLifecycleService.transitionIfCurrentStatus.mockResolvedValue({
+      outcome: 'skipped',
+      session: {
+        id: 'session_1',
+        status: SessionStatus.UPCOMING,
+        scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+      },
+    });
+
+    await setup.service.markSessionConfirmedFromPayment({
+      session: {
+        id: 'session_1',
+        status: SessionStatus.PENDING_PAYMENT,
+        scheduledStartAt: new Date('2026-04-02T10:00:00.000Z'),
+      },
+    });
+
+    expect(setup.sessionRepository.createEvent).not.toHaveBeenCalled();
+    expect(
+      setup.operationalNotificationService.notifySessionConfirmed,
+    ).not.toHaveBeenCalled();
   });
 });

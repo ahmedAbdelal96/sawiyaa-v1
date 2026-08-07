@@ -11,6 +11,9 @@ const baseEnvSchema = z.object({
   SERVICE_NAME: z.string().optional(),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
+  // Public Web application origin used only for safe, stable links in
+  // transactional messages. Provider room URLs are never used here.
+  WEB_APP_URL: z.string().url().optional(),
   CORS_ORIGINS: z
     .string()
     .default(
@@ -18,9 +21,7 @@ const baseEnvSchema = z.object({
     ),
   CONFIG_HTTP_ENABLED: z.enum(['true', 'false']).default('false'),
   CONFIG_HTTP_TOKEN: z.string().optional(),
-  LOG_LEVEL: z
-    .enum(['error', 'warn', 'info', 'http', 'debug', 'verbose'])
-    .optional(),
+  LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug', 'verbose']).optional(),
   LOG_PRETTY: z.enum(['true', 'false']).optional(),
   LOG_HTTP_ENABLED: z.enum(['true', 'false']).default('true'),
   LOG_FILE_ENABLED: z.enum(['true', 'false']).default('true'),
@@ -28,9 +29,30 @@ const baseEnvSchema = z.object({
   LOG_STACK_ENABLED: z.enum(['true', 'false']).optional(),
   LOG_NEST_INTERNAL_ENABLED: z.enum(['true', 'false']).default('false'),
   LOG_DIR: z.string().default('logs'),
-  LOG_SLOW_REQUEST_MS: z.coerce.number().int().positive().default(1000),
-  LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
-  LOG_MAX_FILE_SIZE: z.string().default('20m'),
+  LOG_SLOW_REQUEST_MS: z.coerce.number().int().nonnegative().default(1000),
+  LOG_RETENTION_DAYS: z.coerce.number().int().nonnegative().default(30),
+  LOG_MAX_FILE_SIZE: z
+    .string()
+    .regex(/^\d+(?:\.\d+)?\s*(?:b|kb|mb|gb)?$/i)
+    .default('20m'),
+
+  // Phase 3A: completion-only rollout control. Unset/false keeps manual
+  // completion available while automatic completion remains disabled.
+  SESSION_AUTOMATIC_COMPLETION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false'),
+  SESSION_AUTOMATIC_COMPLETION_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(25),
+  SESSION_AUTOMATIC_PATIENT_NO_SHOW_ENABLED: z
+    .literal('false')
+    .default('false'),
+  SESSION_AUTOMATIC_PRACTITIONER_NO_SHOW_ENABLED: z
+    .literal('false')
+    .default('false'),
 
   // Practitioner weekly session schedule
   AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce
@@ -59,10 +81,6 @@ const baseEnvSchema = z.object({
   REDIS_URL: z.string().url().optional(),
   THROTTLE_KEY_PREFIX: z.string().default('sawiyaa:throttle'),
   THROTTLE_KEY_HASH_SECRET: z.string().optional(),
-
-  // Step-up (re-auth) enforcement for sensitive actions
-  STEP_UP_ENABLED: z.enum(['true', 'false']).optional(),
-  STEP_UP_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(600),
 
   // Database
   DATABASE_URL: z.string().url(),
@@ -256,6 +274,28 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
     }
   }
 
+  if (isProduction && !env.WEB_APP_URL?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['WEB_APP_URL'],
+      message: 'WEB_APP_URL is required in production for transactional session links',
+    });
+  }
+
+  if (isProduction && env.WEB_APP_URL) {
+    const webUrl = env.WEB_APP_URL.toLowerCase();
+    const localhostPattern =
+      /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/;
+    if (localhostPattern.test(webUrl)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['WEB_APP_URL'],
+        message:
+          'WEB_APP_URL cannot use localhost, 127.0.0.1, or 0.0.0.0 in production',
+      });
+    }
+  }
+
   if (env.THROTTLE_STORE === 'redis') {
     // Prefer fail-fast in prod; ThrottleStoreService also enforces this at runtime.
     if (effectiveAppEnv === 'production' && !env.REDIS_URL?.trim()) {
@@ -309,6 +349,15 @@ export const envSchema = baseEnvSchema.superRefine((env, ctx) => {
   }
 
   if (isProduction) {
+    if (!env.DAILY_WEBHOOK_SECRET?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['DAILY_WEBHOOK_SECRET'],
+        message:
+          'DAILY_WEBHOOK_SECRET is required in production when Daily attendance webhooks are enabled',
+      });
+    }
+
     const publicUrls = [
       ['APP_URL', env.APP_URL],
       ['APP_BASE_URL', env.APP_BASE_URL],

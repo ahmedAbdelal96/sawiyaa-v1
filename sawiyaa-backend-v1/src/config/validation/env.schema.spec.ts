@@ -6,6 +6,7 @@ function buildValidEnv(overrides: Record<string, unknown> = {}) {
     NODE_ENV: 'development',
     APP_URL: 'http://localhost:6001',
     APP_BASE_URL: 'http://localhost:3000',
+    WEB_APP_URL: 'https://www.example.com',
     DATABASE_URL: 'postgresql://postgres:password@localhost:5432/fayed_db',
     JWT_ACCESS_SECRET: 'this_is_a_long_access_secret_123',
     JWT_REFRESH_SECRET: 'this_is_a_long_refresh_secret_123',
@@ -161,6 +162,7 @@ describe('env.schema payment validation', () => {
           BREVO_API_URL: 'https://api.brevo.com',
           DAILY_API_KEY: 'daily-key',
           DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          DAILY_WEBHOOK_SECRET: 'daily-webhook-secret',
           CORPORATE_CODE_PEPPER: 'x'.repeat(32),
         }),
       ),
@@ -180,10 +182,34 @@ describe('env.schema payment validation', () => {
           MAIL_FROM: 'noreply@example.com',
           DAILY_API_KEY: 'daily-key',
           DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          DAILY_WEBHOOK_SECRET: 'daily-webhook-secret',
           CORPORATE_CODE_PEPPER: 'x'.repeat(32),
         }),
       ),
     ).toThrow(/BREVO_API_KEY/);
+  });
+
+  it('requires the Daily webhook secret in production', () => {
+    expect(() =>
+      validate(
+        buildValidEnv({
+          APP_ENV: 'production',
+          NODE_ENV: 'production',
+          APP_URL: 'https://api.example.com',
+          APP_BASE_URL: 'https://www.example.com',
+          PAYMENT_SUCCESS_URL: 'https://www.example.com/payment/success',
+          PAYMENT_FAILED_URL: 'https://www.example.com/payment/failed',
+          PAYMENT_PENDING_URL: 'https://www.example.com/payment/pending',
+          MAIL_PROVIDER: 'brevo',
+          MAIL_FROM: 'noreply@example.com',
+          BREVO_API_KEY: 'brevo-key',
+          BREVO_API_URL: 'https://api.brevo.com',
+          DAILY_API_KEY: 'daily-key',
+          DAILY_API_BASE_URL: 'https://api.daily.co/v1',
+          CORPORATE_CODE_PEPPER: 'x'.repeat(32),
+        }),
+      ),
+    ).toThrow(/DAILY_WEBHOOK_SECRET/);
   });
 
   it('rejects unsafe production OTP controls and development URLs', () => {

@@ -24,7 +24,9 @@
     "SYSTEM": "System & Feature Flags",
     "NOTIFICATION": "Notifications & Channels",
     "BOOKING": "Booking & Session Plans",
-    "PAYMENT": "Payments & Gateway Options"
+    "PAYMENT": "Payments & Gateway Options",
+    "SESSION": "Session Scheduling",
+    "PAYOUT": "Practitioner Payouts & Shares"
   },
   "filters": {
     "label": "Settings Filters",

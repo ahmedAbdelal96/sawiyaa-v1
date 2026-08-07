@@ -12,7 +12,7 @@ import {
   listAdminPractitionerPayoutSummaries,
   recordAdminPractitionerManualPayout,
 } from "../api/admin-practitioner-payouts.api";
-import { listAdminPractitionerTransfers } from "../api/admin-practitioner-transfers.api";
+import { getAdminPractitionerTransferDetail, listAdminPractitionerTransfers } from "../api/admin-practitioner-transfers.api";
 import { adminPractitionerPayoutsQueryKeys } from "../constants/query-keys";
 import type {
   ListAdminPractitionerManualPayoutHistoryParams,
@@ -34,13 +34,26 @@ export function useAdminPractitionerWalletDetail(walletId?: string, open = true)
 
 export function useAdminPractitionerTransfers(
   params?: ListAdminPractitionerManualPayoutHistoryParams,
+  options?: { enabled?: boolean },
 ) {
   const role = useSessionRole();
 
   return useQuery({
     queryKey: ["admin", "practitioner-transfers", params ?? {}],
     queryFn: () => listAdminPractitionerTransfers(params),
-    enabled: isAdminRole(role),
+    enabled: (options?.enabled ?? true) && isAdminRole(role),
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+  });
+}
+
+export function useAdminPractitionerTransferDetail(transferId?: string) {
+  const role = useSessionRole();
+
+  return useQuery({
+    queryKey: ["admin", "practitioner-transfers", "detail", transferId ?? ""],
+    queryFn: () => getAdminPractitionerTransferDetail(transferId as string),
+    enabled: isAdminRole(role) && Boolean(transferId),
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });

@@ -21,7 +21,6 @@ export const arAuthCatalog = {
     adminLoggedIn: 'تم تسجيل دخول الإدارة بنجاح',
     adminTokensRefreshed: 'تم تجديد جلسة الإدارة بنجاح',
     adminLoggedOut: 'تم تسجيل خروج الإدارة بنجاح',
-    adminStepUpVerified: 'تم إجراء تحقق إضافي بنجاح',
     practitionerAuthLockoutCleared:
       'تم مسح الحظر المؤقت لحساب المعالج بنجاح',
   },
@@ -71,7 +70,6 @@ export const arAuthCatalog = {
     authenticationRequired: 'يتطلب هذا المسار تسجيل الدخول',
     csrfTokenRequired:
       'ÙŠØªØ·Ù„Ø¨ Ù‡Ø°Ø§ Ø§Ù„Ù…Ø³Ø§Ø± Ø±Ù…Ø² CSRF Ù„Ù„Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø¹Ø¨Ø± Ø§Ù„ÙƒÙˆÙƒÙŠØ²',
-    stepUpRequired: 'يتطلب هذا الإجراء تحققاً إضافياً',
     loginTemporarilyLocked:
       'تم قفل تسجيل الدخول مؤقتًا. حاول مرة أخرى لاحقًا.',
   },

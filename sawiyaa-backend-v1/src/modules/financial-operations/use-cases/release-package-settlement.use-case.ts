@@ -9,11 +9,16 @@ export class ReleasePackageSettlementUseCase {
     private readonly financialOperationsMapper: FinancialOperationsMapper,
   ) {}
 
-  async execute(input: { settlementId: string; releasedByAdminId: string }) {
+  async execute(input: {
+    settlementId: string;
+    releasedByAdminId: string;
+    actorRoles?: string[];
+  }) {
     const settlement =
       await this.packageSettlementService.releaseReadySettlement({
         settlementId: input.settlementId,
         releasedByAdminId: input.releasedByAdminId,
+        actorRoles: input.actorRoles,
       });
 
     return {

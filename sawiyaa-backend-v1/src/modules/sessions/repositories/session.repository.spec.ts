@@ -249,6 +249,7 @@ describe('SessionRepository', () => {
     expect(callArg.where.status.in).toEqual([
       SessionStatus.UPCOMING,
       SessionStatus.READY_TO_JOIN,
+      SessionStatus.IN_PROGRESS,
     ]);
     expect(callArg.where.OR).toEqual([
       { scheduledEndAt: { gt: scheduledEndAt } },

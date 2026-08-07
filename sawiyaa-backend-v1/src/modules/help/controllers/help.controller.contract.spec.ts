@@ -12,7 +12,7 @@ describe('Help controllers contract', () => {
       ROLES_KEY,
       AdminHelpController,
     ) as unknown as AppRole[] | undefined;
-    expect(classRoles).toEqual([AppRole.ADMIN]);
+    expect(classRoles).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN]);
   });
 
   it('enforces auth and role guards for admin help controller', () => {

@@ -20,7 +20,6 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -128,7 +127,6 @@ export class AdminPractitionerRecoveriesController {
 
   @Post(':id/mark-collected')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
-  @RequireStepUp('finance.practitioner-recoveries.collect')
   @ApiOperation({
     summary: 'Mark a practitioner recovery as manually collected',
     description:
@@ -177,7 +175,6 @@ export class AdminPractitionerRecoveriesController {
 
   @Post(':id/waive')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
-  @RequireStepUp('finance.practitioner-recoveries.waive')
   @ApiOperation({
     summary: 'Waive one practitioner recovery',
     description:

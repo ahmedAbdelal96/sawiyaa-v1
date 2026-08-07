@@ -566,6 +566,7 @@ export class PublicPractitionerReadRepository {
         publicSlug: slug.trim().toLowerCase(),
       },
       select: {
+        id: true,
         userId: true,
         publicSlug: true,
       },

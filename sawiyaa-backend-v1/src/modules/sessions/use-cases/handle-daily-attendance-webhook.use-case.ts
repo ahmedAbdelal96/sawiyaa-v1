@@ -8,8 +8,11 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { createHash } from 'crypto';
 import { AppLoggerService } from '@common/logging/app-logger.service';
+import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-attendance-webhook.service';
+import { NormalizeDailyAttendanceEvidenceService } from '../services/normalize-daily-attendance-evidence.service';
+import { MarkSessionInProgressFromAttendanceService } from '../services/mark-session-in-progress-from-attendance.service';
 import { DailyAttendanceWebhookParseResult } from '../types/session-attendance.types';
 import {
   SecurityAuditActorType,
@@ -27,7 +30,10 @@ type AttendanceWebhookHandledReason =
 export class HandleDailyAttendanceWebhookUseCase {
   constructor(
     private readonly parseDailyAttendanceWebhookService: ParseDailyAttendanceWebhookService,
+    private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
+    private readonly normalizeDailyAttendanceEvidenceService: NormalizeDailyAttendanceEvidenceService,
+    private readonly markSessionInProgressFromAttendanceService: MarkSessionInProgressFromAttendanceService,
     private readonly logger: AppLoggerService,
   ) {}
 
@@ -121,32 +127,101 @@ export class HandleDailyAttendanceWebhookUseCase {
       });
     }
 
-    const roleResolution = this.resolveParticipantRole({
-      participantUserId: parsed.participantUserId,
-      participantDisplayName: parsed.participantDisplayName,
-      session,
-    });
-
     try {
-      await this.sessionRepository.createAttendanceEvent({
-        sessionId: session.id,
-        provider: SessionProvider.DAILY,
-        attendanceEventType: parsed.attendanceEventType,
-        participantRole: roleResolution.role,
-        participantUserId: roleResolution.participantUserId,
-        providerEventType: parsed.providerEventType,
-        providerEventRef: parsed.providerEventRef,
-        providerRoomRef: parsed.providerRoomName ?? parsed.providerRoomUrl,
-        providerParticipantRef: parsed.providerParticipantRef,
-        occurredAt: parsed.occurredAt,
-        ingestionKey,
-        payloadJson: parsed.payload as Prisma.InputJsonValue,
-        ingestionMetaJson: {
-          source: parsed.source,
-          participantDisplayName: parsed.participantDisplayName,
-          roleResolutionBy: roleResolution.reason,
-        } as Prisma.InputJsonValue,
+      const result = await this.prisma.$transaction(async (tx) => {
+        const lockedSession = await this.sessionRepository.findByIdForUpdate(
+          session.id,
+          tx,
+        );
+        if (!lockedSession) {
+          return { duplicate: false, lifecycle: 'skipped' as const };
+        }
+
+        const duplicateByLockedKey =
+          await this.sessionRepository.findAttendanceEventByIngestionKey(
+            ingestionKey,
+            tx,
+          );
+        if (duplicateByLockedKey) {
+          return { duplicate: true, lifecycle: 'skipped' as const };
+        }
+
+        if (parsed.providerEventRef) {
+          const duplicateByLockedProviderRef =
+            await this.sessionRepository.findAttendanceEventByProviderEventRef(
+              {
+                provider: SessionProvider.DAILY,
+                providerEventRef: parsed.providerEventRef,
+              },
+              tx,
+            );
+          if (duplicateByLockedProviderRef) {
+            return { duplicate: true, lifecycle: 'skipped' as const };
+          }
+        }
+
+        const evidence = this.normalizeDailyAttendanceEvidenceService.normalize(
+          {
+            parsed,
+            session: lockedSession,
+            ingestionKey,
+            receivedAt: new Date(),
+          },
+        );
+
+        await this.sessionRepository.createAttendanceEvent(
+          {
+            sessionId: lockedSession.id,
+            provider: SessionProvider.DAILY,
+            attendanceEventType: parsed.attendanceEventType!,
+            participantRole: this.toParticipantRole(evidence.participantRole),
+            participantUserId: evidence.participantUserId,
+            providerEventType: parsed.providerEventType,
+            providerEventRef: parsed.providerEventRef,
+            providerRoomRef: parsed.providerRoomName ?? parsed.providerRoomUrl,
+            providerParticipantRef: parsed.providerParticipantRef,
+            occurredAt: parsed.occurredAt,
+            ingestionKey,
+            payloadJson: parsed.payload as Prisma.InputJsonValue,
+            ingestionMetaJson: {
+              source: parsed.source,
+              trustLevel: evidence.trustLevel,
+              lifecycleEligible: evidence.lifecycleEligible,
+              rejectionOrWarningReason:
+                evidence.rejectionOrWarningReason ?? null,
+              participantDisplayName: parsed.participantDisplayName,
+              roleResolutionBy:
+                evidence.participantRole === 'UNKNOWN'
+                  ? 'UNRESOLVED'
+                  : 'USER_ID_MATCH',
+            } as Prisma.InputJsonValue,
+          },
+          tx,
+        );
+
+        if (evidence.trustLevel === 'TRUSTED') {
+          await this.sessionRepository.markAttendanceReconciliationStale?.(
+            lockedSession.id,
+            parsed.occurredAt,
+            tx,
+          );
+        }
+
+        const lifecycle =
+          await this.markSessionInProgressFromAttendanceService.execute({
+            evidence,
+            tx,
+          });
+        return { duplicate: false, lifecycle };
       });
+
+      if (result.duplicate) {
+        return this.buildResponse({
+          handled: true,
+          reason: 'ATTENDANCE_EVENT_DUPLICATE',
+          sessionId: session.id,
+        });
+      }
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
         return this.buildResponse({
@@ -211,11 +286,12 @@ export class HandleDailyAttendanceWebhookUseCase {
     }
 
     // Deduplicate: check if this exact meeting event was already stored.
-    const existingEvent = await this.sessionRepository.findSessionEventByProviderEventRef({
-      sessionId: session.id,
-      eventType,
-      providerEventRef: parsed.providerEventRef,
-    });
+    const existingEvent =
+      await this.sessionRepository.findSessionEventByProviderEventRef({
+        sessionId: session.id,
+        eventType,
+        providerEventRef: parsed.providerEventRef,
+      });
 
     if (existingEvent) {
       return this.buildResponse({
@@ -250,78 +326,14 @@ export class HandleDailyAttendanceWebhookUseCase {
     });
   }
 
-  private resolveParticipantRole(input: {
-    participantUserId: string | null;
-    participantDisplayName: string | null;
-    session: Awaited<ReturnType<SessionRepository['findById']>>;
-  }): {
-    role: SessionAttendanceParticipantRole;
-    participantUserId: string | null;
-    reason: 'USER_ID_MATCH' | 'DISPLAY_NAME_MATCH' | 'UNRESOLVED';
-  } {
-    const session = input.session;
-
-    if (!session) {
-      return {
-        role: SessionAttendanceParticipantRole.UNKNOWN,
-        participantUserId: null,
-        reason: 'UNRESOLVED',
-      };
-    }
-
-    const patientUserId = session.patient.user.id;
-    const practitionerUserId = session.practitioner.user.id;
-
-    if (input.participantUserId) {
-      if (input.participantUserId === patientUserId) {
-        return {
-          role: SessionAttendanceParticipantRole.PATIENT,
-          participantUserId: input.participantUserId,
-          reason: 'USER_ID_MATCH',
-        };
-      }
-
-      if (input.participantUserId === practitionerUserId) {
-        return {
-          role: SessionAttendanceParticipantRole.PRACTITIONER,
-          participantUserId: input.participantUserId,
-          reason: 'USER_ID_MATCH',
-        };
-      }
-    }
-
-    const participantName = input.participantDisplayName?.trim();
-    const patientName = session.patient.user.displayName?.trim();
-    const practitionerName = session.practitioner.user.displayName?.trim();
-
-    if (
-      participantName &&
-      patientName &&
-      practitionerName &&
-      patientName !== practitionerName
-    ) {
-      if (participantName === patientName) {
-        return {
-          role: SessionAttendanceParticipantRole.PATIENT,
-          participantUserId: patientUserId,
-          reason: 'DISPLAY_NAME_MATCH',
-        };
-      }
-
-      if (participantName === practitionerName) {
-        return {
-          role: SessionAttendanceParticipantRole.PRACTITIONER,
-          participantUserId: practitionerUserId,
-          reason: 'DISPLAY_NAME_MATCH',
-        };
-      }
-    }
-
-    return {
-      role: SessionAttendanceParticipantRole.UNKNOWN,
-      participantUserId: null,
-      reason: 'UNRESOLVED',
-    };
+  private toParticipantRole(
+    role: 'PATIENT' | 'PRACTITIONER' | 'UNKNOWN',
+  ): SessionAttendanceParticipantRole {
+    return role === 'PATIENT'
+      ? SessionAttendanceParticipantRole.PATIENT
+      : role === 'PRACTITIONER'
+        ? SessionAttendanceParticipantRole.PRACTITIONER
+        : SessionAttendanceParticipantRole.UNKNOWN;
   }
 
   private buildIngestionKey(input: {

@@ -54,16 +54,23 @@ export type ConfigValidationStrategy =
 
 export type ConfigJsonSchemaId =
   | 'payment.provider.paymob.methodRegistry.v1'
-  | 'payment.routing.currencyRoutes.v1';
+  | 'payment.routing.currencyRoutes.v1'
+  | 'sessions.reminderOffsetsMinutes.v1';
 
 export type ConfigCatalogMetadata = {
   readonly slug: string;
   readonly displayName: string;
+  readonly displayNameAr?: string;
   readonly description: string;
+  readonly descriptionAr?: string;
   readonly configKind: ConfigKind;
 };
 
-export type ConfigSeedValue = string | number | boolean | readonly string[];
+export type ConfigSeedValue =
+  | string
+  | number
+  | boolean
+  | readonly (string | number | boolean)[];
 
 export type ConfigSeedPolicy =
   | { readonly createInitialValue: false }
@@ -105,6 +112,35 @@ type DefaultMetadata<T> =
       readonly defaultValue?: never;
     };
 
+export type ConfigUiMetadata = {
+  readonly control:
+    | 'toggle'
+    | 'integer'
+    | 'decimal'
+    | 'percentage'
+    | 'duration'
+    | 'select'
+    | 'multi-select'
+    | 'integer-list'
+    | 'string-list'
+    | 'time'
+    | 'time-range'
+    | 'text'
+    | 'textarea'
+    | 'secret'
+    | 'structured';
+  readonly sortable?: boolean;
+  readonly uniqueItems?: boolean;
+  readonly allowZero?: boolean;
+  readonly itemLabelKey?: string;
+  readonly optionLabelKeys?: Record<string, string>;
+  readonly helpTextKey?: string;
+  readonly exampleKey?: string;
+  readonly impactTextKey?: string;
+  readonly warningTextKey?: string;
+  readonly advancedOnly?: boolean;
+};
+
 type DefinitionBase<T extends ConfigValueType, V> = {
   readonly key: string;
   readonly category: ConfigCategory;
@@ -115,7 +151,7 @@ type DefinitionBase<T extends ConfigValueType, V> = {
   readonly allowedScopes: readonly ConfigScopeType[];
   readonly minimum?: T extends 'NUMBER' | 'INTEGER' ? number : never;
   readonly maximum?: T extends 'NUMBER' | 'INTEGER' ? number : never;
-  readonly allowedValues?: T extends 'STRING' ? readonly string[] : never;
+  readonly allowedValues?: T extends 'STRING' | 'STRING_ARRAY' ? readonly string[] : never;
   readonly unit?: ConfigUnit;
   readonly editable: boolean;
   readonly sensitive: boolean;
@@ -133,6 +169,7 @@ type DefinitionBase<T extends ConfigValueType, V> = {
   readonly adminVisible: boolean;
   readonly catalog: ConfigCatalogMetadata;
   readonly seed: ConfigSeedPolicy;
+  readonly uiMetadata?: ConfigUiMetadata;
 } & DefaultMetadata<V>;
 
 export type ConfigDefinitionFor<T extends ConfigValueType> = DefinitionBase<

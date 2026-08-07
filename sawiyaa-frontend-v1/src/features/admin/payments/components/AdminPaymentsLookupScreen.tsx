@@ -19,6 +19,7 @@ import { ADMIN_PAYMENT_STATUS_STYLES } from "../lib/admin-payment-status";
 import type { AdminIncomingPaymentItem, AdminIncomingPaymentsQuery, AdminPaymentRefundSummaryStatus } from "../types/admin-payments.types";
 import type { PaymentStatus } from "@/features/payments/types/payments.types";
 import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
+import { cleanPersonName } from "@/lib/person-name-cleaner";
 
 const paymentStatuses: Array<PaymentStatus | "ALL"> = ["ALL", "CREATED", "PENDING", "REQUIRES_ACTION", "AUTHORIZED", "CAPTURED", "FAILED", "CANCELLED", "EXPIRED", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED"];
 const refundStatuses: Array<AdminPaymentRefundSummaryStatus | "ALL"> = ["ALL", "NONE", "PENDING", "REFUNDED", "PARTIALLY_REFUNDED", "FAILED"];
@@ -77,14 +78,59 @@ export default function AdminPaymentsLookupScreen() {
     router.push(next.toString() ? `${pathname}?${next.toString()}` : pathname, { scroll: false });
   };
   const columns = useMemo<ColumnDef<AdminIncomingPaymentItem>[]>(() => [
-    { id: "customer", header: t("list.headers.customer"), accessor: row => row.customer ?? "", cell: row => <span className="font-medium">{row.customer ?? t("incomingPayments.unknownCustomer")}</span> },
+    {
+      id: "customer",
+      header: t("list.headers.customer"),
+      accessor: (row) => row.customer ?? "",
+      cell: (row) => {
+        const rawCustomer = row.customer;
+        const cleanName = cleanPersonName(rawCustomer);
+        const displayName = cleanName || (rawCustomer && !rawCustomer.includes("-") ? rawCustomer : (locale.startsWith("ar") ? "المريض" : "Patient"));
+        const rawId = rawCustomer && rawCustomer !== displayName ? rawCustomer : null;
+
+        return (
+          <div className="space-y-0.5">
+            <span className="font-bold text-xs text-text-primary dark:text-white">
+              {displayName}
+            </span>
+            {rawId && (
+              <span className="block font-mono text-[9px] text-text-muted/80 dark:text-slate-500" dir="ltr">
+                ID: {rawId}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
     { id: "reference", header: t("list.headers.paymentReference"), accessor: row => row.paymentReference ?? "", cell: row => <span className="font-mono text-xs">{row.paymentReference ?? "—"}</span> },
     { id: "provider", header: t("list.headers.provider"), accessor: row => row.provider, cell: row => ["STRIPE", "PAYMOB"].includes(row.provider) ? t(`providers.${row.provider}` as Parameters<typeof t>[0]) : providerFallbackLabel(row.provider) },
     { id: "amount", header: t("list.headers.amount"), accessor: row => Number(row.amount), cell: row => <span className="font-semibold tabular-nums">{formatTableAmount(row.amount, locale)}</span> },
     { id: "currency", header: t("list.headers.currency"), accessor: row => row.currency, cell: row => <span className="font-mono text-xs">{row.currency}</span> },
     { id: "paymentStatus", header: t("list.headers.paymentStatus"), accessor: row => row.paymentStatus, cell: row => <StatusBadge status={row.paymentStatus} kind="payment" t={t} /> },
     { id: "refundStatus", header: t("list.headers.refundStatus"), accessor: row => row.refundStatus, cell: row => <StatusBadge status={row.refundStatus} kind="refund" t={t} /> },
-    { id: "session", header: t("list.headers.session"), accessor: row => row.session?.sessionCode ?? "", cell: row => row.session ? <AdminSessionReference sessionId={row.session.id} sessionCode={row.session.sessionCode} href={`/admin/sessions/runtime-inspection?sessionId=${row.session.id}`} variant="table" copyable /> : <span className="text-text-muted">{t("relations.noRelatedSession")}</span>, hideOnMobile: true },
+    {
+      id: "session",
+      header: t("list.headers.session"),
+      accessor: (row) => row.session?.sessionCode ?? "",
+      cell: (row) =>
+        row.session ? (
+          <div className="inline-flex items-center gap-1 text-xs font-medium">
+            <span className="text-[10px] font-semibold text-text-muted">
+              {locale.startsWith("ar") ? "رمز الجلسة:" : "Code:"}
+            </span>
+            <AdminSessionReference
+              sessionId={row.session.id}
+              sessionCode={row.session.sessionCode}
+              href={`/admin/sessions/runtime-inspection?sessionId=${row.session.id}`}
+              variant="table"
+              copyable
+            />
+          </div>
+        ) : (
+          <span className="text-text-muted text-xs">{t("relations.noRelatedSession")}</span>
+        ),
+      hideOnMobile: true,
+    },
     { id: "settlement", header: t("list.headers.settlement"), accessor: row => row.settlement?.status ?? "", cell: row => row.settlement ? <Link className="text-primary underline-offset-2 hover:underline" href={`/admin/settlements/${row.settlement.id}` as never}>{settlementStatusLabel(row.settlement.status, t)}</Link> : <span className="text-text-muted">{row.paymentStatus === "CAPTURED" && row.session?.status === "COMPLETED" ? t("relations.awaitingSettlement") : t("relations.notCreatedYet")}</span>, hideOnMobile: true },
     { id: "paidAt", header: t("list.headers.paidAt"), accessor: row => row.paidAt ?? "", cell: row => formatDate(row.paidAt, locale), hideOnMobile: true },
     { id: "lastUpdated", header: t("list.headers.lastUpdated"), accessor: row => row.lastUpdated, cell: row => formatDate(row.lastUpdated, locale), hideOnMobile: true },

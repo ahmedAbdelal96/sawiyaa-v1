@@ -31,9 +31,9 @@ export default function AdminApplicationReviewHeader({
 }: Props) {
   const hasAvatar = Boolean(avatarUrl);
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-start gap-4">
+    <section className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-2xs dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             disabled={!hasAvatar}

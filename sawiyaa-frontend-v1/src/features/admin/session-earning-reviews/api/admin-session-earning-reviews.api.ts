@@ -4,9 +4,11 @@ import type { ApiPayload } from "@/lib/api/contracts";
 import type {
   AdminSessionEarningReviewDetailData,
   AdminSessionEarningReviewsListData,
+  CreditPractitionerWalletPayload,
   ListAdminSessionEarningReviewsParams,
   ModerateAdminSessionEarningReviewPayload,
   ModerateAdminSessionEarningReviewResult,
+  RecordFinancialDecisionPayload,
 } from "../types/admin-session-earning-reviews.types";
 
 export async function listAdminSessionEarningReviews(
@@ -23,6 +25,30 @@ export async function listAdminSessionEarningReviews(
 export async function getAdminSessionEarningReview(reviewId: string) {
   const response = await httpClient.get<ApiPayload<AdminSessionEarningReviewDetailData>>(
     `/admin/finance/session-earning-reviews/${reviewId}`,
+  );
+
+  return extractData(response.data);
+}
+
+export async function recordFinancialDecision(
+  reviewId: string,
+  payload: RecordFinancialDecisionPayload,
+) {
+  const response = await httpClient.post<ApiPayload<ModerateAdminSessionEarningReviewResult>>(
+    `/admin/finance/session-earning-reviews/${reviewId}/financial-decision`,
+    payload,
+  );
+
+  return extractData(response.data);
+}
+
+export async function creditPractitionerWallet(
+  reviewId: string,
+  payload: CreditPractitionerWalletPayload,
+) {
+  const response = await httpClient.post<ApiPayload<ModerateAdminSessionEarningReviewResult>>(
+    `/admin/finance/session-earning-reviews/${reviewId}/wallet-credit`,
+    payload,
   );
 
   return extractData(response.data);

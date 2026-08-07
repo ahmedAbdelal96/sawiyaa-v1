@@ -7,10 +7,8 @@ import InputField from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { FormModal } from "@/components/ui/modal";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { createAdminUser } from "../api/admin-users.api";
-import AdminUserStepUpDialog from "./AdminUserStepUpDialog";
-import { useAdminStepUp } from "../hooks/use-admin-step-up";
 import {
   ADMIN_USER_INTERNAL_ROLES,
   ADMIN_USER_STATUS_VALUES,
@@ -35,7 +33,6 @@ export default function AdminUserCreateModal({
 }: AdminUserCreateModalProps) {
   const t = useTranslations("admin-users");
   const { data: currentUser } = useCurrentUser(isOpen);
-  const stepUp = useAdminStepUp();
   const createMutation = useMutation({
     mutationFn: createAdminUser,
   });
@@ -66,7 +63,6 @@ export default function AdminUserCreateModal({
     setStatus("ACTIVE");
     setSelectedRoles(["ADMIN"]);
     setError(null);
-    stepUp.close();
   };
 
   const handleClose = () => {
@@ -131,10 +127,6 @@ export default function AdminUserCreateModal({
       } catch (cause) {
         const appError = toAppError(cause);
 
-        if (isStepUpRequiredError(appError)) {
-          throw appError;
-        }
-
         setError(appError.message || t("errors.generic"));
         return false;
       }
@@ -145,13 +137,6 @@ export default function AdminUserCreateModal({
       await runCreate();
     } catch (cause) {
       const appError = toAppError(cause);
-
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runCreate();
-        });
-        return;
-      }
 
       setError(appError.message || t("errors.generic"));
     }
@@ -268,7 +253,6 @@ export default function AdminUserCreateModal({
         </div>
       </FormModal>
 
-      <AdminUserStepUpDialog controller={stepUp} />
     </>
   );
 }

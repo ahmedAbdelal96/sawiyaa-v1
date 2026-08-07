@@ -17,7 +17,7 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { NotificationIntentWriterService } from '@modules/notifications/services/notification-intent-writer.service';
 import { ResolveSessionJoinReadinessService } from './resolve-session-join-readiness.service';
-import { SESSION_JOIN_LAG_MINUTES } from '../utils/session-join-policy.util';
+import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
@@ -48,6 +48,7 @@ export class SessionJoinAvailableNotificationSweeperService
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly notificationIntentWriterService: NotificationIntentWriterService,
+    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
     private readonly i18nService: I18nService,
     private readonly logger: AppLoggerService,
     @Inject(appConfig.KEY)
@@ -79,14 +80,9 @@ export class SessionJoinAvailableNotificationSweeperService
     this.isSweeping = true;
 
     try {
-      const windowStart = new Date(
-        now.getTime() - SESSION_JOIN_LAG_MINUTES * 60_000,
-      );
-
       const candidates =
         await this.sessionRepository.listJoinNotificationCandidates({
           now,
-          windowStart,
           take: SWEEP_BATCH_SIZE,
         });
 
@@ -136,6 +132,11 @@ export class SessionJoinAvailableNotificationSweeperService
       candidate,
       now,
     );
+    const policy =
+      this.sessionSchedulePolicyService.parseSnapshot(
+        currentSession.schedulePolicySnapshotJson,
+      ) ??
+      (await this.sessionSchedulePolicyService.resolve());
     const readiness = this.resolveSessionJoinReadinessService.resolve({
       status: currentSession.status,
       sessionMode: currentSession.sessionMode,
@@ -145,6 +146,8 @@ export class SessionJoinAvailableNotificationSweeperService
       providerRoomId: currentSession.providerRoomId,
       providerSessionRef: currentSession.providerSessionRef,
       videoRoomClosedAt: currentSession.videoRoomClosedAt,
+      joinEarlyMinutes: policy.join.joinEarlyMinutes,
+      joinAfterEndGraceMinutes: policy.join.joinAfterEndGraceMinutes,
       now,
     });
 
@@ -234,6 +237,7 @@ export class SessionJoinAvailableNotificationSweeperService
         routePath: `/${localePatient}/patient/sessions/${session.id}`,
         scheduledStartAt: session.scheduledStartAt,
         joinOpenAt: session.joinOpenAt,
+        recipientTimezone: candidate.patient.user.timezone,
         packageContext,
       }),
       this.createJoinAvailableEmailNotification({
@@ -245,6 +249,7 @@ export class SessionJoinAvailableNotificationSweeperService
         routePath: `/${localePractitioner}/practitioner/sessions/${session.id}`,
         scheduledStartAt: session.scheduledStartAt,
         joinOpenAt: session.joinOpenAt,
+        recipientTimezone: candidate.practitioner.user.timezone,
         packageContext,
       }),
     ]);
@@ -256,6 +261,11 @@ export class SessionJoinAvailableNotificationSweeperService
     candidate: SessionJoinNotificationCandidate,
     now: Date,
   ): Promise<SessionJoinNotificationCandidate> {
+    const policy =
+      this.sessionSchedulePolicyService.parseSnapshot(
+        candidate.schedulePolicySnapshotJson,
+      ) ??
+      (await this.sessionSchedulePolicyService.resolve());
     const readiness = this.resolveSessionJoinReadinessService.resolve({
       status: candidate.status,
       sessionMode: candidate.sessionMode,
@@ -265,6 +275,8 @@ export class SessionJoinAvailableNotificationSweeperService
       providerRoomId: candidate.providerRoomId,
       providerSessionRef: candidate.providerSessionRef,
       videoRoomClosedAt: candidate.videoRoomClosedAt,
+      joinEarlyMinutes: policy.join.joinEarlyMinutes,
+      joinAfterEndGraceMinutes: policy.join.joinAfterEndGraceMinutes,
       now,
     });
 
@@ -509,6 +521,7 @@ export class SessionJoinAvailableNotificationSweeperService
     routePath: string;
     scheduledStartAt: Date | null;
     joinOpenAt: Date | null;
+    recipientTimezone?: string | null;
     packageContext?: {
       packagePurchaseId: string;
       packagePlanCode: string;
@@ -532,8 +545,6 @@ export class SessionJoinAvailableNotificationSweeperService
       return;
     }
 
-    const appUrl = this.resolveAppUrl();
-    const sessionUrl = `${appUrl}${input.routePath}`;
     const subject = this.i18nService.t(
       'sessions.notifications.sessionJoinAvailableEmailSubject',
       input.locale,
@@ -546,7 +557,6 @@ export class SessionJoinAvailableNotificationSweeperService
       'sessions.notifications.sessionJoinAvailableEmailBody',
       input.locale,
       {
-        sessionUrl,
         packageContext: this.buildPackageContextText(
           input.locale,
           input.packageContext,
@@ -567,6 +577,14 @@ export class SessionJoinAvailableNotificationSweeperService
         recipientRole: input.recipientRole,
         targetRole: input.recipientRole,
         routePath: input.routePath,
+        actionType: 'JOIN_NOW',
+        action: {
+          type: 'INTERNAL_LINK',
+          href: input.routePath,
+          semanticType: 'OPEN_SESSION_JOIN',
+        },
+        startsAtUtc: input.scheduledStartAt?.toISOString() ?? null,
+        timezoneSnapshot: input.recipientTimezone ?? 'UTC',
         scheduledStartAt: input.scheduledStartAt?.toISOString() ?? null,
         joinOpenAt: input.joinOpenAt?.toISOString() ?? null,
         ...(input.packageContext
@@ -636,4 +654,5 @@ export class SessionJoinAvailableNotificationSweeperService
     const rawAppUrl = this.appCfg.url;
     return rawAppUrl.endsWith('/') ? rawAppUrl.slice(0, -1) : rawAppUrl;
   }
+
 }

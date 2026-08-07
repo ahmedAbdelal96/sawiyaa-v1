@@ -61,11 +61,17 @@ function validateValue(definition: ConfigDefinition): string[] {
   ) {
     errors.push(`${definition.key}: minimum cannot exceed maximum`);
   }
-  if (
-    definition.allowedValues &&
-    (typeof value !== 'string' || !definition.allowedValues.includes(value))
-  ) {
-    errors.push(`${definition.key}: default is not an allowed value`);
+  if (definition.allowedValues) {
+    if (definition.valueType === 'STRING_ARRAY') {
+      if (
+        !Array.isArray(value) ||
+        !value.every((item) => definition.allowedValues!.includes(item))
+      ) {
+        errors.push(`${definition.key}: default value contains unallowed values`);
+      }
+    } else if (typeof value !== 'string' || !definition.allowedValues.includes(value)) {
+      errors.push(`${definition.key}: default is not an allowed value`);
+    }
   }
   return errors;
 }
@@ -117,10 +123,11 @@ export function validateConfigRegistry(
     }
     if (
       definition.allowedValues &&
-      definition.validationStrategy !== 'STRING_ENUM'
+      definition.validationStrategy !== 'STRING_ENUM' &&
+      definition.valueType !== 'STRING_ARRAY'
     ) {
       errors.push(
-        `${definition.key}: allowedValues requires STRING_ENUM validation`,
+        `${definition.key}: allowedValues requires STRING_ENUM validation unless valueType is STRING_ARRAY`,
       );
     }
     if (
@@ -168,6 +175,17 @@ export function validateConfigRegistry(
       !keySet.has(definition.deprecatedReplacementKey)
     ) {
       errors.push(`${definition.key}: replacement key does not exist`);
+    }
+    if (
+      definition.status === 'ACTIVE' &&
+      definition.editable &&
+      definition.adminVisible
+    ) {
+      if (!definition.uiMetadata || !definition.uiMetadata.control) {
+        errors.push(
+          `${definition.key}: active editable admin-visible settings must define uiMetadata.control`,
+        );
+      }
     }
     errors.push(...validateValue(definition));
   }

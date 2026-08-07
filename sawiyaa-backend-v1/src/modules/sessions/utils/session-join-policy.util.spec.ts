@@ -42,6 +42,8 @@ describe('session-join-policy util', () => {
       provider: SessionProvider.DAILY,
       providerRoomId: 'room-1',
       providerSessionRef: 'room-ref-1',
+      joinEarlyMinutes: 15,
+      joinAfterEndGraceMinutes: 10,
       now: new Date('2026-08-02T11:58:30.000Z'),
     });
 
@@ -220,11 +222,11 @@ describe('session-join-policy util', () => {
           SessionStatus.READY_TO_JOIN,
         ],
       },
-      scheduledStartAt: {
+      joinOpenAt: {
         not: null,
-        lte: new Date('2026-08-02T12:00:30.000Z'),
+        lte: new Date('2026-08-02T11:58:30.000Z'),
       },
-      scheduledEndAt: {
+      joinCloseAt: {
         not: null,
         gte: new Date('2026-08-02T11:58:30.000Z'),
       },
@@ -281,9 +283,9 @@ describe('session-join-policy util', () => {
               SessionStatus.READY_TO_JOIN,
             ],
           },
-          scheduledStartAt: {
+          joinOpenAt: {
             not: null,
-            gt: new Date('2026-08-02T12:00:30.000Z'),
+            gt: new Date('2026-08-02T11:58:30.000Z'),
           },
         }),
       ]),
@@ -353,14 +355,16 @@ describe('session-join-policy util', () => {
       provider: SessionProvider.DAILY,
       providerRoomId: 'room-1',
       providerSessionRef: 'room-ref-1',
+      joinEarlyMinutes: 15,
+      joinAfterEndGraceMinutes: 10,
       now: new Date('2026-08-02T11:58:30.000Z'),
     });
 
     expect(joinAvailability).toEqual({
       canJoin: true,
       blockedReason: null,
-      availableAt: '2026-08-02T11:58:00.000Z',
-      expiresAt: '2026-08-02T12:30:00.000Z',
+      availableAt: '2026-08-02T11:45:00.000Z',
+      expiresAt: '2026-08-02T12:40:00.000Z',
     });
   });
 
@@ -384,7 +388,7 @@ describe('session-join-policy util', () => {
 
   it('computes reconnect grace close time from scheduled end', () => {
     expect(
-      computeSessionPostEndReconnectGraceClosesAt(scheduledEndAt)?.toISOString(),
+      computeSessionPostEndReconnectGraceClosesAt(scheduledEndAt, 10)?.toISOString(),
     ).toBe('2026-08-02T12:40:00.000Z');
   });
 });

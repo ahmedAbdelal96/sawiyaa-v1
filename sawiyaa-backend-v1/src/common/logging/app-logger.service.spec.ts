@@ -79,7 +79,7 @@ describe('AppLoggerService', () => {
       'Boom',
       expect.objectContaining({
         context: 'Process',
-        targets: ['app', 'exceptions'],
+        targets: ['exceptions'],
       }),
     );
   });

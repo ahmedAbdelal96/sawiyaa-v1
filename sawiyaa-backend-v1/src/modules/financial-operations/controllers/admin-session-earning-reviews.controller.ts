@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -20,7 +21,6 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
@@ -37,6 +37,8 @@ import {
   ModerateSessionEarningReviewDto,
   SessionEarningReviewModerationAction,
 } from '../dto/moderate-session-earning-review.dto';
+import { RecordFinancialDecisionDto } from '../dto/record-financial-decision.dto';
+import { CreditPractitionerWalletDto } from '../dto/credit-practitioner-wallet.dto';
 import {
   AdminSessionEarningReviewDetailSuccessResponseDto,
   AdminSessionEarningReviewListSuccessResponseDto,
@@ -95,15 +97,80 @@ export class AdminSessionEarningReviewsController {
     return this.getAdminSessionEarningReviewUseCase.execute({ reviewId });
   }
 
-  @Patch(':reviewId/moderation')
-  @RequireStepUp('finance.session-earning-reviews.moderation')
-  // Legacy review route delegates to the same settlement-credit path; require
-  // the dedicated settlement approval permission so it cannot bypass Phase 2A.
+  @Post(':reviewId/financial-decision')
+  @Permissions(PermissionKey.FINANCIAL_SETTLEMENT_REVIEW)
+  @ApiOperation({
+    summary: 'Stage A: Record accountant financial decision and adjustment lines',
+    description:
+      'Approves or overrides base source amount and records relational adjustment lines. Produces ZERO wallet credit and ZERO ledger entries.',
+  })
+  @ApiResponse({ status: 200, description: 'Financial decision recorded' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'FINANCIAL_SETTLEMENT_REVIEW permission required',
+  })
+  async approveFinancialDecision(
+    @Param('reviewId', new ParseUUIDPipe()) reviewId: string,
+    @Body() body: RecordFinancialDecisionDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    const result = await this.sessionEarningReviewService.approveFinancialDecision({
+      reviewId,
+      reviewerUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      accountantApprovedSourceAmount: body.accountantApprovedSourceAmount,
+      overrideReason: body.overrideReason,
+      adjustments: body.adjustments,
+      internalReason: body.internalReason,
+      practitionerFacingNote: body.practitionerFacingNote,
+      idempotencyKey: body.idempotencyKey,
+    });
+
+    return {
+      success: true as const,
+      data: result,
+    };
+  }
+
+  @Post(':reviewId/wallet-credit')
   @Permissions(PermissionKey.FINANCIAL_SETTLEMENT_APPROVE)
   @ApiOperation({
-    summary: 'Apply moderation to one session earning review',
+    summary: 'Stage B: Explicitly credit practitioner internal wallet',
     description:
-      'Approves, edits, rejects, or excludes one session earning review and posts ledger entries only on approval.',
+      'Credits practitioner active wallet in wallet currency with FX conversion and posts PRACTITIONER_EARNING credit ledger entry. Produces ZERO external payout.',
+  })
+  @ApiResponse({ status: 200, description: 'Practitioner wallet credited' })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'FINANCIAL_SETTLEMENT_APPROVE permission required',
+  })
+  async creditWallet(
+    @Param('reviewId', new ParseUUIDPipe()) reviewId: string,
+    @Body() body: CreditPractitionerWalletDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    const result = await this.sessionEarningReviewService.creditPractitionerWallet({
+      reviewId,
+      approvedByUserId: currentUser.id,
+      actorRoles: currentUser.roles,
+      approvedWalletCreditAmount: body.approvedWalletCreditAmount,
+      walletCreditDifferenceAmount: body.walletCreditDifferenceAmount,
+      walletCreditOverrideReason: body.walletCreditOverrideReason,
+      idempotencyKey: body.idempotencyKey,
+    });
+
+    return {
+      success: true as const,
+      data: result,
+    };
+  }
+
+  @Patch(':reviewId/moderation')
+  @Permissions(PermissionKey.FINANCIAL_SETTLEMENT_APPROVE)
+  @ApiOperation({
+    summary: 'Legacy moderation endpoint (Stage A + Stage B)',
+    description:
+      'Approves, edits, rejects, or excludes one session earning review.',
   })
   @ApiResponse({ status: 200, description: 'Moderation result' })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
@@ -140,17 +207,31 @@ export class AdminSessionEarningReviewsController {
       }
     }
 
-    const result = await this.sessionEarningReviewService.approveReview({
-      reviewId,
-      reviewerUserId: currentUser.id,
-      action: body.action,
-      finalPractitionerAmount: body.finalPractitionerAmount ?? null,
-      finalPlatformAmount: body.finalPlatformAmount ?? null,
-      finalCurrencyCode: body.finalCurrencyCode ?? null,
-      exchangeRate: body.exchangeRate ?? null,
-      internalReason: body.internalReason ?? null,
-      practitionerFacingNote: body.practitionerFacingNote ?? null,
-    });
+    const result = body.action === SessionEarningReviewModerationAction.APPROVE_AS_IS || body.action === SessionEarningReviewModerationAction.EDIT_AND_APPROVE
+      ? await this.sessionEarningReviewService.approveFinancialDecision({
+          reviewId,
+          reviewerUserId: currentUser.id,
+          accountantApprovedSourceAmount: body.finalPractitionerAmount ?? null,
+          overrideReason: body.internalReason ?? null,
+          internalReason: body.internalReason ?? null,
+          practitionerFacingNote: body.practitionerFacingNote ?? null,
+          idempotencyKey: body.idempotencyKey,
+        })
+      : await this.sessionEarningReviewService.approveReview({
+          reviewId,
+          reviewerUserId: currentUser.id,
+          action: body.action,
+          finalPractitionerAmount: body.finalPractitionerAmount ?? null,
+          finalPlatformAmount: body.finalPlatformAmount ?? null,
+          finalCurrencyCode: body.finalCurrencyCode ?? null,
+          exchangeRate: body.exchangeRate ?? null,
+          accountingAdjustmentType: body.accountingAdjustmentType ?? null,
+          accountingNotes: body.accountingNotes ?? null,
+          internalReason: body.internalReason ?? null,
+          practitionerFacingNote: body.practitionerFacingNote ?? null,
+          postFinancialEffects: false,
+          idempotencyKey: body.idempotencyKey,
+        });
 
     this.securityAuditService.logAsync({
       action: 'finance.session-earning-review.moderation',

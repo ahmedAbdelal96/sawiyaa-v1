@@ -46,9 +46,6 @@ import AdvancedFiltersToggleButton from "@/components/ui/filters/AdvancedFilters
 import { useDebouncedValue } from "@/hooks/use-debounce";
 import { FormModal } from "@/components/ui/modal";
 import Label from "@/components/form/Label";
-import { isStepUpRequiredError } from "@/lib/api/errors";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
-import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
 import InputField from "@/components/form/input/InputField";
 import Select from "@/components/form/Select";
 import Avatar from "@/components/ui/avatar/Avatar";
@@ -91,7 +88,6 @@ export default function AdminPractitionersDirectory() {
   const removeAvatarMutation = useRemoveAdminPractitionerAvatar();
   const publicationQuery = useAdminPractitionerPublication(publicationPractitioner?.id ?? null);
   const publicationMutation = useUpdateAdminPractitionerPublication();
-  const stepUp = useAdminStepUp();
 
   const { data, isLoading, isError, refetch } = useAdminPractitioners({
     search: debouncedSearch.trim() || undefined,
@@ -408,16 +404,27 @@ export default function AdminPractitionersDirectory() {
           </>
         }
         filters={
-          <div className="space-y-4">
-            {/* Type tabs */}
-            <AdminTableTabs
-              value={activeTypeTab}
-              onChange={(nextValue) => {
-                setPractitionerKind(nextValue);
-                setPage(1);
-              }}
-              tabs={practitionerTabs}
-            />
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <AdminTableTabs
+                value={activeTypeTab}
+                onChange={(nextValue) => {
+                  setPractitionerKind(nextValue);
+                  setPage(1);
+                }}
+                tabs={practitionerTabs}
+              />
+              <div className="flex items-center gap-1.5">
+                <Button variant="outline" className="h-7 text-xs px-2.5 py-1" onClick={resetFilters}>
+                  {tListing("filter.clearAll")}
+                </Button>
+                <AdvancedFiltersToggleButton
+                  expanded={showAdvancedFilters}
+                  hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
+                  onToggle={() => setShowAdvancedFilters((prev) => !prev)}
+                />
+              </div>
+            </div>
 
             {/* Main toolbar: search + quick filters */}
             <AdminTableToolbar
@@ -430,11 +437,6 @@ export default function AdminPractitionersDirectory() {
                 placeholder: tListing("search.placeholder"),
                 ariaLabel: tListing("search.button"),
               }}
-              actions={
-                <Button variant="outline" className="h-9 text-sm" onClick={resetFilters}>
-                  {tListing("filter.clearAll")}
-                </Button>
-              }
               filters={
                 <>
                   <label
@@ -507,15 +509,6 @@ export default function AdminPractitionersDirectory() {
                 </>
               }
             />
-
-            {/* Advanced filters toggle */}
-            <div className="flex items-end justify-between gap-3">
-              <AdvancedFiltersToggleButton
-                expanded={showAdvancedFilters}
-                hasHiddenActive={!showAdvancedFilters && hasAdvancedFilters}
-                onToggle={() => setShowAdvancedFilters((prev) => !prev)}
-              />
-            </div>
 
             {showAdvancedFilters ? (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -758,11 +751,7 @@ export default function AdminPractitionersDirectory() {
           };
           try {
             await performPublication();
-          } catch (error) {
-            if (isStepUpRequiredError(error)) {
-              stepUp.requestStepUp(performPublication);
-              return;
-            }
+          } catch {
             // The mutation error is rendered below without hiding backend blockers.
           }
         }}
@@ -795,7 +784,6 @@ export default function AdminPractitionersDirectory() {
           </div>
         ) : publicationQuery.isError ? <p className="text-sm text-status-danger" role="alert">{tAdmin("practitionersDirectory.publication.error")}</p> : <p className="text-sm text-text-muted">{tAdmin("applications.loading")}</p>}
       </FormModal>
-      <AdminUserStepUpDialog controller={stepUp} />
     </>
   );
 }

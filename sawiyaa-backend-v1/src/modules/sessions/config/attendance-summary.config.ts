@@ -51,3 +51,20 @@ export const ATTENDANCE_SUMMARY_THRESHOLDS = {
 } as const;
 
 export type AttendanceSummaryThresholds = typeof ATTENDANCE_SUMMARY_THRESHOLDS;
+
+/**
+ * Phase 2 policy snapshot used by the outcome evaluator. Attendance thresholds
+ * remain owned by this canonical code policy; finalization grace preserves the
+ * existing sweeper ENV contract and is resolved by the read-only orchestrator.
+ */
+export const DEFAULT_SESSION_FINALIZATION_GRACE_MINUTES = 15;
+
+export function resolveSessionFinalizationGraceMinutes(): number {
+  const configured = Number.parseInt(
+    process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_GRACE_MINUTES ?? '',
+    10,
+  );
+  return Number.isInteger(configured) && configured > 0
+    ? configured
+    : DEFAULT_SESSION_FINALIZATION_GRACE_MINUTES;
+}

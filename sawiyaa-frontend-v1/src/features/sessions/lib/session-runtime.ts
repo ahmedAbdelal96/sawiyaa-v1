@@ -14,11 +14,7 @@ export const SESSION_RUNTIME_STATUSES: SessionStatus[] = [
   "IN_PROGRESS",
 ];
 
-// Authoritative values live in the backend (session-join-policy.util.ts).
-// These frontend constants are display hints only — used only when the backend
-// join contract (availableAt / expiresAt) is not yet available.
-export const SESSION_RUNTIME_PREPARE_LEAD_MINUTES = 24 * 60;
-
+// Session timing and authorization are owned by the backend policy snapshot.
 export function hasSessionRuntimeAccess(status: SessionStatus): boolean {
   return SESSION_RUNTIME_STATUSES.includes(status);
 }
@@ -54,8 +50,8 @@ export function getRuntimeBlockedReasonKey(
  * or null if the contract has not been fetched yet.
  *
  * The backend join contract (SessionJoinItem) carries `availableAt` and
- * `expiresAt` which reflect the single source of truth join policy
- * (2 minutes before scheduled start, no lag after end).
+ * `expiresAt`, which reflect the persisted policy snapshot for this session
+ * schedule revision.
  */
 function getBackendWindowTimes(joinResult: SessionJoinItem | null) {
   if (!joinResult?.availableAt || !joinResult?.expiresAt) {
@@ -67,13 +63,6 @@ function getBackendWindowTimes(joinResult: SessionJoinItem | null) {
   };
 }
 
-/**
- * Fallback window computation using local session time bounds.
- * Used only when the backend join contract is not yet available.
- * The values here (15 min lead, 120 min lag) are intentionally more
- * permissive than the backend — they are display hints only, NOT
- * used for any security decisions.
- */
 type RuntimeSource =
   | SessionJoinItem
   | SessionRuntimeItem
@@ -164,8 +153,8 @@ export function canLaunchProviderRuntime(source: RuntimeSource): boolean {
  * Determines whether the session runtime preparation UI should be shown.
  *
  * Uses the authoritative backend join contract window (availableAt/expiresAt)
- * when `joinResult` is provided. Falls back to a local display hint when the
- * contract has not been fetched yet — this fallback is NOT used for security.
+ * when `joinResult` is provided. Before that contract is fetched, the backend
+ * action flag controls whether the preparation UI may be shown.
  */
 export function canPrepareSessionRuntime(
   session: SessionItem,
@@ -180,26 +169,15 @@ export function canPrepareSessionRuntime(
   const windows = getBackendWindowTimes(joinResult);
   if (!windows) return false;
 
-  // prepareOpensAt is derived from availableAt minus the lead buffer.
-  // Use 2-minute lead (backend's authoritative value) when available.
-  const backendLeadMinutes = 2;
-  const prepareOpensAt = joinResult?.availableAt
-    ? new Date(new Date(joinResult.availableAt).getTime() - backendLeadMinutes * 60_000)
-    : null;
-
-  if (prepareOpensAt) {
-    return now >= prepareOpensAt && now <= windows.joinClosesAt;
-  }
-
-  return now >= new Date(windows.joinOpensAt.getTime() - 2 * 60_000) && now <= windows.joinClosesAt;
+  return Boolean(session.actions?.canPrepareRoom) && now <= windows.joinClosesAt;
 }
 
 /**
  * Determines whether the join window is currently open.
  *
  * Uses the authoritative backend join contract window (availableAt/expiresAt)
- * when `joinResult` is provided. Falls back to a local display hint when the
- * contract has not been fetched yet — this fallback is NOT used for security.
+ * when `joinResult` is provided. Before that contract is fetched, the backend
+ * action flag controls whether the join UI may be shown.
  */
 export function isJoinWindowOpen(
   session: SessionItem,

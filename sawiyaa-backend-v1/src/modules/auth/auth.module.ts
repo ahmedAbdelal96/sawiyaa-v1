@@ -29,7 +29,6 @@ import { PasswordResetTokenService } from './services/password-reset-token.servi
 import { AuthLockoutService } from './services/auth-lockout.service';
 import { PractitionerOtpChannelService } from './services/practitioner-otp-channel.service';
 import { PatientOtpChannelService } from './services/patient-otp-channel.service';
-import { StepUpService } from './services/step-up.service';
 import { GetCurrentAuthUserUseCase } from './use-cases/get-current-auth-user.use-case';
 import { HashPasswordUseCase } from './use-cases/hash-password.use-case';
 import { IssueAuthTokensUseCase } from './use-cases/issue-auth-tokens.use-case';
@@ -59,7 +58,6 @@ import { ConfirmPatientPasswordResetUseCase } from './use-cases/confirm-patient-
 import { VerifyPractitionerPasswordResetOtpUseCase } from './use-cases/verify-practitioner-password-reset-otp.use-case';
 import { ConfirmPractitionerPasswordResetUseCase } from './use-cases/confirm-practitioner-password-reset.use-case';
 import { RevokeAuthSessionUseCase } from './use-cases/revoke-auth-session.use-case';
-import { VerifyAdminStepUpUseCase } from './use-cases/verify-admin-step-up.use-case';
 import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practitioner-login-otp.use-case';
 import { PresenceModule } from '../presence/presence.module';
@@ -96,7 +94,6 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     AuthLockoutService,
     PractitionerOtpChannelService,
     PatientOtpChannelService,
-    StepUpService,
     AuthRequestContextService,
     AuthRequestContextMiddleware,
     HashPasswordUseCase,
@@ -131,7 +128,6 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     LoginAdminUseCase,
     RefreshAdminTokenUseCase,
     LogoutAdminUseCase,
-    VerifyAdminStepUpUseCase,
     PractitionerLoginOtpConfigurationWarningService,
     PhoneNumberValidationService,
     PractitionerSpecialtyIntegrityService,
@@ -142,7 +138,6 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     GetCurrentAuthUserUseCase,
     AuthLockoutService,
     AuthRequestContextService,
-    StepUpService,
     UserPhoneRepository,
     AuthIdentityRepository,
     VerifyPasswordUseCase,

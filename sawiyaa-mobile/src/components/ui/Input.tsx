@@ -98,6 +98,7 @@ export const Input = ({
               color: isDark ? '#F5FBF9' : '#053F38',
               textAlign: resolvedPlaceholderDir,
               writingDirection,
+              backgroundColor: 'transparent',
             },
             style,
           ]}
@@ -135,7 +136,7 @@ export const Input = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 14,
+    marginBottom: 16,
     width: '100%',
     minWidth: 0,
   },
@@ -146,30 +147,32 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderWidth: 1.5,
-    borderRadius: 14,
-    minHeight: 48,
+    borderRadius: 16,
+    minHeight: 50,
     alignItems: 'center',
     overflow: 'hidden',
   },
   focusedShadow: {
-    shadowColor: 'rgba(5, 63, 56, 0.15)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowColor: 'rgba(5, 63, 56, 0.18)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 2,
   },
   input: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 50,
     paddingHorizontal: 14,
     fontSize: 14.5,
     paddingVertical: 10,
+    backgroundColor: 'transparent',
   },
   elementSlot: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 48,
+    minHeight: 50,
+    backgroundColor: 'transparent',
   },
   errorText: {
     fontSize: 12,

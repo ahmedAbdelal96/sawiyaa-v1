@@ -44,7 +44,7 @@ import { RefundPolicyService } from '../services/refund-policy.service';
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Permissions(PermissionKey.REFUNDS_APPROVE)
 @Controller('admin/refund-policies')
 export class AdminRefundPoliciesController {

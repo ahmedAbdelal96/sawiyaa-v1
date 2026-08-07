@@ -23,4 +23,15 @@ export type LogRecord = Record<string, unknown> & {
   env?: string;
   appName?: string;
   environment?: string;
+  loggingTarget?: LogTarget;
+  statusCode?: number;
+  outcome?: string;
+  failureClass?: string;
+  statusFamily?: string;
+  isSlow?: boolean;
+  module?: string;
+  operation?: string;
+  correlationId?: string;
+  version?: string;
+  deploymentId?: string;
 };

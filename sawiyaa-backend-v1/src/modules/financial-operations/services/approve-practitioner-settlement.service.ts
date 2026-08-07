@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   LedgerDirection,
   LedgerEntryType,
@@ -30,7 +30,7 @@ export class ApprovePractitionerSettlementService {
     sessionEarningReviewId?: string | null;
     originalAmount: Prisma.Decimal;
     originalCurrencyCode: string;
-    walletCurrencyCode?: string;
+    walletCurrencyCode: string;
     exchangeRate?: Prisma.Decimal;
     convertedAmount: Prisma.Decimal;
     finalWalletCredit: Prisma.Decimal;
@@ -43,6 +43,14 @@ export class ApprovePractitionerSettlementService {
     description: string;
     metadata?: Record<string, unknown>;
   }) {
+    const originalCurrencyCode = input.originalCurrencyCode.trim().toUpperCase();
+    const requestedWalletCurrencyCode = input.walletCurrencyCode.trim().toUpperCase();
+    if (!originalCurrencyCode || originalCurrencyCode.length !== 3 || !requestedWalletCurrencyCode || requestedWalletCurrencyCode.length !== 3) {
+      throw new BadRequestException('Explicit source and Wallet currencies are required');
+    }
+    if (input.originalAmount.lt(0) || input.convertedAmount.lt(0) || input.finalWalletCredit.lt(0)) {
+      throw new BadRequestException('Financial amounts cannot be negative');
+    }
     if (input.finalWalletCredit.lte(0)) {
       throw new BadRequestException({
         messageKey: 'financialOperations.errors.invalidSettlementAmount',
@@ -76,7 +84,7 @@ export class ApprovePractitionerSettlementService {
       select: { id: true, currencyCode: true },
     });
     if (!existingWallet) {
-      throw new BadRequestException({
+      throw new NotFoundException({
         messageKey: 'financialOperations.errors.practitionerWalletRequired',
         error: 'FINANCIAL_OPERATIONS_PRACTITIONER_WALLET_REQUIRED',
       });
@@ -84,7 +92,7 @@ export class ApprovePractitionerSettlementService {
     const currencyCode = assertWalletCurrencyMatches({
       operation: 'WALLET_CREDIT',
       walletCurrency: existingWallet.currencyCode,
-      attemptedCurrency: input.walletCurrencyCode ?? existingWallet.currencyCode,
+      attemptedCurrency: requestedWalletCurrencyCode,
     });
     assertWalletCurrencyMatches({
       operation: 'WALLET_CREDIT',
@@ -92,7 +100,7 @@ export class ApprovePractitionerSettlementService {
       attemptedCurrency: currencyCode,
     });
     if (
-      input.originalCurrencyCode.trim().toUpperCase() !== currencyCode &&
+      originalCurrencyCode !== currencyCode &&
       !input.exchangeRate
     ) {
       throw new BadRequestException({
@@ -162,9 +170,11 @@ export class ApprovePractitionerSettlementService {
             finalWalletCredit: input.finalWalletCredit,
             currencyCode,
             originalAmount: input.originalAmount,
-            originalCurrencyCode: input.originalCurrencyCode,
+            originalCurrencyCode,
             walletCurrencyCode: currencyCode,
             exchangeRate: input.exchangeRate ?? null,
+            exchangeRateSource: input.exchangeRate ? 'ACCOUNTANT_APPROVAL' : null,
+            exchangeRateAt: input.exchangeRate ? now : null,
             convertedAmount: input.convertedAmount,
             walletCreditDifferenceAmount: input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),
             walletCreditOverrideReason: input.walletCreditOverrideReason ?? null,
@@ -183,15 +193,18 @@ export class ApprovePractitionerSettlementService {
       create: {
         batchId: batch.id,
         practitionerId: input.practitionerId,
+        sourceReviewId: input.sessionEarningReviewId ?? null,
         walletId: wallet.id,
         amountGross: input.convertedAmount,
         amountAdjustments: 0,
         amountNet: input.finalWalletCredit,
         currencyCode,
         originalAmount: input.originalAmount,
-        originalCurrencyCode: input.originalCurrencyCode,
+        originalCurrencyCode,
         walletCurrencyCode: currencyCode,
         exchangeRate: input.exchangeRate ?? null,
+        exchangeRateSource: input.exchangeRate ? 'ACCOUNTANT_APPROVAL' : null,
+        exchangeRateAt: input.exchangeRate ? now : null,
         convertedAmount: input.convertedAmount,
         finalWalletCredit: input.finalWalletCredit,
         walletCreditDifferenceAmount: input.walletCreditDifferenceAmount ?? new Prisma.Decimal(0),

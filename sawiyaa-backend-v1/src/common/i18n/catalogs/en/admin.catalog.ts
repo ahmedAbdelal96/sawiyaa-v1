@@ -67,6 +67,9 @@ export const enAdminCatalog = {
       invalidSpecialtiesForCategory:
         'Selected specialties do not belong to the selected primary category',
       practitionerNotFound: 'Practitioner profile was not found',
+      credentialNotFound: 'The requested credential was not found',
+      credentialFileNotFound: 'The credential file was not found or is no longer available',
+      avatarNotFound: 'The practitioner avatar was not found or is no longer available',
     },
     notifications: {
       approvedTitle: 'Your practitioner application was approved',

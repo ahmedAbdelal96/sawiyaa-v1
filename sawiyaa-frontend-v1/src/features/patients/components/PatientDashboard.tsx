@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { ArrowRight, HeartHandshake, LifeBuoy, Sparkles } from "lucide-react";
 import { useCurrentUser } from "@/features/users";
 import { Skeleton } from "@/components/shared/LoadingStates";
+import { UpcomingSessionCard } from "@/features/sessions/components/UpcomingSessionCard";
 
 export default function PatientDashboard() {
   const t = useTranslations("patient-dashboard");
@@ -71,6 +72,8 @@ export default function PatientDashboard() {
           {t("page.subtitle")}
         </p>
       </section>
+
+      <UpcomingSessionCard />
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <QuickLinkCard

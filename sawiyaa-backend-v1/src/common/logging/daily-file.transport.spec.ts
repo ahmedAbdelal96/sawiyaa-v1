@@ -1,4 +1,4 @@
-import { readFile, rm } from 'node:fs/promises';
+import { readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { DailyFileTransport } from './daily-file.transport';
@@ -54,7 +54,7 @@ describe('DailyFileTransport', () => {
       'http.log',
     );
     const contents = await waitForFile(filePath);
-    const parsed = JSON.parse(contents.trim());
+    const parsed = JSON.parse(contents.trim()) as unknown;
 
     expect(parsed).toEqual(
       expect.objectContaining({
@@ -97,7 +97,7 @@ describe('DailyFileTransport', () => {
       'error.log',
     );
     const contents = await waitForFile(filePath);
-    const parsed = JSON.parse(contents.trim());
+    const parsed = JSON.parse(contents.trim()) as unknown;
 
     expect(parsed).toEqual(
       expect.objectContaining({
@@ -139,7 +139,7 @@ describe('DailyFileTransport', () => {
       'exceptions.log',
     );
     const contents = await waitForFile(filePath);
-    const parsed = JSON.parse(contents.trim());
+    const parsed = JSON.parse(contents.trim()) as unknown;
 
     expect(parsed).toEqual(
       expect.objectContaining({
@@ -172,5 +172,110 @@ describe('DailyFileTransport', () => {
     const expectedDir = path.join(baseDir, formatLocalDateFolder(new Date()));
     const filePath = path.join(expectedDir, 'slow-requests.log');
     await expect(readFile(filePath, 'utf8')).rejects.toThrow();
+  });
+
+  it('rotates a dated file when the configured byte limit is reached', async () => {
+    const transport = new DailyFileTransport({
+      baseDir,
+      fileName: 'app.log',
+      target: 'app',
+      retentionDays: 30,
+      maxFileSizeBytes: 1,
+    } as never);
+    const timestamp = new Date('2026-06-28T12:00:00.000Z').toISOString();
+    const write = (message: string) =>
+      new Promise<void>((resolve) => {
+        transport.log(
+          { level: 'info', message, timestamp, targets: ['app'] },
+          resolve,
+        );
+      });
+    await write('first');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await write('second');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await expect(
+      readFile(path.join(baseDir, '2026-06-28', 'app.1.log'), 'utf8'),
+    ).resolves.toContain('first');
+  });
+
+  it('keeps six bounded segments and drops the oldest after the fifth rotation', async () => {
+    const transport = new DailyFileTransport({
+      baseDir,
+      fileName: 'error.log',
+      target: 'error',
+      retentionDays: 30,
+      maxFileSizeBytes: 1,
+    } as never);
+    const timestamp = new Date('2026-06-29T12:00:00.000Z').toISOString();
+    for (let index = 1; index <= 7; index += 1) {
+      await new Promise<void>((resolve) => {
+        transport.log(
+          {
+            level: 'error',
+            message: `record-${index}`,
+            timestamp,
+            targets: ['error'],
+          },
+          resolve,
+        );
+      });
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+    const directory = path.join(baseDir, '2026-06-29');
+    const files = await readdir(directory);
+    expect(files.sort()).toEqual([
+      'error.1.log',
+      'error.2.log',
+      'error.3.log',
+      'error.4.log',
+      'error.5.log',
+      'error.log',
+    ]);
+    await expect(
+      readFile(path.join(directory, 'error.5.log'), 'utf8'),
+    ).resolves.toContain('record-2');
+    await expect(
+      readFile(path.join(directory, 'error.5.log'), 'utf8'),
+    ).resolves.not.toContain('record-1');
+  });
+
+  it('serializes concurrent writes and treats zero size as rotation disabled', async () => {
+    const transport = new DailyFileTransport({
+      baseDir,
+      fileName: 'slow-requests.log',
+      target: 'slow-requests',
+      retentionDays: 30,
+      maxFileSizeBytes: 0,
+    } as never);
+    const timestamp = new Date('2026-06-30T12:00:00.000Z').toISOString();
+    await Promise.all(
+      Array.from(
+        { length: 20 },
+        (_, index) =>
+          new Promise<void>((resolve) => {
+            transport.log(
+              {
+                level: 'warn',
+                message: `slow-${index}`,
+                timestamp,
+                targets: ['slow-requests'],
+              },
+              resolve,
+            );
+          }),
+      ),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const contents = await readFile(
+      path.join(baseDir, '2026-06-30', 'slow-requests.log'),
+      'utf8',
+    );
+    expect(contents.trim().split('\n')).toHaveLength(20);
+    await expect(
+      readdir(path.join(baseDir, '2026-06-30')).then((items) =>
+        items.filter((item) => item.includes('.')),
+      ),
+    ).resolves.toEqual(['slow-requests.log']);
   });
 });

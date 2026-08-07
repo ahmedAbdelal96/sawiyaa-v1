@@ -22,12 +22,15 @@ export class ListAdminPayoutsUseCase {
     const createdTo = input.query.createdTo
       ? new Date(input.query.createdTo)
       : undefined;
+    if (createdTo && /^\d{4}-\d{2}-\d{2}$/.test(input.query.createdTo ?? '')) {
+      createdTo.setUTCHours(23, 59, 59, 999);
+    }
 
     const [itemsResult, summary] = await Promise.all([
       this.settlementPayoutRepository.listSettlementPayouts({
         practitionerId: input.query.practitionerId,
         payoutMethod: input.query.payoutMethod,
-        currencyCode: input.query.currencyCode,
+        currencyCode: input.query.currencyCode?.trim().toUpperCase(),
         createdFrom,
         createdTo,
         skip,
@@ -36,7 +39,7 @@ export class ListAdminPayoutsUseCase {
       this.settlementPayoutRepository.summarizeSettlementPayouts({
         practitionerId: input.query.practitionerId,
         payoutMethod: input.query.payoutMethod,
-        currencyCode: input.query.currencyCode,
+        currencyCode: input.query.currencyCode?.trim().toUpperCase(),
         createdFrom,
         createdTo,
       }),

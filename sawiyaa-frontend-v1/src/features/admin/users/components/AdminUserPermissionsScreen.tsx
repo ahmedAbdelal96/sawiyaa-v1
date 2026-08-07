@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Search, RotateCcw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import Button from "@/components/ui/button/Button";
-import { AdminPageHeader, AdminSectionCard, AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
-import Label from "@/components/form/Label";
-import InputField from "@/components/form/input/InputField";
-import AdminUserStepUpDialog from "./AdminUserStepUpDialog";
-import { useAdminStepUp } from "../hooks/use-admin-step-up";
+import {
+  AdminPageHeader,
+  AdminSectionCard,
+  AdminStatusBadge,
+} from "@/components/shared/admin/AdminDashboardKit";
 import {
   useAdminUser,
   useAdminUserPermissionOverrides,
@@ -27,172 +27,122 @@ import type {
   AdminUserDetails,
   AdminUserPermissionOverride,
   AdminUserPermissionOverrideOperation,
-  AdminUserRole,
 } from "../types/admin-users.types";
-import { PermissionKey, getDefaultPermissionsForRoles } from "@/lib/auth/permissions";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import {
+  PermissionKey,
+  getDefaultPermissionsForRoles,
+} from "@/lib/auth/permissions";
+import { toAppError } from "@/lib/api/errors";
 import { adminUsersQueryKeys } from "../constants/query-keys";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 
-type PermissionDraftState = Record<string, boolean>;
+import type {
+  DensityMode,
+  ModuleGroupData,
+  OverrideEffect,
+  PermissionDraftState,
+  PermissionRowData,
+  RiskFilterValue,
+  StateFilterValue,
+} from "./permissions/permissions.types";
 
-type PermissionRow = {
-  key: string;
-  defaultChecked: boolean;
-  currentChecked: boolean;
-  catalogItem?: AdminPermissionCatalogItem;
-  override?: AdminUserPermissionOverride;
-};
+import { PermissionSummaryCard } from "./permissions/PermissionSummaryCard";
+import { PermissionToolbar } from "./permissions/PermissionToolbar";
+import { PermissionLegend } from "./permissions/PermissionLegend";
+import { PermissionBulkBar } from "./permissions/PermissionBulkBar";
+import { PermissionTable } from "./permissions/PermissionTable";
+import { PermissionSaveBar } from "./permissions/PermissionSaveBar";
 
-type VisiblePermissionModule = {
-  module: string;
-  rows: PermissionRow[];
-};
-
-function getInitialState(overrides: AdminUserPermissionOverride[], roleDefaultKeys: Set<string>) {
+function getInitialDraftState(overrides: AdminUserPermissionOverride[]): PermissionDraftState {
   const state: PermissionDraftState = {};
-
   for (const item of ADMIN_PERMISSION_CATALOG) {
-    state[item.key] = roleDefaultKeys.has(item.key);
+    const existing = overrides.find((o) => o.permissionKey === item.key);
+    state[item.key] = existing ? existing.effect : "INHERITED";
   }
-
   for (const override of overrides) {
-    state[override.permissionKey] = override.effect === "ALLOW";
+    if (!ADMIN_PERMISSION_CATALOG.some((item) => item.key === override.permissionKey)) {
+      state[override.permissionKey] = override.effect;
+    }
   }
-
   return state;
 }
 
-function groupRows(
-  overrides: AdminUserPermissionOverride[],
-  state: PermissionDraftState,
-  roleDefaultKeys: Set<string>,
-) {
-  const rowsByModule = new Map<string, PermissionRow[]>();
-  const overrideMap = new Map(overrides.map((item) => [item.permissionKey, item] as const));
-
-  for (const item of ADMIN_PERMISSION_CATALOG) {
-    const currentChecked = state[item.key] ?? roleDefaultKeys.has(item.key);
-    const rows = rowsByModule.get(item.module) ?? [];
-    rows.push({
-      key: item.key,
-      defaultChecked: roleDefaultKeys.has(item.key),
-      currentChecked,
-      catalogItem: item,
-      override: overrideMap.get(item.key),
-    });
-    rowsByModule.set(item.module, rows);
-  }
-
-  for (const override of overrides) {
-    if (ADMIN_PERMISSION_CATALOG.some((item) => item.key === override.permissionKey)) continue;
-
-    const currentChecked = state[override.permissionKey] ?? override.effect === "ALLOW";
-    const rows = rowsByModule.get("other") ?? [];
-    rows.push({
-      key: override.permissionKey,
-      defaultChecked: false,
-      currentChecked,
-      override,
-    });
-    rowsByModule.set("other", rows);
-  }
-
-  return rowsByModule;
-}
-
-function formatPermissionLabel(t: ReturnType<typeof useTranslations>, row: PermissionRow) {
-  if (row.catalogItem) return t(row.catalogItem.labelKey);
-  return row.key;
-}
-
-function formatPermissionDescription(t: ReturnType<typeof useTranslations>, row: PermissionRow) {
-  if (row.catalogItem) {
-    return t(`permissions.modules.${row.catalogItem.module}.description`);
-  }
-  return row.override?.reason ?? t("permissions.unknownPermissionDescription");
-}
-
-function PermissionMatrixCheckboxCell({
-  name,
-  checked,
-  onChange,
-  disabled,
-}: {
-  name: string;
-  checked: boolean;
-  onChange: (next: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="flex justify-center">
-      <label
-        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
-          disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-primary-light/30"
-        } ${checked ? "border-primary bg-primary-light" : "border-border-light bg-white"}`}
-      >
-        <input
-          type="checkbox"
-          name={name}
-          checked={checked}
-          disabled={disabled}
-          onChange={(event) => onChange(event.target.checked)}
-          className="sr-only"
-        />
-        <span
-          className={`flex h-[18px] w-[18px] items-center justify-center rounded border ${
-            checked ? "border-primary bg-primary text-white" : "border-border-strong bg-white"
-          }`}
-        >
-          {checked ? (
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5">
-              <path
-                d="M16.25 5.75L8.5 13.5l-4.75-4.75"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          ) : null}
-        </span>
-      </label>
-    </div>
-  );
-}
-
-function buildOperations(
+function buildAllRows(
   overrides: AdminUserPermissionOverride[],
   draft: PermissionDraftState,
   roleDefaultKeys: Set<string>,
-): AdminUserPermissionOverrideOperation[] {
-  const operations: AdminUserPermissionOverrideOperation[] = [];
+): PermissionRowData[] {
+  const rows: PermissionRowData[] = [];
+  const overrideMap = new Map(overrides.map((item) => [item.permissionKey, item] as const));
 
+  // Catalog items
   for (const item of ADMIN_PERMISSION_CATALOG) {
-    const nextChecked = draft[item.key] ?? roleDefaultKeys.has(item.key);
-    const previous = overrides.find((override) => override.permissionKey === item.key);
-    const previousChecked = previous ? previous.effect === "ALLOW" : roleDefaultKeys.has(item.key);
+    const defaultChecked = roleDefaultKeys.has(item.key);
+    const existingOverride = overrideMap.get(item.key);
+    const initialOverrideEffect: OverrideEffect = existingOverride ? existingOverride.effect : "INHERITED";
+    const currentDraftEffect: OverrideEffect = draft[item.key] ?? "INHERITED";
 
-    if (nextChecked === previousChecked) continue;
+    let effectiveAllowed = defaultChecked;
+    if (currentDraftEffect === "ALLOW") effectiveAllowed = true;
+    else if (currentDraftEffect === "DENY") effectiveAllowed = false;
 
-    operations.push({
-      permissionKey: item.key,
-      effect: nextChecked ? "ALLOW" : "DENY",
+    rows.push({
+      key: item.key,
+      module: item.module,
+      defaultChecked,
+      initialOverrideEffect,
+      currentDraftEffect,
+      effectiveAllowed,
+      catalogItem: item,
+      override: existingOverride,
+      isModified: currentDraftEffect !== initialOverrideEffect,
     });
   }
 
+  // Non-catalog overrides from backend
   for (const override of overrides) {
     if (ADMIN_PERMISSION_CATALOG.some((item) => item.key === override.permissionKey)) continue;
 
-    const nextChecked = draft[override.permissionKey] ?? override.effect === "ALLOW";
-    const previousChecked = override.effect === "ALLOW";
-    if (nextChecked === previousChecked) continue;
+    const defaultChecked = false;
+    const initialOverrideEffect: OverrideEffect = override.effect;
+    const currentDraftEffect: OverrideEffect = draft[override.permissionKey] ?? override.effect;
 
-    operations.push({
-      permissionKey: override.permissionKey,
-      effect: nextChecked ? "ALLOW" : "DENY",
+    let effectiveAllowed = false;
+    if (currentDraftEffect === "ALLOW") effectiveAllowed = true;
+    else if (currentDraftEffect === "DENY") effectiveAllowed = false;
+
+    rows.push({
+      key: override.permissionKey,
+      module: "other",
+      defaultChecked,
+      initialOverrideEffect,
+      currentDraftEffect,
+      effectiveAllowed,
+      override,
+      isModified: currentDraftEffect !== initialOverrideEffect,
     });
+  }
+
+  return rows;
+}
+
+function buildOperations(allRows: PermissionRowData[]): AdminUserPermissionOverrideOperation[] {
+  const operations: AdminUserPermissionOverrideOperation[] = [];
+
+  for (const row of allRows) {
+    if (!row.isModified) continue;
+
+    if (row.currentDraftEffect === "ALLOW") {
+      operations.push({ permissionKey: row.key, effect: "ALLOW" });
+    } else if (row.currentDraftEffect === "DENY") {
+      operations.push({ permissionKey: row.key, effect: "DENY" });
+    } else if (row.currentDraftEffect === "INHERITED") {
+      // Reverting to role default
+      operations.push({
+        permissionKey: row.key,
+        effect: row.defaultChecked ? "ALLOW" : "DENY",
+      });
+    }
   }
 
   return operations;
@@ -214,58 +164,264 @@ function AdminUserPermissionsEditor({
   const t = useTranslations("admin-users");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const stepUp = useAdminStepUp();
   const roleDefaultKeys = useMemo(() => getDefaultPermissionsForRoles(initialDetail.roles), [initialDetail.roles]);
   const adminUsersPath = (path: string) => path;
 
+  // Filter States
   const [search, setSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState<string>("all");
-  const [showChangedOnly, setShowChangedOnly] = useState(false);
-  const [draft, setDraft] = useState<PermissionDraftState>(() => getInitialState(overrides, roleDefaultKeys));
-  const [error, setError] = useState<string | null>(null);
+  const [stateFilter, setStateFilter] = useState<StateFilterValue>("all");
+  const [riskFilter, setRiskFilter] = useState<RiskFilterValue>("all");
 
-  const groupedRows = useMemo(() => groupRows(overrides, draft, roleDefaultKeys), [draft, overrides, roleDefaultKeys]);
-  const normalizedSearch = search.trim().toLowerCase();
-
-  const moduleOptions = useMemo(
-    () => [
-      { value: "all", label: t("permissions.matrix.toolbar.allModules") },
-      ...ADMIN_PERMISSION_GROUP_ORDER.map((module) => ({
-        value: module,
-        label: t(`permissions.modules.${module}.title`),
-      })),
-    ],
-    [t],
+  // UX States
+  const [density, setDensity] = useState<DensityMode>("compact");
+  const [showLegend, setShowLegend] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [collapsedModules, setCollapsedModules] = useState<Set<string>>(
+    () => new Set(ADMIN_PERMISSION_GROUP_ORDER),
   );
 
-  const visibleModules = useMemo(() => {
-    const result: VisiblePermissionModule[] = [];
+  // Auto-expand modules when search or active filters are applied
+  useEffect(() => {
+    if (search.trim() || moduleFilter !== "all" || stateFilter !== "all" || riskFilter !== "all") {
+      setCollapsedModules(new Set());
+    }
+  }, [search, moduleFilter, stateFilter, riskFilter]);
 
-    for (const groupId of ADMIN_PERMISSION_GROUP_ORDER) {
-      if (moduleFilter !== "all" && moduleFilter !== groupId) continue;
+  // Draft State
+  const [draft, setDraft] = useState<PermissionDraftState>(() => getInitialDraftState(overrides));
+  const [error, setError] = useState<string | null>(null);
 
-      const rows = groupedRows.get(groupId) ?? [];
-      const filtered = rows.filter((row) => {
-        if (showChangedOnly && row.currentChecked === row.defaultChecked) return false;
-        if (!normalizedSearch) return true;
+  // Restore density preference from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("admin_permissions_density");
+      if (stored === "compact" || stored === "comfortable") {
+        setDensity(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
-        const label = formatPermissionLabel(t, row).toLowerCase();
-        const description = formatPermissionDescription(t, row).toLowerCase();
-        return (
-          label.includes(normalizedSearch) ||
-          description.includes(normalizedSearch) ||
-          row.key.toLowerCase().includes(normalizedSearch)
-        );
+  const handleDensityChange = (mode: DensityMode) => {
+    setDensity(mode);
+    try {
+      localStorage.setItem("admin_permissions_density", mode);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Compute all rows with current draft & initial override state
+  const allRows = useMemo(
+    () => buildAllRows(overrides, draft, roleDefaultKeys),
+    [overrides, draft, roleDefaultKeys],
+  );
+
+  // Overall Statistics
+  const totalCatalogCount = ADMIN_PERMISSION_CATALOG.length;
+  const roleAllowedCount = allRows.filter((r) => r.defaultChecked).length;
+  const explicitAllowCount = allRows.filter((r) => r.currentDraftEffect === "ALLOW").length;
+  const explicitDenyCount = allRows.filter((r) => r.currentDraftEffect === "DENY").length;
+  const pendingChangesCount = allRows.filter((r) => r.isModified).length;
+
+  // Filter rows based on search, module, state, and risk
+  const filteredRows = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return allRows.filter((row) => {
+      // Search
+      if (normalizedSearch) {
+        const label = row.catalogItem ? (t as any)(row.catalogItem.labelKey).toLowerCase() : row.key.toLowerCase();
+        const description = row.catalogItem
+          ? (t as any)(`permissions.modules.${row.catalogItem.module}.description`).toLowerCase()
+          : (row.override?.reason ?? "").toLowerCase();
+        const keyMatch = row.key.toLowerCase().includes(normalizedSearch);
+
+        if (!label.includes(normalizedSearch) && !description.includes(normalizedSearch) && !keyMatch) {
+          return false;
+        }
+      }
+
+      // Module Filter
+      if (moduleFilter !== "all" && row.module !== moduleFilter) {
+        return false;
+      }
+
+      // State Filter
+      if (stateFilter === "overriddenOnly" && row.currentDraftEffect === "INHERITED") return false;
+      if (stateFilter === "inheritedOnly" && row.currentDraftEffect !== "INHERITED") return false;
+      if (stateFilter === "explicitAllow" && row.currentDraftEffect !== "ALLOW") return false;
+      if (stateFilter === "explicitDeny" && row.currentDraftEffect !== "DENY") return false;
+      if (stateFilter === "effectiveAllow" && !row.effectiveAllowed) return false;
+      if (stateFilter === "effectiveDeny" && row.effectiveAllowed) return false;
+
+      // Risk Filter
+      if (riskFilter !== "all") {
+        const rowRisk = row.catalogItem?.risk ?? "normal";
+        if (rowRisk !== riskFilter) return false;
+      }
+
+      return true;
+    });
+  }, [allRows, moduleFilter, riskFilter, search, stateFilter, t]);
+
+  // Group filtered rows by module
+  const moduleGroups = useMemo(() => {
+    const groupsMap = new Map<string, PermissionRowData[]>();
+
+    for (const row of filteredRows) {
+      const list = groupsMap.get(row.module) ?? [];
+      list.push(row);
+      groupsMap.set(row.module, list);
+    }
+
+    const result: ModuleGroupData[] = [];
+
+    for (const moduleKey of ADMIN_PERMISSION_GROUP_ORDER) {
+      const rows = groupsMap.get(moduleKey);
+      if (!rows || rows.length === 0) continue;
+
+      let title = moduleKey;
+      let description = "";
+      try {
+        title = (t as any)(`permissions.modules.${moduleKey}.title`);
+        description = (t as any)(`permissions.modules.${moduleKey}.description`);
+      } catch {
+        // fallback
+      }
+
+      result.push({
+        module: moduleKey,
+        title,
+        description,
+        rows,
+        totalCount: rows.length,
+        roleAllowedCount: rows.filter((r) => r.defaultChecked).length,
+        effectiveAllowedCount: rows.filter((r) => r.effectiveAllowed).length,
+        effectiveDeniedCount: rows.filter((r) => !r.effectiveAllowed).length,
+        explicitAllowCount: rows.filter((r) => r.currentDraftEffect === "ALLOW").length,
+        explicitDenyCount: rows.filter((r) => r.currentDraftEffect === "DENY").length,
+        modifiedCount: rows.filter((r) => r.isModified).length,
       });
-
-      if (filtered.length > 0) result.push({ module: groupId, rows: filtered });
     }
 
     return result;
-  }, [groupedRows, moduleFilter, normalizedSearch, showChangedOnly, t]);
+  }, [filteredRows, t]);
 
-  const operations = useMemo(() => buildOperations(overrides, draft, roleDefaultKeys), [draft, overrides, roleDefaultKeys]);
-  const changedCount = operations.length;
+  // Collapse / Expand All
+  const isAllCollapsed =
+    moduleGroups.length > 0 &&
+    moduleGroups.every((g) => collapsedModules.has(g.module));
+
+  const handleToggleCollapseAll = () => {
+    if (isAllCollapsed) {
+      setCollapsedModules(new Set());
+    } else {
+      setCollapsedModules(new Set(moduleGroups.map((g) => g.module)));
+    }
+  };
+
+  const handleToggleCollapseModule = (moduleKey: string) => {
+    setCollapsedModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleKey)) next.delete(moduleKey);
+      else next.add(moduleKey);
+      return next;
+    });
+  };
+
+  // Row Selection Handlers
+  const handleToggleSelectRow = (key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleToggleSelectModule = (moduleRowsKeys: string[], forceState?: boolean) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      const allSelected = moduleRowsKeys.every((k) => next.has(k));
+      const shouldSelect = forceState ?? !allSelected;
+
+      for (const key of moduleRowsKeys) {
+        if (shouldSelect) next.add(key);
+        else next.delete(key);
+      }
+      return next;
+    });
+  };
+
+  // Draft Effect Change Handlers
+  const handleChangeRowEffect = (key: string, nextEffect: OverrideEffect) => {
+    setDraft((prev) => ({
+      ...prev,
+      [key]: nextEffect,
+    }));
+    setError(null);
+  };
+
+  const handleModuleBulkEffect = (moduleRowsKeys: string[], effect: OverrideEffect) => {
+    setDraft((prev) => {
+      const next = { ...prev };
+      for (const key of moduleRowsKeys) {
+        next[key] = effect;
+      }
+      return next;
+    });
+    setError(null);
+  };
+
+  // Bulk Selection Operations
+  const handleGrantSelected = () => {
+    setDraft((prev) => {
+      const next = { ...prev };
+      for (const key of selectedKeys) {
+        next[key] = "ALLOW";
+      }
+      return next;
+    });
+    setError(null);
+  };
+
+  const handleDenySelected = () => {
+    setDraft((prev) => {
+      const next = { ...prev };
+      for (const key of selectedKeys) {
+        next[key] = "DENY";
+      }
+      return next;
+    });
+    setError(null);
+  };
+
+  const handleResetSelected = () => {
+    setDraft((prev) => {
+      const next = { ...prev };
+      for (const key of selectedKeys) {
+        next[key] = "INHERITED";
+      }
+      return next;
+    });
+    setError(null);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedKeys(new Set());
+  };
+
+  const handleResetDraft = () => {
+    setDraft(getInitialDraftState(overrides));
+    setSelectedKeys(new Set());
+    setError(null);
+  };
+
+  // Operations for mutation
+  const operations = useMemo(() => buildOperations(allRows), [allRows]);
 
   const mutation = useMutation({
     mutationFn: (input: AdminUserPermissionOverrideOperation[]) =>
@@ -274,11 +430,6 @@ function AdminUserPermissionsEditor({
 
   const goToDetail = () => {
     router.replace(adminUsersPath(`/admin/users/${id}`) as never, { scroll: false });
-  };
-
-  const handleResetDraft = () => {
-    setDraft(getInitialState(overrides, roleDefaultKeys));
-    setError(null);
   };
 
   const handleSave = async () => {
@@ -306,332 +457,119 @@ function AdminUserPermissionsEditor({
       await persist();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          try {
-            await persist();
-          } catch (retryCause) {
-            const retryError = toAppError(retryCause);
-            setError(retryError.message || t("errors.generic"));
-          }
-        });
-        return;
-      }
-
       setError(appError.message || t("errors.generic"));
     }
   };
 
-  const title = initialDetail.displayName ?? initialDetail.emails?.[0] ?? id;
-  const primaryEmail = initialDetail.emails?.[0] ?? null;
-  const primaryPhone = initialDetail.phones?.[0] ?? null;
   const canEdit = !readOnly;
 
   return (
-    <>
-      <div className="space-y-5 pb-24">
-        <AdminPageHeader
-          eyebrow={t("page.eyebrow")}
-          title={t("permissions.page.title")}
-          description={t("permissions.page.description")}
-          actions={
-            <Button variant="outline" startIcon={<ArrowLeft className="h-4 w-4" />} onClick={onBack}>
-              {t("actions.back")}
-            </Button>
-          }
-          meta={
-            <div className="flex flex-wrap items-center gap-2">
-              <AdminStatusBadge tone="muted">{title}</AdminStatusBadge>
-              {primaryEmail ? <AdminStatusBadge tone="muted">{primaryEmail}</AdminStatusBadge> : null}
-              {primaryPhone ? <AdminStatusBadge tone="muted">{primaryPhone}</AdminStatusBadge> : null}
-              <AdminStatusBadge tone="muted">{t(`status.${initialDetail.status}`)}</AdminStatusBadge>
-              {initialDetail.roles.map((role) => (
-                <AdminStatusBadge key={role} tone="muted">
-                  {t(ADMIN_USER_ROLE_LABEL_KEYS[role])}
-                </AdminStatusBadge>
-              ))}
-            </div>
-          }
+    <div className="space-y-5 pb-24">
+      {/* Top Page Header */}
+      <AdminPageHeader
+        eyebrow={t("page.eyebrow")}
+        title={t("permissions.page.title")}
+        description={t("permissions.page.description")}
+        actions={
+          <Button
+            variant="outline"
+            startIcon={<ArrowLeft className="h-4 w-4" />}
+            onClick={onBack}
+          >
+            {t("actions.back")}
+          </Button>
+        }
+      />
+
+      {/* User Header & KPI Summary Card */}
+      <PermissionSummaryCard
+        user={initialDetail}
+        totalCatalogCount={totalCatalogCount}
+        roleAllowedCount={roleAllowedCount}
+        explicitAllowCount={explicitAllowCount}
+        explicitDenyCount={explicitDenyCount}
+        pendingChangesCount={pendingChangesCount}
+      />
+
+      {/* ReadOnly Warning if viewer is unprivileged */}
+      {readOnly ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300">
+          {t("permissions.page.readOnlyNote")}
+        </div>
+      ) : null}
+
+      {/* Interactive Filters & Search Toolbar */}
+      <PermissionToolbar
+        search={search}
+        onSearchChange={setSearch}
+        moduleFilter={moduleFilter}
+        onModuleFilterChange={setModuleFilter}
+        stateFilter={stateFilter}
+        onStateFilterChange={setStateFilter}
+        riskFilter={riskFilter}
+        onRiskFilterChange={setRiskFilter}
+        density={density}
+        onDensityChange={handleDensityChange}
+        isAllCollapsed={isAllCollapsed}
+        onToggleCollapseAll={handleToggleCollapseAll}
+        showLegend={showLegend}
+        onToggleLegend={() => setShowLegend((prev) => !prev)}
+        hasChanges={pendingChangesCount > 0}
+        onResetChanges={handleResetDraft}
+        canEdit={canEdit}
+      />
+
+      {/* Permission State Legend (Toggleable) */}
+      {showLegend ? <PermissionLegend /> : null}
+
+      {/* Floating Multi-Select Bulk Actions Bar */}
+      <PermissionBulkBar
+        selectedCount={selectedKeys.size}
+        onGrantSelected={handleGrantSelected}
+        onDenySelected={handleDenySelected}
+        onResetSelected={handleResetSelected}
+        onClearSelection={handleClearSelection}
+      />
+
+      {/* Main Enterprise Permission Table Matrix */}
+      <AdminSectionCard
+        title={t("permissions.matrix.title")}
+        description={t("permissions.matrix.description")}
+        actions={
+          canEdit ? (
+            <AdminStatusBadge tone={pendingChangesCount > 0 ? "primary" : "muted"}>
+              {pendingChangesCount > 0
+                ? t("permissions.page.unsavedChanges", { count: pendingChangesCount })
+                : t("permissions.page.noChanges")}
+            </AdminStatusBadge>
+          ) : null
+        }
+      >
+        <PermissionTable
+          moduleGroups={moduleGroups}
+          density={density}
+          selectedKeys={selectedKeys}
+          onToggleSelectRow={handleToggleSelectRow}
+          onToggleSelectModule={handleToggleSelectModule}
+          onChangeRowEffect={handleChangeRowEffect}
+          onModuleBulkEffect={handleModuleBulkEffect}
+          collapsedModules={collapsedModules}
+          onToggleCollapseModule={handleToggleCollapseModule}
+          canEdit={canEdit}
         />
+      </AdminSectionCard>
 
-        <AdminSectionCard
-          title={t("permissions.summary.title")}
-          description={t("permissions.summary.description")}
-        >
-          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl border border-border-light bg-surface-secondary/55 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("detail.profile.displayName")}
-              </p>
-              <p className="mt-1 text-[13px] font-medium text-text-primary">{title}</p>
-            </div>
-            <div className="rounded-2xl border border-border-light bg-surface-secondary/55 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("detail.profile.email")}
-              </p>
-              <p className="mt-1 text-[13px] font-medium text-text-primary">{primaryEmail ?? t("detail.noEmail")}</p>
-            </div>
-            <div className="rounded-2xl border border-border-light bg-surface-secondary/55 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("detail.profile.phone")}
-              </p>
-              <p className="mt-1 text-[13px] font-medium text-text-primary">{primaryPhone ?? t("detail.noValue")}</p>
-            </div>
-            <div className="rounded-2xl border border-border-light bg-surface-secondary/55 px-3 py-2.5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                {t("permissions.page.changeCount")}
-              </p>
-              <p className="mt-1 text-[13px] font-medium text-text-primary">
-                {t("permissions.page.changeCountValue", { count: changedCount })}
-              </p>
-            </div>
-          </div>
-        </AdminSectionCard>
-
-        <AdminSectionCard
-          title={t("permissions.matrix.title")}
-          description={t("permissions.matrix.description")}
-          actions={
-            canEdit ? (
-              <AdminStatusBadge tone={changedCount > 0 ? "primary" : "muted"}>
-                {changedCount > 0
-                  ? t("permissions.page.unsavedChanges", { count: changedCount })
-                  : t("permissions.page.noChanges")}
-              </AdminStatusBadge>
-            ) : null
-          }
-        >
-          <div className="space-y-4">
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(220px,0.9fr)_minmax(0,auto)_auto]">
-              <div className="space-y-1">
-                <Label>{t("permissions.search.label")}</Label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                  <InputField
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder={t("permissions.search.placeholder")}
-                    className="ps-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label>{t("permissions.matrix.toolbar.moduleLabel")}</Label>
-                <select
-                  className="app-control h-10 w-full rounded-xl border border-border-light bg-white px-3 text-[13px] text-text-primary"
-                  value={moduleFilter}
-                  onChange={(event) => setModuleFilter(event.target.value)}
-                >
-                  {moduleOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-end pb-0.5">
-                <label className="flex w-full items-center gap-2.5 rounded-2xl border border-border-light bg-white px-3 py-2.5 text-[13px] font-medium text-text-primary">
-                  <input
-                    type="checkbox"
-                    checked={showChangedOnly}
-                    onChange={(event) => setShowChangedOnly(event.target.checked)}
-                    className="h-4 w-4 rounded border-border-strong text-primary focus:ring-primary/20"
-                  />
-                  <span>{t("permissions.matrix.toolbar.showChangedOnly")}</span>
-                </label>
-              </div>
-
-              <div className="flex items-end justify-end pb-0.5">
-                <Button variant="outline" startIcon={<RotateCcw className="h-4 w-4" />} onClick={handleResetDraft} disabled={!canEdit || changedCount === 0}>
-                  {t("permissions.matrix.toolbar.resetChanges")}
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-primary/15 bg-primary-light/40 px-3 py-3 text-[13px] text-text-secondary">
-              <p className="font-medium text-text-primary">{t("permissions.summary.title")}</p>
-              <p className="mt-1 leading-5">{t("permissions.summary.description")}</p>
-            </div>
-
-            {readOnly ? (
-              <div className="rounded-3xl border border-warning-200 bg-warning-50 px-3 py-3 text-[13px] text-warning-700">
-                {t("permissions.page.readOnlyNote")}
-              </div>
-            ) : null}
-
-            <div className="space-y-4">
-              {visibleModules.map(({ module, rows }) => {
-                const moduleLabel = t(`permissions.modules.${module}.title`);
-                const moduleDescription = t(`permissions.modules.${module}.description`);
-                const customCount = rows.filter((row) => row.currentChecked !== row.defaultChecked).length;
-                const changedCheckedCount = rows.filter((row) => row.currentChecked).length;
-
-                return (
-                  <section key={module} className="rounded-[26px] border border-border-light bg-white p-3 shadow-[0_14px_30px_-28px_rgba(34,52,56,0.22)] sm:p-4">
-                    <div className="mb-3 flex flex-wrap items-start justify-between gap-2.5">
-                      <div className="min-w-0 space-y-1">
-                        <h3 className="text-sm font-semibold text-text-primary">{moduleLabel}</h3>
-                        <p className="text-xs leading-5 text-text-secondary">{moduleDescription}</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <AdminStatusBadge tone="muted">{t("permissions.moduleCounts.total", { count: rows.length })}</AdminStatusBadge>
-                        {customCount > 0 ? (
-                          <AdminStatusBadge tone="primary">
-                            {t("permissions.moduleCounts.custom", { count: customCount })}
-                          </AdminStatusBadge>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="no-scrollbar overflow-x-auto">
-                      <table className="w-full min-w-full table-fixed border-separate border-spacing-0">
-                        <thead>
-                          <tr>
-                            <th className="sticky start-0 z-20 w-40 border-b border-border-light bg-white px-3 py-3 text-start align-bottom">
-                              <div className="space-y-1">
-                                <p className="text-xs font-semibold text-text-primary">
-                                  {t("permissions.matrix.headers.permission")}
-                                </p>
-                              </div>
-                            </th>
-                            {rows.map((row) => {
-                              const rowLabel = formatPermissionLabel(t, row);
-                              return (
-                                <th
-                                  key={row.key}
-                                  className="border-b border-border-light px-2.5 py-3 text-center align-bottom"
-                                  title={row.catalogItem ? `${rowLabel} • ${row.key}` : rowLabel}
-                                >
-                                  <div className="space-y-0.5 text-center">
-                                    <p className="break-words text-[11px] font-semibold leading-4 text-text-primary">{rowLabel}</p>
-                                  </div>
-                                </th>
-                              );
-                            })}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <th className="sticky start-0 z-10 border-b border-border-light bg-surface-secondary/45 px-3 py-3 text-start align-middle">
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-semibold text-text-primary">{t("permissions.matrix.roleRow")}</p>
-                              </div>
-                            </th>
-                            {rows.map((row) => (
-                              <td key={`${row.key}-role`} className="border-b border-border-light px-2.5 py-3 text-center align-middle">
-                                <span
-                                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
-                                    row.defaultChecked
-                                      ? "bg-success-50 text-success-700"
-                                      : "bg-surface-secondary text-text-muted"
-                                  }`}
-                                  title={
-                                    row.defaultChecked ? t("permissions.matrix.roleGranted") : t("permissions.matrix.roleMissing")
-                                  }
-                                >
-                                  {row.defaultChecked ? "✓" : "−"}
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr>
-                            <th className="sticky start-0 z-10 border-b border-border-light bg-surface-secondary/60 px-3 py-3 text-start align-middle">
-                              <div className="space-y-0.5">
-                                <p className="text-xs font-semibold text-text-primary">{t("permissions.matrix.userRow")}</p>
-                              </div>
-                            </th>
-                            {rows.map((row) => {
-                              return (
-                                <td key={row.key} className="border-b border-border-light px-2.5 py-3 align-middle">
-                                  <PermissionMatrixCheckboxCell
-                                    name={row.key}
-                                    checked={row.currentChecked}
-                                    onChange={(next) =>
-                                      setDraft((currentDraft) => ({
-                                        ...currentDraft,
-                                        [row.key]: next,
-                                      }))
-                                    }
-                                    disabled={!canEdit}
-                                  />
-                                  <div className="mt-1.5 flex justify-center gap-1">
-                                    {row.currentChecked !== row.defaultChecked ? (
-                                      <span
-                                        className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${
-                                          row.currentChecked
-                                            ? "bg-success-50 text-success-700"
-                                            : "bg-error-50 text-error-700"
-                                        }`}
-                                      >
-                                        {row.currentChecked ? t("permissions.matrix.custom") : t("permissions.matrix.blocked")}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                      <span>{t("permissions.moduleCounts.total", { count: rows.length })}</span>
-                      <span>•</span>
-                      <span>{t("permissions.matrix.changedCount", { count: customCount })}</span>
-                      <span>•</span>
-                      <span>{t("permissions.matrix.checkedCount", { count: changedCheckedCount })}</span>
-                    </div>
-                  </section>
-                );
-              })}
-
-              {visibleModules.length === 0 ? (
-                <div className="rounded-3xl border border-border-light bg-surface-secondary/60 px-4 py-6 text-sm text-text-secondary">
-                  {t("permissions.page.noMatches")}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </AdminSectionCard>
-
-        {canEdit ? (
-          <div className="sticky bottom-4 z-20">
-            <div className="rounded-[24px] border border-border-light bg-white/95 p-4 shadow-[0_18px_40px_-28px_rgba(34,52,56,0.32)] backdrop-blur">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-text-primary">
-                    {changedCount > 0
-                      ? t("permissions.page.unsavedChanges", { count: changedCount })
-                      : t("permissions.page.noChanges")}
-                  </p>
-                  <p className="mt-1 text-xs text-text-secondary">{t("permissions.page.saveHint")}</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="outline" startIcon={<RotateCcw className="h-4 w-4" />} onClick={handleResetDraft} disabled={!canEdit || changedCount === 0}>
-                    {t("permissions.matrix.toolbar.resetChanges")}
-                  </Button>
-                  <Button variant="outline" onClick={onBack}>
-                    {t("permissions.page.backToUser")}
-                  </Button>
-                  <Button
-                    onClick={() => void handleSave()}
-                    disabled={changedCount === 0 || mutation.isPending}
-                  >
-                    {mutation.isPending ? t("permissions.page.saving") : t("permissions.page.save")}
-                  </Button>
-                </div>
-              </div>
-              {error ? <p className="mt-3 text-sm text-error-600">{error}</p> : null}
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      <AdminUserStepUpDialog controller={stepUp} />
-    </>
+      {/* Sticky Bottom Save / Action Bar */}
+      <PermissionSaveBar
+        changedCount={pendingChangesCount}
+        isSaving={mutation.isPending}
+        error={error}
+        onReset={handleResetDraft}
+        onBack={onBack}
+        onSave={() => void handleSave()}
+        canEdit={canEdit}
+      />
+    </div>
   );
 }
 
@@ -653,15 +591,15 @@ export default function AdminUserPermissionsScreen({ id }: { id: string }) {
       <AdminSectionCard
         title={appError.statusCode === 404 ? t("errors.notFoundTitle") : t("errors.title")}
         description={appError.statusCode === 404 ? t("errors.notFound") : appError.message || t("errors.loadFailed")}
-          actions={
-            <Button
-              variant="outline"
-              startIcon={<ArrowLeft className="h-4 w-4" />}
-              onClick={() => router.replace(`/admin/users/${id}` as never, { scroll: false })}
-            >
-              {t("actions.back")}
-            </Button>
-          }
+        actions={
+          <Button
+            variant="outline"
+            startIcon={<ArrowLeft className="h-4 w-4" />}
+            onClick={() => router.replace(`/admin/users/${id}` as never, { scroll: false })}
+          >
+            {t("actions.back")}
+          </Button>
+        }
       >
         <div />
       </AdminSectionCard>
@@ -674,17 +612,24 @@ export default function AdminUserPermissionsScreen({ id }: { id: string }) {
         title={t("permissions.page.loadingTitle")}
         description={t("permissions.page.loadingDescription")}
       >
-        <div className="space-y-3">
-          <div className="h-4 w-48 animate-pulse rounded-full bg-surface-secondary" />
-          <div className="h-24 animate-pulse rounded-3xl bg-surface-secondary" />
-          <div className="h-56 animate-pulse rounded-3xl bg-surface-secondary" />
+        <div className="space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-teal-600 animate-spin" />
+            <span className="text-xs font-bold text-text-muted">{t("permissions.page.loadingTitle")}</span>
+          </div>
+          <div className="h-24 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
+          <div className="h-56 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />
         </div>
       </AdminSectionCard>
     );
   }
 
   if (!canReadOverrides) {
-    return <AdminSectionCard title={t("errors.title")} description={t("errors.loadFailed")}><div /></AdminSectionCard>;
+    return (
+      <AdminSectionCard title={t("errors.title")} description={t("errors.loadFailed")}>
+        <div />
+      </AdminSectionCard>
+    );
   }
 
   return (

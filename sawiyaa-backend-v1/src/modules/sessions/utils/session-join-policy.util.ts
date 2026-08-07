@@ -9,9 +9,6 @@ import {
   SessionPresentationFilter,
 } from '../types/session-video.types';
 
-export const SESSION_JOIN_LEAD_MINUTES = 2;
-export const SESSION_JOIN_LAG_MINUTES = 0;
-export const SESSION_POST_END_RECONNECT_GRACE_MINUTES = 10;
 export const DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES = 24 * 60;
 
 /** @deprecated Canonical Session.status is now the display lifecycle state. */
@@ -22,12 +19,16 @@ export interface SessionJoinPolicyInput {
   sessionMode: SessionMode;
   scheduledStartAt: Date | null;
   scheduledEndAt: Date | null;
+  joinOpenAt?: Date | null;
+  joinCloseAt?: Date | null;
   provider: SessionProvider;
   providerRoomId: string | null;
   providerSessionRef: string | null;
   videoRoomClosedAt?: Date | null;
   now: Date;
   runtimePrepareLeadMinutes?: number;
+  joinEarlyMinutes?: number;
+  joinAfterEndGraceMinutes?: number;
   /** Kept only until every caller stops sending this obsolete field. */
   finalManualDecision?: unknown;
 }
@@ -136,12 +137,27 @@ export function resolveSessionJoinPolicy(
   const prepareOpensAt = new Date(
     input.scheduledStartAt.getTime() - prepareLeadMinutes * 60_000,
   );
-  const joinOpensAt = new Date(
-    input.scheduledStartAt.getTime() - SESSION_JOIN_LEAD_MINUTES * 60_000,
-  );
-  const joinClosesAt = new Date(
-    input.scheduledEndAt.getTime() + SESSION_JOIN_LAG_MINUTES * 60_000,
-  );
+  const earlyMinutes = input.joinEarlyMinutes ?? 15;
+  const graceMinutes = input.joinAfterEndGraceMinutes ?? 15;
+
+  const joinOpensAt =
+    input.joinOpenAt ??
+    new Date(input.scheduledStartAt.getTime() - earlyMinutes * 60_000);
+  const joinClosesAt =
+    input.joinCloseAt ??
+    new Date(input.scheduledEndAt.getTime() + graceMinutes * 60_000);
+  if (!joinOpensAt || !joinClosesAt) {
+    return {
+      canPrepareRuntime: false,
+      canJoin: false,
+      blockedReason: input.videoRoomClosedAt
+        ? 'SESSION_ROOM_CLOSED'
+        : 'SESSION_TIME_WINDOW_NOT_OPEN',
+      prepareOpensAt: null,
+      joinOpensAt,
+      joinClosesAt,
+    };
+  }
 
   const canPrepareRuntime =
     input.now >= prepareOpensAt && input.now <= joinClosesAt;
@@ -219,15 +235,15 @@ export function buildSessionJoinAvailabilityViewModel(
 
 export function computeSessionPostEndReconnectGraceClosesAt(
   scheduledEndAt: Date | null,
+  joinAfterEndGraceMinutes?: number,
 ): Date | null {
   if (!scheduledEndAt) {
     return null;
   }
 
-  return new Date(
-    scheduledEndAt.getTime() +
-      SESSION_POST_END_RECONNECT_GRACE_MINUTES * 60_000,
-  );
+  return joinAfterEndGraceMinutes === undefined
+    ? null
+    : new Date(scheduledEndAt.getTime() + joinAfterEndGraceMinutes * 60_000);
 }
 
 export function resolveSessionPresentationStatus(
@@ -294,10 +310,6 @@ export function buildSessionPresentationFilterWhere(input: {
   const presentationFilter =
     input.presentationFilter ?? SessionPresentationFilter.ALL;
   const now = input.now ?? new Date();
-  const joinWindowOpenThreshold = new Date(
-    now.getTime() + SESSION_JOIN_LEAD_MINUTES * 60_000,
-  );
-
   switch (presentationFilter) {
     case SessionPresentationFilter.JOINABLE:
       return {
@@ -306,11 +318,11 @@ export function buildSessionPresentationFilterWhere(input: {
         status: {
           in: joinablePresentationStatuses,
         },
-        scheduledStartAt: {
+        joinOpenAt: {
           not: null,
-          lte: joinWindowOpenThreshold,
+          lte: now,
         },
-        scheduledEndAt: {
+        joinCloseAt: {
           not: null,
           gte: now,
         },
@@ -383,9 +395,9 @@ export function buildSessionPresentationFilterWhere(input: {
             status: {
               in: joinablePresentationStatuses,
             },
-            scheduledStartAt: {
+            joinOpenAt: {
               not: null,
-              gt: joinWindowOpenThreshold,
+              gt: now,
             },
             scheduledEndAt: {
               not: null,
@@ -420,11 +432,11 @@ export function buildSessionPresentationFilterWhere(input: {
             status: {
               in: joinablePresentationStatuses,
             },
-            scheduledStartAt: {
+            joinOpenAt: {
               not: null,
-              lte: joinWindowOpenThreshold,
+              lte: now,
             },
-            scheduledEndAt: {
+            joinCloseAt: {
               not: null,
               gte: now,
             },

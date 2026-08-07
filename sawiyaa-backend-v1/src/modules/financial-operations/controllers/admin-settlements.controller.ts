@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
@@ -43,7 +42,6 @@ export class AdminSettlementsController {
   }
 
   @Post(':id/approve')
-  @RequireStepUp('finance.settlement.approve')
   @Permissions(PermissionKey.FINANCIAL_SETTLEMENT_APPROVE)
   @ApiOperation({ summary: 'Approve settlement and credit wallet exactly once' })
   async approve(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: ApproveSettlementDto, @CurrentUser() user: AuthenticatedUser) {
@@ -58,7 +56,6 @@ export class AdminSettlementsController {
   }
 
   @Post(':id/payout')
-  @RequireStepUp('finance.settlement.payout')
   @Permissions(PermissionKey.FINANCIAL_PAYOUT_EXECUTE)
   @ApiOperation({ summary: 'Execute external payout for a credited settlement' })
   async payout(@Param('id', new ParseUUIDPipe()) id: string, @Body() body: RecordPractitionerPayoutDto, @CurrentUser() user: AuthenticatedUser) {

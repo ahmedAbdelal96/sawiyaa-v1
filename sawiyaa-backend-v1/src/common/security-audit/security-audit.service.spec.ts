@@ -1,15 +1,99 @@
 import { SecurityAuditService } from './security-audit.service';
 import { SecurityAuditOutcome } from '@prisma/client';
+import { RequestContextService } from '@common/logging/request-context.service';
 
 describe('SecurityAuditService', () => {
   const createMock = jest.fn().mockResolvedValue({});
   const repository = { create: createMock };
+  const getFirstCall = () =>
+    (
+      createMock.mock.calls as unknown as Array<[Record<string, unknown>]>
+    )[0]?.[0];
 
   let service: SecurityAuditService;
+  let requestContextService: RequestContextService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new SecurityAuditService(repository as never);
+    requestContextService = new RequestContextService();
+    service = new SecurityAuditService(
+      repository as never,
+      requestContextService,
+    );
+  });
+
+  it('automatically enriches audit records with the active request context', async () => {
+    requestContextService.run(
+      {
+        requestId: 'req-123',
+        correlationId: 'corr-123',
+        ipAddress: '1.1.1.1',
+        userAgent: 'Chrome',
+      },
+      () => {
+        service.logAsync({
+          action: 'test.context',
+          outcome: SecurityAuditOutcome.SUCCESS,
+        });
+      },
+    );
+
+    await new Promise((r) => setImmediate(r));
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: 'req-123',
+        correlationId: 'corr-123',
+        ipAddress: '1.1.1.1',
+        userAgent: 'Chrome',
+      }),
+    );
+  });
+
+  it('preserves explicit request context values over automatic context', async () => {
+    requestContextService.run(
+      {
+        requestId: 'req-123',
+        correlationId: 'corr-123',
+        ipAddress: '1.1.1.1',
+        userAgent: 'Chrome',
+      },
+      () => {
+        service.logAsync({
+          action: 'test.explicit-context',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          requestId: 'manual-id',
+        });
+      },
+    );
+
+    await new Promise((r) => setImmediate(r));
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: 'manual-id',
+        correlationId: 'corr-123',
+        ipAddress: '1.1.1.1',
+        userAgent: 'Chrome',
+      }),
+    );
+  });
+
+  it('succeeds without HTTP context', async () => {
+    await service.recordRequired({} as never, {
+      action: 'test.background-context',
+      outcome: SecurityAuditOutcome.SUCCESS,
+    });
+
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requestId: null,
+        correlationId: null,
+        ipAddress: null,
+        userAgent: null,
+      }),
+      {},
+    );
   });
 
   describe('logAsync', () => {
@@ -25,10 +109,10 @@ describe('SecurityAuditService', () => {
 
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({
-            action: 'test.action',
-            outcome: SecurityAuditOutcome.SUCCESS,
-            actorUserId: 'user-1',
-          }),
+          action: 'test.action',
+          outcome: SecurityAuditOutcome.SUCCESS,
+          actorUserId: 'user-1',
+        }),
       );
     });
 
@@ -56,7 +140,7 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      const call = getFirstCall();
       expect(call.userAgent).toHaveLength(500);
       expect(call.reason).toHaveLength(500);
     });
@@ -138,7 +222,7 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      const call = getFirstCall();
       expect(call.metadataJson).not.toHaveProperty(key);
       expect(call.metadataJson).toHaveProperty('safeKey', 'safe-value');
     });
@@ -152,7 +236,7 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      const call = getFirstCall();
       expect(call.metadataJson).toEqual({
         userId: 'u1',
         action: 'click',
@@ -180,7 +264,7 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      const call = getFirstCall();
       expect(call.metadataJson).toEqual({
         actor: {
           userId: 'u1',
@@ -201,7 +285,7 @@ describe('SecurityAuditService', () => {
 
       await new Promise((r) => setImmediate(r));
 
-      const call = createMock.mock.calls[0][0] as Record<string, any>;
+      const call = getFirstCall();
       expect(call.metadataJson).toBeUndefined();
     });
   });

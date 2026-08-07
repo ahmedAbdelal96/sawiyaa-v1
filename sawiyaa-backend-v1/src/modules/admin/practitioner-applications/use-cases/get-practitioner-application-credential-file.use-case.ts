@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
 import { AdminPractitionerCredentialRepository } from '../repositories/admin-practitioner-credential.repository';
 import { PractitionerCredentialStorageService } from '@modules/practitioners/services/practitioner-credential-storage.service';
-import { promises as fs } from 'fs';
 
 @Injectable()
 export class GetPractitionerApplicationCredentialFileUseCase {
@@ -47,8 +46,8 @@ export class GetPractitionerApplicationCredentialFileUseCase {
       });
     }
 
-    const stat = await fs.stat(absolutePath).catch(() => null);
-    if (!stat?.isFile()) {
+    const stat = await this.credentialStorage.statSafeFile(absolutePath);
+    if (!stat) {
       throw new NotFoundException({
         messageKey:
           'admin.practitionerApplications.errors.credentialFileNotFound',

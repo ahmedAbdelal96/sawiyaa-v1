@@ -1309,7 +1309,10 @@
       "back": "الرجوع للطلبات"
     },
     "sections": {
-      "instantBookingPricing": "أسعار الحجز الفوري"
+      "instantBookingPricing": "أسعار الحجز الفوري",
+      "credentials": "المستندات وشهادات الاعتماد",
+      "payout": "بيانات تحويل المستحقات",
+      "qualifications": "المؤهلات والشهادات العلمية"
     },
     "applicant": {
       "displayName": "الإسم",

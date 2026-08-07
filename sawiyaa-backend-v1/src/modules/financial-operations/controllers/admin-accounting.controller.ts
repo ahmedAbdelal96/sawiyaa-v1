@@ -21,7 +21,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -45,6 +44,7 @@ import {
   LedgerExplorerListSuccessResponseDto,
 } from '../dto/admin-accounting-response.dto';
 import { AdminFinanceHubSummarySuccessResponseDto } from '../dto/admin-finance-dashboard-summary.dto';
+import { AdminFinancialOverviewQueryDto, AdminFinancialOverviewSuccessResponseDto } from '../dto/admin-financial-overview.dto';
 import { ExportAdminLedgerExplorerDto } from '../dto/export-admin-ledger-explorer.dto';
 import { ListAdminAccountingReconciliationDto } from '../dto/list-admin-accounting-reconciliation.dto';
 import { ListAdminLedgerExplorerDto } from '../dto/list-admin-ledger-explorer.dto';
@@ -53,6 +53,7 @@ import { ExportAdminAccountingDashboardCsvUseCase } from '../use-cases/export-ad
 import { ExportAdminLedgerExplorerCsvUseCase } from '../use-cases/export-admin-ledger-explorer-csv.use-case';
 import { GetAdminAccountingDashboardUseCase } from '../use-cases/get-admin-accounting-dashboard.use-case';
 import { GetAdminFinanceHubSummaryUseCase } from '../use-cases/get-admin-finance-hub-summary.use-case';
+import { AdminFinancialOverviewService } from '../services/admin-financial-overview.service';
 import { GetAdminAccountingReconciliationOverviewUseCase } from '../use-cases/get-admin-accounting-reconciliation-overview.use-case';
 import { GetAdminLedgerJournalEntryUseCase } from '../use-cases/get-admin-ledger-journal-entry.use-case';
 import { ListAdminAccountingReconciliationUseCase } from '../use-cases/list-admin-accounting-reconciliation.use-case';
@@ -73,6 +74,7 @@ export class AdminAccountingController {
   constructor(
     private readonly getAdminAccountingDashboardUseCase: GetAdminAccountingDashboardUseCase,
     private readonly getAdminFinanceHubSummaryUseCase: GetAdminFinanceHubSummaryUseCase,
+    private readonly adminFinancialOverviewService: AdminFinancialOverviewService,
     private readonly exportAdminAccountingDashboardCsvUseCase: ExportAdminAccountingDashboardCsvUseCase,
     private readonly getAdminAccountingReconciliationOverviewUseCase: GetAdminAccountingReconciliationOverviewUseCase,
     private readonly listAdminAccountingReconciliationUseCase: ListAdminAccountingReconciliationUseCase,
@@ -126,6 +128,46 @@ export class AdminAccountingController {
       success: true as const,
       data,
     };
+  }
+
+  @Get('overview')
+  @Permissions(PermissionKey.ACCOUNTING_READ)
+  @ApiOperation({
+    summary: 'Get canonical accountant-grade financial overview',
+    description:
+      'Returns currency-separated operational financial metrics. Dates are inclusive fromDate and exclusive toDate; each metric uses its authoritative timestamp.',
+  })
+  @ApiResponse({ status: 200, type: AdminFinancialOverviewSuccessResponseDto })
+  async financialOverview(@Query() query: AdminFinancialOverviewQueryDto) {
+    const data = await this.adminFinancialOverviewService.execute(query, 'ACCOUNTING');
+    return { success: true as const, data };
+  }
+
+  @Get('overview/wallets')
+  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_READ)
+  @ApiOperation({ summary: 'Get wallet-scoped financial overview' })
+  @ApiResponse({ status: 200, type: AdminFinancialOverviewSuccessResponseDto })
+  async walletFinancialOverview(@Query() query: AdminFinancialOverviewQueryDto) {
+    const data = await this.adminFinancialOverviewService.execute(query, 'WALLET');
+    return { success: true as const, data };
+  }
+
+  @Get('overview/collections')
+  @Permissions(PermissionKey.FINANCE_EVENTS_READ)
+  @ApiOperation({ summary: 'Get payment-collection-scoped financial overview' })
+  @ApiResponse({ status: 200, type: AdminFinancialOverviewSuccessResponseDto })
+  async collectionsFinancialOverview(@Query() query: AdminFinancialOverviewQueryDto) {
+    const data = await this.adminFinancialOverviewService.execute(query, 'COLLECTIONS');
+    return { success: true as const, data };
+  }
+
+  @Get('overview/payouts')
+  @Permissions(PermissionKey.PRACTITIONER_PAYOUTS_READ)
+  @ApiOperation({ summary: 'Get payout-scoped financial overview' })
+  @ApiResponse({ status: 200, type: AdminFinancialOverviewSuccessResponseDto })
+  async payoutFinancialOverview(@Query() query: AdminFinancialOverviewQueryDto) {
+    const data = await this.adminFinancialOverviewService.execute(query, 'PAYOUT');
+    return { success: true as const, data };
   }
 
   @Get('dashboard/export.csv')
@@ -208,7 +250,6 @@ export class AdminAccountingController {
   }
 
   @Patch('reconciliation/items/:sourceType/:sourceId/review')
-  @RequireStepUp('finance.accounting.reconciliation.review')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Update accounting reconciliation review',

@@ -10,7 +10,7 @@ import axios, {
 } from "axios";
 import Cookies from "js-cookie";
 import { API_CONFIG, TOKEN_CONFIG } from "./config";
-import { isStepUpRequiredError, toAppError } from "./errors";
+import { toAppError } from "./errors";
 import { USER_DATA_COOKIE, USER_ROLE_COOKIE } from "@/lib/auth/constants";
 import { getSignInRouteForRole } from "@/config/route-access";
 import { requestSensitiveCacheClear } from "@/lib/security/sensitive-cache";
@@ -325,7 +325,7 @@ httpClient.interceptors.response.use(
     // 403 Forbidden: user is authenticated but lacks permission.
     // Do NOT logout. Surface as AppError with errorType "FORBIDDEN".
     // Page-level guards and error boundaries will render the appropriate UI.
-    if (error.response?.status === 403 && !isStepUpRequiredError(error)) {
+    if (error.response?.status === 403) {
       requestSensitiveCacheClear("forbidden");
     }
     return Promise.reject(toAppError(error));

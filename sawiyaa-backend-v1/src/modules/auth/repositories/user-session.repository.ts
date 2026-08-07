@@ -33,8 +33,6 @@ export class UserSessionRepository {
         userId: true,
         refreshTokenHash: true,
         expiresAt: true,
-        stepUpVerifiedAt: true,
-        stepUpExpiresAt: true,
         user: {
           select: {
             id: true,
@@ -66,21 +64,6 @@ export class UserSessionRepository {
             },
           },
         },
-      },
-    });
-  }
-
-  findStepUpStateById(sessionId: string, tx?: Prisma.TransactionClient) {
-    return this.getDb(tx).userSession.findFirst({
-      where: {
-        id: sessionId,
-      },
-      select: {
-        id: true,
-        userId: true,
-        revokedAt: true,
-        stepUpVerifiedAt: true,
-        stepUpExpiresAt: true,
       },
     });
   }

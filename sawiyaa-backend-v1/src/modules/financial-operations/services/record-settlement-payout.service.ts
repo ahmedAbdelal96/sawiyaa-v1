@@ -205,6 +205,7 @@ export class RecordSettlementPayoutService {
     const existingPayoutByIdempotencyKey =
       await this.settlementPayoutRepository.findSettlementPayoutByIdempotencyKey(
         payoutIdempotencyKey,
+        currentSettlement.id,
         tx,
       );
     if (existingPayoutByIdempotencyKey) {
@@ -334,6 +335,7 @@ export class RecordSettlementPayoutService {
             netAmountReceived,
             totalPlatformOutflow,
             externalPayoutRef,
+            idempotencyKey: payoutIdempotencyKey,
             notes: resolvedNotes,
             effectiveAt,
             processedByUserId: input.processedByUserId ?? null,

@@ -29,8 +29,8 @@ The authoritative join policy lives in **backend only** — `session-join-policy
 
 | Constant | Value | Meaning |
 |---|---|---|
-| `SESSION_JOIN_LEAD_MINUTES` | `2` | Join window opens 2 minutes before scheduled start |
-| `SESSION_JOIN_LAG_MINUTES` | `0` | Join window closes exactly at scheduled end |
+| `SESSION_JOIN_EARLY_MINUTES` | `15` | Join window opens before scheduled start |
+| `SESSION_JOIN_AFTER_END_GRACE_MINUTES` | `10` | Existing participants may reconnect after scheduled end |
 
 The join contract response (`SessionJoinContractViewModel`) includes `availableAt` and
 `expiresAt` so clients can display authoritative window times without duplicating constants.

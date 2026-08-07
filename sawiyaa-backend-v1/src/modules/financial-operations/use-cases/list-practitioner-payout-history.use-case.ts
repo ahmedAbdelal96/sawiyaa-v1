@@ -39,6 +39,9 @@ export class ListPractitionerPayoutHistoryUseCase {
     const createdTo = input.query.createdTo
       ? new Date(input.query.createdTo)
       : undefined;
+    if (createdTo && /^\d{4}-\d{2}-\d{2}$/.test(input.query.createdTo ?? '')) {
+      createdTo.setUTCHours(23, 59, 59, 999);
+    }
 
     if (createdFrom && createdTo && createdFrom > createdTo) {
       throw new BadRequestException({

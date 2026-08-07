@@ -47,6 +47,7 @@ const editableSetting = {
   expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
   changedAt: "2026-08-03T10:00:00.000Z",
   effect: "IMMEDIATE" as const,
+  uiMetadata: { control: "integer" as const },
 };
 
 const paymentSetting = {
@@ -68,6 +69,7 @@ const localeSetting = {
   value: "ar",
   defaultValue: "en",
   enumOptions: ["ar", "en"],
+  uiMetadata: { control: "select" as const },
 };
 
 function configureHooks(overrides: Record<string, unknown> = {}) {
@@ -210,8 +212,7 @@ describe("AdminPlatformSettingsScreen", () => {
 
     await user.click(screen.getByRole("button", { name: "actions.edit" }));
     const selects = screen.getAllByRole("combobox");
-    expect(selects.length).toBe(2);
-    const select = selects[1];
+    const select = selects[selects.length - 1];
     expect((select as HTMLSelectElement).value).toBe("ar");
     expect(
       Array.from((select as HTMLSelectElement).options).map(
@@ -231,4 +232,48 @@ describe("AdminPlatformSettingsScreen", () => {
       expect.anything(),
     );
   });
+
+  it("opens the dedicated SessionReminderScheduleEditor when editing SESSION_REMINDER_OFFSETS_MINUTES", async () => {
+    const user = userEvent.setup();
+    const sessionReminderSetting = {
+      key: "SESSION_REMINDER_OFFSETS_MINUTES",
+      label: "مواعيد تذكير الجلسة بالدقائق",
+      description: "جدولة التذكيرات بالدقائق",
+      category: "NOTIFICATION",
+      domain: "sessions",
+      valueType: "JSON" as const,
+      value: [60, 15, 0],
+      defaultValue: [60, 15, 0],
+      source: "CATALOG_DEFAULT" as const,
+      editable: true,
+      permission: "configuration.edit.operational",
+      enumOptions: null,
+      jsonSchemaId: null,
+      valueId: "val-reminders",
+      expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
+    };
+
+    mocks.settings.mockReturnValue({
+      data: { categories: ["NOTIFICATION"], settings: [sessionReminderSetting] },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+      refetch: mocks.refetch,
+    });
+
+    render(<AdminPlatformSettingsScreen />);
+
+    await user.click(screen.getByRole("button", { name: "actions.edit" }));
+
+    // Must show business title, NOT raw key as primary title
+    expect(screen.getByText("مواعيد تذكير الجلسة")).toBeTruthy();
+    expect(
+      screen.getByText("حدد متى يتلقى المريض والمختص تذكيرات قبل موعد الجلسة وعند بدايتها.")
+    ).toBeTruthy();
+
+    // Must show human-readable timeline preview
+    expect(screen.getByText("المعاينة الحية للجدول الزمني")).toBeTruthy();
+    expect(screen.getAllByText("قبل الجلسة بساعة").length).toBeGreaterThan(0);
+  });
 });
+

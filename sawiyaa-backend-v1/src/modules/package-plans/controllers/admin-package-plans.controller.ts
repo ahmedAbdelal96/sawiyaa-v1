@@ -40,7 +40,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/package-plans')
 export class AdminPackagePlansController {
   constructor(

@@ -1,13 +1,15 @@
 import {
   ForbiddenException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserRoleType } from '@prisma/client';
+import { SecurityAuditOutcome, UserRoleType } from '@prisma/client';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
 import { AuthUserContextMapper } from '../mappers/auth-user-context.mapper';
 import { AuthTokenService } from '../services/auth-token.service';
 import { AuthSessionService } from '../services/auth-session.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 
 /**
  * Refresh flow is shared because patient, practitioner, and admin all rotate sessions the same way.
@@ -20,6 +22,7 @@ export class RefreshAuthSessionUseCase {
     private readonly authTokenService: AuthTokenService,
     private readonly authSessionService: AuthSessionService,
     private readonly authUserContextMapper: AuthUserContextMapper,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -73,6 +76,16 @@ export class RefreshAuthSessionUseCase {
       refreshToken: tokens.refreshToken,
       refreshExpiresAt: tokens.refreshTokenExpiresAt,
       ...input.deviceContext,
+    });
+
+    this.securityAuditService?.logAsync({
+      action: 'auth.session.refresh.success',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: session.user.id,
+      actorRoles: session.user.roles.map((role) => role.role),
+      resourceType: 'Session',
+      resourceId: payload.sessionId,
+      reason: 'REFRESH_TOKEN_ROTATED',
     });
 
     return {

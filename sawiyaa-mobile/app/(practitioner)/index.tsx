@@ -39,6 +39,7 @@ import {
 import { practitionerMissingRequirementLabel } from "../../src/features/practitioner/profile/utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 import { usePractitionerUnreadNotificationCount } from "../../src/features/practitioner/notifications/hooks";
+import { UpcomingSessionCard } from "../../src/features/sessions/UpcomingSessionCard";
 
 export default function PractitionerHomeScreen() {
   const { t, i18n } = useTranslation();
@@ -441,6 +442,8 @@ export default function PractitionerHomeScreen() {
             </View>
           )}
         </Card>
+
+        <UpcomingSessionCard />
 
         {/* Today Snapshot Card - Clean 2x2 Layout */}
         <Card variant="outlined" padding="md" style={styles.snapshotCard}>

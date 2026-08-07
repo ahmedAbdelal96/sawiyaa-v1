@@ -21,8 +21,14 @@ export function toJsonLogRecord(
   info: LogRecord,
   defaults?: { service?: string; env?: string },
 ): Record<string, unknown> {
-  const service = info.service ?? info.appName ?? defaults?.service ?? resolveServiceName();
-  const env = info.env ?? info.environment ?? defaults?.env ?? process.env.NODE_ENV ?? 'development';
+  const service =
+    info.service ?? info.appName ?? defaults?.service ?? resolveServiceName();
+  const env =
+    info.env ??
+    info.environment ??
+    defaults?.env ??
+    process.env.NODE_ENV ??
+    'development';
 
   const extras = Object.entries(info).reduce<Record<string, unknown>>(
     (accumulator, [key, value]) => {
@@ -53,6 +59,12 @@ export function toJsonLogRecord(
 }
 
 export function formatConsoleMeta(meta: Record<string, unknown>): string {
+  const scalar = (value: unknown): string =>
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+      ? String(value)
+      : '';
   const orderedKeys = [
     'requestId',
     'method',
@@ -81,16 +93,64 @@ export function formatConsoleMeta(meta: Record<string, unknown>): string {
       }
 
       if (Array.isArray(value)) {
-        return [`${key}=[${value.map((item) => String(item)).join(', ')}]`];
+        return [`${key}=[${value.map(scalar).join(', ')}]`];
       }
 
       if (typeof value === 'object') {
         return [];
       }
 
-      return [`${key}=${String(value)}`];
+      return [`${key}=${scalar(value)}`];
     })
     .join(' ');
 
   return rendered.length > 0 ? ` ${rendered}` : '';
+}
+
+export type HttpConsoleStyle =
+  | 'success'
+  | 'redirect'
+  | 'warning'
+  | 'rate-limit'
+  | 'error'
+  | 'slow-success';
+
+export function httpConsoleStyle(
+  statusCode: number,
+  isSlow = false,
+): HttpConsoleStyle {
+  if (statusCode >= 500) return 'error';
+  if (statusCode === 429) return 'rate-limit';
+  if (statusCode >= 400) return 'warning';
+  if (isSlow) return 'slow-success';
+  if (statusCode >= 300) return 'redirect';
+  return 'success';
+}
+
+export function formatHttpConsoleSummary(
+  meta: Record<string, unknown>,
+  colorsEnabled: boolean,
+): string {
+  if (typeof meta.statusCode !== 'number') return '';
+  const scalar = (value: unknown, fallback: string): string =>
+    typeof value === 'string' || typeof value === 'number'
+      ? String(value)
+      : fallback;
+  const status = scalar(meta.statusCode, '0').padStart(3, ' ');
+  const method = scalar(meta.method, '').padEnd(6, ' ');
+  const route = scalar(meta.route ?? meta.path, '').padEnd(48, ' ');
+  const duration = `${scalar(meta.durationMs, '0')}ms`;
+  const requestId = scalar(meta.requestId, '-');
+  const errorCode = meta.errorCode ? ` ${scalar(meta.errorCode, '')}` : '';
+  const line = `${status} ${method} ${route} ${duration} ${requestId}${errorCode}`;
+  if (!colorsEnabled) return line;
+  const colors: Record<HttpConsoleStyle, string> = {
+    success: '\u001b[32m',
+    redirect: '\u001b[36m',
+    warning: '\u001b[33m',
+    'rate-limit': '\u001b[35m',
+    error: '\u001b[31m',
+    'slow-success': '\u001b[1;33m',
+  };
+  return `${colors[httpConsoleStyle(meta.statusCode, meta.isSlow === true)]}${line}\u001b[0m`;
 }

@@ -52,6 +52,8 @@ type PurchaseRecord = {
     providerSessionRef: string | null;
     scheduledStartAt: Date | null;
     scheduledEndAt: Date | null;
+    joinOpenAt: Date | null;
+    joinCloseAt: Date | null;
     durationMinutes: number;
     sessionMode: PackagePurchaseSessionSummaryViewModel['sessionMode'];
     packageSessionIndex: number | null;
@@ -216,6 +218,8 @@ export class PackagePurchasePresenter {
         sessionMode: session.sessionMode,
         scheduledStartAt: session.scheduledStartAt,
         scheduledEndAt: session.scheduledEndAt,
+        joinOpenAt: session.joinOpenAt,
+        joinCloseAt: session.joinCloseAt,
         provider: session.provider,
         providerRoomId: session.providerRoomId,
         providerSessionRef: session.providerSessionRef,

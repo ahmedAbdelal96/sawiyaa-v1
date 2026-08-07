@@ -21,22 +21,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AdminApplicationsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations({ locale, namespace: "admin-area" });
-  const tNavigation = await getTranslations({ locale, namespace: "navigation" });
 
   return (
     <AdminPermissionGate requiredPermissions={[PermissionKey.PRACTITIONER_APPLICATIONS_READ]}>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {tNavigation("main.practitionerApplications")}
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t("applications.page.subtitle")}
-          </p>
-        </div>
-        <AdminApplicationsList />
-      </div>
+      <AdminApplicationsList />
     </AdminPermissionGate>
   );
 }

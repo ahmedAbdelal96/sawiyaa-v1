@@ -30,6 +30,7 @@ describe('GetAdminSessionEarningReviewUseCase', () => {
 
   const reviewRepository = {
     findAdminReviewById: jest.fn(),
+    findAdminReviewBySettlementId: jest.fn(),
   } as unknown as SessionEarningReviewRepository;
 
   const paymentRepository = {

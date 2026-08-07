@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeDollarSign, Receipt, Search, WalletCards } from "lucide-react";
+import { Search } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
@@ -10,22 +10,21 @@ import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagin
 import {
   SurfaceActionLink,
 } from "@/components/shared/SurfaceShell";
-import AdminOperationalListShell, {
-  AdminSummaryCard,
-} from "@/components/shared/admin/AdminOperationalListShell";
-import { Link } from "@/i18n/navigation";
+import AdminOperationalListShell from "@/components/shared/admin/AdminOperationalListShell";
+import { Link, useRouter } from "@/i18n/navigation";
 import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import { cleanPersonName, formatPersonDisplayName, shortId } from "@/lib/person-name-cleaner";
 import type { PayoutMethod } from "@/features/admin/finance/types/payout-method";
 import DateField from "@/components/form/input/DateField";
 import { useAdminPractitionerTransfers } from "../hooks/use-admin-practitioner-payouts";
 import type { AdminPractitionerTransferItem } from "../api/admin-practitioner-transfers.api";
-import AdminPractitionerPayoutHistoryDetailDrawer from "./AdminPractitionerPayoutHistoryDetailDrawer";
 
 const PAGE_SIZE = DEFAULT_PAGE_LIMIT;
 
 export default function AdminPractitionerPayoutHistoryScreen() {
   const t = useTranslations("admin-practitioner-payouts");
   const locale = useLocale();
+  const router = useRouter();
 
   const [currencyFilter, setCurrencyFilter] = useState("");
   const [practitionerFilter, setPractitionerFilter] = useState("");
@@ -77,17 +76,23 @@ export default function AdminPractitionerPayoutHistoryScreen() {
     {
       id: "practitioner",
       header: t("history.columns.practitioner"),
-      cell: (item) => (
-        <div className="space-y-1">
-          <Link
-            href={`/admin/practitioner-payouts/${item.practitionerId}`}
-            className="font-semibold text-text-primary transition hover:text-primary dark:text-white/95"
-          >
-            {item.practitionerDisplayName ?? item.practitionerId}
-          </Link>
-          <p className="text-xs text-text-secondary">{item.practitionerId}</p>
-        </div>
-      ),
+      cell: (item) => {
+        const isAr = locale.startsWith("ar");
+        const name = formatPersonDisplayName(item.practitionerDisplayName, item.practitionerId, isAr ? "الممارس" : "Practitioner");
+        return (
+          <div className="space-y-0.5 min-w-0 max-w-[200px]">
+            <Link
+              href={`/admin/practitioner-payouts/${item.practitionerId}`}
+              className="block truncate font-bold text-xs text-text-primary transition hover:text-primary dark:text-white/95"
+            >
+              {name}
+            </Link>
+            <span className="block truncate font-mono text-[9px] text-text-muted/75 dark:text-slate-500" dir="ltr">
+              {shortId(item.practitionerId, 8, 4)}
+            </span>
+          </div>
+        );
+      },
     },
     {
       id: "settlementReference",
@@ -97,8 +102,9 @@ export default function AdminPractitionerPayoutHistoryScreen() {
           <Link
             href={`/admin/settlements/${item.settlementId}`}
             className="font-mono text-xs text-primary hover:underline"
+            dir="ltr"
           >
-            {item.settlementId.slice(0, 8)}...
+            {shortId(item.settlementId, 8, 4)}
           </Link>
         ) : "-"
       ),
@@ -125,12 +131,27 @@ export default function AdminPractitionerPayoutHistoryScreen() {
     {
       id: "externalReference",
       header: t("history.columns.externalReference" as Parameters<typeof t>[0]),
-      cell: (item) => item.externalReference ?? "-",
+      cell: (item) =>
+        item.externalReference ? (
+          <span className="font-mono text-xs font-semibold text-text-primary dark:text-white/90" dir="ltr">
+            {shortId(item.externalReference, 14, 4)}
+          </span>
+        ) : (
+          "-"
+        ),
     },
     {
       id: "recordedBy",
       header: t("history.columns.recordedBy"),
-      cell: (item) => item.processedByDisplayName ?? item.processedByUserId ?? "-",
+      cell: (item) => {
+        const isAr = locale.startsWith("ar");
+        const recorderName = cleanPersonName(item.processedByDisplayName) || (item.processedByDisplayName && !item.processedByDisplayName.includes("-") ? item.processedByDisplayName : (isAr ? "المحاسب" : "Accountant"));
+        return (
+          <span className="font-medium text-xs text-text-primary dark:text-white/95 truncate">
+            {recorderName}
+          </span>
+        );
+      },
     },
     {
       id: "paidAt",
@@ -183,7 +204,7 @@ export default function AdminPractitionerPayoutHistoryScreen() {
         description={t("history.description")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <SurfaceActionLink href="/admin/practitioner-payouts">
+            <SurfaceActionLink href="/admin/practitioner-payouts" variant="primary">
               {t("history.backToList")}
             </SurfaceActionLink>
             <SurfaceActionLink href="/admin/finance/accounting/reconciliation">
@@ -191,28 +212,7 @@ export default function AdminPractitionerPayoutHistoryScreen() {
             </SurfaceActionLink>
           </div>
         }
-        summaryCards={
-          <>
-            <AdminSummaryCard
-              label={t("history.summary.totalPayouts")}
-              value={summary?.payoutCount ?? 0}
-              tone="primary"
-              icon={<Receipt className="h-4 w-4" />}
-            />
-            <AdminSummaryCard
-              label={t("history.summary.egpRecorded")}
-              value={formatRecordedAmount(summary?.egpAmountPaid, "EGP")}
-              tone="success"
-              icon={<WalletCards className="h-4 w-4" />}
-            />
-            <AdminSummaryCard
-              label={t("history.summary.usdRecorded")}
-              value={formatRecordedAmount(summary?.usdAmountPaid, "USD")}
-              tone="neutral"
-              icon={<BadgeDollarSign className="h-4 w-4" />}
-            />
-          </>
-        }
+
         filters={
           <div className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
@@ -358,24 +358,20 @@ export default function AdminPractitionerPayoutHistoryScreen() {
             setPage(1);
           }}
           pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
+          onRowClick={(item) => router.push(`/admin/practitioner-payouts/history/${item.id}` as never)}
           rowActions={(item) => (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setSelectedPayout(item)}>
-                {t("history.actions.viewDetails")}
-              </Button>
-            </div>
+            <Link
+              href={`/admin/practitioner-payouts/history/${item.id}`}
+              className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-white dark:hover:bg-surface-tertiary"
+            >
+              {t("history.actions.viewDetails")}
+            </Link>
           )}
           rowActionsHeader={t("history.columns.actions")}
           ariaLabel={t("history.title")}
           caption={t("history.description")}
         />
       </AdminOperationalListShell>
-
-      <AdminPractitionerPayoutHistoryDetailDrawer
-        isOpen={Boolean(selectedPayout)}
-        payout={selectedPayoutMapped}
-        onClose={() => setSelectedPayout(null)}
-      />
     </>
   );
 }

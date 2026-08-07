@@ -310,16 +310,16 @@ export function getPaginationPages(
 export function getSizeClasses(size: 'sm' | 'md' | 'lg' = 'md') {
   const sizeMap = {
     sm: {
-      cell: 'px-3 py-2 text-[13px]',
-      header: 'px-3 py-2 text-[11px]',
+      cell: 'px-3 py-2 text-xs',
+      header: 'px-3 py-2 text-xs font-semibold',
     },
     md: {
-      cell: 'px-4 py-2.5 text-sm',
-      header: 'px-4 py-2.5 text-xs',
+      cell: 'px-3.5 py-3 text-xs md:text-sm',
+      header: 'px-3.5 py-3 text-xs md:text-sm font-semibold',
     },
     lg: {
-      cell: 'px-6 py-3.5 text-base',
-      header: 'px-6 py-3 text-sm',
+      cell: 'px-4 py-3.5 text-sm md:text-base',
+      header: 'px-4 py-3 text-sm md:text-base font-semibold',
     },
   };
   

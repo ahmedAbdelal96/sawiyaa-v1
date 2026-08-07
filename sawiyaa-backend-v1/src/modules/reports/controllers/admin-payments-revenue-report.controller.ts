@@ -23,7 +23,7 @@ import { ListAdminPaymentsRevenueReportRowsUseCase } from '../use-cases/list-adm
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/payments-revenue')
 export class AdminPaymentsRevenueReportController {

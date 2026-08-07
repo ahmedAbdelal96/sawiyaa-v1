@@ -18,7 +18,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -65,7 +64,6 @@ export class AdminAccountingReconciliationOperationsController {
   ) {}
 
   @Post('reconciliation-runs/payments')
-  @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Run payment reconciliation',
@@ -99,7 +97,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Post('reconciliation-runs/wallets')
-  @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Run wallet reconciliation',
@@ -128,7 +125,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Post('reconciliation-runs/refunds')
-  @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Run refund reconciliation',
@@ -157,7 +153,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Post('reconciliation-runs/package-settlements')
-  @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Run package settlement reconciliation',
@@ -192,7 +187,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Post('reconciliation-runs/full')
-  @RequireStepUp('finance.accounting.reconciliation.run')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Run a full accounting reconciliation sweep',
@@ -305,7 +299,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Patch('reconciliation-issues/:issueId/acknowledge')
-  @RequireStepUp('finance.accounting.reconciliation.issue.review')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Acknowledge a reconciliation issue',
@@ -337,7 +330,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Patch('reconciliation-issues/:issueId/resolve')
-  @RequireStepUp('finance.accounting.reconciliation.issue.review')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Resolve a reconciliation issue',
@@ -369,7 +361,6 @@ export class AdminAccountingReconciliationOperationsController {
   }
 
   @Patch('reconciliation-issues/:issueId/ignore')
-  @RequireStepUp('finance.accounting.reconciliation.issue.review')
   @Permissions(PermissionKey.ACCOUNTING_WRITE)
   @ApiOperation({
     summary: 'Ignore a reconciliation issue',

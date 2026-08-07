@@ -34,6 +34,7 @@ export interface SessionVideoProviderAdapter {
     userId: string;
     displayName: string | null;
     actorType: 'PATIENT' | 'PRACTITIONER';
+    expiresAt?: Date | null;
   }): Promise<SessionVideoJoinTokenResult>;
 
   closeRoom(input: {

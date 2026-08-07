@@ -298,6 +298,32 @@ describe('PaymentGatewayControlService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('rejects a missing step-up challenge after password confirmation', async () => {
+    await expect(
+      service.updateRouting({
+        actorUserId: 'user-1',
+        requestId: 'request-step-up-required',
+        reason: 'Require step-up',
+        currentPassword: 'current-password',
+        stepUpChallengeId: '',
+        stepUpCode: '',
+        rawDraft: {
+          defaultProvider: PaymentProvider.STRIPE,
+          priorityOrder: [PaymentProvider.STRIPE, PaymentProvider.PAYMOB],
+          fallbackProvider: PaymentProvider.PAYMOB,
+          currencyRoutes: [],
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'PAYMENT_GATEWAY_CONTROL_STEP_UP_REQUIRED' },
+    });
+    expect(passwordConfirmationService.verify).toHaveBeenCalledTimes(1);
+    expect(verifyOtpChallengeUseCase.execute).not.toHaveBeenCalled();
+    expect(
+      configurationManagementService.updateManyWithTransaction,
+    ).not.toHaveBeenCalled();
+  });
+
   it('rolls back to a previous snapshot after fresh password verification', async () => {
     const result = await service.rollbackProvider({
       provider: PaymentProvider.PAYMOB,
@@ -317,6 +343,12 @@ describe('PaymentGatewayControlService', () => {
         targetId: PaymentProvider.PAYMOB,
       }),
     );
+    expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledWith({
+      challengeId: 'challenge-1',
+      userId: 'user-1',
+      code: '123456',
+      purpose: 'ADMIN_STEP_UP',
+    });
     expect(
       configurationManagementService.updateManyWithTransaction,
     ).toHaveBeenCalledTimes(1);
@@ -360,6 +392,12 @@ describe('PaymentGatewayControlService', () => {
     });
     expect(typeof operation).toBe('function');
     expect(auditEventCreateMock).toHaveBeenCalledTimes(1);
+    expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledWith({
+      challengeId: 'challenge-1',
+      userId: 'user-1',
+      code: '123456',
+      purpose: 'ADMIN_STEP_UP',
+    });
   });
 
   it('maps multi-key routing changes into one canonical atomic batch', async () => {
@@ -397,6 +435,12 @@ describe('PaymentGatewayControlService', () => {
         (command: UpdateConfigurationCommand) => command.scopeRefId === null,
       ),
     ).toBe(true);
+    expect(verifyOtpChallengeUseCase.execute).toHaveBeenCalledWith({
+      challengeId: 'challenge-1',
+      userId: 'user-1',
+      code: '123456',
+      purpose: 'ADMIN_STEP_UP',
+    });
   });
 
   it('validates stripe drafts using the provider-specific model', () => {

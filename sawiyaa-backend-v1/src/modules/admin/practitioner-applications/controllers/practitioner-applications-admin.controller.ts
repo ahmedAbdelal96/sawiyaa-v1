@@ -33,7 +33,6 @@ import {
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -132,6 +131,7 @@ export class PractitionerApplicationsAdminController {
     );
 
     res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'private, max-age=60');
     return new StreamableFile(createReadStream(stored.absolutePath));
   }
@@ -162,6 +162,7 @@ export class PractitionerApplicationsAdminController {
       });
 
     res.setHeader('Content-Type', stored.mimeType);
+    res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'private, max-age=60');
     return new StreamableFile(createReadStream(stored.absolutePath));
   }
@@ -205,7 +206,6 @@ export class PractitionerApplicationsAdminController {
 
   /** Creates a practitioner account directly from admin scope without practitioner self-submission. */
   @Post('direct-create')
-  @RequireStepUp('security.practitioner.application.direct-create')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Create practitioner directly (admin)',
@@ -539,7 +539,6 @@ export class PractitionerApplicationsAdminController {
 
   /** Approves a practitioner application when transition policy allows it. */
   @Post(':id/approve')
-  @RequireStepUp('security.practitioner.application.approve')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
   @ApiOperation({
     summary: 'Approve practitioner application',
@@ -584,7 +583,6 @@ export class PractitionerApplicationsAdminController {
 
   /** Rejects a practitioner application when transition policy allows it. */
   @Post(':id/reject')
-  @RequireStepUp('security.practitioner.application.reject')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_REJECT)
   @ApiOperation({
     summary: 'Reject practitioner application',
@@ -629,7 +627,6 @@ export class PractitionerApplicationsAdminController {
 
   /** Requests changes for a practitioner application (editable again). */
   @Post(':id/request-changes')
-  @RequireStepUp('security.practitioner.application.request-changes')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_REQUEST_CHANGES)
   @ApiOperation({
     summary: 'Request changes for practitioner application',

@@ -247,14 +247,16 @@ export class SettlementPayoutRepository {
 
   findSettlementPayoutByIdempotencyKey(
     idempotencyKey: string,
+    settlementId?: string,
     tx?: Prisma.TransactionClient,
   ) {
     return this.getDb(tx).practitionerSettlementPayout.findFirst({
       where: {
-        payoutMethodSnapshot: {
-          path: ['idempotencyKey'],
-          equals: idempotencyKey,
-        },
+        ...(settlementId ? { settlementId } : {}),
+        OR: [
+          { idempotencyKey },
+          { payoutMethodSnapshot: { path: ['idempotencyKey'], equals: idempotencyKey } },
+        ],
       },
       include: this.payoutInclude,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],

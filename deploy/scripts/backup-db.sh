@@ -5,6 +5,7 @@ umask 077
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-/opt/sawiyaa}"
 BACKUP_DIR="${SAWIYAA_BACKUP_DIR:-/opt/sawiyaa-backups/db}"
 COMPOSE_FILE="${SAWIYAA_COMPOSE_FILE:-$PROJECT_DIR/docker-compose.prod.yml}"
+COMPOSE_ENV_FILE="${SAWIYAA_COMPOSE_ENV_FILE:-}"
 DB_SERVICE="${SAWIYAA_DB_SERVICE:-postgres}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-unknown}"
 RETENTION_COUNT="${SAWIYAA_BACKUP_RETENTION_COUNT:-20}"
@@ -23,7 +24,12 @@ mkdir -p -- "$BACKUP_DIR" || fail "Backup directory is unavailable"
 [[ -d "$BACKUP_DIR" && -w "$BACKUP_DIR" ]] || fail "Backup directory is not writable"
 
 cd "$PROJECT_DIR"
-docker compose -f "$COMPOSE_FILE" ps --status running --services | grep -Fxq "$DB_SERVICE" || fail "Database service is not running"
+compose_args=(-f "$COMPOSE_FILE")
+if [[ -n "$COMPOSE_ENV_FILE" ]]; then
+  [[ -r "$COMPOSE_ENV_FILE" ]] || fail "Compose environment file is not readable"
+  compose_args+=(--env-file "$COMPOSE_ENV_FILE")
+fi
+docker compose "${compose_args[@]}" ps --status running --services | grep -Fxq "$DB_SERVICE" || fail "Database service is not running"
 
 dump_file="$BACKUP_DIR/${BASE_NAME}.dump"
 checksum_file="$dump_file.sha256"
@@ -40,7 +46,7 @@ min_free_mb="${SAWIYAA_BACKUP_MIN_FREE_MB:-2048}"
 [[ "$free_kb" =~ ^[0-9]+$ && "$min_free_mb" =~ ^[0-9]+$ ]] || fail "Unable to determine backup disk space"
 (( free_kb >= min_free_mb * 1024 )) || fail "Backup disk space is below threshold"
 
-docker compose -f "$COMPOSE_FILE" exec -T "$DB_SERVICE" sh -lc \
+docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" sh -lc \
   'pg_dump -Fc --no-owner --no-acl -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$tmp_dump" || fail "pg_dump failed"
 
 dump_size="$(wc -c < "$tmp_dump")"
@@ -51,7 +57,7 @@ pg_restore --list "$tmp_dump" >/dev/null || fail "pg_restore structure verificat
 
 checksum="$(awk '{print $1}' "$tmp_checksum")"
 sed "s#$(basename "$tmp_dump")#$(basename "$dump_file")#" "$tmp_checksum" > "$tmp_final_checksum"
-postgres_version="$(docker compose -f "$COMPOSE_FILE" exec -T "$DB_SERVICE" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT version()"' 2>/dev/null | head -n 1 || true)"
+postgres_version="$(docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT version()"' 2>/dev/null | head -n 1 || true)"
 postgres_version="${postgres_version//\\/\\\\}"
 postgres_version="${postgres_version//\"/\\\"}"
 cat > "$tmp_metadata" <<EOF

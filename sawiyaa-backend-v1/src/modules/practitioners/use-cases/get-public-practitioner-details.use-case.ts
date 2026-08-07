@@ -78,7 +78,7 @@ export class GetPublicPractitionerDetailsUseCase {
         profile.id,
       );
     const storedAvatar = this.avatarStorage
-      ? await this.avatarStorage.resolveAvatarMetadata(profile.user.id)
+      ? await this.avatarStorage.resolveAvatarMetadata(profile.id)
       : null;
     const pricingProfile = profile as typeof profile &
       PublicPractitionerPricingProfile;

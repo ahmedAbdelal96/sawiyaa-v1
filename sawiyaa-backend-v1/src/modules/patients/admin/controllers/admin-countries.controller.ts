@@ -19,7 +19,7 @@ import { CountryRepository } from '../../repositories/country.repository';
 @ApiTags('Admin - Countries')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
-@Roles(AppRole.ADMIN, AppRole.PATIENT_OPERATIONS)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.PATIENT_OPERATIONS)
 @Controller('admin/countries')
 export class AdminCountriesController {
   constructor(private readonly countryRepository: CountryRepository) {}

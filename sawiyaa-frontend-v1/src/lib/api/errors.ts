@@ -32,8 +32,10 @@ type AppErrorContext = {
 function createReferenceId(): string {
   return `ERR-${Date.now().toString(36).toUpperCase()}`;
 }
-
-function normalizeMessage(message: string | string[] | undefined, fallback: string): string {
+function normalizeMessage(
+  message: string | string[] | undefined,
+  fallback: string,
+): string {
   if (Array.isArray(message)) {
     return message.join(", ");
   }
@@ -173,7 +175,10 @@ function resolveErrorType(params: {
     return "SERVICE_UNAVAILABLE";
   }
 
-  if (!hasResponse && (axiosCode === "ERR_NETWORK" || axiosCode === "ENOTFOUND")) {
+  if (
+    !hasResponse &&
+    (axiosCode === "ERR_NETWORK" || axiosCode === "ENOTFOUND")
+  ) {
     return "NETWORK_ERROR";
   }
 
@@ -253,7 +258,10 @@ export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
 
-export function toAppError(error: unknown, context: AppErrorContext = {}): AppError {
+export function toAppError(
+  error: unknown,
+  context: AppErrorContext = {},
+): AppError {
   if (error instanceof AppError) {
     if (context.requestPath && !error.requestPath) {
       error.requestPath = context.requestPath;
@@ -275,13 +283,19 @@ export function toAppError(error: unknown, context: AppErrorContext = {}): AppEr
 
   if (error instanceof AxiosError) {
     const responseData = error.response?.data as ErrorShape | undefined;
-    const statusCode = responseData?.statusCode ?? error.response?.status ?? 500;
-    const requestId = readFirstStringField(responseData, "requestId") ?? undefined;
+    const statusCode =
+      responseData?.statusCode ?? error.response?.status ?? 500;
+    const requestId =
+      readFirstStringField(responseData, "requestId") ?? undefined;
     const lockoutMetadata = readAuthLockoutMetadata(responseData);
     const retryAfterHeader = error.response?.headers?.["retry-after"];
     const retryAfterSeconds =
       lockoutMetadata.retryAfterSeconds ??
-      toFiniteNumber(Array.isArray(retryAfterHeader) ? retryAfterHeader[0] : retryAfterHeader);
+      toFiniteNumber(
+        Array.isArray(retryAfterHeader)
+          ? retryAfterHeader[0]
+          : retryAfterHeader,
+      );
     const message = normalizeMessage(
       responseData?.message,
       error.message || "Unexpected API error",
@@ -358,9 +372,4 @@ export function isUnauthorizedError(error: unknown): boolean {
 
 export function isForbiddenError(error: unknown): boolean {
   return toAppError(error).statusCode === 403;
-}
-
-export function isStepUpRequiredError(error: unknown): boolean {
-  const appError = toAppError(error);
-  return appError.statusCode === 403 && appError.code === "STEP_UP_REQUIRED";
 }

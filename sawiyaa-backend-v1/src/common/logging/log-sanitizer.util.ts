@@ -60,32 +60,30 @@ function redactUrlLikeString(url: string): string {
 }
 
 export function sanitizeForLogging<T>(payload: T): T {
-  if (payload === null || payload === undefined) {
-    return payload;
-  }
-
-  if (Array.isArray(payload)) {
-    return payload.map((item) => sanitizeForLogging(item)) as T;
-  }
-
-  if (!isPlainObject(payload)) {
-    return payload;
-  }
-
-  const output: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(payload)) {
-    if (shouldRedact(key)) {
-      output[key] = '[REDACTED]';
-      continue;
+  const seen = new WeakSet<object>();
+  const visit = (value: unknown, depth: number): unknown => {
+    if (value === null || value === undefined || typeof value !== 'object')
+      return value;
+    if (depth >= 8) return '[TRUNCATED]';
+    if (seen.has(value)) return '[CIRCULAR]';
+    if (Array.isArray(value)) {
+      seen.add(value);
+      return value.map((item) => visit(item, depth + 1));
     }
-
-    output[key] = sanitizeForLogging(value);
-  }
-
-  return output as T;
+    if (!isPlainObject(value)) return value;
+    seen.add(value);
+    const output: Record<string, unknown> = {};
+    for (const [key, child] of Object.entries(value)) {
+      output[key] = shouldRedact(key) ? '[REDACTED]' : visit(child, depth + 1);
+    }
+    return output;
+  };
+  return visit(payload, 0) as T;
 }
 
-export function redactUrlForLogging(url: string | null | undefined): string | null {
+export function redactUrlForLogging(
+  url: string | null | undefined,
+): string | null {
   if (url === null || url === undefined) {
     return url ?? null;
   }

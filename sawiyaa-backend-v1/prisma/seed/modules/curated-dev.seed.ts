@@ -42,6 +42,8 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { createHash } from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 import { seedCredentials, seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo, daysFromNow, hashPassword } from '../shared/seed.utils';
@@ -75,6 +77,27 @@ function practiceRegionCurrency(countryIsoCode: string | null): {
   return countryIsoCode === 'EG' || countryIsoCode === 'EGY'
     ? { currencyCode: 'EGP', provider: PaymentProvider.PAYMOB }
     : { currencyCode: 'USD', provider: PaymentProvider.STRIPE };
+}
+
+const SEEDED_AVATAR_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
+
+async function ensureSeedAvatarFiles(
+  profiles: ReadonlyArray<{ profileId: string }>,
+): Promise<void> {
+  for (const profile of profiles) {
+    const directory = path.resolve(
+      process.cwd(),
+      'storage',
+      'practitioners',
+      profile.profileId,
+      'avatar',
+    );
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, 'seed-avatar.png'), SEEDED_AVATAR_PNG);
+  }
 }
 
 type CuratedSessionSeed = {
@@ -576,6 +599,14 @@ export const curatedDevSeedModule: SeedModule = {
       });
     }
 
+    await ensureSeedAvatarFiles(practitionerRows);
+    for (const profile of practitionerRows) {
+      await prisma.practitionerProfile.update({
+        where: { id: profile.profileId },
+        data: { avatarUrl: `/api/v1/practitioners/me/avatar?v=seed-${profile.profileId}` },
+      });
+    }
+
     await prisma.user.upsert({
       where: { id: patientCUserId },
       create: {
@@ -738,8 +769,10 @@ export const curatedDevSeedModule: SeedModule = {
 
     const now = new Date();
     const upcomingStart = addHours(now, 48);
-    const activeStart = addMinutes(now, -20);
-    const activeEnd = addMinutes(now, 40);
+    // This legacy presentation fixture must not occupy the primary demo
+    // patient's live join window; session-access.seed owns that dynamic pair.
+    const activeStart = daysAgo(2);
+    const activeEnd = addMinutes(activeStart, 60);
     const readyStart = addHours(now, 5);
     const completedStart = daysAgo(8);
     const cancelledStart = daysAgo(14);

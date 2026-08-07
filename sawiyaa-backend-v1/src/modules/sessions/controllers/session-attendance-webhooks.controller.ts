@@ -35,9 +35,30 @@ export class SessionAttendanceWebhooksController {
     @Req() request: AuthenticatedRequest,
     @Headers() headers: Record<string, string | string[] | undefined>,
   ) {
+    const rawBody = request.rawBody ?? Buffer.from('');
+    if (this.isDailyVerificationProbe(rawBody)) {
+      return {
+        received: true,
+        handled: false,
+        reason: 'WEBHOOK_VERIFICATION' as const,
+        sessionId: null,
+      };
+    }
+
     return this.handleDailyAttendanceWebhookUseCase.execute({
-      rawBody: request.rawBody ?? Buffer.from(''),
+      rawBody,
       headers,
     });
+  }
+
+  private isDailyVerificationProbe(rawBody: Buffer): boolean {
+    try {
+      const payload = JSON.parse(rawBody.toString('utf8')) as {
+        test?: unknown;
+      };
+      return payload.test === 'test';
+    } catch {
+      return false;
+    }
   }
 }

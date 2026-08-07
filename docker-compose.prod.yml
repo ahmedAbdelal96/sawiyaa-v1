@@ -22,6 +22,7 @@ services:
       - sawiyaa_internal
 
   backend:
+    image: sawiyaa-backend-v1:production
     build:
       context: ./sawiyaa-backend-v1
       dockerfile: Dockerfile
@@ -40,12 +41,15 @@ services:
     volumes:
       - backend_storage:/app/storage
       - backend_uploads:/app/uploads
+      - ./logs/backend:/app/logs
       - ./geoip/GeoLite2-Country.mmdb:/opt/sawiyaa/geoip/GeoLite2-Country.mmdb:ro
-    expose:
-      - "7000"
     depends_on:
+      backend_volume_init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
+    expose:
+      - "7000"
     healthcheck:
       test:
         [
@@ -61,29 +65,48 @@ services:
     networks:
       - sawiyaa_internal
 
+  # Existing named volumes are not re-owned when mounted into a new
+  # container. Preserve their contents while ensuring the non-root backend
+  # user can write them before the backend starts.
+  backend_volume_init:
+    image: sawiyaa-backend-v1:production
+    user: "0:0"
+    restart: "no"
+    command:
+      [
+        "sh",
+        "-c",
+        "chown -R 10001:10001 /app/storage /app/uploads && chmod 0750 /app/storage /app/uploads",
+      ]
+    volumes:
+      - backend_storage:/app/storage
+      - backend_uploads:/app/uploads
+    networks:
+      - sawiyaa_internal
+
   frontend:
     build:
       context: ./sawiyaa-frontend-v1
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: /api/v1
-        API_PROXY_TARGET: http://backend:7000
-        NEXT_PUBLIC_APP_NAME: Sawiyaa
-        NEXT_PUBLIC_APP_URL: https://sawiyaa.com
-        NEXT_PUBLIC_SITE_URL: https://sawiyaa.com
-        NEXT_PUBLIC_APP_ENV: production
-        NEXT_PUBLIC_SHOW_DETAILED_ERRORS: "false"
-        NEXT_PUBLIC_TOKEN_EXPIRY_DAYS: "7"
-        NEXT_PUBLIC_REFRESH_TOKEN_EXPIRY_DAYS: "30"
-        NEXT_PUBLIC_CHAT_SOCKET_URL: https://sawiyaa.com
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ""
-        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ""
-        NEXT_PUBLIC_SHOW_TEST_CREDENTIALS: "false"
-        NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED: "true"
-        NEXT_PUBLIC_ENABLE_ANALYTICS: "false"
-        NEXT_PUBLIC_ENABLE_NOTIFICATIONS: "true"
-        NEXT_PUBLIC_ENABLE_DEVTOOLS: "false"
-        NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: "0"
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        API_PROXY_TARGET: ${API_PROXY_TARGET}
+        NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV}
+        NEXT_PUBLIC_SHOW_DETAILED_ERRORS: ${NEXT_PUBLIC_SHOW_DETAILED_ERRORS}
+        NEXT_PUBLIC_TOKEN_EXPIRY_DAYS: ${NEXT_PUBLIC_TOKEN_EXPIRY_DAYS}
+        NEXT_PUBLIC_REFRESH_TOKEN_EXPIRY_DAYS: ${NEXT_PUBLIC_REFRESH_TOKEN_EXPIRY_DAYS}
+        NEXT_PUBLIC_CHAT_SOCKET_URL: ${NEXT_PUBLIC_CHAT_SOCKET_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_SHOW_TEST_CREDENTIALS: ${NEXT_PUBLIC_SHOW_TEST_CREDENTIALS}
+        NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED: ${NEXT_PUBLIC_PRACTITIONER_LOGIN_OTP_ENABLED}
+        NEXT_PUBLIC_ENABLE_ANALYTICS: ${NEXT_PUBLIC_ENABLE_ANALYTICS}
+        NEXT_PUBLIC_ENABLE_NOTIFICATIONS: ${NEXT_PUBLIC_ENABLE_NOTIFICATIONS}
+        NEXT_PUBLIC_ENABLE_DEVTOOLS: ${NEXT_PUBLIC_ENABLE_DEVTOOLS}
+        NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD: ${NEXT_PUBLIC_DEBUG_PRACTITIONER_WIZARD}
     restart: unless-stopped
     env_file:
       - ./.env.production.frontend
@@ -91,13 +114,13 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-      NEXT_PUBLIC_API_URL: /api/v1
-      API_PROXY_TARGET: http://backend:7000
-      NEXT_PUBLIC_APP_URL: https://sawiyaa.com
-      NEXT_PUBLIC_SITE_URL: https://sawiyaa.com
-      NEXT_PUBLIC_APP_ENV: production
-      NEXT_PUBLIC_SHOW_DETAILED_ERRORS: "false"
-      NEXT_PUBLIC_CHAT_SOCKET_URL: https://sawiyaa.com
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      API_PROXY_TARGET: ${API_PROXY_TARGET}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV}
+      NEXT_PUBLIC_SHOW_DETAILED_ERRORS: ${NEXT_PUBLIC_SHOW_DETAILED_ERRORS}
+      NEXT_PUBLIC_CHAT_SOCKET_URL: ${NEXT_PUBLIC_CHAT_SOCKET_URL}
     expose:
       - "3000"
     depends_on:

@@ -62,7 +62,7 @@ function hashSnapshot(input: unknown): string {
 function toClauseViewModel(clause: RefundPolicyClause): RefundPolicyClauseDto {
   return {
     id: clause.id,
-    titleAr: clause.titleAr,
+    titleAr: clause.titleEn,
     titleEn: clause.titleEn,
     bodyAr: clause.bodyAr,
     bodyEn: clause.bodyEn,
@@ -226,7 +226,6 @@ export class RefundPolicyService {
 
     await this.refundPolicyRepository.createClause({
       policyId: policy.id,
-      titleAr: body.titleAr ?? null,
       titleEn: body.titleEn ?? null,
       bodyAr: body.bodyAr,
       bodyEn: body.bodyEn,
@@ -253,7 +252,6 @@ export class RefundPolicyService {
     }
 
     await this.refundPolicyRepository.updateClause(clauseId, {
-      titleAr: body.titleAr ?? null,
       titleEn: body.titleEn ?? null,
       bodyAr: body.bodyAr,
       bodyEn: body.bodyEn,
@@ -365,7 +363,7 @@ export class RefundPolicyService {
 
     const clauseSnapshots = policy.clauses.map((clause) => ({
       id: clause.id,
-      titleAr: clause.titleAr,
+      titleAr: clause.titleEn,
       titleEn: clause.titleEn,
       bodyAr: clause.bodyAr,
       bodyEn: clause.bodyEn,

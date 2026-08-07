@@ -33,6 +33,21 @@ describe('redactUrlForLogging', () => {
 });
 
 describe('sanitizeForLogging', () => {
+  it('handles circular and excessively deep metadata safely', () => {
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    let deep: Record<string, unknown> = {};
+    const root = deep;
+    for (let index = 0; index < 10; index += 1) {
+      deep.child = {};
+      deep = deep.child as Record<string, unknown>;
+    }
+    expect(sanitizeForLogging({ circular, root })).toEqual({
+      circular: { self: '[CIRCULAR]' },
+      root: expect.any(Object) as unknown,
+    });
+  });
+
   it('redacts sensitive credential fields deeply', () => {
     expect(
       sanitizeForLogging({

@@ -454,6 +454,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
+      // A push may open a logged-out app. Retain only the already-validated
+      // internal Expo route and let the normal sign-in flow return to it.
+      if (!sessionRef.current) {
+        const responseData = response.notification.request.content.data as
+          | Record<string, unknown>
+          | undefined;
+        const rawTargetRole =
+          typeof responseData?.targetRole === "string"
+            ? responseData.targetRole.trim().toLowerCase()
+            : null;
+        const targetRole =
+          rawTargetRole === "patient" || rawTargetRole === "practitioner"
+            ? rawTargetRole
+            : null;
+        if (targetRole) {
+          pendingRedirectRef.current = targetRoute;
+          router.replace(getSignInRouteForRole(targetRole));
+        }
+        return;
+      }
+
       router.push(targetRoute as any);
     };
 
@@ -555,7 +576,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (session.role === "practitioner" && (inAuthGroup || inPatientGroup)) {
-      router.replace("/(practitioner)");
+      const redirect = pendingRedirectRef.current;
+      pendingRedirectRef.current = null;
+      router.replace((redirect ?? "/(practitioner)") as any);
       return;
     }
 
@@ -698,9 +721,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setPendingRedirect: (url) => { pendingRedirectRef.current = url; },
     }),
     [
+      clearPatientRegistrationNotice,
       isBootstrapping,
       enablePushNotifications,
       isPushRegistrationPending,
+      patientRegistrationNotice,
       pushRegistrationStatus,
       refreshPushRegistrationState,
       session,

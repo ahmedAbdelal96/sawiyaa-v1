@@ -984,6 +984,11 @@ export const regionalBulkSeedModule: SeedModule = {
               amountGross: gross.toFixed(2),
               amountAdjustments: adj.toFixed(2),
               amountNet: net.toFixed(2),
+              originalAmount: net.toFixed(2),
+              originalCurrencyCode: 'EGP',
+              walletCurrencyCode: 'EGP',
+              convertedAmount: net.toFixed(2),
+              finalWalletCredit: net.toFixed(2),
               walletId: walletIds.get(practitioner.profileId) ?? null,
               currencyCode: 'EGP',
               status:
@@ -1006,6 +1011,11 @@ export const regionalBulkSeedModule: SeedModule = {
               amountAdjustments: adj.toFixed(2),
               amountNet: net.toFixed(2),
               currencyCode: 'EGP',
+              originalAmount: net.toFixed(2),
+              originalCurrencyCode: 'EGP',
+              walletCurrencyCode: 'EGP',
+              convertedAmount: net.toFixed(2),
+              finalWalletCredit: net.toFixed(2),
               status:
                 monthOffset === 0
                   ? PractitionerSettlementStatus.PROCESSING

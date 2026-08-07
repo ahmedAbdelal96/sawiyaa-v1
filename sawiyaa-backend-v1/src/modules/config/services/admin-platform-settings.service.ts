@@ -34,8 +34,11 @@ export class AdminPlatformSettingsService {
       if (query.category && definition.category !== query.category)
         return false;
       if (search) {
+        const catalogAr = 'displayNameAr' in definition.catalog
+          ? `${definition.catalog.displayNameAr} ${'descriptionAr' in definition.catalog ? definition.catalog.descriptionAr : ''}`
+          : '';
         const haystack =
-          `${definition.key} ${definition.catalog.displayName} ${definition.description} ${definition.catalog.description}`.toLocaleLowerCase();
+          `${definition.key} ${definition.catalog.displayName} ${catalogAr} ${definition.description} ${definition.catalog.description}`.toLocaleLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -43,6 +46,12 @@ export class AdminPlatformSettingsService {
 
     const settings = await Promise.all(
       filtered.map((definition) => this.toSetting(definition, permissions)),
+    );
+    const legacyDefinitions = CONFIG_DEFINITIONS.filter((definition) =>
+      this.isLegacy(definition),
+    );
+    const legacySettings = await Promise.all(
+      legacyDefinitions.map((definition) => this.toSetting(definition, permissions)),
     );
     return {
       categories: [...new Set(settings.map((setting) => setting.category))],
@@ -53,6 +62,7 @@ export class AdminPlatformSettingsService {
         if (query.state === 'default') return setting.source !== 'OVERRIDE';
         return true;
       }),
+      legacySettings,
     };
   }
 
@@ -192,25 +202,54 @@ export class AdminPlatformSettingsService {
         })
       : null;
     const financial = definition.category === ConfigCategory.PAYMENT;
+    const labelAr = 'displayNameAr' in definition.catalog
+      ? definition.catalog.displayNameAr
+      : definition.catalog.displayName;
+    const descriptionAr = 'descriptionAr' in definition.catalog
+      ? definition.catalog.descriptionAr
+      : definition.description;
+    const isLegacySetting = definition.status === 'LEGACY';
+    const isEditable =
+      definition.editable &&
+      !financial &&
+      !isLegacySetting &&
+      permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL);
+
+    let readOnlyReason: string | undefined = undefined;
+    if (isLegacySetting) {
+      readOnlyReason = 'LEGACY_DEPRECATED';
+    } else if (financial) {
+      readOnlyReason = 'DEDICATED_PAYMENT_CONTROL';
+    } else if (!definition.editable) {
+      readOnlyReason = 'READ_ONLY_DEFINITION';
+    }
+
+    let effect = 'IMMEDIATE';
+    if (financial) {
+      effect = 'DEDICATED_CONTROL';
+    } else if (
+      definition.key === 'SESSION_REMINDER_OFFSETS_MINUTES' ||
+      definition.key === 'SESSION_LATE_REMINDER_MINUTES_AFTER_START' ||
+      definition.key === 'SESSION_JOIN_EARLY_MINUTES' ||
+      definition.key === 'SESSION_JOIN_AFTER_END_GRACE_MINUTES'
+    ) {
+      effect = 'NEW_SESSIONS_ONLY';
+    }
+
     return {
       key: definition.key,
       label: definition.catalog.displayName,
+      labelAr,
       description: definition.description,
+      descriptionAr,
       category: definition.category,
       domain: definition.domain,
       valueType: definition.valueType,
       value: definition.sensitive ? null : resolved.value,
       defaultValue: definition.sensitive ? null : definition.defaultValue,
       source: resolved.source === 'database' ? 'OVERRIDE' : 'CATALOG_DEFAULT',
-      editable:
-        definition.editable &&
-        !financial &&
-        permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL),
-      readOnlyReason: financial
-        ? 'DEDICATED_PAYMENT_CONTROL'
-        : definition.editable
-          ? undefined
-          : 'READ_ONLY_DEFINITION',
+      editable: isEditable,
+      readOnlyReason,
       permission: financial
         ? PermissionKey.CONFIGURATION_EDIT_FINANCIAL
         : PermissionKey.CONFIGURATION_EDIT_OPERATIONAL,
@@ -223,7 +262,11 @@ export class AdminPlatformSettingsService {
       expectedUpdatedAt: current?.updatedAt.toISOString() ?? null,
       changedAt:
         current?.updatedAt.toISOString() ?? resolved.evaluatedAt.toISOString(),
-      effect: financial ? 'DEDICATED_CONTROL' : 'IMMEDIATE',
+      effect,
+      status: definition.status,
+      deprecatedReplacementKey: definition.deprecatedReplacementKey ?? null,
+      deprecationReason: definition.deprecationReason ?? null,
+      uiMetadata: definition.uiMetadata ?? null,
     };
   }
 
@@ -235,16 +278,27 @@ export class AdminPlatformSettingsService {
       !definition.sensitive
     );
   }
+
+  private isLegacy(definition: ConfigDefinition) {
+    return (
+      definition.adminVisible &&
+      definition.owner === 'DATABASE_CONFIG' &&
+      definition.status === 'LEGACY' &&
+      !definition.sensitive
+    );
+  }
+
   private requireVisible(
     definition: ConfigDefinition | undefined,
     permissions: PermissionSet,
   ) {
-    if (!definition || !this.isVisible(definition))
+    if (!definition || (!this.isVisible(definition) && !this.isLegacy(definition)))
       throw new NotFoundException({ error: 'CONFIG_SETTING_NOT_FOUND' });
     if (!permissions.includes(PermissionKey.CONFIGURATION_VIEW))
       throw new ForbiddenException({ error: 'CONFIGURATION_VIEW_REQUIRED' });
     return definition;
   }
+
   private requireEditable(
     definition: ConfigDefinition | undefined,
     permissions: PermissionSet,
@@ -252,6 +306,12 @@ export class AdminPlatformSettingsService {
     const value = this.requireVisible(definition, permissions);
     if (value.category === ConfigCategory.PAYMENT)
       throw this.financialFlowError();
+    if (value.status === 'LEGACY') {
+      throw new ForbiddenException({
+        error: 'CONFIG_LEGACY_DEPRECATED',
+        message: 'Legacy settings are read-only.',
+      });
+    }
     if (!value.editable)
       throw new ForbiddenException({ error: 'CONFIG_NOT_EDITABLE' });
     if (!permissions.includes(PermissionKey.CONFIGURATION_EDIT_OPERATIONAL))
@@ -260,6 +320,7 @@ export class AdminPlatformSettingsService {
       });
     return value;
   }
+
   private financialFlowError() {
     return new ForbiddenException({
       error: 'CONFIG_FINANCIAL_DEDICATED_FLOW_REQUIRED',

@@ -33,7 +33,7 @@ import { Link } from "@/i18n/navigation";
 import { PermissionKey } from "@/lib/auth/permissions";
 import { formatUtcAuditDateTime } from "@/lib/time-formatting";
 import { formatAdminMoneyForLocale as formatMoney } from "@/features/admin/finance/lib/finance-formatters";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { getReconciliationIssueCopy } from "../issue-code-copy";
 import {
   useAccountingReconciliationIssue,
@@ -44,8 +44,6 @@ import {
   useReviewAccountingReconciliationIssue,
   useRunAccountingReconciliation,
 } from "../hooks";
-import AccountingStepUpDialog from "./AccountingStepUpDialog";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import type {
   AccountingReconciliationIssueRecord,
   AccountingReconciliationIssueStatus,
@@ -549,7 +547,6 @@ export default function FinancialReconciliationScreen() {
   const searchParams = useSearchParams();
   const { data: permissionData } = useCurrentUserPermissions(true);
   const canWrite = permissionData?.permissions?.includes(PermissionKey.ACCOUNTING_WRITE) ?? false;
-  const stepUp = useAdminStepUp();
 
   const { runQuery, issueQuery, runFilters, issueFilters } = useAccountingReconciliationFilters();
 
@@ -626,12 +623,6 @@ export default function FinancialReconciliationScreen() {
       refreshAll();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await executeRun(kind);
-        });
-        return;
-      }
       toast.error(appError.message || t("states.runError"));
     }
   };
@@ -650,12 +641,6 @@ export default function FinancialReconciliationScreen() {
       refreshAll();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await executeReview(action);
-        });
-        return;
-      }
       toast.error(appError.message || t("states.reviewError"));
     }
   };
@@ -900,7 +885,7 @@ export default function FinancialReconciliationScreen() {
                 {t("actions.refresh")}
               </Button>
               <details className="relative">
-                <summary className="inline-flex cursor-pointer list-none items-center rounded-lg border border-border-light bg-surface-secondary px-4 py-2.5 text-sm font-semibold text-text-primary shadow-sm transition hover:border-primary/30 hover:bg-primary-light/30 dark:border-white/8 dark:bg-white/[0.03]">
+                <summary className="app-btn-outline cursor-pointer list-none h-9 min-h-[36px] text-xs font-semibold">
                   {t("actions.specificChecks")}
                 </summary>
                 <div className="mt-2 grid min-w-56 gap-2 rounded-2xl border border-border-light bg-surface p-2 shadow-lg dark:border-white/8 dark:bg-surface-secondary">
@@ -1206,8 +1191,6 @@ export default function FinancialReconciliationScreen() {
             </div>
           )}
         </section>
-
-        <AccountingStepUpDialog controller={stepUp} />
 
         <Drawer isOpen={Boolean(selectedRunId)} onClose={() => setSelectedRunId(null)} side="right" className="w-full max-w-3xl">
           <div className="flex h-full flex-col">

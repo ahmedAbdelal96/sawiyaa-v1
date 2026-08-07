@@ -40,7 +40,7 @@ import { UpdateArticleCategoryUseCase } from '../use-cases/update-article-catego
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/article-categories')
 export class AdminArticleCategoriesController {
   constructor(

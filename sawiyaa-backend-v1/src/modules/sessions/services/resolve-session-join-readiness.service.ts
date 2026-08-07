@@ -28,6 +28,8 @@ export class ResolveSessionJoinReadinessService {
       providerRoomId: string | null;
       providerSessionRef: string | null;
       videoRoomClosedAt?: Date | null;
+      joinEarlyMinutes?: number;
+      joinAfterEndGraceMinutes?: number;
       finalManualDecision?: SessionAdminDecisionType | null;
       now: Date;
     }): {

@@ -24,7 +24,7 @@ export default async function AdminMessagesPage({ params }: Props) {
     <AdminPermissionGate
       requiredPermissions={[PermissionKey.SUPPORT_TICKET_NOTE_INTERNAL, PermissionKey.SUPPORT_TICKET_ASSIGN]}
     >
-      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 h-[calc(100vh-96px)] min-h-0 overflow-hidden mb-[-16px] md:mb-[-24px]">
+      <div className="w-full h-[calc(100vh-76px)] min-h-0 overflow-hidden px-1 sm:px-2 pb-1">
         <AdminMessagesScreen />
       </div>
     </AdminPermissionGate>

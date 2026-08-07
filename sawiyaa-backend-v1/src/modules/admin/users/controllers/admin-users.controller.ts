@@ -26,7 +26,6 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
@@ -118,7 +117,6 @@ export class AdminUsersController {
 
   @Post()
   @ThrottlePolicy('admin-users-create')
-  @RequireStepUp('security.adminUsers.create')
   @Permissions(PermissionKey.ADMIN_USERS_CREATE)
   @ApiOperation({ summary: 'Create an internal platform user (admin/staff)' })
   @ApiBody({ type: CreateAdminUserDto })
@@ -140,7 +138,6 @@ export class AdminUsersController {
 
   @Patch(':id')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.update')
   @Permissions(PermissionKey.ADMIN_USERS_UPDATE)
   @ApiOperation({ summary: 'Update internal user profile basics' })
   @ApiParam({ name: 'id', description: 'Internal user id' })
@@ -162,7 +159,6 @@ export class AdminUsersController {
 
   @Patch(':id/status')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.status.update')
   @Permissions(PermissionKey.ADMIN_USERS_STATUS_UPDATE)
   @ApiOperation({ summary: 'Update internal user status (enable/disable)' })
   @ApiParam({ name: 'id', description: 'Internal user id' })
@@ -185,7 +181,6 @@ export class AdminUsersController {
 
   @Patch(':id/roles')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.roles.update')
   @Permissions(PermissionKey.ADMIN_USERS_ROLES_UPDATE)
   @ApiOperation({ summary: 'Update internal user roles' })
   @ApiParam({ name: 'id', description: 'Internal user id' })
@@ -223,7 +218,6 @@ export class AdminUsersController {
 
   @Patch(':id/permission-overrides')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.permissionOverrides.update')
   @Permissions(PermissionKey.ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE)
   @ApiOperation({ summary: 'Update permission overrides for an internal user' })
   @ApiParam({ name: 'id', description: 'Internal user id' })
@@ -245,7 +239,6 @@ export class AdminUsersController {
 
   @Post(':id/sessions/revoke')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.sessions.revoke')
   @Permissions(PermissionKey.ADMIN_USERS_SESSIONS_REVOKE)
   @ApiOperation({ summary: 'Revoke all active sessions for an internal user' })
   @ApiParam({ name: 'id', description: 'Internal user id' })
@@ -260,7 +253,6 @@ export class AdminUsersController {
 
   @Post(':id/token-version/invalidate')
   @ThrottlePolicy('admin-users-sensitive-mutation')
-  @RequireStepUp('security.adminUsers.tokenVersion.invalidate')
   @Permissions(PermissionKey.ADMIN_USERS_TOKEN_VERSION_INVALIDATE)
   @ApiOperation({
     summary:

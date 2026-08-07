@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Controller,
   Body,
   Get,
@@ -278,10 +279,9 @@ export class PractitionerSessionsController {
     @CurrentLocale() locale: SupportedLocale,
     @Param('id') sessionId: string,
   ) {
-    return this.markSessionNoShowByPractitionerUseCase.execute({
-      userId: currentUser.id,
-      locale,
-      sessionId,
+    throw new ConflictException({
+      messageKey: 'sessions.errors.adminResolutionRequired',
+      error: 'SESSION_RESOLUTION_REQUIRED',
     });
   }
 }

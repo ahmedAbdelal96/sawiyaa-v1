@@ -63,6 +63,7 @@ export class OperationalNotificationRepository {
             id: true,
             displayName: true,
             defaultLocale: true,
+            timezone: true,
             emails: {
               where: { isPrimary: true },
               take: 1,
@@ -86,6 +87,7 @@ export class OperationalNotificationRepository {
             id: true,
             displayName: true,
             defaultLocale: true,
+            timezone: true,
             emails: {
               where: { isPrimary: true },
               take: 1,
@@ -107,6 +109,7 @@ export class OperationalNotificationRepository {
         id: true,
         displayName: true,
         defaultLocale: true,
+        timezone: true,
         emails: {
           where: { isPrimary: true },
           take: 1,
@@ -250,6 +253,7 @@ export class OperationalNotificationRepository {
         id: true,
         userId: true,
         channel: true,
+        locale: true,
         status: true,
         titleSnapshot: true,
         subjectSnapshot: true,

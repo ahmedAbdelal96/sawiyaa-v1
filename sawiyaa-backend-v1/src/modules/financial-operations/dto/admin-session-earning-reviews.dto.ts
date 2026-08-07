@@ -24,12 +24,22 @@ import {
   SessionEarningReviewDecision,
   SessionEarningReviewSourceType,
   SessionEarningReviewStatus,
+  PractitionerEarningAdjustmentType,
   SessionPaymentCoverageType,
   SessionStatus,
   PatientPackagePurchaseStatus,
   WalletBalanceBucket,
 } from '@prisma/client';
 import { PaginationDto } from './financial-operations-response.dto';
+
+export enum SessionEarningReviewFinancialStage {
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  DECISION_APPROVED = 'DECISION_APPROVED',
+  WALLET_CREDITED = 'WALLET_CREDITED',
+  EXTERNAL_PAYOUT = 'EXTERNAL_PAYOUT',
+  REJECTED_OR_EXCLUDED = 'REJECTED_OR_EXCLUDED',
+  ALL = 'ALL',
+}
 
 export class ListAdminSessionEarningReviewsDto {
   @ApiPropertyOptional({ minimum: 1, default: 1 })
@@ -51,6 +61,11 @@ export class ListAdminSessionEarningReviewsDto {
   @IsOptional()
   @IsEnum(SessionEarningReviewStatus)
   status?: SessionEarningReviewStatus;
+
+  @ApiPropertyOptional({ enum: SessionEarningReviewFinancialStage })
+  @IsOptional()
+  @IsEnum(SessionEarningReviewFinancialStage)
+  stage?: SessionEarningReviewFinancialStage;
 
   @ApiPropertyOptional({ enum: SessionEarningReviewDecision })
   @IsOptional()
@@ -139,6 +154,35 @@ export class SessionEarningReviewUserSummaryDto {
   displayName!: string | null;
 }
 
+export class SessionEarningReviewAdjustmentDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty({ enum: PractitionerEarningAdjustmentType })
+  type!: PractitionerEarningAdjustmentType;
+
+  @ApiProperty()
+  category!: string;
+
+  @ApiProperty()
+  description!: string;
+
+  @ApiProperty()
+  amount!: string;
+
+  @ApiProperty()
+  currencyCode!: string;
+
+  @ApiProperty()
+  reason!: string;
+
+  @ApiProperty()
+  createdBy!: SessionEarningReviewUserSummaryDto | null;
+
+  @ApiProperty()
+  createdAt!: string;
+}
+
 export class SessionEarningReviewPractitionerSummaryDto {
   @ApiProperty()
   practitionerId!: string;
@@ -164,6 +208,9 @@ export class SessionEarningReviewPatientSummaryDto {
 export class SessionEarningReviewSessionSummaryDto {
   @ApiProperty()
   sessionId!: string;
+
+  @ApiProperty({ nullable: true })
+  originalSessionId!: string | null;
 
   @ApiProperty({ nullable: true, description: 'Canonical public reference; null when the Session relation is unavailable.' })
   sessionCode!: string | null;
@@ -394,11 +441,23 @@ export class AdminSessionEarningReviewListItemDto {
   @ApiProperty()
   reviewId!: string;
 
+  @ApiProperty()
+  earningEntitlementId!: string;
+
+  @ApiProperty()
+  fulfillmentSessionId!: string;
+
+  @ApiProperty({ nullable: true })
+  originalSessionId!: string | null;
+
   @ApiProperty({ enum: SessionEarningReviewSourceType })
   sourceType!: SessionEarningReviewSourceType;
 
   @ApiProperty({ enum: SessionEarningReviewStatus })
   reviewStatus!: SessionEarningReviewStatus;
+
+  @ApiProperty({ enum: SessionEarningReviewFinancialStage })
+  financialStage!: SessionEarningReviewFinancialStage;
 
   @ApiProperty({ enum: SessionEarningReviewDecision })
   reviewDecision!: SessionEarningReviewDecision;
@@ -419,6 +478,24 @@ export class AdminSessionEarningReviewListItemDto {
   suggestedCurrencyCode!: string;
 
   @ApiProperty({ nullable: true })
+  suggestedPractitionerPercentage!: string | null;
+
+  @ApiProperty({ nullable: true })
+  accountantApprovedSourceAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  accountingAdjustmentAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  accountingAdjustmentType!: string | null;
+
+  @ApiProperty({ nullable: true })
+  accountingAdjustmentReason!: string | null;
+
+  @ApiProperty({ nullable: true })
+  accountingNotes!: string | null;
+
+  @ApiProperty({ nullable: true })
   finalPractitionerAmount!: string | null;
 
   @ApiProperty({ nullable: true })
@@ -426,6 +503,21 @@ export class AdminSessionEarningReviewListItemDto {
 
   @ApiProperty({ nullable: true })
   finalCurrencyCode!: string | null;
+
+  @ApiProperty({ nullable: true })
+  patientCountrySnapshot!: string | null;
+
+  @ApiProperty({ nullable: true })
+  practitionerCountrySnapshot!: string | null;
+
+  @ApiProperty({ nullable: true })
+  countryRelationshipSnapshot!: string | null;
+
+  @ApiProperty({ nullable: true })
+  calculatedPractitionerAmount!: string | null;
+
+  @ApiProperty({ nullable: true })
+  overrideReason!: string | null;
 
   @ApiProperty({ nullable: true })
   reviewedAt!: string | null;
@@ -457,6 +549,12 @@ export class AdminSessionEarningReviewListItemDto {
   @ApiProperty({ type: SessionEarningReviewPackageSettlementSummaryDto, nullable: true })
   packageSettlement!: SessionEarningReviewPackageSettlementSummaryDto | null;
 
+  @ApiProperty({ nullable: true })
+  activeWalletCurrency!: string | null;
+
+  @ApiProperty()
+  conversionRequired!: boolean;
+
   @ApiProperty()
   isActionRequired!: boolean;
 
@@ -480,6 +578,8 @@ export class AdminSessionEarningReviewListItemDto {
 }
 
 export class AdminSessionEarningReviewDetailItemDto extends AdminSessionEarningReviewListItemDto {
+  @ApiProperty({ type: SessionEarningReviewAdjustmentDto, isArray: true })
+  adjustments!: SessionEarningReviewAdjustmentDto[];
   @ApiProperty({ nullable: true })
   internalReason!: string | null;
 
@@ -501,6 +601,7 @@ export class AdminSessionEarningReviewListDataResponseDto {
     type: 'object',
     properties: {
       status: { type: 'string', nullable: true },
+      stage: { type: 'string', nullable: true },
       decision: { type: 'string', nullable: true },
       sourceType: { type: 'string', nullable: true },
       practitionerId: { type: 'string', nullable: true },
