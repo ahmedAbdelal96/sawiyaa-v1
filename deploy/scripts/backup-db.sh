@@ -38,7 +38,10 @@ tmp_dump="$(mktemp "$BACKUP_DIR/.${BASE_NAME}.dump.XXXXXX")"
 tmp_checksum="$(mktemp "$BACKUP_DIR/.${BASE_NAME}.sha256.XXXXXX")"
 tmp_final_checksum="$(mktemp "$BACKUP_DIR/.${BASE_NAME}.sha256.final.XXXXXX")"
 tmp_metadata="$(mktemp "$BACKUP_DIR/.${BASE_NAME}.metadata.json.XXXXXX")"
-cleanup() { rm -f -- "$tmp_dump" "$tmp_checksum" "$tmp_final_checksum" "$tmp_metadata"; }
+cleanup() {
+  rm -f -- "$tmp_dump" "$tmp_checksum" "$tmp_final_checksum" "$tmp_metadata" || true
+  return 0
+}
 trap cleanup EXIT
 
 free_kb="$(df -Pk "$BACKUP_DIR" | awk 'NR == 2 {print $4}')"
@@ -53,7 +56,8 @@ dump_size="$(wc -c < "$tmp_dump")"
 (( dump_size >= MIN_BACKUP_BYTES )) || fail "Backup dump is empty or below minimum size"
 sha256sum "$tmp_dump" > "$tmp_checksum" || fail "Checksum generation failed"
 sha256sum --check "$tmp_checksum" >/dev/null || fail "Checksum verification failed"
-pg_restore --list "$tmp_dump" >/dev/null || fail "pg_restore structure verification failed"
+docker compose "${compose_args[@]}" exec -T "$DB_SERVICE" pg_restore --list < "$tmp_dump" >/dev/null ||
+  fail "pg_restore structure verification failed in the PostgreSQL container"
 
 checksum="$(awk '{print $1}' "$tmp_checksum")"
 sed "s#$(basename "$tmp_dump")#$(basename "$dump_file")#" "$tmp_checksum" > "$tmp_final_checksum"

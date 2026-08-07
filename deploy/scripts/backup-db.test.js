@@ -26,9 +26,8 @@ function runBackup({ restoreFails = false, minBytes = '1', minFreeMb = '0', rete
     fs.writeFileSync(path.join(backupDir, 'unrelated.txt'), 'keep me');
   }
   fs.writeFileSync(path.join(root, 'docker-compose.prod.yml'), 'services: {}\n');
-  fs.writeFileSync(path.join(bin, 'docker'), `#!/usr/bin/env bash\nif [[ "$*" == *"ps --status running --services"* ]]; then ${postgresMissing ? ':' : 'echo postgres'}; elif [[ "$*" == *"pg_dump"* ]]; then ${emptyDump ? ':' : "printf 'fixture dump'"}; elif [[ "$*" == *"psql"* ]]; then echo 'PostgreSQL 16 fixture'; fi\n`);
-  fs.writeFileSync(path.join(bin, 'pg_restore'), restoreFails ? '#!/usr/bin/env bash\nexit 1\n' : '#!/usr/bin/env bash\nexit 0\n');
-  for (const file of ['docker', 'pg_restore']) fs.chmodSync(path.join(bin, file), 0o755);
+  fs.writeFileSync(path.join(bin, 'docker'), `#!/usr/bin/env bash\nif [[ "$*" == *"ps --status running --services"* ]]; then ${postgresMissing ? ':' : 'echo postgres'}; elif [[ "$*" == *"pg_dump"* ]]; then ${emptyDump ? ':' : "printf 'fixture dump'"}; elif [[ "$*" == *"pg_restore --list"* ]]; then ${restoreFails ? 'exit 1' : 'exit 0'}; elif [[ "$*" == *"psql"* ]]; then echo 'PostgreSQL 16 fixture'; fi\n`);
+  fs.chmodSync(path.join(bin, 'docker'), 0o755);
   const shellPath = process.platform === 'win32' ? process.env.PATH.replaceAll(';', ':') : process.env.PATH;
   const env = { ...process.env, PATH: `${bin}:${shellPath}`, SAWIYAA_PROJECT_DIR: root, SAWIYAA_BACKUP_DIR: backupDir, SAWIYAA_BACKUP_MIN_FREE_MB: minFreeMb, SAWIYAA_BACKUP_MIN_BYTES: minBytes, SAWIYAA_BACKUP_RETENTION_COUNT: retentionCount, SAWIYAA_TARGET_SHA: '0123456789abcdef0123456789abcdef01234567' };
   const script = path.join(__dirname, 'backup-db.sh');
@@ -45,7 +44,7 @@ test('backup script creates verified dump, checksum, and metadata', { skip: !bas
   assert.match(metadata, /"verificationStatus": "VERIFIED"/);
 });
 
-test('backup script stops when pg_restore verification fails', { skip: !bashAvailable }, () => {
+test('backup script stops when container pg_restore verification fails', { skip: !bashAvailable }, () => {
   const { backupDir, run } = runBackup({ restoreFails: true });
   assert.notEqual(run.status, 0);
   assert.equal(fs.readdirSync(backupDir).length, 0);

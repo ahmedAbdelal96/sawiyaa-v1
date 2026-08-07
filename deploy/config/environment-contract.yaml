@@ -60,6 +60,28 @@ variables:
     rebuildRequired: false
     validationOwner: backend Zod schema
     description: Canonical public application URL.
+  - name: WEB_APP_URL
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production policy + preflight
+    description: Public web origin used for transactional session links.
+  - name: LOG_LEVEL
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: info
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + logging config
+    description: Production log level; allowed values are error, warn, info, debug, verbose.
   - name: DATABASE_URL
     service: backend
     required: true
@@ -117,6 +139,150 @@ variables:
     rebuildRequired: false
     validationOwner: backend Zod schema + preflight file check
     description: Readable GeoLite MMDB path.
+  - name: THROTTLE_STORE
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: memory
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + preflight conditional policy
+    description: Request throttling storage mode.
+  - name: REDIS_URL
+    service: backend
+    required: false
+    secret: true
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: Redis URL required only when THROTTLE_STORE=redis.
+  - name: MAIL_PROVIDER
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: smtp
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + preflight conditional policy
+    description: Transactional mail provider.
+  - name: MAIL_FROM
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: Transactional sender address.
+  - name: MAIL_HOST
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: SMTP host when MAIL_PROVIDER=smtp.
+  - name: MAIL_USER
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: SMTP username when MAIL_PROVIDER=smtp.
+  - name: MAIL_PASS
+    service: backend
+    required: false
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: SMTP password when MAIL_PROVIDER=smtp.
+  - name: BREVO_API_KEY
+    service: backend
+    required: false
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production conditional policy
+    description: Brevo API key when MAIL_PROVIDER=brevo.
+  - name: VIDEO_PROVIDER_DEFAULT
+    service: backend
+    required: false
+    secret: false
+    phase: runtime
+    environments: [local, staging, production]
+    safeDefault: DAILY
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod schema + video config
+    description: Active video provider.
+  - name: DAILY_API_KEY
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production policy + Daily integration
+    description: Daily API key.
+  - name: DAILY_API_BASE_URL
+    service: backend
+    required: true
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: https://api.daily.co/v1
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production policy + Daily integration
+    description: Daily API base URL.
+  - name: DAILY_WEBHOOK_SECRET
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production policy + Daily webhook signature verification
+    description: Secret shared with Daily webhook configuration.
+  - name: CORPORATE_CODE_PEPPER
+    service: backend
+    required: true
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    placeholderPatterns: [change-me-to]
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend Zod production policy
+    description: Long random pepper for corporate benefit codes.
   - name: PAYMENT_PROVIDER_ROUTES_JSON
     service: backend
     required: false

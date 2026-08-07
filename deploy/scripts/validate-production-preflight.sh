@@ -37,7 +37,13 @@ done
 block() { printf 'BLOCKING %s\n' "$1"; BLOCKERS=$((BLOCKERS + 1)); }
 warn() { printf 'WARNING %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); }
 pass() { printf 'PASS %s\n' "$1"; }
-cleanup() { [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]] && rm -rf -- "$TEMP_DIR"; }
+skip() { printf 'SKIPPED %s\n' "$1"; }
+cleanup() {
+  if [[ -n "$TEMP_DIR" && -d "$TEMP_DIR" ]]; then
+    rm -rf -- "$TEMP_DIR" || true
+  fi
+  return 0
+}
 trap cleanup EXIT
 
 if (( ! SKIP_LOCK )); then
@@ -117,10 +123,50 @@ fi
 
 VALIDATOR="$PROJECT_DIR/deploy/scripts/validate-environment-contract.js"
 contract_exit=1
+
+run_environment_validator() {
+  local validator="$1"
+  local project_root="$2"
+  local backend_env="$3"
+  local frontend_env="$4"
+  local db_env="$5"
+  local image="${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}"
+
+  if [[ "${SAWIYAA_FORCE_DOCKER_VALIDATOR:-false}" != "true" ]] &&
+    command -v node >/dev/null 2>&1 &&
+    node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 20 ? 0 : 1)' >/dev/null 2>&1; then
+    node "$validator" \
+      --backend-env "$backend_env" \
+      --frontend-env "$frontend_env" \
+      --db-env "$db_env" \
+      --environment "$ENVIRONMENT"
+    return $?
+  fi
+
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "ENVIRONMENT_VALIDATOR_RUNTIME_UNAVAILABLE: compatible host Node.js and Docker are unavailable" >&2
+    return 127
+  fi
+
+  docker run --rm \
+    --network none \
+    --read-only \
+    --tmpfs /tmp:rw,nosuid,nodev,size=16m \
+    -v "$project_root:/workspace:ro" \
+    -v "$backend_env:/inputs/backend.env:ro" \
+    -v "$frontend_env:/inputs/frontend.env:ro" \
+    -v "$db_env:/inputs/db.env:ro" \
+    "$image" node /workspace/deploy/scripts/validate-environment-contract.js \
+    --backend-env /inputs/backend.env \
+    --frontend-env /inputs/frontend.env \
+    --db-env /inputs/db.env \
+    --environment "$ENVIRONMENT"
+}
+
 if [[ -f "$VALIDATOR" ]]; then
   TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"
   set +e
-  node "$VALIDATOR" --backend-env "$BACKEND_ENV" --frontend-env "$FRONTEND_ENV" --db-env "$DB_ENV" --environment "$ENVIRONMENT" >"$TEMP_DIR/contract.txt"
+  run_environment_validator "$VALIDATOR" "$PROJECT_DIR" "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV" >"$TEMP_DIR/contract.txt"
   contract_exit=$?
   set -e
   cat "$TEMP_DIR/contract.txt"
@@ -156,7 +202,7 @@ if [[ ! -f "$COMPOSE_FILE" ]]; then
 elif (( MOCK )); then
   warn COMPOSE_VALIDATION_MOCKED
 elif (( contract_exit != 0 )) || [[ ! -r "$BACKEND_ENV" || ! -r "$FRONTEND_ENV" || ! -r "$DB_ENV" ]]; then
-  block COMPOSE_VALIDATION_PREREQUISITES
+  skip COMPOSE_VALIDATION_DEPENDENCY_ENVIRONMENT_CONTRACT
 else
   if [[ -z "$TEMP_DIR" ]]; then TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"; fi
   override="$TEMP_DIR/compose-env-override.yml"
@@ -172,7 +218,7 @@ elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
   docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
   docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
 else
-  block POSTGRES_CHECK_PREREQUISITES
+  skip POSTGRES_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
 fi
 
 # 17-18. Presence-only operational inputs.

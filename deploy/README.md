@@ -9,6 +9,14 @@ This stack is designed for a production VPS with:
 - Persistent backend volumes for `storage/` and `uploads/`
 - Host-persistent backend logs at `/opt/sawiyaa/logs/backend`, bind-mounted to `/app/logs`
 
+The VPS only needs Docker Engine and the Docker Compose plugin, Git, Bash,
+core file utilities, `curl`, and `flock`. Node.js/npm, the Prisma CLI, and
+PostgreSQL client tools do not need to be installed on the host. Environment
+contract and migration-safety scripts use a compatible host Node.js when
+available, otherwise they run in the read-only `node:20-bookworm-slim`
+validator image. Database dump structure verification runs inside the
+PostgreSQL container.
+
 The backend runtime image runs as UID/GID `10001:10001` (`sawiyaa`) with no
 shell. Deployment creates `/opt/sawiyaa/logs/backend` with ownership
 `10001:10001` and mode `0750` before startup. The
@@ -56,6 +64,12 @@ For the live deployment, duplicate them beside `docker-compose.prod.yml` as:
 Frontend `NEXT_PUBLIC_*` values are build-time inputs. The one-command deployment passes `.env.production.frontend` to Compose as its interpolation source, so the validated frontend environment and the Docker build receive the same values. Do not pass separate ad-hoc build arguments.
 
 Real `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` files must stay on the server only. Do not commit them.
+
+Production backend configuration must include `LOG_LEVEL` (`error`, `warn`,
+`info`, `debug`, or `verbose`), `WEB_APP_URL` as the public HTTPS web origin,
+and the Daily settings `DAILY_API_KEY`, `DAILY_API_BASE_URL`, and
+`DAILY_WEBHOOK_SECRET`. The webhook secret must exactly match the secret
+configured in the Daily dashboard; webhook signatures remain mandatory.
 
 ## First deploy SSL bootstrap
 
@@ -202,7 +216,9 @@ The one-command release order is:
 
 1. Acquire the deployment lock and run read-only host checks.
 2. Create `backup-before-deploy-<timestamp>` at the active commit.
-3. Fetch `origin/main` without changing the active checkout.
+3. Fetch `origin/main` without changing the active checkout; the script prints
+   the active SHA, approved target SHA, and any local/target-only commit counts.
+   Local unpushed commits are intentionally not deployed.
 4. Validate the target release from a temporary Git worktree.
 5. Ensure `/opt/sawiyaa/logs/backend` is writable by the backend UID.
 6. Build only `backend` and `frontend`.
@@ -213,6 +229,12 @@ The one-command release order is:
 After successful health checks, the script writes `.sawiyaa-release` with the
 target SHA, UTC deployment time, and `status=success`. It is a host runtime
 marker and is not source-controlled.
+
+Preflight reports the primary environment-contract blocker first. Compose and
+PostgreSQL checks that depend on a failed contract are reported as skipped,
+not as additional root causes. A missing `WEB_APP_URL`, invalid `LOG_LEVEL`,
+or missing Daily setting therefore stops the release before build, migration,
+or container replacement.
 
 Never run the root `npm run prisma:seed` command in production.
 
@@ -276,7 +298,12 @@ Backups are stored on the server under:
 /opt/sawiyaa-backups/db
 ```
 
-Each run creates a PostgreSQL custom-format dump plus a SHA256 checksum file.
+Each run creates a PostgreSQL custom-format dump plus a SHA256 checksum file
+and metadata marked `VERIFIED` only after checksum validation and
+`pg_restore --list` verification inside the running PostgreSQL container.
+Temporary or failed dumps are removed and are never finalized as valid
+backups. Retention still keeps the newest configured dumps and leaves
+unrelated files alone.
 
 Copy backups off-server with your preferred secure transfer tool, for example `scp` or `rsync`:
 
@@ -287,9 +314,14 @@ scp /opt/sawiyaa-backups/db/sawiyaa-db-*.dump* user@backup-host:/safe/path/
 To restore into a separate database only:
 
 ```bash
-createdb -U "$POSTGRES_USER" sawiyaa_restore
-pg_restore -U "$POSTGRES_USER" --no-owner --no-acl -d sawiyaa_restore /opt/sawiyaa-backups/db/sawiyaa-db-YYYYMMDD-HHMMSS.dump
+docker compose -f docker-compose.prod.yml exec -T postgres createdb -U "$POSTGRES_USER" sawiyaa_restore
+docker compose -f docker-compose.prod.yml exec -T postgres \
+  pg_restore -U "$POSTGRES_USER" --no-owner --no-acl -d sawiyaa_restore \
+  < /opt/sawiyaa-backups/db/sawiyaa-YYYYMMDD-HHMMSS-<sha>.dump
 ```
+
+The restore tools run inside the PostgreSQL container; no PostgreSQL client
+package is required on the VPS host.
 
 Back up the `backend_storage` and `backend_uploads` named volumes separately if you need a full file-level restore of uploads or persisted app data.
 
