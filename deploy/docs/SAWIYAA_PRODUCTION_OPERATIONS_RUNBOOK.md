@@ -312,12 +312,12 @@ Write release marker
 
 # 10. Environment Management
 
-Required files:
+Canonical required files:
 
 ```
-.env.production.backend
-.env.production.frontend
-.env.production.db
+sawiyaa-backend-v1/.env
+sawiyaa-backend-v1/.env.postgres
+sawiyaa-frontend-v1/.env
 ```
 
 Rules:
@@ -333,6 +333,10 @@ Next.js `NEXT_PUBLIC_*` values are build-time variables.
 Therefore:
 
 Docker build arguments must match the validated frontend environment.
+
+The older `.env.production.backend`, `.env.production.frontend`, and
+`.env.production.db` files are legacy migration inputs only. Git updates code;
+deployment does not replace the canonical `.env` files.
 
 ---
 

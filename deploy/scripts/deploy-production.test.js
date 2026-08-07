@@ -17,8 +17,8 @@ test('target validation precedes active checkout, build, migration, and restart'
   assert.ok(position('flock -n 9') < position('--bootstrap-only'));
   assert.ok(position('git fetch --no-tags origin') < position('git worktree add --detach'));
   assert.ok(position('--target-only --skip-lock') < position('git checkout -f main'));
-  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build'));
-  assert.ok(position('docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build') < position('prisma:migrate:deploy'));
+  assert.ok(position('git checkout -f main') < position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build'));
+  assert.ok(position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build') < position('prisma:migrate:deploy'));
   assert.ok(position('prisma:migrate:deploy') < position('up -d backend frontend nginx'));
 });
 
@@ -34,10 +34,26 @@ test('deployment uses status-only contract/preflight diagnostics', () => {
   assert.doesNotMatch(script, /\benv\s+\|/);
 });
 
+test('deployment defaults to canonical application env files', () => {
+  assert.match(script, /sawiyaa-backend-v1\/\.env/);
+  assert.match(script, /sawiyaa-backend-v1\/\.env\.postgres/);
+  assert.match(script, /sawiyaa-frontend-v1\/\.env/);
+  assert.doesNotMatch(script, /\.env\.production\.(backend|frontend|db)/);
+});
+
 test('deployment validates backend log access inside the container', () => {
   assert.doesNotMatch(script, /runuser/);
   assert.match(script, /run --rm --no-deps backend[\s\S]*touch \/app\/logs\/\.write-test/);
   assert.match(script, /Backend container user cannot write to \/app\/logs/);
+});
+
+test('deployment gates the build on database-backed provider state', () => {
+  assert.ok(position('Starting PostgreSQL for database-backed environment checks...') < position('Building backend and frontend images...'));
+  assert.match(script, /valueBoolean/);
+  assert.match(script, /read_provider_state false/);
+  assert.match(script, /read_provider_state true/);
+  assert.match(script, /Database payment provider state is incomplete/);
+  assert.match(script, /Database-backed environment validation failed after bootstrap/);
 });
 
 test('deployment uses the target validator and only the safe config bootstrap', () => {
@@ -65,6 +81,10 @@ test('deployment writes a successful release marker after public health checks',
 
 test('Compose frontend build args come from interpolation, not duplicated production literals', () => {
   const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
+  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-backend-v1\/\.env\.postgres/);
+  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-backend-v1\/\.env/);
+  assert.match(compose, /env_file:\n\s+- \.\/sawiyaa-frontend-v1\/\.env/);
+  assert.doesNotMatch(compose, /\.env\.production\.(backend|frontend|db)/);
   assert.match(compose, /NEXT_PUBLIC_API_URL: \$\{NEXT_PUBLIC_API_URL\}/);
   assert.match(compose, /NEXT_PUBLIC_APP_URL: \$\{NEXT_PUBLIC_APP_URL\}/);
   assert.match(compose, /API_PROXY_TARGET: \$\{API_PROXY_TARGET\}/);

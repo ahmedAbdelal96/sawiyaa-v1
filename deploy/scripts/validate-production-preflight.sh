@@ -9,7 +9,7 @@ BACKEND_ENV=""; FRONTEND_ENV=""; DB_ENV=""; COMPOSE_FILE=""
 MIN_FREE_MB="${SAWIYAA_MIN_FREE_MB:-2048}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""
-BACKEND_IMAGE=""; FRONTEND_IMAGE=""
+BACKEND_IMAGE=""; FRONTEND_IMAGE=""; PROVIDER_STATE_FILE=""
 COMPOSE_EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -28,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --target-only) TARGET_ONLY=1; shift;;
     --backend-image) BACKEND_IMAGE="$2"; shift 2;;
     --frontend-image) FRONTEND_IMAGE="$2"; shift 2;;
+    --provider-state-file) PROVIDER_STATE_FILE="$2"; shift 2;;
     --mock) MOCK=1; shift;;
     -h|--help) sed -n 's/^# //p' "$0"; exit 0;;
     *) printf 'BLOCKING UNKNOWN_ARGUMENT\n'; exit 2;;
@@ -102,9 +103,9 @@ else
 fi
 
 # 9-10. Environment files and status-only validator.
-BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/.env.production.backend}"
-FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/.env.production.frontend}"
-DB_ENV="${DB_ENV:-$PROJECT_DIR/.env.production.db}"
+BACKEND_ENV="${BACKEND_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env}"
+FRONTEND_ENV="${FRONTEND_ENV:-$PROJECT_DIR/sawiyaa-frontend-v1/.env}"
+DB_ENV="${DB_ENV:-$PROJECT_DIR/sawiyaa-backend-v1/.env.postgres}"
 for file in "$BACKEND_ENV" "$FRONTEND_ENV" "$DB_ENV"; do
   [[ -r "$file" ]] && pass "ENV_FILE_PRESENT $(basename -- "$file")" || block "ENV_FILE_MISSING $(basename -- "$file")"
 done
@@ -131,6 +132,10 @@ run_environment_validator() {
   local frontend_env="$4"
   local db_env="$5"
   local image="${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}"
+  local provider_args=()
+  if [[ -n "$PROVIDER_STATE_FILE" ]]; then
+    provider_args+=(--provider-state-file "$PROVIDER_STATE_FILE")
+  fi
 
   if [[ "${SAWIYAA_FORCE_DOCKER_VALIDATOR:-false}" != "true" ]] &&
     command -v node >/dev/null 2>&1 &&
@@ -139,7 +144,8 @@ run_environment_validator() {
       --backend-env "$backend_env" \
       --frontend-env "$frontend_env" \
       --db-env "$db_env" \
-      --environment "$ENVIRONMENT"
+      --environment "$ENVIRONMENT" \
+      "${provider_args[@]}"
     return $?
   fi
 
@@ -148,6 +154,12 @@ run_environment_validator() {
     return 127
   fi
 
+  local docker_mount_args=()
+  local docker_provider_args=()
+  if [[ -n "$PROVIDER_STATE_FILE" ]]; then
+    docker_mount_args+=( -v "$PROVIDER_STATE_FILE:/inputs/provider-state.txt:ro" )
+    docker_provider_args+=( --provider-state-file /inputs/provider-state.txt )
+  fi
   docker run --rm \
     --network none \
     --read-only \
@@ -156,11 +168,13 @@ run_environment_validator() {
     -v "$backend_env:/inputs/backend.env:ro" \
     -v "$frontend_env:/inputs/frontend.env:ro" \
     -v "$db_env:/inputs/db.env:ro" \
+    "${docker_mount_args[@]}" \
     "$image" node /workspace/deploy/scripts/validate-environment-contract.js \
     --backend-env /inputs/backend.env \
     --frontend-env /inputs/frontend.env \
     --db-env /inputs/db.env \
-    --environment "$ENVIRONMENT"
+    --environment "$ENVIRONMENT" \
+    "${docker_provider_args[@]}"
 }
 
 if [[ -f "$VALIDATOR" ]]; then
