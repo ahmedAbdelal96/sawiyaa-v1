@@ -6,6 +6,11 @@ const os = require("node:os");
 const path = require("node:path");
 const childProcess = require("node:child_process");
 const test = require("node:test");
+
+const bash =
+  process.platform === "win32" ? "C:\\Program Files\\Git\\bin\\bash.exe" : "bash";
+const bashAvailable =
+  process.platform !== "win32" || fs.existsSync(bash);
 const {
   STATUS,
   validateEnvironment,
@@ -37,10 +42,21 @@ function completeFixture(directory, overrides = {}) {
     APP_ENV: "production",
     NODE_ENV: "production",
     APP_URL: "https://sawiyaa.test",
+    WEB_APP_URL: "https://sawiyaa.test",
+    LOG_LEVEL: "info",
     DATABASE_URL: "postgresql://dbuser:valid-pass@localhost:5432/sawiyaa",
     JWT_ACCESS_SECRET: "a".repeat(32),
     JWT_REFRESH_SECRET: "b".repeat(32),
     GEOIP_ENABLED: "false",
+    MAIL_PROVIDER: "smtp",
+    MAIL_FROM: "noreply@sawiyaa.test",
+    MAIL_HOST: "smtp.sawiyaa.test",
+    MAIL_USER: "smtp-user",
+    MAIL_PASS: "smtp-password",
+    DAILY_API_KEY: "daily-api-key",
+    DAILY_API_BASE_URL: "https://api.daily.co/v1",
+    DAILY_WEBHOOK_SECRET: "daily-webhook-secret",
+    CORPORATE_CODE_PEPPER: "c".repeat(32),
     ...overrides.backend,
   });
   const frontend = writeEnv(directory, "frontend.env", {
@@ -94,6 +110,24 @@ test("optional variable missing is not blocking", () => {
 test("conditional GeoIP requirement is enforced", () => {
   const { result } = validate({ backend: { GEOIP_ENABLED: "true" } });
   assert.match(formatReport(result), /MISSING GEOIP_DATABASE_PATH/);
+  assert.equal(result.blocking, true);
+});
+
+test("production WEB_APP_URL is required before rollout", () => {
+  const { result } = validate({ backend: { WEB_APP_URL: "" } });
+  assert.match(formatReport(result), /MISSING WEB_APP_URL|EMPTY WEB_APP_URL/);
+  assert.equal(result.blocking, true);
+});
+
+test("production rejects invalid LOG_LEVEL before rollout", () => {
+  const { result } = validate({ backend: { LOG_LEVEL: "http" } });
+  assert.match(formatReport(result), /INVALID LOG_LEVEL/);
+  assert.equal(result.blocking, true);
+});
+
+test("production requires Daily webhook signing secret", () => {
+  const { result } = validate({ backend: { DAILY_WEBHOOK_SECRET: "" } });
+  assert.match(formatReport(result), /EMPTY DAILY_WEBHOOK_SECRET/);
   assert.equal(result.blocking, true);
 });
 
@@ -259,10 +293,7 @@ test("secret values never appear in validator output", () => {
 test(
   "healthy mocked preflight and dirty/allowlisted Git states",
   {
-    skip:
-      process.platform === "win32"
-        ? "Bash is unavailable in the audit environment"
-        : false,
+    skip: !bashAvailable,
   },
   () => {
     const directory = fixtureDirectory();
@@ -270,6 +301,20 @@ test(
       recursive: true,
     });
     fs.mkdirSync(path.join(directory, "deploy", "config"), { recursive: true });
+    fs.cpSync(
+      path.join(__dirname, "..", "..", "sawiyaa-backend-v1", "src", "config"),
+      path.join(directory, "sawiyaa-backend-v1", "src", "config"),
+      { recursive: true },
+    );
+    fs.cpSync(
+      path.join(__dirname, "..", "..", "sawiyaa-frontend-v1", "src"),
+      path.join(directory, "sawiyaa-frontend-v1", "src"),
+      { recursive: true },
+    );
+    fs.copyFileSync(
+      path.join(__dirname, "..", "..", "sawiyaa-frontend-v1", "next.config.ts"),
+      path.join(directory, "sawiyaa-frontend-v1", "next.config.ts"),
+    );
     fs.copyFileSync(
       path.join(__dirname, "validate-production-preflight.sh"),
       path.join(
@@ -300,11 +345,23 @@ test(
       path.join(directory, "docker-compose.prod.yml"),
       "services: {}\n",
     );
-    const files = completeFixture(fixtureDirectory());
     childProcess.execFileSync("git", ["init", "-q", directory]);
-    const run = () =>
+    childProcess.execFileSync("git", ["-C", directory, "add", "."]);
+    childProcess.execFileSync("git", [
+      "-C",
+      directory,
+      "-c",
+      "user.email=fixture@example.test",
+      "-c",
+      "user.name=fixture",
+      "commit",
+      "-qm",
+      "fixture",
+    ]);
+    const files = completeFixture(fixtureDirectory());
+    const run = (extraArgs = [], extraEnv = {}, inputFiles = files) =>
       childProcess.spawnSync(
-        "bash",
+        bash,
         [
           path.join(
             directory,
@@ -315,18 +372,83 @@ test(
           "--project-dir",
           directory,
           "--backend-env",
-          files.backend,
+          inputFiles.backend,
           "--frontend-env",
-          files.frontend,
+          inputFiles.frontend,
           "--db-env",
-          files.db,
+          inputFiles.db,
           "--mock",
+          "--skip-lock",
           "--min-free-mb",
           "1",
+          ...extraArgs,
         ],
-        { encoding: "utf8" },
+        {
+          encoding: "utf8",
+          env: { ...process.env, ...extraEnv },
+        },
       );
-    assert.equal(run().status, 0);
+    const healthyRun = run();
+    assert.equal(healthyRun.status, 0, `${healthyRun.stdout}\n${healthyRun.stderr}`);
+    const bootstrapRun = run(["--bootstrap-only"]);
+    assert.equal(bootstrapRun.status, 0, `${bootstrapRun.stdout}\n${bootstrapRun.stderr}`);
+
+    const bin = path.join(directory, "bin");
+    fs.mkdirSync(bin);
+    const nodeExecutable = process.execPath.replaceAll("\\", "/");
+    fs.writeFileSync(
+      path.join(bin, "docker"),
+      `#!/usr/bin/env bash
+node_executable="${nodeExecutable}"
+workspace=""
+backend_env=""
+frontend_env=""
+db_env=""
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "-v" ]]; then
+    mount="$2"
+    case "$mount" in
+      *:/workspace:ro) workspace="\${mount%:/workspace:ro}" ;;
+      *:/inputs/backend.env:ro) backend_env="\${mount%:/inputs/backend.env:ro}" ;;
+      *:/inputs/frontend.env:ro) frontend_env="\${mount%:/inputs/frontend.env:ro}" ;;
+      *:/inputs/db.env:ro) db_env="\${mount%:/inputs/db.env:ro}" ;;
+    esac
+    shift 2
+  else
+    shift
+  fi
+done
+"$node_executable" "$workspace/deploy/scripts/validate-environment-contract.js" \
+  --backend-env "$backend_env" --frontend-env "$frontend_env" --db-env "$db_env" --environment production
+`,
+    );
+    fs.chmodSync(path.join(bin, "docker"), 0o755);
+    childProcess.execFileSync("git", ["-C", directory, "add", "bin/docker"]);
+    childProcess.execFileSync("git", [
+      "-C",
+      directory,
+      "-c",
+      "user.email=fixture@example.test",
+      "-c",
+      "user.name=fixture",
+      "commit",
+      "-qm",
+      "docker-fixture",
+    ]);
+    const shellPath =
+      process.platform === "win32"
+        ? process.env.PATH.replaceAll(";", ":")
+        : process.env.PATH;
+    const dockerFallbackRun = run([], {
+      PATH: `${bin}:${shellPath}`,
+      SAWIYAA_FORCE_DOCKER_VALIDATOR: "true",
+    });
+    assert.equal(
+      dockerFallbackRun.status,
+      0,
+      `${dockerFallbackRun.stdout}\n${dockerFallbackRun.stderr}`,
+    );
+    assert.match(dockerFallbackRun.stdout, /PASS ENVIRONMENT_CONTRACT/);
     fs.writeFileSync(
       path.join(directory, "unexpected-source.ts"),
       "unexpected",

@@ -73,12 +73,10 @@ git branch "$BACKUP_BRANCH" "$ACTIVE_HEAD" >/dev/null
 # is initialized by the backend_volume_init Compose service.
 install -d -o "$RUNTIME_UID" -g "$RUNTIME_GID" -m 0750 -- \
   "$PROJECT_DIR/logs/backend"
-if command -v runuser >/dev/null 2>&1; then
-  runuser -u "#$RUNTIME_UID" -- test -w "$PROJECT_DIR/logs/backend" || {
-    echo "Backend runtime UID $RUNTIME_UID cannot write $PROJECT_DIR/logs/backend" >&2
-    exit 1
-  }
-fi
+[[ -d "$PROJECT_DIR/logs/backend" ]] || {
+  echo "Backend log bind-mount directory is missing: $PROJECT_DIR/logs/backend" >&2
+  exit 1
+}
 
 cleanup_validation_worktree() {
   if (( WORKTREE_CREATED )); then
@@ -141,6 +139,17 @@ else
 fi
 TARGET_SHA="$(git rev-parse "$TARGET_SHA^{commit}")"
 
+echo "Deployment target resolved from approved remote commit."
+echo "Active checkout commit: $ACTIVE_HEAD"
+echo "Approved deployment target: $TARGET_SHA"
+if [[ "$ACTIVE_HEAD" != "$TARGET_SHA" ]]; then
+  local_only_commits="$(git rev-list --count "$TARGET_SHA..$ACTIVE_HEAD" 2>/dev/null || echo 0)"
+  target_only_commits="$(git rev-list --count "$ACTIVE_HEAD..$TARGET_SHA" 2>/dev/null || echo 0)"
+  echo "Local commits not included in target: $local_only_commits"
+  echo "Target commits not in active checkout: $target_only_commits"
+  echo "Deployment intentionally targets the approved remote commit; local commits are not deployed."
+fi
+
 if [[ -z "$VALIDATION_ROOT" || "$VALIDATION_ROOT" == "/" || "$VALIDATION_ROOT" == "." ]]; then
   echo "Validation root is unsafe: $VALIDATION_ROOT" >&2
   exit 2
@@ -185,6 +194,13 @@ docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_F
 echo "Building backend and frontend images..."
 docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" build backend frontend
 
+echo "Checking backend log bind-mount write access..."
+docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+  sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
+    echo "Backend container user cannot write to /app/logs (host path: $PROJECT_DIR/logs/backend)" >&2
+    exit 1
+  }
+
 echo "Starting PostgreSQL..."
 docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" up -d postgres
 
@@ -199,8 +215,33 @@ scanner_args=(--migrations-dir "$PROJECT_DIR/sawiyaa-backend-v1/prisma/migration
 if [[ "$APPROVE_BLOCKING" == "true" ]]; then
   scanner_args+=(--approve-blocking-migrations)
 fi
+run_migration_safety_check() {
+  local image="${SAWIYAA_VALIDATOR_NODE_IMAGE:-node:20-bookworm-slim}"
+  if [[ "${SAWIYAA_FORCE_DOCKER_VALIDATOR:-false}" != "true" ]] &&
+    command -v node >/dev/null 2>&1 &&
+    node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 20 ? 0 : 1)' >/dev/null 2>&1; then
+    node "$PROJECT_DIR/deploy/scripts/check-migration-safety.js" "${scanner_args[@]}"
+    return $?
+  fi
+
+  docker_args=(
+    run --rm
+    --network none
+    --read-only
+    --tmpfs /tmp:rw,nosuid,nodev,size=16m
+    -v "$PROJECT_DIR:/workspace:ro"
+    -v "$APPLIED_MIGRATIONS_FILE:/inputs/applied-migrations.txt:ro"
+    "$image" node /workspace/deploy/scripts/check-migration-safety.js
+    --migrations-dir /workspace/sawiyaa-backend-v1/prisma/migrations
+    --applied-file /inputs/applied-migrations.txt
+  )
+  if [[ "$APPROVE_BLOCKING" == "true" ]]; then
+    docker_args+=(--approve-blocking-migrations)
+  fi
+  docker "${docker_args[@]}"
+}
 set +e
-scanner_output="$(node "$PROJECT_DIR/deploy/scripts/check-migration-safety.js" "${scanner_args[@]}" 2>&1)"
+scanner_output="$(run_migration_safety_check 2>&1)"
 scanner_exit=$?
 set -e
 printf '%s\n' "$scanner_output"
@@ -227,6 +268,24 @@ docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_F
 
 echo "Starting backend, frontend, and nginx..."
 docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" up -d backend frontend nginx
+
+compose_running_services="$(docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" ps --status running --services)"
+for required_service in postgres backend frontend nginx; do
+  grep -Fxq "$required_service" <<<"$compose_running_services" || {
+    echo "Required production service is not running: $required_service" >&2
+    exit 1
+  }
+done
+
+for healthy_service in postgres backend frontend; do
+  container_id="$(docker compose --env-file "$PROJECT_DIR/.env.production.frontend" -f "$COMPOSE_FILE" ps -q "$healthy_service")"
+  health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$container_id" 2>/dev/null || true)"
+  [[ "$health_status" == "healthy" ]] || {
+    echo "Required production service is not healthy: $healthy_service ($health_status)" >&2
+    exit 1
+  }
+done
+echo "PostgreSQL, backend, and frontend healthchecks are healthy; nginx is running."
 
 echo "Waiting for backend health..."
 for attempt in {1..30}; do

@@ -148,7 +148,7 @@ function deriveKnownNames() {
     for (const file of files) {
       const text = readText(file);
       for (const match of text.matchAll(
-        /\b(?:process\.env\.|NEXT_PUBLIC_|ARG\s+|ENV\s+|^\s*)([A-Z][A-Z0-9_]+)\b/gm,
+        /(?:\bprocess\.env\.|\bNEXT_PUBLIC_|\bARG\s+|\bENV\s+|^\s*)([A-Z][A-Z0-9_]+)\b/gm,
       ))
         known.add(match[1]);
     }
@@ -187,6 +187,7 @@ function isPlaceholder(name, value, metadata = {}) {
     "<db>",
   ];
   return (
+    (lowered.startsWith("<") && lowered.endsWith(">")) ||
     patterns.some((pattern) =>
       lowered.includes(String(pattern).toLowerCase()),
     ) ||
@@ -223,6 +224,16 @@ function isValidBasic(name, value) {
     !["legacy", "intention"].includes(value)
   )
     return false;
+  if (
+    name === "LOG_LEVEL" &&
+    !["error", "warn", "info", "debug", "verbose"].includes(value)
+  )
+    return false;
+  if (name === "MAIL_PROVIDER" && !["smtp", "brevo"].includes(value))
+    return false;
+  if (name === "THROTTLE_STORE" && !["memory", "redis"].includes(value))
+    return false;
+  if (name === "VIDEO_PROVIDER_DEFAULT" && value !== "DAILY") return false;
   if (name === "NEXT_PUBLIC_API_URL" && value.startsWith("/")) return true;
   if (name.endsWith("_URL") && !name.includes("DATABASE_URL")) {
     try {
@@ -236,6 +247,57 @@ function isValidBasic(name, value) {
 
 function addIssue(issues, status, name, blocking = true) {
   issues.push({ status, name, blocking });
+}
+
+function validateProductionConfiguration(backend, issues) {
+  const required = [
+    "WEB_APP_URL",
+    "LOG_LEVEL",
+    "DAILY_API_KEY",
+    "DAILY_API_BASE_URL",
+    "DAILY_WEBHOOK_SECRET",
+    "CORPORATE_CODE_PEPPER",
+  ];
+  for (const name of required) {
+    if (!backend.get(name)?.trim()) addIssue(issues, STATUS.MISSING, name);
+  }
+
+  const mailProvider = backend.get("MAIL_PROVIDER") || "smtp";
+  const mailRequired =
+    mailProvider === "brevo"
+      ? ["BREVO_API_KEY", "MAIL_FROM"]
+      : ["MAIL_HOST", "MAIL_USER", "MAIL_PASS", "MAIL_FROM"];
+  for (const name of mailRequired) {
+    if (!backend.get(name)?.trim()) addIssue(issues, STATUS.MISSING, name);
+  }
+
+  if (backend.get("THROTTLE_STORE") === "redis" && !backend.get("REDIS_URL"))
+    addIssue(issues, STATUS.MISSING, "REDIS_URL");
+
+  for (const name of [
+    "APP_URL",
+    "APP_BASE_URL",
+    "WEB_APP_URL",
+    "GOOGLE_CALLBACK_URL",
+    "PAYMENT_SUCCESS_URL",
+    "PAYMENT_FAILED_URL",
+    "PAYMENT_PENDING_URL",
+    "DAILY_API_BASE_URL",
+  ]) {
+    const value = backend.get(name);
+    if (!value) continue;
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "https:") addIssue(issues, STATUS.INVALID, name);
+      if (/^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(url.hostname))
+        addIssue(issues, STATUS.INVALID, name);
+    } catch {
+      addIssue(issues, STATUS.INVALID, name);
+    }
+  }
+
+  if (backend.get("CORPORATE_CODE_PEPPER")?.trim().length < 32)
+    addIssue(issues, STATUS.INVALID, "CORPORATE_CODE_PEPPER");
 }
 
 function requirementEnabled(requirement, values) {
@@ -260,6 +322,10 @@ function requirementEnabled(requirement, values) {
     );
   }
   return true;
+}
+
+function entryAppliesToEnvironment(entry, environment) {
+  return !Array.isArray(entry.environments) || entry.environments.includes(environment);
 }
 
 function validateEnvironment(options = {}) {
@@ -301,6 +367,8 @@ function validateEnvironment(options = {}) {
       }
       const entry = metadata.get(name);
       const aliasEntry = aliases.get(name);
+      const appliesToEnvironment =
+        !entry || entryAppliesToEnvironment(entry, environment);
       if (!knownNames.has(name) && !metadata.has(name) && !aliasEntry)
         addIssue(issues, STATUS.UNKNOWN, name);
       if (
@@ -311,7 +379,8 @@ function validateEnvironment(options = {}) {
       )
         addIssue(issues, STATUS.UNKNOWN, name);
       const required =
-        Boolean(entry && requirementEnabled(entry.required, env.values)) ||
+        (appliesToEnvironment &&
+          Boolean(entry && requirementEnabled(entry.required, env.values))) ||
         name === "DATABASE_URL" ||
         name.endsWith("_SECRET") ||
         name.endsWith("_PASSWORD");
@@ -338,9 +407,16 @@ function validateEnvironment(options = {}) {
         : entry.service === "database"
           ? db
           : backend;
-    if (requirementEnabled(entry.required, target) && !target.has(entry.name))
+    if (
+      entryAppliesToEnvironment(entry, environment) &&
+      requirementEnabled(entry.required, target) &&
+      !target.has(entry.name)
+    )
       addIssue(issues, STATUS.MISSING, entry.name);
-    if (!target.has(entry.name) && entry.required === false)
+    if (
+      !target.has(entry.name) &&
+      (!entryAppliesToEnvironment(entry, environment) || entry.required === false)
+    )
       addIssue(issues, STATUS.NOT_REQUIRED, entry.name, false);
     if (
       knownNames.has(entry.name) === false &&
@@ -363,6 +439,8 @@ function validateEnvironment(options = {}) {
     addIssue(issues, STATUS.CONFLICT, "PAYMOB_EGP_CARD_INTEGRATION_ID");
   if (environment !== "production" && backend.get("PAYMOB_MODE") === "live")
     addIssue(issues, STATUS.INVALID, "PAYMOB_MODE");
+  if (environment === "production")
+    validateProductionConfiguration(backend, issues);
   return {
     issues,
     blocking: issues.some(
