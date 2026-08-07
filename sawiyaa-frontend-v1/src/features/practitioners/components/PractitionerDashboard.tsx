@@ -37,6 +37,7 @@ import {
 } from "@/lib/time-formatting";
 import type { SessionListItem } from "@/features/sessions/types/sessions.types";
 import SessionCodeReference from "@/components/shared/SessionCodeReference";
+import { UpcomingSessionCard } from "@/features/sessions/components/UpcomingSessionCard";
 
 type LocaleCopy = {
   pageTitle: string;
@@ -487,6 +488,8 @@ export default function PractitionerDashboard() {
       </section>
 
       {/* ── Section 2: Compact KPI Grid ── */}
+      <UpcomingSessionCard />
+
       {pendingInstantRequests.length > 0 ? (
         <SurfaceCard
           variant="compact"

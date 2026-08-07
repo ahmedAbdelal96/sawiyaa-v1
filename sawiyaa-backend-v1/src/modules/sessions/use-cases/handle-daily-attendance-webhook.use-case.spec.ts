@@ -2,11 +2,14 @@ import {
   SessionAttendanceParticipantRole,
   SessionEventType,
   SessionProvider,
+  SessionStatus,
 } from '@prisma/client';
 import { AppLoggerService } from '@common/logging/app-logger.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { ParseDailyAttendanceWebhookService } from '../services/parse-daily-attendance-webhook.service';
 import { HandleDailyAttendanceWebhookUseCase } from './handle-daily-attendance-webhook.use-case';
+import { NormalizeDailyAttendanceEvidenceService } from '../services/normalize-daily-attendance-evidence.service';
+import { MarkSessionInProgressFromAttendanceService } from '../services/mark-session-in-progress-from-attendance.service';
 
 describe('HandleDailyAttendanceWebhookUseCase', () => {
   function buildUseCase() {
@@ -35,6 +38,46 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       findSessionEventByProviderEventRef: jest.fn().mockResolvedValue(null),
       getDb: jest.fn().mockReturnValue(mockDb),
     };
+    const tx = {};
+    const prisma = {
+      $transaction: jest.fn(async (callback: (value: unknown) => unknown) =>
+        callback(tx),
+      ),
+    };
+    sessionRepositoryMocks.findByIdForUpdate = jest
+      .fn()
+      .mockImplementation(() =>
+        sessionRepositoryMocks.findByDailyRoomReference(),
+      );
+    sessionRepositoryMocks.findAttendanceEventByIngestionKey.mockResolvedValue(
+      null,
+    );
+    sessionRepositoryMocks.findAttendanceEventByProviderEventRef.mockResolvedValue(
+      null,
+    );
+    const normalize = {
+      normalize: jest.fn(
+        (input: { parsed: any; session: any; ingestionKey: string }) => ({
+          sessionId: input.session.id,
+          participantUserId: input.parsed.participantUserId,
+          participantRole:
+            input.parsed.participantUserId === input.session.patient.user.id
+              ? 'PATIENT'
+              : input.parsed.participantUserId ===
+                  input.session.practitioner.user.id
+                ? 'PRACTITIONER'
+                : 'UNKNOWN',
+          eventType: input.parsed.attendanceEventType,
+          providerEventId: input.parsed.providerEventRef,
+          ingestionKey: input.ingestionKey,
+          providerOccurredAt: input.parsed.occurredAt,
+          receivedAt: new Date(),
+          trustLevel: input.parsed.source === 'SIGNED' ? 'TRUSTED' : 'UNKNOWN',
+          lifecycleEligible: false,
+        }),
+      ),
+    };
+    const markInProgress = { execute: jest.fn().mockResolvedValue('skipped') };
     const sessionRepository =
       sessionRepositoryMocks as unknown as SessionRepository;
 
@@ -46,7 +89,10 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
 
     const useCase = new HandleDailyAttendanceWebhookUseCase(
       parseDailyAttendanceWebhookService,
+      prisma as never,
       sessionRepository,
+      normalize as unknown as NormalizeDailyAttendanceEvidenceService,
+      markInProgress as unknown as MarkSessionInProgressFromAttendanceService,
       logger,
     );
 
@@ -57,6 +103,9 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
       loggerMocks,
       createdEvents,
       mockDb,
+      prisma,
+      normalize,
+      markInProgress,
     };
   }
 
@@ -86,6 +135,12 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
     );
     setup.sessionRepositoryMocks.findByDailyRoomReference.mockResolvedValue({
       id: 'session_1',
+      status: SessionStatus.READY_TO_JOIN,
+      provider: SessionProvider.DAILY,
+      scheduledStartAt: new Date('2026-04-07T09:58:00.000Z'),
+      scheduledEndAt: new Date('2026-04-07T11:00:00.000Z'),
+      joinOpenAt: new Date('2026-04-07T09:58:00.000Z'),
+      videoRoomClosedAt: null,
       patient: { user: { id: 'user_patient_1', displayName: 'Patient One' } },
       practitioner: { user: { id: 'user_pract_1', displayName: 'Dr One' } },
     });
@@ -111,6 +166,7 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
         participantUserId: 'user_patient_1',
         providerEventRef: 'evt_1',
       }),
+      expect.anything(),
     );
   });
 
@@ -316,9 +372,11 @@ describe('HandleDailyAttendanceWebhookUseCase', () => {
     setup.mockDb.sessionEvent.findFirst.mockResolvedValue({
       id: 'event_existing',
     });
-    setup.sessionRepositoryMocks.findSessionEventByProviderEventRef.mockResolvedValue({
-      id: 'event_existing',
-    });
+    setup.sessionRepositoryMocks.findSessionEventByProviderEventRef.mockResolvedValue(
+      {
+        id: 'event_existing',
+      },
+    );
 
     const result = await setup.useCase.execute({
       rawBody: Buffer.from('{}'),

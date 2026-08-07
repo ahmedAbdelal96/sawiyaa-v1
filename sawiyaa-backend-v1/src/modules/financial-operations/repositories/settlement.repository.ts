@@ -462,7 +462,7 @@ export class SettlementRepository {
       select: {
         id: true, sessionId: true, patientId: true, paymentId: true, sourceType: true,
         reviewStatus: true, reviewDecision: true, paymentAmount: true, paymentCurrencyCode: true,
-        suggestedPractitionerAmount: true, suggestedPlatformAmount: true, finalPractitionerAmount: true, finalCurrencyCode: true,
+        suggestedPractitionerAmount: true, suggestedPlatformAmount: true, calculatedPractitionerAmount: true, accountantApprovedSourceAmount: true, accountingAdjustmentAmount: true, finalPractitionerAmount: true, finalCurrencyCode: true,
       },
     },
     adjustments: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], include: { createdByUser: { select: { id: true, displayName: true } } } },

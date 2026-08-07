@@ -6,8 +6,33 @@ import { AuthGatewayProvider } from "../src/providers/AuthGatewayProvider";
 import { NavigationHistoryProvider } from "../src/providers/NavigationHistoryProvider";
 import { ViewerTimeZoneProvider } from "../src/providers/ViewerTimeZoneProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import "../src/i18n";
+
+// Inject global web styles to remove Chrome/Safari autofill blue tint and outline
+if (Platform.OS === "web" && typeof document !== "undefined") {
+  const styleId = "sawiyaa-web-autofill-fix";
+  if (!document.getElementById(styleId)) {
+    const styleElement = document.createElement("style");
+    styleElement.id = styleId;
+    styleElement.innerHTML = `
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus,
+      input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+        -webkit-text-fill-color: #053F38 !important;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+      input {
+        background-color: transparent !important;
+        outline: none !important;
+      }
+    `;
+    document.head.appendChild(styleElement);
+  }
+}
 
 // Prevent the native splash screen from auto-hiding until bootstrap is complete.
 SplashScreen.preventAutoHideAsync().catch(() => {});

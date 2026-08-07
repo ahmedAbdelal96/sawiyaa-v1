@@ -7,6 +7,15 @@ This stack is designed for a production VPS with:
 - Backend on internal port 7000
 - PostgreSQL with a persistent named volume
 - Persistent backend volumes for `storage/` and `uploads/`
+- Host-persistent backend logs at `/opt/sawiyaa/logs/backend`, bind-mounted to `/app/logs`
+
+The backend runtime image runs as UID/GID `10001:10001` (`sawiyaa`) with no
+shell. Deployment creates `/opt/sawiyaa/logs/backend` with ownership
+`10001:10001` and mode `0750` before startup. The
+`backend_volume_init` one-shot Compose service runs as root, preserves all
+existing named-volume data, and initializes `/app/storage` and `/app/uploads`
+for the backend UID/GID before the backend starts. Logs remain the canonical
+host bind mount.
 
 ## Branch workflow
 
@@ -44,7 +53,7 @@ For the live deployment, duplicate them beside `docker-compose.prod.yml` as:
 - `.env.production.frontend`
 - `.env.production.db`
 
-Frontend `NEXT_PUBLIC_*` values are build-time inputs. If you change the public app URL, Google client ID, Stripe publishable key, or related frontend flags, pass the updated values as Docker build args when building the frontend image.
+Frontend `NEXT_PUBLIC_*` values are build-time inputs. The one-command deployment passes `.env.production.frontend` to Compose as its interpolation source, so the validated frontend environment and the Docker build receive the same values. Do not pass separate ad-hoc build arguments.
 
 Real `.env.production.backend`, `.env.production.frontend`, and `.env.production.db` files must stay on the server only. Do not commit them.
 
@@ -159,17 +168,22 @@ Never delete `postgres_data`.
 
 ## One-off Prisma migrations
 
-Run migrations manually as a release step, before exposing new traffic:
+The normal production release command is:
 
 ```bash
-docker compose -f docker-compose.prod.yml run --rm backend npm run prisma:migrate:deploy
+SAWIYAA_PROJECT_DIR=/opt/sawiyaa bash /opt/sawiyaa/deploy/scripts/deploy-production.sh
 ```
+
+It creates a lightweight Git rollback marker, fetches `origin/main`, validates
+the target release in a temporary worktree against the server env files, then
+builds `backend` and `frontend`, runs migrations, runs the idempotent Config
+bootstrap, recreates the app services, and checks backend/frontend health.
+Payment-route bootstrap remains manual and is never run by this command.
 
 ## Production Config bootstrap
 
-After the backup and successful migration, initialize only the canonical Config
-catalog and approved global initial values. The command is explicit and must be
-run as a one-off operator action:
+If the Config bootstrap ever needs to be run manually, initialize only the
+canonical Config catalog and approved global initial values:
 
 ```bash
 docker compose -f docker-compose.prod.yml run --rm \
@@ -184,15 +198,21 @@ ConfigValue rows, or print configuration values. Expected output is a JSON
 summary containing `catalog.created`, `catalog.preserved`,
 `initialValues.created`, and `initialValues.preserved` counts.
 
-Required release order:
+The one-command release order is:
 
-1. `bash /opt/sawiyaa/deploy/scripts/backup-db.sh`
-2. `bash /opt/sawiyaa/deploy/scripts/validate-production-preflight.sh`
-3. `docker compose -f docker-compose.prod.yml run --rm backend npm run prisma:migrate:deploy`
-4. The Config bootstrap command above.
-5. Run `db:bootstrap:payment-routes` only for an empty route table with explicit operator approval.
-6. `docker compose -f docker-compose.prod.yml up -d backend frontend nginx`
-7. Verify the health endpoints and readiness logs.
+1. Acquire the deployment lock and run read-only host checks.
+2. Create `backup-before-deploy-<timestamp>` at the active commit.
+3. Fetch `origin/main` without changing the active checkout.
+4. Validate the target release from a temporary Git worktree.
+5. Ensure `/opt/sawiyaa/logs/backend` is writable by the backend UID.
+6. Build only `backend` and `frontend`.
+7. Run migration safety checks, create a verified database backup, then apply migrations.
+8. Run the idempotent Config bootstrap with `ALLOW_CONFIG_BOOTSTRAP=true`.
+9. Recreate backend, frontend, and nginx, then verify health.
+
+After successful health checks, the script writes `.sawiyaa-release` with the
+target SHA, UTC deployment time, and `status=success`. It is a host runtime
+marker and is not source-controlled.
 
 Never run the root `npm run prisma:seed` command in production.
 

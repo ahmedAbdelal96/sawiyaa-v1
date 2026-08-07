@@ -13,8 +13,7 @@ import Button from "@/components/ui/button/Button";
 import { FormModal } from "@/components/ui/modal";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { useDownloadAdminPractitionerRecoveriesCsv, useAdminPractitionerRecoveries, useWaiveAdminPractitionerRecovery } from "../hooks/use-admin-practitioner-recoveries";
 import {
   ADMIN_PRACTITIONER_RECOVERY_STATUS_STYLES,
@@ -107,7 +106,6 @@ export default function AdminPractitionerRecoveriesListScreen() {
   const t = useTranslations("admin-finance-operations");
   const locale = useLocale();
   const router = useRouter();
-  const stepUp = useAdminStepUp();
   const exportCsvMutation = useDownloadAdminPractitionerRecoveriesCsv();
   const waiveMutation = useWaiveAdminPractitionerRecovery();
 
@@ -381,10 +379,6 @@ export default function AdminPractitionerRecoveriesListScreen() {
           }
         } catch (cause) {
           const appError = toAppError(cause);
-          if (isStepUpRequiredError(appError)) {
-            throw cause;
-          }
-
           results.failed.push({
             recoveryId: row.recoveryId,
             message: appError.message || t("practitionerRecoveries.list.bulkWaiveModal.itemFailed"),
@@ -408,18 +402,6 @@ export default function AdminPractitionerRecoveriesListScreen() {
       finalizeBulkWaive(results);
     } catch (error) {
       const appError = toAppError(error);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          try {
-            const results = await runBatch();
-            finalizeBulkWaive(results);
-          } catch (retryError) {
-            handleError(retryError);
-          }
-        });
-        return;
-      }
-
       handleError(error);
     }
   };

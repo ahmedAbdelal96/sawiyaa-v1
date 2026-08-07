@@ -52,6 +52,10 @@ describe('SubmitPractitionerApplicationUseCase', () => {
   const practitionerPayoutDestinationValidationService = {
     validate: jest.fn(),
   } as never;
+  const practitionerReviewCaseService = {
+    ensureOnboardingCase: jest.fn().mockResolvedValue({ id: 'case-1' }),
+    resubmitChangeCase: jest.fn().mockResolvedValue({ id: 'case-1' }),
+  } as never;
 
   const useCase = new SubmitPractitionerApplicationUseCase(
     prisma,
@@ -69,6 +73,7 @@ describe('SubmitPractitionerApplicationUseCase', () => {
     getPractitionerProfileReadinessUseCase,
     getPractitionerApplicationStatusUseCase,
     practitionerPayoutDestinationValidationService,
+    practitionerReviewCaseService,
   );
 
   const baseProfile = {

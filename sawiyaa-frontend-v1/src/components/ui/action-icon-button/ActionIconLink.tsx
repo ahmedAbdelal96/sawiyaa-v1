@@ -44,7 +44,7 @@ export default function ActionIconLink({
       href={href as never}
       title={label}
       aria-label={label}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${INTENT_STYLES[intent]} ${className}`}
+      className={`inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border shadow-2xs transition-all duration-150 active:scale-95 ${INTENT_STYLES[intent]} ${className}`}
     >
       <span className="h-4 w-4">{icon}</span>
       <span className="sr-only">{label}</span>

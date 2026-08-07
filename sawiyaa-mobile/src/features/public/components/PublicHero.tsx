@@ -16,8 +16,12 @@ export function PublicHero() {
 
   const isArabic = i18n.language === "ar";
 
-  const badgeText = isArabic ? "رعاية نفسية عربية أكثر قربًا" : "Mental care that feels calmer and closer";
-  const headlineText = isArabic ? "ابدأ رحلة رعاية نفسية" : "Start your mental health care journey";
+  const badgeText = isArabic
+    ? "رعاية نفسية عربية أكثر قربًا"
+    : "Mental care that feels calmer and closer";
+  const headlineText = isArabic
+    ? "ابدأ رحلة رعاية نفسية"
+    : "Start your mental health care journey";
   const subtext = isArabic
     ? "اكتشف المتخصص المناسب، احجز جلستك بسهولة، وتابع خطواتك من مكان واحد — من الاختيار حتى الجلسة والدعم عند الحاجة."
     : "Find the right specialist, book your session easily, and track your steps in one place — from choosing to session and support when needed.";
@@ -27,20 +31,43 @@ export function PublicHero() {
       {/* Section 2: Real Web Hero Content */}
       <View style={styles.heroTextSection}>
         {/* Soft Brand Badge */}
-        <View style={[styles.badgeContainer, { backgroundColor: publicTheme.accentMint, flexDirection: rowDirection }]}>
-          <Ionicons name="sparkles-outline" size={14} color={publicTheme.primaryText} importantForAccessibility="no" />
+        <View
+          style={[
+            styles.badgeContainer,
+            {
+              backgroundColor: publicTheme.accentMint,
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          <Ionicons
+            name="sparkles-outline"
+            size={14}
+            color={publicTheme.primaryText}
+            importantForAccessibility="no"
+          />
           <Text style={[styles.badgeText, { color: publicTheme.primaryText }]}>
             {badgeText}
           </Text>
         </View>
 
         {/* Headline */}
-        <Text style={[styles.heroHeadline, { color: publicTheme.primaryText, textAlign }]}>
+        <Text
+          style={[
+            styles.heroHeadline,
+            { color: publicTheme.primaryText, textAlign },
+          ]}
+        >
           {headlineText}
         </Text>
 
         {/* Subtext */}
-        <Text style={[styles.heroSubtext, { color: publicTheme.secondaryText, textAlign }]}>
+        <Text
+          style={[
+            styles.heroSubtext,
+            { color: publicTheme.secondaryText, textAlign },
+          ]}
+        >
           {subtext}
         </Text>
 
@@ -49,7 +76,10 @@ export function PublicHero() {
           {/* Primary Action: Browse Practitioners */}
           <TouchableOpacity
             onPress={() => router.push("/(public)/practitioners")}
-            style={[styles.primaryCtaBtn, { backgroundColor: publicTheme.primaryText }]}
+            style={[
+              styles.primaryCtaBtn,
+              { backgroundColor: publicTheme.primaryText },
+            ]}
             activeOpacity={0.88}
             accessibilityRole="button"
             accessibilityLabel={t("publicHome.hero.chooseSpecialist")}
@@ -58,19 +88,29 @@ export function PublicHero() {
               <Text style={styles.primaryCtaText} color="#FFFFFF">
                 {t("publicHome.hero.chooseSpecialist")}
               </Text>
-              <Ionicons name={arrowForward} size={18} color="#FFFFFF" importantForAccessibility="no" />
             </View>
           </TouchableOpacity>
 
           {/* Secondary Action: Explore Specialties */}
           <TouchableOpacity
             onPress={() => router.push("/(public)/specialties")}
-            style={[styles.secondaryCtaBtn, { backgroundColor: publicTheme.accentMint, borderColor: publicTheme.subtleBorder }]}
+            style={[
+              styles.secondaryCtaBtn,
+              {
+                backgroundColor: publicTheme.accentMint,
+                borderColor: publicTheme.subtleBorder,
+              },
+            ]}
             activeOpacity={0.88}
             accessibilityRole="button"
             accessibilityLabel={t("publicHome.hero.helpChoose")}
           >
-            <Text style={[styles.secondaryCtaText, { color: publicTheme.primaryText }]}>
+            <Text
+              style={[
+                styles.secondaryCtaText,
+                { color: publicTheme.primaryText },
+              ]}
+            >
               {t("publicHome.hero.helpChoose")}
             </Text>
           </TouchableOpacity>
@@ -93,18 +133,44 @@ export function PublicHero() {
             accessibilityRole="button"
             accessibilityLabel={t("publicHome.hero.secondaryCta")}
           >
-            <View style={[styles.portalIconBox, { backgroundColor: "rgba(5, 63, 56, 0.08)" }]}>
-              <Ionicons name="person-circle-outline" size={20} color={publicTheme.primaryText} />
+            <View
+              style={[
+                styles.portalIconBox,
+                { backgroundColor: "rgba(5, 63, 56, 0.08)" },
+              ]}
+            >
+              <Ionicons
+                name="person-circle-outline"
+                size={20}
+                color={publicTheme.primaryText}
+              />
             </View>
             <View style={styles.portalTextWrap}>
-              <Text style={[styles.portalTitle, { color: publicTheme.primaryText, textAlign }]} weight="bold">
+              <Text
+                style={[
+                  styles.portalTitle,
+                  { color: publicTheme.primaryText, textAlign },
+                ]}
+                weight="bold"
+              >
                 {t("publicHome.hero.secondaryCta")}
               </Text>
-              <Text style={[styles.portalSubtitle, { color: publicTheme.secondaryText, textAlign }]}>
-                {isArabic ? "متابعة حساب الجلسات والتقييمات" : "Sign in to manage sessions"}
+              <Text
+                style={[
+                  styles.portalSubtitle,
+                  { color: publicTheme.secondaryText, textAlign },
+                ]}
+              >
+                {isArabic
+                  ? "متابعة حساب الجلسات والتقييمات"
+                  : "Sign in to manage sessions"}
               </Text>
             </View>
-            <Ionicons name={arrowForward} size={16} color={publicTheme.primaryText} />
+            <Ionicons
+              name={arrowForward}
+              size={16}
+              color={publicTheme.primaryText}
+            />
           </TouchableOpacity>
 
           {/* Patient Signup Quick Link */}
@@ -118,7 +184,9 @@ export function PublicHero() {
             <Text style={{ color: publicTheme.secondaryText, fontSize: 13 }}>
               {isArabic ? "ليس لديك حساب مريض؟" : "Don't have an account?"}
             </Text>
-            <Text style={[styles.signupBarLink, { color: publicTheme.primaryText }]}>
+            <Text
+              style={[styles.signupBarLink, { color: publicTheme.primaryText }]}
+            >
               {t("publicHome.hero.startJourney")}
             </Text>
           </TouchableOpacity>
@@ -138,33 +206,75 @@ export function PublicHero() {
             accessibilityRole="button"
             accessibilityLabel={t("publicHome.practitioner.button")}
           >
-            <View style={[styles.portalIconBox, { backgroundColor: publicTheme.raisedSurface }]}>
-              <Ionicons name="medical-outline" size={20} color={publicTheme.primaryText} />
+            <View
+              style={[
+                styles.portalIconBox,
+                { backgroundColor: publicTheme.raisedSurface },
+              ]}
+            >
+              <Ionicons
+                name="medical-outline"
+                size={20}
+                color={publicTheme.primaryText}
+              />
             </View>
             <View style={styles.portalTextWrap}>
-              <Text style={[styles.portalTitle, { color: publicTheme.primaryText, textAlign }]} weight="bold">
+              <Text
+                style={[
+                  styles.portalTitle,
+                  { color: publicTheme.primaryText, textAlign },
+                ]}
+                weight="bold"
+              >
                 {t("publicHome.practitioner.button")}
               </Text>
-              <Text style={[styles.portalSubtitle, { color: publicTheme.primaryText, textAlign }]}>
-                {isArabic ? "بوابة الأطباء والمعالجين النفسيين" : "Specialist & Doctor Portal"}
+              <Text
+                style={[
+                  styles.portalSubtitle,
+                  { color: publicTheme.primaryText, textAlign },
+                ]}
+              >
+                {isArabic
+                  ? "بوابة الأطباء والمعالجين النفسيين"
+                  : "Specialist & Doctor Portal"}
               </Text>
             </View>
-            <Ionicons name={arrowForward} size={16} color={publicTheme.primaryText} />
+            <Ionicons
+              name={arrowForward}
+              size={16}
+              color={publicTheme.primaryText}
+            />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Section 3: Hero Media Card */}
-      <View style={[styles.mediaCard, { borderColor: publicTheme.subtleBorder }]}>
+      <View
+        style={[styles.mediaCard, { borderColor: publicTheme.subtleBorder }]}
+      >
         <Image
           source={require("../../../../assets/banner.png")}
           style={styles.mediaImage}
           resizeMode="cover"
         />
         <View style={styles.mediaOverlay} />
-        <View style={[styles.mediaBadge, { backgroundColor: publicTheme.raisedSurface, flexDirection: rowDirection }]}>
-          <Ionicons name="checkmark-circle" size={16} color={publicTheme.primaryText} />
-          <Text style={[styles.mediaBadgeText, { color: publicTheme.primaryText }]}>
+        <View
+          style={[
+            styles.mediaBadge,
+            {
+              backgroundColor: publicTheme.raisedSurface,
+              flexDirection: rowDirection,
+            },
+          ]}
+        >
+          <Ionicons
+            name="checkmark-circle"
+            size={16}
+            color={publicTheme.primaryText}
+          />
+          <Text
+            style={[styles.mediaBadgeText, { color: publicTheme.primaryText }]}
+          >
             {isArabic ? "رعاية معتمدة وآمنة" : "Certified & Secure Care"}
           </Text>
         </View>

@@ -22,6 +22,7 @@ import {
   resolveSessionJoinPolicy,
 } from '../utils/session-join-policy.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
+import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
@@ -39,6 +40,7 @@ export class ResolveSessionJoinContractUseCase {
     private readonly sessionVideoProviderResolverService: SessionVideoProviderResolverService,
     private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly prepareSessionRuntimeUseCase: PrepareSessionRuntimeUseCase,
+    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
   ) {}
 
   async execute(input: {
@@ -66,6 +68,14 @@ export class ResolveSessionJoinContractUseCase {
         session.id,
       );
     const finalManualDecision = latestDecision?.decisionType ?? null;
+    const schedulePolicy =
+      this.sessionSchedulePolicyService.parseSnapshot(
+        session.schedulePolicySnapshotJson,
+      ) ??
+      this.sessionSchedulePolicyService.withScheduleRevision(
+        await this.sessionSchedulePolicyService.resolve(),
+        session.scheduleRevision,
+      );
 
     // JOIN_ATTEMPTED — always emitted at the start of a join attempt
     await this.emitEvent({
@@ -91,6 +101,8 @@ export class ResolveSessionJoinContractUseCase {
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
       videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
+      joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
       finalManualDecision,
       now,
     });
@@ -117,6 +129,8 @@ export class ResolveSessionJoinContractUseCase {
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
         videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
+        joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
         finalManualDecision,
         now,
       });
@@ -132,6 +146,7 @@ export class ResolveSessionJoinContractUseCase {
           session: effectiveSession,
           userId: input.userId,
           now,
+          joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
         });
 
       if (graceJoinAllowed) {
@@ -155,6 +170,8 @@ export class ResolveSessionJoinContractUseCase {
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
         videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+        joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
+        joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
         finalManualDecision,
         now,
       });
@@ -214,6 +231,26 @@ export class ResolveSessionJoinContractUseCase {
           input.actorType === 'PATIENT'
             ? effectiveSession.patient.user.displayName
             : effectiveSession.practitioner.user.displayName,
+        expiresAt:
+          usedPostEndReconnectGrace
+            ? computeSessionPostEndReconnectGraceClosesAt(
+                effectiveSession.scheduledEndAt,
+                schedulePolicy.join.joinAfterEndGraceMinutes,
+              )
+            : resolveSessionJoinPolicy({
+                status: effectiveSession.status,
+                sessionMode: effectiveSession.sessionMode,
+                scheduledStartAt: effectiveSession.scheduledStartAt,
+                scheduledEndAt: effectiveSession.scheduledEndAt,
+                provider: effectiveSession.provider,
+                providerRoomId: effectiveSession.providerRoomId,
+                providerSessionRef: effectiveSession.providerSessionRef,
+                videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+                joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
+                joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
+                finalManualDecision,
+                now,
+              }).joinClosesAt,
       });
       joinToken = tokenResult.token;
       tokenExpiresAt = this.normalizeDate(tokenResult.expiresAt);
@@ -289,6 +326,7 @@ export class ResolveSessionJoinContractUseCase {
     const reconnectGraceClosesAt = usedPostEndReconnectGrace
       ? computeSessionPostEndReconnectGraceClosesAt(
           effectiveSession.scheduledEndAt,
+          schedulePolicy.join.joinAfterEndGraceMinutes,
         )
       : null;
 
@@ -425,6 +463,7 @@ export class ResolveSessionJoinContractUseCase {
     session: NonNullable<Awaited<ReturnType<SessionRepository['findById']>>>;
     userId: string;
     now: Date;
+    joinAfterEndGraceMinutes: number;
   }): Promise<boolean> {
     if (!input.session.scheduledEndAt) {
       return false;
@@ -436,6 +475,7 @@ export class ResolveSessionJoinContractUseCase {
 
     const reconnectGraceClosesAt = computeSessionPostEndReconnectGraceClosesAt(
       input.session.scheduledEndAt,
+      input.joinAfterEndGraceMinutes,
     );
     if (!reconnectGraceClosesAt || input.now > reconnectGraceClosesAt) {
       return false;

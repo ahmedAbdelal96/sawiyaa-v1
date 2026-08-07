@@ -8,8 +8,7 @@ import InputField from "@/components/form/input/InputField";
 import TimeZonePicker from "@/components/timezone/TimeZonePicker";
 import { ConfirmModal, FormModal } from "@/components/ui/modal";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
-import { useAdminStepUp } from "../hooks/use-admin-step-up";
+import { toAppError } from "@/lib/api/errors";
 import { useAdminUser } from "../hooks/use-admin-users";
 import {
   invalidateAdminUserTokenVersion,
@@ -64,7 +63,6 @@ export default function AdminUsersActionDialogs({
 }: Props) {
   const t = useTranslations("admin-users");
   const { data: currentUser } = useCurrentUser(Boolean(action));
-  const stepUp = useAdminStepUp();
   const userQuery = useAdminUser(action?.userId ?? "", Boolean(action));
   const detail = userQuery.data?.item;
   const currentUserId = currentUser?.userId ?? null;
@@ -156,7 +154,6 @@ export default function AdminUsersActionDialogs({
         initialDisplayName={detail.displayName ?? ""}
         initialDefaultLocale={detail.defaultLocale ?? ""}
         initialTimezone={detail.timezone ?? ""}
-        stepUp={stepUp}
         onClose={onClose}
         onCompleted={onCompleted}
         mutation={profileMutation}
@@ -174,7 +171,6 @@ export default function AdminUsersActionDialogs({
         submitLabel={t("statusModal.submit")}
         cancelLabel={t("statusModal.cancel")}
         initialStatus={detail.status}
-        stepUp={stepUp}
         onClose={onClose}
         onCompleted={onCompleted}
         mutation={statusMutation}
@@ -197,7 +193,6 @@ export default function AdminUsersActionDialogs({
         initialRoles={detail.roles.filter(
           (role): role is AdminUserRole => role in ADMIN_USER_ROLE_LABEL_KEYS,
         )}
-        stepUp={stepUp}
         onClose={onClose}
         onCompleted={onCompleted}
         mutation={rolesMutation}
@@ -216,7 +211,6 @@ export default function AdminUsersActionDialogs({
         cancelLabel={t("sessions.cancel")}
         onClose={onClose}
         onCompleted={onCompleted}
-        stepUp={stepUp}
         mutation={revokeMutation}
       />
     );
@@ -232,7 +226,6 @@ export default function AdminUsersActionDialogs({
       cancelLabel={t("tokenVersion.cancel")}
       onClose={onClose}
       onCompleted={onCompleted}
-      stepUp={stepUp}
       mutation={invalidateMutation}
       confirmVariant="danger"
     />
@@ -248,7 +241,6 @@ function ProfileDialog({
   initialDisplayName,
   initialDefaultLocale,
   initialTimezone,
-  stepUp,
   onClose,
   onCompleted,
   mutation,
@@ -261,7 +253,6 @@ function ProfileDialog({
   initialDisplayName: string;
   initialDefaultLocale: string;
   initialTimezone: string;
-  stepUp: ReturnType<typeof useAdminStepUp>;
   onClose: () => void;
   onCompleted: () => void;
   mutation: MutationWithVariables<Parameters<typeof updateAdminUserProfile>[1]>;
@@ -277,7 +268,6 @@ function ProfileDialog({
     setDefaultLocale(initialDefaultLocale);
     setTimezone(initialTimezone);
     setError(null);
-    stepUp.close();
     onClose();
   };
 
@@ -293,7 +283,6 @@ function ProfileDialog({
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setError(appError.message || t("errors.generic"));
       return false;
     }
@@ -310,12 +299,6 @@ function ProfileDialog({
       await runUpdate();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runUpdate();
-        });
-        return;
-      }
       setError(appError.message || t("errors.generic"));
     }
   };
@@ -372,7 +355,6 @@ function StatusDialog({
   submitLabel,
   cancelLabel,
   initialStatus,
-  stepUp,
   onClose,
   onCompleted,
   mutation,
@@ -383,7 +365,6 @@ function StatusDialog({
   submitLabel: string;
   cancelLabel: string;
   initialStatus: (typeof ADMIN_USER_STATUS_VALUES)[number];
-  stepUp: ReturnType<typeof useAdminStepUp>;
   onClose: () => void;
   onCompleted: () => void;
   mutation: MutationWithVariables<Parameters<typeof updateAdminUserStatus>[1]>;
@@ -398,7 +379,6 @@ function StatusDialog({
     setStatus(initialStatus);
     setReason("");
     setError(null);
-    stepUp.close();
     onClose();
   };
 
@@ -419,7 +399,6 @@ function StatusDialog({
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setError(appError.message || t("errors.generic"));
       return false;
     }
@@ -431,12 +410,6 @@ function StatusDialog({
       await runUpdate();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runUpdate();
-        });
-        return;
-      }
       setError(appError.message || t("errors.generic"));
     }
   };
@@ -506,7 +479,6 @@ function RolesDialog({
   canAssignSuperAdmin,
   roleOptions,
   initialRoles,
-  stepUp,
   onClose,
   onCompleted,
   mutation,
@@ -520,7 +492,6 @@ function RolesDialog({
   canAssignSuperAdmin: boolean;
   roleOptions: AdminUserRole[];
   initialRoles: AdminUserRole[];
-  stepUp: ReturnType<typeof useAdminStepUp>;
   onClose: () => void;
   onCompleted: () => void;
   mutation: MutationWithVariables<Parameters<typeof updateAdminUserRoles>[1]>;
@@ -538,7 +509,6 @@ function RolesDialog({
     setSelectedRoles(initialRoles);
     setReason("");
     setError(null);
-    stepUp.close();
     onClose();
   };
 
@@ -581,7 +551,6 @@ function RolesDialog({
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setError(appError.message || t("errors.generic"));
       return false;
     }
@@ -593,12 +562,6 @@ function RolesDialog({
       await runUpdate();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runUpdate();
-        });
-        return;
-      }
       setError(appError.message || t("errors.generic"));
     }
   };
@@ -666,7 +629,6 @@ function ConfirmActionDialog({
   cancelLabel,
   onClose,
   onCompleted,
-  stepUp,
   mutation,
   confirmVariant = "primary",
 }: {
@@ -677,7 +639,6 @@ function ConfirmActionDialog({
   cancelLabel: string;
   onClose: () => void;
   onCompleted: () => void;
-  stepUp: ReturnType<typeof useAdminStepUp>;
   mutation: MutationWithoutVariables;
   confirmVariant?: "primary" | "outline" | "danger";
 }) {
@@ -686,7 +647,6 @@ function ConfirmActionDialog({
 
   const handleClose = () => {
     setError(null);
-    stepUp.close();
     onClose();
   };
 
@@ -698,7 +658,6 @@ function ConfirmActionDialog({
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setError(appError.message || t("errors.generic"));
       return false;
     }
@@ -710,12 +669,6 @@ function ConfirmActionDialog({
       await runAction();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runAction();
-        });
-        return;
-      }
       setError(appError.message || t("errors.generic"));
     }
   };

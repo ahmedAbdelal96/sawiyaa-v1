@@ -45,9 +45,9 @@ export default function ActionIconButton({
       title={label}
       aria-label={label}
       disabled={disabled}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+      className={`inline-flex h-7.5 w-7.5 items-center justify-center rounded-lg border shadow-2xs transition-all duration-150 ${
         INTENT_STYLES[intent]
-      } ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
+      } ${disabled ? "cursor-not-allowed opacity-50 shadow-none" : "active:scale-95 cursor-pointer"} ${className}`}
       {...props}
     >
       <span className="h-4 w-4">{icon}</span>

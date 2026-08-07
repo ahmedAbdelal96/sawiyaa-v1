@@ -1,11 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, Session, SessionEventType, SessionStatus } from '@prisma/client';
+import { Injectable, Optional } from '@nestjs/common';
+import {
+  Prisma,
+  Session,
+  SessionEventType,
+  SessionStatus,
+} from '@prisma/client';
 import { SessionRepository } from '../repositories/session.repository';
 import { ValidateSessionStatusTransitionService } from './validate-session-status-transition.service';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
 } from '@common/security-audit/security-audit.types';
+import { SessionOutcomePolicySnapshotService } from './session-outcome-policy-snapshot.service';
 
 type LifecycleSession = Pick<Session, 'id' | 'status'>;
 
@@ -15,6 +21,8 @@ export class SessionLifecycleService {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly transitions: ValidateSessionStatusTransitionService,
+    @Optional()
+    private readonly policySnapshotService?: SessionOutcomePolicySnapshotService,
   ) {}
 
   async transition<TSession extends LifecycleSession>(input: {
@@ -31,7 +39,10 @@ export class SessionLifecycleService {
     at?: Date;
     eventType?: SessionEventType;
     metadata?: Prisma.InputJsonObject;
-    data?: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>;
+    data?: Omit<
+      Prisma.SessionUncheckedUpdateInput,
+      'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'
+    >;
   }) {
     if (input.session.status === input.to) return input.session;
     this.transitions.assertCanTransition(input.session.status, input.to);
@@ -48,6 +59,13 @@ export class SessionLifecycleService {
       },
       input.tx,
     );
+    if (input.to === SessionStatus.UPCOMING && this.policySnapshotService) {
+      await this.policySnapshotService.captureForUpcoming(
+        input.session.id,
+        input.tx,
+        at,
+      );
+    }
     await this.sessionRepository.createEvent(
       {
         sessionId: input.session.id,
@@ -97,8 +115,14 @@ export class SessionLifecycleService {
     at?: Date;
     eventType?: SessionEventType;
     metadata?: Prisma.InputJsonObject;
-    data?: Omit<Prisma.SessionUncheckedUpdateInput, 'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'>;
-  }): Promise<{ outcome: 'transitioned' | 'skipped' | 'idempotent'; session: LifecycleSession | null }> {
+    data?: Omit<
+      Prisma.SessionUncheckedUpdateInput,
+      'status' | 'completedAt' | 'cancelledAt' | 'expiredAt'
+    >;
+  }): Promise<{
+    outcome: 'transitioned' | 'skipped' | 'idempotent';
+    session: LifecycleSession | null;
+  }> {
     const session = await this.sessionRepository.findByIdForUpdate(
       input.sessionId,
       input.tx,
@@ -118,17 +142,27 @@ export class SessionLifecycleService {
 
   private eventFor(status: SessionStatus): SessionEventType {
     switch (status) {
-      case SessionStatus.UPCOMING: return SessionEventType.SESSION_CONFIRMED;
-      case SessionStatus.READY_TO_JOIN: return SessionEventType.SESSION_READY_TO_JOIN;
-      case SessionStatus.IN_PROGRESS: return SessionEventType.SESSION_STARTED;
-      case SessionStatus.AWAITING_COMPLETION_CONFIRMATION: return SessionEventType.SESSION_AWAITING_COMPLETION_CONFIRMATION;
-      case SessionStatus.COMPLETED: return SessionEventType.SESSION_COMPLETED;
-      case SessionStatus.PATIENT_NO_SHOW: return SessionEventType.NO_SHOW_PATIENT;
+      case SessionStatus.UPCOMING:
+        return SessionEventType.SESSION_CONFIRMED;
+      case SessionStatus.READY_TO_JOIN:
+        return SessionEventType.SESSION_READY_TO_JOIN;
+      case SessionStatus.IN_PROGRESS:
+        return SessionEventType.SESSION_STARTED;
+      case SessionStatus.AWAITING_COMPLETION_CONFIRMATION:
+        return SessionEventType.SESSION_AWAITING_COMPLETION_CONFIRMATION;
+      case SessionStatus.COMPLETED:
+        return SessionEventType.SESSION_COMPLETED;
+      case SessionStatus.PATIENT_NO_SHOW:
+        return SessionEventType.NO_SHOW_PATIENT;
       case SessionStatus.PRACTITIONER_NO_SHOW:
-      case SessionStatus.BOTH_NO_SHOW: return SessionEventType.NO_SHOW_PRACTITIONER;
-      case SessionStatus.EXPIRED: return SessionEventType.EXPIRED_UNPAID;
-      case SessionStatus.CANCELLED: return SessionEventType.CANCELLED_BY_PATIENT;
-      default: return SessionEventType.SESSION_CREATED;
+      case SessionStatus.BOTH_NO_SHOW:
+        return SessionEventType.NO_SHOW_PRACTITIONER;
+      case SessionStatus.EXPIRED:
+        return SessionEventType.EXPIRED_UNPAID;
+      case SessionStatus.CANCELLED:
+        return SessionEventType.CANCELLED_BY_PATIENT;
+      default:
+        return SessionEventType.SESSION_CREATED;
     }
   }
 }

@@ -214,21 +214,6 @@
     "confirm": "Invalidate tokens",
     "cancel": "Cancel"
   },
-  "stepUp": {
-    "title": "Confirm with password",
-    "description": "Sensitive actions require a fresh password confirmation.",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "Enter your password",
-    "hint": "Your password is never stored or logged.",
-    "confirm": "Verify",
-    "cancel": "Cancel",
-    "successNote": "Step-up confirmation succeeded.",
-    "errors": {
-      "passwordRequired": "Password is required.",
-      "invalidPassword": "The password is incorrect.",
-      "generic": "Step-up verification failed. Please try again."
-    }
-  },
   "permissions": {
     "summary": {
       "title": "How custom permissions work",
@@ -259,21 +244,95 @@
       }
     },
     "page": {
-      "title": "Customize user permissions",
-      "description": "Role permissions are the default. Check a permission to enable it, or uncheck it to disable it. Changes are saved when you click Save.",
-      "loadingTitle": "Loading permissions",
-      "loadingDescription": "Fetching the selected user's current permission settings.",
+      "title": "Enterprise Permission Matrix",
+      "description": "Enterprise-grade platform permissions management. Grant or revoke explicit overrides with clear role inheritance transparency.",
+      "loadingTitle": "Loading Permission Matrix",
+      "loadingDescription": "Fetching current permissions, role defaults, and custom overrides.",
       "readOnlyNote": "You can view custom permissions for this user, but you do not have permission to edit them.",
       "saved": "Custom permissions saved successfully.",
-      "save": "Save custom permissions",
+      "save": "Save Custom Permissions",
       "saving": "Saving...",
       "backToUser": "Back to user details",
-      "saveHint": "Changes are audited and may require password step-up before saving.",
+      "saveHint": "Changes are audited and take effect immediately upon saving.",
       "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
-      "noChanges": "No unsaved changes",
+      "noChanges": "No pending changes",
       "changeCount": "Current changes",
       "changeCountValue": "{count, plural, =0 {0 changes} one {# change} other {# changes}}",
-      "noMatches": "No permissions match your search."
+      "noMatches": "No permissions match the current filters or search query."
+    },
+    "risk": {
+      "normal": "Normal",
+      "sensitive": "Sensitive",
+      "critical": "Critical"
+    },
+    "stateFilter": {
+      "all": "All States",
+      "overriddenOnly": "Custom Overrides Only",
+      "inheritedOnly": "Role Defaults Only",
+      "explicitAllow": "Explicit Allow Only",
+      "explicitDeny": "Explicit Deny Only",
+      "effectiveAllow": "Effective Allowed",
+      "effectiveDeny": "Effective Denied"
+    },
+    "riskFilter": {
+      "all": "All Risk Levels",
+      "normal": "Normal",
+      "sensitive": "Sensitive",
+      "critical": "Critical"
+    },
+    "density": {
+      "label": "Density",
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    },
+    "legend": {
+      "title": "Permission State Legend",
+      "inherited": "Granted from role default",
+      "inheritedDeny": "Not granted by role default",
+      "explicitAllow": "Explicit Allow (custom override)",
+      "explicitDeny": "Explicit Deny (custom override)",
+      "noOverride": "No override (uses role default)"
+    },
+    "table": {
+      "columns": {
+        "permission": "Permission & Key",
+        "module": "Module",
+        "roleDefault": "Role Default",
+        "userOverride": "User Override",
+        "effective": "Effective Access",
+        "control": "Control & Actions"
+      },
+      "inherited": "Role Default",
+      "explicitAllow": "Explicit Allow",
+      "explicitDeny": "Explicit Deny",
+      "noOverride": "No Override",
+      "effectiveAllow": "Allowed",
+      "effectiveDeny": "Denied",
+      "roleGranted": "Role Granted",
+      "roleMissing": "Not granted by role",
+      "pendingChange": "Pending Change",
+      "actions": {
+        "allow": "Allow",
+        "deny": "Deny",
+        "inherit": "Default"
+      },
+      "bulk": {
+        "selected": "{count, plural, one {# permission selected} other {# permissions selected}}",
+        "grantSelected": "Grant Selected",
+        "denySelected": "Deny Selected",
+        "resetSelected": "Reset Selected",
+        "clearSelection": "Clear Selection",
+        "moduleAllowAll": "Allow All in Module",
+        "moduleDenyAll": "Deny All in Module",
+        "moduleReset": "Reset Module Defaults"
+      }
+    },
+    "stats": {
+      "total": "Total Permissions",
+      "roleAllowed": "Role Inherited",
+      "explicitAllow": "Explicit Allow",
+      "explicitDeny": "Explicit Deny",
+      "pending": "Pending Changes"
     },
     "search": {
       "label": "Search permissions",
@@ -308,6 +367,10 @@
       "payouts": {
         "title": "Payouts",
         "description": "Permissions for practitioner payout workflows."
+      },
+      "academy": {
+        "title": "Academy",
+        "description": "Permissions for academy enrollment administration."
       },
       "refunds": {
         "title": "Refunds",
@@ -390,6 +453,10 @@
     "settlementsWrite": {
       "label": "Manage settlements"
     },
+    "financialPackageSettlementRelease": {
+      "label": "Release package settlements",
+      "description": "Release ready package settlements into practitioner earnings."
+    },
     "practitionerPayoutsRead": {
       "label": "View practitioner payouts"
     },
@@ -398,6 +465,10 @@
     },
     "practitionerStatementsRead": {
       "label": "View practitioner statements"
+    },
+    "academyEnrollmentsCreateManual": {
+      "label": "Create manual academy enrollments",
+      "description": "Create academy program enrollments manually from the back office."
     },
     "refundsApprove": {
       "label": "Approve refunds"

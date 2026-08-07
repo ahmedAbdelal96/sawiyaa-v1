@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import AdminPermissionGate from "@/components/admin/AdminPermissionGate";
 import AdminPractitionerPayoutDetailScreen from "@/features/admin/practitioner-payouts/components/AdminPractitionerPayoutDetailScreen";
+import { PermissionKey } from "@/lib/auth/permissions";
 
 type Props = {
   params: Promise<{ locale: string; practitionerId: string }>;
@@ -20,5 +22,11 @@ export default async function AdminPractitionerPayoutDetailPage({ params }: Prop
   const { locale, practitionerId } = await params;
   setRequestLocale(locale);
 
-  return <AdminPractitionerPayoutDetailScreen practitionerId={practitionerId} />;
+  return (
+    <AdminPermissionGate
+      requiredPermissions={[PermissionKey.PRACTITIONER_PAYOUTS_READ]}
+    >
+      <AdminPractitionerPayoutDetailScreen walletOrPractitionerId={practitionerId} />
+    </AdminPermissionGate>
+  );
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, UserStatus, UserRoleType } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { AppLoggerService } from '@common/logging/app-logger.service';
 import {
   AdminPatientOnboardingDto,
   AdminPatientStatusDto,
@@ -8,7 +9,10 @@ import {
 
 @Injectable()
 export class AdminPatientDirectoryRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: AppLoggerService,
+  ) {}
 
   private resolveStatusFilter(
     status?: AdminPatientStatusDto,
@@ -43,12 +47,16 @@ export class AdminPatientDirectoryRepository {
           ? { onboardingCompletedAt: null }
           : undefined;
 
-    console.log('[adminPatients] buildWhere', {
-      search: search ?? null,
-      looksLikeUuid,
-      status: input.status ?? null,
-      onboarding: input.onboarding ?? null,
-    });
+    this.logger.debug(
+      {
+        message: 'Building admin patient directory filter',
+        search: search ?? null,
+        looksLikeUuid,
+        status: input.status ?? null,
+        onboarding: input.onboarding ?? null,
+      },
+      AdminPatientDirectoryRepository.name,
+    );
 
     return {
       ...(onboardingFilter ?? {}),

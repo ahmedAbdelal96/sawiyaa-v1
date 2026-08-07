@@ -26,6 +26,7 @@ export const PermissionKey = {
   ACCOUNTING_WRITE: "finance.accounting.write",
   SETTLEMENTS_READ: "settlements.read",
   SETTLEMENTS_WRITE: "settlements.write",
+  FINANCIAL_PACKAGE_SETTLEMENT_RELEASE: "financial.package-settlement.release",
   FINANCIAL_SETTLEMENT_VIEW: "financial.settlement.view",
   FINANCIAL_SETTLEMENT_REVIEW: "financial.settlement.review",
   FINANCIAL_SETTLEMENT_APPROVE: "financial.settlement.approve",
@@ -34,6 +35,7 @@ export const PermissionKey = {
   PRACTITIONER_PAYOUTS_READ: "practitioner-payouts.read",
   PRACTITIONER_PAYOUTS_WRITE: "practitioner-payouts.write",
   PRACTITIONER_STATEMENTS_READ: "practitioner-statements.read",
+  ACADEMY_ENROLLMENTS_CREATE_MANUAL: "academy.enrollments.create.manual",
   NOTIFICATION_OPS_READ: "notification-ops.read",
   AUDIT_LOG_READ: "audit-log.read",
   REFUNDS_APPROVE: "refunds.approve",
@@ -41,6 +43,7 @@ export const PermissionKey = {
   SESSIONS_READ_ADMIN: "sessions.read.admin",
   SESSIONS_READ_SUPPORT_SUMMARY: "sessions.read.supportSummary",
   SESSIONS_MANUAL_DECISIONS_WRITE: "sessions.manualDecisions.write",
+  SESSIONS_RESOLUTION_WRITE: "sessions.resolution.write",
   CARE_CHAT_REQUEST_DECIDE: "careChat.request.decide",
   CARE_CHAT_REQUEST_READ_ADMIN: "careChat.request.read.admin",
   CARE_CHAT_CONVERSATION_READ_ADMIN: "careChat.conversation.read.admin",
@@ -54,7 +57,8 @@ export const PermissionKey = {
   PRACTITIONER_APPLICATIONS_READ: "practitionerApplications.read",
   PRACTITIONER_APPLICATIONS_APPROVE: "practitionerApplications.approve",
   PRACTITIONER_APPLICATIONS_REJECT: "practitionerApplications.reject",
-  PRACTITIONER_APPLICATIONS_REQUEST_CHANGES: "practitionerApplications.requestChanges",
+  PRACTITIONER_APPLICATIONS_REQUEST_CHANGES:
+    "practitionerApplications.requestChanges",
   FEATURED_PRACTITIONERS_READ: "featured-practitioners.read",
   FEATURED_PRACTITIONERS_MANAGE: "featured-practitioners.manage",
   ADMIN_USERS_READ: "admin-users.read",
@@ -62,8 +66,10 @@ export const PermissionKey = {
   ADMIN_USERS_UPDATE: "admin-users.update",
   ADMIN_USERS_STATUS_UPDATE: "admin-users.status.update",
   ADMIN_USERS_ROLES_UPDATE: "admin-users.roles.update",
-  ADMIN_USERS_PERMISSION_OVERRIDES_READ: "admin-users.permission-overrides.read",
-  ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE: "admin-users.permission-overrides.update",
+  ADMIN_USERS_PERMISSION_OVERRIDES_READ:
+    "admin-users.permission-overrides.read",
+  ADMIN_USERS_PERMISSION_OVERRIDES_UPDATE:
+    "admin-users.permission-overrides.update",
   ADMIN_USERS_SESSIONS_REVOKE: "admin-users.sessions.revoke",
   ADMIN_USERS_TOKEN_VERSION_INVALIDATE: "admin-users.token-version.invalidate",
 } as const;
@@ -105,10 +111,12 @@ const ROLE_PERMISSION_MAP: Partial<Record<AdminRole, PermissionKey[]>> = {
     PermissionKey.FINANCE_EVENTS_READ,
     PermissionKey.ACCOUNTING_READ,
     PermissionKey.SETTLEMENTS_READ,
+    PermissionKey.FINANCIAL_PACKAGE_SETTLEMENT_RELEASE,
     PermissionKey.PRACTITIONER_PAYOUTS_READ,
     PermissionKey.PRACTITIONER_STATEMENTS_READ,
     PermissionKey.REFUNDS_APPROVE,
     PermissionKey.REFUNDS_RETRY,
+    PermissionKey.ACADEMY_ENROLLMENTS_CREATE_MANUAL,
   ],
   FINANCE_STAFF: [
     PermissionKey.FINANCE_EVENTS_READ,
@@ -133,9 +141,7 @@ const ROLE_PERMISSION_MAP: Partial<Record<AdminRole, PermissionKey[]>> = {
     PermissionKey.SUPPORT_TICKET_ASSIGN,
     PermissionKey.PATIENTS_READ_ADMIN,
   ],
-  CONTENT_REVIEWER: [
-    PermissionKey.SESSIONS_READ_ADMIN,
-  ],
+  CONTENT_REVIEWER: [PermissionKey.SESSIONS_READ_ADMIN],
   PRACTITIONER_REVIEWER: [
     PermissionKey.AUDIT_LOG_READ,
     PermissionKey.PRACTITIONER_APPLICATIONS_READ,
@@ -157,7 +163,9 @@ export function getRoleDefaultPermissionKeys(role: AdminRole): PermissionKey[] {
   return ROLE_PERMISSION_MAP[role] ?? [];
 }
 
-export function getRoleDefaultPermissionSet(role: AdminRole): Set<PermissionKey> {
+export function getRoleDefaultPermissionSet(
+  role: AdminRole,
+): Set<PermissionKey> {
   return new Set(getRoleDefaultPermissionKeys(role));
 }
 
@@ -213,7 +221,7 @@ function derivePermissions(user: PermissionCheckUser): Set<string> {
  */
 export function hasPermission(
   user: PermissionCheckUser | null | undefined,
-  permission: PermissionKey
+  permission: PermissionKey,
 ): boolean {
   if (!user) return false;
   if (isSuperAdmin(user)) return true;
@@ -227,7 +235,7 @@ export function hasPermission(
  */
 export function hasAnyPermission(
   user: PermissionCheckUser | null | undefined,
-  permissions: PermissionKey[]
+  permissions: PermissionKey[],
 ): boolean {
   if (!user) return false;
   if (permissions.length === 0) return false;
@@ -243,7 +251,7 @@ export function hasAnyPermission(
  */
 export function hasAllPermissions(
   user: PermissionCheckUser | null | undefined,
-  permissions: PermissionKey[]
+  permissions: PermissionKey[],
 ): boolean {
   if (!user) return false;
   if (permissions.length === 0) return true;
@@ -257,7 +265,7 @@ export function hasAllPermissions(
  */
 export function hasRole(
   user: PermissionCheckUser | null | undefined,
-  role: string
+  role: string,
 ): boolean {
   if (!user) return false;
   return getUserRoles(user).includes(role);
@@ -267,7 +275,7 @@ export function hasRole(
  * Returns true if the user is a SUPER_ADMIN.
  */
 export function isSuperAdmin(
-  user: PermissionCheckUser | null | undefined
+  user: PermissionCheckUser | null | undefined,
 ): boolean {
   if (!user) return false;
   return getUserRoles(user).includes("SUPER_ADMIN");
@@ -279,7 +287,7 @@ export function isSuperAdmin(
  */
 export function canAccessAdminRoute(
   user: PermissionCheckUser | null | undefined,
-  requiredPermissions: PermissionKey[]
+  requiredPermissions: PermissionKey[],
 ): boolean {
   if (!user) return false;
   if (requiredPermissions.length === 0) return true;

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -36,7 +45,12 @@ import { AdminPatientCountryChangeUseCase } from '../use-cases/admin-patient-cou
 @ApiTags('Admin - Patients')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT, AppRole.PATIENT_OPERATIONS)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.SUPPORT_AGENT,
+  AppRole.PATIENT_OPERATIONS,
+)
 @Controller('admin/patients')
 export class AdminPatientsController {
   constructor(
@@ -116,10 +130,14 @@ export class AdminPatientsController {
       'Updates the country stored against a patient profile. Used for pricing correction after identity verification. Requires a reason for audit trail.',
   })
   @ApiParam({ name: 'patientId', description: 'Patient user ID' })
-  @ApiResponse({ status: 200, type: AdminPatientCountryChangeSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: AdminPatientCountryChangeSuccessResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin/support roles with patients.update.admin permission may access this route',
+    description:
+      'Only admin/support roles with patients.update.admin permission may access this route',
   })
   changeCountry(
     @CurrentUser() currentUser: AuthenticatedUser,

@@ -3,11 +3,17 @@ import {
   SessionAttendanceEventType,
   SessionAttendanceParticipantRole,
 } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
+import { summarizeSessionAttendance } from '../utils/attendance-summary.engine';
 import {
-  summarizeSessionAttendance,
-} from '../utils/attendance-summary.engine';
+  ATTENDANCE_SUMMARY_THRESHOLDS,
+  resolveSessionFinalizationGraceMinutes,
+} from '../config/attendance-summary.config';
+import { SessionOutcomeEvaluator } from '../services/session-outcome-evaluator.service';
+import { SessionOutcomePolicySnapshotService } from '../services/session-outcome-policy-snapshot.service';
+import type { SessionOutcomeEvaluationPolicy } from '../types/session-outcome-evaluation.types';
 import {
   buildParticipantsSummary,
   type SessionWithParticipants,
@@ -43,9 +49,15 @@ export class GetAdminSessionAttendanceUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
+    private readonly sessionOutcomeEvaluator: SessionOutcomeEvaluator,
+    private readonly policySnapshotService?: SessionOutcomePolicySnapshotService,
   ) {}
 
-  async execute(input: { sessionId: string }) {
+  async execute(input: {
+    sessionId: string;
+    tx?: Prisma.TransactionClient;
+    evaluatedAt?: Date;
+  }) {
     // Phase 3 — fetch the session with the participant identity include so we
     // can surface patient/practitioner display names + primary contact
     // details. Reusing findById would expand the data surface for every
@@ -53,6 +65,7 @@ export class GetAdminSessionAttendanceUseCase {
     // explicit about the opt-in.
     const session = await this.sessionRepository.findByIdWithParticipants(
       input.sessionId,
+      input.tx,
     );
 
     if (!session) {
@@ -64,11 +77,56 @@ export class GetAdminSessionAttendanceUseCase {
 
     const events = await this.sessionRepository.listAttendanceEventsBySessionId(
       input.sessionId,
+      input.tx,
     );
-    const platformEvents = await this.sessionRepository.listSessionEventsBySessionId(
-      input.sessionId,
-    );
+    const platformEvents =
+      await this.sessionRepository.listSessionEventsBySessionId(
+        input.sessionId,
+        input.tx,
+      );
     const summary = this.deriveSummary(events);
+    const evaluatedAt = input.evaluatedAt ?? new Date();
+    const policySnapshot =
+      await this.sessionRepository.findOutcomePolicySnapshot?.(
+        input.sessionId,
+        input.tx,
+      );
+    const reconciliation =
+      await this.sessionRepository.findLatestAttendanceReconciliation?.(
+        input.sessionId,
+        input.tx,
+      );
+    const trustedAttendanceEvents = events.filter((event) => {
+      const metadata = event.ingestionMetaJson;
+      return (
+        metadata &&
+        typeof metadata === 'object' &&
+        (metadata as Record<string, unknown>).trustLevel === 'TRUSTED'
+      );
+    });
+    const reconciliationConfirmed =
+      reconciliation?.status === 'CONFIRMED' &&
+      reconciliation.eligibleForAutomaticFinalization === true;
+    const webhookPatientPresent =
+      trustedAttendanceEventsCount(
+        trustedAttendanceEvents,
+        SessionAttendanceParticipantRole.PATIENT,
+      ) > 0;
+    const webhookPractitionerPresent =
+      trustedAttendanceEventsCount(
+        trustedAttendanceEvents,
+        SessionAttendanceParticipantRole.PRACTITIONER,
+      ) > 0;
+    const patientPresent = reconciliationConfirmed
+      ? reconciliation.patientJoined || webhookPatientPresent
+      : webhookPatientPresent;
+    const practitionerPresent = reconciliationConfirmed
+      ? reconciliation.practitionerJoined || webhookPractitionerPresent
+      : webhookPractitionerPresent;
+    const reconciliationConflict =
+      reconciliationConfirmed &&
+      ((webhookPatientPresent && !reconciliation.patientJoined) ||
+        (webhookPractitionerPresent && !reconciliation.practitionerJoined));
 
     // Build timing context from session
     const timing: SessionTimingContext = {
@@ -94,6 +152,7 @@ export class GetAdminSessionAttendanceUseCase {
       providerParticipantRef: e.providerParticipantRef,
       occurredAt: e.occurredAt,
       ingestedAt: e.ingestedAt,
+      ingestionMetaJson: e.ingestionMetaJson as Record<string, unknown> | null,
     }));
 
     const platformEventsInput: PlatformEvent[] = platformEvents.map((e) => ({
@@ -111,10 +170,106 @@ export class GetAdminSessionAttendanceUseCase {
       platformEvents: platformEventsInput,
       patientUserId: session.patientId,
       practitionerUserId: session.practitionerId,
-      now: new Date(),
+      now: evaluatedAt,
     };
 
-    const extendedSummary: SessionAttendanceSummary = summarizeSessionAttendance(engineInput);
+    const extendedSummary: SessionAttendanceSummary =
+      summarizeSessionAttendance(engineInput);
+    const currentPolicy: SessionOutcomeEvaluationPolicy = {
+      completionOverlapPercent:
+        ATTENDANCE_SUMMARY_THRESHOLDS.MIN_OVERLAP_FOR_COMPLETION_PERCENT,
+      minimumOverlapMinutes:
+        ATTENDANCE_SUMMARY_THRESHOLDS.MIN_OVERLAP_FOR_COMPLETION_MINUTES,
+      patientNoShowGraceMinutes:
+        ATTENDANCE_SUMMARY_THRESHOLDS.PATIENT_NO_SHOW_AFTER_MINUTES,
+      practitionerNoShowGraceMinutes:
+        ATTENDANCE_SUMMARY_THRESHOLDS.PRACTITIONER_NO_SHOW_AFTER_MINUTES,
+      finalizationGraceMinutes: resolveSessionFinalizationGraceMinutes(),
+      lateEvidenceWaitingMinutes: 0,
+    };
+    const policy: SessionOutcomeEvaluationPolicy = policySnapshot
+      ? (this.policySnapshotService?.toEvaluationPolicy(policySnapshot) ?? {
+          completionOverlapPercent: policySnapshot.completionOverlapPercent,
+          minimumOverlapMinutes: policySnapshot.minimumOverlapMinutes,
+          patientNoShowGraceMinutes: policySnapshot.patientNoShowGraceMinutes,
+          practitionerNoShowGraceMinutes:
+            policySnapshot.practitionerNoShowGraceMinutes,
+          finalizationGraceMinutes: policySnapshot.finalizationGraceMinutes,
+          lateEvidenceWaitingMinutes: policySnapshot.lateEvidenceWaitingMinutes,
+        })
+      : currentPolicy;
+    const hasEvidenceOutsideWindow = events.some((event) => {
+      const metadata = event.ingestionMetaJson;
+      const reason =
+        metadata && typeof metadata === 'object'
+          ? (metadata as Record<string, unknown>).rejectionOrWarningReason
+          : null;
+      return (
+        reason === 'JOINED_BEFORE_RUNTIME_WINDOW' ||
+        reason === 'JOINED_AFTER_RUNTIME_WINDOW'
+      );
+    });
+    const evaluation = this.sessionOutcomeEvaluator.evaluate({
+      session: {
+        id: session.id,
+        status: session.status,
+        scheduledStartAt: session.scheduledStartAt,
+        scheduledEndAt: session.scheduledEndAt,
+        durationMinutes: session.durationMinutes,
+        patientId: session.patientId,
+        practitionerId: session.practitionerId,
+        cancelledAt: session.cancelledAt,
+      },
+      attendance: {
+        patientPresenceSeconds: extendedSummary.patient.totalPresenceSeconds,
+        practitionerPresenceSeconds:
+          extendedSummary.practitioner.totalPresenceSeconds,
+        overlapSeconds: extendedSummary.overlap.overlapSeconds,
+        patientTrustedJoinCount: patientPresent ? 1 : 0,
+        practitionerTrustedJoinCount: practitionerPresent ? 1 : 0,
+        unknownParticipantCount:
+          extendedSummary.evidence.unknownParticipantEventCount,
+        hasOpenIntervals:
+          extendedSummary.evidence.hasOpenIntervalsWithoutCloseBoundary,
+        hasMissingLeave: extendedSummary.evidence.hasMissingLeaveEvent,
+        hasOutOfOrderEvidence: extendedSummary.evidence.hasOutOfOrderEvents,
+        hasConflictingEvidence: reconciliationConflict,
+        hasIdentityAmbiguity:
+          extendedSummary.evidence.unknownParticipantEventCount > 0 ||
+          events.some((event) => {
+            const metadata = event.ingestionMetaJson;
+            return (
+              metadata &&
+              typeof metadata === 'object' &&
+              (metadata as Record<string, unknown>).roleResolutionBy ===
+                'UNRESOLVED'
+            );
+          }),
+        hasEvidenceOutsideWindow,
+      },
+      providerHealth: {
+        webhookAuthenticated:
+          trustedAttendanceEvents.length > 0 || reconciliationConfirmed,
+        evidenceSourceTrusted:
+          reconciliationConfirmed ||
+          (trustedAttendanceEvents.length === events.length &&
+            trustedAttendanceEvents.length > 0),
+        meetingBoundsKnown:
+          reconciliationConfirmed ||
+          extendedSummary.meeting.sourceConfidence !== 'LOW',
+        providerOutageKnown: false,
+        roomCreationFailed:
+          !session.providerRoomId && !reconciliation?.roomFound,
+        reconciliationCompleted: reconciliationConfirmed,
+        reconciliationHealthyForNoShow: reconciliationConfirmed,
+        reconciliationConflict:
+          reconciliation?.status === 'PARTIAL' ||
+          (reconciliation?.unknownParticipantCount ?? 0) > 0,
+      },
+      policy,
+      policySnapshotPresent: Boolean(policySnapshot),
+      evaluatedAt,
+    });
 
     // Phase 3 — build the new evidence surfaces.
     const sessionIdentityContext: {
@@ -125,7 +280,10 @@ export class GetAdminSessionAttendanceUseCase {
       practitionerUserId: session.practitionerId,
     };
     const resolveActorDisplayName = (userId: string | null) =>
-      this.resolveDisplayName(session as unknown as SessionWithParticipants, userId);
+      this.resolveDisplayName(
+        session as unknown as SessionWithParticipants,
+        userId,
+      );
 
     const platformInputRows: PlatformInputItem[] = platformEvents.map((e) => ({
       id: e.id,
@@ -167,7 +325,7 @@ export class GetAdminSessionAttendanceUseCase {
     );
 
     const closedByUser = session.videoRoomClosedByUserId
-      ? await this.prisma.user.findUnique({
+      ? await (input.tx ?? this.prisma).user.findUnique({
           where: { id: session.videoRoomClosedByUserId },
           select: {
             id: true,
@@ -176,7 +334,9 @@ export class GetAdminSessionAttendanceUseCase {
         })
       : null;
 
-    const relatedSupportTickets = await this.prisma.supportTicket.findMany({
+    const relatedSupportTickets = await (
+      input.tx ?? this.prisma
+    ).supportTicket.findMany({
       where: {
         relatedSessionId: input.sessionId,
       },
@@ -194,6 +354,21 @@ export class GetAdminSessionAttendanceUseCase {
     });
 
     const presentationStatus = session.status;
+    const automaticCompletionEvent = platformEvents.find((event) => {
+      const metadata = event.metadataJson;
+      return (
+        event.newStatus === 'COMPLETED' &&
+        metadata &&
+        typeof metadata === 'object' &&
+        (metadata as Record<string, unknown>).completionMode ===
+          'AUTOMATIC_COMPLETION'
+      );
+    });
+    const automaticCompletionMetadata =
+      automaticCompletionEvent?.metadataJson &&
+      typeof automaticCompletionEvent.metadataJson === 'object'
+        ? (automaticCompletionEvent.metadataJson as Record<string, unknown>)
+        : null;
 
     return {
       sessionId: input.sessionId,
@@ -235,7 +410,82 @@ export class GetAdminSessionAttendanceUseCase {
         updatedAt: ticket.updatedAt.toISOString(),
       })),
       presentationStatus,
-      extendedSummary: this.mapExtendedSummary(extendedSummary),
+      extendedSummary: this.mapExtendedSummary(extendedSummary, evaluation),
+      outcomeEvaluation: {
+        ...evaluation,
+        evaluatedAt: evaluation.evaluatedAt.toISOString(),
+      },
+      reconciliation: reconciliation
+        ? {
+            id: reconciliation.id,
+            version: reconciliation.observationVersion,
+            status: reconciliation.status,
+            reconciledAt: reconciliation.reconciledAt.toISOString(),
+            providerDataObservedUntil:
+              reconciliation.providerDataObservedUntil?.toISOString() ?? null,
+            provider: reconciliation.provider,
+            roomFound: reconciliation.roomFound,
+            meetingStarted: reconciliation.meetingStarted,
+            meetingEnded: reconciliation.meetingEnded,
+            patient: {
+              identityConfirmed: reconciliation.patientIdentityConfirmed,
+              joined: reconciliation.patientJoined,
+              totalPresenceSeconds: reconciliation.patientTotalPresenceSeconds,
+            },
+            practitioner: {
+              identityConfirmed: reconciliation.practitionerIdentityConfirmed,
+              joined: reconciliation.practitionerJoined,
+              totalPresenceSeconds:
+                reconciliation.practitionerTotalPresenceSeconds,
+            },
+            unknownParticipantCount: reconciliation.unknownParticipantCount,
+            confidence: reconciliation.confidence,
+            reasonCodes: Array.isArray(reconciliation.reasonCodesJson)
+              ? reconciliation.reasonCodesJson
+              : [],
+            evaluationStale: reconciliation.evaluationStale,
+            staleReason: reconciliation.staleReason,
+          }
+        : null,
+      policySnapshot: policySnapshot
+        ? {
+            version: policySnapshot.version,
+            completionOverlapPercent: policySnapshot.completionOverlapPercent,
+            minimumOverlapMinutes: policySnapshot.minimumOverlapMinutes,
+            patientNoShowGraceMinutes: policySnapshot.patientNoShowGraceMinutes,
+            practitionerNoShowGraceMinutes:
+              policySnapshot.practitionerNoShowGraceMinutes,
+            finalizationGraceMinutes: policySnapshot.finalizationGraceMinutes,
+            lateEvidenceWaitingMinutes:
+              policySnapshot.lateEvidenceWaitingMinutes,
+            capturedAt: policySnapshot.capturedAt.toISOString(),
+            source: policySnapshot.source,
+          }
+        : null,
+      finalization: automaticCompletionEvent
+        ? {
+            mode: 'AUTOMATIC_COMPLETION',
+            finalizedAt: (
+              automaticCompletionEvent.occurredAt ??
+              automaticCompletionEvent.createdAt
+            ).toISOString(),
+            auditEventId: automaticCompletionEvent.id,
+            policyVersion:
+              typeof automaticCompletionMetadata?.policyVersion === 'number'
+                ? automaticCompletionMetadata.policyVersion
+                : null,
+            reconciliationVersion:
+              typeof automaticCompletionMetadata?.reconciliationVersion ===
+              'number'
+                ? automaticCompletionMetadata.reconciliationVersion
+                : null,
+            reasonCodes: Array.isArray(automaticCompletionMetadata?.reasonCodes)
+              ? automaticCompletionMetadata.reasonCodes.filter(
+                  (value): value is string => typeof value === 'string',
+                )
+              : [],
+          }
+        : null,
     };
   }
 
@@ -255,8 +505,31 @@ export class GetAdminSessionAttendanceUseCase {
 
   private mapExtendedSummary(
     engine: SessionAttendanceSummary,
+    evaluation: ReturnType<SessionOutcomeEvaluator['evaluate']>,
   ): SessionAttendanceSummary {
-    return engine;
+    const recommendedOutcome =
+      evaluation.recommendedTerminalStatus === 'COMPLETED'
+        ? 'COMPLETION_CANDIDATE'
+        : evaluation.recommendedTerminalStatus === 'PATIENT_NO_SHOW'
+          ? 'PATIENT_NO_SHOW_CANDIDATE'
+          : evaluation.recommendedTerminalStatus === 'PRACTITIONER_NO_SHOW'
+            ? 'PRACTITIONER_NO_SHOW_CANDIDATE'
+            : evaluation.recommendedTerminalStatus === 'BOTH_NO_SHOW'
+              ? 'BOTH_NO_SHOW_CANDIDATE'
+              : evaluation.classification === 'NOT_READY_FOR_EVALUATION'
+                ? 'INSUFFICIENT_EVIDENCE'
+                : 'MANUAL_REVIEW_REQUIRED';
+
+    return {
+      ...engine,
+      recommendation: {
+        recommendedOutcome,
+        recommendedReason: evaluation.reasonCodes.join(', '),
+        riskFlags: evaluation.reasonCodes,
+        isFinalDecision: false,
+        requiresAdminReview: !evaluation.eligibleForAutomaticFinalization,
+      },
+    };
   }
 
   private deriveSummary(
@@ -353,4 +626,18 @@ export class GetAdminSessionAttendanceUseCase {
 
     return values[values.length - 1].toISOString();
   }
+}
+
+function trustedAttendanceEventsCount(
+  trustedEvents: Array<{
+    participantRole: SessionAttendanceParticipantRole;
+    attendanceEventType: SessionAttendanceEventType;
+  }>,
+  role: SessionAttendanceParticipantRole,
+): number {
+  return trustedEvents.filter(
+    (event) =>
+      event.participantRole === role &&
+      event.attendanceEventType === SessionAttendanceEventType.JOINED,
+  ).length;
 }

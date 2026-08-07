@@ -46,6 +46,14 @@ export class ValidateSessionStatusTransitionService {
     ],
     [SessionStatus.AWAITING_COMPLETION_CONFIRMATION]: [
       SessionStatus.COMPLETED,
+      SessionStatus.AWAITING_ADMIN_RESOLUTION,
+      SessionStatus.CANCELLED,
+      SessionStatus.PATIENT_NO_SHOW,
+      SessionStatus.PRACTITIONER_NO_SHOW,
+      SessionStatus.BOTH_NO_SHOW,
+    ],
+    [SessionStatus.AWAITING_ADMIN_RESOLUTION]: [
+      SessionStatus.COMPLETED,
       SessionStatus.CANCELLED,
       SessionStatus.PATIENT_NO_SHOW,
       SessionStatus.PRACTITIONER_NO_SHOW,

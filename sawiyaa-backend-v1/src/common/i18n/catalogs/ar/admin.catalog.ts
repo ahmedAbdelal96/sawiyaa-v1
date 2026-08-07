@@ -54,6 +54,9 @@ export const arAdminCatalog = {
       credentialRejectionReasonRequired:
         '\u064a\u062c\u0628 \u0625\u062f\u062e\u0627\u0644 \u0633\u0628\u0628 \u0639\u0646\u062f \u0631\u0641\u0636 \u0627\u0644\u0645\u0633\u062a\u0646\u062f',
       practitionerNotFound: 'تعذر العثور على ملف الممارس',
+      credentialNotFound: 'تعذر العثور على المستند المطلوب',
+      credentialFileNotFound: 'ملف المستند غير موجود أو لم يعد متاحًا',
+      avatarNotFound: 'صورة الممارس غير موجودة أو لم تعد متاحة',
     },
     notifications: {
       approvedTitle: 'تمت الموافقة على طلب انضمامك كممارس',

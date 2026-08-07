@@ -25,7 +25,7 @@ import { ListCustomerWalletEntriesUseCase } from '../use-cases/list-customer-wal
 @ApiTags('Admin - Customer Wallet')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.FINANCE_STAFF)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.FINANCE_STAFF)
 @Controller('admin/patients/:patientId/wallet')
 export class AdminCustomerWalletController {
   constructor(

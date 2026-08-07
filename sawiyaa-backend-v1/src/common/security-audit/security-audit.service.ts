@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { SecurityAuditRepository } from './security-audit.repository';
+import { RequestContextService } from '@common/logging/request-context.service';
 import {
   SecurityAuditActorType,
   SecurityAuditEntry,
@@ -18,7 +19,10 @@ const MAX_METADATA_BYTES = 32 * 1024;
 export class SecurityAuditService {
   private readonly logger = new Logger(SecurityAuditService.name);
 
-  constructor(private readonly repository: SecurityAuditRepository) {}
+  constructor(
+    private readonly repository: SecurityAuditRepository,
+    private readonly requestContextService: RequestContextService,
+  ) {}
 
   async recordRequired(
     tx: Prisma.TransactionClient,
@@ -45,6 +49,7 @@ export class SecurityAuditService {
   private toCreateInput(
     entry: SecurityAuditEntry,
   ): Prisma.SecurityAuditLogUncheckedCreateInput {
+    const requestContext = this.requestContextService.getContext();
     const actorType = this.resolveActorType(entry);
     if (actorType === SecurityAuditActorType.USER && !entry.actorUserId) {
       throw new Error('Security audit USER actor requires actorUserId');
@@ -77,10 +82,13 @@ export class SecurityAuditService {
       resourceType: entry.resourceType ?? null,
       resourceId: entry.resourceId ?? null,
       targetUserId: entry.targetUserId ?? null,
-      ipAddress: entry.ipAddress ?? null,
-      userAgent: entry.userAgent ? entry.userAgent.substring(0, 500) : null,
-      requestId: entry.requestId ?? null,
-      correlationId: entry.correlationId ?? null,
+      ipAddress: entry.ipAddress ?? requestContext.ipAddress ?? null,
+      userAgent: entry.userAgent
+        ? entry.userAgent.substring(0, 500)
+        : (requestContext.userAgent?.substring(0, 500) ?? null),
+      requestId: entry.requestId ?? requestContext.requestId ?? null,
+      correlationId:
+        entry.correlationId ?? requestContext.correlationId ?? null,
       reason: entry.reason ? entry.reason.substring(0, 500) : null,
       metadataJson: metadata as Prisma.InputJsonValue | undefined,
     };

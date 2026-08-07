@@ -18,9 +18,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AdminArticlesPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return (
-    <div className="px-4 py-8">
-      <AdminArticlesListScreen />
-    </div>
-  );
+  return <AdminArticlesListScreen />;
 }

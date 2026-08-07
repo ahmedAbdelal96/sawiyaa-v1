@@ -6,7 +6,7 @@ import { useSidebar, useSidebarStore } from "@/stores";
 import { useLocale, useTranslations } from "next-intl";
 import { NavigationConfig, NavigationSection } from "@/config/navigation";
 import BrandMark from "@/components/shared/BrandMark";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DynamicSidebarProps {
@@ -26,31 +26,6 @@ function resolveNavLabel(
     return t(key as Parameters<typeof t>[0]);
   }
   return t(`${resolvedNamespace}.${key}` as Parameters<typeof t>[0]);
-}
-
-function SidebarSectionLabel({
-  children,
-  isRTL,
-  density = "comfortable",
-}: {
-  children: React.ReactNode;
-  isRTL: boolean;
-  density?: "compact" | "comfortable";
-}) {
-  const isCompact = density === "compact";
-  return (
-    <div className={cn(
-      isCompact ? "px-3 pb-0.5 pt-2" : "px-3 pb-2 pt-4",
-      isRTL ? "text-right" : "text-left"
-    )}>
-      <p className={cn(
-        "font-semibold tracking-normal text-text-muted",
-        isCompact ? "text-[10px]" : "text-[11px]"
-      )}>
-        {children}
-      </p>
-    </div>
-  );
 }
 
 function SidebarRow({
@@ -81,28 +56,38 @@ function SidebarRow({
   const isVisible = isExpanded || isHovered || isMobileOpen;
 
   const className = cn(
-    "group relative flex w-full items-center text-start transition-all duration-150 ease-out border border-transparent",
+    "group relative flex w-full items-center text-start transition-all duration-150 ease-out border rounded-xl",
     isCompact
-      ? "gap-2.5 rounded-lg px-2.5 h-[36px]"
-      : "gap-3 rounded-xl px-3 py-2",
+      ? "gap-2 px-2.5 h-[36px]"
+      : "gap-2.5 px-3 py-1.5 min-h-[40px]",
     active
-      ? "bg-primary-light text-text-brand font-semibold"
-      : "bg-transparent text-text-secondary hover:bg-gray-50 hover:text-text-primary dark:hover:bg-white/5",
+      ? "bg-primary/10 border-primary/20 text-primary font-bold dark:bg-primary/20 dark:text-primary-light shadow-xs"
+      : "bg-transparent border-transparent text-text-secondary hover:bg-surface-secondary/70 hover:text-text-primary dark:hover:bg-white/5",
     !isVisible && "lg:justify-center lg:px-0",
   );
 
   const leftContent = (
     <>
+      {/* Active Indicator Bar */}
+      {active && isVisible && (
+        <span
+          className={cn(
+            "absolute top-2 bottom-2 w-1 rounded-full bg-primary shadow-xs transition-all duration-200",
+            isRTL ? "right-0 rounded-l-full" : "left-0 rounded-r-full"
+          )}
+        />
+      )}
+
       {icon ? (
         <span
           className={cn(
-            "inline-flex shrink-0 items-center justify-center transition-colors duration-200",
+            "inline-flex shrink-0 items-center justify-center rounded-xl transition-all duration-200",
             isCompact
-              ? "h-6 w-6 [&_svg]:h-[14px] [&_svg]:w-[14px]"
-              : "h-7 w-7 [&_svg]:h-[18px] [&_svg]:w-[18px]",
+              ? "h-6.5 w-6.5 [&_svg]:h-[15px] [&_svg]:w-[15px]"
+              : "h-7.5 w-7.5 [&_svg]:h-[17px] [&_svg]:w-[17px]",
             active
-              ? "text-text-brand"
-              : "text-text-muted group-hover:text-text-primary",
+              ? "bg-primary text-white shadow-xs"
+              : "text-text-muted group-hover:text-primary group-hover:bg-primary/10",
           )}
         >
           {icon}
@@ -112,8 +97,9 @@ function SidebarRow({
       {isVisible && (
         <span className="min-w-0 flex-1">
           <span className={cn(
-            "block truncate font-medium",
-            isCompact ? "text-[13px] leading-4" : "text-[14.5px] leading-5"
+            "block truncate transition-colors",
+            active ? "font-bold" : "font-semibold",
+            isCompact ? "text-[14px] leading-4" : "text-[15px] leading-5"
           )}>
             {children}
           </span>
@@ -124,9 +110,9 @@ function SidebarRow({
 
   const chevronIcon = hasChildren && isVisible ? (
     <ChevronDown className={cn(
-      "transition-transform duration-200 text-text-muted group-hover:text-text-primary",
+      "transition-transform duration-200 text-text-muted group-hover:text-primary shrink-0",
       isCompact ? "h-3.5 w-3.5" : "h-4 w-4",
-      toggled ? "rotate-0" : isRTL ? "rotate-90" : "-rotate-90"
+      toggled ? "rotate-0 text-primary" : isRTL ? "rotate-90" : "-rotate-90"
     )} />
   ) : null;
 
@@ -138,7 +124,7 @@ function SidebarRow({
         className={className}
         aria-expanded={toggled}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           {leftContent}
         </div>
         {chevronIcon}
@@ -153,7 +139,7 @@ function SidebarRow({
           href={href}
           onClick={onClick}
           aria-current={active ? "page" : undefined}
-          className="flex min-w-0 flex-1 items-center gap-2"
+          className="flex min-w-0 flex-1 items-center gap-2.5"
         >
           {leftContent}
         </Link>
@@ -163,7 +149,7 @@ function SidebarRow({
 
   return (
     <div className={className}>
-      <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
         {leftContent}
       </div>
     </div>
@@ -195,21 +181,21 @@ function SidebarSubItem({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex w-full items-center rounded-lg transition-all duration-150 ease-out",
+        "flex w-full items-center rounded-xl transition-all duration-150 ease-out",
         isCompact
-          ? "py-1 text-[12.5px] h-7.5 px-2.5 hover:bg-gray-50/50 dark:hover:bg-white/5"
-          : "py-1.5 text-[13.5px] h-8.5 px-3 hover:bg-gray-50/50 dark:hover:bg-white/5",
+          ? "py-0.5 text-[13px] h-7.5 px-2.5 hover:bg-surface-secondary/70 dark:hover:bg-white/5"
+          : "py-1 text-[14px] h-8 px-3 hover:bg-surface-secondary/70 dark:hover:bg-white/5",
         active
-          ? "text-text-brand font-semibold bg-primary-light/40"
+          ? "text-primary font-bold bg-primary/10 dark:bg-primary/20 dark:text-primary-light shadow-2xs"
           : "text-text-secondary hover:text-text-primary",
       )}
     >
       <span
         className={cn(
-          "shrink-0 rounded-full",
-          isCompact ? "h-1 w-1" : "h-1.5 w-1.5",
-          active ? "bg-primary" : "bg-border-strong",
-          isRTL ? "ml-2" : "mr-2",
+          "shrink-0 rounded-full transition-all duration-200",
+          isCompact ? "h-1.5 w-1.5" : "h-2 w-2",
+          active ? "bg-primary ring-2 ring-primary/30 shadow-xs scale-110" : "bg-border-strong group-hover:bg-primary/50",
+          isRTL ? "ml-2.5" : "mr-2.5",
         )}
       />
       <span className="min-w-0 flex-1 truncate">{children}</span>
@@ -335,25 +321,24 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
     const headerContent = (
       <div className={cn(
         "flex w-full items-center justify-between transition-all duration-200 select-none",
-        isCompact ? "px-2.5 h-[30px]" : "px-3 py-2",
+        isCompact ? "px-2.5 h-[32px]" : "px-3 py-2",
         isActiveGroup
-          ? "text-text-brand font-semibold"
+          ? "text-primary font-bold"
           : "text-text-muted/80 hover:text-text-primary"
       )}>
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {isCollapsible && isVisible && (
             <ChevronDown className={cn(
-              "shrink-0 transition-transform duration-200 text-text-muted/60",
+              "shrink-0 transition-transform duration-200 text-text-muted/70",
               isCompact ? "h-3.5 w-3.5" : "h-4 w-4",
               isExpandedSection ? "rotate-0" : isRTL ? "rotate-90" : "-rotate-90",
-              isActiveGroup && "text-text-brand"
+              isActiveGroup && "text-primary"
             )} />
           )}
           {isVisible ? (
             <span className={cn(
-              "font-bold tracking-normal",
-              isCompact ? "text-[10px]" : "text-[11px]",
-              isActiveGroup && "text-text-brand"
+              "font-bold uppercase tracking-wider text-[13px]",
+              isActiveGroup ? "text-primary" : "text-text-muted/90"
             )}>
               {sectionTitle}
             </span>
@@ -363,9 +348,9 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
         </div>
         {isCollapsible && isVisible && (
           <span className={cn(
-            "text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0",
+            "text-[12px] font-extrabold px-2 py-0.5 rounded-full shrink-0 transition-colors",
             isActiveGroup 
-              ? "bg-primary-light text-text-brand" 
+              ? "bg-primary/15 text-primary" 
               : "bg-surface-tertiary text-text-muted"
           )}>
             {section.items.length}
@@ -375,12 +360,12 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
     );
 
     return (
-      <div key={section.key} className={isCompact ? "space-y-0.5" : "space-y-1.5"}>
+      <div key={section.key} className={cn("pt-2 first:pt-0", isCompact ? "space-y-0.5" : "space-y-1.5")}>
         {isCollapsible && !isActiveGroup && isVisible ? (
           <button
             type="button"
             onClick={() => toggleSection(section.key)}
-            className="flex w-full text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-lg py-0.5 hover:bg-gray-50/40 dark:hover:bg-white/5"
+            className="flex w-full text-start focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 rounded-xl py-0.5 hover:bg-surface-secondary/50 dark:hover:bg-white/5 cursor-pointer"
             aria-expanded={isExpandedSection}
           >
             {headerContent}
@@ -392,7 +377,7 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
         )}
 
         {isExpandedSection && (
-          <div className={isCompact ? "space-y-0.5" : "space-y-1"}>
+          <div className={isCompact ? "space-y-1" : "space-y-1.5"}>
             {section.items.map((nav) => {
               const label = resolveNavLabel(
                 t,
@@ -425,8 +410,8 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
 
                   {hasSubItems && isOpen ? (
                     <div className={cn(
-                      "space-y-0.5 border-s border-slate-100 my-0.5",
-                      isRTL ? "mr-[25px] pr-1.5" : "ml-[25px] pl-1.5"
+                      "space-y-1 border-s-2 border-primary/20 my-1 py-0.5 transition-all",
+                      isRTL ? "mr-6 pr-2" : "ml-6 pl-2"
                     )}>
                       {nav.subItems?.map((subItem) => {
                         const subLabel = resolveNavLabel(
@@ -483,25 +468,17 @@ const DynamicSidebar: React.FC<DynamicSidebarProps> = ({
       )}
     >
       <div className={cn(
-        "flex shrink-0 items-center border-b border-border-light/70 py-5",
+        "flex shrink-0 items-center border-b border-border-light/70 min-h-[76px] py-4 transition-all",
         isVisible ? "px-5 justify-between" : "justify-center px-3"
       )}>
-        <BrandMark 
-          compact={!isVisible} 
-          href={basePathPrefix + "/"} 
-          asButton
-          onClick={() => {
-            setIsHovered(false);
-            useSidebarStore.getState().toggleSidebar();
-          }}
-        />
+        <BrandMark compact={!isVisible} href={basePathPrefix + "/"} />
       </div>
 
       <div className={cn(
         "no-scrollbar flex-1 overflow-y-auto",
-        isCompact ? "px-3 py-3" : "px-4 py-4"
+        isCompact ? "px-2.5 py-2" : "px-3 py-3"
       )}>
-        <nav className={isCompact ? "space-y-2.5" : "space-y-4"}>{renderedNavigation}</nav>
+        <nav className={isCompact ? "space-y-1.5" : "space-y-2.5"}>{renderedNavigation}</nav>
       </div>
     </aside>
   );

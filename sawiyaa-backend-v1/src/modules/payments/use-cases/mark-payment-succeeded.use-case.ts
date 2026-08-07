@@ -194,6 +194,8 @@ export class MarkPaymentSucceededUseCase {
           id: true,
           status: true,
           scheduledStartAt: true,
+          scheduledEndAt: true,
+          scheduleRevision: true,
         },
       });
 

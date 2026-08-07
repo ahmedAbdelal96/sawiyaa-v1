@@ -18,7 +18,6 @@ import moduleConfig from './config/module.config';
 import loggingConfig from './config/logging.config';
 import sessionConfig from './config/session.config';
 import throttleConfig from './config/throttle.config';
-import stepUpConfig from './config/step-up.config';
 import geoipConfig from './config/geoip.config';
 import availabilityConfig from './config/availability.config';
 import { I18nModule } from './common/i18n/i18n.module';
@@ -30,7 +29,6 @@ import { RequestContextMiddleware } from './common/logging/request-context.middl
 import { ThrottleModule } from './common/throttle/throttle.module';
 import { ThrottlePolicyGuard } from './common/throttle/throttle-policy.guard';
 import { CsrfProtectionGuard } from './common/guards/security/csrf-protection.guard';
-import { StepUpGuard } from './common/guards/security/step-up.guard';
 import { SecurityAuditModule } from './common/security-audit/security-audit.module';
 import { CommonAuthModule } from './common/guards/common-auth.module';
 import { HealthModule } from './health/health.module';
@@ -88,7 +86,6 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
         loggingConfig,
         sessionConfig,
         throttleConfig,
-        stepUpConfig,
         geoipConfig,
         availabilityConfig,
       ],
@@ -145,10 +142,6 @@ import { TrustedCountryResolutionService } from './common/country-resolution/tru
     {
       provide: APP_GUARD,
       useClass: CsrfProtectionGuard,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: StepUpGuard,
     },
   ],
 })

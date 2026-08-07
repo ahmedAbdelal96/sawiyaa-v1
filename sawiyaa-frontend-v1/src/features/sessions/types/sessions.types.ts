@@ -366,3 +366,33 @@ export type SessionCancellationPreviewItem = {
 export type SessionCancellationPreviewResponseData = {
   item: SessionCancellationPreviewItem;
 };
+
+export type NextSession = {
+  sessionId: string;
+  role: "PATIENT" | "PRACTITIONER";
+  counterpart: { displayName: string | null; avatarUrl: string | null };
+  startsAt: string;
+  scheduledEndAt: string;
+  durationMinutes: number;
+  displayTimezone: string;
+  status: string;
+  joinAvailable: boolean;
+  joinAvailableAt: string | null;
+  joinExpiresAt: string | null;
+  countdownReferenceTime: string;
+  detailsRoute: string;
+  joinRoute: string;
+  isReplacement: boolean;
+  statusReasonCode: string | null;
+};
+
+export type JoinBootstrapItem = {
+  sessionId: string;
+  provider: string;
+  canJoin: boolean;
+  blockedReason: string | null;
+  joinAvailableAt: string | null;
+  joinExpiresAt: string | null;
+  roomUrl: string | null;
+  joinToken: string | null;
+};

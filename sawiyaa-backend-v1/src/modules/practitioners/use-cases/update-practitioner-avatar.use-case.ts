@@ -59,9 +59,16 @@ export class UpdatePractitionerAvatarUseCase {
 
     let updated: { id: string; avatarUrl: string | null };
     try {
+      const profile = await this.practitionerProfileRepository.findByUserId(input.userId);
+      if (!profile) {
+        throw new NotFoundException({
+          messageKey: 'practitioners.errors.profileNotFound',
+          error: 'PRACTITIONER_PROFILE_NOT_FOUND',
+        });
+      }
       if (input.file) {
         const stored = await this.practitionerAvatarStorageService.saveAvatar({
-          practitionerProfileId: input.userId,
+          practitionerProfileId: profile.id,
           fileBuffer: input.file.buffer,
           mimeType: input.file.mimetype,
         });

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { getProfessionalTitleLabel } from "@/constants/reference-data";
@@ -16,14 +16,29 @@ import {
   FileCheck,
   Video,
   ExternalLink,
+  Wallet,
+  CheckCircle2,
+  ArrowUpRight,
+  Copy,
+  Clock3,
 } from "lucide-react";
 import { useAdminPractitionerDetails } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
+import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
+import {
+  useAdminPractitionerWalletDetail,
+  useAdminPractitionerTransfers,
+} from "@/features/admin/practitioner-payouts/hooks/use-admin-practitioner-payouts";
+import { useAdminSessionEarningReviews } from "@/features/admin/session-earning-reviews/hooks/use-admin-session-earning-reviews";
 import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
 import { ListStateSkeleton } from "@/components/shared/ContentStates";
 import Avatar from "@/components/ui/avatar/Avatar";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table/DataTable";
+import type { ColumnDef } from "@/components/ui/data-table";
+import { cleanPersonName, formatPersonDisplayName, formatSessionTimeRange, shortId } from "@/lib/person-name-cleaner";
+import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
 
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;
@@ -49,8 +64,25 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
 
   const [activeTab, setActiveTab] = useState<string>("overview");
 
+  // LAZY LOADED TAB QUERIES:
+  // 1. Sessions tab query - only active when activeTab === "sessions"
+  const sessionsQuery = useAdminSessions(
+    { practitionerId: id, limit: 50 },
+    { enabled: activeTab === "sessions" }
+  );
+
+  // 2. Financial tab queries - only active when activeTab === "financial"
+  const walletQuery = useAdminPractitionerWalletDetail(id, activeTab === "financial");
+  const settlementsQuery = useAdminSessionEarningReviews(
+    { practitionerId: id, limit: 50 },
+    { enabled: activeTab === "financial" }
+  );
+  const transfersQuery = useAdminPractitionerTransfers(
+    { practitionerId: id, limit: 50 },
+    { enabled: activeTab === "financial" }
+  );
+
   const t = (key: string, defaults?: string) => {
-    // Basic inline translator for admin practitioner detail interface
     const translations: Record<string, Record<string, string>> = {
       ar: {
         back: "العودة لقائمة المعالجين",
@@ -62,7 +94,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         application: "طلب الانضمام",
         documents: "المستندات",
         sessions: "الجلسات",
-        financial: "المالية",
+        financial: "المالية والتسويات",
         publication: "النشر",
         audit: "سجل التغييرات",
         id: "معرف المعالج",
@@ -76,7 +108,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         timezone: "المنطقة الزمنية",
         created: "تاريخ الإنشاء",
         updated: "تاريخ التحديث",
-        type: "نوع التخصص",
+        type: "نوع تخصص المعالج",
         title: "اللقب المهني",
         bio: "نبذة تعريفية",
         experience: "سنوات الخبرة",
@@ -114,7 +146,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         application: "Application",
         documents: "Documents",
         sessions: "Sessions",
-        financial: "Financial",
+        financial: "Financials & Settlements",
         publication: "Publication",
         audit: "Audit Log",
         id: "Practitioner ID",
@@ -160,6 +192,248 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
     return translations[locale]?.[key] ?? defaults ?? key;
   };
 
+  const credentialColumns = [
+    {
+      id: "type",
+      header: isRtl ? "نوع المستند" : "Document Type",
+      accessor: (row: any) => row.credentialType,
+    },
+    {
+      id: "status",
+      header: isRtl ? "حالة التحقق" : "Verification Status",
+      accessor: (row: any) => row.reviewStatus,
+      cell: (row: any) => {
+        const tones: Record<string, "success" | "warning" | "error" | "light"> = {
+          APPROVED: "success",
+          PENDING: "warning",
+          REJECTED: "error",
+        };
+        return (
+          <Badge variant="solid" color={tones[row.reviewStatus] ?? "light"} size="sm">
+            {row.reviewStatus}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "uploadedAt",
+      header: isRtl ? "تاريخ الرفع" : "Uploaded Date",
+      accessor: (row: any) => row.uploadedAt,
+      cell: (row: any) => new Date(row.uploadedAt).toLocaleDateString(isRtl ? "ar-SA" : "en-US"),
+    },
+    {
+      id: "notes",
+      header: isRtl ? "ملاحظات" : "Notes",
+      accessor: (row: any) => row.reviewNotes || "-",
+    },
+    {
+      id: "actions",
+      header: isRtl ? "تحميل" : "Download",
+      accessor: (row: any) => row.credentialId,
+      cell: (row: any) => (
+        <a
+          href={row.fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+        >
+          {isRtl ? "عرض المستند" : "View Document"}
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      ),
+    },
+  ];
+
+  const auditColumns = [
+    {
+      id: "occurredAt",
+      header: isRtl ? "الوقت" : "Timestamp",
+      accessor: (row: any) => row.occurredAt,
+      cell: (row: any) => new Date(row.occurredAt).toLocaleString(isRtl ? "ar-SA" : "en-US"),
+    },
+    {
+      id: "typeSlug",
+      header: isRtl ? "نوع الحدث" : "Event Type",
+      accessor: (row: any) => row.typeSlug,
+    },
+    {
+      id: "actor",
+      header: isRtl ? "منفذ الإجراء" : "Actor",
+      accessor: (row: any) => row.actorDisplayName || "System",
+    },
+    {
+      id: "title",
+      header: isRtl ? "تفاصيل الحدث" : "Event Detail",
+      accessor: (row: any) => row.titleSnapshot || "-",
+    },
+  ];
+
+  const practitionerSessionColumns = useMemo<ColumnDef<any>[]>(() => [
+    {
+      id: "sessionCode",
+      header: isRtl ? "رمز الجلسة" : "Session Code",
+      cell: (row) => (
+        <AdminSessionReference
+          sessionId={row.id}
+          sessionCode={row.sessionCode}
+          href={`/admin/sessions/runtime-inspection?sessionId=${row.id}`}
+          variant="table"
+          copyable
+        />
+      ),
+    },
+    {
+      id: "patient",
+      header: isRtl ? "المريض" : "Patient",
+      cell: (row) => {
+        const name = formatPersonDisplayName(row.patient?.displayName, row.patient?.id, isRtl ? "المريض" : "Patient");
+        return <span className="text-xs font-bold text-text-primary dark:text-white">{name}</span>;
+      },
+    },
+    {
+      id: "scheduled",
+      header: isRtl ? "الموعد" : "Scheduled Time",
+      cell: (row) => (
+        <span className="text-xs text-text-secondary">
+          {formatSessionTimeRange(locale, row.scheduledStartAt, row.scheduledEndAt)}
+        </span>
+      ),
+    },
+    {
+      id: "status",
+      header: isRtl ? "الحالة" : "Status",
+      cell: (row) => {
+        const statusColors: Record<string, "success" | "warning" | "error" | "light"> = {
+          COMPLETED: "success",
+          SCHEDULED: "warning",
+          CANCELLED: "error",
+        };
+        return (
+          <Badge variant="solid" color={statusColors[row.status] ?? "light"} size="sm">
+            {row.status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: isRtl ? "الإجراءات" : "Actions",
+      cell: (row) => (
+        <Link
+          href={`/admin/sessions/runtime-inspection?sessionId=${row.id}`}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border-light px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/5 dark:border-white/10"
+        >
+          {isRtl ? "معاينة الجلسة" : "Inspect Session"}
+          <ExternalLink className="h-3 w-3" />
+        </Link>
+      ),
+    },
+  ], [isRtl, locale]);
+
+  const practitionerSettlementColumns = useMemo<ColumnDef<any>[]>(() => [
+    {
+      id: "session",
+      header: isRtl ? "رمز الجلسة" : "Session Code",
+      cell: (row) => (
+        <AdminSessionReference
+          sessionId={row.session?.sessionId}
+          sessionCode={row.session?.sessionCode}
+          href={`/admin/sessions/runtime-inspection?sessionId=${row.session?.sessionId}`}
+          variant="table"
+          copyable
+        />
+      ),
+    },
+    {
+      id: "patient",
+      header: isRtl ? "المريض" : "Patient",
+      cell: (row) => {
+        const name = formatPersonDisplayName(row.patient?.displayName, row.patient?.patientId, isRtl ? "المريض" : "Patient");
+        return <span className="text-xs text-text-secondary">{name}</span>;
+      },
+    },
+    {
+      id: "suggestedPractitionerAmount",
+      header: isRtl ? "مستحق الممارس" : "Practitioner Split",
+      cell: (row) => (
+        <span className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400">
+          {formatSettlementMoney(locale, row.suggestedPractitionerAmount, row.suggestedCurrencyCode)}
+        </span>
+      ),
+    },
+    {
+      id: "reviewStatus",
+      header: isRtl ? "حالة المراجعة" : "Status",
+      cell: (row) => (
+        <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+          {row.reviewStatus}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: isRtl ? "الإجراءات" : "Actions",
+      cell: (row) => (
+        <Link
+          href={`/admin/settlements/${row.reviewId}`}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+        >
+          {isRtl ? "عرض التسوية" : "View Settlement"}
+        </Link>
+      ),
+    },
+  ], [isRtl, locale]);
+
+  const practitionerTransferColumns = useMemo<ColumnDef<any>[]>(() => [
+    {
+      id: "reference",
+      header: isRtl ? "مرجع التحويل" : "Transfer Ref",
+      cell: (row) => (
+        <span className="font-mono text-xs font-bold text-text-primary dark:text-white" dir="ltr">
+          {shortId(row.externalReference || row.id, 14, 4)}
+        </span>
+      ),
+    },
+    {
+      id: "amount",
+      header: isRtl ? "المبلغ المحول" : "Amount",
+      cell: (row) => (
+        <span className="font-mono text-xs font-bold text-rose-700 dark:text-rose-400">
+          {formatSettlementMoney(locale, row.amountPaid || row.amount, row.currency || row.currencyCode)}
+        </span>
+      ),
+    },
+    {
+      id: "method",
+      header: isRtl ? "طريقة التحويل" : "Method",
+      cell: (row) => (
+        <span className="text-xs text-text-secondary">
+          {row.payoutMethod || row.transferMethod || "-"}
+        </span>
+      ),
+    },
+    {
+      id: "executedBy",
+      header: isRtl ? "نفذه" : "Executed By",
+      cell: (row) => {
+        const name = cleanPersonName(row.processedByDisplayName || row.executedBy) || (isRtl ? "المحاسب" : "Accountant");
+        return <span className="text-xs font-medium text-text-primary dark:text-white">{name}</span>;
+      },
+    },
+    {
+      id: "actions",
+      header: isRtl ? "الإجراءات" : "Actions",
+      cell: (row) => (
+        <Link
+          href={`/admin/practitioner-payouts/history/${row.id}`}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+        >
+          {isRtl ? "عرض التفاصيل" : "View Details"}
+        </Link>
+      ),
+    },
+  ], [isRtl, locale]);
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8 space-y-6">
@@ -172,9 +446,9 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-12 text-center space-y-4">
         <h2 className="text-xl font-bold text-text-primary dark:text-white">
-          {locale === "ar" ? "تعذر تحميل بيانات المعالج" : "Failed to load practitioner details"}
+          {isRtl ? "تعذر تحميل بيانات المعالج" : "Failed to load practitioner details"}
         </h2>
-        <Button onClick={() => refetch()}>{locale === "ar" ? "إعادة المحاولة" : "Retry"}</Button>
+        <Button onClick={() => refetch()}>{isRtl ? "إعادة المحاولة" : "Retry"}</Button>
       </div>
     );
   }
@@ -193,85 +467,9 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
     { id: "audit", label: t("audit") },
   ];
 
-  const credentialColumns = [
-    {
-      id: "type",
-      header: locale === "ar" ? "نوع المستند" : "Document Type",
-      accessor: (row: any) => row.credentialType,
-    },
-    {
-      id: "status",
-      header: locale === "ar" ? "حالة التحقق" : "Verification Status",
-      accessor: (row: any) => row.reviewStatus,
-      cell: (row: any) => {
-        const tones: Record<string, "success" | "warning" | "error" | "light"> = {
-          APPROVED: "success",
-          PENDING: "warning",
-          REJECTED: "error",
-        };
-        return (
-          <Badge variant="solid" color={tones[row.reviewStatus] ?? "light"} size="sm">
-            {row.reviewStatus}
-          </Badge>
-        );
-      },
-    },
-    {
-      id: "uploadedAt",
-      header: locale === "ar" ? "تاريخ الرفع" : "Uploaded Date",
-      accessor: (row: any) => row.uploadedAt,
-      cell: (row: any) => new Date(row.uploadedAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US"),
-    },
-    {
-      id: "notes",
-      header: locale === "ar" ? "ملاحظات" : "Notes",
-      accessor: (row: any) => row.reviewNotes || "-",
-    },
-    {
-      id: "actions",
-      header: locale === "ar" ? "تحميل" : "Download",
-      accessor: (row: any) => row.credentialId,
-      cell: (row: any) => (
-        <a
-          href={row.fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-        >
-          {locale === "ar" ? "عرض المستند" : "View Document"}
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      ),
-    },
-  ];
-
-  const auditColumns = [
-    {
-      id: "occurredAt",
-      header: locale === "ar" ? "الوقت" : "Timestamp",
-      accessor: (row: any) => row.occurredAt,
-      cell: (row: any) => new Date(row.occurredAt).toLocaleString(locale === "ar" ? "ar-SA" : "en-US"),
-    },
-    {
-      id: "typeSlug",
-      header: locale === "ar" ? "نوع الحدث" : "Event Type",
-      accessor: (row: any) => row.typeSlug,
-    },
-    {
-      id: "actor",
-      header: locale === "ar" ? "منفذ الإجراء" : "Actor",
-      accessor: (row: any) => row.actorDisplayName || "System",
-    },
-    {
-      id: "title",
-      header: locale === "ar" ? "تفاصيل الحدث" : "Event Detail",
-      accessor: (row: any) => row.titleSnapshot || "-",
-    },
-  ];
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:py-6 space-y-6">
-      {/* Header */}
+      {/* Header Navigation */}
       <div>
         <Link
           href="/admin/practitioners"
@@ -329,7 +527,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         </div>
       </SurfaceCard>
 
-      {/* Tab Navigation List */}
+      {/* Lazy Tab Navigation Bar */}
       <div className="flex gap-2 border-b border-border-light dark:border-white/5 pb-1 overflow-x-auto whitespace-nowrap scrollbar-none">
         {tabList.map((tab) => {
           const IconComponent = TAB_ICONS[tab.id];
@@ -340,7 +538,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all ${
                 activeTab === tab.id
-                  ? "bg-primary text-white"
+                  ? "bg-primary text-white shadow-sm"
                   : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary dark:hover:bg-white/5"
               }`}
             >
@@ -353,11 +551,12 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
 
       {/* Tab Content Rendering */}
       <div className="min-h-[300px]">
+        {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <SurfaceCard variant="section" className="space-y-6">
             <SurfaceHeader
               eyebrow={t("overview")}
-              title={locale === "ar" ? "نظرة عامة على النشاط" : "Activity Overview"}
+              title={isRtl ? "نظرة عامة على النشاط" : "Activity Overview"}
             />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 dark:bg-white/5">
@@ -401,6 +600,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
           </SurfaceCard>
         )}
 
+        {/* BASIC TAB */}
         {activeTab === "basic" && (
           <SurfaceCard variant="section" className="space-y-4">
             <SurfaceHeader eyebrow={t("basic")} title={t("basic")} />
@@ -436,19 +636,20 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-xs text-text-muted">{t("created")}</p>
                 <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
-                  {new Date(details.createdAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")}
+                  {new Date(details.createdAt).toLocaleDateString(isRtl ? "ar-SA" : "en-US")}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-text-muted">{t("updated")}</p>
                 <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
-                  {new Date(details.updatedAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")}
+                  {new Date(details.updatedAt).toLocaleDateString(isRtl ? "ar-SA" : "en-US")}
                 </p>
               </div>
             </div>
           </SurfaceCard>
         )}
 
+        {/* PROFESSIONAL TAB */}
         {activeTab === "professional" && (
           <SurfaceCard variant="section" className="space-y-5">
             <SurfaceHeader eyebrow={t("professional")} title={t("professional")} />
@@ -464,7 +665,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-xs text-text-muted">{t("experience")}</p>
                 <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
-                  {details.yearsOfExperience} {locale === "ar" ? "سنوات" : "years"}
+                  {details.yearsOfExperience} {isRtl ? "سنوات" : "years"}
                 </p>
               </div>
               <div>
@@ -482,7 +683,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               <div>
                 <p className="text-xs text-text-muted">{t("acceptsPackages")}</p>
                 <Badge variant="solid" color={details.acceptsPackages ? "success" : "light"}>
-                  {details.acceptsPackages ? (locale === "ar" ? "نعم" : "Yes") : (locale === "ar" ? "لا" : "No")}
+                  {details.acceptsPackages ? (isRtl ? "نعم" : "Yes") : (isRtl ? "لا" : "No")}
                 </Badge>
               </div>
             </div>
@@ -496,6 +697,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
           </SurfaceCard>
         )}
 
+        {/* APPLICATION TAB */}
         {activeTab === "application" && (
           <SurfaceCard variant="section" className="space-y-4">
             <SurfaceHeader eyebrow={t("application")} title={t("application")} />
@@ -511,7 +713,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
                   <p className="text-xs text-text-muted">{t("submittedAt")}</p>
                   <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
                     {details.application.submittedAt
-                      ? new Date(details.application.submittedAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")
+                      ? new Date(details.application.submittedAt).toLocaleDateString(isRtl ? "ar-SA" : "en-US")
                       : "-"}
                   </p>
                 </div>
@@ -519,7 +721,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
                   <p className="text-xs text-text-muted">{t("reviewedAt")}</p>
                   <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
                     {details.application.reviewedAt
-                      ? new Date(details.application.reviewedAt).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US")
+                      ? new Date(details.application.reviewedAt).toLocaleDateString(isRtl ? "ar-SA" : "en-US")
                       : "-"}
                   </p>
                 </div>
@@ -529,11 +731,12 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-text-muted">{locale === "ar" ? "لا يوجد طلب انضمام مسجل" : "No application registered"}</p>
+              <p className="text-sm text-text-muted">{isRtl ? "لا يوجد طلب انضمام مسجل" : "No application registered"}</p>
             )}
           </SurfaceCard>
         )}
 
+        {/* DOCUMENTS TAB */}
         {activeTab === "documents" && (
           <SurfaceCard variant="section" className="space-y-4">
             <SurfaceHeader eyebrow={t("documents")} title={t("documents")} />
@@ -543,95 +746,189 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               getRowId={(row) => row.credentialId}
               emptyState={{
                 title: t("emptyDocs"),
-                description: locale === "ar" ? "لم يقم المعالج برفع أي مستندات رسمية للتحقق." : "No verification documents uploaded yet.",
+                description: isRtl ? "لم يقم المعالج برفع أي مستندات رسمية للتحقق." : "No verification documents uploaded yet.",
               }}
             />
           </SurfaceCard>
         )}
 
+        {/* SESSIONS TAB (LAZY LOADED) */}
         {activeTab === "sessions" && (
-          <SurfaceCard variant="section" className="space-y-4">
-            <SurfaceHeader eyebrow={t("sessions")} title={t("sessions")} />
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-border-light bg-surface p-4 text-center">
-                <p className="text-xs text-text-muted">{t("totalSessions")}</p>
+          <SurfaceCard variant="section" className="space-y-6">
+            <SurfaceHeader
+              eyebrow={t("sessions")}
+              title={isRtl ? "سجل كافة جلسات الممارس" : "Practitioner Sessions Record"}
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 text-center">
+                <p className="text-xs text-text-muted font-semibold">{t("totalSessions")}</p>
                 <p className="text-3xl font-extrabold text-text-primary dark:text-white mt-1">{details.operations.totalSessions}</p>
               </div>
-              <div className="rounded-2xl border border-border-light bg-surface p-4 text-center">
-                <p className="text-xs text-text-muted">{t("completedSessions")}</p>
+              <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 text-center">
+                <p className="text-xs text-text-muted font-semibold">{t("completedSessions")}</p>
                 <p className="text-3xl font-extrabold text-success-700 dark:text-success-400 mt-1">{details.operations.completedSessions}</p>
               </div>
-              <div className="rounded-2xl border border-border-light bg-surface p-4 text-center">
-                <p className="text-xs text-text-muted">{t("upcomingSessions")}</p>
+              <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 text-center">
+                <p className="text-xs text-text-muted font-semibold">{t("upcomingSessions")}</p>
                 <p className="text-3xl font-extrabold text-primary mt-1">{details.operations.upcomingSessions}</p>
               </div>
-              <div className="rounded-2xl border border-border-light bg-surface p-4 text-center">
-                <p className="text-xs text-text-muted">{t("cancelledSessions")}</p>
+              <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 text-center">
+                <p className="text-xs text-text-muted font-semibold">{t("cancelledSessions")}</p>
                 <p className="text-3xl font-extrabold text-danger-700 dark:text-danger-400 mt-1">{details.operations.cancelledSessions}</p>
               </div>
             </div>
+
+            <DataTable
+              data={sessionsQuery.data?.items ?? []}
+              columns={practitionerSessionColumns}
+              getRowId={(row) => row.id}
+              loading={sessionsQuery.isLoading}
+              emptyState={{
+                title: isRtl ? "لا توجد جلسات مسجلة" : "No sessions found",
+                description: isRtl ? "لم يتم العثور على أي جلسات مسجلة لهذا المعالج حتى الآن." : "No sessions found for this practitioner.",
+              }}
+              ariaLabel={t("sessions")}
+            />
           </SurfaceCard>
         )}
 
+        {/* FINANCIAL TAB (LAZY LOADED) */}
         {activeTab === "financial" && (
-          <SurfaceCard variant="section" className="space-y-4">
-            <SurfaceHeader eyebrow={t("financial")} title={t("financial")} />
-            {details.payoutDestination ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <p className="text-xs text-text-muted">{t("payoutMethod")}</p>
-                  <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white uppercase">{details.payoutDestination.methodType}</p>
+          <div className="space-y-6">
+            <SurfaceCard variant="section" className="space-y-6">
+              <SurfaceHeader
+                eyebrow={t("financial")}
+                title={isRtl ? "الملف المالي وأرصدة الممارس" : "Financial Profile & Wallet Balances"}
+              />
+
+              {/* Wallet Summary */}
+              {walletQuery.isLoading ? (
+                <ListStateSkeleton items={1} heightClass="h-20" />
+              ) : walletQuery.data ? (
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-xs font-semibold text-text-muted">{isRtl ? "الرصيد القابل للدفع" : "Available Balance"}</p>
+                    <p className="text-2xl font-extrabold text-primary mt-1">
+                      {formatSettlementMoney(locale, walletQuery.data.wallet.availableBalance, walletQuery.data.wallet.currencyCode)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                    <p className="text-xs font-semibold text-text-muted">{isRtl ? "إجمالي الأرباح المضافة" : "Total Credited"}</p>
+                    <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 mt-1">
+                      {formatSettlementMoney(locale, walletQuery.data.wallet.totalCredited, walletQuery.data.wallet.currencyCode)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-border-light bg-surface-secondary p-4 dark:bg-white/5">
+                    <p className="text-xs font-semibold text-text-muted">{isRtl ? "إجمالي التحويلات الخارجة" : "Total Transferred"}</p>
+                    <p className="text-2xl font-extrabold text-text-primary dark:text-white mt-1">
+                      {formatSettlementMoney(locale, walletQuery.data.wallet.totalExternallyTransferred, walletQuery.data.wallet.currencyCode)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-text-muted">{t("accountHolder")}</p>
-                  <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.accountHolderName || "-"}</p>
-                </div>
-                {details.payoutDestination.methodType === "BANK" ? (
-                  <>
+              ) : null}
+
+              {/* Payout Destination Info */}
+              <div className="border-t border-border-light pt-4 dark:border-white/8">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-3">
+                  {isRtl ? "تفاصيل وجهة تحويل المستحقات" : "Payout Destination Details"}
+                </h3>
+                {details.payoutDestination ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 rounded-2xl border border-border-light bg-surface-secondary/40 p-4 dark:bg-white/[0.02]">
                     <div>
-                      <p className="text-xs text-text-muted">{t("bankName")}</p>
-                      <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.bankName || "-"}</p>
+                      <p className="text-xs text-text-muted">{t("payoutMethod")}</p>
+                      <p className="text-sm font-semibold mt-0.5 text-text-primary dark:text-white uppercase">{details.payoutDestination.methodType}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-text-muted">{t("accountNum")}</p>
-                      <p className="text-sm font-mono font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.bankAccountNumber || "-"}</p>
+                      <p className="text-xs text-text-muted">{t("accountHolder")}</p>
+                      <p className="text-sm font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.accountHolderName || "-"}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-text-muted">{t("iban")}</p>
-                      <p className="text-sm font-mono font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.iban || "-"}</p>
-                    </div>
-                  </>
+                    {details.payoutDestination.methodType === "BANK" ? (
+                      <>
+                        <div>
+                          <p className="text-xs text-text-muted">{t("bankName")}</p>
+                          <p className="text-sm font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.bankName || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">{t("accountNum")}</p>
+                          <p className="text-sm font-mono font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.bankAccountNumber || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">{t("iban")}</p>
+                          <p className="text-sm font-mono font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.iban || "-"}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-xs text-text-muted">{t("walletProvider")}</p>
+                          <p className="text-sm font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.walletProvider || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">{t("walletId")}</p>
+                          <p className="text-sm font-mono font-semibold mt-0.5 text-text-primary dark:text-white">{details.payoutDestination.walletIdentifier || "-"}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 ) : (
-                  <>
-                    <div>
-                      <p className="text-xs text-text-muted">{t("walletProvider")}</p>
-                      <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.walletProvider || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-text-muted">{t("walletId")}</p>
-                      <p className="text-sm font-mono font-semibold mt-1 text-text-primary dark:text-white">{details.payoutDestination.walletIdentifier || "-"}</p>
-                    </div>
-                  </>
+                  <p className="text-sm text-text-muted">{isRtl ? "لم يتم تحديد بيانات تحويل المستحقات" : "No payout details registered"}</p>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-text-muted">{locale === "ar" ? "لم يتم تحديد بيانات تحويل المستحقات" : "No payout details registered"}</p>
-            )}
-          </SurfaceCard>
+            </SurfaceCard>
+
+            {/* Settlements Table */}
+            <SurfaceCard variant="section" className="space-y-4">
+              <SurfaceHeader
+                eyebrow={t("financial")}
+                title={isRtl ? "جدول تسويات وتوزيعات أرباح الممارس" : "Practitioner Earning Settlements"}
+              />
+              <DataTable
+                data={settlementsQuery.data?.items ?? []}
+                columns={practitionerSettlementColumns}
+                getRowId={(row) => row.reviewId}
+                loading={settlementsQuery.isLoading}
+                emptyState={{
+                  title: isRtl ? "لا توجد تسويات مسجلة" : "No settlements found",
+                  description: isRtl ? "ستظهر التسويات المعتمدة لأرباح الجلسات هنا." : "Approved session settlements will appear here.",
+                }}
+                ariaLabel={isRtl ? "التسويات" : "Settlements"}
+              />
+            </SurfaceCard>
+
+            {/* Transfers Table */}
+            <SurfaceCard variant="section" className="space-y-4">
+              <SurfaceHeader
+                eyebrow={t("financial")}
+                title={isRtl ? "جدول التحويلات والدفعات الخارجة" : "External Payout Transfers"}
+              />
+              <DataTable
+                data={transfersQuery.data?.items ?? []}
+                columns={practitionerTransferColumns}
+                getRowId={(row) => row.id}
+                loading={transfersQuery.isLoading}
+                emptyState={{
+                  title: isRtl ? "لا توجد تحويلات خارجة مسجلة" : "No payout transfers found",
+                  description: isRtl ? "ستظهر سجلات التحويلات البنكية للمستحقات هنا." : "Payout transfer records will appear here.",
+                }}
+                ariaLabel={isRtl ? "التحويلات الخارجة" : "External Transfers"}
+              />
+            </SurfaceCard>
+          </div>
         )}
 
+        {/* PUBLICATION TAB */}
         {activeTab === "publication" && (
           <SurfaceCard variant="section" className="space-y-4">
             <SurfaceHeader eyebrow={t("publication")} title={t("publication")} />
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="text-xs text-text-muted">{locale === "ar" ? "الحالة المنشورة" : "Publication State"}</p>
+                <p className="text-xs text-text-muted">{isRtl ? "الحالة المنشورة" : "Publication State"}</p>
                 <Badge variant="solid" color={details.profileStatus === "APPROVED" ? "success" : "light"}>
-                  {details.profileStatus === "APPROVED" ? (locale === "ar" ? "منشور للعامة" : "Published to Public") : (locale === "ar" ? "غير منشور" : "Unpublished")}
+                  {details.profileStatus === "APPROVED" ? (isRtl ? "منشور للعامة" : "Published to Public") : (isRtl ? "غير منشور" : "Unpublished")}
                 </Badge>
               </div>
               <div>
-                <p className="text-xs text-text-muted">{locale === "ar" ? "رابط التعريف العام" : "Public Slug Route"}</p>
+                <p className="text-xs text-text-muted">{isRtl ? "رابط التعريف العام" : "Public Slug Route"}</p>
                 <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
                   /practitioners/{details.publicSlug || details.id}
                 </p>
@@ -640,6 +937,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
           </SurfaceCard>
         )}
 
+        {/* AUDIT LOG TAB */}
         {activeTab === "audit" && (
           <SurfaceCard variant="section" className="space-y-4">
             <SurfaceHeader eyebrow={t("audit")} title={t("audit")} />
@@ -649,7 +947,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
               getRowId={(row) => row.id}
               emptyState={{
                 title: t("emptyLogs"),
-                description: locale === "ar" ? "لا توجد عمليات مراجعة أو تعديل مسجلة لهذا المعالج." : "No operations recorded for this practitioner yet.",
+                description: isRtl ? "لا توجد عمليات مراجعة أو تعديل مسجلة لهذا المعالج." : "No operations recorded for this practitioner yet.",
               }}
             />
           </SurfaceCard>

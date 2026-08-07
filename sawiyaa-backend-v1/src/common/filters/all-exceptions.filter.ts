@@ -18,6 +18,16 @@ import {
   redactUrlForLogging,
   sanitizeForLogging,
 } from '@common/logging/log-sanitizer.util';
+import {
+  classifyHttpException,
+  classifyHttpStatus,
+  inferHttpModule,
+  normalizedRoute,
+} from '@common/logging/http-log.util';
+import {
+  HTTP_LOG_METADATA_KEY,
+  HttpLogMetadata,
+} from '@common/logging/http-log-metadata.decorator';
 
 @Catch()
 @Injectable()
@@ -102,10 +112,98 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const userId = request.user?.id ?? null;
     const role = this.resolveUserRole(request.user?.roles?.[0]);
     const requestId = request.requestId ?? null;
+    const classification = classifyHttpStatus(status);
+    const route = normalizedRoute(request);
+    const metadataHost = host as ArgumentsHost & {
+      getHandler?: () => unknown;
+      getClass?: () => { name?: string };
+    };
+    const handlerTarget = metadataHost.getHandler?.();
+    const controllerTarget = metadataHost.getClass?.();
+    const readMetadata = (target: unknown): HttpLogMetadata | undefined =>
+      target && (typeof target === 'object' || typeof target === 'function')
+        ? (Reflect.getMetadata(HTTP_LOG_METADATA_KEY, target) as
+            | HttpLogMetadata
+            | undefined)
+        : undefined;
+    const handlerMetadata = readMetadata(handlerTarget);
+    const controllerMetadata = readMetadata(controllerTarget);
+    const requestState = request as AuthenticatedRequest & {
+      __httpLogRecorded?: boolean;
+      loggingStartedAt?: number;
+    };
+
+    if (this.loggingCfg.httpEnabled && !requestState.__httpLogRecorded) {
+      requestState.__httpLogRecorded = true;
+      const durationMs = requestState.loggingStartedAt
+        ? Math.max(0, Date.now() - requestState.loggingStartedAt)
+        : 0;
+      const httpMeta = sanitizeForLogging({
+        requestId,
+        method,
+        route,
+        module:
+          handlerMetadata?.module ??
+          controllerMetadata?.module ??
+          inferHttpModule(controllerTarget?.name ?? '', route),
+        ...((handlerMetadata?.operation ?? controllerMetadata?.operation)
+          ? {
+              operation:
+                handlerMetadata?.operation ?? controllerMetadata?.operation,
+            }
+          : {}),
+        ...(request.correlationId
+          ? { correlationId: request.correlationId }
+          : {}),
+        path,
+        statusCode: status,
+        durationMs,
+        ...classification,
+        failureClass: classifyHttpException(exception, status),
+        errorCode,
+        messageKey,
+        actorId: userId,
+        actorRole: role,
+        tenantId:
+          (request.user as Record<string, unknown> | undefined)?.tenantId ??
+          null,
+        ip: request.ip,
+        userAgent: request.headers['user-agent'],
+        service: this.loggingCfg.serviceName,
+        environment: this.loggingCfg.nodeEnv,
+        version: this.loggingCfg.version,
+        ...(this.loggingCfg.deploymentId
+          ? { deploymentId: this.loggingCfg.deploymentId }
+          : {}),
+        isSlow: durationMs >= (this.loggingCfg.slowRequestMs ?? 1000),
+      });
+      const optionalLogger = this.logger as unknown as {
+        http?: (...args: unknown[]) => void;
+        slowRequest?: (...args: unknown[]) => void;
+      };
+      if (typeof optionalLogger.http === 'function') {
+        optionalLogger.http(
+          { message: 'HTTP request failed', ...httpMeta },
+          undefined,
+          AllExceptionsFilter.name,
+        );
+      }
+      if (httpMeta.isSlow && typeof optionalLogger.slowRequest === 'function') {
+        optionalLogger.slowRequest(
+          { message: 'Slow HTTP request failed', ...httpMeta },
+          undefined,
+          AllExceptionsFilter.name,
+        );
+      }
+    }
 
     const logMeta = sanitizeForLogging({
       requestId,
       statusCode: status,
+      statusFamily: classification.statusFamily,
+      failureClass: classifyHttpException(exception, status),
+      errorCode,
+      messageKey,
       method,
       path,
       userId,
@@ -123,7 +221,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : {}),
     });
 
-    if (status >= 500) {
+    if (Number(status) >= 500) {
       this.logger.error(
         {
           message: 'Request failed',
@@ -150,19 +248,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private resolveHttpErrorCode(status: number): string {
     switch (status) {
-      case HttpStatus.BAD_REQUEST:
+      case 400:
         return 'BAD_REQUEST';
-      case HttpStatus.UNAUTHORIZED:
+      case 401:
         return 'UNAUTHORIZED';
-      case HttpStatus.FORBIDDEN:
+      case 403:
         return 'FORBIDDEN';
-      case HttpStatus.NOT_FOUND:
+      case 404:
         return 'NOT_FOUND';
-      case HttpStatus.CONFLICT:
+      case 409:
         return 'CONFLICT';
-      case HttpStatus.UNPROCESSABLE_ENTITY:
+      case 422:
         return 'UNPROCESSABLE_ENTITY';
-      case HttpStatus.TOO_MANY_REQUESTS:
+      case 429:
         return 'TOO_MANY_REQUESTS';
       default:
         return 'INTERNAL_SERVER_ERROR';
@@ -171,19 +269,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   private resolveHttpMessageKey(status: number): string {
     switch (status) {
-      case HttpStatus.BAD_REQUEST:
+      case 400:
         return 'common.errors.badRequest';
-      case HttpStatus.UNAUTHORIZED:
+      case 401:
         return 'common.errors.unauthorized';
-      case HttpStatus.FORBIDDEN:
+      case 403:
         return 'common.errors.forbidden';
-      case HttpStatus.NOT_FOUND:
+      case 404:
         return 'common.errors.notFound';
-      case HttpStatus.CONFLICT:
+      case 409:
         return 'common.errors.conflict';
-      case HttpStatus.UNPROCESSABLE_ENTITY:
+      case 422:
         return 'common.errors.unprocessableEntity';
-      case HttpStatus.TOO_MANY_REQUESTS:
+      case 429:
         return 'common.errors.tooManyRequests';
       default:
         return 'common.errors.internalServerError';

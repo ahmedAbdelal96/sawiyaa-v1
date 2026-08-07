@@ -86,9 +86,8 @@ export class GetPractitionerApplicationDetailsUseCase {
     }
 
     // If an avatar exists in storage, expose an admin-authenticated proxy URL.
-    // Avatar storage is keyed by user id (same id used by practitioner self-service avatar endpoints).
     const hasStoredAvatar = Boolean(
-      await this.avatarStorage.getAvatarFile(user.id),
+      await this.avatarStorage.getAvatarFile(profile.id),
     );
     const adminAvatarUrl = hasStoredAvatar
       ? `/api/v1/admin/practitioner-applications/${application.id}/avatar`

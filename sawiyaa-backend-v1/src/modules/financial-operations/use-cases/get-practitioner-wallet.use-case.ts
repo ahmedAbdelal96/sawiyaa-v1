@@ -29,12 +29,12 @@ export class GetPractitionerWalletUseCase {
     const wallets = await this.walletRepository.findByPractitionerId(
       practitioner.id,
     );
-    let primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
+    const primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
     if (!primary) {
-      primary = await this.walletRepository.ensureActiveWallet(
-        practitioner.id,
-        practitioner.preferredPayoutCurrencyCode,
-      );
+      throw new NotFoundException({
+        messageKey: 'financialOperations.errors.walletNotFound',
+        error: FINANCIAL_OPS_ERROR_CODES.practitionerWalletNotFound,
+      });
     }
     const currencyCode = primary.currencyCode;
     const balance = await this.balanceService.getBalance({

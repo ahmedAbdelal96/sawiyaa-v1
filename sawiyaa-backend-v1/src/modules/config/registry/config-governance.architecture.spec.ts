@@ -77,23 +77,23 @@ describe('configuration governance registry', () => {
       'payment.provider.paymob.methodRegistry',
     );
 
-    expect(CONFIG_DEFINITIONS).toHaveLength(21);
+    expect(CONFIG_DEFINITIONS).toHaveLength(35);
     expect(
       CONFIG_DEFINITIONS.filter(
         (definition) => definition.owner === 'DATABASE_CONFIG',
       ),
-    ).toHaveLength(18);
+    ).toHaveLength(32);
     expect(
       CONFIG_DEFINITIONS.filter((definition) => definition.status === 'LEGACY'),
-    ).toHaveLength(3);
+    ).toHaveLength(8);
     expect(
       CONFIG_DEFINITIONS.filter((definition) => definition.editable),
-    ).toHaveLength(16);
+    ).toHaveLength(24);
     expect(
       CONFIG_DEFINITIONS.filter(
         (definition) => definition.seed.createInitialValue,
       ),
-    ).toHaveLength(5);
+    ).toHaveLength(14);
     const catalogSlugs = CONFIG_DEFINITIONS.map(
       (definition) => definition.catalog.slug,
     );

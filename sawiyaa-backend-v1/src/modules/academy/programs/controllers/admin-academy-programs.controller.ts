@@ -34,7 +34,6 @@ import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-c
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
@@ -83,7 +82,7 @@ const MAX_COVER_IMAGE_BYTES = 10 * 1024 * 1024;
 @ApiTags('Academy')
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/academy')
 export class AdminAcademyProgramsController {
   constructor(
@@ -267,7 +266,7 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('programs/:id/enrollments/manual')
-  @RequireStepUp('academy.programEnrollment.manualCreate')
+  @Permissions(PermissionKey.ACADEMY_ENROLLMENTS_CREATE_MANUAL)
   @ApiOperation({ summary: 'Create a manual academy program enrollment' })
   createManualProgramEnrollment(
     @Param('id') programId: string,
@@ -305,7 +304,6 @@ export class AdminAcademyProgramsController {
   }
 
   @Post('program-enrollments/:id/certificate')
-  @RequireStepUp('academy.programEnrollment.certificate.manage')
   @Permissions(PermissionKey.PATIENTS_UPDATE_ADMIN)
   @ApiOperation({
     summary: 'Upload academy program enrollment certificate PDF',

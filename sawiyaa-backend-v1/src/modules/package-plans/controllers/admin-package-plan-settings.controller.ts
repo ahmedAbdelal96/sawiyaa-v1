@@ -28,7 +28,7 @@ import { UpdatePackagePlanSettingsUseCase } from '../use-cases/update-package-pl
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/package-plans/settings')
 export class AdminPackagePlanSettingsController {
   constructor(

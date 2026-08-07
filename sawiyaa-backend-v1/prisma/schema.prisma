@@ -316,12 +316,51 @@ enum SessionStatus {
   READY_TO_JOIN
   IN_PROGRESS
   AWAITING_COMPLETION_CONFIRMATION
+  AWAITING_ADMIN_RESOLUTION
   COMPLETED
   CANCELLED
   PATIENT_NO_SHOW
   PRACTITIONER_NO_SHOW
   BOTH_NO_SHOW
   EXPIRED
+}
+
+enum SessionResolutionCaseStatus {
+  OPEN
+  EXECUTED
+  CANCELLED
+}
+
+enum SessionResolutionPatientRemedy {
+  KEEP_ORIGINAL
+  RESTORE_PACKAGE
+  CREDIT_WALLET
+  CREATE_REPLACEMENT_SESSION
+}
+
+enum SessionResolutionPractitionerRemedy {
+  NO_EARNING
+  CREATE_EARNING_REVIEW
+}
+
+enum SessionFundingSource {
+  ORIGINAL
+  ADMIN_REPLACEMENT
+}
+
+enum SessionReconciliationStatus {
+  CONFIRMED
+  PARTIAL
+  UNAVAILABLE
+  FAILED
+  NOT_FOUND
+}
+
+enum SessionReconciliationConfidence {
+  HIGH
+  MEDIUM
+  LOW
+  UNTRUSTED
 }
 
 enum AvailabilityScheduleRepeatOperationStatus {
@@ -381,6 +420,9 @@ enum SessionEventType {
 enum SessionReminderType {
   REMINDER_60
   REMINDER_15
+  PRE_START
+  STARTING_NOW
+  LATE_JOIN
 }
 
 enum SessionCancellationBookingType {
@@ -520,6 +562,7 @@ enum SessionEarningReviewSourceType {
 
 enum SessionEarningReviewStatus {
   PENDING_REVIEW
+  DECISION_APPROVED
   APPROVED
   REJECTED
   EXCLUDED_FROM_PAYOUT
@@ -531,6 +574,17 @@ enum SessionEarningReviewDecision {
   EDITED_AND_APPROVED
   REJECTED_PAYOUT
   EXCLUDED_FROM_PAYOUT
+}
+
+enum PractitionerEarningAdjustmentType {
+  ADDITION
+  DEDUCTION
+}
+
+enum FinancialOperationType {
+  RECORD_ACCOUNTANT_DECISION
+  CREDIT_PRACTITIONER_WALLET
+  RECORD_EXTERNAL_SETTLEMENT
 }
 
 enum RefundEventType {
@@ -577,10 +631,6 @@ enum PractitionerRecoveryActionType {
   MANUALLY_COLLECTED
   WAIVED
 }
-
-//////////////////////////////
-// Corporate Benefits â€” Voucher Sponsorship
-//////////////////////////////
 
 enum CorporateOrganizationStatus {
   ACTIVE
@@ -696,7 +746,6 @@ model RefundPolicy {
 model RefundPolicyClause {
   id        String   @id @default(uuid()) @db.Uuid
   policyId  String   @db.Uuid
-  titleAr   String?  @db.VarChar(1000)
   titleEn   String?  @db.VarChar(1000)
   bodyAr    String   @db.VarChar(4000)
   bodyEn    String   @db.VarChar(4000)
@@ -1459,6 +1508,8 @@ model User {
   academyProgramSessionAttendancesMarked AcademyProgramSessionAttendance[]   @relation("AcademyProgramSessionAttendanceMarkedByUser")
   sessionReviewsModerated                SessionReview[]                     @relation("SessionReviewModeratedByUser")
   sessionPackageEntitlementDecisions     SessionPackageEntitlementDecision[]
+  sessionEarningReviewsReviewed          SessionEarningReview[]              @relation("SessionEarningReviewReviewedByUser")
+  sessionEarningReviewsApproved          SessionEarningReview[]              @relation("SessionEarningReviewApprovedByUser")
 
   authoredArticles                              Article[]                               @relation("ArticleAuthorUser")
   configChanges                                 ConfigChangeLog[]                       @relation("ConfigChangeByUser")
@@ -1470,11 +1521,11 @@ model User {
   walletEntryAuditActors                        CustomerWalletEntry[]                   @relation("CustomerWalletEntryAuditActorUser")
   recoveryActionAuditActors                     PractitionerRecoveryAction[]            @relation("PractitionerRecoveryActionAuditActorUser")
   settlementPayoutAuditActors                   PractitionerSettlementPayout[]          @relation("PractitionerSettlementPayoutAuditActorUser")
-  ledgerEntriesCreatedAsActor                   LedgerEntry[]                            @relation("LedgerEntryActorUser")
-  settlementsApproved                            PractitionerSettlement[]                 @relation("PractitionerSettlementApprovedByUser")
-  settlementsRejected                            PractitionerSettlement[]                 @relation("PractitionerSettlementRejectedByUser")
-  settlementAdjustmentsCreated                  SettlementAdjustment[]                   @relation("SettlementAdjustmentCreatedByUser")
-  settlementAdjustmentsApproved                 SettlementAdjustment[]                   @relation("SettlementAdjustmentApprovedByUser")
+  ledgerEntriesCreatedAsActor                   LedgerEntry[]                           @relation("LedgerEntryActorUser")
+  settlementsApproved                           PractitionerSettlement[]                @relation("PractitionerSettlementApprovedByUser")
+  settlementsRejected                           PractitionerSettlement[]                @relation("PractitionerSettlementRejectedByUser")
+  settlementAdjustmentsCreated                  SettlementAdjustment[]                  @relation("SettlementAdjustmentCreatedByUser")
+  settlementAdjustmentsApproved                 SettlementAdjustment[]                  @relation("SettlementAdjustmentApprovedByUser")
   refundEventsAsActor                           RefundEvent[]                           @relation("RefundEventActorUser")
   ledgerClassificationEventsAsActor             LedgerClassificationEvent[]             @relation("LedgerClassificationEventActorUser")
   financeReconciliationActionsAsActor           FinanceReconciliationAction[]           @relation("FinanceReconciliationActionActorUser")
@@ -1501,10 +1552,12 @@ model User {
   pausedMarketingPlacements                     PractitionerMarketingPlacement[]        @relation("PractitionerMarketingPlacementPausedByAdmin")
   marketingPlacementHistoryEntries              PractitionerMarketingPlacementHistory[]
   sessionAdminDecisions                         SessionAdminDecision[]
-  moderationReportsFiled                        ModerationReport[]                   @relation("ModerationReportReporter")
-  moderationReportsTargeted                     ModerationReport[]                   @relation("ModerationReportTargetUser")
-  moderationEnforcementsReceived                ModerationUserEnforcement[]         @relation("ModerationUserEnforcementTarget")
-  moderationEnforcementsIssued                 ModerationUserEnforcement[]         @relation("ModerationUserEnforcementActor")
+  sessionResolutions                            SessionResolution[]
+  earningAdjustmentsCreated                     PractitionerEarningAdjustment[]         @relation("PractitionerEarningAdjustmentCreatedByUser")
+  moderationReportsFiled                        ModerationReport[]                      @relation("ModerationReportReporter")
+  moderationReportsTargeted                     ModerationReport[]                      @relation("ModerationReportTargetUser")
+  moderationEnforcementsReceived                ModerationUserEnforcement[]             @relation("ModerationUserEnforcementTarget")
+  moderationEnforcementsIssued                  ModerationUserEnforcement[]             @relation("ModerationUserEnforcementActor")
 
   @@index([status, createdAt])
 }
@@ -1617,8 +1670,6 @@ model UserSession {
   userAgent        String?   @db.VarChar(500)
   expiresAt        DateTime?
   revokedAt        DateTime?
-  stepUpVerifiedAt DateTime?
-  stepUpExpiresAt  DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -1626,7 +1677,6 @@ model UserSession {
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
-  @@index([stepUpExpiresAt])
 }
 
 model OtpChallenge {
@@ -2046,42 +2096,61 @@ model PackageSettlement {
 }
 
 model SessionEarningReview {
-  id                          String                         @id @default(uuid()) @db.Uuid
-  sessionId                   String                         @db.Uuid
-  paymentId                   String?                        @db.Uuid
-  packagePurchaseId           String?                        @db.Uuid
-  packageSettlementId         String?                        @db.Uuid
-  settlementId                String?                        @db.Uuid
-  practitionerId              String                         @db.Uuid
-  patientId                   String                         @db.Uuid
-  sourceType                  SessionEarningReviewSourceType
-  reviewStatus                SessionEarningReviewStatus     @default(PENDING_REVIEW)
-  reviewDecision              SessionEarningReviewDecision   @default(AUTO_CREATED)
-  paymentAmount               Decimal                        @db.Decimal(18, 2)
-  paymentCurrencyCode         String                         @db.VarChar(3)
-  suggestedPractitionerAmount Decimal                        @db.Decimal(18, 2)
-  suggestedPlatformAmount     Decimal                        @db.Decimal(18, 2)
-  suggestedCurrencyCode       String                         @db.VarChar(3)
-  finalPractitionerAmount     Decimal?                       @db.Decimal(18, 2)
-  finalPlatformAmount         Decimal?                       @db.Decimal(18, 2)
-  finalCurrencyCode           String?                        @db.VarChar(3)
-  reviewedByUserId            String?                        @db.Uuid
-  reviewedAt                  DateTime?
-  approvedByUserId            String?                        @db.Uuid
-  approvedAt                  DateTime?
-  internalReason              String?                        @db.VarChar(1000)
-  practitionerFacingNote      String?                        @db.VarChar(1000)
-  idempotencyKey              String                         @unique @db.VarChar(191)
-  createdAt                   DateTime                       @default(now())
-  updatedAt                   DateTime                       @updatedAt
+  id                              String                         @id @default(uuid()) @db.Uuid
+  sessionId                       String                         @db.Uuid
+  earningEntitlementId            String                         @db.Uuid
+  paymentId                       String?                        @db.Uuid
+  packagePurchaseId               String?                        @db.Uuid
+  packageSettlementId             String?                        @db.Uuid
+  settlementId                    String?                        @db.Uuid
+  practitionerId                  String                         @db.Uuid
+  patientId                       String                         @db.Uuid
+  sourceType                      SessionEarningReviewSourceType
+  reviewStatus                    SessionEarningReviewStatus     @default(PENDING_REVIEW)
+  reviewDecision                  SessionEarningReviewDecision   @default(AUTO_CREATED)
+  paymentAmount                   Decimal                        @db.Decimal(18, 2)
+  paymentCurrencyCode             String                         @db.VarChar(3)
+  suggestedPractitionerAmount     Decimal                        @db.Decimal(18, 2)
+  suggestedPlatformAmount         Decimal                        @db.Decimal(18, 2)
+  suggestedCurrencyCode           String                         @db.VarChar(3)
+  suggestedPractitionerPercentage Decimal?                       @db.Decimal(5, 2)
+  patientCountrySnapshot          String?                        @db.VarChar(10)
+  practitionerCountrySnapshot     String?                        @db.VarChar(10)
+  countryRelationshipSnapshot     String?                        @db.VarChar(30)
+  policySnapshotJson              Json?
+  calculatedPractitionerAmount    Decimal?                       @db.Decimal(18, 2)
+  accountantApprovedSourceAmount  Decimal?                       @db.Decimal(18, 2)
+  accountingAdjustmentAmount      Decimal?                       @db.Decimal(18, 2)
+  accountingAdjustmentType        String?                        @db.VarChar(30)
+  accountingAdjustmentReason      String?                        @db.VarChar(1000)
+  accountingNotes                 String?                        @db.VarChar(2000)
+  overrideReason                  String?                        @db.VarChar(1000)
+  finalPractitionerAmount         Decimal?                       @db.Decimal(18, 2)
+  finalPlatformAmount             Decimal?                       @db.Decimal(18, 2)
+  finalCurrencyCode               String?                        @db.VarChar(3)
+  reviewedByUserId                String?                        @db.Uuid
+  reviewedAt                      DateTime?
+  approvedByUserId                String?                        @db.Uuid
+  approvedAt                      DateTime?
+  internalReason                  String?                        @db.VarChar(1000)
+  practitionerFacingNote          String?                        @db.VarChar(1000)
+  idempotencyKey                  String                         @db.VarChar(191)
+  createdAt                       DateTime                       @default(now())
+  updatedAt                       DateTime                       @updatedAt
 
   ledgerEntries                    LedgerEntry[]
-  settlement                       PractitionerSettlement?       @relation(fields: [settlementId], references: [id], onDelete: SetNull)
-  sourceSettlement                 PractitionerSettlement?       @relation("PractitionerSettlementSourceReview")
+  session                          Session                            @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  reviewedByUser                   User?                              @relation("SessionEarningReviewReviewedByUser", fields: [reviewedByUserId], references: [id], onDelete: Restrict)
+  approvedByUser                   User?                              @relation("SessionEarningReviewApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  settlement                       PractitionerSettlement?            @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+  sourceSettlement                 PractitionerSettlement?            @relation("PractitionerSettlementSourceReview")
   packageEntitlementDecisionResult SessionPackageEntitlementDecision? @relation("SessionPackageEntitlementDecisionResultingReview")
   practitionerRecoveries           PractitionerRecovery[]
+  adjustments                      PractitionerEarningAdjustment[]
+  financialOperations              FinancialOperationIdempotency[]
 
   @@unique([sessionId, sourceType])
+  @@index([earningEntitlementId, reviewStatus])
   @@index([reviewStatus, createdAt, id])
   @@index([practitionerId, reviewStatus, createdAt])
   @@index([patientId, createdAt])
@@ -2091,6 +2160,45 @@ model SessionEarningReview {
   @@index([settlementId])
   @@index([reviewedByUserId, reviewedAt])
   @@index([approvedByUserId, approvedAt])
+  @@index([idempotencyKey])
+}
+
+model PractitionerEarningAdjustment {
+  id                     String                            @id @default(uuid()) @db.Uuid
+  sessionEarningReviewId String                            @db.Uuid
+  type                   PractitionerEarningAdjustmentType
+  category               String                            @db.VarChar(50)
+  description            String                            @db.VarChar(500)
+  amount                 Decimal                           @db.Decimal(18, 2)
+  currencyCode           String                            @db.VarChar(3)
+  reason                 String                            @db.VarChar(1000)
+  createdByUserId        String                            @db.Uuid
+  createdAt              DateTime                          @default(now())
+
+  sessionEarningReview SessionEarningReview @relation(fields: [sessionEarningReviewId], references: [id], onDelete: Restrict)
+  createdByUser        User                 @relation("PractitionerEarningAdjustmentCreatedByUser", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([sessionEarningReviewId])
+  @@index([type, category])
+}
+
+model FinancialOperationIdempotency {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  earningEntitlementId String                 @db.Uuid
+  operationType        FinancialOperationType
+  idempotencyKey       String                 @db.VarChar(191)
+  reviewId             String                 @db.Uuid
+  settlementId         String?                @db.Uuid
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  review     SessionEarningReview    @relation(fields: [reviewId], references: [id], onDelete: Restrict)
+  settlement PractitionerSettlement? @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+
+  @@unique([earningEntitlementId, operationType, idempotencyKey], map: "uq_financial_operation_entitlement_type_key")
+  @@unique([earningEntitlementId, operationType], map: "uq_financial_operation_entitlement_type")
+  @@unique([reviewId, operationType], map: "uq_financial_operation_review_type")
+  @@index([reviewId, operationType])
 }
 
 model MatchingSession {
@@ -2519,16 +2627,19 @@ model Session {
   durationMinutes Int
   status          SessionStatus   @default(DRAFT)
 
-  requestedStartAt   DateTime?
-  scheduledStartAt   DateTime?
-  scheduledEndAt     DateTime?
-  joinOpenAt         DateTime?
-  expiresAt          DateTime?
-  cancelledAt        DateTime?
-  cancelledByUserId  String?   @db.Uuid
-  cancellationReason String?   @db.VarChar(500)
-  completedAt        DateTime?
-  expiredAt          DateTime?
+  requestedStartAt           DateTime?
+  scheduledStartAt           DateTime?
+  scheduledEndAt             DateTime?
+  joinOpenAt                 DateTime?
+  joinCloseAt                DateTime?
+  scheduleRevision           Int       @default(1)
+  schedulePolicySnapshotJson Json?
+  expiresAt                  DateTime?
+  cancelledAt                DateTime?
+  cancelledByUserId          String?   @db.Uuid
+  cancellationReason         String?   @db.VarChar(500)
+  completedAt                DateTime?
+  expiredAt                  DateTime?
 
   timezoneSnapshot        String?                    @db.VarChar(50)
   provider                SessionProvider            @default(NONE)
@@ -2543,6 +2654,15 @@ model Session {
   packageSessionIndex     Int?
   packageSessionCount     Int?
   paymentCoverageType     SessionPaymentCoverageType @default(DIRECT_PAYMENT)
+  fundingSource           SessionFundingSource       @default(ORIGINAL)
+  originalSessionId       String?                    @db.Uuid
+  earningEntitlementId    String                     @default(uuid()) @db.Uuid
+
+  patientCountrySnapshot                  String?  @db.VarChar(10)
+  practitionerCountrySnapshot             String?  @db.VarChar(10)
+  countryRelationshipSnapshot             String?  @db.VarChar(30)
+  suggestedPractitionerPercentageSnapshot Decimal? @db.Decimal(5, 2)
+  pricingPolicySnapshotJson               Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2561,14 +2681,22 @@ model Session {
   conversations               Conversation[]
   chatApprovalRequests        ChatApprovalRequest[]
   reviews                     SessionReview[]
+  earningReviews              SessionEarningReview[]
   ledgerEntries               LedgerEntry[]
   practitionerRecoveries      PractitionerRecovery[]
   couponRedemptions           CouponRedemption[]
   attendanceEvents            SessionAttendanceEvent[]
+  outcomePolicySnapshot       SessionOutcomePolicySnapshot?
+  attendanceReconciliations   SessionAttendanceReconciliation[]
   cancellationRecord          SessionCancellationRecord?
   corporateSponsorship        CorporateSessionSponsorship?
   corporateLedgerEntries      CorporateLedger[]
   sessionReminderQueueEntries SessionReminderQueue[]
+  resolutionCase              SessionResolutionCase?
+  resolutions                 SessionResolution[]                @relation("SessionResolutions")
+  replacementForResolution    SessionResolution?                 @relation("ResolutionReplacement")
+  originalSession             Session?                           @relation("SessionReplacement", fields: [originalSessionId], references: [id], onDelete: SetNull)
+  replacementSessions         Session[]                          @relation("SessionReplacement")
 
   @@unique([packagePurchaseId, packageSessionIndex])
   @@index([patientId, status])
@@ -2584,6 +2712,117 @@ model Session {
   @@index([flowType, status])
   @@index([provider, providerRoomId])
   @@index([paymentCoverageType, status])
+  @@index([originalSessionId])
+  @@index([earningEntitlementId])
+}
+
+model SessionResolutionCase {
+  id                          String                              @id @default(uuid()) @db.Uuid
+  sessionId                   String                              @unique @db.Uuid
+  status                      SessionResolutionCaseStatus         @default(OPEN)
+  suggestedOutcome            SessionStatus
+  suggestedPatientRemedy      SessionResolutionPatientRemedy
+  suggestedPractitionerRemedy SessionResolutionPractitionerRemedy
+  evidenceSnapshotJson        Json
+  version                     Int                                 @default(1)
+  openedAt                    DateTime                            @default(now())
+  resolvedAt                  DateTime?
+  createdAt                   DateTime                            @default(now())
+  updatedAt                   DateTime                            @updatedAt
+
+  session     Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  resolutions SessionResolution[]
+
+  @@index([status, openedAt])
+  @@index([suggestedOutcome, status])
+}
+
+model SessionResolution {
+  id                   String                              @id @default(uuid()) @db.Uuid
+  caseId               String                              @db.Uuid
+  sessionId            String                              @db.Uuid
+  attendanceOutcome    SessionStatus
+  patientRemedy        SessionResolutionPatientRemedy
+  practitionerRemedy   SessionResolutionPractitionerRemedy
+  reasonCode           String                              @db.VarChar(100)
+  adminNotes           String                              @db.VarChar(2000)
+  actedByAdminId       String                              @db.Uuid
+  actedAt              DateTime                            @default(now())
+  requestId            String                              @unique @db.VarChar(191)
+  evidenceSnapshotJson Json
+  effectsSnapshotJson  Json
+  replacementSessionId String?                             @unique @db.Uuid
+  createdAt            DateTime                            @default(now())
+
+  resolutionCase     SessionResolutionCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  session            Session               @relation("SessionResolutions", fields: [sessionId], references: [id], onDelete: Restrict)
+  actedByAdmin       User                  @relation(fields: [actedByAdminId], references: [id], onDelete: Restrict)
+  replacementSession Session?              @relation("ResolutionReplacement", fields: [replacementSessionId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, actedAt])
+  @@index([actedByAdminId, actedAt])
+}
+
+model SessionOutcomePolicySnapshot {
+  id                             String   @id @default(uuid()) @db.Uuid
+  sessionId                      String   @unique @db.Uuid
+  version                        Int
+  completionOverlapPercent       Int
+  minimumOverlapMinutes          Int
+  patientNoShowGraceMinutes      Int
+  practitionerNoShowGraceMinutes Int
+  finalizationGraceMinutes       Int
+  lateEvidenceWaitingMinutes     Int
+  capturedAt                     DateTime
+  source                         String   @db.VarChar(100)
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([capturedAt])
+}
+
+model SessionAttendanceReconciliation {
+  id                               String                          @id @default(uuid()) @db.Uuid
+  sessionId                        String                          @db.Uuid
+  provider                         SessionProvider
+  observationVersion               Int
+  status                           SessionReconciliationStatus
+  roomFound                        Boolean
+  meetingStarted                   Boolean?
+  meetingEnded                     Boolean?
+  patientIdentityConfirmed         Boolean
+  patientJoined                    Boolean
+  patientTotalPresenceSeconds      Int
+  patientFirstJoinedAt             DateTime?
+  patientLastLeftAt                DateTime?
+  practitionerIdentityConfirmed    Boolean
+  practitionerJoined               Boolean
+  practitionerTotalPresenceSeconds Int
+  practitionerFirstJoinedAt        DateTime?
+  practitionerLastLeftAt           DateTime?
+  unknownParticipantCount          Int
+  providerMeetingId                String?                         @db.VarChar(191)
+  reconciledAt                     DateTime
+  providerDataObservedUntil        DateTime?
+  confidence                       SessionReconciliationConfidence
+  reasonCodesJson                  Json
+  attemptNumber                    Int
+  requestStatus                    String                          @db.VarChar(40)
+  failureCategory                  String?                         @db.VarChar(100)
+  eligibleForAutomaticFinalization Boolean
+  evaluationStale                  Boolean                         @default(false)
+  staleReason                      String?                         @db.VarChar(100)
+  createdAt                        DateTime                        @default(now())
+  updatedAt                        DateTime                        @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, provider, observationVersion])
+  @@index([sessionId, createdAt])
+  @@index([status, reconciledAt])
+  @@index([eligibleForAutomaticFinalization, reconciledAt])
 }
 
 model SessionCodeCounter {
@@ -2626,17 +2865,21 @@ model SessionPackageEntitlementDecision {
 }
 
 model SessionReminderQueue {
-  id              String              @id @default(uuid()) @db.Uuid
-  sessionId       String              @db.Uuid
-  recipientUserId String              @db.Uuid
-  recipientRole   UserRoleType
-  reminderType    SessionReminderType
-  dueAt           DateTime
-  sentAt          DateTime?
-  cancelledAt     DateTime?
-  idempotencyKey  String              @unique @db.VarChar(191)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                        String              @id @default(uuid()) @db.Uuid
+  sessionId                 String              @db.Uuid
+  recipientUserId           String              @db.Uuid
+  recipientRole             UserRoleType
+  reminderType              SessionReminderType
+  scheduleRevision          Int                 @default(1)
+  offsetMinutesSnapshot     Int?
+  recipientTimezoneSnapshot String?             @db.VarChar(50)
+  recipientLocaleSnapshot   String?             @db.VarChar(10)
+  dueAt                     DateTime
+  sentAt                    DateTime?
+  cancelledAt               DateTime?
+  idempotencyKey            String              @unique @db.VarChar(191)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
   session       Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   recipientUser User    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
@@ -3124,14 +3367,14 @@ model CustomerWalletReservation {
 }
 
 model LedgerEntry {
-  id                     String  @id @default(uuid()) @db.Uuid
-  practitionerId         String? @db.Uuid
-  sessionId              String? @db.Uuid
-  paymentId              String? @db.Uuid
-  settlementId           String? @db.Uuid
-  sessionEarningReviewId String? @db.Uuid
-  actorUserId           String? @db.Uuid
-  actorType             SecurityAuditActorType?
+  id                     String                  @id @default(uuid()) @db.Uuid
+  practitionerId         String?                 @db.Uuid
+  sessionId              String?                 @db.Uuid
+  paymentId              String?                 @db.Uuid
+  settlementId           String?                 @db.Uuid
+  sessionEarningReviewId String?                 @db.Uuid
+  actorUserId            String?                 @db.Uuid
+  actorType              SecurityAuditActorType?
 
   entryType     LedgerEntryType
   direction     LedgerDirection
@@ -3153,7 +3396,7 @@ model LedgerEntry {
   payment              Payment?                    @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   settlement           PractitionerSettlement?     @relation(fields: [settlementId], references: [id], onDelete: SetNull)
   sessionEarningReview SessionEarningReview?       @relation(fields: [sessionEarningReviewId], references: [id], onDelete: SetNull)
-  actorUser             User?                       @relation("LedgerEntryActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
+  actorUser            User?                       @relation("LedgerEntryActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
   classificationEvents LedgerClassificationEvent[]
 
   @@unique([sessionEarningReviewId, entryType, direction])
@@ -3328,9 +3571,9 @@ model AccountingReconciliationIssue {
 }
 
 model PractitionerWallet {
-  id             String @id @default(uuid()) @db.Uuid
-  practitionerId String @db.Uuid
-  currencyCode   String @db.VarChar(3)
+  id             String                   @id @default(uuid()) @db.Uuid
+  practitionerId String                   @db.Uuid
+  currencyCode   String                   @db.VarChar(3)
   status         PractitionerWalletStatus @default(ACTIVE)
   closedAt       DateTime?
 
@@ -3345,7 +3588,7 @@ model PractitionerWallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  practitioner PractitionerProfile      @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile      @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
   settlements  PractitionerSettlement[]
 
   @@unique([practitionerId, currencyCode])
@@ -3378,47 +3621,50 @@ model PractitionerSettlement {
   sourceReviewId String? @unique @db.Uuid
   walletId       String? @db.Uuid
 
-  amountGross       Decimal @db.Decimal(18, 2)
-  amountAdjustments Decimal @default(0) @db.Decimal(18, 2)
-  amountNet         Decimal @db.Decimal(18, 2)
-  amountPaidTotal   Decimal @default(0) @db.Decimal(18, 2)
-  currencyCode      String  @db.VarChar(3)
-  originalAmount       Decimal @default(0) @db.Decimal(18, 2)
-  originalCurrencyCode String  @default("USD") @db.VarChar(3)
-  walletCurrencyCode   String  @default("USD") @db.VarChar(3)
-  exchangeRate         Decimal? @db.Decimal(18, 8)
-  convertedAmount      Decimal @default(0) @db.Decimal(18, 2)
-  finalWalletCredit    Decimal @default(0) @db.Decimal(18, 2)
-  walletCreditDifferenceAmount Decimal @default(0) @db.Decimal(18, 2)
-  walletCreditOverrideReason String? @db.VarChar(500)
-  approvedByUserId     String? @db.Uuid
-  approvedAt           DateTime?
+  amountGross                  Decimal   @db.Decimal(18, 2)
+  amountAdjustments            Decimal   @default(0) @db.Decimal(18, 2)
+  amountNet                    Decimal   @db.Decimal(18, 2)
+  amountPaidTotal              Decimal   @default(0) @db.Decimal(18, 2)
+  currencyCode                 String    @db.VarChar(3)
+  originalAmount               Decimal   @db.Decimal(18, 2)
+  originalCurrencyCode         String    @db.VarChar(3)
+  walletCurrencyCode           String    @db.VarChar(3)
+  exchangeRate                 Decimal?  @db.Decimal(18, 8)
+  exchangeRateSource           String?   @db.VarChar(100)
+  exchangeRateAt               DateTime?
+  convertedAmount              Decimal   @db.Decimal(18, 2)
+  finalWalletCredit            Decimal   @db.Decimal(18, 2)
+  walletCreditDifferenceAmount Decimal   @default(0) @db.Decimal(18, 2)
+  walletCreditOverrideReason   String?   @db.VarChar(500)
+  approvedByUserId             String?   @db.Uuid
+  approvedAt                   DateTime?
 
   payoutMethodSnapshot Json?
   externalPayoutRef    String?                      @db.VarChar(191)
   status               PractitionerSettlementStatus @default(DRAFT)
 
-  paidAt    DateTime?
-  failedAt  DateTime?
-  notes     String?   @db.VarChar(500)
-  rejectionReason String? @db.VarChar(1000)
-  rejectedByUserId String? @db.Uuid
-  rejectedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  paidAt           DateTime?
+  failedAt         DateTime?
+  notes            String?   @db.VarChar(500)
+  rejectionReason  String?   @db.VarChar(1000)
+  rejectedByUserId String?   @db.Uuid
+  rejectedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  batch                  SettlementBatch                @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  practitioner           PractitionerProfile            @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
-  wallet                 PractitionerWallet?            @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  batch                  SettlementBatch                 @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  practitioner           PractitionerProfile             @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  wallet                 PractitionerWallet?             @relation(fields: [walletId], references: [id], onDelete: SetNull)
   ledgerEntries          LedgerEntry[]
   payoutRecords          PractitionerSettlementPayout[]
   practitionerRecoveries PractitionerRecovery[]
-  approvedByUser         User? @relation("PractitionerSettlementApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  approvedByUser         User?                           @relation("PractitionerSettlementApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   adjustments            SettlementAdjustment[]
   manualPayouts          PractitionerManualPayout[]
   sessionEarningReviews  SessionEarningReview[]
-  sourceReview           SessionEarningReview? @relation("PractitionerSettlementSourceReview", fields: [sourceReviewId], references: [id], onDelete: SetNull)
-  rejectedByUser         User? @relation("PractitionerSettlementRejectedByUser", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
+  sourceReview           SessionEarningReview?           @relation("PractitionerSettlementSourceReview", fields: [sourceReviewId], references: [id], onDelete: SetNull)
+  financialOperations    FinancialOperationIdempotency[]
+  rejectedByUser         User?                           @relation("PractitionerSettlementRejectedByUser", fields: [rejectedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([batchId, practitionerId])
   @@index([practitionerId, status])
@@ -3427,53 +3673,54 @@ model PractitionerSettlement {
 }
 
 model PractitionerSettlementPayout {
-  id                   String                        @id @default(uuid()) @db.Uuid
-  batchId              String                        @db.Uuid
-  settlementId         String                        @db.Uuid
-  practitionerId       String                        @db.Uuid
-  amountPaid           Decimal                       @db.Decimal(18, 2)
-  currencyCode         String                        @db.VarChar(3)
-  sourceAmount         Decimal?                      @db.Decimal(18, 2)
-  sourceCurrencyCode   String?                       @db.VarChar(3)
-  payoutCurrencyCode   String?                       @db.VarChar(3)
-  exchangeRateEgpPerUsd Decimal?                     @db.Decimal(18, 8)
-  calculatedPayoutAmount Decimal?                    @db.Decimal(18, 2)
-  actualPayoutAmount   Decimal?                      @db.Decimal(18, 2)
-  differenceAmount     Decimal?                      @db.Decimal(18, 2)
-  overrideReason       String?                       @db.VarChar(500)
-  payoutMethod         SettlementPayoutMethod
-  payoutSource         SettlementPayoutSource
-  payoutMethodSnapshot Json?
-  transferFeeAmount    Decimal?                      @db.Decimal(18, 2)
-  transferFeeTreatment PayoutTransferFeeTreatment    @default(PLATFORM_EXPENSE)
-  transferFeeCurrencyCode String?                    @db.VarChar(3)
-  netAmountReceived    Decimal?                       @db.Decimal(18, 2)
-  totalPlatformOutflow Decimal?                      @db.Decimal(18, 2)
-  externalPayoutRef    String?                       @db.VarChar(191)
-  notes                String?                       @db.VarChar(500)
-  actorType            SecurityAuditActorType?
-  actorUserId          String?                       @db.Uuid
-  actorRolesJson       Json?
-  source               String?                       @db.VarChar(50)
-  reason               String?                       @db.VarChar(500)
-  requestId            String?                       @db.VarChar(191)
-  correlationId        String?                       @db.VarChar(191)
-  previousStatus       PractitionerSettlementStatus?
-  newStatus            PractitionerSettlementStatus?
-  idempotencyKey       String?                       @db.VarChar(191)
-  occurredAt           DateTime                      @default(now())
-  effectiveAt          DateTime
-  processedByUserId    String?                       @db.Uuid
-  createdAt            DateTime                      @default(now())
-  updatedAt            DateTime                      @updatedAt
+  id                      String                        @id @default(uuid()) @db.Uuid
+  batchId                 String                        @db.Uuid
+  settlementId            String                        @db.Uuid
+  practitionerId          String                        @db.Uuid
+  amountPaid              Decimal                       @db.Decimal(18, 2)
+  currencyCode            String                        @db.VarChar(3)
+  sourceAmount            Decimal?                      @db.Decimal(18, 2)
+  sourceCurrencyCode      String?                       @db.VarChar(3)
+  payoutCurrencyCode      String?                       @db.VarChar(3)
+  exchangeRateEgpPerUsd   Decimal?                      @db.Decimal(18, 8)
+  calculatedPayoutAmount  Decimal?                      @db.Decimal(18, 2)
+  actualPayoutAmount      Decimal?                      @db.Decimal(18, 2)
+  differenceAmount        Decimal?                      @db.Decimal(18, 2)
+  overrideReason          String?                       @db.VarChar(500)
+  payoutMethod            SettlementPayoutMethod
+  payoutSource            SettlementPayoutSource
+  payoutMethodSnapshot    Json?
+  transferFeeAmount       Decimal?                      @db.Decimal(18, 2)
+  transferFeeTreatment    PayoutTransferFeeTreatment    @default(PLATFORM_EXPENSE)
+  transferFeeCurrencyCode String?                       @db.VarChar(3)
+  netAmountReceived       Decimal?                      @db.Decimal(18, 2)
+  totalPlatformOutflow    Decimal?                      @db.Decimal(18, 2)
+  externalPayoutRef       String?                       @db.VarChar(191)
+  notes                   String?                       @db.VarChar(500)
+  actorType               SecurityAuditActorType?
+  actorUserId             String?                       @db.Uuid
+  actorRolesJson          Json?
+  source                  String?                       @db.VarChar(50)
+  reason                  String?                       @db.VarChar(500)
+  requestId               String?                       @db.VarChar(191)
+  correlationId           String?                       @db.VarChar(191)
+  previousStatus          PractitionerSettlementStatus?
+  newStatus               PractitionerSettlementStatus?
+  idempotencyKey          String?                       @db.VarChar(191)
+  occurredAt              DateTime                      @default(now())
+  effectiveAt             DateTime
+  processedByUserId       String?                       @db.Uuid
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
 
-  batch           SettlementBatch                    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  settlement      PractitionerSettlement             @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  batch           SettlementBatch                    @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  settlement      PractitionerSettlement             @relation(fields: [settlementId], references: [id], onDelete: Restrict)
   practitioner    PractitionerProfile                @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
   processedByUser User?                              @relation(fields: [processedByUserId], references: [id], onDelete: SetNull)
   actorUser       User?                              @relation("PractitionerSettlementPayoutAuditActorUser", fields: [actorUserId], references: [id], onDelete: SetNull)
   proof           PractitionerSettlementPayoutProof?
 
+  @@unique([settlementId, idempotencyKey], map: "PractitionerSettlementPayout_settlementId_idempotencyKey_key")
   @@index([practitionerId, effectiveAt])
   @@index([batchId, effectiveAt])
   @@index([settlementId, createdAt])
@@ -3539,21 +3786,21 @@ model LedgerClassificationEvent {
 }
 
 model SettlementAdjustment {
-  id              String                  @id @default(uuid()) @db.Uuid
-  settlementId    String                  @db.Uuid
-  type            SettlementAdjustmentType
-  amount          Decimal                 @db.Decimal(18, 2)
-  currencyCode    String                  @db.VarChar(3)
-  reason          String                  @db.VarChar(1000)
-  createdByUserId String                  @db.Uuid
-  approvedByUserId String?                @db.Uuid
-  approvedAt      DateTime?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  id               String                   @id @default(uuid()) @db.Uuid
+  settlementId     String                   @db.Uuid
+  type             SettlementAdjustmentType
+  amount           Decimal                  @db.Decimal(18, 2)
+  currencyCode     String                   @db.VarChar(3)
+  reason           String                   @db.VarChar(1000)
+  createdByUserId  String                   @db.Uuid
+  approvedByUserId String?                  @db.Uuid
+  approvedAt       DateTime?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 
-  settlement     PractitionerSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
-  createdByUser  User                    @relation("SettlementAdjustmentCreatedByUser", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  approvedByUser User?                   @relation("SettlementAdjustmentApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  settlement     PractitionerSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  createdByUser  User                   @relation("SettlementAdjustmentCreatedByUser", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedByUser User?                  @relation("SettlementAdjustmentApprovedByUser", fields: [approvedByUserId], references: [id], onDelete: SetNull)
 
   @@index([settlementId, createdAt])
   @@index([type, createdAt])
@@ -3577,9 +3824,9 @@ model PractitionerManualPayout {
   createdAt                    DateTime               @default(now())
   updatedAt                    DateTime               @updatedAt
 
-  practitioner   PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
+  practitioner   PractitionerProfile    @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
   settlement     PractitionerSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
-  recordedByUser User?               @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  recordedByUser User?                  @relation(fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
   @@index([practitionerId, currencyCode, paidAt])
   @@index([settlementId, paidAt])
@@ -3669,7 +3916,7 @@ model PractitionerSettlementPayoutProof {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  payout PractitionerSettlementPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  payout PractitionerSettlementPayout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
 
   @@index([uploadedAt])
 }
@@ -4013,14 +4260,14 @@ model Conversation {
   practitioner PractitionerProfile? @relation("ConversationPractitioner", fields: [practitionerId], references: [id], onDelete: SetNull)
   session      Session?             @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
-  participants        ConversationParticipant[]
-  messages            Message[]
-  internalNotes       InternalConversationNote[]
-  moderationReports   ChatModerationReport[]
-  moderationActions   ChatModerationAction[]
-  moderationReportsEvidence ModerationReport[] @relation("ModerationReportConversation")
-  supportTicket       SupportTicket?
-  chatApprovalRequest ChatApprovalRequest?
+  participants              ConversationParticipant[]
+  messages                  Message[]
+  internalNotes             InternalConversationNote[]
+  moderationReports         ChatModerationReport[]
+  moderationActions         ChatModerationAction[]
+  moderationReportsEvidence ModerationReport[]         @relation("ModerationReportConversation")
+  supportTicket             SupportTicket?
+  chatApprovalRequest       ChatApprovalRequest?
 
   @@index([conversationType, status, startedAt])
   @@index([conversationType, status, updatedAt])
@@ -4073,13 +4320,13 @@ model Message {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  conversation      Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  replyToMessage    Message?               @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
-  replies           Message[]              @relation("MessageReplies")
-  attachments       MessageAttachment[]
-  moderationReports ChatModerationReport[]
-  moderationActions ChatModerationAction[]
-  moderationReportsEvidence ModerationReport[] @relation("ModerationReportReportedMessage")
+  conversation              Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  replyToMessage            Message?               @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies                   Message[]              @relation("MessageReplies")
+  attachments               MessageAttachment[]
+  moderationReports         ChatModerationReport[]
+  moderationActions         ChatModerationAction[]
+  moderationReportsEvidence ModerationReport[]     @relation("ModerationReportReportedMessage")
 
   @@index([conversationId, sentAt])
   @@index([conversationId, senderUserId, clientMessageId])
@@ -4345,23 +4592,23 @@ model ModerationReport {
 
   status ModerationCaseStatus @default(OPEN)
 
-  reportedByUserId String?                @db.Uuid
-  reportedByRole   ModerationReporterRole
-  conversationId   String?                @db.Uuid
-  reportedMessageId String?               @db.Uuid
-  targetUserId     String?                @db.Uuid
-  chatType         ModerationChatType?
+  reportedByUserId  String?                @db.Uuid
+  reportedByRole    ModerationReporterRole
+  conversationId    String?                @db.Uuid
+  reportedMessageId String?                @db.Uuid
+  targetUserId      String?                @db.Uuid
+  chatType          ModerationChatType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  auditEvents ModerationReportAuditEvent[]
-  actions     ModerationReportAction[]
+  auditEvents      ModerationReportAuditEvent[]
+  actions          ModerationReportAction[]
   userEnforcements ModerationUserEnforcement[]
-  reporterUser     User?                  @relation("ModerationReportReporter", fields: [reportedByUserId], references: [id], onDelete: SetNull)
-  targetUser       User?                  @relation("ModerationReportTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
-  conversation     Conversation?          @relation("ModerationReportConversation", fields: [conversationId], references: [id], onDelete: SetNull)
-  reportedMessage  Message?               @relation("ModerationReportReportedMessage", fields: [reportedMessageId], references: [id], onDelete: SetNull)
+  reporterUser     User?                        @relation("ModerationReportReporter", fields: [reportedByUserId], references: [id], onDelete: SetNull)
+  targetUser       User?                        @relation("ModerationReportTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  conversation     Conversation?                @relation("ModerationReportConversation", fields: [conversationId], references: [id], onDelete: SetNull)
+  reportedMessage  Message?                     @relation("ModerationReportReportedMessage", fields: [reportedMessageId], references: [id], onDelete: SetNull)
 
   @@index([targetType, targetId, status, createdAt])
   @@index([reportedByUserId, reportedByRole, createdAt])
@@ -4382,7 +4629,7 @@ model ModerationUserEnforcement {
 
   targetUser       User             @relation("ModerationUserEnforcementTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
   actedByUser      User             @relation("ModerationUserEnforcementActor", fields: [actedByUserId], references: [id], onDelete: Restrict)
-  moderationReport ModerationReport  @relation(fields: [moderationReportId], references: [id], onDelete: Cascade)
+  moderationReport ModerationReport @relation(fields: [moderationReportId], references: [id], onDelete: Cascade)
 
   @@index([targetUserId, createdAt])
   @@index([moderationReportId, createdAt])

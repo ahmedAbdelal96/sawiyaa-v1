@@ -39,7 +39,7 @@ import { ModerateReviewUseCase } from '../use-cases/moderate-review.use-case';
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.CONTENT_REVIEWER)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.CONTENT_REVIEWER)
 @Controller('admin/reviews')
 export class AdminReviewsController {
   constructor(

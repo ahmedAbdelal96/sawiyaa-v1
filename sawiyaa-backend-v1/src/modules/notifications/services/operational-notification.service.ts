@@ -13,15 +13,18 @@ import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import {
   SessionReminderQueueItem,
+  SessionReminderQueueCreateInput,
   SessionReminderQueueRepository,
 } from '../repositories/session-reminder-queue.repository';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
+import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 
 type Recipient = {
   userId: string;
   displayName: string | null;
   locale: SupportedLocale;
   email: string | null;
+  timezone: string | null;
 };
 
 type SessionPackageContext = {
@@ -44,6 +47,9 @@ type SessionReminderNotificationInput = {
   practitionerProfileId: string;
   sessionId: string;
   scheduledStartAt: Date | null;
+  scheduledEndAt?: Date | null;
+  scheduleRevision?: number;
+  schedulePolicySnapshot?: unknown;
 };
 
 type InstantBookingRequestNotificationInput = {
@@ -70,6 +76,7 @@ export class OperationalNotificationService {
     private readonly repository: OperationalNotificationRepository,
     private readonly sessionReminderQueueRepository: SessionReminderQueueRepository,
     private readonly i18nService: I18nService,
+    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
   ) {}
 
   async notifyPaymentSucceeded(input: {
@@ -423,7 +430,10 @@ export class OperationalNotificationService {
     practitionerProfileId: string;
     sessionId: string;
     scheduledStartAt: Date | null;
+    scheduledEndAt?: Date | null;
     packageContext?: SessionPackageContext | null;
+    scheduleRevision?: number;
+    schedulePolicySnapshot?: unknown;
   }): Promise<void> {
     const sessionAt = input.scheduledStartAt?.toISOString() ?? '-';
     const packageContextPayload = input.packageContext
@@ -472,7 +482,19 @@ export class OperationalNotificationService {
           patient?.userId ?? null,
         ),
         targetRole: 'PATIENT',
-        payload: packageContextPayload,
+        payload: {
+          ...(packageContextPayload ?? {}),
+          sessionId: input.sessionId,
+          recipientRole: 'PATIENT',
+          startsAtUtc: input.scheduledStartAt?.toISOString() ?? null,
+          timezoneSnapshot: patient?.timezone ?? 'UTC',
+          actionType: 'DETAILS',
+          action: {
+            type: 'INTERNAL_LINK',
+            href: this.buildSessionRoutePath(patient?.locale ?? null, 'PATIENT', input.sessionId),
+            semanticType: 'OPEN_SESSION_DETAILS',
+          },
+        },
       }),
       this.sendBySlug({
         recipient: practitioner,
@@ -498,7 +520,19 @@ export class OperationalNotificationService {
           practitioner?.userId ?? null,
         ),
         targetRole: 'PRACTITIONER',
-        payload: packageContextPayload,
+        payload: {
+          ...(packageContextPayload ?? {}),
+          sessionId: input.sessionId,
+          recipientRole: 'PRACTITIONER',
+          startsAtUtc: input.scheduledStartAt?.toISOString() ?? null,
+          timezoneSnapshot: practitioner?.timezone ?? 'UTC',
+          actionType: 'DETAILS',
+          action: {
+            type: 'INTERNAL_LINK',
+            href: this.buildSessionRoutePath(practitioner?.locale ?? null, 'PRACTITIONER', input.sessionId),
+            semanticType: 'OPEN_SESSION_DETAILS',
+          },
+        },
       }),
     ]);
 
@@ -507,6 +541,9 @@ export class OperationalNotificationService {
       practitionerProfileId: input.practitionerProfileId,
       sessionId: input.sessionId,
       scheduledStartAt: input.scheduledStartAt,
+      scheduledEndAt: input.scheduledEndAt,
+      scheduleRevision: input.scheduleRevision,
+      schedulePolicySnapshot: input.schedulePolicySnapshot,
     });
   }
 
@@ -515,6 +552,7 @@ export class OperationalNotificationService {
     practitionerProfileId: string;
     sessionId: string;
     scheduledStartAt: Date | null;
+    scheduleRevision?: number;
   }): Promise<void> {
     const sessionAt = input.scheduledStartAt?.toISOString() ?? '-';
 
@@ -545,6 +583,19 @@ export class OperationalNotificationService {
           patient?.userId ?? null,
         ),
         targetRole: 'PATIENT',
+        payload: {
+          sessionId: input.sessionId,
+          startsAtUtc: input.scheduledStartAt?.toISOString() ?? null,
+          timezoneSnapshot: patient?.timezone ?? 'UTC',
+          recipientRole: 'PATIENT',
+          actionType: 'CANCELLATION_DETAILS',
+          action: {
+            type: 'INTERNAL_LINK',
+            href: this.buildSessionRoutePath(patient?.locale ?? null, 'PATIENT', input.sessionId),
+            label: this.i18nService.t('sessions.notifications.sessionCancelledDetailsCta', patient?.locale ?? 'en'),
+            semanticType: 'OPEN_SESSION_CANCELLATION',
+          },
+        },
       }),
       this.sendBySlug({
         recipient: practitioner,
@@ -567,6 +618,19 @@ export class OperationalNotificationService {
           practitioner?.userId ?? null,
         ),
         targetRole: 'PRACTITIONER',
+        payload: {
+          sessionId: input.sessionId,
+          startsAtUtc: input.scheduledStartAt?.toISOString() ?? null,
+          timezoneSnapshot: practitioner?.timezone ?? 'UTC',
+          recipientRole: 'PRACTITIONER',
+          actionType: 'CANCELLATION_DETAILS',
+          action: {
+            type: 'INTERNAL_LINK',
+            href: this.buildSessionRoutePath(practitioner?.locale ?? null, 'PRACTITIONER', input.sessionId),
+            label: this.i18nService.t('sessions.notifications.sessionCancelledDetailsCta', practitioner?.locale ?? 'en'),
+            semanticType: 'OPEN_SESSION_CANCELLATION',
+          },
+        },
       }),
     ]);
 
@@ -591,6 +655,7 @@ export class OperationalNotificationService {
       displayName: null,
       locale: input.locale,
       email: null,
+      timezone: null,
     };
 
     await this.queueBySlug({
@@ -634,38 +699,74 @@ export class OperationalNotificationService {
       this.resolvePractitionerRecipient(input.practitionerProfileId),
     ]);
 
-    await Promise.all([
-      this.scheduleSessionReminderForRecipient({
-        recipient: patient,
-        role: 'PATIENT',
-        sessionId: input.sessionId,
-        scheduledStartAt: input.scheduledStartAt,
-        offsetMinutes: 60,
-      }),
-      this.scheduleSessionReminderForRecipient({
-        recipient: patient,
-        role: 'PATIENT',
-        sessionId: input.sessionId,
-        scheduledStartAt: input.scheduledStartAt,
-        offsetMinutes: 15,
-      }),
-      this.scheduleSessionReminderForRecipient({
-        recipient: practitioner,
-        role: 'PRACTITIONER',
-        sessionId: input.sessionId,
-        scheduledStartAt: input.scheduledStartAt,
-        offsetMinutes: 60,
-      }),
-      this.scheduleSessionReminderForRecipient({
-        recipient: practitioner,
-        role: 'PRACTITIONER',
-        sessionId: input.sessionId,
-        scheduledStartAt: input.scheduledStartAt,
-        offsetMinutes: 15,
-      }),
-    ]);
+    const now = new Date();
+    const scheduleRevision = input.scheduleRevision ?? 1;
+    const policy = this.sessionSchedulePolicyService.withScheduleRevision(
+      input.schedulePolicySnapshot
+        ? (this.sessionSchedulePolicyService.parseSnapshot(
+            input.schedulePolicySnapshot,
+          ) ?? (await this.sessionSchedulePolicyService.resolve()))
+        : await this.sessionSchedulePolicyService.resolve(),
+      scheduleRevision,
+    );
+    const candidates: SessionReminderQueueCreateInput[] = [];
+    const recipients: Array<{
+      recipient: Recipient | null;
+      role: SessionReminderRecipientRole;
+    }> = [
+      { recipient: patient, role: 'PATIENT' },
+      { recipient: practitioner, role: 'PRACTITIONER' },
+    ];
+    const start = input.scheduledStartAt;
+    const schedule = this.sessionSchedulePolicyService.buildReminderPlan({
+      policy,
+      scheduledStartAt: start,
+    });
 
-    await this.cancelSessionReminders({ sessionId: input.sessionId });
+    for (const { recipient, role } of recipients) {
+      if (!recipient) continue;
+      for (const item of schedule) {
+        // A plan is created from exact UTC instants. Already elapsed stages
+        // are intentionally not inserted retroactively.
+        if (item.dueAt.getTime() < now.getTime()) continue;
+        const slug = this.resolveSessionReminderSlug(item.type);
+        candidates.push({
+          sessionId: input.sessionId,
+          recipientUserId: recipient.userId,
+          recipientRole: role as UserRoleType,
+          reminderType: item.type,
+          scheduleRevision,
+          offsetMinutesSnapshot: item.offsetMinutes,
+          dueAt: item.dueAt,
+          recipientTimezoneSnapshot: recipient.timezone ?? 'UTC',
+          recipientLocaleSnapshot: recipient.locale,
+          idempotencyKey: `${slug}:${input.sessionId}:${recipient.userId}:r${scheduleRevision}`,
+        });
+      }
+    }
+    const replacePlan = this.sessionReminderQueueRepository.replaceSessionPlan;
+    if (typeof replacePlan === 'function') {
+      await replacePlan.call(this.sessionReminderQueueRepository, {
+        sessionId: input.sessionId,
+        reminders: candidates,
+        cancelledAt: now,
+        schedulePolicySnapshot: policy as unknown as Prisma.InputJsonValue,
+        joinOpenAt: new Date(
+          start.getTime() - policy.join.joinEarlyMinutes * 60_000,
+        ),
+        joinCloseAt: input.scheduledEndAt
+          ? new Date(
+              input.scheduledEndAt.getTime() +
+                policy.join.joinAfterEndGraceMinutes * 60_000,
+            )
+          : null,
+      });
+    } else {
+      // Compatibility fallback for older test doubles/rolling deployments.
+      // The real repository always takes the atomic path above.
+      await this.cancelSessionReminders({ sessionId: input.sessionId });
+      await this.sessionReminderQueueRepository.scheduleMany(candidates);
+    }
   }
 
   async cancelSessionReminders(input: {
@@ -708,6 +809,36 @@ export class OperationalNotificationService {
       };
     }
 
+    if (reminder.scheduleRevision !== session.scheduleRevision) {
+      return {
+        delivered: false,
+        skipReason: 'SESSION_SCHEDULE_REVISION_STALE',
+      };
+    }
+
+    const policy = this.sessionSchedulePolicyService.parseSnapshot(
+      session.schedulePolicySnapshotJson,
+    );
+    if (!policy || policy.scheduleRevision !== session.scheduleRevision) {
+      return {
+        delivered: false,
+        skipReason: 'SESSION_SCHEDULE_POLICY_SNAPSHOT_MISSING',
+      };
+    }
+
+    if (
+      reminder.reminderType === SessionReminderType.STARTING_NOW ||
+      reminder.reminderType === SessionReminderType.LATE_JOIN
+    ) {
+      const joined = await this.sessionReminderQueueRepository.hasParticipantJoined({
+        sessionId: reminder.sessionId,
+        recipientUserId: reminder.recipientUserId,
+      });
+      if (joined) {
+        return { delivered: false, skipReason: 'PARTICIPANT_ALREADY_JOINED' };
+      }
+    }
+
     const recipientProfileId =
       reminder.recipientRole === 'PATIENT'
         ? session.patient?.id ?? null
@@ -741,6 +872,15 @@ export class OperationalNotificationService {
       reminder.reminderType,
       reminder.recipientRole as SessionReminderRecipientRole,
     );
+    const routePath = this.buildSessionRoutePath(
+      recipient.locale,
+      reminder.recipientRole as SessionReminderRecipientRole,
+      reminder.sessionId,
+    );
+    const ctaLabel = this.i18nService.t(
+      this.resolveSessionReminderCtaKey(reminder.reminderType),
+      recipient.locale,
+    );
 
     await this.queueBySlug({
       recipient,
@@ -751,24 +891,48 @@ export class OperationalNotificationService {
       relatedEntityId: reminder.sessionId,
       category: NotificationCategory.SESSION,
       scheduledFor: reminder.dueAt,
-      routePath: this.buildSessionRoutePath(
-        recipient.locale,
-        reminder.recipientRole as SessionReminderRecipientRole,
-        reminder.sessionId,
-      ),
+      params: {
+        offsetMinutes: this.resolveReminderOffsetMinutes(reminder),
+      },
+      routePath,
       idempotencyKey: reminder.idempotencyKey,
       targetRole: reminder.recipientRole as SessionReminderRecipientRole,
+      channels: {
+        inApp: policy.reminder.inAppRemindersEnabled,
+        email: policy.reminder.emailRemindersEnabled,
+      },
       payload: {
-        routePath: this.buildSessionRoutePath(
-          recipient.locale,
-          reminder.recipientRole as SessionReminderRecipientRole,
-          reminder.sessionId,
-        ),
-        reminderOffsetMinutes:
-          reminder.reminderType === SessionReminderType.REMINDER_60 ? 60 : 15,
+        sessionId: reminder.sessionId,
+        routePath,
+        ctaLabel,
+        // The existing notification convention uses an internal relative href.
+        // It is intentionally not a provider URL or participant credential.
+        ...(routePath
+          ? {
+              action: {
+                type: 'INTERNAL_LINK',
+                href: routePath,
+                label: ctaLabel,
+                semanticType: 'OPEN_SESSION_JOIN',
+              },
+            }
+          : {}),
+        reminderOffsetMinutes: this.resolveReminderOffsetMinutes(reminder),
         recipientRole: reminder.recipientRole,
         targetRole: reminder.recipientRole,
         reminderType: reminder.reminderType,
+        actionType:
+          reminder.reminderType === SessionReminderType.STARTING_NOW
+            ? 'JOIN_NOW'
+            : reminder.reminderType === SessionReminderType.LATE_JOIN
+              ? 'LATE_JOIN'
+              : reminder.reminderType === SessionReminderType.REMINDER_15
+                ? 'JOIN_SESSION'
+                : 'DETAILS',
+        scheduleRevision: reminder.scheduleRevision,
+        startsAtUtc: session.scheduledStartAt.toISOString(),
+        timezoneSnapshot:
+          reminder.recipientTimezoneSnapshot ?? recipient.timezone ?? 'UTC',
       },
     });
 
@@ -894,6 +1058,7 @@ export class OperationalNotificationService {
           displayName: record.user.displayName,
           locale: this.resolveLocale(record.user.defaultLocale),
           email: email?.isVerified ? email.email : null,
+          timezone: record.user.timezone,
         }
       : null;
   }
@@ -911,6 +1076,7 @@ export class OperationalNotificationService {
           displayName: record.user.displayName,
           locale: this.resolveLocale(record.user.defaultLocale),
           email: email?.isVerified ? email.email : null,
+          timezone: record.user.timezone,
         }
       : null;
   }
@@ -926,6 +1092,7 @@ export class OperationalNotificationService {
           displayName: record.displayName,
           locale: this.resolveLocale(record.defaultLocale),
           email: email?.isVerified ? email.email : null,
+          timezone: record.timezone,
         }
       : null;
   }
@@ -961,7 +1128,7 @@ export class OperationalNotificationService {
       return null;
     }
 
-    return `/${locale}/${role.toLowerCase()}/sessions/${sessionId}`;
+    return `/${locale}/${role.toLowerCase()}/sessions/${sessionId}/join`;
   }
 
   private buildInstantBookingRoutePath(
@@ -1059,9 +1226,35 @@ export class OperationalNotificationService {
   private resolveSessionReminderSlug(
     reminderType: SessionReminderType,
   ): string {
-    return reminderType === SessionReminderType.REMINDER_60
-      ? 'sessions.session-reminder-60'
-      : 'sessions.session-reminder-15';
+    switch (reminderType) {
+      case SessionReminderType.REMINDER_60:
+        return 'sessions.session-reminder-60';
+      case SessionReminderType.REMINDER_15:
+        return 'sessions.session-reminder-15';
+      case SessionReminderType.PRE_START:
+        return 'sessions.session-reminder-before-start';
+      case SessionReminderType.STARTING_NOW:
+        return 'sessions.session-starting-now';
+      case SessionReminderType.LATE_JOIN:
+        return 'sessions.session-late-join';
+    }
+  }
+
+  private resolveSessionReminderCtaKey(
+    type: SessionReminderType,
+  ): string {
+    switch (type) {
+      case SessionReminderType.REMINDER_60:
+      case SessionReminderType.PRE_START:
+        return 'sessions.notifications.sessionReminderViewDetailsCta';
+      case SessionReminderType.STARTING_NOW:
+        return 'sessions.notifications.sessionStartingNowCta';
+      case SessionReminderType.LATE_JOIN:
+        return 'sessions.notifications.sessionLateJoinCta';
+      case SessionReminderType.REMINDER_15:
+      default:
+        return 'sessions.notifications.sessionReminderJoinCta';
+    }
   }
 
   private resolveSessionReminderTitleKey(
@@ -1074,9 +1267,24 @@ export class OperationalNotificationService {
         : 'sessions.notifications.sessionReminder60PractitionerTitle';
     }
 
+    if (reminderType === SessionReminderType.REMINDER_15) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionReminder15Title'
+        : 'sessions.notifications.sessionReminder15PractitionerTitle';
+    }
+    if (reminderType === SessionReminderType.PRE_START) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionReminderBeforeStartTitle'
+        : 'sessions.notifications.sessionReminderBeforeStartPractitionerTitle';
+    }
+    if (reminderType === SessionReminderType.STARTING_NOW) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionStartingNowTitle'
+        : 'sessions.notifications.sessionStartingNowPractitionerTitle';
+    }
     return role === 'PATIENT'
-      ? 'sessions.notifications.sessionReminder15Title'
-      : 'sessions.notifications.sessionReminder15PractitionerTitle';
+      ? 'sessions.notifications.sessionLateJoinTitle'
+      : 'sessions.notifications.sessionLateJoinPractitionerTitle';
   }
 
   private resolveSessionReminderBodyKey(
@@ -1089,9 +1297,28 @@ export class OperationalNotificationService {
         : 'sessions.notifications.sessionReminder60PractitionerBody';
     }
 
+    if (reminderType === SessionReminderType.REMINDER_15) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionReminder15Body'
+        : 'sessions.notifications.sessionReminder15PractitionerBody';
+    }
+    if (reminderType === SessionReminderType.PRE_START) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionReminderBeforeStartBody'
+        : 'sessions.notifications.sessionReminderBeforeStartPractitionerBody';
+    }
+    if (reminderType === SessionReminderType.STARTING_NOW) {
+      return role === 'PATIENT'
+        ? 'sessions.notifications.sessionStartingNowBody'
+        : 'sessions.notifications.sessionStartingNowPractitionerBody';
+    }
     return role === 'PATIENT'
-      ? 'sessions.notifications.sessionReminder15Body'
-      : 'sessions.notifications.sessionReminder15PractitionerBody';
+      ? 'sessions.notifications.sessionLateJoinBody'
+      : 'sessions.notifications.sessionLateJoinPractitionerBody';
+  }
+
+  private resolveReminderOffsetMinutes(reminder: SessionReminderQueueItem): number {
+    return reminder.offsetMinutesSnapshot ?? 0;
   }
 
   private buildMessageNotificationIdempotencyKey(
@@ -1125,6 +1352,10 @@ export class OperationalNotificationService {
     routePath?: string | null;
     idempotencyKey?: string | null;
     targetRole?: SessionReminderRecipientRole | null;
+    channels?: {
+      inApp?: boolean;
+      email?: boolean;
+    };
     payload?: Record<string, unknown> | null;
     /** Optional push-specific body key to use instead of bodyKey when rendering push notification body.
      *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps) that should not appear on lock screen.
@@ -1160,7 +1391,7 @@ export class OperationalNotificationService {
         ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
         : body;
 
-      if (notificationType.supportsInApp) {
+      if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {
         await this.queueInApp({
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
@@ -1185,7 +1416,11 @@ export class OperationalNotificationService {
         });
       }
 
-      if (notificationType.supportsEmail && input.recipient.email) {
+      if (
+        notificationType.supportsEmail &&
+        (input.channels?.email ?? true) &&
+        input.recipient.email
+      ) {
         await this.queueEmail({
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
@@ -1494,58 +1729,11 @@ export class OperationalNotificationService {
     });
   }
 
-  private async scheduleSessionReminderForRecipient(input: {
-    recipient: Recipient | null;
-    role: SessionReminderRecipientRole;
-    sessionId: string;
-    scheduledStartAt: Date;
-    offsetMinutes: 60 | 15;
-  }): Promise<void> {
-    if (!input.recipient) {
-      return;
-    }
-
-    const dueAt = new Date(
-      input.scheduledStartAt.getTime() - input.offsetMinutes * 60_000,
-    );
-    const now = new Date();
-    if (dueAt.getTime() < now.getTime()) {
-      return;
-    }
-
-    const slug =
-      input.offsetMinutes === 60
-        ? 'sessions.session-reminder-60'
-        : 'sessions.session-reminder-15';
-    const idempotencyKey = this.buildSessionNotificationIdempotencyKey(
-      slug,
-      input.sessionId,
-      input.recipient.userId,
-    );
-
-    if (!idempotencyKey) {
-      return;
-    }
-
-    await this.sessionReminderQueueRepository.scheduleMany([
-      {
-        sessionId: input.sessionId,
-        recipientUserId: input.recipient.userId,
-        recipientRole: input.role as UserRoleType,
-        reminderType:
-          input.offsetMinutes === 60
-            ? SessionReminderType.REMINDER_60
-            : SessionReminderType.REMINDER_15,
-        dueAt,
-        idempotencyKey,
-      },
-    ]);
-  }
-
   private isDispatchableSessionStatus(status: SessionStatus): boolean {
     return (
       status === SessionStatus.UPCOMING ||
-      status === SessionStatus.READY_TO_JOIN
+      status === SessionStatus.READY_TO_JOIN ||
+      status === SessionStatus.IN_PROGRESS
     );
   }
 
@@ -1562,6 +1750,10 @@ export class OperationalNotificationService {
     routePath?: string | null;
     idempotencyKey?: string | null;
     targetRole?: SessionReminderRecipientRole | null;
+    channels?: {
+      inApp?: boolean;
+      email?: boolean;
+    };
     payload?: Record<string, unknown> | null;
     /** Optional push-specific body key to use instead of bodyKey for push notifications.
      *  Use when the default body contains PHI (e.g. {{sessionAt}} timestamps).
@@ -1597,7 +1789,7 @@ export class OperationalNotificationService {
         ? this.i18nService.t(input.pushBodyKey, input.recipient.locale, input.params)
         : body;
 
-      if (notificationType.supportsInApp) {
+      if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {
         const inAppPref = await this.repository.findPreference({
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
@@ -1638,7 +1830,11 @@ export class OperationalNotificationService {
         });
       }
 
-      if (notificationType.supportsEmail && input.recipient.email) {
+      if (
+        notificationType.supportsEmail &&
+        (input.channels?.email ?? true) &&
+        input.recipient.email
+      ) {
         const emailPref = await this.repository.findPreference({
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,

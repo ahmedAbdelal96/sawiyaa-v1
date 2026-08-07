@@ -3,6 +3,10 @@ import { ConfigType } from '@nestjs/config';
 import { SessionAttendanceEventType, SessionProvider } from '@prisma/client';
 import { createHmac, timingSafeEqual } from 'crypto';
 import videoConfig from '@config/video.config';
+import {
+  DAILY_ATTENDANCE_MAX_FUTURE_SKEW_SECONDS,
+  DAILY_ATTENDANCE_MAX_REPLAY_AGE_SECONDS,
+} from '../config/daily-attendance-trust.config';
 import { DailyAttendanceWebhookParseResult } from '../types/session-attendance.types';
 
 type DailyWebhookPayload = Record<string, unknown>;
@@ -20,9 +24,18 @@ export class ParseDailyAttendanceWebhookService {
   }): DailyAttendanceWebhookParseResult {
     const payload = this.parsePayload(input.rawBody);
     const signatureHeader = this.readHeader(input.headers, 'x-daily-signature');
+    const webhookSignatureHeader = this.readHeader(
+      input.headers,
+      'x-webhook-signature',
+    );
+    const webhookTimestampHeader = this.readHeader(
+      input.headers,
+      'x-webhook-timestamp',
+    );
     const source = this.resolveSource({
       rawBody: input.rawBody,
-      signatureHeader,
+      signatureHeader: webhookSignatureHeader ?? signatureHeader,
+      timestampHeader: webhookTimestampHeader,
     });
 
     const providerEventType = this.readProviderEventType(payload);
@@ -41,6 +54,7 @@ export class ParseDailyAttendanceWebhookService {
       participantDisplayName: participant.participantDisplayName,
       attendanceEventType: this.mapAttendanceEventType(providerEventType),
       occurredAt,
+      receivedAt: new Date(),
       source,
       payload,
     };
@@ -60,6 +74,7 @@ export class ParseDailyAttendanceWebhookService {
   private resolveSource(input: {
     rawBody: Buffer;
     signatureHeader: string | null;
+    timestampHeader?: string | null;
   }): 'SIGNED' | 'UNSIGNED' {
     const webhookSecret = this.videoCfg.daily.webhookSecret?.trim();
 
@@ -76,10 +91,19 @@ export class ParseDailyAttendanceWebhookService {
         });
       }
 
-      const candidate = this.extractSignatureCandidate(signature);
-      const expected = createHmac('sha256', webhookSecret)
-        .update(input.rawBody)
-        .digest('hex');
+      const isDailyWebhookSignature = Boolean(input.timestampHeader?.trim());
+      const candidate = isDailyWebhookSignature
+        ? signature
+        : this.extractSignatureCandidate(signature);
+      const expected = isDailyWebhookSignature
+        ? createHmac('sha256', Buffer.from(webhookSecret, 'base64'))
+            .update(
+              `${input.timestampHeader!.trim()}.${input.rawBody.toString('utf8')}`,
+            )
+            .digest('base64')
+        : createHmac('sha256', webhookSecret)
+            .update(input.rawBody)
+            .digest('hex');
 
       const candidateBuffer = Buffer.from(candidate, 'utf8');
       const expectedBuffer = Buffer.from(expected, 'utf8');
@@ -93,6 +117,10 @@ export class ParseDailyAttendanceWebhookService {
           error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_SIGNATURE',
           messageParams: { reason: 'INVALID_SIGNATURE' },
         });
+      }
+
+      if (isDailyWebhookSignature) {
+        this.assertWebhookTimestampFresh(input.timestampHeader!);
       }
 
       return 'SIGNED';
@@ -116,6 +144,30 @@ export class ParseDailyAttendanceWebhookService {
     return signature.toLowerCase();
   }
 
+  private assertWebhookTimestampFresh(timestampHeader: string): void {
+    const timestampSeconds = Number(timestampHeader.trim());
+    if (!Number.isFinite(timestampSeconds)) {
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
+        error: 'SESSION_ATTENDANCE_INVALID_WEBHOOK_TIMESTAMP',
+      });
+    }
+
+    const ageSeconds = Date.now() / 1000 - timestampSeconds;
+    if (ageSeconds < -DAILY_ATTENDANCE_MAX_FUTURE_SKEW_SECONDS) {
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
+        error: 'SESSION_ATTENDANCE_WEBHOOK_TIMESTAMP_IN_FUTURE',
+      });
+    }
+    if (ageSeconds > DAILY_ATTENDANCE_MAX_REPLAY_AGE_SECONDS) {
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.invalidAttendanceWebhookSignature',
+        error: 'SESSION_ATTENDANCE_WEBHOOK_TIMESTAMP_STALE',
+      });
+    }
+  }
+
   private readProviderEventType(payload: DailyWebhookPayload): string {
     const eventTypeCandidates = [
       this.readString(payload.event),
@@ -124,6 +176,9 @@ export class ParseDailyAttendanceWebhookService {
       this.readString(payload.name),
       this.readString(
         (payload.data as Record<string, unknown> | undefined)?.event,
+      ),
+      this.readString(
+        (payload.payload as Record<string, unknown> | undefined)?.type,
       ),
     ];
 
@@ -146,6 +201,9 @@ export class ParseDailyAttendanceWebhookService {
       this.readString(payload.id) ??
       this.readString(payload.event_id) ??
       this.readString(payload.webhook_id) ??
+      this.readString(
+        (payload.payload as Record<string, unknown> | undefined)?.id,
+      ) ??
       null
     );
   }
@@ -158,12 +216,16 @@ export class ParseDailyAttendanceWebhookService {
     const data = (payload.data as Record<string, unknown> | undefined) ?? {};
     const roomFromData =
       (data.room as Record<string, unknown> | undefined) ?? {};
+    const providerPayload =
+      (payload.payload as Record<string, unknown> | undefined) ?? {};
 
     const roomName =
       this.readString(room.name) ??
+      this.readString(payload.room) ??
       this.readString(payload.room_name) ??
       this.readString(data.room_name) ??
       this.readString(roomFromData.name) ??
+      this.readString(providerPayload.room) ??
       this.readRoomNameFromUrl(
         this.readString(room.url) ??
           this.readString(payload.room_url) ??
@@ -190,26 +252,31 @@ export class ParseDailyAttendanceWebhookService {
     participantDisplayName: string | null;
   } {
     const data = (payload.data as Record<string, unknown> | undefined) ?? {};
+    const providerPayload =
+      (payload.payload as Record<string, unknown> | undefined) ?? {};
     const participant =
       (payload.participant as Record<string, unknown> | undefined) ??
       (data.participant as Record<string, unknown> | undefined) ??
-      {};
+      providerPayload;
 
     return {
       participantRef:
         this.readString(participant.id) ??
         this.readString(participant.session_id) ??
         this.readString(participant.peer_id) ??
+        this.readString(participant.participant_id) ??
         null,
       participantUserId:
         this.readString(participant.user_id) ??
         this.readString(participant.userId) ??
         this.readString(data.user_id) ??
+        this.readString(providerPayload.user_id) ??
         null,
       participantDisplayName:
         this.readString(participant.user_name) ??
         this.readString(participant.userName) ??
         this.readString(participant.name) ??
+        this.readString(providerPayload.user_name) ??
         null,
     };
   }
@@ -218,23 +285,37 @@ export class ParseDailyAttendanceWebhookService {
     const data = (payload.data as Record<string, unknown> | undefined) ?? {};
     const participantData =
       (data.participant as Record<string, unknown> | undefined) ?? {};
+    const providerPayload =
+      (payload.payload as Record<string, unknown> | undefined) ?? {};
 
     const rawCandidate =
-      this.readString(payload.timestamp) ??
-      this.readString(payload.event_ts) ??
-      this.readString(payload.created_at) ??
-      this.readString(data.timestamp) ??
-      this.readString(data.event_ts) ??
-      this.readString(participantData.joined_at) ??
-      this.readString(participantData.left_at);
+      this.readTimestampCandidate(payload.timestamp) ??
+      this.readTimestampCandidate(payload.event_ts) ??
+      this.readTimestampCandidate(payload.created_at) ??
+      this.readTimestampCandidate(data.timestamp) ??
+      this.readTimestampCandidate(data.event_ts) ??
+      this.readTimestampCandidate(providerPayload.event_ts) ??
+      this.readTimestampCandidate(participantData.joined_at) ??
+      this.readTimestampCandidate(participantData.left_at) ??
+      this.readTimestampCandidate(providerPayload.joined_at) ??
+      this.readTimestampCandidate(providerPayload.left_at);
 
     if (!rawCandidate) {
-      return new Date();
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.invalidAttendanceWebhookPayload',
+        error: 'SESSION_ATTENDANCE_TIMESTAMP_REQUIRED',
+      });
     }
 
-    const parsed = new Date(rawCandidate);
+    const numeric = Number(rawCandidate);
+    const parsed = Number.isFinite(numeric)
+      ? new Date(numeric < 1_000_000_000_000 ? numeric * 1000 : numeric)
+      : new Date(rawCandidate);
     if (Number.isNaN(parsed.getTime())) {
-      return new Date();
+      throw new BadRequestException({
+        messageKey: 'sessions.errors.invalidAttendanceWebhookPayload',
+        error: 'SESSION_ATTENDANCE_INVALID_TIMESTAMP',
+      });
     }
 
     return parsed;
@@ -303,5 +384,10 @@ export class ParseDailyAttendanceWebhookService {
 
   private readString(value: unknown): string | null {
     return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
+  private readTimestampCandidate(value: unknown): number | string | null {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    return this.readString(value);
   }
 }

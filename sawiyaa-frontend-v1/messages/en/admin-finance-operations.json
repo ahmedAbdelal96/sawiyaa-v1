@@ -39,7 +39,8 @@
       "paymentStatus": "Payment status",
       "refundStatus": "Refund status",
       "session": "Session",
-      "settlement": "Settlement",
+      "settlement": "Accounting state",
+      "accountingState": "Accounting state",
       "paidAt": "Paid at",
       "lastUpdated": "Last updated"
     }
@@ -194,6 +195,7 @@
     },
     "statuses": {
       "pendingReview": "Pending review",
+      "decisionApproved": "Decision approved",
       "approved": "Approved",
       "rejected": "Rejected",
       "excludedFromPayout": "Excluded from payout"
@@ -213,8 +215,12 @@
         "title": "Review queue"
       },
       "queue": {
-        "pending": "Pending",
-        "finalized": "Finalized"
+        "PENDING_REVIEW": "Needs accountant review",
+        "DECISION_APPROVED": "Decision approved",
+        "WALLET_CREDITED": "Added to practitioner Wallet",
+        "EXTERNAL_PAYOUT": "Transferred to practitioner",
+        "REJECTED_OR_EXCLUDED": "Rejected / excluded",
+        "ALL": "All accounting records"
       },
       "searchLabel": "Search",
       "searchPlaceholder": "Search by review ID, session code, practitioner, or patient",
@@ -364,8 +370,6 @@
         "readOnlyBadge": "Read only",
         "loadingPermissions": "Checking moderation permissions...",
         "viewOnly": "You can view this review, but only accounting admins can change its moderation decision.",
-        "stepUpHint": "Step-up protected",
-        "stepUpNote": "Sensitive moderation actions may require step-up.",
         "submit": "Save moderation decision",
         "submitting": "Saving...",
         "reviewedBy": "Reviewed by",
@@ -590,7 +594,6 @@
         "loadingPermissions": "Checking accounting permissions...",
         "readOnlyBadge": "Read only",
         "viewOnly": "You can view this recovery, but only accounting admins can collect or waive it.",
-        "stepUpHint": "Step-up protected",
         "readOnly": "This recovery has already been resolved and can no longer be changed.",
         "validation": {
           "amountInvalid": "Enter a valid amount greater than zero.",
@@ -714,7 +717,6 @@
     "invalidFilter": "One or more filters are invalid.",
     "finalAmountsRequired": "Please provide the final amounts before approving this review.",
     "reasonRequired": "Please add a reason for this moderation action.",
-    "stepUpRequired": "Additional verification is required to continue.",
     "forbidden": "You do not have access to this finance operations scope.",
     "notFound": "The requested operation event was not found.",
     "generic": "Could not load finance operation data right now."

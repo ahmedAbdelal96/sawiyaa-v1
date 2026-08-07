@@ -113,7 +113,7 @@ export class ListPublicPractitionersUseCase {
     const rowsWithPublicAvatars = await Promise.all(
       rows.map(async (profile) => {
         const storedAvatar = this.avatarStorage
-          ? await this.avatarStorage.resolveAvatarMetadata(profile.user.id)
+          ? await this.avatarStorage.resolveAvatarMetadata(profile.id)
           : null;
         return {
           profile,

@@ -41,6 +41,7 @@ import {
   useUpdatePlatformSetting,
 } from "../hooks/use-platform-settings";
 import type { PlatformSetting } from "../types/platform-settings.types";
+import { EditorControl, SessionReminderScheduleEditor, formatMinutesToHuman } from "./editors";
 import { cn } from "@/lib/utils";
 
 // Category Icons Mapper
@@ -56,6 +57,7 @@ function getCategoryIcon(category: string) {
     cat.includes("STRIPE")
   )
     return CreditCard;
+  if (cat === "SESSION_SCHEDULE") return Clock;
   return Layers;
 }
 
@@ -77,6 +79,7 @@ export default function AdminPlatformSettingsScreen() {
   const [reason, setReason] = useState("");
   const [feedback, setFeedback] = useState<"saved" | "reset" | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [isEditorValid, setIsEditorValid] = useState(true);
 
   // Queries & Mutations
   const query = usePlatformSettings();
@@ -108,7 +111,11 @@ export default function AdminPlatformSettingsScreen() {
     }
 
     if (activeCategory) {
-      result = result.filter((s) => s.category === activeCategory);
+      if (activeCategory === SESSION_SCHEDULE_GROUP) {
+        result = result.filter((s) => s.domain === "sessions");
+      } else {
+        result = result.filter((s) => s.category === activeCategory && s.domain !== "sessions");
+      }
     }
 
     if (stateFilter) {
@@ -135,15 +142,27 @@ export default function AdminPlatformSettingsScreen() {
     return { total, overridden, readonly, catsCount };
   }, [rawSettings, categories]);
 
+  // Virtual group key for session-schedule settings (UI-only, not a real backend category)
+  const SESSION_SCHEDULE_GROUP = "SESSION_SCHEDULE";
+
   // Grouped Settings by Category (from filtered settings)
+  // Session-domain settings are extracted into a dedicated SESSION_SCHEDULE group shown first
   const grouped = useMemo(() => {
-    return filteredSettings.reduce<Record<string, PlatformSetting[]>>(
+    const map = filteredSettings.reduce<Record<string, PlatformSetting[]>>(
       (acc, item) => {
-        (acc[item.category] ??= []).push(item);
+        const groupKey =
+          item.domain === "sessions"
+            ? SESSION_SCHEDULE_GROUP
+            : item.category;
+        (acc[groupKey] ??= []).push(item);
         return acc;
       },
       {},
     );
+    // Place SESSION_SCHEDULE group first if it exists
+    const {[SESSION_SCHEDULE_GROUP]: sessionGroup, ...rest} = map;
+    if (sessionGroup) return {[SESSION_SCHEDULE_GROUP]: sessionGroup, ...rest};
+    return rest;
   }, [filteredSettings]);
 
   // Copy Key Helper
@@ -159,6 +178,7 @@ export default function AdminPlatformSettingsScreen() {
     setEditValue(setting.value);
     setReason("");
     setFeedback(null);
+    setIsEditorValid(true);
   }
 
   // Save Modified Setting
@@ -209,6 +229,9 @@ export default function AdminPlatformSettingsScreen() {
 
   // Translate Category Label Safely
   function getCategoryLabel(catKey: string) {
+    if (catKey === SESSION_SCHEDULE_GROUP) {
+      return isAr ? "مواعيد وتذكيرات الجلسات" : "Session Schedule & Reminders";
+    }
     try {
       return t(`categories.${catKey}` as any);
     } catch {
@@ -328,10 +351,40 @@ export default function AdminPlatformSettingsScreen() {
             </span>
           </button>
 
+          {/* Session Schedule & Reminders virtual category pill */}
+          {(() => {
+            const sessionCount = rawSettings.filter((s) => s.domain === "sessions").length;
+            if (sessionCount === 0) return null;
+            const isActive = activeCategory === SESSION_SCHEDULE_GROUP;
+            return (
+              <button
+                key={SESSION_SCHEDULE_GROUP}
+                type="button"
+                onClick={() => setActiveCategory(isActive ? "" : SESSION_SCHEDULE_GROUP)}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition-all",
+                  isActive
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-indigo-600/20"
+                    : "text-text-secondary border-indigo-200/60 bg-indigo-50/60 hover:bg-indigo-50 dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:text-indigo-300 dark:hover:bg-indigo-950/30",
+                )}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>{isAr ? "مواعيد الجلسات" : "Session Schedule"}</span>
+                <span className={cn(
+                  "py-0.2 ms-0.5 rounded-full px-1.5 text-[10px] font-extrabold",
+                  isActive ? "bg-white/20 text-white" : "text-indigo-600 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300",
+                )}
+                >
+                  {sessionCount}
+                </span>
+              </button>
+            );
+          })()}
+
           {categories.map((catKey) => {
             const Icon = getCategoryIcon(catKey);
             const count = rawSettings.filter(
-              (s) => s.category === catKey,
+              (s) => s.category === catKey && s.domain !== "sessions",
             ).length;
             const isActive = activeCategory === catKey;
             return (
@@ -605,7 +658,26 @@ export default function AdminPlatformSettingsScreen() {
           aria-modal="true"
         >
           <div className="animate-fade-in relative my-8 w-full max-w-lg space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xl md:p-6 dark:border-white/10 dark:bg-slate-900">
-            {/* Modal Header */}
+            {selectedSetting.key === "SESSION_REMINDER_OFFSETS_MINUTES" ? (
+              <SessionReminderScheduleEditor
+                setting={selectedSetting}
+                value={editValue}
+                onChange={setEditValue}
+                onValidationChange={setIsEditorValid}
+                reason={reason}
+                onReasonChange={setReason}
+                onSave={handleSave}
+                onCancel={() => setSelectedSetting(null)}
+                onReset={handleResetSetting}
+                isPending={updateMutation.isPending}
+                isResetPending={resetMutation.isPending}
+                isError={updateMutation.isError || resetMutation.isError}
+                onReloadLatest={handleReloadLatest}
+                isFetching={query.isFetching}
+              />
+            ) : (
+              <div className="space-y-4 font-sans">
+                {/* Modal Header */}
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 dark:border-white/10">
               <div>
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 dark:text-teal-400">
@@ -638,6 +710,7 @@ export default function AdminPlatformSettingsScreen() {
                   setting={selectedSetting}
                   value={editValue}
                   onChange={setEditValue}
+                  onValidationChange={setIsEditorValid}
                 />
               </div>
 
@@ -710,6 +783,7 @@ export default function AdminPlatformSettingsScreen() {
                   type="button"
                   disabled={
                     !reason.trim() ||
+                    !isEditorValid ||
                     updateMutation.isPending ||
                     resetMutation.isPending
                   }
@@ -731,8 +805,10 @@ export default function AdminPlatformSettingsScreen() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+    </div>
+  )}
 
       {/* History Modal */}
       {historyKey && (
@@ -860,7 +936,26 @@ export default function AdminPlatformSettingsScreen() {
 
 // Subcomponent: Formatted Value Preview inside cards
 function ValueFormattedPreview({ setting }: { setting: PlatformSetting }) {
+  const locale = useLocale();
+  const isAr = locale.startsWith("ar");
   const value = setting.value;
+
+  if (setting.key === "SESSION_REMINDER_OFFSETS_MINUTES" || (setting.domain === "sessions" && Array.isArray(value))) {
+    const list = Array.isArray(value) ? (value as number[]).map((v) => Number(v)).filter((v) => !isNaN(v)) : [];
+    if (list.length === 0) {
+      return <span className="text-text-muted text-[10px] italic">{isAr ? "لا توجد تذكيرات" : "No reminders"}</span>;
+    }
+    const formattedList = list.slice().sort((a, b) => b - a).map((m) => formatMinutesToHuman(m, isAr));
+    return (
+      <div className="flex flex-wrap gap-1.5 pt-0.5">
+        {formattedList.map((item, idx) => (
+          <span key={idx} className="rounded-md border border-indigo-200/80 bg-indigo-50/80 px-2 py-0.5 text-[10px] font-bold text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/40 dark:text-indigo-200">
+            {item}
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   if (setting.valueType === "BOOLEAN") {
     const isTrue = Boolean(value);
@@ -921,155 +1016,3 @@ function ValueFormattedPreview({ setting }: { setting: PlatformSetting }) {
   );
 }
 
-// Subcomponent: Custom Dynamic Control by Value Type for Edit Modal
-function EditorControl({
-  setting,
-  value,
-  onChange,
-}: {
-  setting: PlatformSetting;
-  value: unknown;
-  onChange: (val: unknown) => void;
-}) {
-  const t = useTranslations("admin-platform-settings");
-  const [arrayInputText, setArrayInputText] = useState("");
-
-  if (setting.valueType === "BOOLEAN") {
-    const isChecked = Boolean(value);
-    return (
-      <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/70 bg-slate-50 p-3 dark:border-white/5 dark:bg-slate-950/50">
-        <button
-          type="button"
-          onClick={() => onChange(!isChecked)}
-          className={cn(
-            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-            isChecked ? "bg-teal-600" : "bg-slate-300 dark:bg-slate-700",
-          )}
-        >
-          <span
-            className={cn(
-              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out rtl:translate-x-0",
-              isChecked ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0",
-            )}
-          />
-        </button>
-        <span className="text-text-primary text-xs font-bold dark:text-white">
-          {isChecked ? t("editor.booleanEnabled") : t("editor.booleanDisabled")}
-        </span>
-      </div>
-    );
-  }
-
-  if (setting.valueType === "NUMBER" || setting.valueType === "INTEGER") {
-    return (
-      <div className="space-y-1">
-        <input
-          type="number"
-          min={setting.minimum}
-          max={setting.maximum}
-          step={setting.valueType === "INTEGER" ? 1 : "any"}
-          value={typeof value === "number" ? value : ""}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="text-text-primary w-full rounded-xl border border-slate-200/80 bg-slate-50 p-2.5 font-mono text-xs outline-none focus:border-teal-500 dark:border-white/10 dark:bg-slate-950/40 dark:text-white"
-        />
-        {(setting.minimum !== undefined || setting.maximum !== undefined) && (
-          <p className="text-text-muted text-[10px]">
-            Allowed range: {setting.minimum ?? "Min"} -{" "}
-            {setting.maximum ?? "Max"}
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (setting.enumOptions && setting.enumOptions.length > 0) {
-    return (
-      <select
-        aria-label={setting.label}
-        value={String(value ?? "")}
-        onChange={(e) => onChange(e.target.value)}
-        className="text-text-primary w-full rounded-xl border border-slate-200/80 bg-slate-50 p-2.5 text-xs font-medium outline-none focus:border-teal-500 dark:border-white/10 dark:bg-slate-950/40 dark:text-white"
-      >
-        {setting.enumOptions.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
-      </select>
-    );
-  }
-
-  if (setting.valueType === "STRING_ARRAY") {
-    const list = Array.isArray(value) ? (value as string[]) : [];
-
-    const handleAdd = () => {
-      if (!arrayInputText.trim()) return;
-      onChange([...list, arrayInputText.trim()]);
-      setArrayInputText("");
-    };
-
-    const handleRemove = (index: number) => {
-      onChange(list.filter((_, i) => i !== index));
-    };
-
-    return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={arrayInputText}
-            onChange={(e) => setArrayInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAdd();
-              }
-            }}
-            placeholder={t("editor.arrayAddPlaceholder")}
-            className="text-text-primary flex-1 rounded-xl border border-slate-200/80 bg-slate-50 p-2.5 text-xs outline-none focus:border-teal-500 dark:border-white/10 dark:bg-slate-950/40 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="rounded-xl bg-teal-600 p-2.5 font-bold text-white transition hover:bg-teal-700"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        <div className="flex min-h-[40px] flex-wrap gap-1.5 rounded-xl border border-slate-200/70 bg-slate-50 p-2 dark:border-white/5 dark:bg-slate-950/40">
-          {list.length === 0 ? (
-            <span className="text-text-muted text-[11px] italic">
-              [No items]
-            </span>
-          ) : (
-            list.map((item, idx) => (
-              <span
-                key={idx}
-                className="text-text-primary inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-0.5 font-mono text-xs font-bold shadow-sm dark:border-white/10 dark:bg-slate-900 dark:text-white"
-              >
-                <span>{item}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(idx)}
-                  className="text-text-muted transition hover:text-rose-600"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </span>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <input
-      type="text"
-      value={String(value ?? "")}
-      onChange={(e) => onChange(e.target.value)}
-      className="text-text-primary w-full rounded-xl border border-slate-200/80 bg-slate-50 p-2.5 font-mono text-xs outline-none focus:border-teal-500 dark:border-white/10 dark:bg-slate-950/40 dark:text-white"
-    />
-  );
-}

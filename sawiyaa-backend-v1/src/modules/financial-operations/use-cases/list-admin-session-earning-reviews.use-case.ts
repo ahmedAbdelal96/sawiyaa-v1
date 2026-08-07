@@ -7,6 +7,7 @@ import {
   SessionEarningReviewStatus,
   SessionPaymentCoverageType,
   SessionStatus,
+  PractitionerSettlementStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { FinancialOperationsPaymentRepository } from '../repositories/financial-operations-payment.repository';
@@ -23,13 +24,17 @@ import {
   SessionEarningReviewSessionRow,
   SessionEarningReviewUserRow,
 } from '../presenters/session-earning-review.presenter';
+import { SessionEarningReviewFinancialStage } from '../dto/admin-session-earning-reviews.dto';
 
 type ReviewRow = {
   id: string;
   sessionId: string;
+  earningEntitlementId: string;
   paymentId: string | null;
   packagePurchaseId: string | null;
   packageSettlementId: string | null;
+  settlementId: string | null;
+  settlement: { status: PractitionerSettlementStatus } | null;
   practitionerId: string;
   patientId: string;
   sourceType: SessionEarningReviewSourceType;
@@ -40,6 +45,12 @@ type ReviewRow = {
   suggestedPractitionerAmount: Prisma.Decimal;
   suggestedPlatformAmount: Prisma.Decimal;
   suggestedCurrencyCode: string;
+  suggestedPractitionerPercentage: Prisma.Decimal | null;
+  accountantApprovedSourceAmount: Prisma.Decimal | null;
+  accountingAdjustmentAmount: Prisma.Decimal | null;
+  accountingAdjustmentType: string | null;
+  accountingAdjustmentReason: string | null;
+  accountingNotes: string | null;
   finalPractitionerAmount: Prisma.Decimal | null;
   finalPlatformAmount: Prisma.Decimal | null;
   finalCurrencyCode: string | null;
@@ -126,6 +137,7 @@ export class ListAdminSessionEarningReviewsUseCase {
               packagePurchaseId: row.packagePurchaseId,
               packageSessionIndex: null,
               packageSessionCount: null,
+              originalSessionId: null,
             },
         payment: paymentRow
           ? this.presenter.presentPaymentSummary({
@@ -146,6 +158,7 @@ export class ListAdminSessionEarningReviewsUseCase {
               packageSettlementRow,
             )
           : null,
+        activeWalletCurrency: context.walletCurrencyMap.get(row.practitionerId) ?? null,
         reviewedBy:
           row.reviewedByUserId && context.userMap.get(row.reviewedByUserId)
             ? this.presenter.presentReviewUserSummary(
@@ -206,6 +219,32 @@ export class ListAdminSessionEarningReviewsUseCase {
       });
     }
 
+    if (query.stage && query.stage !== SessionEarningReviewFinancialStage.ALL) {
+      switch (query.stage) {
+        case SessionEarningReviewFinancialStage.PENDING_REVIEW:
+          andConditions.push({ reviewStatus: SessionEarningReviewStatus.PENDING_REVIEW });
+          break;
+        case SessionEarningReviewFinancialStage.DECISION_APPROVED:
+          andConditions.push({ reviewStatus: SessionEarningReviewStatus.DECISION_APPROVED });
+          break;
+        case SessionEarningReviewFinancialStage.WALLET_CREDITED:
+          andConditions.push({
+            reviewStatus: SessionEarningReviewStatus.APPROVED,
+            settlement: { is: { status: PractitionerSettlementStatus.CREDITED } },
+          });
+          break;
+        case SessionEarningReviewFinancialStage.EXTERNAL_PAYOUT:
+          andConditions.push({
+            reviewStatus: SessionEarningReviewStatus.APPROVED,
+            settlement: { is: { status: { in: [PractitionerSettlementStatus.PAID_OUT, PractitionerSettlementStatus.PAID] } } },
+          });
+          break;
+        case SessionEarningReviewFinancialStage.REJECTED_OR_EXCLUDED:
+          andConditions.push({ reviewStatus: { in: [SessionEarningReviewStatus.REJECTED, SessionEarningReviewStatus.EXCLUDED_FROM_PAYOUT] } });
+          break;
+      }
+    }
+
     if (query.decision !== undefined) {
       andConditions.push({ reviewDecision: query.decision });
     }
@@ -242,19 +281,27 @@ export class ListAdminSessionEarningReviewsUseCase {
     }
 
     if (query.createdFrom || query.createdTo) {
+      const createdTo = query.createdTo ? new Date(query.createdTo) : undefined;
+      if (createdTo && /^\d{4}-\d{2}-\d{2}$/.test(query.createdTo ?? '')) {
+        createdTo.setUTCHours(23, 59, 59, 999);
+      }
       andConditions.push({
         createdAt: {
           ...(query.createdFrom ? { gte: new Date(query.createdFrom) } : {}),
-          ...(query.createdTo ? { lte: new Date(query.createdTo) } : {}),
+          ...(createdTo ? { lte: createdTo } : {}),
         },
       });
     }
 
     if (query.reviewedFrom || query.reviewedTo) {
+      const reviewedTo = query.reviewedTo ? new Date(query.reviewedTo) : undefined;
+      if (reviewedTo && /^\d{4}-\d{2}-\d{2}$/.test(query.reviewedTo ?? '')) {
+        reviewedTo.setUTCHours(23, 59, 59, 999);
+      }
       andConditions.push({
         reviewedAt: {
           ...(query.reviewedFrom ? { gte: new Date(query.reviewedFrom) } : {}),
-          ...(query.reviewedTo ? { lte: new Date(query.reviewedTo) } : {}),
+          ...(reviewedTo ? { lte: reviewedTo } : {}),
         },
       });
     }
@@ -297,6 +344,7 @@ export class ListAdminSessionEarningReviewsUseCase {
       orderBy,
       filters: {
         status: query.status ?? null,
+        stage: query.stage ?? null,
         decision: query.decision ?? null,
         sourceType: query.sourceType ?? null,
         practitionerId: query.practitionerId ?? null,
@@ -359,6 +407,7 @@ export class ListAdminSessionEarningReviewsUseCase {
           .filter((value): value is string => Boolean(value)),
       ),
     );
+    const practitionerIds = Array.from(new Set(rows.map((row) => row.practitionerId)));
 
     const [sessions, payments, refundSums, packagePurchases, packageSettlements, users] =
       await Promise.all([
@@ -377,6 +426,7 @@ export class ListAdminSessionEarningReviewsUseCase {
             packagePurchaseId: true,
             packageSessionIndex: true,
             packageSessionCount: true,
+            originalSessionId: true,
             patient: {
               select: {
                 id: true,
@@ -476,6 +526,11 @@ export class ListAdminSessionEarningReviewsUseCase {
           },
         }),
       ]);
+    const wallets = await this.prisma.practitionerWallet.findMany({
+      where: { practitionerId: { in: practitionerIds }, status: 'ACTIVE' },
+      orderBy: { updatedAt: 'desc' },
+      select: { practitionerId: true, currencyCode: true },
+    });
 
     const sessionMap = new Map(
       sessions.map((session) => [
@@ -520,6 +575,8 @@ export class ListAdminSessionEarningReviewsUseCase {
     );
 
     const userMap = new Map(users.map((user) => [user.id, user as SessionEarningReviewUserRow]));
+    const walletCurrencyMap = new Map<string, string>();
+    for (const wallet of wallets) if (!walletCurrencyMap.has(wallet.practitionerId)) walletCurrencyMap.set(wallet.practitionerId, wallet.currencyCode);
 
     return {
       sessionMap,
@@ -528,6 +585,7 @@ export class ListAdminSessionEarningReviewsUseCase {
       packagePurchaseMap,
       packageSettlementMap,
       userMap,
+      walletCurrencyMap,
     };
   }
 

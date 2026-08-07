@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PresenceStatus } from '@prisma/client';
+import { Injectable, Optional } from '@nestjs/common';
+import { PresenceStatus, SecurityAuditOutcome } from '@prisma/client';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 import { UserSessionRepository } from '../repositories/user-session.repository';
@@ -15,6 +16,7 @@ export class LogoutPractitionerUseCase {
     private readonly userSessionRepository: UserSessionRepository,
     private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
     private readonly revokeAuthSessionUseCase: RevokeAuthSessionUseCase,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(sessionId: string) {
@@ -46,6 +48,16 @@ export class LogoutPractitionerUseCase {
           tx,
         );
       }
+
+      this.securityAuditService?.logAsync({
+        action: 'auth.practitioner.logout.success',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorUserId: session.userId,
+        actorRoles: session.user.roles.map((role) => role.role),
+        resourceType: 'Session',
+        resourceId: sessionId,
+        reason: 'SESSION_REVOKED',
+      });
     });
   }
 }

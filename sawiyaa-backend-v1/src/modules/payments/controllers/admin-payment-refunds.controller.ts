@@ -22,7 +22,6 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { Roles } from '@common/decorators/roles.decorator';
@@ -52,7 +51,12 @@ import { ListAdminPaymentsUseCase } from '../use-cases/list-admin-payments.use-c
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.FINANCE_STAFF, AppRole.SUPPORT_AGENT)
+@Roles(
+  AppRole.ADMIN,
+  AppRole.SUPER_ADMIN,
+  AppRole.FINANCE_STAFF,
+  AppRole.SUPPORT_AGENT,
+)
 @Controller('admin/payments')
 export class AdminPaymentRefundsController {
   constructor(
@@ -68,7 +72,8 @@ export class AdminPaymentRefundsController {
   @Permissions(PermissionKey.FINANCE_EVENTS_READ)
   @ApiOperation({
     summary: 'List incoming payments',
-    description: 'Returns one operational row per payment with summarized refund state.',
+    description:
+      'Returns one operational row per payment with summarized refund state.',
   })
   listPayments(@Query() query: ListAdminPaymentsDto) {
     return this.listAdminPaymentsUseCase.execute(query);
@@ -110,7 +115,6 @@ export class AdminPaymentRefundsController {
   }
 
   @Post(':id/refunds')
-  @RequireStepUp('finance.refund.approve')
   @Permissions(PermissionKey.REFUNDS_APPROVE)
   @ApiOperation({
     summary: 'Request a payment refund',
@@ -164,7 +168,6 @@ export class AdminPaymentRefundsController {
   }
 
   @Post(':paymentId/refunds/:refundId/retry')
-  @RequireStepUp('finance.refund.retry')
   @Permissions(PermissionKey.REFUNDS_RETRY)
   @ApiOperation({
     summary: 'Retry a failed refund',

@@ -21,6 +21,17 @@ export type AdminSummaryCardProps = {
   className?: string;
   metricKey?: string;
   semantic?: string;
+  currencyBuckets?: Array<{
+    currency: string;
+    amount: string | number;
+    count?: number;
+  }>;
+  secondaryItems?: Array<{
+    label: string;
+    value: ReactNode;
+    tone?: "default" | "positive" | "warning" | "negative";
+  }>;
+  tooltip?: string;
 };
 
 export function AdminSummaryCard({
@@ -32,6 +43,9 @@ export function AdminSummaryCard({
   className,
   metricKey,
   semantic,
+  currencyBuckets,
+  secondaryItems,
+  tooltip,
 }: AdminSummaryCardProps) {
   return (
     <AdminMetricCard
@@ -43,6 +57,9 @@ export function AdminSummaryCard({
       className={className}
       metricKey={metricKey}
       semantic={semantic}
+      currencyBuckets={currencyBuckets}
+      secondaryItems={secondaryItems}
+      tooltip={tooltip}
     />
   );
 }

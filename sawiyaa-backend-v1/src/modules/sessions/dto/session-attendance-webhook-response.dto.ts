@@ -13,13 +13,15 @@ export class SessionAttendanceWebhookDataResponseDto {
       'ATTENDANCE_EVENT_DUPLICATE',
       'ATTENDANCE_EVENT_UNSUPPORTED',
       'ATTENDANCE_EVENT_SESSION_UNMAPPABLE',
+      'WEBHOOK_VERIFICATION',
     ],
   })
   reason!:
     | 'ATTENDANCE_EVENT_STORED'
     | 'ATTENDANCE_EVENT_DUPLICATE'
     | 'ATTENDANCE_EVENT_UNSUPPORTED'
-    | 'ATTENDANCE_EVENT_SESSION_UNMAPPABLE';
+    | 'ATTENDANCE_EVENT_SESSION_UNMAPPABLE'
+    | 'WEBHOOK_VERIFICATION';
 
   @ApiProperty({ nullable: true })
   sessionId!: string | null;

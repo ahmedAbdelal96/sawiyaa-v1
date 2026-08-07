@@ -1,13 +1,11 @@
 import { ForbiddenException } from '@nestjs/common';
-import { SessionEventType, SessionStatus } from '@prisma/client';
+import { SessionStatus } from '@prisma/client';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { SessionLifecycleService } from '../services/session-lifecycle.service';
 import { MarkSessionCompletedByPractitionerUseCase } from './mark-session-completed-by-practitioner.use-case';
-import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
-import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
+import { CompleteSessionTransactionService } from '../services/complete-session-transaction.service';
 
 describe('MarkSessionCompletedByPractitionerUseCase', () => {
   it('marks owned session as completed and emits completion event', async () => {
@@ -54,8 +52,8 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       createEvent: jest.fn().mockResolvedValue(undefined),
     } as unknown as SessionRepository;
 
-    const transitionService = {
-      transition: jest.fn().mockResolvedValue({
+    const completionTransaction = {
+      execute: jest.fn().mockResolvedValue({
         id: 'session-1',
         status: SessionStatus.COMPLETED,
         sessionCode: 'SES-2026-000001',
@@ -72,22 +70,22 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
         completedAt: new Date('2026-01-01T00:00:00.000Z'),
         expiredAt: null,
         timezoneSnapshot: 'Africa/Cairo',
-        practitioner: { id: 'practitioner-1', publicSlug: 'dr-one', user: { displayName: 'Dr One' } },
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-one',
+          user: { displayName: 'Dr One' },
+        },
         patient: { id: 'patient-1', user: { displayName: 'Patient One' } },
       }),
-    } as unknown as SessionLifecycleService;
-    const postPackageSessionLedgerEntriesUseCase = {
-      execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
-    } as unknown as PostPackageSessionLedgerEntriesUseCase;
-    const sessionEarningReviewService = {
-      syncForSessionCompletion: jest.fn().mockResolvedValue(null),
-    } as unknown as SessionEarningReviewService;
+    } as unknown as CompleteSessionTransactionService;
     const operationalNotificationService = {
       cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
     } as unknown as OperationalNotificationService;
 
     const prisma = {
-      $transaction: jest.fn().mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
+      $transaction: jest
+        .fn()
+        .mockImplementation(async (fn: (...args: any[]) => any) => fn({})),
     } as never;
 
     const useCase = new MarkSessionCompletedByPractitionerUseCase(
@@ -95,9 +93,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       practitionerRepository,
       sessionRepository,
       new SessionMapper(),
-      transitionService,
-      postPackageSessionLedgerEntriesUseCase,
-      sessionEarningReviewService,
+      completionTransaction,
       operationalNotificationService,
     );
 
@@ -108,27 +104,13 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
     });
 
     expect(result.item.status).toBe(SessionStatus.COMPLETED);
-    expect(transitionService.transition).toHaveBeenCalledWith(
-      expect.objectContaining({ to: SessionStatus.COMPLETED }),
-    );
-    expect(
-      (postPackageSessionLedgerEntriesUseCase.execute as jest.Mock).mock
-        .calls[0][0],
-    ).toEqual(
+    expect(completionTransaction.execute).toHaveBeenCalledWith(
       expect.objectContaining({
-        sessionId: 'session-1',
+        session: expect.objectContaining({ id: 'session-1' }),
       }),
     );
     expect(
-      (sessionEarningReviewService.syncForSessionCompletion as jest.Mock).mock
-        .calls[0][0],
-    ).toEqual(
-      expect.objectContaining({
-        sessionId: 'session-1',
-      }),
-    );
-    expect(
-      (operationalNotificationService.cancelSessionReminders as jest.Mock),
+      operationalNotificationService.cancelSessionReminders as jest.Mock,
     ).toHaveBeenCalledWith({
       sessionId: 'session-1',
       cancelledAt: expect.any(Date),
@@ -151,15 +133,9 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       }),
     } as unknown as SessionRepository;
 
-    const transitionService = {
-      transition: jest.fn(),
-    } as unknown as SessionLifecycleService;
-    const postPackageSessionLedgerEntriesUseCase = {
-      execute: jest.fn().mockResolvedValue({ wasAlreadyPosted: true }),
-    } as unknown as PostPackageSessionLedgerEntriesUseCase;
-    const sessionEarningReviewService = {
-      syncForSessionCompletion: jest.fn().mockResolvedValue(null),
-    } as unknown as SessionEarningReviewService;
+    const completionTransaction = {
+      execute: jest.fn(),
+    } as unknown as CompleteSessionTransactionService;
     const operationalNotificationService = {
       cancelSessionReminders: jest.fn().mockResolvedValue(undefined),
     } as unknown as OperationalNotificationService;
@@ -173,9 +149,7 @@ describe('MarkSessionCompletedByPractitionerUseCase', () => {
       practitionerRepository,
       sessionRepository,
       new SessionMapper(),
-      transitionService,
-      postPackageSessionLedgerEntriesUseCase,
-      sessionEarningReviewService,
+      completionTransaction,
       operationalNotificationService,
     );
 

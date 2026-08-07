@@ -5,11 +5,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { AuthScaffold } from "../../../src/components/auth/AuthScaffold";
 import { Button, Input, Text, OtpInput } from "../../../src/components/ui";
 import { useAuth } from "../../../src/providers/AuthProvider";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { usePublicTheme } from "../../../src/features/public/theme/public-theme";
+import { useAppDirection } from "../../../src/i18n/direction";
 import { useTranslation } from "react-i18next";
 import { formatViewerDateTime } from "../../../src/lib/time-formatting";
 import { getAuthLockoutErrorMessage } from "../../../src/features/auth/auth-lockout-messages";
@@ -19,15 +22,26 @@ function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
 }
 
-const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> = [];
+const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> = __DEV__
+  ? [
+      {
+        label: "د. ممارس تجريبي",
+        email: "dr.mohamed@hesba.local",
+        password: "Practitioner2@12345",
+      },
+    ]
+  : [];
 
 export default function PractitionerSignInScreen() {
   const router = useRouter();
   const { theme } = useTheme();
+  const { publicTheme } = usePublicTheme();
   const { t, i18n } = useTranslation();
+  const { isRTL } = useAppDirection();
   const { startPractitionerLogin, verifyPractitionerOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [challenge, setChallenge] =
     useState<PractitionerOtpChallengeResponse | null>(null);
@@ -37,20 +51,19 @@ export default function PractitionerSignInScreen() {
 
   const isArabic = i18n.language?.startsWith("ar");
   const practitionerEyebrow = isArabic
-    ? "دخول المختص"
-    : t("auth.practitionerSignIn.eyebrow");
+    ? "🩺 بوابة المختصين والخبراء"
+    : t("auth.practitionerSignIn.eyebrow", { defaultValue: "Practitioner Portal" });
   const practitionerTitle = isArabic
-    ? "ادخل إلى مساحة عملك كمختص"
-    : t("auth.practitionerSignIn.title");
+    ? "دخول مساحة عمل المختص"
+    : t("auth.practitionerSignIn.title", { defaultValue: "Sign In as Practitioner" });
   const practitionerSubtitle = isArabic
-    ? "في وضع التطوير الحالي، إذا رجع السيرفر جلسة مباشرة سيتم الدخول فورًا بدون OTP."
-    : t("auth.practitionerSignIn.subtitle");
+    ? "أهلاً بك دكتور، سجل دخولك لمتابعة استشاراتك ورعاية مرضاك"
+    : t("auth.practitionerSignIn.subtitle", { defaultValue: "Access your dashboard, schedule, and patient care requests" });
 
   const emailError = useMemo(() => {
     if (!email) {
       return null;
     }
-
     return validateEmail(email) ? null : t("auth.validation.email");
   }, [email, t]);
 
@@ -115,142 +128,221 @@ export default function PractitionerSignInScreen() {
       footer={
         <TouchableOpacity onPress={() => router.replace("/(auth)")}>
           <Text color={theme.colors.textMuted} style={styles.backText}>
-            {t("auth.common.backToEntry")}
+            {t("auth.common.backToEntry", { defaultValue: isArabic ? "الرجوع لاختيار مسار الدخول" : "Back to sign in options" })}
           </Text>
         </TouchableOpacity>
       }
     >
       {!challenge ? (
         <>
-          {__DEV__ && (
-            <View style={styles.devBox}>
-              <Text style={styles.devLabel} color={theme.colors.textMuted}>
-                DEV · بيانات تجريبية
+          {/* Email Input */}
+          <Input
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            label={t("auth.fields.email", { defaultValue: isArabic ? "البريد الإلكتروني" : "Email address" })}
+            onChangeText={setEmail}
+            placeholder={t("auth.placeholders.email", { defaultValue: "practitioner@domain.com" })}
+            value={email}
+            error={emailError ?? undefined}
+            leftElement={
+              <Ionicons
+                name="mail-outline"
+                size={19}
+                color={publicTheme.secondaryText}
+              />
+            }
+          />
+
+          {/* Password Input */}
+          <Input
+            autoCapitalize="none"
+            autoComplete="password"
+            label={t("auth.fields.password", { defaultValue: isArabic ? "كلمة المرور" : "Password" })}
+            onChangeText={setPassword}
+            placeholder={t("auth.placeholders.password", { defaultValue: "••••••••••••" })}
+            secureTextEntry={!showPassword}
+            value={password}
+            leftElement={
+              <Ionicons
+                name="lock-closed-outline"
+                size={19}
+                color={publicTheme.secondaryText}
+              />
+            }
+            rightElement={
+              <TouchableOpacity
+                onPress={() => setShowPassword((v) => !v)}
+                style={styles.eyeButton}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={19}
+                  color={publicTheme.secondaryText}
+                />
+              </TouchableOpacity>
+            }
+          />
+
+          {/* Forgot Password Link */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(auth)/practitioner-forgot-password")}
+            style={[
+              styles.forgotWrap,
+              { alignSelf: isRTL ? "flex-start" : "flex-end" },
+            ]}
+          >
+            <Text
+              color={theme.colors.textBrand}
+              weight="700"
+              style={styles.forgotText}
+            >
+              {t("auth.practitionerSignIn.forgotPassword", { defaultValue: isArabic ? "نسيت كلمة المرور؟" : "Forgot password?" })}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Error Banner */}
+          {errorText ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+              <Text style={styles.errorText} color="#DC2626">
+                {errorText}
               </Text>
+            </View>
+          ) : null}
+
+          {/* Main Action Button */}
+          <Button
+            title={
+              isSubmitting
+                ? t("auth.common.pleaseWait", { defaultValue: isArabic ? "جارٍ تسجيل الدخول..." : "Please wait..." })
+                : isArabic
+                  ? "دخول مساحة العمل"
+                  : t("auth.practitionerSignIn.submit", { defaultValue: "Sign In as Practitioner" })
+            }
+            onPress={() => void submitCredentials()}
+            disabled={
+              isSubmitting || !email || !password || Boolean(emailError)
+            }
+            style={[
+              styles.primaryButton,
+              { backgroundColor: publicTheme.primaryText },
+            ]}
+          />
+
+          {/* Sign Up Redirect Link */}
+          <View style={styles.footerRow}>
+            <Text color={publicTheme.secondaryText} style={styles.footerLabel}>
+              {isArabic
+                ? "ليس لديك حساب مختص؟"
+                : t("auth.practitionerSignIn.noAccount", { defaultValue: "Don't have a practitioner account?" })}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(auth)/signup/practitioner")}
+            >
+              <Text style={[styles.signupLink, { color: publicTheme.primaryText }]}>
+                {isArabic
+                  ? "قدم طلب انضمام عبر الويب"
+                  : t("auth.practitionerSignIn.createAccount", { defaultValue: "Apply on web" })}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Dev Test Accounts Section */}
+          {__DEV__ && DEV_ACCOUNTS.length > 0 && (
+            <View
+              style={[
+                styles.devBox,
+                {
+                  backgroundColor: publicTheme.accentMint,
+                  borderColor: publicTheme.subtleBorder,
+                },
+              ]}
+            >
+              <View style={styles.devHeader}>
+                <Ionicons name="flash-outline" size={14} color={publicTheme.primaryText} />
+                <Text
+                  variant="caption"
+                  weight="700"
+                  color={publicTheme.primaryText}
+                  style={styles.devTitle}
+                >
+                  حسابات التجربة والاختبار
+                </Text>
+              </View>
               <View style={styles.devRow}>
                 {DEV_ACCOUNTS.map((a) => (
                   <TouchableOpacity
                     key={a.email}
                     style={[
                       styles.devChip,
-                      { borderColor: theme.colors.primary },
+                      {
+                        backgroundColor: publicTheme.raisedSurface,
+                        borderColor: publicTheme.subtleBorder,
+                      },
                     ]}
                     onPress={() => {
                       setEmail(a.email);
                       setPassword(a.password);
                       setErrorText(null);
                     }}
+                    activeOpacity={0.8}
                   >
                     <Text
-                      style={styles.devChipText}
-                      color={theme.colors.primary}
+                      style={[styles.devChipTitle, { color: publicTheme.primaryText }]}
+                      weight="700"
                     >
                       {a.label}
+                    </Text>
+                    <Text
+                      variant="caption"
+                      color={publicTheme.secondaryText}
+                      style={styles.devChipText}
+                    >
+                      {a.email}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
           )}
-
-          <Input
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            label={t("auth.fields.email")}
-            onChangeText={setEmail}
-            placeholder={t("auth.placeholders.email")}
-            value={email}
-            error={emailError ?? undefined}
-          />
-          <Input
-            autoCapitalize="none"
-            autoComplete="password"
-            label={t("auth.fields.password")}
-            onChangeText={setPassword}
-            placeholder={t("auth.placeholders.password")}
-            secureTextEntry
-            value={password}
-          />
-
-          <TouchableOpacity
-            onPress={() => router.push("/(auth)/practitioner-forgot-password")}
-          >
-            <Text
-              color={theme.colors.textBrand}
-              weight="600"
-              style={styles.inlineLink}
-            >
-              {t("auth.practitionerSignIn.forgotPassword")}
-            </Text>
-          </TouchableOpacity>
-
-          {errorText ? (
-            <Text style={styles.errorText} color="#dc2626">
-              {errorText}
-            </Text>
-          ) : null}
-
-          <Button
-            title={
-              isSubmitting
-                ? t("auth.common.pleaseWait")
-                : isArabic
-                  ? "دخول المختص"
-                  : t("auth.practitionerSignIn.submit")
-            }
-            onPress={() => void submitCredentials()}
-            disabled={
-              isSubmitting || !email || !password || Boolean(emailError)
-            }
-            style={styles.primaryButton}
-          />
-
-          <View style={styles.rowWrap}>
-            <Text color={theme.colors.textSecondary}>
-              {isArabic
-                ? "ليس لديك حساب مختص؟"
-                : t("auth.practitionerSignIn.noAccount")}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(auth)/signup/practitioner")}
-            >
-              <Text color={theme.colors.textBrand} weight="600">
-                {isArabic
-                  ? "سجل عبر الويب"
-                  : t("auth.practitionerSignIn.createAccount")}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </>
       ) : (
         <>
+          {/* OTP Challenge Screen */}
           <View
             style={[
               styles.challengeCard,
               {
-                backgroundColor: theme.colors.primaryLight,
-                borderColor: theme.colors.borderStrong,
+                backgroundColor: publicTheme.accentMint,
+                borderColor: publicTheme.subtleBorder,
               },
             ]}
           >
+            <View style={styles.challengeIconRow}>
+              <Ionicons name="shield-checkmark-outline" size={24} color={publicTheme.primaryText} />
+              <Text
+                weight="bold"
+                color={publicTheme.primaryText}
+                style={styles.challengeTitle}
+              >
+                {t("auth.practitionerSignIn.otpTitle", { defaultValue: isArabic ? "التحقق المزدوج المطلوب" : "OTP Verification" })}
+              </Text>
+            </View>
             <Text
-              weight="600"
-              color={theme.colors.textPrimary}
-              style={styles.challengeTitle}
-            >
-              {t("auth.practitionerSignIn.otpTitle")}
-            </Text>
-            <Text
-              color={theme.colors.textSecondary}
+              color={publicTheme.secondaryText}
               style={styles.challengeBody}
             >
               {t("auth.practitionerSignIn.otpHint", {
                 channel: challenge.channel,
                 target: challenge.maskedTarget,
+                defaultValue: `أدخل كود التحقق المرسل عبر ${challenge.channel} إلى ${challenge.maskedTarget}`,
               })}
             </Text>
-            <Text color={theme.colors.textMuted} style={styles.challengeMeta}>
+            <Text color={publicTheme.secondaryText} style={styles.challengeMeta}>
               {t("auth.practitionerSignIn.challengeExpires", {
                 expiresAt: challenge.expiresAt
                   ? formatViewerDateTime(challenge.expiresAt, {
@@ -267,32 +359,38 @@ export default function PractitionerSignInScreen() {
             onChangeText={setOtpCode}
             length={6}
             disabled={isSubmitting}
-            label={t("auth.fields.otpCode")}
+            label={t("auth.fields.otpCode", { defaultValue: isArabic ? "رمز التحقق (OTP)" : "Verification Code" })}
           />
 
           {infoText ? (
-            <Text style={styles.infoText} color={theme.colors.textSecondary}>
+            <Text style={styles.infoText} color={publicTheme.secondaryText}>
               {infoText}
             </Text>
           ) : null}
           {errorText ? (
-            <Text style={styles.errorText} color="#dc2626">
-              {errorText}
-            </Text>
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle-outline" size={16} color="#DC2626" />
+              <Text style={styles.errorText} color="#DC2626">
+                {errorText}
+              </Text>
+            </View>
           ) : null}
 
           <Button
             title={
               isSubmitting
-                ? t("auth.common.pleaseWait")
-                : t("auth.practitionerSignIn.verifyOtp")
+                ? t("auth.common.pleaseWait", { defaultValue: "Please wait..." })
+                : t("auth.practitionerSignIn.verifyOtp", { defaultValue: isArabic ? "تأكيد والوصول" : "Verify Code" })
             }
             onPress={() => void submitOtp()}
             disabled={isSubmitting || otpCode.trim().length < 6}
-            style={styles.primaryButton}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: publicTheme.primaryText },
+            ]}
           />
           <Button
-            title={t("auth.practitionerSignIn.changeCredentials")}
+            title={t("auth.practitionerSignIn.changeCredentials", { defaultValue: isArabic ? "تغيير بيانات الدخول" : "Change Login Info" })}
             variant="secondary"
             onPress={() => {
               setChallenge(null);
@@ -300,13 +398,13 @@ export default function PractitionerSignInScreen() {
               setErrorText(null);
               setInfoText(null);
             }}
-            style={styles.primaryButton}
+            style={styles.secondaryButton}
           />
         </>
       )}
 
       {isSubmitting ? (
-        <ActivityIndicator style={styles.loader} color={theme.colors.primary} />
+        <ActivityIndicator style={styles.loader} color={publicTheme.primaryText} />
       ) : null}
     </AuthScaffold>
   );
@@ -331,84 +429,127 @@ function isOtpChallengeResponse(
 }
 
 const styles = StyleSheet.create({
-  devBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#3f7dcf33",
-    backgroundColor: "#3f7dcf0a",
-    padding: 9,
-    marginBottom: 12,
+  forgotWrap: {
+    marginTop: -4,
+    marginBottom: 16,
   },
-  devLabel: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 6,
-    textTransform: "uppercase",
+  forgotText: {
+    fontSize: 13,
+    textDecorationLine: "underline",
+  },
+  eyeButton: {
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(220, 38, 38, 0.08)",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 14,
+  },
+  errorText: {
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  infoText: {
+    fontSize: 13,
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  primaryButton: {
+    borderRadius: 16,
+    minHeight: 52,
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  secondaryButton: {
+    borderRadius: 16,
+    minHeight: 48,
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 8,
+    flexWrap: "wrap",
+  },
+  footerLabel: {
+    fontSize: 13.5,
+  },
+  signupLink: {
+    fontWeight: "800",
+    textDecorationLine: "underline",
+    fontSize: 13.5,
+  },
+  devBox: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    marginTop: 18,
+    gap: 8,
+  },
+  devHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  devTitle: {
+    fontSize: 12,
   },
   devRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 6,
   },
   devChip: {
     borderWidth: 1,
-    borderRadius: 18,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  devChipTitle: {
+    fontSize: 13,
+    marginBottom: 2,
   },
   devChipText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  inlineLink: {
-    fontSize: 12,
-    marginBottom: 10,
-  },
-  primaryButton: {
-    minHeight: 46,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  rowWrap: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  errorText: {
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    marginBottom: 8,
+    fontSize: 11.5,
   },
   challengeCard: {
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 11,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+  },
+  challengeIconRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
   },
   challengeTitle: {
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: 15,
   },
   challengeBody: {
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 4,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 6,
   },
   challengeMeta: {
-    fontSize: 10,
+    fontSize: 11.5,
   },
   backText: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: "center",
+    textDecorationLine: "underline",
   },
   loader: {
-    marginTop: 10,
+    marginTop: 8,
   },
 });

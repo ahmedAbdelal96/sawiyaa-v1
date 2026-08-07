@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import FinancialPageHeader from "@/components/shared/admin/FinancialPageHeader";
 import AdminFinanceSummarySection from "./AdminFinanceSummarySection";
+import AdminFinanceOverviewSection from "./AdminFinanceOverviewSection";
 
 type Props = {
   locale: string;
@@ -216,6 +217,8 @@ export default async function AdminFinanceHubScreen({ locale }: Props) {
       />
 
       <AdminFinanceSummarySection />
+
+      <AdminFinanceOverviewSection />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-text-primary">

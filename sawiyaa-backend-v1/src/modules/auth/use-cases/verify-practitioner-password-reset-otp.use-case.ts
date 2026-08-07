@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpPurpose, UserRoleType } from '@prisma/client';
@@ -6,6 +6,8 @@ import { VerifyOtpChallengeUseCase } from '../../verification/use-cases/verify-o
 import { PasswordResetSessionRepository } from '../repositories/password-reset-session.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { PasswordResetTokenService } from '../services/password-reset-token.service';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 @Injectable()
 export class VerifyPractitionerPasswordResetOtpUseCase {
@@ -15,6 +17,7 @@ export class VerifyPractitionerPasswordResetOtpUseCase {
     private readonly verifyOtpChallengeUseCase: VerifyOtpChallengeUseCase,
     private readonly passwordResetSessionRepository: PasswordResetSessionRepository,
     private readonly passwordResetTokenService: PasswordResetTokenService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: {
@@ -79,6 +82,16 @@ export class VerifyPractitionerPasswordResetOtpUseCase {
       role: UserRoleType.PRACTITIONER,
       tokenHash,
       expiresAt,
+    });
+
+    this.securityAuditService?.logAsync({
+      action: 'auth.practitioner.password-reset-otp.verify.success',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: challenge.user.id,
+      actorRoles: [UserRoleType.PRACTITIONER],
+      resourceType: 'OtpChallenge',
+      resourceId: challenge.id,
+      reason: 'PASSWORD_RESET_OTP_VERIFIED',
     });
 
     return {

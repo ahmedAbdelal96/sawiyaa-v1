@@ -293,6 +293,22 @@ describe('SessionJoinAvailableNotificationSweeperService', () => {
       sessionVideoProviderResolverService,
       sessionLifecycleService,
       notificationIntentWriterService,
+      {
+        resolve: jest.fn().mockResolvedValue({
+          version: 1,
+          scheduleRevision: 1,
+          capturedAt: '2026-01-01T00:00:00.000Z',
+          reminder: {
+            reminderOffsetsMinutes: [60, 15, 0],
+            lateReminderEnabled: true,
+            lateReminderMinutesAfterStart: 5,
+            inAppRemindersEnabled: true,
+            emailRemindersEnabled: true,
+          },
+          join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+        }),
+        parseSnapshot: jest.fn().mockReturnValue(null),
+      } as never,
       i18nService,
       logger,
       { url: 'http://localhost:3000' } as never,

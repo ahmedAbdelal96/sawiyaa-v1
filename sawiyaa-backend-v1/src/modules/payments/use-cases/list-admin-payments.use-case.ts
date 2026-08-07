@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentStatus, Prisma } from '@prisma/client';
+import { PaymentStatus, Prisma, PractitionerSettlementStatus } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { ListAdminPaymentsDto } from '../dto/list-admin-payments.dto';
 import { sessionCodeSearchFilter } from '../../sessions/utils/session-code-search.util';
@@ -83,21 +83,29 @@ export class ListAdminPaymentsUseCase {
     const reviews = paymentIds.length || sessionIds.length
       ? await this.prisma.sessionEarningReview.findMany({
           where: {
-            settlementId: { not: null },
             OR: [
               ...(paymentIds.length ? [{ paymentId: { in: paymentIds } }] : []),
               ...(sessionIds.length ? [{ sessionId: { in: sessionIds } }] : []),
             ],
           },
-          select: { paymentId: true, sessionId: true, settlement: { select: { id: true, status: true } } },
+          select: { id: true, paymentId: true, sessionId: true, reviewStatus: true, settlement: { select: { id: true, status: true } } },
           orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         })
       : [];
-    const settlementByPaymentId = new Map<string, { id: string; status: string }>();
+    const settlementByPaymentId = new Map<string, { id: string | null; reviewId: string; reviewStatus: string; financialStage: string; status: string }>();
     for (const review of reviews) {
       const paymentId = review.paymentId ?? paymentIdBySessionId.get(review.sessionId);
-      if (paymentId && review.settlement && !settlementByPaymentId.has(paymentId)) {
-        settlementByPaymentId.set(paymentId, review.settlement);
+      if (paymentId && !settlementByPaymentId.has(paymentId)) {
+        const financialStage = review.reviewStatus === 'PENDING_REVIEW'
+          ? 'PENDING_REVIEW'
+          : review.reviewStatus === 'DECISION_APPROVED'
+            ? 'DECISION_APPROVED'
+            : review.reviewStatus === 'REJECTED' || review.reviewStatus === 'EXCLUDED_FROM_PAYOUT'
+              ? 'REJECTED_OR_EXCLUDED'
+              : review.settlement?.status === PractitionerSettlementStatus.PAID_OUT || review.settlement?.status === PractitionerSettlementStatus.PAID
+                ? 'EXTERNAL_PAYOUT'
+                : 'WALLET_CREDITED';
+        settlementByPaymentId.set(paymentId, { id: review.settlement?.id ?? null, reviewId: review.id, reviewStatus: review.reviewStatus, financialStage, status: review.settlement?.status ?? review.reviewStatus });
       }
     }
 

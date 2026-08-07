@@ -48,7 +48,7 @@ import { RevokeCareChatRequestUseCase } from '../use-cases/revoke-care-chat-requ
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/care-chat')
 export class AdminCareChatController {
   constructor(

@@ -21,9 +21,7 @@ export class GetPractitionerApplicationAvatarFileUseCase {
       });
     }
 
-    // Avatar storage is keyed by the owning user id (same id used by practitioner self-service endpoints).
-    const practitionerUserId = application.practitioner.userId;
-    const stored = await this.avatarStorage.getAvatarFile(practitionerUserId);
+    const stored = await this.avatarStorage.getAvatarFile(application.practitioner.id);
     if (!stored) {
       throw new NotFoundException({
         messageKey: 'admin.practitionerApplications.errors.avatarNotFound',

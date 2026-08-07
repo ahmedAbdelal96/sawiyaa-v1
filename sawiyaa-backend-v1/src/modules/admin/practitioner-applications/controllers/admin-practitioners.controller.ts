@@ -52,7 +52,6 @@ import {
 } from '../dto/practitioner-publication-response.dto';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
-import { RequireStepUp } from '@common/decorators/step-up.decorator';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 
@@ -107,7 +106,6 @@ export class AdminPractitionersController {
 
   @Patch(':id/publication')
   @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
-  @RequireStepUp('security.practitioner.publication.update')
   @ApiOperation({ summary: 'Publish or unpublish a practitioner profile' })
   @ApiResponse({ status: 200, type: PractitionerPublicationSuccessResponseDto })
   updatePublication(

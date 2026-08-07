@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { isAppError } from "@/lib/api/errors";
 import { API_BASE_URL } from "@/config/api";
+import httpClient from "@/lib/api/http-client";
 import { getLocalizedCountryOptions } from "@/features/practitioners/constants/country-options";
 import { getLocalizedLanguageLabel } from "@/constants/reference-data";
 import {
@@ -33,6 +34,7 @@ import {
   useRejectPractitionerApplication,
   useRequestPractitionerApplicationChanges,
   useUpdateAdminPractitionerApplicationCredential,
+  useViewAdminPractitionerApplicationCredentialFile,
 } from "../hooks/use-practitioner-applications";
 import { useAdminPractitioners } from "@/features/admin/practitioners/hooks/use-admin-practitioners";
 import type { PractitionerApplicationDetailsResponse } from "../types/practitioner-applications.types";
@@ -348,6 +350,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const { mutate: reject, isPending: isRejecting } = useRejectPractitionerApplication();
   const { mutate: requestChanges, isPending: isRequestingChanges } = useRequestPractitionerApplicationChanges();
   const { mutate: updateCredential, isPending: isUpdatingCredential } = useUpdateAdminPractitionerApplicationCredential();
+  const { mutateAsync: viewCredential, isPending: isOpeningCredential } = useViewAdminPractitionerApplicationCredentialFile();
 
   const [activeStep, setActiveStep] = useState(0);
   const [approveNote, setApproveNote] = useState("");
@@ -364,13 +367,82 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const [requestChangesResult, setRequestChangesResult] = useState<"success" | "error" | null>(null);
   const [credentialReviewNotes, setCredentialReviewNotes] = useState<Record<string, string>>({});
   const [credentialActionMessage, setCredentialActionMessage] = useState<string | null>(null);
+  const [openingCredentialId, setOpeningCredentialId] = useState<string | null>(null);
   const [credentialActionError, setCredentialActionError] = useState<string | null>(null);
+  const [authenticatedAvatarUrl, setAuthenticatedAvatarUrl] = useState<string | null>(null);
+
+  const handleOpenCredential = async (credentialId: string) => {
+    if (isOpeningCredential) return;
+
+    const previewWindow = window.open("", "_blank");
+    if (!previewWindow) {
+      setCredentialActionError(t("errors.generic"));
+      return;
+    }
+    previewWindow.opener = null;
+    setOpeningCredentialId(credentialId);
+    setCredentialActionError(null);
+    let objectUrl: string | null = null;
+
+    try {
+      const blob = await viewCredential({ applicationId, credentialId });
+      objectUrl = URL.createObjectURL(blob);
+      previewWindow.location.href = objectUrl;
+      const previewUrl = objectUrl;
+      window.setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
+    } catch (error) {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      previewWindow.close();
+      setCredentialActionError(error instanceof Error ? error.message : t("errors.generic"));
+    } finally {
+      setOpeningCredentialId(null);
+    }
+  };
 
   const liveApplicantSearch = data?.details.liveApplicant.displayName?.trim() ?? "";
   const directoryPractitionersQuery = useAdminPractitioners(
     { search: liveApplicantSearch || undefined, page: 1, limit: 25 },
     Boolean(liveApplicantSearch),
   );
+
+  useEffect(() => {
+    if (!data) {
+      setAuthenticatedAvatarUrl(null);
+      return;
+    }
+
+    const { applicant, profile, liveApplicant, liveProfile, application } = data.details;
+    const hasAvatar = Boolean(
+      normalizeAvatarUrl(
+        applicant.avatarUrl ?? profile.avatarUrl ?? liveApplicant.avatarUrl ?? liveProfile.avatarUrl ?? null,
+      ),
+    );
+    if (!hasAvatar) {
+      setAuthenticatedAvatarUrl(null);
+      return;
+    }
+
+    let disposed = false;
+    let objectUrl: string | null = null;
+    void httpClient
+      .get<Blob>(`/admin/practitioner-applications/${application.applicationId}/avatar`, {
+        responseType: "blob",
+      })
+      .then(({ data: blob }) => {
+        if (disposed) return;
+        objectUrl = URL.createObjectURL(blob);
+        setAuthenticatedAvatarUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!disposed) setAuthenticatedAvatarUrl(null);
+      });
+
+    return () => {
+      disposed = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setAuthenticatedAvatarUrl(null);
+    };
+  }, [data]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production" || !data) {
@@ -389,9 +461,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
       completion,
     } = data.details;
     const directoryPractitioner = directoryPractitionersQuery.data?.items.find((item) => item.id === liveApplicant.practitionerProfileId);
-    const requestedAvatarUrl = normalizeAvatarUrl(applicant.avatarUrl ?? profile.avatarUrl ?? null);
-    const liveAvatarUrl = normalizeAvatarUrl(liveApplicant.avatarUrl ?? directoryPractitioner?.avatarUrl ?? null);
-    const reviewAvatarUrl = requestedAvatarUrl || liveAvatarUrl ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/avatar` : null;
+    const reviewAvatarUrl = authenticatedAvatarUrl;
     const debugDecision = deriveAdminReviewDecision({
       locale,
       application,
@@ -430,7 +500,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
       approveDisabledReasons: debugDecision.approveDisabledReasons.map((item) => item.code),
     });
     console.groupEnd();
-  }, [applicationId, data, directoryPractitionersQuery.data?.items, locale]);
+  }, [applicationId, authenticatedAvatarUrl, data, directoryPractitionersQuery.data?.items, locale]);
 
   if (isLoading) {
     return (
@@ -470,11 +540,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
   const { applicant, profile, liveApplicant, liveProfile, credentials, payoutDestination, livePayoutDestination, application, readinessSnapshot, completion, reviewCase } = data.details;
   const directoryPractitioner = directoryPractitionersQuery.data?.items.find((item) => item.id === liveApplicant.practitionerProfileId);
 
-  const requestedAvatarUrl = normalizeAvatarUrl(applicant.avatarUrl ?? profile.avatarUrl ?? null);
-  const liveAvatarUrl = normalizeAvatarUrl(liveApplicant.avatarUrl ?? liveProfile.avatarUrl ?? directoryPractitioner?.avatarUrl ?? null);
-  const hasUploadedAvatar = Boolean(requestedAvatarUrl ?? liveAvatarUrl);
-  // Admin must not use practitioner-only avatar URLs; always proxy via admin-authenticated endpoint when an avatar exists.
-  const reviewAvatarUrl = hasUploadedAvatar ? `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/avatar` : null;
+  // The protected avatar is loaded as a Blob before it is used by the UI.
+  const reviewAvatarUrl = authenticatedAvatarUrl;
 
   const applicantCountryLabel = getLocalizedCountryLabel(locale, applicant.countryCode);
   const liveApplicantCountryLabel = getLocalizedCountryLabel(locale, liveApplicant.countryCode);
@@ -981,6 +1048,8 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
               notesValue: cred.reviewNotes || t("applicationDetails.application.noNotes"),
               // Credentials are sensitive; open only through the authorized admin endpoint.
               viewUrl: `${API_BASE_URL}/admin/practitioner-applications/${application.applicationId}/credentials/${cred.credentialId}/file`,
+              onOpenFile: () => void handleOpenCredential(cred.credentialId),
+              isOpeningFile: openingCredentialId === cred.credentialId,
               reviewNoteDraft: credentialReviewNotes[cred.credentialId] ?? cred.reviewNotes ?? "",
               reviewNotePlaceholder: t("applicationDetails.credentials.reviewNotesPlaceholder"),
               reviewActionHint:

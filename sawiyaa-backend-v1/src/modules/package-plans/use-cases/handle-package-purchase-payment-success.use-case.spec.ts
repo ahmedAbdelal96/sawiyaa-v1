@@ -110,6 +110,17 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       reconcilePurchase: jest.fn().mockResolvedValue({ id: 'settlement-1' }),
     } as unknown as PackageSettlementService;
 
+    const sessionSchedulePolicyService = {
+      resolve: jest.fn().mockResolvedValue({
+        reminderOffsetsMinutes: [1440, 60, 15],
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      withScheduleRevision: jest.fn().mockReturnValue({
+        reminderOffsetsMinutes: [1440, 60, 15],
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+    };
+
     const useCase = new HandlePackagePurchasePaymentSuccessUseCase(
       prisma as never,
       paymentRepository as never,
@@ -118,6 +129,7 @@ describe('HandlePackagePurchasePaymentSuccessUseCase', () => {
       sessionLifecycleService as never,
       operationalNotificationService,
       packageSettlementService,
+      sessionSchedulePolicyService as never,
     );
 
     return {

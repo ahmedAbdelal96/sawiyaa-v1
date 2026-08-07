@@ -10,17 +10,26 @@ import {
   KeyRound,
   LogOut,
   PencilLine,
+  Shield,
   ShieldAlert,
   ShieldCheck,
   SquarePen,
+  User,
+  Mail,
+  Phone,
+  Globe,
+  Clock,
+  CheckCircle2,
+  Sparkles,
+  Layers,
+  ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 import { AdminSectionCard, AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
 import Label from "@/components/form/Label";
 import { ConfirmModal, FormModal } from "@/components/ui/modal";
 import InputField from "@/components/form/input/InputField";
-import AdminUserStepUpDialog from "./AdminUserStepUpDialog";
-import { useAdminStepUp } from "../hooks/use-admin-step-up";
 import {
   useAdminUser,
   useAdminUserPermissionOverrides,
@@ -44,7 +53,7 @@ import {
 } from "../utils/admin-users-format";
 import { useCurrentUser, useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { PermissionKey } from "@/lib/auth/permissions";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { adminUsersQueryKeys } from "../constants/query-keys";
 import { ADMIN_PERMISSION_CATALOG } from "../constants/admin-permission-catalog";
 
@@ -97,7 +106,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
 
   const userQuery = useAdminUser(id, true);
   const overridesQuery = useAdminUserPermissionOverrides(id, true);
-  const stepUp = useAdminStepUp();
 
   const detail = userQuery.data?.item;
   const overrides = overridesQuery.data?.items ?? [];
@@ -147,7 +155,7 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
   );
 
   const permissionLabelByKey = useMemo(
-    () => new Map(ADMIN_PERMISSION_CATALOG.map((item) => [item.key, t(item.labelKey)] as const)),
+    () => new Map(ADMIN_PERMISSION_CATALOG.map((item) => [item.key, (t as any)(item.labelKey)] as const)),
     [t]
   );
 
@@ -171,10 +179,10 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
         order.push(moduleKey);
         groups.set(moduleKey, {
           module: moduleKey,
-          label: catalogItem ? t(catalogItem.moduleLabelKey) : t("permissions.modules.other.title"),
+          label: catalogItem ? (t as any)(catalogItem.moduleLabelKey) : (t as any)("permissions.modules.other.title"),
           description: catalogItem
-            ? t(`permissions.modules.${moduleKey}.description`)
-            : t("permissions.modules.other.description"),
+            ? (t as any)(`permissions.modules.${moduleKey}.description`)
+            : (t as any)("permissions.modules.other.description"),
           items: [],
         });
       }
@@ -239,14 +247,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       await action();
     } catch (cause) {
       const appError = toAppError(cause);
-
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await action();
-        });
-        return;
-      }
-
       throw appError;
     }
   };
@@ -263,7 +263,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setProfileError(appError.message || t("errors.generic"));
       return false;
     }
@@ -293,7 +292,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setStatusError(appError.message || t("errors.generic"));
       return false;
     }
@@ -329,7 +327,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setRolesError(appError.message || t("errors.generic"));
       return false;
     }
@@ -353,7 +350,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setActionError(appError.message || t("errors.generic"));
       return false;
     }
@@ -367,7 +363,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       return true;
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) throw appError;
       setActionError(appError.message || t("errors.generic"));
       return false;
     }
@@ -385,6 +380,15 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
   const primaryEmail = detail?.emails?.[0] ?? null;
   const primaryPhone = detail?.phones?.[0] ?? null;
 
+  // Compute initials for user avatar
+  const initials = title
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   if (userQuery.isError) {
     const appError = toAppError(userQuery.error);
 
@@ -394,15 +398,15 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
         description={
           appError.statusCode === 404 ? t("errors.notFound") : appError.message || t("errors.loadFailed")
         }
-          actions={
-            <Button
-              variant="outline"
-              startIcon={<ArrowLeft className="h-4 w-4" />}
-              onClick={() => router.push("/admin/users" as never)}
-            >
-              {t("actions.back")}
-            </Button>
-          }
+        actions={
+          <Button
+            variant="outline"
+            startIcon={<ArrowLeft className="h-4 w-4" />}
+            onClick={() => router.push("/admin/users" as never)}
+          >
+            {t("actions.back")}
+          </Button>
+        }
       >
         <div />
       </AdminSectionCard>
@@ -411,275 +415,388 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
 
   return (
     <>
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0 space-y-1">
+      <div className="space-y-6 pb-12">
+        {/* Navigation & Header Trail */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-text-muted">
+            <span>إدارة النظام</span>
+            <span className="text-slate-300 dark:text-slate-700">/</span>
+            <span>المشرفين</span>
+            <span className="text-slate-300 dark:text-slate-700">/</span>
+            <span className="text-primary">تفاصيل الحساب</span>
+          </div>
+
           <Button
             variant="outline"
             startIcon={<ArrowLeft className="h-4 w-4" />}
             onClick={() => router.push("/admin/users" as never)}
+            className="self-start md:self-auto"
           >
             {t("actions.back")}
           </Button>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                {t("page.eyebrow")}
-              </p>
-              <h1 className="mt-1 text-[2rem] font-semibold tracking-[-0.03em] text-text-primary">
-                {title}
-              </h1>
-              <p className="mt-1 text-sm text-text-secondary">
-                {primaryEmail ?? t("detail.noEmail")}
-              </p>
-            </div>
-          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {canEditProfile ? (
-              <Button
-                variant="outline"
-                startIcon={<PencilLine className="h-4 w-4" />}
-                onClick={() => openModal("profile")}
-              >
-                {t("actions.editProfile")}
-              </Button>
-            ) : null}
-            {canEditRoles ? (
-              <Button
-                variant="outline"
-                startIcon={<ShieldCheck className="h-4 w-4" />}
-                onClick={() => openModal("roles")}
-              >
-                {t("actions.updateRoles")}
-              </Button>
-            ) : null}
-            {canEditStatus ? (
-              <Button
-                variant="outline"
-                startIcon={<ShieldAlert className="h-4 w-4" />}
-                onClick={() => openModal("status")}
-              >
-                {t("actions.updateStatus")}
-              </Button>
-            ) : null}
-            {canReadOverrides ? (
-              <Button
-                variant="outline"
-                startIcon={<SquarePen className="h-4 w-4" />}
-                onClick={() => router.push(`/admin/users/${id}/permissions` as never)}
-              >
-                {t("actions.customizePermissions")}
-              </Button>
-            ) : null}
-            {canRevokeSessions && !showSelfWarning ? (
-              <Button
-                variant="outline"
-                startIcon={<LogOut className="h-4 w-4" />}
-                onClick={() => openModal("sessions")}
-              >
-                {t("actions.revokeSessions")}
-              </Button>
-            ) : null}
-            {canInvalidateTokens && !showSelfWarning ? (
-              <Button
-                variant="danger"
-                startIcon={<KeyRound className="h-4 w-4" />}
-                onClick={() => openModal("token-version")}
-              >
-                {t("actions.invalidateTokens")}
-              </Button>
-            ) : null}
+        {/* Executive Profile Card (Adaptive Premium Layout) */}
+        <div className="rounded-3xl border border-border-light bg-surface-secondary p-6 shadow-sm">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            {/* User Avatar + Identity details */}
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-xl font-black tracking-wider text-teal-600 dark:text-teal-400 border border-teal-100 dark:border-teal-900/30 shadow-xs">
+                {initials || <User className="h-8 w-8" />}
+              </div>
+
+              <div className="space-y-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-xl font-black text-text-primary">
+                    {title}
+                  </h1>
+                  {detail ? (
+                    <AdminStatusBadge tone={ADMIN_USER_STATUS_TONE[detail.status]}>
+                      {t(`status.${detail.status}`)}
+                    </AdminStatusBadge>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-secondary">
+                  {primaryEmail ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Mail className="h-3.5 w-3.5 text-text-muted" />
+                      <span className="truncate">{primaryEmail}</span>
+                    </span>
+                  ) : null}
+
+                  {primaryPhone ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Phone className="h-3.5 w-3.5 text-text-muted" />
+                      <span>{primaryPhone}</span>
+                    </span>
+                  ) : null}
+
+                  {detail?.timezone ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Globe className="h-3.5 w-3.5 text-text-muted" />
+                      <span>{detail.timezone}</span>
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Primary Actions in Header Banner */}
+            <div className="flex flex-wrap items-center gap-2.5 border-t border-border-light/40 pt-4 md:border-t-0 md:pt-0">
+              {canReadOverrides ? (
+                <Button
+                  onClick={() => router.push(`/admin/users/${id}/permissions` as never)}
+                  startIcon={<SquarePen className="h-4 w-4" />}
+                  variant="primary"
+                >
+                  {t("actions.customizePermissions")}
+                </Button>
+              ) : null}
+
+              {canEditProfile ? (
+                <Button
+                  variant="outline"
+                  startIcon={<PencilLine className="h-4 w-4" />}
+                  onClick={() => openModal("profile")}
+                >
+                  {t("actions.editProfile")}
+                </Button>
+              ) : null}
+
+              {canEditRoles ? (
+                <Button
+                  variant="outline"
+                  startIcon={<ShieldCheck className="h-4 w-4" />}
+                  onClick={() => openModal("roles")}
+                >
+                  {t("actions.updateRoles")}
+                </Button>
+              ) : null}
+
+              {canEditStatus ? (
+                <Button
+                  variant="outline"
+                  startIcon={<ShieldAlert className="h-4 w-4" />}
+                  onClick={() => openModal("status")}
+                >
+                  {t("actions.updateStatus")}
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        <AdminSectionCard title={t("detail.profile.title")} description={t("detail.profile.description")}>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.displayName")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {detail?.displayName ?? t("detail.noValue")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.email")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {primaryEmail ?? t("detail.noValue")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.phone")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {primaryPhone ?? t("detail.noValue")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.tokenVersion")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {detail?.tokenVersion ?? "-"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.locale")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {detail?.defaultLocale ?? t("detail.noValue")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.timezone")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {detail?.timezone ?? t("detail.noValue")}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.status")}
-              </p>
-              <div className="mt-1">
-                {detail ? (
-                  <AdminStatusBadge tone={ADMIN_USER_STATUS_TONE[detail.status]}>
-                    {t(`status.${detail.status}`)}
-                  </AdminStatusBadge>
+        {/* 2-Column Responsive Dashboard Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Left Column (2/3 width) - Profile Details & Custom Overrides */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Account Metadata Detail Card */}
+            <AdminSectionCard
+              title={t("detail.profile.title")}
+              description={t("detail.profile.description")}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Display Name */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <User className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.displayName")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-text-primary">
+                    {detail?.displayName ?? t("detail.noValue")}
+                  </p>
+                </div>
+
+                {/* Primary Email */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <Mail className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.email")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-text-primary truncate">
+                    {primaryEmail ?? t("detail.noValue")}
+                  </p>
+                </div>
+
+                {/* Primary Phone */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <Phone className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.phone")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-text-primary">
+                    {primaryPhone ?? t("detail.noValue")}
+                  </p>
+                </div>
+
+                {/* Locale & Language */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <Globe className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.locale")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-text-primary uppercase">
+                    {detail?.defaultLocale ?? t("detail.noValue")}
+                  </p>
+                </div>
+
+                {/* Timezone */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <Clock className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.timezone")}
+                    </span>
+                  </div>
+                  <p className="text-sm font-black text-text-primary">
+                    {detail?.timezone ?? t("detail.noValue")}
+                  </p>
+                </div>
+
+                {/* Last Updated At */}
+                <div className="rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-4">
+                  <div className="flex items-center gap-2 text-text-muted mb-1">
+                    <Clock className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">
+                      {t("detail.profile.updatedAt")}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-text-primary">
+                    {detail ? new Date(detail.updatedAt).toLocaleString(locale) : "-"}
+                  </p>
+                </div>
+              </div>
+            </AdminSectionCard>
+
+            {/* Custom Permission Overrides Summary */}
+            {canReadOverrides ? (
+              <AdminSectionCard
+                title={t("detail.permissions.title")}
+                description={t("detail.permissions.description")}
+              >
+                {overrides.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-surface-secondary/40 dark:bg-slate-900/20 rounded-2xl border border-dashed border-border-light text-center">
+                    <Layers className="h-8 w-8 text-slate-350 dark:text-slate-600 mb-2" />
+                    <p className="text-xs font-bold text-text-secondary">
+                      {t("detail.permissions.empty")}
+                    </p>
+                    <p className="text-[11px] text-text-muted mt-1">
+                      جميع الصلاحيات تُدار تلقائياً حسب الدور المسند للحساب.
+                    </p>
+                  </div>
                 ) : (
-                  "-"
-                )}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">
-                {t("detail.profile.updatedAt")}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-primary">
-                {detail ? new Date(detail.updatedAt).toLocaleString(locale) : "-"}
-              </p>
-            </div>
-          </div>
-        </AdminSectionCard>
-
-        <AdminSectionCard title={t("detail.roles.title")} description={t("detail.roles.description")}>
-          <div className="flex flex-wrap gap-2">
-            {detail?.roles.map((role) => (
-              <span
-                key={role}
-                className="inline-flex items-center rounded-full border border-border-light bg-surface-secondary px-2.5 py-1 text-xs font-medium text-text-primary"
-              >
-                {roleLabel(t, role)}
-              </span>
-            ))}
-          </div>
-        </AdminSectionCard>
-
-        <AdminSectionCard title={t("detail.security.title")} description={t("detail.security.description")}>
-          <div className="flex flex-wrap gap-3">
-            {canEditStatus ? (
-              <Button
-                variant="outline"
-                startIcon={<ShieldAlert className="h-4 w-4" />}
-                onClick={() => openModal("status")}
-              >
-                {t("actions.updateStatus")}
-              </Button>
-            ) : null}
-            {canRevokeSessions && !showSelfWarning ? (
-              <Button
-                variant="outline"
-                startIcon={<LogOut className="h-4 w-4" />}
-                onClick={() => openModal("sessions")}
-              >
-                {t("actions.revokeSessions")}
-              </Button>
-            ) : null}
-            {canInvalidateTokens && !showSelfWarning ? (
-              <Button
-                variant="danger"
-                startIcon={<KeyRound className="h-4 w-4" />}
-                onClick={() => openModal("token-version")}
-              >
-                {t("actions.invalidateTokens")}
-              </Button>
-            ) : null}
-          </div>
-          {showSelfWarning ? (
-            <p className="mt-4 text-sm text-warning-700">{t("detail.security.selfWarning")}</p>
-          ) : null}
-        </AdminSectionCard>
-
-        {canReadOverrides ? (
-          <AdminSectionCard
-            title={t("detail.permissions.title")}
-            description={t("detail.permissions.description")}
-            actions={
-              canEditOverrides ? (
-                <Button onClick={() => router.push(`/admin/users/${id}/permissions` as never)}>
-                  {t("actions.customizePermissions")}
-                </Button>
-              ) : null
-            }
-          >
-            {overrides.length === 0 ? (
-              <p className="text-sm text-text-secondary">{t("detail.permissions.empty")}</p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
-                  <span className="rounded-full border border-border-light bg-surface-secondary/70 px-2.5 py-1 font-medium">
-                    {overrides.length}
-                  </span>
-                  <span>{t("detail.permissions.summaryHint")}</span>
-                </div>
-                <div className="space-y-3">
-                  {permissionGroups.map((group) => (
-                    <section key={group.module} className="rounded-3xl border border-border-light bg-white p-3 shadow-[0_12px_30px_-28px_rgba(34,52,56,0.22)]">
-                      <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 space-y-0.5">
-                          <h4 className="text-sm font-semibold text-text-primary">{group.label}</h4>
-                          <p className="text-[11px] leading-4 text-text-secondary">{group.description}</p>
-                        </div>
-                        <AdminStatusBadge tone="muted">{group.items.length}</AdminStatusBadge>
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 p-4 border border-teal-100 dark:border-teal-900/30 text-xs">
+                      <div className="flex items-center gap-2 font-bold text-teal-800 dark:text-teal-300">
+                        <Sparkles className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                        <span>يوجد {overrides.length} استثناء مخصص لهذا المستخدم</span>
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                        {group.items.map((item) => (
-                          <div
-                            key={item.permissionKey}
-                            className="min-w-0 rounded-2xl border border-border-light bg-surface-secondary/60 px-3 py-2.5"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-[13px] font-medium text-text-primary">
-                                  {permissionLabelByKey.get(item.permissionKey as PermissionKey) ?? item.permissionKey}
-                                </p>
-                                <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-text-muted">
-                                  {item.reason ?? t("detail.permissions.noReason")}
-                                </p>
-                              </div>
-                              <div className="shrink-0">
-                                <AdminStatusBadge tone={item.effect === "ALLOW" ? "success" : "warning"}>
-                                  {t(`permissions.states.${item.effect.toLowerCase()}`)}
-                                </AdminStatusBadge>
-                              </div>
-                            </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/users/${id}/permissions` as never)}
+                        className="text-xs font-black text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>فتح مصفوفة الصلاحيات</span>
+                        <ChevronRight className="h-3 w-3 rtl:rotate-180" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {permissionGroups.map((group) => (
+                        <div
+                          key={group.module}
+                          className="rounded-2xl border border-border-light bg-surface-secondary/50 dark:bg-slate-900/40 p-4 shadow-sm"
+                        >
+                          <div className="mb-2.5 flex items-center justify-between">
+                            <h4 className="text-xs font-black text-text-primary">
+                              {group.label}
+                            </h4>
+                            <span className="rounded-full bg-surface-tertiary px-2.5 py-0.5 text-[10px] font-bold text-text-muted">
+                              {group.items.length}
+                            </span>
                           </div>
-                        ))}
+
+                          <div className="grid gap-2.5 sm:grid-cols-2">
+                            {group.items.map((item) => (
+                              <div
+                                key={item.permissionKey}
+                                className="flex items-start justify-between gap-3 rounded-xl border border-border-light bg-surface-secondary/60 dark:bg-slate-950/40 p-3"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs font-bold text-text-primary">
+                                    {permissionLabelByKey.get(item.permissionKey as PermissionKey) ?? item.permissionKey}
+                                  </p>
+                                  <p className="font-mono text-[10px] text-text-muted truncate mt-0.5">
+                                    {item.permissionKey}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold shrink-0 ${
+                                    item.effect === "ALLOW"
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                      : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+                                  }`}
+                                >
+                                  {item.effect === "ALLOW" ? "✓ سماح" : "✕ حظر"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </AdminSectionCard>
+            ) : null}
+          </div>
+
+          {/* Right Sidebar Column (1/3 width) - Roles & Security Console */}
+          <div className="space-y-6">
+            {/* Internal Roles Card */}
+            <AdminSectionCard
+              title={t("detail.roles.title")}
+              description={t("detail.roles.description")}
+            >
+              <div className="space-y-2">
+                {detail?.roles.map((role) => (
+                  <div
+                    key={role}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-teal-550/10 bg-teal-550/5 dark:bg-teal-950/20 p-3.5"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white font-bold">
+                        <Shield className="h-4 w-4" />
                       </div>
-                    </section>
-                  ))}
-                </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-text-primary truncate">
+                          {roleLabel(t, role)}
+                        </p>
+                        <p className="font-mono text-[10px] text-text-muted uppercase">
+                          {role}
+                        </p>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                  </div>
+                ))}
               </div>
-            )}
-          </AdminSectionCard>
-        ) : null}
+            </AdminSectionCard>
+
+            {/* Security & Sessions Console */}
+            <AdminSectionCard
+              title={t("detail.security.title")}
+              description={t("detail.security.description")}
+            >
+              <div className="space-y-3.5">
+                {/* Token Version Tile */}
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <KeyRound className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                    <div>
+                      <p className="text-[10px] font-bold text-text-muted uppercase">
+                        {t("detail.profile.tokenVersion")}
+                      </p>
+                      <p className="text-xs font-black text-text-primary">
+                        {detail?.tokenVersion ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {canInvalidateTokens && !showSelfWarning ? (
+                    <Button
+                      variant="danger"
+                      onClick={() => openModal("token-version")}
+                      size="sm"
+                    >
+                      {t("actions.invalidateTokens")}
+                    </Button>
+                  ) : null}
+                </div>
+
+                {/* Revoke Active Sessions Action */}
+                {canRevokeSessions && !showSelfWarning ? (
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-border-light bg-surface-secondary/40 dark:bg-slate-900/40 p-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <LogOut className="h-4 w-4 text-rose-600 dark:text-rose-450" />
+                      <span className="text-xs font-bold text-text-primary">
+                        {t("sessions.title")}
+                      </span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => openModal("sessions")}
+                      size="sm"
+                      className="text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 border-rose-200 dark:border-rose-900/30"
+                    >
+                      {t("actions.revokeSessions")}
+                    </Button>
+                  </div>
+                ) : null}
+
+                {/* Self Warning Banner */}
+                {showSelfWarning ? (
+                  <div className="flex items-start gap-2.5 rounded-2xl border border-amber-250 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-950/20 p-3.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>{t("detail.security.selfWarning")}</span>
+                  </div>
+                ) : null}
+              </div>
+            </AdminSectionCard>
+          </div>
+        </div>
       </div>
 
+      {/* Modals for Edit Profile, Update Status, Update Roles, Revoke Sessions, Invalidate Tokens */}
       <FormModal
         isOpen={activeModal === "profile"}
         onClose={closeModal}
@@ -817,8 +934,6 @@ export default function AdminUserDetailScreen({ id }: { id: string }) {
       >
         {actionError ? <p className="text-sm text-error-600">{actionError}</p> : null}
       </ConfirmModal>
-
-      <AdminUserStepUpDialog controller={stepUp} />
     </>
   );
 }

@@ -349,16 +349,6 @@
     },
     "help": "These actions only update review status and do not change financial records."
   },
-  "stepUp": {
-    "title": "Step-up verification",
-    "description": "Enter your password to confirm this sensitive finance action.",
-    "confirm": "Confirm",
-    "cancel": "Cancel",
-    "passwordLabel": "Password",
-    "passwordPlaceholder": "Enter your password",
-    "hint": "We only use this to confirm the current sensitive action.",
-    "successNote": "Step-up verification completed."
-  },
   "states": {
     "loading": "Loading...",
     "runsError": "Could not load reconciliation runs right now.",
@@ -631,6 +621,62 @@
       "errorTitle": "Journal entry is not available",
       "errorNote": "The requested entry was not found or cannot be loaded now.",
       "back": "Back to ledger explorer"
+    }
+  },
+  "overviewCards": {
+    "title": "Authoritative financial overview",
+    "description": "Currency-separated totals from captured payments, review decisions, wallet ledger postings, and completed payouts.",
+    "tabs": {
+      "collections": "Collections & Operations",
+      "reviews": "Settlement Reviews",
+      "wallets": "Practitioner Wallets",
+      "payouts": "External Payouts"
+    },
+    "loading": "Loading financial totals…",
+    "error": "Financial totals are temporarily unavailable.",
+    "retry": "Retry",
+    "empty": "No records in this filtered scope",
+    "count": "records",
+    "metrics": {
+      "grossCollections": "Gross patient collections",
+      "patientCredits": "Patient wallet credits",
+      "serviceValue": "Completed service economic value",
+      "awaitingReview": "Awaiting accountant review",
+      "suggestedPractitioner": "Suggested practitioner amount",
+      "approvedAwaitingWallet": "Approved awaiting wallet credit",
+      "approvedCredited": "Approved and wallet credited",
+      "walletCredits": "Practitioner wallet credits",
+      "outstandingLiability": "Outstanding practitioner wallet liability",
+      "availableForPayout": "Available for payout",
+      "balances": "Current practitioner wallet balances",
+      "completedPayouts": "Completed external payouts",
+      "pendingPayouts": "Pending external payouts",
+      "failedPayouts": "Failed or reversed external payouts",
+      "platformSuggested": "Suggested platform share",
+      "platformRemainder": "Platform remainder after decision",
+      "additions": "Accountant additions",
+      "deductions": "Accountant deductions",
+      "rejected": "Rejected or excluded candidates"
+    },
+    "notes": {
+      "grossCollections": "Captured patient money; not reduced by internal wallet liabilities.",
+      "patientCredits": "Persisted internal patient-wallet credits, not external cash refunds.",
+      "serviceValue": "Fulfilled booking value from the immutable source snapshot.",
+      "awaitingReview": "Informational candidate value awaiting Stage A.",
+      "approvedAwaitingWallet": "Stage A source amount not yet posted to a practitioner wallet.",
+      "approvedCredited": "Stage A source amount whose Stage B wallet credit is posted.",
+      "walletCredits": "Internal practitioner liability from earning ledger credits.",
+      "outstandingLiability": "Current unpaid practitioner wallet liability; not an initiated external payout.",
+      "availableForPayout": "READY settlement amount eligible for external payout selection.",
+      "balances": "Current active wallet projection rebuilt from signed ledger; balances are not date-ranged.",
+      "completedPayouts": "Successfully recorded external payout movements.",
+      "pendingPayouts": "Payout instructions in external processing; internally CREDITED settlements are excluded.",
+      "failedPayouts": "Recorded payout instructions linked to FAILED or CANCELLED settlement states.",
+      "platformSuggested": "Informational candidate snapshot; not recognized profit.",
+      "platformRemainder": "Source value minus accountant-approved practitioner amount; may be negative.",
+      "additions": "Adjustments adding value to the practitioner payout.",
+      "deductions": "Adjustments subtracting value from the practitioner payout.",
+      "rejected": "Settlements rejected or excluded from payout cycles."
     }
   }
 }

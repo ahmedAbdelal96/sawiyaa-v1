@@ -36,17 +36,17 @@ export default function SupportSafeContextPanel({
   };
 
   return (
-    <div className="border-border-light/80 flex h-full w-[300px] shrink-0 flex-col gap-4 border-s bg-white p-4 dark:border-white/10 dark:bg-slate-900/40">
+    <div className="border-border-light/80 flex h-full w-[285px] shrink-0 flex-col gap-4 border-s bg-white p-4 shadow-xs dark:border-white/10 dark:bg-slate-900/60">
       {/* User Card */}
-      <div className="border-border-light/80 flex flex-col items-center border-b pb-4 text-center dark:border-white/10">
-        <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-600/20 to-teal-600/5 text-lg font-bold text-teal-700 ring-2 ring-teal-600/20 dark:text-teal-400">
+      <div className="border-border-light/70 flex flex-col items-center border-b pb-4 text-center dark:border-white/10">
+        <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-base font-extrabold text-primary ring-1 ring-primary/20 shadow-2xs dark:text-primary-light">
           {conversation.otherParty?.displayName?.charAt(0).toUpperCase() || "U"}
         </span>
-        <h4 className="text-text-primary mt-2 text-sm font-bold dark:text-white">
+        <h4 className="text-text-primary mt-2 text-xs font-bold dark:text-white">
           {conversation.otherParty?.displayName ||
             (isAr ? "مستخدم المنصة" : "Platform User")}
         </h4>
-        <span className="text-text-secondary mt-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold dark:bg-white/10 dark:text-white/60">
+        <span className="text-text-secondary mt-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold dark:bg-white/10 dark:text-white/70">
           {conversation.otherParty?.publicRoleLabel === "Patient"
             ? isAr
               ? "مريض"
@@ -62,30 +62,30 @@ export default function SupportSafeContextPanel({
       </div>
 
       {/* Ticket Details */}
-      <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto">
-        <h3 className="text-text-muted text-xs font-bold tracking-wide uppercase dark:text-white/60">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto custom-scrollbar">
+        <h3 className="text-text-muted text-[10px] font-extrabold tracking-wider uppercase dark:text-white/50">
           {isAr ? "تفاصيل تذكرة الدعم" : "Support Ticket Info"}
         </h3>
 
-        <div className="space-y-2 text-xs">
-          <div>
-            <span className="text-text-muted block dark:text-white/40">
+        <div className="space-y-2.5 text-xs">
+          <div className="rounded-xl border border-border-light/70 bg-surface-secondary/40 p-2.5 dark:border-white/5 dark:bg-white/5">
+            <span className="text-text-muted block text-[10px] font-semibold dark:text-white/40">
               {isAr ? "العنوان" : "Subject"}
             </span>
-            <span className="text-text-primary mt-0.5 block font-semibold dark:text-white">
+            <span className="text-text-primary mt-0.5 block font-bold leading-snug dark:text-white text-xs">
               {conversation.subject || conversation.title}
             </span>
           </div>
 
-          <div>
-            <span className="text-text-muted block dark:text-white/40">
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-border-light/70 bg-surface-secondary/40 p-2.5 dark:border-white/5 dark:bg-white/5">
+            <span className="text-text-muted text-[10px] font-semibold dark:text-white/40">
               {isAr ? "حالة التذكرة" : "Status"}
             </span>
             <span
-              className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                 conversation.isResolved
-                  ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
-                  : "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400"
+                  ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                  : "bg-amber-500/15 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
               }`}
             >
               {getStatusLabel(
@@ -94,24 +94,26 @@ export default function SupportSafeContextPanel({
             </span>
           </div>
 
-          <div>
-            <span className="text-text-muted block dark:text-white/40">
-              {isAr ? "تاريخ الإنشاء" : "Created At"}
-            </span>
-            <span className="text-text-secondary mt-0.5 block dark:text-white/80">
-              {formattedDate(conversation.createdAt)}
-            </span>
-          </div>
+          <div className="rounded-xl border border-border-light/70 bg-surface-secondary/40 p-2.5 space-y-1.5 dark:border-white/5 dark:bg-white/5">
+            <div>
+              <span className="text-text-muted block text-[10px] font-semibold dark:text-white/40">
+                {isAr ? "تاريخ الإنشاء" : "Created At"}
+              </span>
+              <span className="text-text-secondary mt-0.5 block text-[11px] font-medium dark:text-white/80">
+                {formattedDate(conversation.createdAt)}
+              </span>
+            </div>
 
-          <div>
-            <span className="text-text-muted block dark:text-white/40">
-              {isAr ? "آخر نشاط" : "Last Activity"}
-            </span>
-            <span className="text-text-secondary mt-0.5 block dark:text-white/80">
-              {formattedDate(
-                conversation.lastActivityAt || conversation.updatedAt,
-              )}
-            </span>
+            <div>
+              <span className="text-text-muted block text-[10px] font-semibold dark:text-white/40">
+                {isAr ? "آخر نشاط" : "Last Activity"}
+              </span>
+              <span className="text-text-secondary mt-0.5 block text-[11px] font-medium dark:text-white/80">
+                {formattedDate(
+                  conversation.lastActivityAt || conversation.updatedAt,
+                )}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -121,7 +123,7 @@ export default function SupportSafeContextPanel({
         <button
           onClick={onResolve}
           disabled={isResolving}
-          className="w-full rounded-xl bg-teal-600 py-2.5 text-xs font-bold text-white transition hover:bg-teal-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50 cursor-pointer"
         >
           {isResolving
             ? isAr

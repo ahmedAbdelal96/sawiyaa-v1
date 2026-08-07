@@ -135,7 +135,7 @@ export const seedCredentials = {
     password: 'Practitioner@12345',
   },
   practitionerB: {
-    email: 'amohamef206@gmail.com',
+    email: 'dr.mohamed@hesba.local',
     password: 'Practitioner2@12345',
   },
   practitionerC: {
@@ -169,5 +169,24 @@ export const seedCredentials = {
   practitionerJ: {
     email: 'dr.hassan@hesba.local',
     password: 'Practitioner10@12345',
+  },
+} as const;
+
+/** Single development-only identity contract consumed by seed/access QA. */
+export const developmentDemoAccounts = {
+  primaryPatient: {
+    userId: seedIds.users.patientA,
+    profileId: seedIds.patientProfiles.patientA,
+    ...seedCredentials.patientA,
+  },
+  primaryPractitioner: {
+    userId: seedIds.users.practitionerB,
+    profileId: seedIds.practitionerProfiles.practitionerB,
+    ...seedCredentials.practitionerB,
+  },
+  noSessionPatient: {
+    userId: seedIds.users.patientC,
+    profileId: seedIds.patientProfiles.patientC,
+    ...seedCredentials.patientC,
   },
 } as const;

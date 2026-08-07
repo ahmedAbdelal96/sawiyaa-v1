@@ -24,14 +24,18 @@ import {
   SessionEarningReviewPackageSettlementRow,
   SessionEarningReviewSessionRow,
   SessionEarningReviewUserRow,
+  SessionEarningReviewAdjustmentRow,
 } from '../presenters/session-earning-review.presenter';
 
 type ReviewRow = {
   id: string;
   sessionId: string;
+  earningEntitlementId: string;
   paymentId: string | null;
   packagePurchaseId: string | null;
   packageSettlementId: string | null;
+  settlementId: string | null;
+  settlement: { status: import('@prisma/client').PractitionerSettlementStatus } | null;
   practitionerId: string;
   patientId: string;
   sourceType: SessionEarningReviewSourceType;
@@ -42,6 +46,12 @@ type ReviewRow = {
   suggestedPractitionerAmount: Prisma.Decimal;
   suggestedPlatformAmount: Prisma.Decimal;
   suggestedCurrencyCode: string;
+  suggestedPractitionerPercentage: Prisma.Decimal | null;
+  accountantApprovedSourceAmount: Prisma.Decimal | null;
+  accountingAdjustmentAmount: Prisma.Decimal | null;
+  accountingAdjustmentType: string | null;
+  accountingAdjustmentReason: string | null;
+  accountingNotes: string | null;
   finalPractitionerAmount: Prisma.Decimal | null;
   finalPlatformAmount: Prisma.Decimal | null;
   finalCurrencyCode: string | null;
@@ -54,6 +64,7 @@ type ReviewRow = {
   createdAt: Date;
   updatedAt: Date;
   ledgerEntries: SessionEarningReviewLedgerRow[];
+  adjustments: SessionEarningReviewAdjustmentRow[];
 };
 
 @Injectable()
@@ -68,7 +79,9 @@ export class GetAdminSessionEarningReviewUseCase {
   async execute(input: {
     reviewId: string;
   }): Promise<AdminSessionEarningReviewDetailSuccessResponseDto> {
-    const review = await this.reviewRepository.findAdminReviewById(input.reviewId);
+    const review =
+      (await this.reviewRepository.findAdminReviewById(input.reviewId)) ??
+      (await this.reviewRepository.findAdminReviewBySettlementId(input.reviewId));
 
     if (!review) {
       throw new NotFoundException({
@@ -132,6 +145,7 @@ export class GetAdminSessionEarningReviewUseCase {
                 packagePurchaseId: review.packagePurchaseId,
                 packageSessionIndex: null,
                 packageSessionCount: null,
+                originalSessionId: null,
               },
         payment,
         packagePurchase:
@@ -163,6 +177,7 @@ export class GetAdminSessionEarningReviewUseCase {
               )
             : null,
         ledgerEntries: review.ledgerEntries as SessionEarningReviewLedgerRow[],
+        adjustments: review.adjustments as SessionEarningReviewAdjustmentRow[],
       });
 
     return {
@@ -187,6 +202,7 @@ export class GetAdminSessionEarningReviewUseCase {
             packagePurchaseId: true,
             packageSessionIndex: true,
             packageSessionCount: true,
+            originalSessionId: true,
             patient: {
               select: {
                 id: true,

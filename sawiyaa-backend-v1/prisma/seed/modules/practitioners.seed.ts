@@ -10,6 +10,8 @@ import {
   PrismaClient,
 } from '@prisma/client';
 import { createHash } from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 import { seedIds } from '../shared/seed.constants';
 import { SeedModule } from '../shared/seed.types';
 import { daysAgo, daysFromNow } from '../shared/seed.utils';
@@ -20,6 +22,25 @@ function deterministicUuid(seed: string): string {
     13,
     16,
   )}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
+
+function seedCredentialFileUrl(practitionerId: string, credentialId: string): string {
+  return `/uploads/practitioners/${practitionerId}/credentials/${credentialId}.pdf`;
+}
+
+const SEEDED_PDF = Buffer.from(
+  '%PDF-1.4\n1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n2 0 obj<< /Type /Pages /Kids [] /Count 0 >>endobj\ntrailer<< /Root 1 0 R >>\n%%EOF\n',
+);
+
+async function ensureSeedCredentialFiles(
+  credentials: Array<{ practitionerId: string; id: string; fileUrl: string }>,
+): Promise<void> {
+  for (const credential of credentials) {
+    const relative = credential.fileUrl.slice('/uploads/'.length);
+    const absolutePath = path.resolve(process.cwd(), 'uploads', relative);
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, SEEDED_PDF);
+  }
 }
 
 function getSundayBasedWeekRange(baseDate: Date, weekOffset = 0) {
@@ -545,7 +566,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.aLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerA,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-a-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerA, seedIds.credentials.aLicense),
         reviewStatus: CredentialReviewStatus.PENDING,
         expiresAt: daysFromNow(365),
       },
@@ -553,7 +574,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.aDegree,
         practitionerId: seedIds.practitionerProfiles.practitionerA,
         credentialType: CredentialType.DEGREE,
-        fileUrl: 'https://files.local/practitioner-a-degree.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerA, seedIds.credentials.aDegree),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: null,
       },
@@ -561,7 +582,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.bLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerB,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-b-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerB, seedIds.credentials.bLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(540),
       },
@@ -569,7 +590,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.cLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerC,
         credentialType: CredentialType.CERTIFICATION,
-        fileUrl: 'https://files.local/practitioner-c-certification.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerC, seedIds.credentials.cLicense),
         reviewStatus: CredentialReviewStatus.REJECTED,
         expiresAt: null,
       },
@@ -577,7 +598,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.dLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerD,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-d-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerD, seedIds.credentials.dLicense),
         reviewStatus: CredentialReviewStatus.PENDING,
         expiresAt: daysFromNow(400),
       },
@@ -585,7 +606,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.eLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerE,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-e-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerE, seedIds.credentials.eLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(480),
       },
@@ -593,7 +614,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.fLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerF,
         credentialType: CredentialType.CERTIFICATION,
-        fileUrl: 'https://files.local/practitioner-f-certification.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerF, seedIds.credentials.fLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(365),
       },
@@ -601,7 +622,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.gLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerG,
         credentialType: CredentialType.DEGREE,
-        fileUrl: 'https://files.local/practitioner-g-degree.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerG, seedIds.credentials.gLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: null,
       },
@@ -609,7 +630,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.hLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerH,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-h-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerH, seedIds.credentials.hLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(365),
       },
@@ -617,7 +638,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.iLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerI,
         credentialType: CredentialType.CERTIFICATION,
-        fileUrl: 'https://files.local/practitioner-i-certification.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerI, seedIds.credentials.iLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(365),
       },
@@ -625,7 +646,7 @@ export const practitionersSeedModule: SeedModule = {
         id: seedIds.credentials.jLicense,
         practitionerId: seedIds.practitionerProfiles.practitionerJ,
         credentialType: CredentialType.LICENSE,
-        fileUrl: 'https://files.local/practitioner-j-license.pdf',
+        fileUrl: seedCredentialFileUrl(seedIds.practitionerProfiles.practitionerJ, seedIds.credentials.jLicense),
         reviewStatus: CredentialReviewStatus.APPROVED,
         expiresAt: daysFromNow(365),
       },
@@ -643,6 +664,7 @@ export const practitionersSeedModule: SeedModule = {
         },
       });
     }
+    await ensureSeedCredentialFiles(credentials);
 
     const applications = [
       {

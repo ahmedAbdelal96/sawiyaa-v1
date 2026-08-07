@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '../config/config.module';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
@@ -39,6 +40,7 @@ import { CalculatePackageSessionAllocationService } from './services/calculate-p
 import { AccountingJournalPostingService } from './services/accounting-journal-posting.service';
 import { AccountingLedgerAccountService } from './services/accounting-ledger-account.service';
 import { AccountingReconciliationDiagnosticsService } from './services/accounting-reconciliation-diagnostics.service';
+import { AdminFinancialOverviewService } from './services/admin-financial-overview.service';
 import { AccountingReconciliationAlertService } from './services/accounting-reconciliation-alert.service';
 import { AccountingReconciliationOperationsService } from './services/accounting-reconciliation-operations.service';
 import { AccountingReconciliationSchedulerService } from './services/accounting-reconciliation-scheduler.service';
@@ -111,6 +113,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
  * Payments stays the collection layer and only hands off successful payments here.
  */
 @Module({
+  imports: [ConfigModule],
   controllers: [
     PractitionerFinancialOperationsController,
     AdminPractitionerManualPayoutsController,
@@ -189,6 +192,7 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     GetFinanceOperationEventUseCase,
     GetAdminAccountingDashboardUseCase,
     GetAdminFinanceHubSummaryUseCase,
+    AdminFinancialOverviewService,
     ExportAdminAccountingDashboardCsvUseCase,
     ExportAdminLedgerExplorerCsvUseCase,
     GetAdminAccountingReconciliationOverviewUseCase,

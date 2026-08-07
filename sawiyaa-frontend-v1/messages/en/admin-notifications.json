@@ -269,6 +269,10 @@
         "title": "Practitioner application approved",
         "subtitle": "Practitioner · Application"
       },
+      "care-chat-request-approved": {
+        "title": "Care chat request approved",
+        "subtitle": "Care · Chat"
+      },
       "GENERAL_CHAT_MESSAGE": {
         "title": "New chat message",
         "subtitle": "Chat · Message"

@@ -8,6 +8,7 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallets.module';
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { ConfigModule } from '@modules/config/config.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
@@ -21,6 +22,7 @@ import { SessionPractitionerRepository } from './repositories/session-practition
 import { SessionRepository } from './repositories/session.repository';
 import { SessionCancellationPolicyRepository } from './repositories/session-cancellation-policy.repository';
 import { ApplySessionCancellationFinancialEffectsService } from './services/apply-session-cancellation-financial-effects.service';
+import { ApplyManualNoShowFinancialEffectsService } from './services/apply-manual-no-show-financial-effects.service';
 import { EvaluateSessionCancellationPolicyService } from './services/evaluate-session-cancellation-policy.service';
 import { ResolveSessionJoinReadinessService } from './services/resolve-session-join-readiness.service';
 import { SessionJoinAvailableNotificationSweeperService } from './services/session-join-available-notification-sweeper.service';
@@ -63,6 +65,23 @@ import { ResolvePatientSessionActionsService } from './services/resolve-patient-
 import { SessionLifecycleService } from './services/session-lifecycle.service';
 import { SessionCompletionConfirmationSweeperService } from './services/session-completion-confirmation-sweeper.service';
 import { SessionCodeGeneratorService } from './services/session-code-generator.service';
+import { NormalizeDailyAttendanceEvidenceService } from './services/normalize-daily-attendance-evidence.service';
+import { MarkSessionInProgressFromAttendanceService } from './services/mark-session-in-progress-from-attendance.service';
+import { SessionOutcomeEvaluator } from './services/session-outcome-evaluator.service';
+import { SessionOutcomePolicySnapshotService } from './services/session-outcome-policy-snapshot.service';
+import { NormalizeSessionAttendanceReconciliationService } from './services/normalize-session-attendance-reconciliation.service';
+import { DailySessionAttendanceReconciliationAdapter } from './providers/daily-session-attendance-reconciliation.adapter';
+import { SESSION_ATTENDANCE_RECONCILIATION_PROVIDER } from './providers/session-attendance-reconciliation.tokens';
+import { ReconcileSessionAttendanceUseCase } from './use-cases/reconcile-session-attendance.use-case';
+import { SessionAttendanceReconciliationSweeperService } from './services/session-attendance-reconciliation-sweeper.service';
+import { CompleteSessionTransactionService } from './services/complete-session-transaction.service';
+import { FinalizeSessionAutomaticallyAsCompletedUseCase } from './use-cases/finalize-session-automatically-as-completed.use-case';
+import { SessionAutomaticCompletionSweeperService } from './services/session-automatic-completion-sweeper.service';
+import { AdminSessionResolutionService } from './services/admin-session-resolution.service';
+import { MySessionController } from './controllers/my-session.controller';
+import { GetMyNextSessionUseCase } from './use-cases/get-my-next-session.use-case';
+import { SessionJoinBootstrapController } from './controllers/session-join-bootstrap.controller';
+import { RescheduleSessionService } from './services/reschedule-session.service';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -76,12 +95,15 @@ import { SessionCodeGeneratorService } from './services/session-code-generator.s
     CustomerWalletsModule,
     FinancialOperationsModule,
     forwardRef(() => PaymentsModule),
+    ConfigModule,
   ],
   controllers: [
     PatientSessionsController,
     PractitionerSessionsController,
     AdminSessionsOperationsController,
     SessionAttendanceWebhooksController,
+    MySessionController,
+    SessionJoinBootstrapController,
   ],
   providers: [
     JwtAccessAuthGuard,
@@ -105,6 +127,7 @@ import { SessionCodeGeneratorService } from './services/session-code-generator.s
     EvaluateSessionCancellationPolicyService,
     ResolvePatientSessionActionsService,
     ApplySessionCancellationFinancialEffectsService,
+    ApplyManualNoShowFinancialEffectsService,
     ExpireUnpaidSessionSweeperService,
     ResolveSessionJoinReadinessService,
     ParseDailyAttendanceWebhookService,
@@ -138,6 +161,25 @@ import { SessionCodeGeneratorService } from './services/session-code-generator.s
     ExpireUnpaidSessionUseCase,
     SessionJoinAvailableNotificationSweeperService,
     SessionReminderNotificationSweeperService,
+    NormalizeDailyAttendanceEvidenceService,
+    MarkSessionInProgressFromAttendanceService,
+    SessionOutcomeEvaluator,
+    SessionOutcomePolicySnapshotService,
+    NormalizeSessionAttendanceReconciliationService,
+    DailySessionAttendanceReconciliationAdapter,
+    {
+      provide: SESSION_ATTENDANCE_RECONCILIATION_PROVIDER,
+      useExisting: DailySessionAttendanceReconciliationAdapter,
+    },
+    ReconcileSessionAttendanceUseCase,
+    RescheduleSessionService,
+    SessionAttendanceReconciliationSweeperService,
+    CompleteSessionTransactionService,
+    FinalizeSessionAutomaticallyAsCompletedUseCase,
+    SessionAutomaticCompletionSweeperService,
+    AdminSessionResolutionService,
+    GetMyNextSessionUseCase,
+    RescheduleSessionService,
   ],
   exports: [
     SessionRepository,
@@ -148,6 +190,7 @@ import { SessionCodeGeneratorService } from './services/session-code-generator.s
     ValidateSessionStatusTransitionService,
     SessionLifecycleService,
     ExpireUnpaidSessionUseCase,
+    ReconcileSessionAttendanceUseCase,
   ],
 })
 export class SessionsModule {}

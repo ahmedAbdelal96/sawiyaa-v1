@@ -6,8 +6,7 @@ import InputField from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { FormModal } from "@/components/ui/modal";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
-import type { AdminStepUpController } from "../hooks/use-admin-step-up";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import type {
   AdminUserPermissionEffect,
   AdminUserPermissionOverride,
@@ -38,7 +37,6 @@ type AdminPermissionCustomizationModalProps = {
   cancelLabel: string;
   overrides: AdminUserPermissionOverride[];
   loading?: boolean;
-  stepUp: AdminStepUpController;
   onClose: () => void;
   onSubmit: (operations: AdminUserPermissionOverrideOperation[]) => Promise<void>;
 };
@@ -165,7 +163,6 @@ export default function AdminPermissionCustomizationModal({
   cancelLabel,
   overrides,
   loading = false,
-  stepUp,
   onClose,
   onSubmit,
 }: AdminPermissionCustomizationModalProps) {
@@ -249,18 +246,6 @@ export default function AdminPermissionCustomizationModal({
       handleClose();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          try {
-            await onSubmit(operations);
-            handleClose();
-          } catch (retryCause) {
-            const retryError = toAppError(retryCause);
-            setError(retryError.message || t("errors.generic"));
-          }
-        });
-        return;
-      }
       setError(appError.message || t("errors.generic"));
     }
   };

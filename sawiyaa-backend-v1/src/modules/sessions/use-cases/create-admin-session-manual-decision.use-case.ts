@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   Prisma,
   SessionAdminDecisionType,
@@ -9,9 +13,11 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '../repositories/session.repository';
 import { sanitizeSafeMetadata } from '../utils/safe-metadata.util';
 import { GetAdminSessionAttendanceUseCase } from './get-admin-session-attendance.use-case';
-import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
 import type { AdminSessionManualDecisionItemDto } from '../dto/admin-session-manual-decision-response.dto';
 import { SessionLifecycleService } from '../services/session-lifecycle.service';
+import { CompleteSessionTransactionService } from '../services/complete-session-transaction.service';
+import { ApplyManualNoShowFinancialEffectsService } from '../services/apply-manual-no-show-financial-effects.service';
+import type { ManualNoShowOutcome } from '../services/apply-manual-no-show-financial-effects.service';
 import {
   SecurityAuditActorType,
   SecurityAuditSource,
@@ -20,10 +26,12 @@ import {
 const DECISION_TYPE_I18N_KEY: Record<SessionAdminDecisionType, string> = {
   [SessionAdminDecisionType.MARK_COMPLETED]: 'MARK_COMPLETED',
   [SessionAdminDecisionType.MARK_PATIENT_NO_SHOW]: 'MARK_PATIENT_NO_SHOW',
-  [SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW]: 'MARK_PRACTITIONER_NO_SHOW',
+  [SessionAdminDecisionType.MARK_PRACTITIONER_NO_SHOW]:
+    'MARK_PRACTITIONER_NO_SHOW',
   [SessionAdminDecisionType.MARK_BOTH_NO_SHOW]: 'MARK_BOTH_NO_SHOW',
   [SessionAdminDecisionType.MARK_TECHNICAL_REVIEW]: 'MARK_TECHNICAL_REVIEW',
-  [SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE]: 'MARK_INSUFFICIENT_EVIDENCE',
+  [SessionAdminDecisionType.MARK_INSUFFICIENT_EVIDENCE]:
+    'MARK_INSUFFICIENT_EVIDENCE',
 };
 
 /** Statuses that make a session ineligible for manual decision */
@@ -53,8 +61,9 @@ export class CreateAdminSessionManualDecisionUseCase {
     private readonly prisma: PrismaService,
     private readonly sessionRepository: SessionRepository,
     private readonly getAdminSessionAttendanceUseCase: GetAdminSessionAttendanceUseCase,
-    private readonly sessionEarningReviewService: SessionEarningReviewService,
     private readonly sessionLifecycleService: SessionLifecycleService,
+    private readonly completeSessionTransactionService: CompleteSessionTransactionService,
+    private readonly manualNoShowFinancialEffectsService: ApplyManualNoShowFinancialEffectsService,
   ) {}
 
   async execute(input: {
@@ -79,18 +88,48 @@ export class CreateAdminSessionManualDecisionUseCase {
     const snapshot = this.buildEvidenceSnapshot(attendanceData);
 
     const decision = await this.prisma.$transaction(async (tx) => {
-      const session = await this.sessionRepository.findByIdForUpdate(input.sessionId, tx);
+      const session = await this.sessionRepository.findByIdForUpdate(
+        input.sessionId,
+        tx,
+      );
       if (!session) {
-        throw new NotFoundException({ messageKey: 'sessions.errors.sessionNotFound', error: 'SESSION_NOT_FOUND' });
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
       }
-      if (([
-        SessionStatus.COMPLETED,
-        SessionStatus.CANCELLED,
-        SessionStatus.EXPIRED,
-        SessionStatus.PATIENT_NO_SHOW,
-        SessionStatus.PRACTITIONER_NO_SHOW,
-        SessionStatus.BOTH_NO_SHOW,
-      ] as SessionStatus[]).includes(session.status)) {
+      if (NO_SHOW_DECISION_TYPES.has(input.decisionType)) {
+        const latestActive =
+          await this.sessionRepository.findLatestActiveSessionAdminDecision(
+            session.id,
+            tx,
+          );
+        if (
+          latestActive?.decisionType === input.decisionType &&
+          latestActive.nextSessionStatus === session.status &&
+          (
+            [
+              SessionStatus.PATIENT_NO_SHOW,
+              SessionStatus.PRACTITIONER_NO_SHOW,
+              SessionStatus.BOTH_NO_SHOW,
+            ] as SessionStatus[]
+          ).includes(session.status)
+        ) {
+          return latestActive;
+        }
+      }
+      if (
+        (
+          [
+            SessionStatus.COMPLETED,
+            SessionStatus.CANCELLED,
+            SessionStatus.EXPIRED,
+            SessionStatus.PATIENT_NO_SHOW,
+            SessionStatus.PRACTITIONER_NO_SHOW,
+            SessionStatus.BOTH_NO_SHOW,
+          ] as SessionStatus[]
+        ).includes(session.status)
+      ) {
         throw new ConflictException({
           messageKey: 'sessions.errors.finalOutcomeCorrectionNotSupported',
           error: 'SESSION_FINAL_OUTCOME_CORRECTION_NOT_SUPPORTED',
@@ -102,10 +141,16 @@ export class CreateAdminSessionManualDecisionUseCase {
         input.supersedePrevious === true,
         tx,
       );
-      const { previousSessionStatus, nextSessionStatus } = this.resolveStatusMapping(
-        session.status,
-        input.decisionType,
-      );
+      const { previousSessionStatus, nextSessionStatus } =
+        this.resolveStatusMapping(session.status, input.decisionType);
+      let noShowEffects: {
+        packageDecision: string | null;
+        walletEffect: string;
+        earningEffect: string;
+        refundId: string | null;
+        refundAmount: string;
+        idempotencyKey: string;
+      } | null = null;
       // 5a. If supersedePrevious=true, find and mark the latest active final decision
       let supersedesDecisionId: string | null = null;
       if (input.supersedePrevious) {
@@ -146,12 +191,15 @@ export class CreateAdminSessionManualDecisionUseCase {
       if (nextSessionStatus != null) {
         let lifecycleSession = session;
         const needsConfirmationStep =
-          nextSessionStatus !== SessionStatus.AWAITING_COMPLETION_CONFIRMATION &&
-          ([
-            SessionStatus.UPCOMING,
-            SessionStatus.READY_TO_JOIN,
-            SessionStatus.IN_PROGRESS,
-          ] as SessionStatus[]).includes(session.status);
+          nextSessionStatus !==
+            SessionStatus.AWAITING_COMPLETION_CONFIRMATION &&
+          (
+            [
+              SessionStatus.UPCOMING,
+              SessionStatus.READY_TO_JOIN,
+              SessionStatus.IN_PROGRESS,
+            ] as SessionStatus[]
+          ).includes(session.status);
 
         if (needsConfirmationStep) {
           lifecycleSession = await this.sessionLifecycleService.transition({
@@ -170,27 +218,60 @@ export class CreateAdminSessionManualDecisionUseCase {
           });
         }
 
-        await this.sessionLifecycleService.transition({
-          session: lifecycleSession,
-          to: nextSessionStatus,
-          actorUserId: input.decidedByUserId,
-          actorType: SecurityAuditActorType.USER,
-          actorRoles: input.actorRoles,
-          source: SecurityAuditSource.HTTP_REQUEST,
-          requestId: input.requestId,
-          correlationId: input.correlationId,
-          reason: input.reasonCode,
-          at: newDecision.createdAt,
-          metadata: { decisionId: newDecision.id, decisionType: input.decisionType },
-          tx,
-        });
-      }
+        if (nextSessionStatus === SessionStatus.COMPLETED) {
+          await this.completeSessionTransactionService.execute({
+            session: lifecycleSession,
+            actorUserId: input.decidedByUserId,
+            actorType: SecurityAuditActorType.USER,
+            actorRoles: input.actorRoles,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            requestId: input.requestId,
+            correlationId: input.correlationId,
+            reason: input.reasonCode,
+            at: newDecision.createdAt,
+            metadata: {
+              decisionId: newDecision.id,
+              decisionType: input.decisionType,
+            },
+            tx,
+          });
+        } else {
+          await this.sessionLifecycleService.transition({
+            session: lifecycleSession,
+            to: nextSessionStatus,
+            actorUserId: input.decidedByUserId,
+            actorType: SecurityAuditActorType.USER,
+            actorRoles: input.actorRoles,
+            source: SecurityAuditSource.HTTP_REQUEST,
+            requestId: input.requestId,
+            correlationId: input.correlationId,
+            reason: input.reasonCode,
+            at: newDecision.createdAt,
+            metadata: {
+              decisionId: newDecision.id,
+              decisionType: input.decisionType,
+            },
+            tx,
+          });
+        }
 
-      if (nextSessionStatus === SessionStatus.COMPLETED) {
-        await this.sessionEarningReviewService.syncForSessionCompletion({
-          sessionId: input.sessionId,
-          tx,
-        });
+        if (
+          nextSessionStatus === SessionStatus.PATIENT_NO_SHOW ||
+          nextSessionStatus === SessionStatus.PRACTITIONER_NO_SHOW ||
+          nextSessionStatus === SessionStatus.BOTH_NO_SHOW
+        ) {
+          noShowEffects = await this.manualNoShowFinancialEffectsService.apply({
+            tx,
+            session: lifecycleSession,
+            outcome: nextSessionStatus as ManualNoShowOutcome,
+            adminUserId: input.decidedByUserId,
+            actorRoles: input.actorRoles,
+            requestId: input.requestId,
+            correlationId: input.correlationId,
+            reasonCode: input.reasonCode,
+            decidedAt: newDecision.createdAt,
+          });
+        }
       }
 
       // 5d. Write ADMIN_MANUAL_DECISION_CREATED audit event
@@ -216,6 +297,16 @@ export class CreateAdminSessionManualDecisionUseCase {
             nextSessionStatus,
             reasonCode: input.reasonCode,
             supersedesDecisionId,
+            ...(noShowEffects
+              ? {
+                  packageDecision: noShowEffects.packageDecision,
+                  walletEffect: noShowEffects.walletEffect,
+                  earningEffect: noShowEffects.earningEffect,
+                  refundId: noShowEffects.refundId,
+                  refundAmount: noShowEffects.refundAmount,
+                  idempotencyKey: noShowEffects.idempotencyKey,
+                }
+              : {}),
           },
         },
       });
@@ -249,9 +340,8 @@ export class CreateAdminSessionManualDecisionUseCase {
     });
 
     // 6. Fetch with admin user for response
-    const decisionWithUser = await this.sessionRepository.findSessionAdminDecisionById(
-      decision.id,
-    );
+    const decisionWithUser =
+      await this.sessionRepository.findSessionAdminDecisionById(decision.id);
 
     return this.toResponseDto(decisionWithUser!);
   }
@@ -302,10 +392,11 @@ export class CreateAdminSessionManualDecisionUseCase {
         });
       }
 
-      const latestActive = await this.sessionRepository.findLatestActiveSessionAdminDecision(
-        session.id,
-        tx,
-      );
+      const latestActive =
+        await this.sessionRepository.findLatestActiveSessionAdminDecision(
+          session.id,
+          tx,
+        );
       if (
         latestActive &&
         NO_SHOW_DECISION_TYPES.has(latestActive.decisionType)
@@ -319,10 +410,11 @@ export class CreateAdminSessionManualDecisionUseCase {
 
     // If a final decision already exists and supersedePrevious is not true, reject
     if (!supersedePrevious) {
-      const latestActive = await this.sessionRepository.findLatestActiveSessionAdminDecision(
-        session.id,
-        tx,
-      );
+      const latestActive =
+        await this.sessionRepository.findLatestActiveSessionAdminDecision(
+          session.id,
+          tx,
+        );
       if (latestActive) {
         throw new NotFoundException({
           messageKey: 'sessions.errors.sessionNotFound',
@@ -422,7 +514,10 @@ export class CreateAdminSessionManualDecisionUseCase {
   private resolveStatusMapping(
     currentStatus: SessionStatus,
     decisionType: SessionAdminDecisionType,
-  ): { previousSessionStatus: SessionStatus; nextSessionStatus: SessionStatus | null } {
+  ): {
+    previousSessionStatus: SessionStatus;
+    nextSessionStatus: SessionStatus | null;
+  } {
     switch (decisionType) {
       case SessionAdminDecisionType.MARK_COMPLETED:
         return {
@@ -453,7 +548,9 @@ export class CreateAdminSessionManualDecisionUseCase {
     }
   }
 
-  private toResponseDto(decision: DecisionWithUser): AdminSessionManualDecisionItemDto {
+  private toResponseDto(
+    decision: DecisionWithUser,
+  ): AdminSessionManualDecisionItemDto {
     return {
       id: decision.id,
       sessionId: decision.sessionId,
@@ -469,9 +566,13 @@ export class CreateAdminSessionManualDecisionUseCase {
         displayName: decision.adminUser.displayName,
       },
       createdAt: decision.createdAt.toISOString(),
-      recommendedOutcomeSnapshot: (decision.recommendedOutcomeSnapshot as Record<string, unknown>) ?? null,
-      attendanceSummarySnapshot: (decision.attendanceSummarySnapshot as Record<string, unknown>) ?? null,
-      evidenceTimelineSnapshot: (decision.evidenceTimelineSnapshot as Record<string, unknown>) ?? null,
+      recommendedOutcomeSnapshot:
+        (decision.recommendedOutcomeSnapshot as Record<string, unknown>) ??
+        null,
+      attendanceSummarySnapshot:
+        (decision.attendanceSummarySnapshot as Record<string, unknown>) ?? null,
+      evidenceTimelineSnapshot:
+        (decision.evidenceTimelineSnapshot as Record<string, unknown>) ?? null,
     };
   }
 }

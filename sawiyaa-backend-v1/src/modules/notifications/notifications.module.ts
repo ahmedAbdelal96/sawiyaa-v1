@@ -42,11 +42,13 @@ import { EMAIL_PROVIDER } from './providers/email-provider.token';
 import { EmailProviderAdapter } from './providers/email-provider.adapter';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { BrevoEmailProvider } from './providers/brevo-email.provider';
+import { ConfigModule } from '@modules/config/config.module';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
  */
 @Module({
+  imports: [ConfigModule],
   controllers: [
     AdminNotificationOpsController,
     AdminAuditLogController,

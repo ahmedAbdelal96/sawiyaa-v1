@@ -26,6 +26,8 @@ type SessionForPatientActions = Pick<
   | 'sessionMode'
   | 'scheduledStartAt'
   | 'scheduledEndAt'
+  | 'joinOpenAt'
+  | 'joinCloseAt'
   | 'expiresAt'
   | 'provider'
   | 'providerRoomId'

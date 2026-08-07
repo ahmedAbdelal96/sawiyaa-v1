@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
@@ -30,6 +31,7 @@ type DailyDeleteRoomResponse = {
 @Injectable()
 export class DailySessionVideoProviderAdapter implements SessionVideoProviderAdapter {
   readonly provider = SessionProvider.DAILY;
+  private readonly logger = new Logger(DailySessionVideoProviderAdapter.name);
 
   constructor(
     @Inject(videoConfig.KEY)
@@ -37,7 +39,7 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
   ) {}
 
   private get dailyBaseUrl(): string {
-    return this.videoCfg.daily.apiBaseUrl ?? 'https://api.daily.co/v1';
+    return this.videoCfg.daily.apiBaseUrl?.trim().replace(/\/+$/, '') ?? '';
   }
 
   async createRoom(input: {
@@ -48,39 +50,36 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
     this.assertConfigured();
 
     const roomName = `fayed-session-${input.sessionId}`;
-    const response = await fetch(`${this.dailyBaseUrl}/rooms`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.videoCfg.daily.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: roomName,
-        privacy: 'private',
-        properties: {
-          exp: Math.floor(input.endsAt.getTime() / 1000) + 7200,
-          eject_at_room_exp: true,
-          enable_screenshare: true,
+    let response: Response;
+    try {
+      response = await fetch(`${this.dailyBaseUrl}/rooms`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.videoCfg.daily.apiKey}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          name: roomName,
+          privacy: 'private',
+          properties: {
+            exp: Math.floor(input.endsAt.getTime() / 1000) + 7200,
+            eject_at_room_exp: true,
+            enable_screenshare: true,
+          },
+        }),
+      });
+    } catch (error) {
+      this.logTransportFailure('rooms', error);
+      throw this.providerUnavailable('SESSION_VIDEO_PROVIDER_ROOM_CREATION_FAILED');
+    }
 
     if (!response.ok) {
       if (response.status === 409) {
-        return {
-          roomId: roomName,
-          roomUrl: `https://${roomName}.daily.co`,
-          roomName,
-        };
+        return this.readExistingRoom(roomName);
       }
 
-      throw new ServiceUnavailableException({
-        messageKey: 'sessions.errors.videoProviderRoomCreationFailed',
-        error: 'SESSION_VIDEO_PROVIDER_ROOM_CREATION_FAILED',
-        messageParams: {
-          provider: SessionProvider.DAILY,
-        },
-      });
+      await this.logProviderFailure('rooms', response);
+      throw this.providerUnavailable('SESSION_VIDEO_PROVIDER_ROOM_CREATION_FAILED');
     }
 
     const payload = (await response.json()) as DailyRoomResponse;
@@ -101,6 +100,7 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
     userId: string;
     displayName: string | null;
     actorType: 'PATIENT' | 'PRACTITIONER';
+    expiresAt?: Date | null;
   }): Promise<SessionVideoJoinTokenResult> {
     this.assertConfigured();
 
@@ -116,7 +116,12 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
           user_id: input.userId,
           user_name: input.displayName ?? input.userId,
           is_owner: false,
-          exp: Math.floor(Date.now() / 1000) + 3600,
+          exp: Math.floor(
+            Math.min(
+              (input.expiresAt?.getTime() ?? Date.now() + 60 * 60_000) / 1000,
+              (Date.now() + 2 * 60 * 60_000) / 1000,
+            ),
+          ),
         },
       }),
     });
@@ -146,7 +151,10 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
 
     return {
       token,
-      expiresAt: new Date(Date.now() + 3600 * 1000),
+      expiresAt:
+        input.expiresAt && input.expiresAt.getTime() > Date.now()
+          ? input.expiresAt
+          : new Date(Date.now() + 60 * 60_000),
       joinMode: 'redirect_url',
       payload: {},
       raw: payload,
@@ -197,14 +205,87 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
   }
 
   private assertConfigured(): void {
-    if (!this.videoCfg.daily.apiKey?.trim()) {
-      throw new ServiceUnavailableException({
-        messageKey: 'sessions.errors.videoProviderNotConfigured',
-        error: 'SESSION_VIDEO_PROVIDER_NOT_CONFIGURED',
-        messageParams: {
-          provider: SessionProvider.DAILY,
-        },
-      });
+    if (!this.videoCfg.daily.apiKey?.trim() || !this.dailyBaseUrl) {
+      throw this.providerUnavailable('SESSION_VIDEO_PROVIDER_NOT_CONFIGURED', 'sessions.errors.videoProviderNotConfigured');
     }
+
+    try {
+      const parsed = new URL(this.dailyBaseUrl);
+      if (!['https:', 'http:'].includes(parsed.protocol) || !parsed.host) throw new Error('invalid-url');
+    } catch {
+      throw this.providerUnavailable('SESSION_VIDEO_PROVIDER_NOT_CONFIGURED', 'sessions.errors.videoProviderNotConfigured');
+    }
+  }
+
+  private async readExistingRoom(roomName: string): Promise<SessionVideoRoomResult> {
+    try {
+      const response = await fetch(`${this.dailyBaseUrl}/rooms/${encodeURIComponent(roomName)}`, {
+        headers: { Authorization: `Bearer ${this.videoCfg.daily.apiKey}` },
+      });
+      if (!response.ok) {
+        await this.logProviderFailure('rooms/{roomName} after 409', response);
+        throw new Error(`existing-room-${response.status}`);
+      }
+      const payload = (await response.json()) as DailyRoomResponse;
+      const resolvedRoomName = payload.name?.trim() || roomName;
+      const roomUrl = payload.url?.trim();
+      if (!roomUrl) {
+        this.logger.warn(JSON.stringify({
+          event: 'dailyProviderSchemaMismatch',
+          endpoint: 'rooms/{roomName}',
+          missingField: 'url',
+        }));
+        throw new Error('existing-room-missing-url');
+      }
+      return {
+        roomId: resolvedRoomName,
+        roomUrl,
+        roomName: resolvedRoomName,
+        raw: payload,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      this.logTransportFailure('rooms/{roomName} after 409', error);
+      throw this.providerUnavailable('SESSION_VIDEO_PROVIDER_ROOM_CREATION_FAILED');
+    }
+  }
+
+  private async logProviderFailure(endpoint: string, response: Response): Promise<void> {
+    let providerCode: string | undefined;
+    let providerMessageLength: number | undefined;
+    try {
+      const payload = (await response.clone().json()) as Record<string, unknown>;
+      providerCode = typeof payload.error === 'string' ? payload.error : undefined;
+      const providerMessage = typeof payload.info === 'string' ? payload.info :
+        typeof payload.message === 'string' ? payload.message : undefined;
+      providerMessageLength = providerMessage?.length;
+    } catch {
+      // Some provider failures are not JSON; status metadata is sufficient.
+    }
+    this.logger.warn(JSON.stringify({
+      event: 'dailyProviderHttpFailure',
+      endpoint,
+      status: response.status,
+      statusText: response.statusText,
+      providerCode,
+      providerMessageLength,
+    }));
+  }
+
+  private logTransportFailure(endpoint: string, error: unknown): void {
+    this.logger.warn(JSON.stringify({
+      event: 'dailyProviderTransportFailure',
+      endpoint,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+      errorMessage: error instanceof Error ? error.message.slice(0, 240) : 'unknown',
+    }));
+  }
+
+  private providerUnavailable(error: string, messageKey = 'sessions.errors.videoProviderRoomCreationFailed') {
+    return new ServiceUnavailableException({
+      messageKey,
+      error,
+      messageParams: { provider: SessionProvider.DAILY },
+    });
   }
 }

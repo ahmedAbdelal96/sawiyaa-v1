@@ -23,7 +23,7 @@ import { ListAdminPayoutsReportRowsUseCase } from '../use-cases/list-admin-payou
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/payouts')
 export class AdminPayoutsReportController {

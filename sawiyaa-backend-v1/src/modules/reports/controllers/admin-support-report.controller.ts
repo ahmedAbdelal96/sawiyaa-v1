@@ -23,7 +23,7 @@ import { ListAdminSupportReportRowsUseCase } from '../use-cases/list-admin-suppo
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/support')
 export class AdminSupportReportController {

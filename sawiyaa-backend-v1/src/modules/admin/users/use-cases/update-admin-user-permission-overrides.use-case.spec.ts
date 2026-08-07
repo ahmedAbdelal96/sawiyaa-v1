@@ -46,6 +46,13 @@ describe('UpdateAdminUserPermissionOverridesUseCase', () => {
         .mockResolvedValue(overrides?.superAdminCount ?? 2),
       upsertPermissionOverride: jest.fn().mockResolvedValue(undefined),
       deletePermissionOverride: jest.fn().mockResolvedValue(undefined),
+      listPermissionOverrides: jest.fn().mockResolvedValue([
+        {
+          permission: { key: 'admin.users.read' },
+          effect: PermissionOverrideEffect.DENY,
+          reason: 'legacy restriction',
+        },
+      ]),
     } as unknown as AdminUsersRepository;
 
     const policy = new AdminUserManagementPolicy();
@@ -58,6 +65,7 @@ describe('UpdateAdminUserPermissionOverridesUseCase', () => {
 
     const audit = {
       logAsync: jest.fn(),
+      recordRequired: jest.fn().mockResolvedValue(undefined),
     } as unknown as SecurityAuditService;
 
     const sut = new UpdateAdminUserPermissionOverridesUseCase(
@@ -73,7 +81,7 @@ describe('UpdateAdminUserPermissionOverridesUseCase', () => {
       ? ['SUPER_ADMIN']
       : ['ADMIN'];
 
-    return { sut, repo, actorRoles, permissionResolver };
+    return { sut, repo, actorRoles, permissionResolver, audit };
   };
 
   it('rejects when target is not an internal user', async () => {
@@ -130,5 +138,45 @@ describe('UpdateAdminUserPermissionOverridesUseCase', () => {
         ],
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('records before and after override state without sensitive payloads', async () => {
+    const { sut, actorRoles, audit } = makeSut({
+      internalUser: { id: 'u2', roles: [{ role: UserRoleType.ADMIN }] },
+      actorIsSuperAdmin: true,
+    });
+
+    await sut.execute({
+      locale: 'en' as any,
+      actor: { id: 'a1', roles: actorRoles } as any,
+      userId: 'u2',
+      operations: [
+        {
+          permissionKey: PermissionKey.AUDIT_LOG_READ,
+          effect: PermissionOverrideEffect.ALLOW,
+          reason: 'approved',
+        } as any,
+      ],
+    });
+
+    expect(audit.recordRequired).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          before: [
+            expect.objectContaining({
+              permissionKey: 'admin.users.read',
+              effect: PermissionOverrideEffect.DENY,
+            }),
+          ],
+          after: [
+            expect.objectContaining({
+              permissionKey: PermissionKey.AUDIT_LOG_READ,
+              effect: PermissionOverrideEffect.ALLOW,
+            }),
+          ],
+        }),
+      }),
+    );
   });
 });

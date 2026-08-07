@@ -83,6 +83,22 @@ export class PractitionerCredentialStorageService {
     return absolutePath;
   }
 
+  async statSafeFile(absolutePath: string): Promise<import('fs').Stats | null> {
+    const baseRealPath = await fs.realpath(this.baseDir).catch(() => null);
+    const fileRealPath = await fs.realpath(absolutePath).catch(() => null);
+    if (!baseRealPath || !fileRealPath) return null;
+
+    const base = baseRealPath.endsWith(path.sep)
+      ? baseRealPath
+      : baseRealPath + path.sep;
+    if (!(fileRealPath === baseRealPath || fileRealPath.startsWith(base))) {
+      return null;
+    }
+
+    const stat = await fs.stat(fileRealPath).catch(() => null);
+    return stat?.isFile() ? stat : null;
+  }
+
   guessMimeTypeFromAbsolutePath(absolutePath: string): string | null {
     const ext = path.extname(absolutePath).toLowerCase();
     return EXTENSION_TO_MIME[ext] ?? null;

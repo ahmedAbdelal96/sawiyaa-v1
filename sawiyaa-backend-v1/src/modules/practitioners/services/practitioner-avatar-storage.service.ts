@@ -85,6 +85,7 @@ export class PractitionerAvatarStorageService {
         if (!mimeType) return;
 
         const absolutePath = path.join(practitionerDir, name);
+        if (!(await this.isSafeFilePath(absolutePath))) return null;
         const stat = await fs.stat(absolutePath).catch(() => null);
         if (!stat?.isFile()) return;
 
@@ -164,6 +165,16 @@ export class PractitionerAvatarStorageService {
   private toApiAvatarUrl(updatedAtMs: number): string {
     const version = Math.floor(updatedAtMs);
     return `/api/v1/practitioners/me/avatar?v=${version}`;
+  }
+
+  private async isSafeFilePath(absolutePath: string): Promise<boolean> {
+    const baseRealPath = await fs.realpath(this.baseDir).catch(() => null);
+    const fileRealPath = await fs.realpath(absolutePath).catch(() => null);
+    if (!baseRealPath || !fileRealPath) return false;
+    const base = baseRealPath.endsWith(path.sep)
+      ? baseRealPath
+      : baseRealPath + path.sep;
+    return fileRealPath.startsWith(base);
   }
 
   toPublicAvatarUrl(publicSlug: string, updatedAtMs: number): string {

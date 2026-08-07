@@ -27,6 +27,7 @@ describe('LoggingInterceptor', () => {
       headers: { 'user-agent': 'jest' },
       query: { foo: 'bar' },
       ip: '127.0.0.1',
+      correlationId: 'payment-flow-1',
     } as never;
     const response = { statusCode: 200 } as never;
     const context = {
@@ -58,6 +59,8 @@ describe('LoggingInterceptor', () => {
         locale: 'ar',
         routeController: 'PractitionersController',
         routeHandler: 'listPublicPractitioners',
+        module: 'practitioners',
+        correlationId: 'payment-flow-1',
       }),
       undefined,
       'LoggingInterceptor',

@@ -58,6 +58,10 @@ export const permissionDefinitions: Array<{
     description: 'Add append-only settlement adjustments before approval',
   },
   {
+    key: 'financial.package-settlement.release',
+    description: 'Release ready package settlements into practitioner earnings',
+  },
+  {
     key: 'financial.payout.execute',
     description: 'Execute external payout preparation for credited settlements',
   },
@@ -161,6 +165,11 @@ export const permissionDefinitions: Array<{
     key: 'patients.update.admin',
     description:
       'Update patient profile data in back-office (e.g. country change for pricing correction)',
+  },
+  {
+    key: 'academy.enrollments.create.manual',
+    description:
+      'Create manual academy program enrollments from the back-office',
   },
   {
     key: 'support.ticket.note.internal',

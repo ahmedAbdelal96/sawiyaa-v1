@@ -23,7 +23,6 @@ export const enAuthCatalog = {
     adminLoggedIn: 'Admin logged in successfully',
     adminTokensRefreshed: 'Admin session refreshed successfully',
     adminLoggedOut: 'Admin session logged out successfully',
-    adminStepUpVerified: 'Step-up verification completed successfully',
     practitionerAuthLockoutCleared:
       'Practitioner auth lockout cleared successfully',
   },
@@ -86,7 +85,6 @@ export const enAuthCatalog = {
     authenticationRequired: 'Authentication is required for this route',
     csrfTokenRequired:
       'A CSRF token is required for this cookie-authenticated request',
-    stepUpRequired: 'Step-up verification is required for this action',
     loginTemporarilyLocked:
       'Login is temporarily locked. Please try again later.',
   },

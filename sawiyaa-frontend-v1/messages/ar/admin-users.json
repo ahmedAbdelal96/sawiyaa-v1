@@ -214,21 +214,6 @@
     "confirm": "إبطال الرموز",
     "cancel": "إلغاء"
   },
-  "stepUp": {
-    "title": "تأكيد بكلمة المرور",
-    "description": "الإجراءات الحساسة تتطلب تأكيدًا جديدًا لكلمة المرور.",
-    "passwordLabel": "كلمة المرور",
-    "passwordPlaceholder": "أدخل كلمة المرور",
-    "hint": "لن يتم تخزين كلمة المرور أو تسجيلها.",
-    "confirm": "تحقق",
-    "cancel": "إلغاء",
-    "successNote": "تم تأكيد الخطوة الإضافية بنجاح.",
-    "errors": {
-      "passwordRequired": "كلمة المرور مطلوبة.",
-      "invalidPassword": "كلمة المرور غير صحيحة.",
-      "generic": "فشل التحقق. حاول مرة أخرى."
-    }
-  },
   "permissions": {
     "search": {
       "label": "البحث في الصلاحيات",
@@ -263,6 +248,10 @@
       "payouts": {
         "title": "مدفوعات الممارسين",
         "description": "صلاحيات عمليات مدفوعات الممارسين."
+      },
+      "academy": {
+        "title": "الأكاديمية",
+        "description": "صلاحيات إدارة تسجيلات الأكاديمية."
       },
       "refunds": {
         "title": "الاستردادات",
@@ -345,6 +334,10 @@
     "settlementsWrite": {
       "label": "إدارة التسويات"
     },
+    "financialPackageSettlementRelease": {
+      "label": "إطلاق تسويات الباقات",
+      "description": "إطلاق تسويات الباقات الجاهزة إلى أرباح الممارسين."
+    },
     "practitionerPayoutsRead": {
       "label": "عرض مدفوعات الممارسين"
     },
@@ -353,6 +346,10 @@
     },
     "practitionerStatementsRead": {
       "label": "عرض كشوف الممارسين"
+    },
+    "academyEnrollmentsCreateManual": {
+      "label": "إنشاء تسجيلات أكاديمية يدوية",
+      "description": "إنشاء تسجيلات برامج الأكاديمية يدويًا من لوحة الإدارة."
     },
     "refundsApprove": {
       "label": "الموافقة على الاستردادات"
@@ -435,20 +432,94 @@
     },
     "page": {
       "saving": "جارٍ الحفظ...",
-      "description": "صلاحيات الدور هي الأساس. علِّم على الصلاحية لتفعيلها، أو أزل العلامة لإيقافها. تُحفظ التغييرات بعد الضغط على حفظ.",
+      "description": "نظام مصفوفة الصلاحيات المتقدمة للمنصة. يمكنك السماح بصلاحيات إضافية أو حظر صلاحيات محددة، مع عرض شفاف لوراثة الأدوار.",
       "readOnlyNote": "يمكنك عرض الصلاحيات المخصصة، لكن لا تملك صلاحية تعديلها.",
       "save": "حفظ الصلاحيات المخصصة",
-      "noMatches": "لا توجد صلاحيات تطابق بحثك.",
-      "title": "تخصيص صلاحيات المستخدم",
+      "noMatches": "لا توجد صلاحيات تطابق البحث والمرشحات الحالية.",
+      "title": "إدارة مصفوفة الصلاحيات",
       "saved": "تم حفظ الصلاحيات المخصصة بنجاح.",
-      "saveHint": "تُدقَّق هذه التغييرات وقد تتطلب تأكيد كلمة المرور قبل الحفظ.",
+      "saveHint": "تُدقَّق هذه التغييرات وتنطبق فوراً على حساب المستخدم.",
       "backToUser": "العودة إلى تفاصيل المستخدم",
-      "loadingTitle": "جارٍ تحميل الصلاحيات",
-      "loadingDescription": "جارٍ جلب إعدادات الصلاحيات الحالية لهذا المستخدم.",
-      "noChanges": "لا توجد تغييرات غير محفوظة",
-      "unsavedChanges": "{count, plural, one {تغيير غير محفوظ واحد} other {# تغييرات غير محفوظة}}",
+      "loadingTitle": "جارٍ تحميل مصفوفة الصلاحيات",
+      "loadingDescription": "جارٍ جلب إعدادات الصلاحيات الحالية والأدوار للمستخدم.",
+      "noChanges": "لا توجد تغييرات معلقة",
+      "unsavedChanges": "{count, plural, one {تغيير واحد معلق} other {# تغييرات معلقة}}",
       "changeCount": "التغييرات الحالية",
       "changeCountValue": "{count, plural, =0 {0 تغييرات} one {تغيير واحد} other {# تغييرات}}"
+    },
+    "risk": {
+      "normal": "عادي",
+      "sensitive": "حساس",
+      "critical": "حرج"
+    },
+    "stateFilter": {
+      "all": "كل الحالات",
+      "overriddenOnly": "المخصصة فقط (استثناءات)",
+      "inheritedOnly": "الافتراضية حسب الدور",
+      "explicitAllow": "سماح صريح فقط",
+      "explicitDeny": "حظر صريح فقط",
+      "effectiveAllow": "المسموحة فعلياً",
+      "effectiveDeny": "المحظورة فعلياً"
+    },
+    "riskFilter": {
+      "all": "كل مستويات الخطورة",
+      "normal": "عادي",
+      "sensitive": "حساس",
+      "critical": "حرج"
+    },
+    "density": {
+      "label": "الكثافة",
+      "compact": "مدمج",
+      "comfortable": "مريح"
+    },
+    "legend": {
+      "title": "دليل حالات الصلاحيات",
+      "inherited": "ممنوح من الدور الافتراضي",
+      "inheritedDeny": "غير متاح بالدور الافتراضي",
+      "explicitAllow": "سماح صريح (تجاوز خاص)",
+      "explicitDeny": "حظر صريح (تجاوز خاص)",
+      "noOverride": "بدون تخصيص (يتبع الدور)"
+    },
+    "table": {
+      "columns": {
+        "permission": "الصلاحية والمفتاح",
+        "module": "القسم",
+        "roleDefault": "افتراضي الدور",
+        "userOverride": "تخصيص المستخدم",
+        "effective": "الحالة النهائية",
+        "control": "التحكم والتبديل"
+      },
+      "inherited": "افتراضي الدور",
+      "explicitAllow": "سماح خاص",
+      "explicitDeny": "حظر خاص",
+      "noOverride": "بدون تخصيص",
+      "effectiveAllow": "مسموح",
+      "effectiveDeny": "محظور",
+      "roleGranted": "مسموح بالدور",
+      "roleMissing": "غير متاح بالدور",
+      "pendingChange": "تغيير معلق",
+      "actions": {
+        "allow": "سماح",
+        "deny": "حظر",
+        "inherit": "افتراضي"
+      },
+      "bulk": {
+        "selected": "{count, plural, one {صلاحية واحدة محدودة} other {# صلاحيات محددة}}",
+        "grantSelected": "منح المحدد",
+        "denySelected": "حظر المحدد",
+        "resetSelected": "إعادة المحدد للافتراضي",
+        "clearSelection": "إلغاء التحديد",
+        "moduleAllowAll": "سماح للكل بالقسم",
+        "moduleDenyAll": "حظر الكل بالقسم",
+        "moduleReset": "إعادة ضبط القسم"
+      }
+    },
+    "stats": {
+      "total": "إجمالي الصلاحيات",
+      "roleAllowed": "مسموح بالدور",
+      "explicitAllow": "سماح خاص",
+      "explicitDeny": "حظر خاص",
+      "pending": "تغييرات معلقة"
     }
   }
 }

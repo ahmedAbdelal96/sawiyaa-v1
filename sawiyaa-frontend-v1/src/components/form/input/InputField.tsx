@@ -20,7 +20,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     // Determine input styles based on state (disabled, success, error)
-    let inputClasses = `app-control bg-surface-tertiary dark:bg-surface-tertiary focus:ring-ring-focus focus:border-border-focus h-11 w-full appearance-none px-4 py-2.5 ${className}`;
+    let inputClasses = `app-control bg-surface-tertiary dark:bg-surface-tertiary focus:ring-ring-focus focus:border-border-focus h-10 w-full appearance-none px-3.5 py-2 text-xs md:text-sm ${className}`;
 
     // Add styles for the different states
     if (disabled) {

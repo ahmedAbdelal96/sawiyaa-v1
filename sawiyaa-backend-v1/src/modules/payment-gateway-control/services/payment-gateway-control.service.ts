@@ -246,6 +246,12 @@ export class PaymentGatewayControlService {
         targetId: provider,
         requestId: input.requestId,
       });
+      this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
+      await this.verifyStepUp({
+        challengeId: input.stepUpChallengeId,
+        code: input.stepUpCode,
+        actorUserId: input.actorUserId,
+      });
 
       const nextSnapshot = this.toPaymobRuntimeSnapshot(normalized, current);
       const result = await this.applyPaymentSnapshot({
@@ -293,6 +299,12 @@ export class PaymentGatewayControlService {
       operation: 'provider.update',
       targetId: provider,
       requestId: input.requestId,
+    });
+    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
+    await this.verifyStepUp({
+      challengeId: input.stepUpChallengeId,
+      code: input.stepUpCode,
+      actorUserId: input.actorUserId,
     });
 
     const nextSnapshot = this.toStripeRuntimeSnapshot(normalized, current);
@@ -351,6 +363,12 @@ export class PaymentGatewayControlService {
       operation: 'routing.update',
       targetId: 'routing',
       requestId: input.requestId,
+    });
+    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
+    await this.verifyStepUp({
+      challengeId: input.stepUpChallengeId,
+      code: input.stepUpCode,
+      actorUserId: input.actorUserId,
     });
 
     const nextSnapshot = this.toRoutingRuntimeSnapshot(normalized, current);
@@ -455,6 +473,12 @@ export class PaymentGatewayControlService {
       operation: 'provider.rollback',
       targetId: provider,
       requestId: input.requestId,
+    });
+    this.assertStepUpPayload(input.stepUpChallengeId, input.stepUpCode);
+    await this.verifyStepUp({
+      challengeId: input.stepUpChallengeId,
+      code: input.stepUpCode,
+      actorUserId: input.actorUserId,
     });
 
     const current =

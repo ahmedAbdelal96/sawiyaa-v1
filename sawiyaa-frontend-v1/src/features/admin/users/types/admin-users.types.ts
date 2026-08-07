@@ -117,7 +117,6 @@ export interface AdminUserUpdateStatusInput {
   status: UserStatus;
   reason?: string;
 }
-
 export interface AdminUserUpdateRolesInput {
   roles: AdminUserRole[];
   reason?: string;
@@ -131,13 +130,4 @@ export interface AdminUserPermissionOverrideOperation {
 
 export interface AdminUserUpdatePermissionOverridesInput {
   operations: AdminUserPermissionOverrideOperation[];
-}
-
-export interface AdminStepUpVerifyInput {
-  password: string;
-}
-
-export interface AdminStepUpVerifyResult {
-  message: string;
-  expiresAt: string;
 }

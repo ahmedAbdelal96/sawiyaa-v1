@@ -162,15 +162,15 @@ else
   override="$TEMP_DIR/compose-env-override.yml"
   { printf 'services:\n'; printf '  postgres:\n    env_file:\n      - %s\n' "$DB_ENV"; printf '  backend:\n    env_file:\n      - %s\n' "$BACKEND_ENV"; printf '  frontend:\n    env_file:\n      - %s\n' "$FRONTEND_ENV"; } > "$override"
   COMPOSE_EXTRA_ARGS=(-f "$override")
-  docker compose -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" config --quiet >/dev/null 2>&1 && pass COMPOSE_MODEL || block COMPOSE_MODEL_INVALID
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" config --quiet >/dev/null 2>&1 && pass COMPOSE_MODEL || block COMPOSE_MODEL_INVALID
 fi
 
 # 15-16. PostgreSQL running and non-mutating readiness/connectivity.
 if (( MOCK )); then
   warn POSTGRES_CHECK_MOCKED
 elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
-  docker compose -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
-  docker compose -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
 else
   block POSTGRES_CHECK_PREREQUISITES
 fi

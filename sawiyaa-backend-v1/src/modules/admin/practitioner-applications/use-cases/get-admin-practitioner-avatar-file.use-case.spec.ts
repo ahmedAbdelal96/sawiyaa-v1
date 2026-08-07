@@ -4,7 +4,7 @@ import { GetAdminPractitionerAvatarFileUseCase } from './get-admin-practitioner-
 describe('GetAdminPractitionerAvatarFileUseCase', () => {
   it('returns only the stored avatar file for an admin-visible profile', async () => {
     const profileRepository = {
-      findById: jest.fn().mockResolvedValue({ userId: 'user-1' }),
+      findById: jest.fn().mockResolvedValue({ id: 'profile-1', userId: 'user-1' }),
     };
     const avatarStorage = {
       getAvatarFile: jest.fn().mockResolvedValue({
@@ -18,7 +18,7 @@ describe('GetAdminPractitionerAvatarFileUseCase', () => {
       avatarStorage as never,
     ).execute('profile-1');
 
-    expect(avatarStorage.getAvatarFile).toHaveBeenCalledWith('user-1');
+    expect(avatarStorage.getAvatarFile).toHaveBeenCalledWith('profile-1');
     expect(result).toEqual({
       absolutePath: 'C:/safe/avatar.jpg',
       mimeType: 'image/jpeg',

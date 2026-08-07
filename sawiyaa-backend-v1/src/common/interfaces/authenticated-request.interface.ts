@@ -16,4 +16,5 @@ export interface AuthenticatedRequest extends Request {
   locale?: SupportedLocale;
   resourceOwnerId?: string;
   practitionerApplicationOwnerId?: string;
+  correlationId?: string;
 }

@@ -15,8 +15,9 @@ import {
   getPractitionerSessions,
   preparePractitionerSessionRuntime,
   resolvePractitionerSessionJoinContract,
+  getMyNextSession,
 } from "../api/sessions.api";
-import type { ListSessionsParams, SessionItem } from "../types/sessions.types";
+import type { ListSessionsParams, NextSession, SessionItem } from "../types/sessions.types";
 import type { SessionSummary } from "../types/sessions.types";
 
 function sanitizeListSessionsParams(params?: ListSessionsParams): ListSessionsParams | undefined {
@@ -32,6 +33,18 @@ export const patientSessionQueryKeys = {
     [...patientSessionQueryKeys.all, "list", params ?? {}] as const,
   detail: (sessionId: string) => [...patientSessionQueryKeys.all, sessionId] as const,
 };
+
+export const nextSessionQueryKey = ["my-next-session"] as const;
+
+export function useMyNextSession() {
+  return useQuery<NextSession | null>({
+    queryKey: nextSessionQueryKey,
+    queryFn: getMyNextSession,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
+  });
+}
 
 type PatientSessionExtraOptions = {
   staleTime?: number;

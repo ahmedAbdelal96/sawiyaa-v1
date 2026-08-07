@@ -5,10 +5,14 @@ import type {
   AdminPatientOnboardingDto,
   AdminPatientStatusDto,
 } from '../dto/list-admin-patients.dto';
+import { AppLoggerService } from '@common/logging/app-logger.service';
 
 @Injectable()
 export class ListAdminPatientsUseCase {
-  constructor(private readonly repository: AdminPatientDirectoryRepository) {}
+  constructor(
+    private readonly repository: AdminPatientDirectoryRepository,
+    private readonly logger: AppLoggerService,
+  ) {}
 
   async execute(input: {
     locale: SupportedLocale;
@@ -21,13 +25,17 @@ export class ListAdminPatientsUseCase {
     const page = input.page ?? 1;
     const limit = input.limit ?? 20;
     const skip = (page - 1) * limit;
-    console.log('[adminPatients] list request', {
-      search: input.search ?? null,
-      status: input.status ?? null,
-      onboarding: input.onboarding ?? null,
-      page,
-      limit,
-    });
+    this.logger.debug(
+      {
+        message: 'Admin patient directory request',
+        search: input.search ?? null,
+        status: input.status ?? null,
+        onboarding: input.onboarding ?? null,
+        page,
+        limit,
+      },
+      ListAdminPatientsUseCase.name,
+    );
 
     const { rows, total, completedOnboarding, incompleteOnboarding } =
       await this.repository.list({
@@ -37,19 +45,23 @@ export class ListAdminPatientsUseCase {
         skip,
         take: limit,
       });
-    console.log('[adminPatients] list result', {
-      search: input.search ?? null,
-      rows: rows.length,
-      total,
-      firstItem: rows[0]
-        ? {
-            id: rows[0].id,
-            userId: rows[0].userId,
-            displayName:
-              rows[0].user.displayName ?? rows[0].displayName ?? null,
-          }
-        : null,
-    });
+    this.logger.debug(
+      {
+        message: 'Admin patient directory result',
+        search: input.search ?? null,
+        rows: rows.length,
+        total,
+        firstItem: rows[0]
+          ? {
+              id: rows[0].id,
+              userId: rows[0].userId,
+              displayName:
+                rows[0].user.displayName ?? rows[0].displayName ?? null,
+            }
+          : null,
+      },
+      ListAdminPatientsUseCase.name,
+    );
 
     return {
       message: 'Patients fetched successfully.',

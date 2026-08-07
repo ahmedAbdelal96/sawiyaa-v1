@@ -86,6 +86,8 @@ export class ReconcileSessionPaymentReturnUseCase {
               id: session.id,
               status: session.status,
               scheduledStartAt: session.scheduledStartAt,
+              scheduledEndAt: session.scheduledEndAt,
+              scheduleRevision: session.scheduleRevision,
             },
           },
         );

@@ -3,6 +3,7 @@ import type { PaymentProvider, PaymentStatus } from "@/features/payments/types/p
 export type SessionEarningReviewSourceType = "DIRECT_SESSION" | "PACKAGE_SESSION";
 export type SessionEarningReviewStatus =
   | "PENDING_REVIEW"
+  | "DECISION_APPROVED"
   | "APPROVED"
   | "REJECTED"
   | "EXCLUDED_FROM_PAYOUT";
@@ -17,6 +18,13 @@ export type SessionEarningReviewModerationAction =
   | "EDIT_AND_APPROVE"
   | "REJECT_PAYOUT"
   | "EXCLUDE_FROM_PAYOUT";
+export type SessionEarningReviewFinancialStage =
+  | "PENDING_REVIEW"
+  | "DECISION_APPROVED"
+  | "WALLET_CREDITED"
+  | "EXTERNAL_PAYOUT"
+  | "REJECTED_OR_EXCLUDED"
+  | "ALL";
 
 export type SessionPaymentCoverageType = "DIRECT_PAYMENT" | "PACKAGE";
 export type SessionStatus =
@@ -53,6 +61,7 @@ export type ListAdminSessionEarningReviewsParams = {
   search?: string;
   sourceType?: SessionEarningReviewSourceType;
   status?: SessionEarningReviewStatus;
+  stage?: SessionEarningReviewFinancialStage;
   decision?: SessionEarningReviewDecision;
   practitionerId?: string;
   patientId?: string;
@@ -111,6 +120,7 @@ export type AdminSessionEarningReviewPatientSummary = {
 
 export type AdminSessionEarningReviewSessionSummary = {
   sessionId: string;
+  originalSessionId: string | null;
   sessionCode: string;
   status: SessionStatus;
   paymentCoverageType: SessionPaymentCoverageType;
@@ -200,14 +210,24 @@ export type AdminSessionEarningReviewPackageSettlementSummary = {
 
 export type AdminSessionEarningReviewListItem = {
   reviewId: string;
+  earningEntitlementId: string;
+  fulfillmentSessionId: string;
+  originalSessionId: string | null;
   sourceType: SessionEarningReviewSourceType;
   reviewStatus: SessionEarningReviewStatus;
+  financialStage: SessionEarningReviewFinancialStage;
   reviewDecision: SessionEarningReviewDecision;
   paymentAmount: string;
   paymentCurrencyCode: string;
   suggestedPractitionerAmount: string;
   suggestedPlatformAmount: string;
   suggestedCurrencyCode: string;
+  suggestedPractitionerPercentage: string | null;
+  accountantApprovedSourceAmount: string | null;
+  accountingAdjustmentAmount: string | null;
+  accountingAdjustmentType: string | null;
+  accountingAdjustmentReason: string | null;
+  accountingNotes: string | null;
   finalPractitionerAmount: string | null;
   finalPlatformAmount: string | null;
   finalCurrencyCode: string | null;
@@ -221,19 +241,39 @@ export type AdminSessionEarningReviewListItem = {
   payment: AdminSessionEarningReviewPaymentSummary | null;
   packagePurchase: AdminSessionEarningReviewPackagePurchaseSummary | null;
   packageSettlement: AdminSessionEarningReviewPackageSettlementSummary | null;
+  activeWalletCurrency: string | null;
+  conversionRequired: boolean;
   isActionRequired: boolean;
   isFinalized: boolean;
   canApprove: boolean;
+  patientCountrySnapshot?: string | null;
+  practitionerCountrySnapshot?: string | null;
+  countryRelationshipSnapshot?: string | null;
+  calculatedPractitionerAmount?: string | null;
+  overrideReason?: string | null;
   canAdjust: boolean;
   canReject: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
+export type PractitionerEarningAdjustmentItem = {
+  id: string;
+  type: "ADDITION" | "DEDUCTION";
+  category: string;
+  description: string;
+  amount: string;
+  currencyCode: string;
+  reason: string;
+  createdBy: AdminSessionEarningReviewUserSummary | null;
+  createdAt: string;
+};
+
 export type AdminSessionEarningReviewDetailItem = AdminSessionEarningReviewListItem & {
   internalReason: string | null;
   practitionerFacingNote: string | null;
   ledgerEntries: AdminSessionEarningReviewLedgerEntry[];
+  adjustments?: PractitionerEarningAdjustmentItem[];
 };
 
 export type AdminSessionEarningReviewsListData = {
@@ -246,6 +286,32 @@ export type AdminSessionEarningReviewDetailData = {
   item: AdminSessionEarningReviewDetailItem;
 };
 
+export type PractitionerEarningAdjustmentItemPayload = {
+  type: "ADDITION" | "DEDUCTION";
+  category: string;
+  description: string;
+  amount: string;
+  currencyCode: string;
+  reason?: string;
+};
+
+export type RecordFinancialDecisionPayload = {
+  accountantApprovedSourceAmount?: string;
+  overrideReason?: string;
+  adjustments?: PractitionerEarningAdjustmentItemPayload[];
+  internalReason?: string;
+  practitionerFacingNote?: string;
+  idempotencyKey?: string;
+};
+
+export type CreditPractitionerWalletPayload = {
+  approvedWalletCreditAmount?: string;
+  walletCreditDifferenceAmount?: string;
+  walletCreditOverrideReason?: string;
+  internalReason?: string;
+  idempotencyKey?: string;
+};
+
 export type ModerateAdminSessionEarningReviewPayload = {
   action: SessionEarningReviewModerationAction;
   finalPractitionerAmount?: string | null;
@@ -253,6 +319,10 @@ export type ModerateAdminSessionEarningReviewPayload = {
   finalCurrencyCode?: string | null;
   internalReason?: string | null;
   practitionerFacingNote?: string | null;
+  approvedWalletCreditAmount?: string | null;
+  accountingAdjustmentType?: string | null;
+  accountingNotes?: string | null;
+  idempotencyKey?: string | null;
 };
 
 export type ModerateAdminSessionEarningReviewResult = {

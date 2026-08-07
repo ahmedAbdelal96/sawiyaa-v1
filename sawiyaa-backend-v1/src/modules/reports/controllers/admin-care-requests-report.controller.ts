@@ -23,7 +23,7 @@ import { ListAdminCareRequestsReportRowsUseCase } from '../use-cases/list-admin-
 @ApiTags('Admin - Reports')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Controller('admin/reports/care-requests')
 export class AdminCareRequestsReportController {

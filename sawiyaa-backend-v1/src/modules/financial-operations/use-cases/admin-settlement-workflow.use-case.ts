@@ -10,6 +10,7 @@ import { RecordPractitionerPayoutDto } from '../dto/practitioner-payout.dto';
 import { RecordSettlementPayoutService } from '../services/record-settlement-payout.service';
 import { CalculatePractitionerPayoutConversionService } from '../services/calculate-practitioner-payout-conversion.service';
 import { assertWalletCurrencyMatches } from '../utils/wallet-currency-invariant';
+import { ApprovePractitionerSettlementService } from '../services/approve-practitioner-settlement.service';
 
 @Injectable()
 export class AdminSettlementWorkflowUseCase {
@@ -20,6 +21,7 @@ export class AdminSettlementWorkflowUseCase {
     private readonly reviewService: SessionEarningReviewService,
     private readonly audit: SecurityAuditService,
     private readonly payoutService: RecordSettlementPayoutService,
+    private readonly approvePractitionerSettlementService?: ApprovePractitionerSettlementService,
     private readonly payoutConversionService: CalculatePractitionerPayoutConversionService = new CalculatePractitionerPayoutConversionService(),
   ) {}
 
@@ -50,6 +52,8 @@ export class AdminSettlementWorkflowUseCase {
           : null,
       originalAmount: this.money(item.originalAmount),
       originalCurrency: item.originalCurrencyCode,
+      calculatedDecisionAmount: sourceReview?.calculatedPractitionerAmount ? this.money(sourceReview.calculatedPractitionerAmount) : null,
+      accountantApprovedSourceAmount: sourceReview?.accountantApprovedSourceAmount ? this.money(sourceReview.accountantApprovedSourceAmount) : null,
       grossPractitionerAmount: this.money(item.amountGross),
       adjustmentsTotal: this.money(item.amountAdjustments),
       finalWalletCredit: this.money(item.finalWalletCredit),
@@ -58,8 +62,8 @@ export class AdminSettlementWorkflowUseCase {
       originalCurrencyCode: item.originalCurrencyCode,
       walletCurrencyCode: item.walletCurrencyCode,
       exchangeRate: this.money(item.exchangeRate),
-      exchangeRateSource: item.exchangeRate ? 'ACCOUNTANT_SNAPSHOT' : null,
-      exchangeRateDate: item.approvedAt ?? item.createdAt,
+      exchangeRateSource: item.exchangeRateSource ?? null,
+      exchangeRateDate: item.exchangeRateAt ?? item.approvedAt ?? item.createdAt,
       convertedAmount: this.money(item.convertedAmount),
       approvedByUserId: item.approvedByUserId ?? null,
       approvedBy: item.approvedByUser ? { id: item.approvedByUser.id, name: item.approvedByUser.displayName } : null,
@@ -143,115 +147,33 @@ export class AdminSettlementWorkflowUseCase {
           select: { id: true, providerPaymentRef: true, providerOrderRef: true, status: true, provider: true, currencyCode: true, amountTotal: true, commissionPlatformRatePercent: true, capturedAt: true },
         })
       : null;
-    return { item: { ...this.toContract(item, session), financial: { originalAmount: this.money(item.originalAmount), originalCurrency: item.originalCurrencyCode, walletCurrency: item.walletCurrencyCode, exchangeRate: this.money(item.exchangeRate), exchangeRateSource: item.exchangeRate ? 'ACCOUNTANT_SNAPSHOT' : null, exchangeRateDate: item.approvedAt ?? item.createdAt, convertedAmount: this.money(item.convertedAmount), finalWalletCredit: this.money(item.finalWalletCredit), walletCreditDifferenceAmount: this.money(item.walletCreditDifferenceAmount), walletCreditOverrideReason: item.walletCreditOverrideReason ?? null, grossPractitionerAmount: this.money(item.amountGross), adjustmentsTotal: this.money(item.amountAdjustments), platformCommissionRatePercent: this.money(payment?.commissionPlatformRatePercent), platformCommissionAmount: this.money(item.sourceReview?.suggestedPlatformAmount), platformCommissionCurrency: payment?.currencyCode ?? item.originalCurrencyCode }, payment: payment ? { id: payment.id, reference: payment.providerPaymentRef ?? payment.providerOrderRef ?? null, status: payment.status, provider: payment.provider, currency: payment.currencyCode, amount: this.money(payment.amountTotal), capturedAt: payment.capturedAt } : null, adjustments: item.adjustments.map((adjustment: any) => ({ id: adjustment.id, type: adjustment.type, amount: this.money(adjustment.amount), currency: adjustment.currencyCode, reason: adjustment.reason, createdByUserId: adjustment.createdByUserId, createdBy: adjustment.createdByUser ? { id: adjustment.createdByUser.id, name: adjustment.createdByUser.displayName } : null, createdAt: adjustment.createdAt })), auditEvents: events, session, patient: session?.patient ?? null } };
+    const sourcePlatformAmount = item.sourceReview?.accountantApprovedSourceAmount && item.sourceReview.paymentAmount
+      ? item.sourceReview.paymentAmount.sub(item.sourceReview.accountantApprovedSourceAmount)
+      : null;
+    return { item: { ...this.toContract(item, session), financial: { originalAmount: this.money(item.originalAmount), originalCurrency: item.originalCurrencyCode, walletCurrency: item.walletCurrencyCode, exchangeRate: this.money(item.exchangeRate), exchangeRateSource: item.exchangeRateSource ?? null, exchangeRateDate: item.exchangeRateAt ?? item.approvedAt ?? item.createdAt, convertedAmount: this.money(item.convertedAmount), finalWalletCredit: this.money(item.finalWalletCredit), walletCreditDifferenceAmount: this.money(item.walletCreditDifferenceAmount), walletCreditOverrideReason: item.walletCreditOverrideReason ?? null, grossPractitionerAmount: this.money(item.amountGross), adjustmentsTotal: this.money(item.amountAdjustments), platformCommissionRatePercent: this.money(payment?.commissionPlatformRatePercent), platformCommissionAmount: this.money(sourcePlatformAmount), platformCommissionCurrency: payment?.currencyCode ?? item.originalCurrencyCode }, payment: payment ? { id: payment.id, reference: payment.providerPaymentRef ?? payment.providerOrderRef ?? null, status: payment.status, provider: payment.provider, currency: payment.currencyCode, amount: this.money(payment.amountTotal), capturedAt: payment.capturedAt } : null, adjustments: item.adjustments.map((adjustment: any) => ({ id: adjustment.id, type: adjustment.type, amount: this.money(adjustment.amount), currency: adjustment.currencyCode, reason: adjustment.reason, createdByUserId: adjustment.createdByUserId, createdBy: adjustment.createdByUser ? { id: adjustment.createdByUser.id, name: adjustment.createdByUser.displayName } : null, createdAt: adjustment.createdAt })), auditEvents: events, session, patient: session?.patient ?? null } };
   }
 
   async addAdjustment(input: { settlementId: string; body: AddSettlementAdjustmentDto; actorUserId: string }) {
-    return this.prisma.$transaction(async (tx) => {
-      const item = await tx.practitionerSettlement.findUnique({ where: { id: input.settlementId }, select: { status: true, walletCurrencyCode: true } });
-      if (!item) throw new NotFoundException('Settlement was not found');
-      const adjustment = await this.adjustmentService.apply({
-        db: tx,
-        settlementId: input.settlementId,
-        type: input.body.type,
-        amount: new Prisma.Decimal(input.body.amount),
-        reason: input.body.reason,
-        actorUserId: input.actorUserId,
-      });
-      await this.audit.recordRequired(tx, {
-        action: 'SETTLEMENT_ADJUSTMENT_ADDED', outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: input.actorUserId, resourceType: 'PractitionerSettlement', resourceId: input.settlementId,
-        reason: input.body.reason, metadata: { type: input.body.type, amount: input.body.amount, currencyCode: item.walletCurrencyCode, oldState: item.status, newState: item.status },
-      });
-      return adjustment;
+    throw new BadRequestException({
+      messageKey: 'financialOperations.errors.legacySettlementAdjustmentsDisabled',
+      error: 'LEGACY_SETTLEMENT_ADJUSTMENTS_DISABLED',
+      settlementId: input.settlementId,
     });
   }
 
   async approve(input: { settlementId: string; actorUserId: string; exchangeRate?: string | null; approvedWalletCreditAmount?: string | null; walletCreditOverrideReason?: string | null }) {
-    return this.prisma.$transaction(async (tx) => {
-      const settlement = await tx.practitionerSettlement.findUnique({
-        where: { id: input.settlementId },
-        include: { sourceReview: true },
-      });
-      if (!settlement) throw new NotFoundException('Settlement was not found');
-      if (settlement.status === PractitionerSettlementStatus.CREDITED || settlement.status === PractitionerSettlementStatus.PAID_OUT) return { item: settlement, wasAlreadyApproved: true };
-      if (settlement.status !== PractitionerSettlementStatus.DRAFT && settlement.status !== PractitionerSettlementStatus.UNDER_REVIEW) throw new BadRequestException('Settlement is not awaiting approval');
-      if (!settlement.sourceReview) throw new BadRequestException('Settlement is missing its source earning review');
-      if (settlement.sourceReview.reviewStatus !== 'PENDING_REVIEW') throw new BadRequestException('Settlement source earning review is no longer pending');
-      const originalCurrency = (settlement.originalCurrencyCode ?? settlement.walletCurrencyCode).trim().toUpperCase();
-      const wallet = await tx.practitionerWallet.findFirst({ where: { practitionerId: settlement.practitionerId, status: 'ACTIVE' }, orderBy: { updatedAt: 'desc' }, select: { currencyCode: true } });
-      if (!wallet) throw new BadRequestException('Practitioner active wallet is required before approval');
-      const walletCurrency = assertWalletCurrencyMatches({
-        operation: 'WALLET_CREDIT',
-        walletCurrency: wallet.currencyCode,
-        attemptedCurrency: settlement.walletCurrencyCode,
-      });
-      const isCrossCurrency = originalCurrency !== walletCurrency;
-      if (isCrossCurrency && !input.exchangeRate) throw new BadRequestException({ messageKey: 'financialOperations.errors.exchangeRateRequired', error: 'FINANCIAL_OPERATIONS_EXCHANGE_RATE_REQUIRED' });
-      if (!isCrossCurrency && input.exchangeRate) throw new BadRequestException('Exchange rate is not applicable when currencies match');
-      const exchangeRate = isCrossCurrency ? new Prisma.Decimal(input.exchangeRate!) : null;
-      if (exchangeRate?.lte(0)) throw new BadRequestException('Exchange rate must be greater than zero');
-      const toDecimal = (value: unknown) => {
-        const text = value?.toString?.() ?? String(value ?? 0);
-        return new Prisma.Decimal(text === '[object Object]' ? '0' : text);
-      };
-      const entitlementAmount = toDecimal(settlement.sourceReview.suggestedPractitionerAmount ?? settlement.amountGross ?? settlement.amountNet);
-      const conversion = this.payoutConversionService.calculate({ sourceAmount: entitlementAmount, sourceCurrencyCode: originalCurrency, payoutCurrencyCode: walletCurrency, exchangeRateEgpPerUsd: exchangeRate });
-      const adjustmentsAmount = toDecimal(settlement.amountAdjustments ?? 0);
-      const calculatedWalletCredit = conversion.calculatedPayoutAmount.sub(adjustmentsAmount).toDecimalPlaces(2);
-      const finalWalletCredit = input.approvedWalletCreditAmount ? new Prisma.Decimal(input.approvedWalletCreditAmount).toDecimalPlaces(2) : calculatedWalletCredit;
-      const walletCreditDifferenceAmount = finalWalletCredit.sub(calculatedWalletCredit).toDecimalPlaces(2);
-      const walletCreditOverrideReason = input.walletCreditOverrideReason?.trim() || null;
-      if (walletCreditDifferenceAmount.abs().gt(new Prisma.Decimal('0.01')) && !walletCreditOverrideReason) throw new BadRequestException('Wallet credit difference reason is required');
-      if (finalWalletCredit.lte(0)) throw new BadRequestException('Settlement final wallet credit must be greater than zero');
-      const sourcePlatformAmount = toDecimal(settlement.sourceReview.suggestedPlatformAmount ?? 0);
-      const convertedPlatformAmount = isCrossCurrency ? sourcePlatformAmount.mul(exchangeRate!).toDecimalPlaces(2) : sourcePlatformAmount;
-      if (isCrossCurrency) {
-        await tx.practitionerSettlement.update({ where: { id: input.settlementId }, data: { amountGross: conversion.calculatedPayoutAmount, convertedAmount: calculatedWalletCredit, amountNet: finalWalletCredit, finalWalletCredit, exchangeRate } });
-      }
-      const result = await this.reviewService.approveReview({
-        tx,
-        reviewId: settlement.sourceReview.id,
-        reviewerUserId: input.actorUserId,
-        action: 'EDIT_AND_APPROVE',
-        finalPractitionerAmount: finalWalletCredit,
-        calculatedWalletCreditAmount: calculatedWalletCredit,
-        walletCreditDifferenceAmount,
-        walletCreditOverrideReason,
-        finalPlatformAmount: convertedPlatformAmount,
-        finalCurrencyCode: walletCurrency,
-        exchangeRate,
-      });
-      const approvedSettlement = await tx.practitionerSettlement.findUnique({ where: { id: input.settlementId } });
-      if (!approvedSettlement) throw new NotFoundException('Approved settlement was not found');
-      const auditAmount = approvedSettlement.finalWalletCredit ?? approvedSettlement.amountNet;
-      const auditCurrency = approvedSettlement.walletCurrencyCode;
-      await this.audit.recordRequired(tx, {
-        action: 'SETTLEMENT_APPROVED', outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: input.actorUserId, resourceType: 'PractitionerSettlement', resourceId: input.settlementId,
-        metadata: { oldState: settlement.status, newState: approvedSettlement.status, amount: auditAmount.toString(), currencyCode: auditCurrency, finalWalletCredit: auditAmount.toString() },
-      });
-      await this.audit.recordRequired(tx, {
-        action: 'SETTLEMENT_CREDITED', outcome: SecurityAuditOutcome.SUCCESS,
-        actorUserId: input.actorUserId, resourceType: 'PractitionerSettlement', resourceId: input.settlementId,
-        metadata: { oldState: settlement.status, newState: approvedSettlement.status, walletCurrencyCode: auditCurrency, amount: auditAmount.toString(), currencyCode: auditCurrency, finalWalletCredit: auditAmount.toString() },
-      });
-      return { item: approvedSettlement, review: result.item, wasAlreadyApproved: result.wasAlreadyPosted };
+    throw new BadRequestException({
+      messageKey: 'financialOperations.errors.legacySettlementApprovalDisabled',
+      error: 'LEGACY_SETTLEMENT_APPROVAL_DISABLED',
+      settlementId: input.settlementId,
     });
   }
 
   async reject(input: { settlementId: string; actorUserId: string; reason: string }) {
-    const reason = input.reason.trim();
-    if (!reason) throw new BadRequestException('Rejection reason is required');
-    return this.prisma.$transaction(async (tx) => {
-      const settlement = await tx.practitionerSettlement.findUnique({ where: { id: input.settlementId }, select: { status: true, walletCurrencyCode: true, finalWalletCredit: true, amountNet: true } });
-      if (!settlement) throw new NotFoundException('Settlement was not found');
-      if (settlement.status === PractitionerSettlementStatus.REJECTED) return { settlementId: input.settlementId, wasAlreadyRejected: true };
-      if (settlement.status !== PractitionerSettlementStatus.DRAFT && settlement.status !== PractitionerSettlementStatus.UNDER_REVIEW) throw new BadRequestException('Settlement is not awaiting rejection');
-      const item = await tx.practitionerSettlement.update({ where: { id: input.settlementId }, data: { status: PractitionerSettlementStatus.REJECTED, rejectionReason: reason, rejectedByUserId: input.actorUserId, rejectedAt: new Date() } });
-      if (item.sourceReviewId) await tx.sessionEarningReview.update({ where: { id: item.sourceReviewId }, data: { reviewStatus: 'REJECTED', internalReason: reason, reviewedByUserId: input.actorUserId, reviewedAt: new Date() } });
-      await this.audit.recordRequired(tx, { action: 'SETTLEMENT_REJECTED', outcome: SecurityAuditOutcome.SUCCESS, actorUserId: input.actorUserId, resourceType: 'PractitionerSettlement', resourceId: input.settlementId, reason, metadata: { oldState: settlement.status, newState: item.status, amount: (settlement.finalWalletCredit ?? settlement.amountNet).toString(), currencyCode: settlement.walletCurrencyCode } });
-      return { item, wasAlreadyRejected: false };
+    throw new BadRequestException({
+      messageKey: 'financialOperations.errors.legacySettlementRejectionDisabled',
+      error: 'LEGACY_SETTLEMENT_REJECTION_DISABLED',
+      settlementId: input.settlementId,
     });
   }
 

@@ -20,6 +20,10 @@ type ConfigSeedDb = Pick<PrismaClient, '$transaction'> & {
     create: (args: {
       data: Prisma.ConfigKeyCatalogCreateInput;
     }) => Promise<CatalogRow>;
+    update: (args: {
+      where: { id: string };
+      data: Prisma.ConfigKeyCatalogUpdateInput;
+    }) => Promise<CatalogRow>;
   };
   configValue: {
     findFirst: (args: {
@@ -74,7 +78,6 @@ function assertCatalogCompatibility(
   definition: ConfigDefinition,
 ): void {
   const expected = {
-    slug: definition.catalog.slug,
     configKind: definition.catalog.configKind,
     dataType: toPrismaDataType(definition.valueType),
     category: definition.category,
@@ -137,7 +140,38 @@ async function seedConfigOnce(db: ConfigSeedDb): Promise<ConfigSeedSummary> {
       where: { key: definition.key },
     });
     if (existing) {
-      assertCatalogCompatibility(existing, definition);
+      // Development seeds must converge an older local catalog onto the typed
+      // registry. Values are preserved below; only catalog metadata changes.
+      if (JSON.stringify({
+        slug: existing.slug, configKind: existing.configKind, dataType: existing.dataType,
+        category: existing.category, isSensitive: existing.isSensitive,
+        isRequired: existing.isRequired, supportsOverride: existing.supportsOverride,
+      }) !== JSON.stringify({
+        slug: definition.catalog.slug, configKind: definition.catalog.configKind,
+        dataType: toPrismaDataType(definition.valueType), category: definition.category,
+        isSensitive: definition.sensitive, isRequired: definition.required,
+        supportsOverride: supportsOverride(definition),
+      })) {
+        await db.configKeyCatalog.update({
+          where: { id: existing.id },
+          data: {
+            slug: definition.catalog.slug,
+            displayName: definition.catalog.displayName,
+            description: definition.catalog.description,
+            configKind: definition.catalog.configKind,
+            dataType: toPrismaDataType(definition.valueType),
+            category: definition.category,
+            isSensitive: definition.sensitive,
+            isRequired: definition.required,
+            supportsOverride: supportsOverride(definition),
+            defaultValueJson:
+              'defaultValue' in definition
+                ? (definition.defaultValue as Prisma.InputJsonValue)
+                : Prisma.JsonNull,
+          },
+        });
+        summary.catalog.metadataSynchronized += 1;
+      }
       keyRows.set(definition.key, existing);
       summary.catalog.preserved += 1;
       continue;

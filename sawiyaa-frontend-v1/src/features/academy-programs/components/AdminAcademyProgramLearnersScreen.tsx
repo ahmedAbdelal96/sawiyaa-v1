@@ -24,8 +24,6 @@ import AdminOperationalListShell, { AdminSummaryCard } from "@/components/shared
 import { useAdminCountries } from "@/features/admin/patients/hooks/use-admin-patients";
 import type { CountryListItem } from "@/features/admin/patients/api/admin-patients.api";
 import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
-import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
 import { getAcademyProgramErrorKey } from "../lib/academy-program-errors";
 import {
@@ -50,7 +48,7 @@ import type { CreateAdminAcademyProgramEnrollmentInput } from "../types/academy-
 import { resolveAcademyCertificateDownloadUrl } from "../lib/academy-certificate";
 import { resolveAcademyProgramCertificateStatusLabel } from "../lib/academy-program-localization";
 import AcademyProgramTabs from "./AcademyProgramTabs";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 
 type Props = {
   programId: string;
@@ -750,7 +748,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   }, [isDetailOpen, items, selectedEnrollmentId]);
 
   const exportMutation = useExportAdminAcademyProgramEnrollments();
-  const stepUp = useAdminStepUp();
   const createManualMutation = useCreateAdminAcademyProgramEnrollment();
   const updateLearnerMutation = useUpdateAdminAcademyProgramEnrollmentLearner();
   const cancelMutation = useCancelAdminAcademyProgramEnrollment();
@@ -951,10 +948,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         return true;
       } catch (cause) {
         const appError = toAppError(cause);
-        if (isStepUpRequiredError(appError)) {
-          throw appError;
-        }
-
         const errorKey = getAcademyProgramErrorKey(appError);
         setToastMessage({
           tone: "error",
@@ -968,13 +961,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
       return await runUpload();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runUpload();
-        });
-        return false;
-      }
-
       setToastMessage({
         tone: "error",
         message: t("programs.learners.feedback.certificateUploadFailure"),
@@ -998,10 +984,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         return true;
       } catch (cause) {
         const appError = toAppError(cause);
-        if (isStepUpRequiredError(appError)) {
-          throw appError;
-        }
-
         const errorKey = getAcademyProgramErrorKey(appError);
         setToastMessage({
           tone: "error",
@@ -1015,13 +997,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
       await runCreate();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runCreate();
-        });
-        return;
-      }
-
       setToastMessage({
         tone: "error",
         message: t("programs.learners.feedback.manualCreateFailure"),
@@ -1402,7 +1377,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         </div>
       </DestructiveConfirmModal>
 
-      <AdminUserStepUpDialog controller={stepUp} />
     </AdminOperationalListShell>
   );
 }

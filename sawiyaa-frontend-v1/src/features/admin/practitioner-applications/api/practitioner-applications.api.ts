@@ -44,6 +44,18 @@ export async function getAdminPractitionerApplicationDetails(id: string) {
   return extractData(response.data);
 }
 
+/** Fetches a protected credential file with the authenticated API client. */
+export async function viewAdminPractitionerApplicationCredentialFile(
+  applicationId: string,
+  credentialId: string,
+) {
+  const response = await httpClient.get<Blob>(
+    `/admin/practitioner-applications/${applicationId}/credentials/${credentialId}/file`,
+    { responseType: "blob" },
+  );
+  return response.data;
+}
+
 /**
  * Approves a practitioner application.
  */

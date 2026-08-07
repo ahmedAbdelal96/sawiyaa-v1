@@ -299,7 +299,10 @@ export default function SignInForm({ mode }: SignInFormProps) {
     return `/${locale}${path}`;
   };
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const redirectAfterAuth = (user: AuthenticatedUser) => {
+    setIsNavigating(true);
     const resolvedRole = resolveRole(user.roles[0]) ?? "PATIENT";
     const practitionerNeedsOnboarding =
       resolvedRole === "PRACTITIONER" && user.practitionerStatus !== "APPROVED";
@@ -350,7 +353,6 @@ export default function SignInForm({ mode }: SignInFormProps) {
       )) as PractitionerLoginResponse;
 
       if (loginResponse.nextStep === "AUTHENTICATED") {
-        resetPractitionerOtpState();
         redirectAfterAuth(loginResponse.user);
         return;
       }
@@ -387,8 +389,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
         code: data.code,
       });
       verified = true;
-      setChallenge(null);
-      otpForm.reset({ code: "" });
+      setIsNavigating(true);
       redirectAfterAuth(result.user);
     } catch (cause) {
       setError(getSafeOtpErrorMessage(cause));
@@ -493,7 +494,27 @@ export default function SignInForm({ mode }: SignInFormProps) {
           </div>
         </div>
 
-        {!challenge ? (
+        {isNavigating ? (
+          <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+            <div className="relative flex items-center justify-center">
+              <div className={`h-12 w-12 rounded-full border-3 animate-spin ${
+                mode === "practitioner"
+                  ? "border-sky-200 border-t-[#1A365D]"
+                  : mode === "admin"
+                  ? "border-indigo-200 border-t-[#2D3748]"
+                  : "border-primary/20 border-t-primary"
+              }`} />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-text-primary dark:text-white">
+                {isRtl ? "تم التحقق بنجاح!" : "Verification Successful"}
+              </h3>
+              <p className="text-xs text-text-secondary">
+                {isRtl ? "لحظات وتنتقل لمساحة العمل..." : "Redirecting to your dashboard..."}
+              </p>
+            </div>
+          </div>
+        ) : !challenge ? (
           <div
             role="form"
             aria-label={mode === "admin" ? "Admin sign in" : undefined}
@@ -648,7 +669,13 @@ export default function SignInForm({ mode }: SignInFormProps) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-theme-xs transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-2xs transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                    mode === "patient"
+                      ? "bg-[#24564F] hover:bg-[#1E4B45]"
+                      : mode === "practitioner"
+                      ? "bg-[#1A365D] hover:bg-[#2A4D7C]"
+                      : "bg-[#2D3748] hover:bg-[#4A5568]"
+                  }`}
                 >
                   {isSubmitting ? t("verifyingOtp") : t("verifyOtpButton")}
                 </button>
@@ -656,7 +683,11 @@ export default function SignInForm({ mode }: SignInFormProps) {
                 <button
                   type="button"
                   onClick={resetPractitionerOtpState}
-                  className="w-full rounded-2xl border border-border-light bg-white/70 px-4 py-3 text-sm font-semibold text-text-secondary transition hover:border-primary hover:text-primary dark:border-white/5 dark:bg-surface-secondary dark:text-text-secondary"
+                  className={`w-full rounded-xl border border-border-light bg-white/70 px-4 py-3 text-sm font-semibold text-text-secondary transition-all duration-150 dark:border-white/5 dark:bg-surface-secondary dark:text-text-secondary ${
+                    mode === "practitioner"
+                      ? "hover:border-[#1A365D]/40 hover:text-[#1A365D]"
+                      : "hover:border-primary/40 hover:text-text-primary"
+                  }`}
                 >
                   {t("backToCredentials")}
                 </button>

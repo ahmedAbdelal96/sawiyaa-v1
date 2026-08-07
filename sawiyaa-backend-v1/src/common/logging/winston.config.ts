@@ -1,6 +1,9 @@
 import * as winston from 'winston';
 import { DailyFileTransport } from './daily-file.transport';
-import { formatConsoleMeta } from './logging-record.util';
+import {
+  formatConsoleMeta,
+  formatHttpConsoleSummary,
+} from './logging-record.util';
 import { shouldSuppressNestConsoleLog } from './logging-policy.util';
 
 export type WinstonBootstrapOptions = {
@@ -14,39 +17,54 @@ export type WinstonBootstrapOptions = {
   logDir: string;
   retentionDays: number;
   maxFileSize: string;
+  maxFileSizeBytes: number;
+  version?: string;
+  deploymentId?: string | null;
 };
 
 function buildConsoleFormat(serviceName: string, nodeEnv: string) {
+  const displayValue = (value: unknown, fallback: string): string =>
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+      ? String(value)
+      : fallback;
+
   return winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
-    winston.format.colorize({ all: true }),
     winston.format.printf(
-      ({
-        level,
-        message,
-        timestamp,
-        context,
-        service,
-        env,
-        ...meta
-      }) => {
-        const contextLabel = context ? `[${String(context)}]` : '[App]';
-        const resolvedService = String(service ?? serviceName);
-        const resolvedEnv = String(env ?? nodeEnv);
-        const metaPayload = formatConsoleMeta(meta);
+      ({ level, message, timestamp, context, service, env, ...meta }) => {
+        const contextLabel = context
+          ? `[${displayValue(context, 'App')}]`
+          : '[App]';
+        const resolvedService = displayValue(service, serviceName);
+        const resolvedEnv = displayValue(env, nodeEnv);
+        const httpSummary = formatHttpConsoleSummary(
+          meta,
+          process.env.NO_COLOR === undefined && Boolean(process.stdout.isTTY),
+        );
+        const metaPayload = httpSummary || formatConsoleMeta(meta);
 
-        return `${timestamp} ${String(level).toUpperCase()} ${contextLabel} ${String(message)} service=${resolvedService} env=${resolvedEnv}${metaPayload}`;
+        return `${displayValue(timestamp, '')} ${displayValue(level, 'INFO').toUpperCase()} ${contextLabel} ${displayValue(message, '')} service=${resolvedService} env=${resolvedEnv}${metaPayload}`;
       },
     ),
   );
 }
 
-function addStaticMeta(serviceName: string, nodeEnv: string) {
+function addStaticMeta(
+  serviceName: string,
+  nodeEnv: string,
+  version = '0.0.0',
+  deploymentId: string | null = null,
+) {
   return winston.format((info) => ({
     ...info,
     service: serviceName,
     env: nodeEnv,
+    environment: nodeEnv,
+    version,
+    ...(deploymentId ? { deploymentId } : {}),
   }))();
 }
 
@@ -61,30 +79,40 @@ function createDailyFileTransports(options: WinstonBootstrapOptions) {
       retentionDays: options.retentionDays,
       fileName: 'app.log',
       target: 'app',
+      level: options.level,
+      maxFileSizeBytes: options.maxFileSizeBytes,
     }),
     new DailyFileTransport({
       baseDir: options.logDir,
       retentionDays: options.retentionDays,
       fileName: 'http.log',
       target: 'http',
+      level: 'silly',
+      maxFileSizeBytes: options.maxFileSizeBytes,
     }),
     new DailyFileTransport({
       baseDir: options.logDir,
       retentionDays: options.retentionDays,
       fileName: 'slow-requests.log',
       target: 'slow-requests',
+      level: 'silly',
+      maxFileSizeBytes: options.maxFileSizeBytes,
     }),
     new DailyFileTransport({
       baseDir: options.logDir,
       retentionDays: options.retentionDays,
       fileName: 'error.log',
       target: 'error',
+      level: 'silly',
+      maxFileSizeBytes: options.maxFileSizeBytes,
     }),
     new DailyFileTransport({
       baseDir: options.logDir,
       retentionDays: options.retentionDays,
       fileName: 'exceptions.log',
       target: 'exceptions',
+      level: 'silly',
+      maxFileSizeBytes: options.maxFileSizeBytes,
     }),
   ];
 }
@@ -109,6 +137,7 @@ function createConsoleTransport(options: WinstonBootstrapOptions) {
   });
 
   return new winston.transports.Console({
+    level: options.level,
     format: options.pretty
       ? winston.format.combine(
           consoleFilter(),
@@ -136,12 +165,19 @@ export function createWinstonLogger(
   transports.push(...createDailyFileTransports(options));
 
   return winston.createLogger({
-    level: options.level,
+    // Let each transport apply its own threshold. This keeps app.log aligned
+    // with LOG_LEVEL while allowing HTTP and error files to remain complete.
+    level: 'silly',
     levels: winston.config.npm.levels,
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.errors({ stack: true }),
-      addStaticMeta(options.serviceName, options.nodeEnv),
+      addStaticMeta(
+        options.serviceName,
+        options.nodeEnv,
+        options.version,
+        options.deploymentId,
+      ),
     ),
     transports,
   });

@@ -187,8 +187,8 @@ export class AdminUsersRepository {
     });
   }
 
-  async listPermissionOverrides(userId: string) {
-    return this.prisma.userPermissionOverride.findMany({
+  async listPermissionOverrides(userId: string, tx?: Prisma.TransactionClient) {
+    return this.db(tx).userPermissionOverride.findMany({
       where: { userId },
       select: {
         effect: true,

@@ -1,4 +1,7 @@
-import { SessionAttendanceEventType, SessionAttendanceParticipantRole } from '@prisma/client';
+import {
+  SessionAttendanceEventType,
+  SessionAttendanceParticipantRole,
+} from '@prisma/client';
 
 // =============================================================================
 // Raw evidence input types
@@ -17,6 +20,7 @@ export interface AttendanceEvent {
   providerParticipantRef: string | null;
   occurredAt: Date;
   ingestedAt: Date;
+  ingestionMetaJson?: Record<string, unknown> | null;
 }
 
 /** A platform SessionEvent (JOIN_ATTEMPTED, MEETING_STARTED, etc.) */

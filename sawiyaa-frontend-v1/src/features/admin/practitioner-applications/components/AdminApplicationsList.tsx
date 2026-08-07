@@ -342,7 +342,7 @@ export default function AdminApplicationsList() {
             </div>
           </div>
           <label className="block">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="mb-1 block text-[11px] font-bold text-text-muted">
               {t("applications.table.status")}
             </span>
             <select
@@ -355,7 +355,7 @@ export default function AdminApplicationsList() {
                   page: 1,
                 });
               }}
-              className="app-control w-full px-4 py-3"
+              className="app-control w-full"
             >
               {FILTER_STATUSES.map((filter) => (
                 <option key={filter} value={filter}>
@@ -367,16 +367,16 @@ export default function AdminApplicationsList() {
             </select>
           </label>
           <label className="block md:col-span-2 lg:col-span-2">
-            <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <span className="mb-1 block text-[11px] font-bold text-text-muted">
               {t("applications.filters.search")}
             </span>
             <div className="relative">
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <Search className="pointer-events-none absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
               <input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder={t("applications.filters.searchPlaceholder")}
-                className="app-control w-full py-3 pe-4 ps-10"
+                className="app-control w-full pe-3 ps-8.5"
               />
             </div>
           </label>

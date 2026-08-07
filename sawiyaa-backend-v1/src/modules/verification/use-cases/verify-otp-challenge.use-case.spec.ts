@@ -14,6 +14,7 @@ describe('VerifyOtpChallengeUseCase', () => {
     incrementAttemptCount: jest.fn(),
     invalidate: jest.fn(),
     consume: jest.fn(),
+    invalidateActiveChallengesByScope: jest.fn(),
   } as unknown as OtpChallengeRepository;
   const otpHashService = new OtpHashService();
   const useCase = new VerifyOtpChallengeUseCase(
@@ -32,6 +33,7 @@ describe('VerifyOtpChallengeUseCase', () => {
     otpChallengeRepository.incrementAttemptCount = jest.fn();
     otpChallengeRepository.invalidate = jest.fn();
     otpChallengeRepository.consume = jest.fn();
+    otpChallengeRepository.invalidateActiveChallengesByScope = jest.fn();
     otpChallengeRepository.findLatestActiveByUserId = jest.fn();
     otpChallengeRepository.findLatestActiveByTarget = jest.fn();
   });

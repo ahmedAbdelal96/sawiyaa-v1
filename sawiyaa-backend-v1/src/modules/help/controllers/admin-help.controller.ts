@@ -39,7 +39,7 @@ import { HelpService } from '../services/help.service';
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/help')
 export class AdminHelpController {
   constructor(private readonly helpService: HelpService) {}

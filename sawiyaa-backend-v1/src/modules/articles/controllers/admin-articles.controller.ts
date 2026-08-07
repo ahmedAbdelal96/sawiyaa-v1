@@ -48,7 +48,7 @@ import { ArticleCoverStorageService } from '../services/article-cover-storage.se
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/articles')
 export class AdminArticlesController {
   constructor(

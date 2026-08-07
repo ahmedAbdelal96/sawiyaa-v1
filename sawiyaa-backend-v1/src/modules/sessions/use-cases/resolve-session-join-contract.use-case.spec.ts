@@ -33,11 +33,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
     },
   };
 
-  // Backend join policy: LEAD=2 min, LAG=0 min
-  // joinOpensAt = 10:30 - 2min = 10:28
-  // joinClosesAt = 11:00 + 0min = 11:00
-  const expectedAvailableAt = new Date('2026-04-02T10:28:00.000Z').toISOString();
-  const expectedExpiresAt = new Date('2026-04-02T11:00:00.000Z').toISOString();
+  // Backend join policy: opens 15 minutes early and closes after 10 minutes grace.
+  const expectedAvailableAt = new Date('2026-04-02T10:15:00.000Z').toISOString();
+  const expectedExpiresAt = new Date('2026-04-02T11:10:00.000Z').toISOString();
 
   function buildUseCase(overrides?: {
     canJoin?: boolean;

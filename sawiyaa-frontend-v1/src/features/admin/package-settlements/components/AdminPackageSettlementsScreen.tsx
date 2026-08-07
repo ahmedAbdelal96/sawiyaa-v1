@@ -19,6 +19,7 @@ import {
   getAdminPackageSettlementErrorKey,
 } from "../lib/admin-package-settlement-status";
 import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import { formatPersonDisplayName } from "@/lib/person-name-cleaner";
 import {
   useAdminPackageSettlements,
   useReleaseAdminPackageSettlement,
@@ -225,31 +226,43 @@ export default function AdminPackageSettlementsScreen() {
       {
         id: "practitioner",
         header: t("table.practitioner"),
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.practitionerDisplayName ?? row.practitionerSlug ?? shortId(row.practitionerId)}
-            </p>
-            <p className="mt-1 truncate text-xs text-text-muted">
-              {row.practitionerSlug ?? shortId(row.practitionerId)}
-              {row.packagePlanTitle ? ` - ${row.packagePlanTitle}` : ""}
-            </p>
-          </div>
-        ),
+        cell: (row) => {
+          const isAr = locale.startsWith("ar");
+          const name = formatPersonDisplayName(row.practitionerDisplayName, row.practitionerSlug, isAr ? "الممارس" : "Practitioner");
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-text-primary dark:text-white/95">
+                {name}
+              </p>
+              {row.packagePlanTitle && (
+                <p className="truncate text-[11px] font-medium text-text-secondary dark:text-slate-300">
+                  {row.packagePlanTitle}
+                </p>
+              )}
+              <span className="block mt-0.5 font-mono text-[9px] text-text-muted/80 dark:text-slate-500" dir="ltr">
+                ID: {row.practitionerId}
+              </span>
+            </div>
+          );
+        },
       },
       {
         id: "patient",
         header: t("table.patient"),
-        cell: (row) => (
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-              {row.patientDisplayName ?? shortId(row.patientId)}
-            </p>
-            <p className="mt-1 truncate text-xs text-text-muted">
-              {t("table.purchaseRef")}: {shortId(row.purchaseId)}
-            </p>
-          </div>
-        ),
+        cell: (row) => {
+          const isAr = locale.startsWith("ar");
+          const name = formatPersonDisplayName(row.patientDisplayName, row.patientId, isAr ? "المريض" : "Patient");
+          return (
+            <div className="min-w-0">
+              <p className="truncate text-xs font-bold text-text-primary dark:text-white/95">
+                {name}
+              </p>
+              <span className="block mt-0.5 font-mono text-[9px] text-text-muted/80 dark:text-slate-500" dir="ltr">
+                ID: {row.patientId}
+              </span>
+            </div>
+          );
+        },
       },
       {
         id: "status",

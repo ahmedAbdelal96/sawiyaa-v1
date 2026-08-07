@@ -81,5 +81,6 @@ export class MarkSessionNoShowByPractitionerUseCase {
     return {
       item: this.sessionMapper.toDetails(updatedSession),
     };
+
   }
 }

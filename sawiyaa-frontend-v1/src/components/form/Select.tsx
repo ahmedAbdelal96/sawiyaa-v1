@@ -43,7 +43,7 @@ const Select: React.FC<SelectProps> = ({
     <div>
       <div className="relative">
         <select
-          className={`h-11 w-full rounded-xl border appearance-none px-4 pe-10 text-sm transition-colors bg-surface-tertiary border-border-light text-text-primary focus:border-border-focus focus:ring-ring-focus focus:outline-hidden focus:ring-3 ${
+          className={`h-10 w-full rounded-xl border appearance-none px-3.5 pe-9 text-xs md:text-sm transition-colors bg-surface-tertiary border-border-light text-text-primary focus:border-border-focus focus:ring-ring-focus focus:outline-hidden focus:ring-3 ${
             selectedValue ? "text-text-primary" : "text-text-muted"
           } ${
             error

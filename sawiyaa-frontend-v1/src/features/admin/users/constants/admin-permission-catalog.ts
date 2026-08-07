@@ -64,7 +64,8 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionCatalogItem[] = [
     module: "adminUsers",
     moduleLabelKey: "permissions.modules.adminUsers.title",
     labelKey: "permissions.adminUsers.permissionOverridesRead.label",
-    descriptionKey: "permissions.adminUsers.permissionOverridesRead.description",
+    descriptionKey:
+      "permissions.adminUsers.permissionOverridesRead.description",
     risk: "critical",
     order: 15,
   },
@@ -73,7 +74,8 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionCatalogItem[] = [
     module: "adminUsers",
     moduleLabelKey: "permissions.modules.adminUsers.title",
     labelKey: "permissions.adminUsers.permissionOverridesUpdate.label",
-    descriptionKey: "permissions.adminUsers.permissionOverridesUpdate.description",
+    descriptionKey:
+      "permissions.adminUsers.permissionOverridesUpdate.description",
     risk: "critical",
     order: 16,
   },
@@ -144,6 +146,15 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionCatalogItem[] = [
     risk: "critical",
     order: 41,
   },
+  {
+    key: PermissionKey.FINANCIAL_PACKAGE_SETTLEMENT_RELEASE,
+    module: "settlements",
+    moduleLabelKey: "permissions.modules.settlements.title",
+    labelKey: "permissions.financialPackageSettlementRelease.label",
+    descriptionKey: "permissions.financialPackageSettlementRelease.description",
+    risk: "critical",
+    order: 42,
+  },
 
   // Practitioner payouts
   {
@@ -172,6 +183,17 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionCatalogItem[] = [
     descriptionKey: "permissions.practitionerStatementsRead.description",
     risk: "sensitive",
     order: 52,
+  },
+
+  // Academy
+  {
+    key: PermissionKey.ACADEMY_ENROLLMENTS_CREATE_MANUAL,
+    module: "academy",
+    moduleLabelKey: "permissions.modules.academy.title",
+    labelKey: "permissions.academyEnrollmentsCreateManual.label",
+    descriptionKey: "permissions.academyEnrollmentsCreateManual.description",
+    risk: "critical",
+    order: 115,
   },
 
   // Refunds
@@ -316,7 +338,8 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionCatalogItem[] = [
     module: "practitionerApplications",
     moduleLabelKey: "permissions.modules.practitionerApplications.title",
     labelKey: "permissions.practitionerApplicationsRequestChanges.label",
-    descriptionKey: "permissions.practitionerApplicationsRequestChanges.description",
+    descriptionKey:
+      "permissions.practitionerApplicationsRequestChanges.description",
     risk: "critical",
     order: 113,
   },
@@ -349,6 +372,7 @@ export const ADMIN_PERMISSION_GROUP_ORDER = [
   "finance",
   "settlements",
   "payouts",
+  "academy",
   "refunds",
   "sessions",
   "careChat",

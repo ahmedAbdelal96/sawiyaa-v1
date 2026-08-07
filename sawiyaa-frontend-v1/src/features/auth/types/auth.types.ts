@@ -37,7 +37,6 @@ export interface AuthTokens {
   accessTokenExpiresAt: string;
   refreshTokenExpiresAt: string;
 }
-
 export interface AuthenticatedUser {
   id: string;
   displayName: string | null;
@@ -56,7 +55,7 @@ export interface AuthSuccessResponse {
   message: string;
   tokens: AuthTokens;
   user: AuthenticatedUser;
-  nextStep?: 'AUTHENTICATED';
+  nextStep?: "AUTHENTICATED";
 }
 
 export interface MessageResponse {
@@ -70,18 +69,18 @@ export interface OtpChallengeResponse {
   maskedTarget: string;
   expiresAt: string;
   requiresOtpVerification: boolean;
-  nextStep?: 'OTP_REQUIRED';
+  nextStep?: "OTP_REQUIRED";
 }
 
 export type PractitionerAuthenticatedResponse = AuthSuccessResponse & {
-  nextStep: 'AUTHENTICATED';
+  nextStep: "AUTHENTICATED";
 };
 
 export type PractitionerOtpChallengeResponse = Omit<
   OtpChallengeResponse,
-  'nextStep'
+  "nextStep"
 > & {
-  nextStep: 'OTP_REQUIRED';
+  nextStep: "OTP_REQUIRED";
 };
 
 export interface PractitionerRegistrationResponse {
@@ -93,8 +92,10 @@ export interface PractitionerRegistrationResponse {
   maskedTarget?: string;
   expiresAt?: string;
   requiresOtpVerification?: boolean;
-  nextStep?: 'OTP_REQUIRED';
-  phone?: { status: 'NOT_PROVIDED' | 'NOT_SAVED_INVALID' | 'SAVED' | 'NOT_SAVED' };
+  nextStep?: "OTP_REQUIRED";
+  phone?: {
+    status: "NOT_PROVIDED" | "NOT_SAVED_INVALID" | "SAVED" | "NOT_SAVED";
+  };
 }
 
 export interface CurrentAuthUserResponse {
@@ -175,8 +176,7 @@ export interface PractitionerLoginRequest {
 }
 
 export type PractitionerLoginResponse =
-  | PractitionerOtpChallengeResponse
-  | PractitionerAuthenticatedResponse;
+  PractitionerOtpChallengeResponse | PractitionerAuthenticatedResponse;
 
 export interface PractitionerVerifyOtpRequest {
   challengeId: string;
@@ -242,13 +242,4 @@ export interface AdminLoginRequest {
   email: string;
   password: string;
   deviceId?: string;
-}
-
-export interface AdminStepUpVerifyRequest {
-  password: string;
-}
-
-export interface AdminStepUpVerifyResponse {
-  message: string;
-  expiresAt: string;
 }

@@ -18,9 +18,8 @@ import AdminSessionReference from "@/components/shared/admin/AdminSessionReferen
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { PermissionKey } from "@/lib/auth/permissions";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import { formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import { getAdminPractitionerRecoveryActionKey, getAdminPractitionerRecoveryErrorKey, getAdminPractitionerRecoveryReasonCodeKey, getAdminPractitionerRecoveryStatusKey } from "../lib/admin-practitioner-recovery-status";
 import {
@@ -398,7 +397,6 @@ function RecoveryActionsCard({
 }) {
   const { data: permissionData, isLoading: permissionsLoading } = useCurrentUserPermissions(true);
   const canWrite = permissionData?.permissions?.includes(PermissionKey.ACCOUNTING_WRITE) ?? false;
-  const stepUp = useAdminStepUp();
   const collectMutation = useMarkAdminPractitionerRecoveryCollected();
   const waiveMutation = useWaiveAdminPractitionerRecovery();
 
@@ -430,22 +428,6 @@ function RecoveryActionsCard({
       await action();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          try {
-            await action();
-          } catch (retryCause) {
-            const retryError = toAppError(retryCause);
-            const errorKey = getAdminPractitionerRecoveryErrorKey(retryError);
-            setFeedback({
-              tone: "error",
-              message: t(errorKey as Parameters<typeof t>[0]),
-            });
-          }
-        });
-        return;
-      }
-
       const errorKey = getAdminPractitionerRecoveryErrorKey(appError);
       setFeedback({
         tone: "error",
@@ -574,7 +556,6 @@ function RecoveryActionsCard({
     <AdminSectionCard
       title={t("practitionerRecoveries.detail.actions.title")}
       description={t("practitionerRecoveries.detail.actions.description")}
-      actions={<AdminStatusBadge tone="warning">{t("practitionerRecoveries.detail.actions.stepUpHint")}</AdminStatusBadge>}
     >
       <div className="space-y-4">
         {feedback ? <StatusMessage tone={feedback.tone} message={feedback.message} /> : null}

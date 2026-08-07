@@ -128,6 +128,22 @@ export class UserNotificationsPresenter {
       normalized.scheduledStartAt = raw.scheduledStartAt;
     }
 
+    if (typeof raw.startsAtUtc === 'string') {
+      normalized.startsAtUtc = raw.startsAtUtc;
+    }
+
+    if (typeof raw.timezoneSnapshot === 'string') {
+      normalized.timezoneSnapshot = raw.timezoneSnapshot;
+    }
+
+    if (typeof raw.scheduleRevision === 'number') {
+      normalized.scheduleRevision = raw.scheduleRevision;
+    }
+
+    if (typeof raw.reminderType === 'string') {
+      normalized.reminderType = raw.reminderType;
+    }
+
     if (typeof raw.joinOpenAt === 'string' || raw.joinOpenAt === null) {
       normalized.joinOpenAt = raw.joinOpenAt;
     }

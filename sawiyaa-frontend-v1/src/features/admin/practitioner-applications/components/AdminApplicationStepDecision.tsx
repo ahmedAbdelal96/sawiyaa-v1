@@ -1,6 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Edit3,
+  Plus,
+  Trash2,
+  Info,
+  ShieldCheck,
+} from "lucide-react";
 import type { AdminReviewDecisionReason } from "../utils/admin-review-decision";
 
 type DecisionDisplayItem = Partial<AdminReviewDecisionReason> & {
@@ -23,6 +34,7 @@ type DecisionReasonDraft = {
 };
 
 type Props = {
+  debugData?: unknown;
   statusLabel?: string;
   statusDescription?: string;
   statusTone?: "success" | "warning" | "danger" | "info" | "neutral";
@@ -75,349 +87,467 @@ type Props = {
   rejectReasonRequired: string;
   rejectReasonsHelper: string;
   rejectNotePlaceholder: string;
-  debugData?: {
-    applicationStatus: string;
-    canBeApproved: boolean;
-    canRequestChanges: boolean;
-    blockersCount: number;
-    blockerCodes: string[];
-    credentialStatuses: Array<{ id: string; type: string; status: string }>;
-    derivedDecisionGroups: Record<string, string[]>;
-  } | null;
 };
 
-function sectionToneClassName(tone: ReviewSection["tone"]) {
+type DecisionMode = "approve" | "request_changes" | "reject";
+
+function sectionToneBadge(tone: ReviewSection["tone"]) {
   switch (tone) {
     case "success":
-      return "border-success-200 bg-success-50/55 dark:border-success-900/30 dark:bg-success-900/10";
+      return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300";
     case "warning":
-      return "border-warning-200 bg-warning-50/55 dark:border-warning-900/30 dark:bg-warning-900/10";
+      return "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300";
     case "danger":
-      return "border-red-200 bg-red-50/55 dark:border-red-900/30 dark:bg-red-900/10";
+      return "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300";
     default:
-      return "border-sky-200 bg-sky-50/55 dark:border-sky-900/30 dark:bg-sky-900/10";
+      return "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900/40 dark:bg-sky-950/20 dark:text-sky-300";
   }
-}
-
-function statusToneClassName(tone: Props["statusTone"]) {
-  switch (tone) {
-    case "success":
-      return "border-success-200 bg-success-50 text-success-900 dark:border-success-900/40 dark:bg-success-900/10 dark:text-success-100";
-    case "danger":
-      return "border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-100";
-    case "info":
-      return "border-sky-200 bg-sky-50 text-sky-900 dark:border-sky-900/40 dark:bg-sky-900/10 dark:text-sky-100";
-    case "neutral":
-      return "border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-800/40 dark:text-gray-100";
-    default:
-      return "border-warning-200 bg-warning-50 text-warning-900 dark:border-warning-900/40 dark:bg-warning-900/10 dark:text-warning-100";
-  }
-}
-
-function ReasonListEditor({
-  title,
-  helper,
-  items,
-  placeholder,
-  addLabel,
-  removeLabel,
-  notePlaceholder,
-  noteValue,
-  onNoteChange,
-  onItemsChange,
-  error,
-  errorLabel,
-}: {
-  title: string;
-  helper: string;
-  items: DecisionReasonDraft[];
-  placeholder: string;
-  addLabel: string;
-  removeLabel: string;
-  notePlaceholder: string;
-  noteValue: string;
-  onNoteChange: (value: string) => void;
-  onItemsChange: (items: DecisionReasonDraft[]) => void;
-  error: boolean;
-  errorLabel: string;
-}) {
-  const updateItem = (id: string, value: string) => {
-    onItemsChange(items.map((item) => (item.id === id ? { ...item, value } : item)));
-  };
-
-  const removeItem = (id: string) => {
-    if (items.length === 1) {
-      onItemsChange([{ ...items[0], value: "" }]);
-      return;
-    }
-    onItemsChange(items.filter((item) => item.id !== id));
-  };
-
-  const addItem = () => {
-    onItemsChange([...items, { id: crypto.randomUUID(), value: "" }]);
-  };
-
-  return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">{title}</p>
-          <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{helper}</p>
-        </div>
-        <button
-          type="button"
-          onClick={addItem}
-          className="inline-flex items-center rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"
-        >
-          {addLabel}
-        </button>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {items.map((item, index) => (
-          <div
-            key={item.id}
-            className={cn(
-              "rounded-xl border bg-gray-50/70 p-3 dark:bg-gray-800/40",
-              error ? "border-red-200 dark:border-red-900/40" : "border-gray-100 dark:border-gray-800",
-            )}
-          >
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">#{index + 1}</p>
-              <button
-                type="button"
-                onClick={() => removeItem(item.id)}
-                className="text-xs font-medium text-red-600 transition hover:text-red-700 dark:text-red-300 dark:hover:text-red-200"
-              >
-                {removeLabel}
-              </button>
-            </div>
-            <input
-              type="text"
-              value={item.value}
-              onChange={(event) => updateItem(item.id, event.target.value)}
-              placeholder={placeholder}
-              className={cn(
-                "w-full rounded-xl border bg-white px-3 py-2 text-sm text-gray-900 dark:bg-gray-900 dark:text-white",
-                error ? "border-red-400" : "border-gray-200 dark:border-gray-700",
-              )}
-            />
-          </div>
-        ))}
-      </div>
-
-      {error ? <p className="mt-2 text-xs text-error-500">{errorLabel}</p> : null}
-
-      <textarea
-        rows={3}
-        value={noteValue}
-        onChange={(event) => onNoteChange(event.target.value)}
-        placeholder={notePlaceholder}
-        className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-      />
-    </div>
-  );
-}
-
-function DecisionReasonRow({
-  item,
-  highlight,
-}: {
-  item: DecisionDisplayItem;
-  highlight: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border border-white/70 bg-white/85 p-3 dark:border-gray-800 dark:bg-gray-900/50",
-        highlight && "border-red-200 bg-red-50/60 dark:border-red-900/40 dark:bg-red-900/10",
-      )}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
-        {item.actionLabel ? (
-          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-            {item.actionLabel}
-          </span>
-        ) : null}
-      </div>
-      {item.description || item.helper ? (
-        <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">{item.description ?? item.helper}</p>
-      ) : null}
-    </div>
-  );
 }
 
 export default function AdminApplicationStepDecision(props: Props) {
-  const visibleSections = props.sections.filter((section) => section.items.length > 0);
-  const showDebug = process.env.NODE_ENV !== "production" && props.debugData;
-  const statusTone = props.statusTone ?? (props.canBeApproved ? "success" : "warning");
-  const statusLabel = props.statusLabel ?? (props.canBeApproved ? "Ready for approval" : "Approval is blocked");
-  const statusDescription =
-    props.statusDescription ??
-    props.cannotApproveHint ??
-    props.decisionNotice ??
-    "";
-  const disabledReasons =
-    props.approveDisabledReasons?.map((reason) =>
-      typeof reason === "string"
-        ? { code: reason, label: reason }
-        : reason,
-    ) ??
-    props.approveBlockedReasons?.map((reason) => ({ code: reason, label: reason })) ??
-    [];
+  // Determine initial decision tab mode (default to request_changes if blocked, or approve if ready)
+  const [activeMode, setActiveMode] = useState<DecisionMode>(
+    props.canBeApproved ? "approve" : "request_changes"
+  );
+
+  const nonSuccessSections = props.sections.filter(
+    (s) => s.tone !== "success" && s.items.length > 0
+  );
+  const successSections = props.sections.filter(
+    (s) => s.tone === "success" && s.items.length > 0
+  );
+
+  // Quick suggestion labels derived from non-success sections
+  const quickSuggestions = nonSuccessSections.flatMap((s) => s.items.map((i) => i.label));
+
+  const addQuickSuggestionToRequestChanges = (label: string) => {
+    // If the first input is empty, fill it; otherwise append
+    if (
+      props.requestChangeReasons.length === 1 &&
+      !props.requestChangeReasons[0].value.trim()
+    ) {
+      props.setRequestChangeReasons([{ ...props.requestChangeReasons[0], value: label }]);
+    } else {
+      // Check if not already added
+      const exists = props.requestChangeReasons.some((r) => r.value === label);
+      if (!exists) {
+        props.setRequestChangeReasons([
+          ...props.requestChangeReasons,
+          { id: crypto.randomUUID(), value: label },
+        ]);
+      }
+    }
+    if (props.requestChangesReasonError) {
+      props.setRequestChangesReasonError(false);
+    }
+  };
+
+  const updateReasonItem = (
+    list: DecisionReasonDraft[],
+    setList: (items: DecisionReasonDraft[]) => void,
+    id: string,
+    val: string
+  ) => {
+    setList(list.map((item) => (item.id === id ? { ...item, value: val } : item)));
+  };
+
+  const removeReasonItem = (
+    list: DecisionReasonDraft[],
+    setList: (items: DecisionReasonDraft[]) => void,
+    id: string
+  ) => {
+    if (list.length === 1) {
+      setList([{ ...list[0], value: "" }]);
+      return;
+    }
+    setList(list.filter((item) => item.id !== id));
+  };
+
+  const addReasonItem = (
+    list: DecisionReasonDraft[],
+    setList: (items: DecisionReasonDraft[]) => void
+  ) => {
+    setList([...list, { id: crypto.randomUUID(), value: "" }]);
+  };
 
   return (
-    <div className="space-y-4">
-      <div className={cn("rounded-2xl border p-4", statusToneClassName(statusTone))}>
-        <p className="text-sm font-semibold">{statusLabel}</p>
-        {statusDescription ? <p className="mt-1 text-sm opacity-90">{statusDescription}</p> : null}
+    <div className="space-y-6">
+      {/* 1. Readiness Overview Banner */}
+      <div
+        className={cn(
+          "rounded-3xl border p-5 transition-all shadow-xs",
+          props.canBeApproved
+            ? "border-emerald-200 bg-emerald-50/70 text-emerald-950 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-100"
+            : "border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-100"
+        )}
+      >
+        <div className="flex items-start gap-3.5">
+          <div className="mt-0.5 shrink-0">
+            {props.canBeApproved ? (
+              <ShieldCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            ) : (
+              <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <h3 className="text-base font-bold">
+              {props.statusLabel ?? (props.canBeApproved ? "الطلب مكتمل وجاهز للاعتماد" : "الطلب يتطلب استكمال بيانات قبل الاعتماد")}
+            </h3>
+            {props.statusDescription ? (
+              <p className="text-xs leading-relaxed opacity-90">
+                {props.statusDescription}
+              </p>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      {visibleSections.length > 0 ? (
-        <div className="space-y-3">
-          {visibleSections.map((section) => (
-            <div
-              key={section.key ?? section.title}
-              className={cn(
-                "rounded-2xl border p-4",
-                sectionToneClassName(section.tone),
-                props.approveAttemptedBlocked &&
-                  (section.tone === "warning" || section.tone === "danger" || section.tone === "info") &&
-                  "ring-2 ring-red-200 dark:ring-red-900/40",
-              )}
-            >
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">{section.title}</p>
-              <div className="mt-3 space-y-2">
-                {section.items.map((item) => (
-                  <DecisionReasonRow
-                    key={`${section.key}-${item.code}-${item.label}`}
-                    item={item}
-                    highlight={
-                      props.approveAttemptedBlocked &&
-                      (section.tone === "warning" || section.tone === "danger" || section.tone === "info")
-                    }
-                  />
-                ))}
+      {/* 2. Structured Application Checks (Categorized Summary) */}
+      {nonSuccessSections.length > 0 ? (
+        <div className="rounded-3xl border border-border-light bg-surface-secondary/40 p-5 dark:border-white/8 dark:bg-white/[0.02] space-y-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            ملخص ملاحظات واشتراطات الملف
+          </h4>
+          <div className="grid gap-3 md:grid-cols-2">
+            {nonSuccessSections.map((section) => (
+              <div
+                key={section.key ?? section.title}
+                className={cn("rounded-2xl border p-4 space-y-2.5", sectionToneBadge(section.tone))}
+              >
+                <p className="text-xs font-bold uppercase tracking-wide">{section.title}</p>
+                <ul className="space-y-1.5">
+                  {section.items.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-xs font-medium">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+                      <span>{item.label}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {!props.canBeApproved && disabledReasons.length > 0 ? (
-        <div
-          className={cn(
-            "rounded-2xl border p-4 text-sm",
-            props.approveAttemptedBlocked
-              ? "border-red-300 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-900/10 dark:text-red-200"
-              : "border-warning-200 bg-warning-50 text-warning-900 dark:border-warning-900/40 dark:bg-warning-900/10 dark:text-warning-200",
-          )}
-        >
-          <p className="font-semibold">{statusTone === "success" ? statusLabel : statusDescription || statusLabel}</p>
-          <div className="mt-3 space-y-2">
-            {disabledReasons.map((reason) => (
-              <DecisionReasonRow
-                key={`disabled-${reason.code}-${reason.label}`}
-                item={reason}
-                highlight={props.approveAttemptedBlocked}
-              />
             ))}
           </div>
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-sm font-semibold text-gray-800 dark:text-white">{props.approveNoteLabel}</p>
-          <textarea
-            rows={5}
-            value={props.approveNote}
-            onChange={(e) => props.setApproveNote(e.target.value)}
-            placeholder={props.approveNotePlaceholder}
-            className="mt-3 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
+      {/* 3. Decision Action Mode Switcher (Tabs) */}
+      <div className="space-y-4 pt-2">
+        <h4 className="text-sm font-bold text-text-primary dark:text-white">
+          اختر القرار النهائي للطلب:
+        </h4>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {/* Approve Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveMode("approve")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all cursor-pointer",
+              activeMode === "approve"
+                ? "border-emerald-500 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-100"
+                : "border-border-light bg-white text-text-secondary hover:border-emerald-300 dark:border-white/10 dark:bg-white/5 dark:text-white/80",
+              !props.canBeApproved && "opacity-75"
+            )}
+          >
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-bold">قبول واعتماد الطلب</span>
+          </button>
+
+          {/* Request Changes Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveMode("request_changes")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all cursor-pointer",
+              activeMode === "request_changes"
+                ? "border-amber-500 bg-amber-50 text-amber-900 ring-2 ring-amber-500/30 dark:bg-amber-950/30 dark:text-amber-100"
+                : "border-border-light bg-white text-text-secondary hover:border-amber-300 dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+            )}
+          >
+            <Edit3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <span className="text-xs font-bold">طلب تعديل / استكمال بيانات</span>
+          </button>
+
+          {/* Reject Tab */}
+          <button
+            type="button"
+            onClick={() => setActiveMode("reject")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 text-center transition-all cursor-pointer",
+              activeMode === "reject"
+                ? "border-rose-500 bg-rose-50 text-rose-900 ring-2 ring-rose-500/30 dark:bg-rose-950/30 dark:text-rose-100"
+                : "border-border-light bg-white text-text-secondary hover:border-rose-300 dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+            )}
+          >
+            <XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+            <span className="text-xs font-bold">رفض الطلب</span>
+          </button>
         </div>
-
-        <ReasonListEditor
-          title={props.requestReasonLabel}
-          helper={props.requestReasonsHelper}
-          items={props.requestChangeReasons}
-          placeholder={props.requestReasonPlaceholder}
-          addLabel={props.addReasonLabel}
-          removeLabel={props.removeReasonLabel}
-          notePlaceholder={props.requestNotePlaceholder}
-          noteValue={props.requestChangesNote}
-          onNoteChange={props.setRequestChangesNote}
-          onItemsChange={(items) => {
-            props.setRequestChangeReasons(items);
-            if (props.requestChangesReasonError) {
-              props.setRequestChangesReasonError(false);
-            }
-          }}
-          error={props.requestChangesReasonError}
-          errorLabel={props.requestReasonRequired}
-        />
-
-        <ReasonListEditor
-          title={props.rejectReasonLabel}
-          helper={props.rejectReasonsHelper}
-          items={props.rejectReasons}
-          placeholder={props.rejectReasonPlaceholder}
-          addLabel={props.addReasonLabel}
-          removeLabel={props.removeReasonLabel}
-          notePlaceholder={props.rejectNotePlaceholder}
-          noteValue={props.rejectNote}
-          onNoteChange={props.setRejectNote}
-          onItemsChange={(items) => {
-            props.setRejectReasons(items);
-            if (props.rejectReasonError) {
-              props.setRejectReasonError(false);
-            }
-          }}
-          error={props.rejectReasonError}
-          errorLabel={props.rejectReasonRequired}
-        />
       </div>
 
-      {!props.canBeReviewed ? (
-        <div className="rounded-2xl border border-warning-200 bg-warning-50 p-4 text-sm text-warning-900 dark:border-warning-900/40 dark:bg-warning-900/10 dark:text-warning-200">
-          {props.statusDescription}
-        </div>
-      ) : null}
+      {/* 4. Active Decision Panel */}
+      <div className="rounded-3xl border border-border-light bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.02]">
+        {/* APPROVE MODE */}
+        {activeMode === "approve" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="text-sm font-bold text-text-primary dark:text-white">
+                اعتماد وتفعيل حساب الممارس
+              </h4>
+            </div>
 
-      {showDebug ? (
-        <details className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-4 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900/50 dark:text-gray-200">
-          <summary className="cursor-pointer font-semibold">Debug</summary>
-          <pre className="mt-3 overflow-auto whitespace-pre-wrap">{JSON.stringify(props.debugData, null, 2)}</pre>
-        </details>
-      ) : null}
+            {!props.canBeApproved ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-medium text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>
+                  تنبيه: يمكنك اعتماد الطلب كاستثناء إداري، لكن يفضّل استكمال البيانات الناقصة أو طلب تعديلها أولاً.
+                </span>
+              </div>
+            ) : null}
 
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={!props.canBeApproved || props.isApproving}
-          onClick={props.onApprove}
-          className="inline-flex items-center rounded-xl bg-green-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {props.isApproving ? props.approveSubmittingLabel : props.approveLabel}
-        </button>
-        <button
-          type="button"
-          disabled={!props.canRequestChanges || props.isRequestingChanges}
-          onClick={props.onRequestChanges}
-          className="inline-flex items-center rounded-xl bg-orange-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {props.isRequestingChanges ? props.requestChangesSubmittingLabel : props.requestChangesLabel}
-        </button>
-        <button
-          type="button"
-          disabled={props.isRejecting}
-          onClick={props.onReject}
-          className="inline-flex items-center rounded-xl bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {props.isRejecting ? props.rejectSubmittingLabel : props.rejectLabel}
-        </button>
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
+                {props.approveNoteLabel} (اختياري)
+              </label>
+              <textarea
+                rows={3}
+                value={props.approveNote}
+                onChange={(e) => props.setApproveNote(e.target.value)}
+                placeholder={props.approveNotePlaceholder}
+                className="w-full rounded-2xl border border-border-light bg-surface-secondary/50 px-4 py-3 text-sm text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={props.isApproving}
+                onClick={props.onApprove}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {props.isApproving ? props.approveSubmittingLabel : props.approveLabel}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* REQUEST CHANGES MODE */}
+        {activeMode === "request_changes" && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <Edit3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <h4 className="text-sm font-bold text-text-primary dark:text-white">
+                تحديد أسباب طلب التعديل واستكمال البيانات
+              </h4>
+            </div>
+
+            {/* Quick Suggestion Chips */}
+            {quickSuggestions.length > 0 ? (
+              <div className="space-y-2 rounded-2xl border border-amber-200/60 bg-amber-50/40 p-4 dark:border-amber-900/30 dark:bg-amber-950/10">
+                <p className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                  اضغط على الأسباب الناقصة لإضافتها بنقرة واحدة:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {quickSuggestions.map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => addQuickSuggestionToRequestChanges(label)}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-white/5 dark:text-amber-200 dark:hover:bg-white/10 cursor-pointer"
+                    >
+                      <Plus className="h-3 w-3" />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Dynamic Reason List Inputs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-text-muted">
+                  {props.requestReasonLabel}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => addReasonItem(props.requestChangeReasons, props.setRequestChangeReasons)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {props.addReasonLabel}
+                </button>
+              </div>
+
+              {props.requestChangeReasons.map((item, index) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-secondary font-mono text-xs font-bold text-text-muted dark:bg-white/5 shrink-0">
+                    #{index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={item.value}
+                    onChange={(e) =>
+                      updateReasonItem(
+                        props.requestChangeReasons,
+                        props.setRequestChangeReasons,
+                        item.id,
+                        e.target.value
+                      )
+                    }
+                    placeholder={props.requestReasonPlaceholder}
+                    className={cn(
+                      "flex-1 rounded-2xl border bg-surface-secondary/50 px-4 py-2.5 text-sm text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white focus:border-amber-500 focus:outline-none",
+                      props.requestChangesReasonError && !item.value.trim() && "border-rose-500"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeReasonItem(
+                        props.requestChangeReasons,
+                        props.setRequestChangeReasons,
+                        item.id
+                      )
+                    }
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-light text-text-muted transition hover:bg-rose-50 hover:text-rose-600 dark:border-white/10 dark:hover:bg-rose-950/20 cursor-pointer shrink-0"
+                    title={props.removeReasonLabel}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+
+              {props.requestChangesReasonError ? (
+                <p className="text-xs font-semibold text-rose-500">{props.requestReasonRequired}</p>
+              ) : null}
+            </div>
+
+            {/* Note to Practitioner */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
+                توجيهات وملاحظات إضافية للمعارض (اختياري)
+              </label>
+              <textarea
+                rows={3}
+                value={props.requestChangesNote}
+                onChange={(e) => props.setRequestChangesNote(e.target.value)}
+                placeholder={props.requestNotePlaceholder}
+                className="w-full rounded-2xl border border-border-light bg-surface-secondary/50 px-4 py-3 text-sm text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white focus:border-amber-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={props.isRequestingChanges}
+                onClick={props.onRequestChanges}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-amber-700 disabled:opacity-50 cursor-pointer"
+              >
+                <Edit3 className="h-4 w-4" />
+                {props.isRequestingChanges ? props.requestChangesSubmittingLabel : props.requestChangesLabel}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* REJECT MODE */}
+        {activeMode === "reject" && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <h4 className="text-sm font-bold text-text-primary dark:text-white">
+                تحديد أسباب رفض طلب الانضمام
+              </h4>
+            </div>
+
+            {/* Dynamic Reason List Inputs */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-text-muted">
+                  {props.rejectReasonLabel}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => addReasonItem(props.rejectReasons, props.setRejectReasons)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  {props.addReasonLabel}
+                </button>
+              </div>
+
+              {props.rejectReasons.map((item, index) => (
+                <div key={item.id} className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-secondary font-mono text-xs font-bold text-text-muted dark:bg-white/5 shrink-0">
+                    #{index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={item.value}
+                    onChange={(e) =>
+                      updateReasonItem(
+                        props.rejectReasons,
+                        props.setRejectReasons,
+                        item.id,
+                        e.target.value
+                      )
+                    }
+                    placeholder={props.rejectReasonPlaceholder}
+                    className={cn(
+                      "flex-1 rounded-2xl border bg-surface-secondary/50 px-4 py-2.5 text-sm text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white focus:border-rose-500 focus:outline-none",
+                      props.rejectReasonError && !item.value.trim() && "border-rose-500"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeReasonItem(
+                        props.rejectReasons,
+                        props.setRejectReasons,
+                        item.id
+                      )
+                    }
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-light text-text-muted transition hover:bg-rose-50 hover:text-rose-600 dark:border-white/10 dark:hover:bg-rose-950/20 cursor-pointer shrink-0"
+                    title={props.removeReasonLabel}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+
+              {props.rejectReasonError ? (
+                <p className="text-xs font-semibold text-rose-500">{props.rejectReasonRequired}</p>
+              ) : null}
+            </div>
+
+            {/* Internal Reject Note */}
+            <div>
+              <label className="block text-xs font-semibold text-text-muted mb-1.5">
+                ملاحظات مراجعة وتوثيق الرفض للإدارة (اختياري)
+              </label>
+              <textarea
+                rows={3}
+                value={props.rejectNote}
+                onChange={(e) => props.setRejectNote(e.target.value)}
+                placeholder={props.rejectNotePlaceholder}
+                className="w-full rounded-2xl border border-border-light bg-surface-secondary/50 px-4 py-3 text-sm text-text-primary dark:border-white/10 dark:bg-white/5 dark:text-white focus:border-rose-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                disabled={props.isRejecting}
+                onClick={props.onReject}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+              >
+                <XCircle className="h-4 w-4" />
+                {props.isRejecting ? props.rejectSubmittingLabel : props.rejectLabel}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

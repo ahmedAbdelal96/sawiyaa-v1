@@ -33,12 +33,12 @@ export default function AdminApplicationReviewWizard({
   children,
 }: Props) {
   return (
-    <section className="rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <div className="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+    <section className="rounded-2xl border border-gray-200 bg-white shadow-2xs dark:border-gray-800 dark:bg-gray-900">
+      <div className="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
         <AdminApplicationReviewStepper steps={steps} activeStep={activeStep} onStepChange={onStepChange} />
       </div>
 
-      <div className="px-5 py-5 lg:px-6 lg:py-6">{children}</div>
+      <div className="p-4 lg:p-5">{children}</div>
 
       <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
         <div className="flex flex-wrap items-center gap-3">

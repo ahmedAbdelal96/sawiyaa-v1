@@ -24,7 +24,7 @@ import { GetAdminPatientAssessmentsHistoryUseCase } from '../use-cases/get-admin
 @ApiTags('Admin - Patients')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/patients/:patientId/assessments')
 export class AdminPatientAssessmentsController {
   constructor(

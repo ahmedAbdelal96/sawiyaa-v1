@@ -10,7 +10,7 @@ import UserDropdown from "@/components/header/UserDropdown";
 import MessagesHeaderButton from "@/features/messages-shell/components/MessagesHeaderButton";
 import UserNotificationDropdown from "@/features/notifications/components/UserNotificationDropdown";
 import { useSidebar } from "@/stores";
-import { Menu, X } from "lucide-react";
+import { Menu, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 
@@ -48,18 +48,31 @@ const AppHeader: React.FC<AppHeaderProps> = ({ messagingRole }) => {
             className="h-10 w-10 rounded-2xl lg:hidden"
           />
 
+          <ActionIconButton
+            label={
+              isRTL
+                ? isExpanded || isHovered
+                  ? "إغلاق القائمة الجانبية"
+                  : "توسيع القائمة الجانبية"
+                : isExpanded || isHovered
+                  ? "Collapse sidebar"
+                  : "Expand sidebar"
+            }
+            icon={
+              isRTL ? (
+                isExpanded || isHovered ? <PanelRightClose className="h-4.5 w-4.5" /> : <PanelRightOpen className="h-4.5 w-4.5" />
+              ) : (
+                isExpanded || isHovered ? <PanelLeftClose className="h-4.5 w-4.5" /> : <PanelLeftOpen className="h-4.5 w-4.5" />
+              )
+            }
+            onClick={toggleSidebar}
+            intent="neutral"
+            className="hidden lg:flex h-10 w-10 rounded-2xl border border-border-light bg-surface-secondary/80 hover:bg-primary/10 hover:text-primary transition-all cursor-pointer shrink-0"
+          />
+
           <div className="flex min-w-0 items-center gap-3">
-            <BrandMark
-              compact
-              asButton
-              onClick={() => {
-                if (window.innerWidth >= 1024) {
-                  toggleSidebar();
-                }
-              }}
-            />
-            <div className="hidden min-w-0 border-s border-border-light ps-3 lg:block">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted">
+            <div className="hidden min-w-0 lg:block">
+              <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-text-muted">
                 Sawiyaa
               </p>
               <p className="text-sm font-medium text-text-primary">

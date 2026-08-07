@@ -82,6 +82,23 @@ function getMessageShellTarget(
 export function resolveNotificationClickTarget(
   input: ResolveNotificationClickTargetInput,
 ): NotificationClickTarget {
+  // Reminder payloads carry the canonical secure join page. It must win over
+  // generic session enrichment, which deliberately points to the detail page.
+  if (
+    input.item.typeSlug.startsWith("sessions.session-reminder-") ||
+    input.item.typeSlug === "sessions.session-starting-now" ||
+    input.item.typeSlug === "sessions.session-late-join" ||
+    input.item.typeSlug === "sessions.session-join-available"
+  ) {
+    const reminderHref = normalizeNotificationHref(input.item.action?.href) ??
+      normalizeNotificationHref(
+        typeof input.item.payload["routePath"] === "string"
+          ? (input.item.payload["routePath"] as string)
+          : null,
+      );
+    if (reminderHref) return { kind: "href", href: reminderHref };
+  }
+
   const primaryAction = input.item.primaryAction;
 
   if (primaryAction) {

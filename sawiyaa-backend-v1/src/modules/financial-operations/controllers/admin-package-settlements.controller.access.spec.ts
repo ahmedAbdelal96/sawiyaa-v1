@@ -3,7 +3,6 @@ import {
   PERMISSIONS_KEY,
   ROLES_KEY,
 } from '@common/constants/auth-metadata.constants';
-import { STEP_UP_POLICY_KEY } from '@common/decorators/step-up.decorator';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
@@ -63,8 +62,23 @@ describe('AdminPackageSettlementsController access contract', () => {
     const guards = (Reflect.getMetadata(GUARDS_METADATA, method) ??
       []) as unknown[];
     expect(guards).toContain(AdminGuard);
-    expect(Reflect.getMetadata(STEP_UP_POLICY_KEY, method)).toBe(
-      'finance.package-settlement.release',
-    );
+  });
+
+  it('release allows SUPER_ADMIN through role metadata', () => {
+    const method = getControllerMethod('release');
+    const roles = Reflect.getMetadata(ROLES_KEY, method) as
+      | AppRole[]
+      | undefined;
+    expect(roles).toEqual([AppRole.ADMIN, AppRole.SUPER_ADMIN]);
+  });
+
+  it('release requires the dedicated package settlement permission', () => {
+    const method = getControllerMethod('release');
+    const permissions = Reflect.getMetadata(PERMISSIONS_KEY, method) as
+      | PermissionKey[]
+      | undefined;
+    expect(permissions).toEqual([
+      PermissionKey.FINANCIAL_PACKAGE_SETTLEMENT_RELEASE,
+    ]);
   });
 });

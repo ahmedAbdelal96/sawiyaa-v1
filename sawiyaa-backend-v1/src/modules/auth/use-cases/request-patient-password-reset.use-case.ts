@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpPurpose, UserRoleType } from '@prisma/client';
@@ -10,6 +10,8 @@ import { SendOtpChallengeUseCase } from '../../verification/use-cases/send-otp-c
 import { OtpResendCooldownException } from '../../verification/exceptions/otp-cooldown.exception';
 import { PasswordResetRateLimitService } from '../../verification/services/password-reset-rate-limit.service';
 import { OtpEmailRoleRateLimitException } from '../../verification/exceptions/otp-rate-limit.exception';
+import { SecurityAuditService } from '@common/security-audit/security-audit.service';
+import { SecurityAuditOutcome } from '@prisma/client';
 
 /**
  * Forgot-password validates that a patient account exists, then issues a reset OTP.
@@ -24,6 +26,7 @@ export class RequestPatientPasswordResetUseCase {
     private readonly createOtpChallengeUseCase: CreateOtpChallengeUseCase,
     private readonly sendOtpChallengeUseCase: SendOtpChallengeUseCase,
     private readonly passwordResetRateLimitService: PasswordResetRateLimitService,
+    @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
   async execute(input: { email: string; locale: SupportedLocale }) {
@@ -103,6 +106,17 @@ export class RequestPatientPasswordResetUseCase {
       }
       throw error;
     }
+
+    this.securityAuditService?.logAsync({
+      action: 'auth.patient.password-reset.request.success',
+      outcome: SecurityAuditOutcome.SUCCESS,
+      actorUserId: userEmail.user.id,
+      actorRoles: [UserRoleType.PATIENT],
+      resourceType: 'User',
+      resourceId: userEmail.user.id,
+      reason: 'PASSWORD_RESET_REQUESTED',
+      metadata: { channel: 'verified-contact' },
+    });
 
     return {
       message: this.i18nService.t(

@@ -420,6 +420,167 @@ class ExtendedSessionSummaryDto {
   recommendation!: RecommendationDto;
 }
 
+class SessionOutcomeEvidenceSummaryDto {
+  @ApiProperty()
+  sessionDurationMinutes!: number;
+
+  @ApiProperty()
+  patientPresenceMinutes!: number;
+
+  @ApiProperty()
+  practitionerPresenceMinutes!: number;
+
+  @ApiProperty()
+  overlapMinutes!: number;
+
+  @ApiProperty()
+  overlapPercentage!: number;
+}
+
+class SessionOutcomePolicySnapshotDto {
+  @ApiProperty()
+  version!: number;
+  @ApiProperty()
+  completionOverlapPercent!: number;
+
+  @ApiProperty()
+  minimumOverlapMinutes!: number;
+
+  @ApiProperty()
+  patientNoShowGraceMinutes!: number;
+
+  @ApiProperty()
+  practitionerNoShowGraceMinutes!: number;
+
+  @ApiProperty()
+  finalizationGraceMinutes!: number;
+
+  @ApiProperty()
+  lateEvidenceWaitingMinutes!: number;
+
+  @ApiProperty()
+  capturedAt!: string;
+
+  @ApiProperty()
+  source!: string;
+}
+
+class SessionOutcomeEvaluationDto {
+  @ApiProperty({
+    enum: [
+      'AUTO_COMPLETABLE',
+      'AUTO_PATIENT_NO_SHOW',
+      'AUTO_PRACTITIONER_NO_SHOW',
+      'AUTO_BOTH_NO_SHOW',
+      'NEEDS_ADMIN_REVIEW',
+      'NOT_READY_FOR_EVALUATION',
+    ],
+  })
+  classification!: string;
+
+  @ApiProperty({ enum: ['HIGH', 'MEDIUM', 'LOW', 'UNTRUSTED'] })
+  confidence!: string;
+
+  @ApiProperty()
+  eligibleForAutomaticFinalization!: boolean;
+
+  @ApiProperty({ nullable: true })
+  recommendedTerminalStatus!: string | null;
+
+  @ApiProperty({ type: String, isArray: true })
+  reasonCodes!: string[];
+
+  @ApiProperty({ type: SessionOutcomeEvidenceSummaryDto })
+  evidenceSummary!: SessionOutcomeEvidenceSummaryDto;
+
+  @ApiProperty({ type: SessionOutcomePolicySnapshotDto })
+  policySnapshot!: SessionOutcomePolicySnapshotDto;
+
+  @ApiProperty()
+  evaluatedAt!: string;
+}
+
+class AdminSessionReconciliationParticipantDto {
+  @ApiProperty()
+  identityConfirmed!: boolean;
+
+  @ApiProperty()
+  joined!: boolean;
+
+  @ApiProperty()
+  totalPresenceSeconds!: number;
+}
+
+class AdminSessionReconciliationDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  version!: number;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  provider!: string;
+
+  @ApiProperty()
+  roomFound!: boolean;
+
+  @ApiProperty({ nullable: true })
+  meetingStarted!: boolean | null;
+
+  @ApiProperty({ nullable: true })
+  meetingEnded!: boolean | null;
+
+  @ApiProperty()
+  reconciledAt!: string;
+
+  @ApiProperty({ nullable: true })
+  providerDataObservedUntil!: string | null;
+
+  @ApiProperty({ type: AdminSessionReconciliationParticipantDto })
+  patient!: AdminSessionReconciliationParticipantDto;
+
+  @ApiProperty({ type: AdminSessionReconciliationParticipantDto })
+  practitioner!: AdminSessionReconciliationParticipantDto;
+
+  @ApiProperty()
+  unknownParticipantCount!: number;
+
+  @ApiProperty()
+  confidence!: string;
+
+  @ApiProperty({ type: String, isArray: true })
+  reasonCodes!: string[];
+
+  @ApiProperty()
+  evaluationStale!: boolean;
+
+  @ApiProperty({ nullable: true })
+  staleReason!: string | null;
+}
+
+class AdminSessionFinalizationDto {
+  @ApiProperty({ enum: ['AUTOMATIC_COMPLETION', 'MANUAL'] })
+  mode!: string;
+
+  @ApiProperty()
+  finalizedAt!: string;
+
+  @ApiProperty()
+  auditEventId!: string;
+
+  @ApiProperty({ nullable: true })
+  policyVersion!: number | null;
+
+  @ApiProperty({ nullable: true })
+  reconciliationVersion!: number | null;
+
+  @ApiProperty({ type: String, isArray: true })
+  reasonCodes!: string[];
+}
+
 class AdminSessionAttendanceDataResponseDto {
   @ApiProperty()
   sessionId!: string;
@@ -485,6 +646,19 @@ class AdminSessionAttendanceDataResponseDto {
   /** Extended attendance summary from the Phase 2 Attendance Summary Engine */
   @ApiProperty({ type: ExtendedSessionSummaryDto, nullable: true })
   extendedSummary!: ExtendedSessionSummaryDto | null;
+
+  /** Read-only Phase 2 classification; it never mutates lifecycle state. */
+  @ApiProperty({ type: SessionOutcomeEvaluationDto })
+  outcomeEvaluation!: SessionOutcomeEvaluationDto;
+
+  @ApiProperty({ type: AdminSessionReconciliationDto, nullable: true })
+  reconciliation!: AdminSessionReconciliationDto | null;
+
+  @ApiProperty({ type: SessionOutcomePolicySnapshotDto, nullable: true })
+  policySnapshot!: SessionOutcomePolicySnapshotDto | null;
+
+  @ApiProperty({ type: AdminSessionFinalizationDto, nullable: true })
+  finalization!: AdminSessionFinalizationDto | null;
 }
 
 export class AdminSessionAttendanceSuccessResponseDto {

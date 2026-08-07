@@ -18,7 +18,8 @@ import FilterClearButton from "@/components/ui/filters/FilterClearButton";
 import AdminOperationalListShell from "@/components/shared/admin/AdminOperationalListShell";
 import { SurfaceActionLink } from "@/components/shared/SurfaceShell";
 import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
-import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import { formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
+import { formatPersonDisplayName, formatSessionTimeRange } from "@/lib/person-name-cleaner";
 import { useAdminSessionEarningReviews } from "../hooks/use-admin-session-earning-reviews";
 import {
   ADMIN_SESSION_EARNING_REVIEW_DECISION_STYLES,
@@ -31,10 +32,11 @@ import {
 import type {
   AdminSessionEarningReviewListItem,
   SessionEarningReviewDecision,
+  SessionEarningReviewFinancialStage,
   SessionEarningReviewSourceType,
 } from "../types/admin-session-earning-reviews.types";
 
-type QueueView = "pending" | "finalized";
+type QueueView = SessionEarningReviewFinancialStage;
 type QueryParamValue = string | number | null | undefined;
 
 const SOURCE_TYPE_OPTIONS = ["DIRECT_SESSION", "PACKAGE_SESSION"] as const satisfies readonly SessionEarningReviewSourceType[];
@@ -96,7 +98,9 @@ function ReviewStatePill({
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${className}`}>{label}</span>;
 }
 
-export default function AdminSessionEarningReviewsListScreen() {
+export default function AdminSessionEarningReviewsListScreen({
+  basePath = "/admin/finance/session-earning-reviews",
+}: { basePath?: string } = {}) {
   const t = useTranslations("admin-finance-operations");
   const locale = useLocale();
   const router = useRouter();
@@ -108,7 +112,9 @@ export default function AdminSessionEarningReviewsListScreen() {
     min: 1,
     max: 50,
   });
-  const queue = (searchParams.get("queue") === "finalized" ? "finalized" : "pending") as QueueView;
+  const stageValues: SessionEarningReviewFinancialStage[] = ["PENDING_REVIEW", "DECISION_APPROVED", "WALLET_CREDITED", "EXTERNAL_PAYOUT", "REJECTED_OR_EXCLUDED", "ALL"];
+  const requestedStage = searchParams.get("stage") as SessionEarningReviewFinancialStage | null;
+  const queue = (requestedStage && stageValues.includes(requestedStage) ? requestedStage : "PENDING_REVIEW") as QueueView;
   const query = parseTextParam(searchParams.get("query"), { maxLength: 120 });
   const currencyCode = parseTextParam(searchParams.get("currencyCode"), { maxLength: 3 });
   const sourceTypeRaw = searchParams.get("sourceType");
@@ -130,9 +136,9 @@ export default function AdminSessionEarningReviewsListScreen() {
       sourceType,
       decision,
       currencyCode: currencyCode?.trim().toUpperCase() || undefined,
-      finalized: queue === "finalized" ? true : undefined,
+      stage: requestedStage && stageValues.includes(requestedStage) ? requestedStage : "PENDING_REVIEW",
     }),
-    [currencyCode, decision, deferredQuery, limit, page, queue, sourceType],
+    [currencyCode, decision, deferredQuery, limit, page, requestedStage, sourceType],
   );
 
   const reviewsQuery = useAdminSessionEarningReviews(params);
@@ -150,7 +156,7 @@ export default function AdminSessionEarningReviewsListScreen() {
       sourceType ||
       decision ||
       currencyCode ||
-      queue === "finalized" ||
+      queue !== "PENDING_REVIEW" ||
       page !== 1 ||
       limit !== DEFAULT_PAGE_LIMIT,
   );
@@ -159,102 +165,84 @@ export default function AdminSessionEarningReviewsListScreen() {
     {
       id: "review",
       header: t("sessionEarningReviews.list.columns.review"),
-      cell: (row) => (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-text-primary dark:text-white/95">{shortId(row.reviewId)}</span>
-            <ReviewStatePill
-              label={t(`sessionEarningReviews.sourceTypes.${getAdminSessionEarningReviewSourceTypeKey(row.sourceType).split(".")[1]}` as Parameters<typeof t>[0])}
-              className={ADMIN_SESSION_EARNING_REVIEW_SOURCE_TYPE_STYLES[row.sourceType]}
-            />
-            <ReviewStatePill
-              label={t(`sessionEarningReviews.statuses.${getAdminSessionEarningReviewStatusKey(row.reviewStatus).split(".")[1]}` as Parameters<typeof t>[0])}
-              className={ADMIN_SESSION_EARNING_REVIEW_STATUS_STYLES[row.reviewStatus]}
-            />
+      cell: (row) => {
+        const isAr = locale.startsWith("ar");
+        return (
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-xs font-bold text-primary dark:text-primary-light" dir="ltr">
+                {row.session.sessionCode}
+              </span>
+              <ReviewStatePill
+                label={t(`sessionEarningReviews.sourceTypes.${getAdminSessionEarningReviewSourceTypeKey(row.sourceType).split(".")[1]}` as Parameters<typeof t>[0])}
+                className={ADMIN_SESSION_EARNING_REVIEW_SOURCE_TYPE_STYLES[row.sourceType]}
+              />
+            </div>
+            <p className="text-xs font-medium text-text-secondary dark:text-slate-300">
+              {formatSessionTimeRange(locale, row.session.scheduledStartAt, row.session.scheduledEndAt)}
+            </p>
           </div>
-          <p className="text-xs text-text-secondary">
-            {t("sessionEarningReviews.list.columns.sessionCode")}{" "}
-            <span className="font-mono text-[11px] text-text-muted">{row.session.sessionCode}</span>
-          </p>
-          <p className="text-xs text-text-secondary">
-            {row.session.scheduledStartAt ? formatDateTime(locale, row.session.scheduledStartAt) : "-"}
-            {row.session.scheduledEndAt ? ` • ${formatDateTime(locale, row.session.scheduledEndAt)}` : ""}
-          </p>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: "people",
       header: t("sessionEarningReviews.list.columns.people"),
-      cell: (row) => (
-        <div className="space-y-2">
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-text-muted">
-              {t("sessionEarningReviews.list.columns.practitioner")}
-            </p>
-            <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
-              {renderName(row.practitioner.displayName, row.practitioner.publicSlug)}
-            </p>
-            <p className="mt-1 text-xs text-text-secondary">{getProfessionalTitleLabel(row.practitioner.professionalTitle, locale) || row.practitioner.publicSlug || row.practitioner.practitionerId}</p>
+      cell: (row) => {
+        const isAr = locale.startsWith("ar");
+        const pracName = formatPersonDisplayName(row.practitioner.displayName, row.practitioner.publicSlug, isAr ? "الممارس" : "Practitioner");
+        const patName = formatPersonDisplayName(row.patient.displayName, row.patient.patientId, isAr ? "المريض" : "Patient");
+
+        return (
+          <div className="space-y-1 text-xs">
+            <div className="truncate">
+              <span className="font-bold text-text-primary dark:text-white/95 me-1.5">{pracName}</span>
+              <span className="text-[10px] text-text-muted">({isAr ? "الممارس" : "Practitioner"})</span>
+            </div>
+            <div className="truncate">
+              <span className="text-text-secondary dark:text-slate-300 me-1.5">{patName}</span>
+              <span className="text-[10px] text-text-muted">({isAr ? "المريض" : "Patient"})</span>
+            </div>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.14em] text-text-muted">
-              {t("sessionEarningReviews.list.columns.patient")}
-            </p>
-            <p className="mt-1 font-semibold text-text-primary dark:text-white/95">
-              {renderName(row.patient.displayName, row.patient.patientId)}
-            </p>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       id: "money",
       header: t("sessionEarningReviews.list.columns.amounts"),
-      cell: (row) => (
-        <div className="space-y-2 text-sm">
-          <p className="font-semibold text-text-primary dark:text-white/95">
-            {formatSettlementMoney(locale, row.paymentAmount, row.paymentCurrencyCode)}
-          </p>
-          <p className="text-xs leading-5 text-text-secondary">
-            {t("sessionEarningReviews.list.columns.suggestedSplit")}{" "}
-            {formatSettlementMoney(locale, row.suggestedPractitionerAmount, row.suggestedCurrencyCode)}{" "}
-            / {formatSettlementMoney(locale, row.suggestedPlatformAmount, row.suggestedCurrencyCode)}
-          </p>
-          <p className="text-xs leading-5 text-text-secondary">
-            {t("sessionEarningReviews.list.columns.finalSplit")}{" "}
-            {row.finalPractitionerAmount && row.finalCurrencyCode
-              ? `${formatSettlementMoney(locale, row.finalPractitionerAmount, row.finalCurrencyCode)} / ${formatSettlementMoney(locale, row.finalPlatformAmount ?? "0", row.finalCurrencyCode)}`
-              : t("sessionEarningReviews.list.columns.unset")}
-          </p>
-        </div>
-      ),
+      cell: (row) => {
+        const isAr = locale.startsWith("ar");
+        const pracAmt = formatSettlementMoney(locale, row.suggestedPractitionerAmount, row.suggestedCurrencyCode);
+        const platAmt = formatSettlementMoney(locale, row.suggestedPlatformAmount, row.suggestedCurrencyCode);
+
+        return (
+          <div className="space-y-0.5 text-xs">
+            <p className="font-bold text-text-primary dark:text-white/95 text-sm">
+              {formatSettlementMoney(locale, row.paymentAmount, row.paymentCurrencyCode)}
+            </p>
+            <p className="text-[11px] text-text-muted">
+              {isAr ? "المختص:" : "Practitioner:"} {pracAmt} | {isAr ? "المنصة:" : "Platform:"} {platAmt}
+            </p>
+          </div>
+        );
+      },
     },
     {
       id: "state",
       header: t("sessionEarningReviews.list.columns.state"),
       cell: (row) => (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <ReviewStatePill
             label={t(`sessionEarningReviews.statuses.${getAdminSessionEarningReviewStatusKey(row.reviewStatus).split(".")[1]}` as Parameters<typeof t>[0])}
             className={ADMIN_SESSION_EARNING_REVIEW_STATUS_STYLES[row.reviewStatus]}
           />
-          <ReviewStatePill
-            label={t(`sessionEarningReviews.decisions.${getAdminSessionEarningReviewDecisionKey(row.reviewDecision).split(".")[1]}` as Parameters<typeof t>[0])}
-            className={ADMIN_SESSION_EARNING_REVIEW_DECISION_STYLES[row.reviewDecision]}
-          />
-          <div className="flex flex-wrap gap-1.5">
-            {row.isActionRequired ? (
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+          {row.isActionRequired ? (
+            <div>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
                 {t("sessionEarningReviews.list.badges.actionRequired")}
               </span>
-            ) : null}
-            {row.isFinalized ? (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-                {t("sessionEarningReviews.list.badges.finalized")}
-              </span>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       ),
     },
@@ -262,40 +250,16 @@ export default function AdminSessionEarningReviewsListScreen() {
       id: "audit",
       header: t("sessionEarningReviews.list.columns.audit"),
       cell: (row) => (
-        <div className="space-y-2 text-sm text-text-secondary">
-          <p>
-            <span className="text-xs uppercase tracking-[0.14em] text-text-muted">
-              {t("sessionEarningReviews.list.columns.reviewedBy")}
-            </span>
-            <br />
-            <span className="font-medium text-text-primary dark:text-white/95">
-              {row.reviewedBy?.displayName ?? t("sessionEarningReviews.detail.fallbacks.teamAdmin")}
-            </span>
-          </p>
-          <p className="text-xs leading-5 text-text-muted">
-            {row.reviewedAt ? formatDateTime(locale, row.reviewedAt) : t("sessionEarningReviews.list.columns.notYet")}
-          </p>
-          <p>
-            <span className="text-xs uppercase tracking-[0.14em] text-text-muted">
-              {t("sessionEarningReviews.list.columns.approvedBy")}
-            </span>
-            <br />
-            <span className="font-medium text-text-primary dark:text-white/95">
-              {row.approvedBy?.displayName ?? row.reviewedBy?.displayName ?? t("sessionEarningReviews.detail.fallbacks.teamAdmin")}
-            </span>
-          </p>
-          <p className="text-xs leading-5 text-text-muted">
-            {row.approvedAt ? formatDateTime(locale, row.approvedAt) : "-"}
-          </p>
+        <div className="text-xs text-text-secondary">
+          <span className="font-medium text-text-primary dark:text-white/95">
+            {row.reviewedBy?.displayName ?? "—"}
+          </span>
         </div>
       ),
     },
   ], [locale, t]);
 
-  const queueLabel =
-    queue === "finalized"
-      ? t("sessionEarningReviews.list.queue.finalized")
-      : t("sessionEarningReviews.list.queue.pending");
+  const queueLabel = t(`sessionEarningReviews.list.queue.${queue}` as Parameters<typeof t>[0]);
 
   return (
     <AdminOperationalListShell
@@ -380,14 +344,18 @@ export default function AdminSessionEarningReviewsListScreen() {
           <div className="flex flex-wrap items-center gap-2">
             {(
               [
-                ["pending", t("sessionEarningReviews.list.queue.pending")],
-                ["finalized", t("sessionEarningReviews.list.queue.finalized")],
+                ["PENDING_REVIEW", t("sessionEarningReviews.list.queue.PENDING_REVIEW")],
+                ["DECISION_APPROVED", t("sessionEarningReviews.list.queue.DECISION_APPROVED")],
+                ["WALLET_CREDITED", t("sessionEarningReviews.list.queue.WALLET_CREDITED")],
+                ["EXTERNAL_PAYOUT", t("sessionEarningReviews.list.queue.EXTERNAL_PAYOUT")],
+                ["REJECTED_OR_EXCLUDED", t("sessionEarningReviews.list.queue.REJECTED_OR_EXCLUDED")],
+                ["ALL", t("sessionEarningReviews.list.queue.ALL")],
               ] as const
             ).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => updateQuery({ queue: value, page: 1 })}
+                onClick={() => updateQuery({ stage: value, page: 1 })}
                 className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
                   queue === value
                     ? "border-primary/25 bg-primary-light/45 text-primary dark:bg-primary/15"
@@ -402,7 +370,7 @@ export default function AdminSessionEarningReviewsListScreen() {
               <FilterClearButton
                 onClick={() =>
                   updateQuery({
-                    queue: "pending",
+                    stage: "PENDING_REVIEW",
                     query: null,
                     sourceType: null,
                     decision: null,
@@ -473,11 +441,11 @@ export default function AdminSessionEarningReviewsListScreen() {
         onPageChange={(nextPage) => updateQuery({ page: nextPage })}
         onPageSizeChange={(nextLimit) => updateQuery({ page: 1, limit: nextLimit })}
         pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
-        onRowClick={(row) => router.push(`/admin/finance/session-earning-reviews/${row.reviewId}` as never)}
+        onRowClick={(row) => router.push(`${basePath}/${row.reviewId}` as never)}
         rowActions={(row) => (
           <Link
-            href={`/admin/finance/session-earning-reviews/${row.reviewId}`}
-            className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-white/95 dark:hover:bg-surface-tertiary"
+            href={`${basePath}/${row.reviewId}`}
+            className="inline-flex items-center justify-center rounded-xl border border-border-light bg-white px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-primary/30 hover:bg-brand-25 dark:bg-surface-secondary dark:text-white/95 dark:hover:bg-surface-tertiary"
           >
             {t("sessionEarningReviews.list.actions.viewDetails")}
           </Link>

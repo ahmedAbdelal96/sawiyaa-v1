@@ -21,12 +21,15 @@ import {
 } from '@nestjs/swagger';
 import { PaymentProvider } from '@prisma/client';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
+import { Permissions } from '@common/decorators/permissions.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { PermissionKey } from '@common/enums/permission-key.enum';
 import { Roles } from '@common/decorators/roles.decorator';
 import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
@@ -34,7 +37,7 @@ import { PaymentGatewayControlService } from '../services/payment-gateway-contro
 
 @ApiTags('Admin - Payment Gateway Control')
 @ApiBearerAuth()
-@UseGuards(JwtAccessAuthGuard, RolesGuard)
+@UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
 @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/payment-gateway-control')
@@ -131,6 +134,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Patch('providers/:provider')
+  @Permissions(PermissionKey.CONFIGURATION_EDIT_FINANCIAL)
   @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Update provider control state',
@@ -159,6 +163,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('providers/:provider/rollback')
+  @Permissions(PermissionKey.CONFIGURATION_EDIT_FINANCIAL)
   @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Rollback provider control state',
@@ -247,6 +252,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Patch('routing')
+  @Permissions(PermissionKey.CONFIGURATION_EDIT_FINANCIAL)
   @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Update routing control state',
@@ -271,6 +277,7 @@ export class AdminPaymentGatewayControlController {
   }
 
   @Post('routing/rollback')
+  @Permissions(PermissionKey.CONFIGURATION_EDIT_FINANCIAL)
   @ThrottlePolicy('admin-payment-gateway-control-password-confirmation')
   @ApiOperation({
     summary: 'Rollback routing control state',

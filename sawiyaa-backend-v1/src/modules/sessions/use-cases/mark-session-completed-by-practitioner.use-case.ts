@@ -9,9 +9,7 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
-import { SessionLifecycleService } from '../services/session-lifecycle.service';
-import { PostPackageSessionLedgerEntriesUseCase } from '@modules/financial-operations/use-cases/post-package-session-ledger-entries.use-case';
-import { SessionEarningReviewService } from '@modules/financial-operations/services/session-earning-review.service';
+import { CompleteSessionTransactionService } from '../services/complete-session-transaction.service';
 import { OperationalNotificationService } from '@modules/notifications/services/operational-notification.service';
 
 @Injectable()
@@ -21,9 +19,7 @@ export class MarkSessionCompletedByPractitionerUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
-    private readonly sessionLifecycleService: SessionLifecycleService,
-    private readonly postPackageSessionLedgerEntriesUseCase: PostPackageSessionLedgerEntriesUseCase,
-    private readonly sessionEarningReviewService: SessionEarningReviewService,
+    private readonly completionTransaction: CompleteSessionTransactionService,
     private readonly operationalNotificationService: OperationalNotificationService,
   ) {}
 
@@ -62,22 +58,11 @@ export class MarkSessionCompletedByPractitionerUseCase {
     const completedAt = new Date();
 
     const updatedSession = await this.prisma.$transaction(async (tx) => {
-      const completedSession = await this.sessionLifecycleService.transition({
+      const completedSession = await this.completionTransaction.execute({
         session,
-        to: SessionStatus.COMPLETED,
-        actorUserId: input.userId,
         at: completedAt,
+        actorUserId: input.userId,
         metadata: { markedBy: 'PRACTITIONER', locale: input.locale },
-        tx,
-      });
-
-      await this.postPackageSessionLedgerEntriesUseCase.execute({
-        sessionId: session.id,
-        tx,
-      });
-
-      await this.sessionEarningReviewService.syncForSessionCompletion({
-        sessionId: session.id,
         tx,
       });
 

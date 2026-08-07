@@ -7,6 +7,7 @@ import { sanitizeForLogging } from './log-sanitizer.util';
 import { isNestInternalContext } from './logging-policy.util';
 import { createWinstonLogger } from './winston.config';
 import type { LogTarget } from './logging.types';
+import { classifyHttpStatus } from './http-log.util';
 
 type LogMeta = Record<string, unknown> | undefined;
 
@@ -33,6 +34,9 @@ export class AppLoggerService implements LoggerService {
       logDir: this.loggingCfg.logDir,
       retentionDays: this.loggingCfg.retentionDays,
       maxFileSize: this.loggingCfg.maxFileSize,
+      maxFileSizeBytes: this.loggingCfg.maxFileSizeBytes,
+      version: this.loggingCfg.version,
+      deploymentId: this.loggingCfg.deploymentId,
     });
 
     this.registerProcessHandlers();
@@ -44,7 +48,7 @@ export class AppLoggerService implements LoggerService {
 
   error(message: unknown, trace?: string, context?: string): void {
     const meta = this.withTrace(trace);
-    this.write('error', message, meta, context, ['app', 'error']);
+    this.write('error', message, meta, context, ['error']);
   }
 
   warn(message: unknown, context?: string): void {
@@ -67,20 +71,27 @@ export class AppLoggerService implements LoggerService {
         stack: this.loggingCfg.stackEnabled ? trace : undefined,
       },
       context,
-      ['app', 'exceptions'],
+      ['exceptions'],
     );
   }
 
   http(message: unknown, meta?: LogMeta, context?: string): void {
-    this.write('http', message, meta, context, ['app', 'http']);
+    const messageStatus =
+      typeof message === 'object' && message !== null && 'statusCode' in message
+        ? (message as Record<string, unknown>).statusCode
+        : undefined;
+    const statusCode =
+      meta?.statusCode ??
+      (typeof messageStatus === 'number' ? messageStatus : undefined);
+    const level =
+      typeof statusCode === 'number'
+        ? classifyHttpStatus(statusCode).level
+        : 'info';
+    this.write(level, message, meta, context, ['http']);
   }
 
   slowRequest(message: unknown, meta?: LogMeta, context?: string): void {
-    this.write('warn', message, meta, context, [
-      'app',
-      'http',
-      'slow-requests',
-    ]);
+    this.write('warn', message, meta, context, ['slow-requests']);
   }
 
   info(message: unknown, meta?: LogMeta, context?: string): void {
@@ -95,7 +106,7 @@ export class AppLoggerService implements LoggerService {
       [key: string]: unknown;
     },
     context?: string,
-    targets: LogTarget[] = ['app', 'exceptions'],
+    targets: LogTarget[] = ['exceptions'],
     meta?: LogMeta,
   ): void {
     const payload = sanitizeForLogging({
@@ -134,6 +145,7 @@ export class AppLoggerService implements LoggerService {
         ...(context ? { context } : {}),
         ...mergedMeta,
         targets,
+        loggingTarget: targets[0],
         fileEnabled,
       });
       return;
@@ -143,6 +155,7 @@ export class AppLoggerService implements LoggerService {
       ...(context ? { context } : {}),
       ...sanitizeForLogging(meta ?? {}),
       targets,
+      loggingTarget: targets[0],
       fileEnabled,
     });
   }
@@ -198,7 +211,7 @@ export class AppLoggerService implements LoggerService {
           event: 'uncaughtException',
         },
         'Process',
-        ['app', 'exceptions'],
+        ['exceptions'],
       );
     });
 
@@ -206,7 +219,9 @@ export class AppLoggerService implements LoggerService {
       const error =
         reason instanceof Error
           ? reason
-          : new Error(typeof reason === 'string' ? reason : 'Unhandled rejection');
+          : new Error(
+              typeof reason === 'string' ? reason : 'Unhandled rejection',
+            );
 
       this.exception(
         {
@@ -218,7 +233,7 @@ export class AppLoggerService implements LoggerService {
           event: 'unhandledRejection',
         },
         'Process',
-        ['app', 'exceptions'],
+        ['exceptions'],
       );
     });
   }

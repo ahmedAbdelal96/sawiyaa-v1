@@ -16,8 +16,6 @@ import {
   useUploadAdminDirectPractitionerCredentialFile,
   useViewAdminDirectPractitionerCredentialFile,
 } from "../hooks/use-practitioner-applications";
-import AdminUserStepUpDialog from "@/features/admin/users/components/AdminUserStepUpDialog";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import type {
   CreateAdminPractitionerRequest,
 } from "../types/practitioner-applications.types";
@@ -51,7 +49,7 @@ import {
   getLocalizedProfessionalTitleOptions,
   getProfessionalTitleLabel,
 } from "@/constants/reference-data";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { normalizeFormError } from "@/lib/form-errors";
 import {
   buildCountryOptions,
@@ -314,7 +312,6 @@ export default function AdminPractitionerCreatePage() {
   const createMutation = useCreateAdminPractitionerDirect();
   const uploadMutation = useUploadAdminDirectPractitionerCredentialFile();
   const viewMutation = useViewAdminDirectPractitionerCredentialFile();
-  const stepUp = useAdminStepUp();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<StepId>("account");
@@ -725,19 +722,26 @@ export default function AdminPractitionerCreatePage() {
 
   const handleViewCredential = async (credential: UploadedCredential) => {
     if (viewMutation.isPending) return;
-    const popup = window.open("", "_blank", "noopener,noreferrer");
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      setGlobalError(t("applications.directCreate.upload.submitError"));
+      return;
+    }
+    popup.opener = null;
     setViewingCredentialId(credential.credentialId);
+    let objectUrl: string | null = null;
     try {
       const blob = await viewMutation.mutateAsync({
         credentialId: credential.credentialId,
         mimeType: credential.mimeType,
       });
-      const url = URL.createObjectURL(blob);
-      if (popup) popup.location.href = url;
-      else window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      objectUrl = URL.createObjectURL(blob);
+      popup.location.href = objectUrl;
+      const previewUrl = objectUrl;
+      window.setTimeout(() => URL.revokeObjectURL(previewUrl), 60_000);
     } catch {
-      popup?.close();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      popup.close();
       setGlobalError(t("applications.directCreate.upload.submitError"));
     } finally {
       setViewingCredentialId(null);
@@ -854,10 +858,6 @@ export default function AdminPractitionerCreatePage() {
         });
       } catch (cause) {
         const appError = toAppError(cause);
-
-        if (isStepUpRequiredError(appError)) {
-          throw appError;
-        }
 
         const normalized = normalizeFormError(
           cause,
@@ -1031,13 +1031,6 @@ export default function AdminPractitionerCreatePage() {
 
     void runCreate().catch((cause) => {
       const appError = toAppError(cause);
-
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          await runCreate();
-        });
-        return;
-      }
 
       setGlobalError(
         appError.statusCode === 403
@@ -2024,7 +2017,6 @@ export default function AdminPractitionerCreatePage() {
         </div>
       </div>
 
-      <AdminUserStepUpDialog controller={stepUp} />
     </div>
   );
 }

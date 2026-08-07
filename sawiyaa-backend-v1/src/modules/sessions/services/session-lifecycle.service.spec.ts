@@ -10,19 +10,24 @@ describe('SessionLifecycleService', () => {
   const updateStatus = jest.fn();
   const createEvent = jest.fn();
   const repository = { updateStatus, createEvent } as never;
+  const captureForUpcoming = jest.fn();
   const service = new SessionLifecycleService(
     repository,
     new ValidateSessionStatusTransitionService(),
+    { captureForUpcoming } as never,
   );
   const tx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    updateStatus.mockImplementation(async (id: string, data: { status: SessionStatus }) => ({
-      id,
-      status: data.status,
-    }));
+    updateStatus.mockImplementation(
+      (id: string, data: { status: SessionStatus }) => ({
+        id,
+        status: data.status,
+      }),
+    );
     createEvent.mockResolvedValue(undefined);
+    captureForUpcoming.mockResolvedValue(undefined);
   });
 
   it('writes the canonical status and an event in the supplied transaction', async () => {
@@ -44,9 +49,14 @@ describe('SessionLifecycleService', () => {
         metadataJson: expect.objectContaining({
           previousStatus: SessionStatus.PENDING_PAYMENT,
           nextStatus: SessionStatus.UPCOMING,
-        }),
+        }) as never,
       }),
       tx,
+    );
+    expect(captureForUpcoming).toHaveBeenCalledWith(
+      'session-1',
+      tx,
+      expect.any(Date),
     );
   });
 

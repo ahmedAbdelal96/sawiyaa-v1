@@ -102,11 +102,11 @@ export function SurfaceActionLink({
   className,
 }: SurfaceActionLinkProps) {
   const baseClasses =
-    "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold transition";
+    "inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs md:text-sm font-semibold transition-all duration-150 active:scale-[0.98] h-10 min-h-[40px]";
   const variantClasses =
     variant === "primary"
-      ? "bg-primary text-white shadow-[0_12px_24px_-16px_rgba(68,161,148,0.34)] hover:bg-primary-hover"
-      : "border border-border-light bg-surface-secondary text-text-primary shadow-[0_10px_20px_-16px_rgba(34,52,56,0.08)] dark:shadow-[0_10px_20px_-16px_rgba(0,0,0,0.4)] hover:border-primary/30 hover:bg-surface-tertiary";
+      ? "bg-primary text-white border border-transparent shadow-xs hover:bg-primary-hover active:bg-primary-active"
+      : "border border-border-light bg-white text-text-primary shadow-xs hover:border-primary/50 hover:bg-primary-light/40 hover:text-text-brand dark:bg-slate-800 dark:border-white/10 dark:text-white";
 
   return (
     <Link href={href as never} className={cn(baseClasses, variantClasses, className)}>

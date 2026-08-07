@@ -15,7 +15,7 @@ import { OperationalNotificationService } from '@modules/notifications/services/
 import { PackageSettlementService } from '@modules/financial-operations/services/package-settlement.service';
 import { PaymentRepository } from '@modules/payments/repositories/payment.repository';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
-import { SESSION_JOIN_LEAD_MINUTES } from '@modules/sessions/utils/session-join-policy.util';
+import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import { SessionLifecycleService } from '@modules/sessions/services/session-lifecycle.service';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 
@@ -29,6 +29,7 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     private readonly sessionLifecycleService: SessionLifecycleService,
     private readonly operationalNotificationService: OperationalNotificationService,
     private readonly packageSettlementService: PackageSettlementService,
+    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
   ) {}
 
   async execute(input: {
@@ -112,6 +113,8 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
     }
 
     const now = new Date();
+    const currentSchedulePolicy = await this.sessionSchedulePolicyService.resolve();
+    const policyBySessionId = new Map<string, unknown>();
 
     const activated = await this.prisma.$transaction(async (tx) => {
       const updatedPurchase = await this.packagePurchaseRepository.updateStatus(
@@ -125,17 +128,33 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
       );
 
       for (const [index, session] of pendingSessions.entries()) {
+        const schedulePolicy = this.sessionSchedulePolicyService.withScheduleRevision(
+          currentSchedulePolicy,
+          session.scheduleRevision,
+        );
+        policyBySessionId.set(session.id, schedulePolicy);
         const joinOpenAt = session.scheduledStartAt
           ? new Date(
               session.scheduledStartAt.getTime() -
-                SESSION_JOIN_LEAD_MINUTES * 60_000,
+                schedulePolicy.join.joinEarlyMinutes * 60_000,
+            )
+          : null;
+        const joinCloseAt = session.scheduledEndAt
+          ? new Date(
+              session.scheduledEndAt.getTime() +
+                schedulePolicy.join.joinAfterEndGraceMinutes * 60_000,
             )
           : null;
 
         await this.sessionLifecycleService.transition({
           session,
           to: SessionStatus.UPCOMING,
-          data: { joinOpenAt },
+          data: {
+            joinOpenAt,
+            joinCloseAt,
+            schedulePolicySnapshotJson:
+              schedulePolicy as unknown as import('@prisma/client').Prisma.InputJsonValue,
+          },
           metadata: {
             source: 'package-purchase-payment-success',
             packagePurchaseId: purchase.id,
@@ -176,6 +195,9 @@ export class HandlePackagePurchasePaymentSuccessUseCase {
           practitionerProfileId: purchase.practitionerId,
           sessionId: session.id,
           scheduledStartAt: session.scheduledStartAt,
+          scheduledEndAt: session.scheduledEndAt,
+          scheduleRevision: session.scheduleRevision,
+          schedulePolicySnapshot: policyBySessionId.get(session.id),
           packageContext: {
             packagePurchaseId: purchase.id,
             packagePlanCode: purchase.packagePlan?.code ?? '',

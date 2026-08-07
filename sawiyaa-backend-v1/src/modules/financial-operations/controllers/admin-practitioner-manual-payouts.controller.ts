@@ -53,7 +53,7 @@ import { SecurityAuditOutcome } from '@prisma/client';
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
 @Controller('admin/practitioner-payouts')
 export class AdminPractitionerManualPayoutsController {
   constructor(

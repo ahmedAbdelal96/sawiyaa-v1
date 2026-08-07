@@ -361,7 +361,7 @@ export default function MessagesWorkspace({ role }: Props) {
   const showDetailPane = Boolean(selectedId);
 
   return (
-    <section className="h-full min-h-0 w-full overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <section className="h-full min-h-0 w-full overflow-hidden rounded-2xl border border-border-light/80 bg-white shadow-xs dark:border-white/10 dark:bg-slate-900">
       <ChatWorkspaceShell>
         <div className="flex h-full w-full min-h-0 overflow-hidden">
           {/* 1. Left Conversation List Sidebar */}
@@ -419,7 +419,7 @@ export default function MessagesWorkspace({ role }: Props) {
                           className={cn(
                             "py-1.5 rounded-lg text-[10px] font-bold text-center transition-all",
                             isActive
-                              ? "bg-teal-600 text-white shadow-sm"
+                              ? "bg-primary text-white shadow-xs"
                               : "text-text-secondary dark:text-slate-400 hover:text-text-primary"
                           )}
                         >
@@ -432,9 +432,9 @@ export default function MessagesWorkspace({ role }: Props) {
                   <button
                     onClick={() => handleQueueChange("CARE")}
                     className={cn(
-                      "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-bold text-center transition-all border",
+                      "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-bold text-center transition-all border cursor-pointer",
                       activeAdminQueue === "CARE"
-                        ? "bg-indigo-600 text-white shadow-sm border-indigo-600"
+                        ? "bg-indigo-600 text-white shadow-xs border-indigo-600"
                         : "border-indigo-200/60 text-indigo-600 dark:text-indigo-400 dark:border-indigo-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
                     )}
                   >
@@ -446,7 +446,7 @@ export default function MessagesWorkspace({ role }: Props) {
             </div>
 
             {/* Conversation List */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1 bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1 bg-surface-secondary/30 dark:bg-slate-950/20">
               {listQueryLoading ? (
                 <div className="flex items-center justify-center p-8 text-xs text-text-muted animate-pulse font-semibold">
                   {isAr ? "جاري التحميل..." : "Loading..."}
@@ -460,15 +460,15 @@ export default function MessagesWorkspace({ role }: Props) {
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 p-8 text-center text-xs text-text-muted font-medium">
-                  <span>{isAr ? "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u062d\u0627\u062f\u062b\u0627\u062a \u062d\u062a\u0649 \u0627\u0644\u0622\u0646" : "No conversations yet"}</span>
+                  <span>{isAr ? "لا توجد محادثات حتى الآن" : "No conversations yet"}</span>
                   {role !== "admin" && !searchQuery.trim() && (
                     <button
                       type="button"
                       onClick={handleStartSupport}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-3 py-2 text-xs font-bold text-white hover:bg-teal-700"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white hover:bg-primary-hover shadow-xs cursor-pointer"
                     >
                       <PlusCircle className="h-4 w-4" />
-                      {isAr ? "\u0627\u0628\u062f\u0623 \u0645\u062d\u0627\u062f\u062b\u0629 \u0645\u0639 \u0627\u0644\u062f\u0639\u0645" : "Start a conversation with support"}
+                      {isAr ? "ابدأ محادثة مع الدعم" : "Start a conversation with support"}
                     </button>
                   )}
                 </div>
@@ -478,7 +478,7 @@ export default function MessagesWorkspace({ role }: Props) {
                   const isUnread = c.unreadCount > 0;
                   const badgeColor =
                     c.type === "SESSION"
-                      ? "bg-teal-500/10 text-teal-600 dark:bg-teal-500/25 dark:text-teal-400"
+                      ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light"
                       : c.type === "CARE"
                       ? "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/25 dark:text-indigo-400"
                       : "bg-amber-500/10 text-amber-600 dark:bg-amber-500/25 dark:text-amber-400";
@@ -488,16 +488,16 @@ export default function MessagesWorkspace({ role }: Props) {
                       key={c.conversationId}
                       onClick={() => handleConversationClick(c)}
                       className={cn(
-                        "relative w-full rounded-2xl border p-3 text-start transition-all duration-200 flex items-start justify-between gap-3",
+                        "relative w-full rounded-2xl border p-3 text-start transition-all duration-200 flex items-start justify-between gap-3 cursor-pointer",
                         isActive
-                          ? "border-teal-600/50 bg-teal-500/5 shadow-sm ring-1 ring-teal-500/20 dark:border-teal-500/30"
-                          : "border-border-light/60 bg-white hover:border-teal-500/30 dark:border-white/5 dark:bg-slate-900"
+                          ? "border-primary/50 bg-primary/5 shadow-xs ring-1 ring-primary/20 dark:border-primary/30"
+                          : "border-border-light/60 bg-white hover:border-primary/30 dark:border-white/5 dark:bg-slate-900"
                       )}
                     >
                       {/* Active Indicator on the Inner Divider Edge (Right edge for RTL, Left edge for LTR) */}
                       {isActive && (
                         <span className={cn(
-                          "absolute top-0 bottom-0 w-1.5 bg-teal-600 rounded-full",
+                          "absolute top-0 bottom-0 w-1.5 bg-primary rounded-full",
                           isAr ? "-left-[1px]" : "-right-[1px]"
                         )} />
                       )}

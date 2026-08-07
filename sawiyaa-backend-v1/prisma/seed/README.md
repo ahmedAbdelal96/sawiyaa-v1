@@ -35,6 +35,14 @@ Run:
 npm run prisma:seed
 ```
 
+The normal development seed also refreshes `session-access` scenarios. The displayed
+Egyptian patient and verified practitioner share an immediately joinable direct
+session. To refresh only these dynamic fixtures without rebuilding unrelated data:
+
+```bash
+npm run seed:session-access
+```
+
 ### Seed Profiles
 
 The default seed profile is curated and QA-friendly:
@@ -103,11 +111,15 @@ Scale intent:
 | Egyptian patient | `ahmed.patient@hesba.local` | `Patient@12345` | booking, wallet EGP flows, academy enrollment, unread messages, active sessions |
 | International patient | `mohamed.patient@hesba.local` | `Patient2@12345` | USD checkout, international practitioner discovery, refunds, package history |
 | New patient | `omar.patient@hesba.local` | `Patient3@12345` | onboarding, empty states, incomplete profile, first-time academy/package flows |
-| Verified practitioner | `dr.mohamed@hesba.local` | `Practitioner2@12345` | onboarding approved, availability, sessions workspace, unread chats |
+| Verified practitioner / primary session-access pair | `dr.mohamed@hesba.local` | `Practitioner2@12345` | primary joinable session, reminders, availability, sessions workspace, unread chats |
 | Pending practitioner | `dr.ahmed@hesba.local` | `Practitioner@12345` | onboarding completeness, verification requirements, incomplete profile |
 | Support agent | `support@hesba.local` | `Support@12345` | support inbox, chat handling, ticket-linked conversations |
 | System admin | `admin@hesba.local` | `Admin@12345` | admin dashboards, settlements, accounting visibility |
 | Content reviewer | `reviewer@hesba.local` | `Reviewer@12345` | content review surfaces and read-only QA flows |
+
+The primary session-access pair is always the Egyptian patient above and the
+verified practitioner above. The new-patient account (`omar.patient@hesba.local`)
+is intentionally seeded without an active or upcoming session for empty-state QA.
 
 Or after reset:
 

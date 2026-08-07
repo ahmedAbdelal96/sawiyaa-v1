@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   Get,
   Param,
@@ -23,7 +24,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { SessionCancellationBookingType } from '@prisma/client';
+import { SessionCancellationBookingType, SessionStatus } from '@prisma/client';
 import { RequireAccountStates } from '@common/decorators/account-state.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import type { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
@@ -40,17 +41,11 @@ import { AdminSessionAttendanceSuccessResponseDto } from '../dto/admin-session-a
 import { AdminSessionsListSuccessResponseDto } from '../dto/admin-sessions-list-response.dto';
 import { ListAdminSessionsDto } from '../dto/list-admin-sessions.dto';
 import { AdminSessionRuntimeInspectionSuccessResponseDto } from '../dto/admin-session-ops-response.dto';
-import {
-  AdminSessionManualDecisionSuccessResponseDto,
-} from '../dto/admin-session-manual-decision-response.dto';
-import {
-  AdminSessionManualDecisionListSuccessResponseDto,
-} from '../dto/admin-session-manual-decision-list-response.dto';
+import { AdminSessionManualDecisionSuccessResponseDto } from '../dto/admin-session-manual-decision-response.dto';
+import { AdminSessionManualDecisionListSuccessResponseDto } from '../dto/admin-session-manual-decision-list-response.dto';
 import { CreateAdminSessionManualDecisionDto } from '../dto/create-admin-session-manual-decision.dto';
 import { CreateAdminSessionPackageEntitlementDecisionDto } from '../dto/create-admin-session-package-entitlement-decision.dto';
-import {
-  AdminSessionPackageEntitlementDecisionSuccessResponseDto,
-} from '../dto/admin-session-package-entitlement-decision-response.dto';
+import { AdminSessionPackageEntitlementDecisionSuccessResponseDto } from '../dto/admin-session-package-entitlement-decision-response.dto';
 import { GetAdminSessionAttendanceUseCase } from '../use-cases/get-admin-session-attendance.use-case';
 import { GetAdminSessionsUseCase } from '../use-cases/get-admin-sessions.use-case';
 import { InspectAdminSessionRuntimeUseCase } from '../use-cases/inspect-admin-session-runtime.use-case';
@@ -64,12 +59,14 @@ import {
 } from '../dto/session-cancellation-policy.dto';
 import { GetSessionCancellationPoliciesUseCase } from '../use-cases/get-session-cancellation-policies.use-case';
 import { UpdateSessionCancellationPolicyUseCase } from '../use-cases/update-session-cancellation-policy.use-case';
+import { AdminSessionResolutionService } from '../services/admin-session-resolution.service';
+import { ExecuteAdminSessionResolutionDto } from '../dto/admin-session-resolution.dto';
 
 @ApiTags('Sessions')
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard, PermissionsGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.ADMIN, AppRole.SUPPORT_AGENT)
+@Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT)
 @Controller('admin/sessions')
 // TODO(Phase-4): SUPPORT_AGENT has `sessions.read.supportSummary` permission.
 // When a dedicated support-safe session summary endpoint is added it should:
@@ -88,7 +85,48 @@ export class AdminSessionsOperationsController {
     private readonly createAdminSessionManualDecisionUseCase: CreateAdminSessionManualDecisionUseCase,
     private readonly createAdminSessionPackageEntitlementDecisionUseCase: CreateAdminSessionPackageEntitlementDecisionUseCase,
     private readonly listAdminSessionManualDecisionsUseCase: ListAdminSessionManualDecisionsUseCase,
+    private readonly adminSessionResolutionService: AdminSessionResolutionService,
   ) {}
+
+  @Get('resolution-cases')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
+  listResolutionCases(
+    @Query()
+    query: {
+      status?: string;
+      suggestedOutcome?: SessionStatus;
+      practitionerId?: string;
+      patientId?: string;
+      from?: string;
+      to?: string;
+    },
+  ) {
+    return this.adminSessionResolutionService.list(query);
+  }
+
+  @Get(':id/resolution-case')
+  @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
+  getResolutionCase(@Param('id') sessionId: string) {
+    return this.adminSessionResolutionService.get(sessionId);
+  }
+
+  @Post(':id/resolution')
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
+  @Permissions(PermissionKey.SESSIONS_RESOLUTION_WRITE)
+  executeResolution(
+    @Param('id') sessionId: string,
+    @Body() body: ExecuteAdminSessionResolutionDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.adminSessionResolutionService.execute({
+      sessionId,
+      adminId: user.id,
+      actorRoles: user.roles,
+      requestId: request.requestId ?? null,
+      command: body,
+    });
+  }
 
   @Get()
   @Permissions(PermissionKey.SESSIONS_READ_ADMIN)
@@ -167,7 +205,7 @@ export class AdminSessionsOperationsController {
   }
 
   @Post(':id/manual-decision')
-  @Roles(AppRole.ADMIN)
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
   @Permissions(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE)
   @ApiOperation({
     summary: 'Record a manual session decision',
@@ -181,7 +219,8 @@ export class AdminSessionsOperationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin active accounts with write permission can access this route',
+    description:
+      'Only admin active accounts with write permission can access this route',
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   createManualDecision(
@@ -190,6 +229,15 @@ export class AdminSessionsOperationsController {
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: AuthenticatedRequest,
   ) {
+    if (
+      body.decisionType.startsWith('MARK_') &&
+      body.decisionType.endsWith('NO_SHOW')
+    ) {
+      throw new ConflictException({
+        messageKey: 'sessions.errors.adminResolutionRequired',
+        error: 'SESSION_RESOLUTION_REQUIRED',
+      });
+    }
     return this.createAdminSessionManualDecisionUseCase.execute({
       sessionId,
       decisionType: body.decisionType,
@@ -207,7 +255,7 @@ export class AdminSessionsOperationsController {
   }
 
   @Post(':id/package-entitlement-decision')
-  @Roles(AppRole.ADMIN)
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
   @Permissions(PermissionKey.SESSIONS_MANUAL_DECISIONS_WRITE)
   @ApiOperation({
     summary: 'Record a package entitlement decision',
@@ -221,7 +269,8 @@ export class AdminSessionsOperationsController {
   })
   @ApiUnauthorizedResponse({ description: 'Access token is required' })
   @ApiForbiddenResponse({
-    description: 'Only admin active accounts with write permission can access this route',
+    description:
+      'Only admin active accounts with write permission can access this route',
   })
   @ApiNotFoundResponse({ description: 'Session was not found' })
   createPackageEntitlementDecision(
@@ -285,7 +334,7 @@ export class AdminSessionsOperationsController {
   @ApiConflictResponse({
     description: 'Policy contains overlapping or invalid rule windows',
   })
-  @Roles(AppRole.ADMIN)
+  @Roles(AppRole.ADMIN, AppRole.SUPER_ADMIN)
   updateCancellationPolicy(
     @Param('bookingType', new ParseEnumPipe(SessionCancellationBookingType))
     bookingType: SessionCancellationBookingType,

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -15,9 +15,8 @@ import { AdminSectionCard, AdminStatusBadge } from "@/components/shared/admin/Ad
 import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { PermissionKey } from "@/lib/auth/permissions";
-import { isStepUpRequiredError, toAppError } from "@/lib/api/errors";
+import { toAppError } from "@/lib/api/errors";
 import { useCurrentUserPermissions } from "@/features/users/hooks/use-users";
-import { useAdminStepUp } from "@/features/admin/users/hooks/use-admin-step-up";
 import { formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import {
   getAdminSessionEarningReviewDecisionKey,
@@ -36,6 +35,7 @@ import type {
 
 type Props = {
   reviewId: string;
+  basePath?: string;
 };
 
 const MODERATION_ACTION_OPTIONS: Array<{
@@ -113,9 +113,9 @@ function DetailRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-border-light py-3 last:border-b-0 dark:border-white/8">
-      <span className="text-xs font-medium text-text-muted">{label}</span>
-      <span className={`text-right text-sm text-text-primary dark:text-white/90 ${mono ? "font-mono text-xs sm:text-sm" : ""}`}>
+    <div className="flex items-center justify-between gap-4 border-b border-border-light/40 py-1.5 last:border-b-0 dark:border-white/8 text-xs">
+      <span className="text-[11px] text-text-muted uppercase tracking-wider">{label}</span>
+      <span className={`text-right text-xs font-semibold text-text-primary dark:text-white/95 ${mono ? "font-mono text-[11px]" : ""}`}>
         {value}
       </span>
     </div>
@@ -215,78 +215,41 @@ function ReviewOverviewCard({
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
-    <AdminSectionCard
-      eyebrow={t("sessionEarningReviews.detail.overview.eyebrow")}
-      title={t("sessionEarningReviews.detail.overview.title")}
-      description={t("sessionEarningReviews.detail.overview.description")}
-    >
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.overview.reviewId")}
-          </p>
-          <p className="mt-1 break-all font-mono text-xs text-text-primary dark:text-white/90">
-            {item.reviewId}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.overview.sourceType")}
-          </p>
+    <AdminSectionCard title={t("sessionEarningReviews.detail.overview.title")}>
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4 text-xs">
+        <div>
+          <span className="text-[10px] text-text-muted block uppercase tracking-wider">{t("sessionEarningReviews.detail.overview.sourceType")}</span>
           <div className="mt-1">
             <ActionBadge
               tone={getSourceTypeTone(item.sourceType)}
-              label={t(
-                `sessionEarningReviews.sourceTypes.${getAdminSessionEarningReviewSourceTypeKey(item.sourceType).split(".")[1]}` as Parameters<typeof t>[0],
-              )}
+              label={t(`sessionEarningReviews.sourceTypes.${getAdminSessionEarningReviewSourceTypeKey(item.sourceType).split(".")[1]}` as Parameters<typeof t>[0])}
             />
           </div>
         </div>
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.overview.status")}
-          </p>
+        <div>
+          <span className="text-[10px] text-text-muted block uppercase tracking-wider">{t("sessionEarningReviews.detail.overview.status")}</span>
           <div className="mt-1">
             <ActionBadge
               tone={getStatusTone(item.reviewStatus)}
-              label={t(
-                `sessionEarningReviews.statuses.${getAdminSessionEarningReviewStatusKey(item.reviewStatus).split(".")[1]}` as Parameters<typeof t>[0],
-              )}
+              label={t(`sessionEarningReviews.statuses.${getAdminSessionEarningReviewStatusKey(item.reviewStatus).split(".")[1]}` as Parameters<typeof t>[0])}
             />
           </div>
         </div>
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.overview.decision")}
-          </p>
+        <div>
+          <span className="text-[10px] text-text-muted block uppercase tracking-wider">{t("sessionEarningReviews.detail.overview.decision")}</span>
           <div className="mt-1">
             <ActionBadge
               tone={getDecisionTone(item.reviewDecision)}
-              label={t(
-                `sessionEarningReviews.decisions.${getAdminSessionEarningReviewDecisionKey(item.reviewDecision).split(".")[1]}` as Parameters<typeof t>[0],
-              )}
+              label={t(`sessionEarningReviews.decisions.${getAdminSessionEarningReviewDecisionKey(item.reviewDecision).split(".")[1]}` as Parameters<typeof t>[0])}
             />
           </div>
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {item.isActionRequired ? (
-          <AdminStatusBadge tone="warning">{t("sessionEarningReviews.detail.overview.actionRequired")}</AdminStatusBadge>
-        ) : (
-          <AdminStatusBadge tone="muted">{t("sessionEarningReviews.detail.overview.noActionRequired")}</AdminStatusBadge>
-        )}
-        {item.isFinalized ? (
-          <AdminStatusBadge tone="success">{t("sessionEarningReviews.detail.overview.finalized")}</AdminStatusBadge>
-        ) : (
-          <AdminStatusBadge tone="muted">{t("sessionEarningReviews.detail.overview.pending")}</AdminStatusBadge>
-        )}
-        <AdminStatusBadge tone="muted">
-          {t("sessionEarningReviews.detail.overview.reviewedAt")}: {formatDateTime(locale, item.reviewedAt)}
-        </AdminStatusBadge>
-        <AdminStatusBadge tone="muted">
-          {t("sessionEarningReviews.detail.overview.approvedAt")}: {formatDateTime(locale, item.approvedAt)}
-        </AdminStatusBadge>
+        <div>
+          <span className="text-[10px] text-text-muted block uppercase tracking-wider">{t("sessionEarningReviews.detail.overview.reviewedAt")}</span>
+          <span className="font-semibold text-text-primary dark:text-white/90 block mt-1">
+            {formatDateTime(locale, item.reviewedAt)}
+          </span>
+        </div>
       </div>
     </AdminSectionCard>
   );
@@ -302,83 +265,19 @@ function SessionAndPeopleCard({
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
-    <AdminSectionCard title={t("sessionEarningReviews.detail.session.title")} description={t("sessionEarningReviews.detail.session.description")}>
-      <div className="grid gap-3 xl:grid-cols-2">
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.code")}
-          </p>
-          <p className="mt-1 font-mono text-xs text-text-primary dark:text-white/90">{item.session.sessionCode}</p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.status")}
-          </p>
-          <p className="mt-1 text-sm text-text-primary dark:text-white/90">
-            {t(`sessionStatuses.${item.session.status}` as Parameters<typeof t>[0])}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.paymentCoverage")}
-          </p>
-          <p className="mt-1 text-sm text-text-primary dark:text-white/90">
-            {t(`sessionPaymentCoverage.${item.session.paymentCoverageType}` as Parameters<typeof t>[0])}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.schedule")}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-text-primary dark:text-white/90">
-            {item.session.scheduledStartAt ? formatDateTime(locale, item.session.scheduledStartAt) : "-"}
-            {item.session.scheduledEndAt ? ` â€¢ ${formatDateTime(locale, item.session.scheduledEndAt)}` : ""}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.completedAt")}
-          </p>
-          <p className="mt-1 text-sm text-text-primary dark:text-white/90">
-            {formatDateTime(locale, item.session.completedAt)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.session.packagePurchaseId")}
-          </p>
-          <p className="mt-1 font-mono text-xs text-text-primary dark:text-white/90">
-            {readOnlyValue(item.session.packagePurchaseId)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.people.practitioner")}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-            {humanizeDisplayName(item.practitioner.displayName, item.practitioner.publicSlug ?? item.practitioner.practitionerId)}
-          </p>
-          <p className="mt-1 text-xs text-text-secondary">
-            {readOnlyValue(getProfessionalTitleLabel(item.practitioner.professionalTitle, locale) || item.practitioner.publicSlug)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-            {t("sessionEarningReviews.detail.people.patient")}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white/90">
-            {humanizeDisplayName(item.patient.displayName, item.patient.patientId)}
-          </p>
-        </div>
+    <AdminSectionCard title={t("sessionEarningReviews.detail.session.title")}>
+      <div className="space-y-1">
+        <DetailRow label={t("sessionEarningReviews.detail.session.code")} value={item.session.sessionCode} mono />
+        <DetailRow label={t("sessionEarningReviews.detail.session.status")} value={t(`sessionStatuses.${item.session.status}` as Parameters<typeof t>[0])} />
+        <DetailRow label={t("sessionEarningReviews.detail.session.paymentCoverage")} value={t(`sessionPaymentCoverage.${item.session.paymentCoverageType}` as Parameters<typeof t>[0])} />
+        <DetailRow label={t("sessionEarningReviews.detail.session.schedule")} value={
+          (item.session.scheduledStartAt ? formatDateTime(locale, item.session.scheduledStartAt) : "-") +
+          (item.session.scheduledEndAt ? ` • ${formatDateTime(locale, item.session.scheduledEndAt)}` : "")
+        } />
+        <DetailRow label={t("sessionEarningReviews.detail.session.completedAt")} value={formatDateTime(locale, item.session.completedAt)} />
+        <DetailRow label={t("sessionEarningReviews.detail.session.packagePurchaseId")} value={readOnlyValue(item.session.packagePurchaseId)} mono />
+        <DetailRow label={t("sessionEarningReviews.detail.people.practitioner")} value={humanizeDisplayName(item.practitioner.displayName, item.practitioner.publicSlug ?? item.practitioner.practitionerId)} />
+        <DetailRow label={t("sessionEarningReviews.detail.people.patient")} value={humanizeDisplayName(item.patient.displayName, item.patient.patientId)} />
       </div>
     </AdminSectionCard>
   );
@@ -396,12 +295,12 @@ function PaymentCard({
   const payment = item.payment;
 
   return (
-    <AdminSectionCard title={t("sessionEarningReviews.detail.payment.title")} description={t("sessionEarningReviews.detail.payment.description")}>
+    <AdminSectionCard title={t("sessionEarningReviews.detail.payment.title")}>
       {!payment ? (
-        <p className="text-sm text-text-secondary">{t("sessionEarningReviews.detail.payment.none")}</p>
+        <p className="text-xs text-text-secondary">{t("sessionEarningReviews.detail.payment.none")}</p>
       ) : (
-        <div className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-3">
+          <div className="space-y-1">
             <DetailRow label={t("sessionEarningReviews.detail.payment.id")} value={readOnlyValue(payment.paymentId)} mono />
             <DetailRow
               label={t("sessionEarningReviews.detail.payment.status")}
@@ -420,41 +319,24 @@ function PaymentCard({
             <DetailRow label={t("sessionEarningReviews.detail.payment.providerPaymentRef")} value={readOnlyValue(payment.providerPaymentRef)} mono />
             <DetailRow label={t("sessionEarningReviews.detail.payment.providerOrderRef")} value={readOnlyValue(payment.providerOrderRef)} mono />
             <DetailRow label={t("sessionEarningReviews.detail.payment.remainingEffectiveAmount")} value={formatSettlementMoney(locale, payment.remainingEffectiveAmount, payment.currencyCode)} />
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <DetailRow label={t("sessionEarningReviews.detail.payment.initiatedAt")} value={formatDateTime(locale, payment.initiatedAt)} />
             <DetailRow label={t("sessionEarningReviews.detail.payment.capturedAt")} value={formatDateTime(locale, payment.capturedAt)} />
-            <DetailRow label={t("sessionEarningReviews.detail.payment.failedAt")} value={formatDateTime(locale, payment.failedAt)} />
-            <DetailRow label={t("sessionEarningReviews.detail.payment.expiredAt")} value={formatDateTime(locale, payment.expiredAt)} />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-text-primary dark:text-white/95">{t("sessionEarningReviews.detail.payment.refunds.title")}</h3>
-              <span className="text-xs text-text-muted">
-                {payment.refunds.length > 0 ? t("sessionEarningReviews.detail.payment.refunds.count", { count: payment.refunds.length }) : t("sessionEarningReviews.detail.payment.refunds.empty")}
-              </span>
-            </div>
-            {payment.refunds.length > 0 ? (
-              <div className="grid gap-3 md:grid-cols-2">
+          {payment.refunds.length > 0 ? (
+            <div className="mt-3 pt-2 border-t border-border-light/60">
+              <h3 className="text-xs font-semibold text-text-primary mb-2">
+                {t("sessionEarningReviews.detail.payment.refunds.title")} ({payment.refunds.length})
+              </h3>
+              <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
                 {payment.refunds.map((refund) => (
-                  <div key={refund.id} className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-3 dark:bg-white/[0.03]">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-mono text-xs text-text-secondary">{refund.id}</p>
-                      <AdminStatusBadge tone="muted">
-                        {t(`refundStatuses.${refund.status}` as Parameters<typeof t>[0])}
-                      </AdminStatusBadge>
-                    </div>
-                    <p className="mt-2 text-sm font-semibold text-text-primary dark:text-white/90">
-                      {formatSettlementMoney(locale, refund.amount, refund.currencyCode)}
-                    </p>
-                    <p className="mt-1 text-xs text-text-muted">{formatDateTime(locale, refund.requestedAt)}</p>
+                  <div key={refund.id} className="flex justify-between items-center text-[11px] border-b border-border-light/20 py-1 last:border-0">
+                    <span className="font-mono text-text-muted">{shortId(refund.id)}</span>
+                    <span className="font-medium text-text-primary">{formatSettlementMoney(locale, refund.amount, refund.currencyCode)}</span>
                   </div>
                 ))}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       )}
     </AdminSectionCard>
@@ -473,26 +355,26 @@ function LedgerCard({
   return (
     <AdminSectionCard title={t("sessionEarningReviews.detail.ledger.title")} description={t("sessionEarningReviews.detail.ledger.description")}>
       {item.ledgerEntries.length === 0 ? (
-        <p className="text-sm text-text-secondary">{t("sessionEarningReviews.detail.ledger.empty")}</p>
+        <p className="text-xs text-text-secondary">{t("sessionEarningReviews.detail.ledger.empty")}</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border-light">
-          <div className="grid grid-cols-1 gap-2 border-b border-border-light bg-surface-tertiary px-4 py-3 text-xs font-semibold text-text-muted md:grid-cols-5 md:gap-0">
+        <div className="overflow-hidden rounded-xl border border-border-light">
+          <div className="grid grid-cols-5 gap-1 border-b border-border-light bg-surface-tertiary px-3 py-1.5 text-[10px] font-bold text-text-muted uppercase tracking-wider">
             <div>{t("sessionEarningReviews.detail.ledger.columns.type")}</div>
             <div>{t("sessionEarningReviews.detail.ledger.columns.direction")}</div>
             <div>{t("sessionEarningReviews.detail.ledger.columns.amount")}</div>
             <div>{t("sessionEarningReviews.detail.ledger.columns.bucket")}</div>
             <div>{t("sessionEarningReviews.detail.ledger.columns.createdAt")}</div>
           </div>
-          <div className="divide-y divide-border-light">
+          <div className="divide-y divide-border-light max-h-48 overflow-y-auto">
             {item.ledgerEntries.map((entry) => (
-              <div key={entry.id} className="grid grid-cols-1 gap-2 px-4 py-3 text-sm md:grid-cols-5 md:gap-0">
-                <div className="text-text-primary dark:text-white/90">
+              <div key={entry.id} className="grid grid-cols-5 gap-1 px-3 py-1.5 text-xs">
+                <div className="font-medium text-text-primary dark:text-white/90">
                   {t(getLedgerEntryTypeKey(entry.entryType) as Parameters<typeof t>[0])}
                 </div>
                 <div className="text-text-secondary">
                   {t(getLedgerDirectionKey(entry.direction) as Parameters<typeof t>[0])}
                 </div>
-                <div className="font-medium text-text-primary dark:text-white/90">
+                <div className="font-semibold text-text-primary dark:text-white/90">
                   {formatSettlementMoney(locale, entry.amount, entry.currencyCode)}
                 </div>
                 <div className="text-text-secondary">
@@ -525,7 +407,7 @@ function PackageCard({
     <div className="grid gap-4 xl:grid-cols-2">
       {item.packagePurchase ? (
         <AdminSectionCard title={t("sessionEarningReviews.detail.packagePurchase.title")} description={t("sessionEarningReviews.detail.packagePurchase.description")}>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
             <DetailRow label={t("sessionEarningReviews.detail.packagePurchase.id")} value={readOnlyValue(item.packagePurchase.packagePurchaseId)} mono />
             <DetailRow
               label={t("sessionEarningReviews.detail.packagePurchase.status")}
@@ -543,7 +425,7 @@ function PackageCard({
 
       {item.packageSettlement ? (
         <AdminSectionCard title={t("sessionEarningReviews.detail.packageSettlement.title")} description={t("sessionEarningReviews.detail.packageSettlement.description")}>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
             <DetailRow label={t("sessionEarningReviews.detail.packageSettlement.id")} value={readOnlyValue(item.packageSettlement.packageSettlementId)} mono />
             <DetailRow
               label={t("sessionEarningReviews.detail.packageSettlement.status")}
@@ -573,7 +455,6 @@ function ModerationCard({
 }) {
   const { data: permissionData, isLoading: permissionsLoading } = useCurrentUserPermissions(true);
   const canWrite = permissionData?.permissions?.includes(PermissionKey.ACCOUNTING_WRITE) ?? false;
-  const stepUp = useAdminStepUp();
   const mutation = useModerateAdminSessionEarningReview();
   const availableActions = useMemo(() => getAvailableActions(item), [item]);
 
@@ -639,18 +520,6 @@ function ModerationCard({
       await runMutation();
     } catch (cause) {
       const appError = toAppError(cause);
-      if (isStepUpRequiredError(appError)) {
-        stepUp.requestStepUp(async () => {
-          try {
-            await runMutation();
-          } catch (retryCause) {
-            const retryError = toAppError(retryCause);
-            setLocalError(retryError.message || t("sessionEarningReviews.detail.moderation.feedback.error"));
-          }
-        });
-        return;
-      }
-
       setLocalError(appError.message || t("sessionEarningReviews.detail.moderation.feedback.error"));
     }
   };
@@ -707,9 +576,6 @@ function ModerationCard({
     <AdminSectionCard
       title={t("sessionEarningReviews.detail.moderation.title")}
       description={t("sessionEarningReviews.detail.moderation.description")}
-      actions={
-        <AdminStatusBadge tone="warning">{t("sessionEarningReviews.detail.moderation.stepUpHint")}</AdminStatusBadge>
-      }
     >
       <div className="space-y-5">
         <div className="grid gap-3 xl:grid-cols-2">
@@ -828,14 +694,13 @@ function ModerationCard({
           >
             {mutation.isPending ? t("sessionEarningReviews.detail.moderation.submitting") : t("sessionEarningReviews.detail.moderation.submit")}
           </Button>
-          <span className="text-xs text-text-secondary">{t("sessionEarningReviews.detail.moderation.stepUpNote")}</span>
         </div>
       </div>
     </AdminSectionCard>
   );
 }
 
-export default function AdminSessionEarningReviewDetailScreen({ reviewId }: Props) {
+export default function AdminSessionEarningReviewDetailScreen({ reviewId, basePath = "/admin/finance/session-earning-reviews" }: Props) {
   const t = useTranslations("admin-finance-operations");
   const locale = useLocale();
   const reviewQuery = useAdminSessionEarningReview(reviewId);
@@ -855,7 +720,7 @@ export default function AdminSessionEarningReviewDetailScreen({ reviewId }: Prop
           label: t("sessionEarningReviews.detail.states.back"),
           href: (
             <Link
-              href="/admin/finance/session-earning-reviews"
+              href={basePath}
               className="inline-flex items-center justify-center rounded-2xl border border-border-light bg-white px-5 py-2 text-sm text-text-secondary shadow-theme-xs transition hover:border-primary/30 hover:bg-primary-light hover:text-primary dark:bg-surface-tertiary dark:hover:bg-surface-tertiary/80"
             >
               {t("sessionEarningReviews.detail.states.back")}
@@ -869,12 +734,12 @@ export default function AdminSessionEarningReviewDetailScreen({ reviewId }: Prop
   const item = reviewQuery.data.item;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <SurfaceCard variant="page">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 space-y-2">
             <Link
-              href="/admin/finance/session-earning-reviews"
+              href={basePath}
               className="inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-primary transition hover:border-primary/30 hover:bg-surface-tertiary"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -887,9 +752,6 @@ export default function AdminSessionEarningReviewDetailScreen({ reviewId }: Prop
               <h1 className="text-2xl font-semibold tracking-tight text-text-primary dark:text-white/95 sm:text-3xl">
                 {t("sessionEarningReviews.detail.title")}
               </h1>
-              <p className="max-w-3xl text-sm leading-6 text-text-secondary sm:text-base">
-                {t("sessionEarningReviews.detail.note")}
-              </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -905,16 +767,14 @@ export default function AdminSessionEarningReviewDetailScreen({ reviewId }: Prop
 
       <ReviewOverviewCard item={item} locale={locale} t={t} />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
+      <div className="grid gap-4 lg:grid-cols-3">
         <SessionAndPeopleCard item={item} locale={locale} t={t} />
         <PaymentCard item={item} locale={locale} t={t} />
+        <ModerationCard item={item} locale={locale} t={t} />
       </div>
 
       <PackageCard item={item} locale={locale} t={t} />
-
       <LedgerCard item={item} locale={locale} t={t} />
-
-      <ModerationCard item={item} locale={locale} t={t} />
     </div>
   );
 }

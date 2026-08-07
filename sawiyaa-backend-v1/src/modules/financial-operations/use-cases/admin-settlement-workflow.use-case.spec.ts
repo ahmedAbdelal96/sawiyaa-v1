@@ -1,5 +1,6 @@
 import { PractitionerSettlementStatus } from '@prisma/client';
 import { AdminSettlementWorkflowUseCase } from './admin-settlement-workflow.use-case';
+import { Prisma } from '@prisma/client';
 
 describe('AdminSettlementWorkflowUseCase', () => {
   function setup() {
@@ -21,12 +22,13 @@ describe('AdminSettlementWorkflowUseCase', () => {
     return { service: new AdminSettlementWorkflowUseCase(prisma, repository, adjustmentService, reviewService, audit), tx, prisma, repository, adjustmentService, reviewService, audit };
   }
 
-  it('adds adjustments only through the accountant transaction path', async () => {
-    const { service, tx, adjustmentService, audit } = setup();
-    tx.practitionerSettlement.findUnique.mockResolvedValue({ status: PractitionerSettlementStatus.UNDER_REVIEW });
-    await service.addAdjustment({ settlementId: 'settlement-1', actorUserId: 'user-1', body: { type: 'TAX', amount: '10.00', reason: 'Tax withholding' } });
-    expect(adjustmentService.apply).toHaveBeenCalledWith(expect.objectContaining({ settlementId: 'settlement-1', actorUserId: 'user-1' }));
-    expect(audit.recordRequired).toHaveBeenCalledWith(tx, expect.objectContaining({ action: 'SETTLEMENT_ADJUSTMENT_ADDED' }));
+  it('fails closed for legacy settlement adjustments', async () => {
+    const { service, adjustmentService, audit } = setup();
+    await expect(service.addAdjustment({ settlementId: 'settlement-1', actorUserId: 'user-1', body: { type: 'TAX', amount: '10.00', reason: 'Tax withholding' } })).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_ADJUSTMENTS_DISABLED' }),
+    });
+    expect(adjustmentService.apply).not.toHaveBeenCalled();
+    expect(audit.recordRequired).not.toHaveBeenCalled();
   });
 
   it('returns accountant payment, commission, wallet and actor details', async () => {
@@ -48,63 +50,58 @@ describe('AdminSettlementWorkflowUseCase', () => {
 
     const result = await service.detail('settlement-1');
     expect(result.item.payment).toEqual(expect.objectContaining({ reference: 'pay-ref', status: 'CAPTURED', provider: 'STRIPE' }));
-    expect(result.item.financial).toEqual(expect.objectContaining({ platformCommissionRatePercent: '30', platformCommissionAmount: '300', finalWalletCredit: '4500' }));
+    expect(result.item.financial).toEqual(expect.objectContaining({ platformCommissionRatePercent: '30', platformCommissionAmount: null, finalWalletCredit: '4500' }));
     expect(result.item.practitioner.walletStatus).toBe('ACTIVE');
     expect(result.item.adjustments[0].createdBy.name).toBe('Accountant');
     expect(result.item.session.durationMinutes).toBe(60);
   });
 
-  it('rejects without wallet credit and preserves the reason', async () => {
-    const { service, tx, audit } = setup();
-    tx.practitionerSettlement.findUnique.mockResolvedValue({ status: PractitionerSettlementStatus.UNDER_REVIEW, sourceReviewId: 'review-1', finalWalletCredit: { toString: () => '90' }, amountNet: { toString: () => '90' }, walletCurrencyCode: 'EGP' });
-    tx.practitionerSettlement.update.mockResolvedValue({ id: 'settlement-1', sourceReviewId: 'review-1' });
-    await service.reject({ settlementId: 'settlement-1', actorUserId: 'user-1', reason: 'Not eligible' });
-    expect(tx.practitionerSettlement.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: PractitionerSettlementStatus.REJECTED, rejectionReason: 'Not eligible' }) }));
-    expect(audit.recordRequired).toHaveBeenCalledWith(tx, expect.objectContaining({ action: 'SETTLEMENT_REJECTED' }));
+  it('fails closed for legacy settlement rejection', async () => {
+    const { service, audit } = setup();
+    await expect(service.reject({ settlementId: 'settlement-1', actorUserId: 'user-1', reason: 'Not eligible' })).rejects.toMatchObject({
+      response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_REJECTION_DISABLED' }),
+    });
+    expect(audit.recordRequired).not.toHaveBeenCalled();
   });
 
-  it('delegates approval to the existing sole wallet-credit path', async () => {
+  it('fails closed instead of combining accountant approval with wallet credit', async () => {
     const { service, tx, reviewService, audit } = setup();
     tx.practitionerSettlement.findUnique.mockResolvedValue({
       id: 'settlement-1', status: PractitionerSettlementStatus.UNDER_REVIEW, amountNet: { toString: () => '90' },
-      walletCurrencyCode: 'EGP', exchangeRate: 1, sourceReview: { id: 'review-1', reviewStatus: 'PENDING_REVIEW', suggestedPlatformAmount: 10 },
+      walletCurrencyCode: 'EGP', exchangeRate: 1, sourceReview: { id: 'review-1', reviewStatus: 'DECISION_APPROVED', paymentAmount: new Prisma.Decimal(100), accountantApprovedSourceAmount: new Prisma.Decimal(80), suggestedPlatformAmount: 20 },
     });
-    const result = await service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' });
-    expect(reviewService.approveReview).toHaveBeenCalledWith(expect.objectContaining({ reviewId: 'review-1', reviewerUserId: 'user-1' }));
-    expect(audit.recordRequired).toHaveBeenCalledWith(tx, expect.objectContaining({ action: 'SETTLEMENT_APPROVED' }));
-    expect(result.wasAlreadyApproved).toBe(false);
+    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_APPROVAL_DISABLED' }) });
+    expect(reviewService.approveReview).not.toHaveBeenCalled();
+    expect(audit.recordRequired).not.toHaveBeenCalled();
   });
 
-  it('records the final wallet amount and currency in approval audit events', async () => {
+  it('does not record a wallet-credit audit event through the legacy endpoint', async () => {
     const { service, tx, audit } = setup();
     tx.practitionerSettlement.findUnique
       .mockResolvedValueOnce({
         id: 'settlement-1', status: PractitionerSettlementStatus.UNDER_REVIEW,
         amountNet: { toString: () => '90' }, amountGross: { toString: () => '100' },
         amountAdjustments: { toString: () => '500' }, originalCurrencyCode: 'USD',
-        walletCurrencyCode: 'EGP', sourceReview: { id: 'review-1', reviewStatus: 'PENDING_REVIEW', suggestedPlatformAmount: { mul: () => ({ toDecimalPlaces: () => ({}) }) } },
+        walletCurrencyCode: 'EGP', sourceReview: { id: 'review-1', reviewStatus: 'DECISION_APPROVED', paymentAmount: new Prisma.Decimal(100), accountantApprovedSourceAmount: new Prisma.Decimal(80), suggestedPlatformAmount: new Prisma.Decimal(20) },
       })
       .mockResolvedValueOnce({ id: 'settlement-1', status: PractitionerSettlementStatus.CREDITED, finalWalletCredit: { toString: () => '4500' }, amountNet: { toString: () => '4500' }, walletCurrencyCode: 'EGP' });
     const reviewService = (service as any).reviewService;
     reviewService.approveReview.mockResolvedValue({ item: { id: 'review-1' }, wasAlreadyPosted: false });
-    await service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1', exchangeRate: '50' });
-    expect(audit.recordRequired).toHaveBeenCalledWith(tx, expect.objectContaining({
-      action: 'SETTLEMENT_CREDITED',
-      metadata: expect.objectContaining({ amount: '4500', currencyCode: 'EGP', newState: 'CREDITED' }),
-    }));
+    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1', exchangeRate: '50' })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_APPROVAL_DISABLED' }) });
+    expect(audit.recordRequired).not.toHaveBeenCalled();
   });
 
   it('does not approve a rejected settlement', async () => {
     const { service, tx, reviewService } = setup();
     tx.practitionerSettlement.findUnique.mockResolvedValue({ id: 'settlement-1', status: PractitionerSettlementStatus.REJECTED });
-    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' })).rejects.toThrow('not awaiting approval');
+    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_APPROVAL_DISABLED' }) });
     expect(reviewService.approveReview).not.toHaveBeenCalled();
   });
 
   it('returns an idempotent safe response for an already paid-out settlement', async () => {
     const { service, tx, reviewService } = setup();
     tx.practitionerSettlement.findUnique.mockResolvedValue({ id: 'settlement-1', status: PractitionerSettlementStatus.PAID_OUT });
-    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' })).resolves.toEqual(expect.objectContaining({ wasAlreadyApproved: true }));
+    await expect(service.approve({ settlementId: 'settlement-1', actorUserId: 'user-1' })).rejects.toMatchObject({ response: expect.objectContaining({ error: 'LEGACY_SETTLEMENT_APPROVAL_DISABLED' }) });
     expect(reviewService.approveReview).not.toHaveBeenCalled();
   });
 });
