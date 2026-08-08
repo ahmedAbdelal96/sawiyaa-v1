@@ -60,6 +60,16 @@ const PAYMOB_NAMES = new Set([
   "PAYMOB_INTENTION_BASE_URL",
   "PAYMOB_CHECKOUT_BASE_URL",
 ]);
+const DAILY_NAMES = new Set([
+  "DAILY_API_KEY",
+  "DAILY_API_BASE_URL",
+  "DAILY_WEBHOOK_SECRET",
+]);
+const ZOOM_NAMES = new Set([
+  "ZOOM_ACCOUNT_ID",
+  "ZOOM_CLIENT_ID",
+  "ZOOM_CLIENT_SECRET",
+]);
 
 function parseArgs(argv) {
   const args = {};
@@ -270,7 +280,8 @@ function isValidBasic(name, value) {
     return false;
   if (name === "THROTTLE_STORE" && !["memory", "redis"].includes(value))
     return false;
-  if (name === "VIDEO_PROVIDER_DEFAULT" && value !== "DAILY") return false;
+  if (name === "VIDEO_PROVIDER_DEFAULT" && !["DAILY", "ZOOM"].includes(value))
+    return false;
   if (name === "NEXT_PUBLIC_API_URL" && value.startsWith("/")) return true;
   if (name.endsWith("_URL") && !name.includes("DATABASE_URL")) {
     try {
@@ -354,7 +365,32 @@ function conditionalProviderDisabled(name, backend, providerStates) {
     return true;
   if (name === "REDIS_URL" && backend.get("THROTTLE_STORE") !== "redis")
     return true;
+  const activeVideoProvider = (backend.get("VIDEO_PROVIDER_DEFAULT") || "DAILY")
+    .trim()
+    .toUpperCase();
+  if (DAILY_NAMES.has(name)) return activeVideoProvider !== "DAILY";
+  if (ZOOM_NAMES.has(name)) return activeVideoProvider !== "ZOOM";
   return false;
+}
+
+function validateVideoProviderConfiguration(backend, issues) {
+  const provider = (backend.get("VIDEO_PROVIDER_DEFAULT") || "DAILY")
+    .trim()
+    .toUpperCase();
+  const required = provider === "ZOOM"
+    ? ["ZOOM_ACCOUNT_ID", "ZOOM_CLIENT_ID", "ZOOM_CLIENT_SECRET"]
+    : provider === "DAILY"
+      ? ["DAILY_API_KEY", "DAILY_API_BASE_URL", "DAILY_WEBHOOK_SECRET"]
+      : [];
+
+  if (!required.length) {
+    addIssue(issues, STATUS.INVALID, "VIDEO_PROVIDER_DEFAULT");
+    return;
+  }
+  for (const name of required) {
+    const value = backend.get(name);
+    if (!value?.trim()) addIssue(issues, STATUS.MISSING, name);
+  }
 }
 
 function validateStripeConfiguration(backend, frontend, providerStates, issues) {
@@ -410,9 +446,6 @@ function validateProductionConfiguration(backend, frontend, providerStates, issu
   const required = [
     "WEB_APP_URL",
     "LOG_LEVEL",
-    "DAILY_API_KEY",
-    "DAILY_API_BASE_URL",
-    "DAILY_WEBHOOK_SECRET",
     "CORPORATE_CODE_PEPPER",
   ];
   for (const name of required) {
@@ -455,6 +488,7 @@ function validateProductionConfiguration(backend, frontend, providerStates, issu
 
   if (backend.get("CORPORATE_CODE_PEPPER")?.trim().length < 32)
     addIssue(issues, STATUS.INVALID, "CORPORATE_CODE_PEPPER");
+  validateVideoProviderConfiguration(backend, issues);
   validateStripeConfiguration(backend, frontend, providerStates, issues);
   validatePaymobConfiguration(backend, providerStates, issues);
 }
@@ -471,6 +505,10 @@ function requirementEnabled(requirement, values) {
     values.get("GEOIP_ENABLED") !== "true"
   )
     return false;
+  if (text.includes("VIDEO_PROVIDER_DEFAULT == DAILY"))
+    return (values.get("VIDEO_PROVIDER_DEFAULT") || "DAILY") === "DAILY";
+  if (text.includes("VIDEO_PROVIDER_DEFAULT == ZOOM"))
+    return (values.get("VIDEO_PROVIDER_DEFAULT") || "DAILY") === "ZOOM";
   if (text.includes("no method registry/legacy card route")) {
     return (
       !values.get("PAYMOB_METHOD_REGISTRY_JSON") &&

@@ -137,6 +137,67 @@ test("production requires Daily webhook signing secret", () => {
   assert.equal(result.blocking, true);
 });
 
+test("Daily selected with empty optional Zoom credentials is ready", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "DAILY",
+      ZOOM_ACCOUNT_ID: "",
+      ZOOM_CLIENT_ID: "",
+      ZOOM_CLIENT_SECRET: "",
+    },
+  });
+  assert.equal(result.blocking, false);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV ZOOM_/);
+});
+
+test("Daily selected with missing Daily credentials is blocking", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "DAILY",
+      DAILY_API_KEY: "",
+      DAILY_API_BASE_URL: "",
+      DAILY_WEBHOOK_SECRET: "",
+    },
+  });
+  const report = formatReport(result);
+  assert.match(report, /BLOCKING_ENV DAILY_API_KEY/);
+  assert.match(report, /BLOCKING_ENV DAILY_API_BASE_URL/);
+  assert.match(report, /BLOCKING_ENV DAILY_WEBHOOK_SECRET/);
+  assert.equal(result.blocking, true);
+});
+
+test("Zoom selected with missing Zoom credentials is blocking", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "ZOOM",
+      ZOOM_ACCOUNT_ID: "",
+      ZOOM_CLIENT_ID: "",
+      ZOOM_CLIENT_SECRET: "",
+    },
+  });
+  const report = formatReport(result);
+  assert.match(report, /BLOCKING_ENV ZOOM_ACCOUNT_ID/);
+  assert.match(report, /BLOCKING_ENV ZOOM_CLIENT_ID/);
+  assert.match(report, /BLOCKING_ENV ZOOM_CLIENT_SECRET/);
+  assert.equal(result.blocking, true);
+});
+
+test("Zoom selected with complete Zoom credentials is ready", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "ZOOM",
+      ZOOM_ACCOUNT_ID: "zoom-account",
+      ZOOM_CLIENT_ID: "zoom-client",
+      ZOOM_CLIENT_SECRET: "zoom-secret",
+      DAILY_API_KEY: "",
+      DAILY_API_BASE_URL: "",
+      DAILY_WEBHOOK_SECRET: "",
+    },
+  });
+  assert.equal(result.blocking, false);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV (DAILY|ZOOM)_/);
+});
+
 test("Stripe disabled allows placeholder frontend and empty backend credentials", () => {
   const { result } = validate({
     backend: {
