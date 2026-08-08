@@ -47,6 +47,18 @@ test('deployment validates backend log access inside the container', () => {
   assert.match(script, /Backend container user cannot write to \/app\/logs/);
 });
 
+test('detached target preflight resolves relative Compose paths from the target worktree', () => {
+  const preflight = fs.readFileSync(
+    path.join(__dirname, 'validate-production-preflight.sh'),
+    'utf8',
+  );
+  assert.match(preflight, /cd -- "\$PROJECT_DIR"/);
+  assert.ok(
+    preflight.indexOf('cd -- "$PROJECT_DIR"') <
+      preflight.indexOf('docker compose'),
+  );
+});
+
 test('deployment gates the build on database-backed provider state', () => {
   assert.ok(position('Starting PostgreSQL for database-backed environment checks...') < position('Building backend and frontend images...'));
   assert.match(script, /valueBoolean/);

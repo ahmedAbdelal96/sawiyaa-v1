@@ -35,6 +35,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# All relative Compose paths must resolve from the release being validated.
+# This is especially important when deploy-production.sh invokes preflight
+# against a detached target worktree while the active checkout remains elsewhere.
+cd -- "$PROJECT_DIR"
+
 block() { printf 'BLOCKING %s\n' "$1"; BLOCKERS=$((BLOCKERS + 1)); }
 warn() { printf 'WARNING %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); }
 pass() { printf 'PASS %s\n' "$1"; }
