@@ -3104,6 +3104,7 @@ model InstantBookingRequest {
   expiresAt      DateTime
   respondedAt    DateTime?
   responseReason String?   @db.VarChar(500)
+  idempotencyKey String?   @db.VarChar(128)
   metadataJson   Json?
 
   createdAt DateTime @default(now())
@@ -3113,6 +3114,7 @@ model InstantBookingRequest {
   practitioner  PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Restrict)
   linkedSession Session?            @relation(fields: [linkedSessionId], references: [id], onDelete: SetNull)
 
+  @@unique([patientId, idempotencyKey])
   @@index([patientId, status])
   @@index([practitionerId, status])
   @@index([practitionerId, status, expiresAt, createdAt])

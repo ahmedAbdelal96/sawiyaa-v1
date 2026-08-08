@@ -84,7 +84,7 @@ export class AdminAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 
@@ -136,7 +136,7 @@ export class AdminAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -178,8 +178,13 @@ export default function PublicAvailabilityViewer({
   const isAuthenticated = Boolean(user);
 
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
   const [showBooked, setShowBooked] = useState(false);
   const canShowBookedSlots = false;
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { from, to, fromDate } = useMemo(
     () => getDateWindowBounds(dateWindowOffsetDays),
@@ -397,7 +402,9 @@ export default function PublicAvailabilityViewer({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">{tAvail("heading")}</p>
-          <p className="mt-1 text-sm font-medium text-text-secondary">{dateWindowLabel}</p>
+          <p className="mt-1 text-sm font-medium text-text-secondary">
+            {isMounted ? dateWindowLabel : ""}
+          </p>
         </div>
         <div className="flex items-center gap-1">
           <button

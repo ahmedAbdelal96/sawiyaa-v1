@@ -1,7 +1,7 @@
-import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { OtpPurpose, UserRoleType } from '@prisma/client';
+import { OtpPurpose, UserRoleType, UserStatus } from '@prisma/client';
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { PatientOtpChannelService } from '../services/patient-otp-channel.service';
@@ -34,21 +34,21 @@ export class RequestPatientPasswordResetUseCase {
     const userEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
-    if (!userEmail) {
+    const hasPatientRole = userEmail?.user.roles.some(
+      (role) => role.role === UserRoleType.PATIENT,
+    ) ?? false;
+
+    if (!userEmail || !hasPatientRole) {
       throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+        messageKey: 'auth.errors.emailNotRegistered',
+        error: 'EMAIL_NOT_REGISTERED',
       });
     }
 
-    const hasPatientRole = userEmail.user.roles.some(
-      (role) => role.role === UserRoleType.PATIENT,
-    );
-
-    if (!hasPatientRole) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
+    if (userEmail.user.status !== undefined && userEmail.user.status !== UserStatus.ACTIVE) {
+      throw new ForbiddenException({
+        messageKey: 'auth.errors.accountNotEligible',
+        error: 'ACCOUNT_NOT_ELIGIBLE',
       });
     }
 
@@ -69,14 +69,24 @@ export class RequestPatientPasswordResetUseCase {
     }
 
     try {
-      const resolvedChannel =
-        this.patientOtpChannelService.resolveVerifiedChannel(
+      let resolvedChannel;
+      try {
+        resolvedChannel = this.patientOtpChannelService.resolveVerifiedChannel(
           {
             emails: userEmail.user.emails ?? [],
             phones: userEmail.user.phones ?? [],
           },
           twoFactorSetting,
         );
+      } catch (error) {
+        if (error instanceof ForbiddenException) {
+          throw new ConflictException({
+            messageKey: 'auth.errors.accountEmailUnavailable',
+            error: 'ACCOUNT_EMAIL_UNAVAILABLE',
+          });
+        }
+        throw error;
+      }
       const challenge = await this.createOtpChallengeUseCase.execute({
         userId: userEmail.user.id,
         purpose: OtpPurpose.PASSWORD_RESET,
@@ -126,4 +136,5 @@ export class RequestPatientPasswordResetUseCase {
       nextStep: 'VERIFY_OTP',
     };
   }
+
 }

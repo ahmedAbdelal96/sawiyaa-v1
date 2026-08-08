@@ -167,6 +167,7 @@ export default function PractitionerSessionsPanel() {
           <SessionStatusBadge
             status={row.status}
             presentationStatus={row.presentationStatus}
+            operational={row.operational}
           />
         ),
       },

@@ -13,6 +13,10 @@ type PublicPractitionerPricingProfile = {
   sessionPrice30Usd: string | { toString(): string } | null;
   sessionPrice60Egp: string | { toString(): string } | null;
   sessionPrice60Usd: string | { toString(): string } | null;
+  instantBookingPrice30Egp: string | { toString(): string } | null;
+  instantBookingPrice30Usd: string | { toString(): string } | null;
+  instantBookingPrice60Egp: string | { toString(): string } | null;
+  instantBookingPrice60Usd: string | { toString(): string } | null;
 };
 
 /**
@@ -161,6 +165,26 @@ export class GetPublicPractitionerDetailsUseCase {
           pricingProfile.sessionPrice60Usd === undefined
             ? null
             : Number(pricingProfile.sessionPrice60Usd),
+        instantBookingPrice30Egp:
+          pricingProfile.instantBookingPrice30Egp === null ||
+          pricingProfile.instantBookingPrice30Egp === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice30Egp),
+        instantBookingPrice30Usd:
+          pricingProfile.instantBookingPrice30Usd === null ||
+          pricingProfile.instantBookingPrice30Usd === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice30Usd),
+        instantBookingPrice60Egp:
+          pricingProfile.instantBookingPrice60Egp === null ||
+          pricingProfile.instantBookingPrice60Egp === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice60Egp),
+        instantBookingPrice60Usd:
+          pricingProfile.instantBookingPrice60Usd === null ||
+          pricingProfile.instantBookingPrice60Usd === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice60Usd),
         ratingSummary: {
           averageRating: ratingSummary.averageRating,
           ratingsCount: ratingSummary.ratingsCount,

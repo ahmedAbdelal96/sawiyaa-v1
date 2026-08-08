@@ -65,6 +65,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       sessionPrice30Usd: new Prisma.Decimal('8.00'),
       sessionPrice60Egp: new Prisma.Decimal('450.00'),
       sessionPrice60Usd: new Prisma.Decimal('15.00'),
+      instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+      instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+      instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+      instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
       avatarUrl: null,
       yearsOfExperience: 7,
       acceptsPackages: true,
@@ -102,6 +106,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     expect(result.item.sessionPrice30).toBe(8);
     expect(result.item.sessionPrice60).toBe(15);
     expect(result.item.sessionPrice60Usd).toBe(15);
+    expect(result.item.instantBookingPrice30Egp).toBe(520);
+    expect(result.item.instantBookingPrice30Usd).toBe(31);
+    expect(result.item.instantBookingPrice60Egp).toBe(940);
+    expect(result.item.instantBookingPrice60Usd).toBe(56);
     expect(result.item.ratingSummary).toEqual({
       averageRating: 4.5,
       ratingsCount: 8,
@@ -138,6 +146,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       sessionPrice30Usd: new Prisma.Decimal('8.00'),
       sessionPrice60Egp: new Prisma.Decimal('450.00'),
       sessionPrice60Usd: new Prisma.Decimal('15.00'),
+      instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+      instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+      instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+      instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
       avatarUrl: null,
       yearsOfExperience: 7,
       acceptsPackages: true,

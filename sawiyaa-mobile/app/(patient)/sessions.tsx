@@ -38,6 +38,7 @@ import { useTheme } from "../../src/providers/ThemeProvider";
 import { extractApiErrorMessage } from "../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../src/lib/analytics";
+import { operationalState } from "../../src/features/sessions/operational";
 
 export default function PatientSessionsScreen() {
   const { t, i18n } = useTranslation();
@@ -72,7 +73,7 @@ export default function PatientSessionsScreen() {
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((session) => {
-      const status = session.status;
+      const status = operationalState(session);
       if (activeTab === "upcoming") {
         return (
           status === "READY_TO_JOIN" ||
@@ -96,13 +97,13 @@ export default function PatientSessionsScreen() {
     if (activeTab === "upcoming") {
       const active = filteredSessions.filter(
         (s) =>
-          s.status === "READY_TO_JOIN" ||
-          s.status === "IN_PROGRESS" ||
-          s.status === "PENDING_PAYMENT"
+          operationalState(s) === "READY_TO_JOIN" ||
+          operationalState(s) === "IN_PROGRESS" ||
+          operationalState(s) === "PENDING_PAYMENT"
       );
       const upcoming = filteredSessions.filter(
         (s) =>
-          s.status === "UPCOMING"
+          operationalState(s) === "UPCOMING"
       );
 
       return [
@@ -253,7 +254,7 @@ export default function PatientSessionsScreen() {
         trackAnalyticsEvent("session_joined", {
           role: "patient",
           sessionId: session.id,
-          sessionStatus: session.status,
+          sessionStatus: operationalState(session) ?? session.status,
           provider: contract.provider,
           source: "sessions_workspace",
         });
@@ -558,7 +559,8 @@ function SessionCard({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const tone = mapSessionPresentationTone(session.presentationStatus);
+  const canonicalState = operationalState(session) ?? session.presentationStatus;
+  const tone = mapSessionPresentationTone(canonicalState as SessionPresentationStatus);
   const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
   
@@ -613,7 +615,7 @@ function SessionCard({
         <View style={styles.cardStatusWrap}>
           <StatusChip
             label={t(
-              `patientSessionsFlow.presentationStatus.${session.presentationStatus}`,
+              `patientSessionsFlow.presentationStatus.${canonicalState}`,
             )}
             tone={tone}
             showDot={false}
@@ -660,7 +662,7 @@ function SessionCard({
             disabled={isJoining}
             style={styles.ctaButton}
           />
-        ) : session.status === "PENDING_PAYMENT" ? (
+        ) : canonicalState === "PENDING_PAYMENT" ? (
           <Button
             title={t("patientSessionsFlow.detail.payNow")}
             onPress={() => onContinuePayment(session.id)}
@@ -703,12 +705,13 @@ function SessionTimelineItem({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const canonicalState = operationalState(session) ?? session.presentationStatus;
   const practitionerName =
     session.practitioner.displayName ??
     t("patientSessionsFlow.common.practitionerFallback");
 
-  const isCompleted = session.presentationStatus === "COMPLETED";
-  const isCancelled = session.presentationStatus === "CANCELLED" || session.presentationStatus === "PATIENT_NO_SHOW";
+  const isCompleted = canonicalState === "COMPLETED";
+  const isCancelled = canonicalState === "CANCELLED" || canonicalState === "PATIENT_NO_SHOW";
   
   let dotBg = theme.colors.surfaceContainer;
   let iconName: keyof typeof Ionicons.glyphMap = "help-circle-outline";
@@ -762,8 +765,8 @@ function SessionTimelineItem({
               : t("patientSessionsFlow.common.notAvailable")}
           </Text>
           <StatusChip
-            label={t(`patientSessionsFlow.presentationStatus.${session.presentationStatus}`)}
-            tone={mapSessionPresentationTone(session.presentationStatus)}
+            label={t(`patientSessionsFlow.presentationStatus.${canonicalState}`)}
+            tone={mapSessionPresentationTone(canonicalState as SessionPresentationStatus)}
             showDot={false}
           />
         </View>
@@ -793,12 +796,12 @@ function SessionTimelineItem({
 
 function buildOverview(sessions: SessionListItem[]) {
   const actionRequired = sessions.filter(
-    (session) => session.status === "READY_TO_JOIN",
+    (session) => operationalState(session) === "READY_TO_JOIN",
   ).length;
   const active = sessions.filter(
     (session) =>
-      session.status === "READY_TO_JOIN" ||
-      session.status === "IN_PROGRESS",
+      operationalState(session) === "READY_TO_JOIN" ||
+      operationalState(session) === "IN_PROGRESS",
   ).length;
 
   return {

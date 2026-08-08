@@ -52,15 +52,12 @@ export default function PractitionerCard({
     typeof practitioner.yearsExperience === "number" ? practitioner.yearsExperience : 0;
   const filledStars = Math.max(0, Math.min(5, Math.round(rating)));
 
-  const visibleSpecialties = practitioner.specialties.slice(0, 2);
+  const visibleSpecialties = practitioner.specialties.slice(0, 3);
   const sessionPrices = getPublicSessionPrices(practitioner);
 
-  const visibleLanguages = practitioner.languages.slice(0, 2);
-  const languagesList = visibleLanguages
+  const languagesList = practitioner.languages
     .map((code) => languageLabels[code] ?? getLocalizedLanguageLabel(code, locale))
-    .join(", ");
-  const hiddenLanguageCount = Math.max(0, practitioner.languages.length - visibleLanguages.length);
-  const languageSummary = hiddenLanguageCount > 0 ? `${languagesList} +${hiddenLanguageCount}` : languagesList;
+    .join(isArabic ? "، " : ", ");
 
   const profileHref = `${basePath}/${practitioner.slug}`;
 
@@ -71,20 +68,29 @@ export default function PractitionerCard({
           <p className="text-[15px] sm:text-base font-bold text-text-primary dark:text-white/95 leading-snug">{name}</p>
           <p className="mt-0.5 text-xs sm:text-sm font-medium text-text-brand">{title}</p>
           
-          <div
-            className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
-              practitioner.isOnlineNow
-                ? "bg-emerald-500/5 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-                : "bg-surface-secondary text-text-secondary border-border-light/60 dark:bg-white/5"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                practitioner.isOnlineNow ? "bg-emerald-500 animate-pulse" : "bg-text-muted/70"
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                practitioner.isOnlineNow
+                  ? "bg-emerald-500/5 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+                  : "bg-surface-secondary text-text-secondary border-border-light/60 dark:bg-white/5"
               }`}
-              aria-hidden="true"
-            />
-            <span>{practitioner.isOnlineNow ? t("onlineNow") : t("offline")}</span>
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  practitioner.isOnlineNow ? "bg-emerald-500 animate-pulse" : "bg-text-muted/70"
+                }`}
+                aria-hidden="true"
+              />
+              <span>{practitioner.isOnlineNow ? t("onlineNow") : t("offline")}</span>
+            </div>
+
+            {(practitioner.availableNow || practitioner.isInstantBookingAvailable) ? (
+              <div className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                <span>{t("instantAvailable")}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-2 flex items-center gap-2">
@@ -150,10 +156,10 @@ export default function PractitionerCard({
             <p className="text-[10px] text-text-muted font-medium mb-0.5">{t("sessions")}</p>
             <p className="font-bold text-text-primary dark:text-white/90">{sessionCount}+</p>
           </div>
-          <div className="border-s border-border-light/50 dark:border-white/10">
+          <div className="border-s border-border-light/50 dark:border-white/10 px-1 flex flex-col justify-center">
             <p className="text-[10px] text-text-muted font-medium mb-0.5">{t("languages")}</p>
-            <p className="font-bold text-text-primary dark:text-white/90 truncate px-0.5" title={languageSummary}>
-              {languageSummary || "-"}
+            <p className="text-[10px] sm:text-[11px] font-bold text-text-primary dark:text-white/90 leading-tight">
+              {languagesList || "-"}
             </p>
           </div>
           <div className="border-s border-border-light/50 dark:border-white/10">

@@ -82,6 +82,9 @@ import { MySessionController } from './controllers/my-session.controller';
 import { GetMyNextSessionUseCase } from './use-cases/get-my-next-session.use-case';
 import { SessionJoinBootstrapController } from './controllers/session-join-bootstrap.controller';
 import { RescheduleSessionService } from './services/reschedule-session.service';
+import { ParticipantSessionOutcomeBoundaryService } from './services/participant-session-outcome-boundary.service';
+import { SessionOperationalInterpreterService } from './services/session-operational-interpreter.service';
+import { ResolvePractitionerSessionCommandActionsService } from './services/resolve-practitioner-session-command-actions.service';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -122,10 +125,13 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     ValidateSessionBookingRequestService,
     ValidateSessionStatusTransitionService,
     SessionLifecycleService,
+    ParticipantSessionOutcomeBoundaryService,
     SessionCompletionConfirmationSweeperService,
     ValidateSessionCancellationPolicyRulesService,
     EvaluateSessionCancellationPolicyService,
     ResolvePatientSessionActionsService,
+    SessionOperationalInterpreterService,
+    ResolvePractitionerSessionCommandActionsService,
     ApplySessionCancellationFinancialEffectsService,
     ApplyManualNoShowFinancialEffectsService,
     ExpireUnpaidSessionSweeperService,

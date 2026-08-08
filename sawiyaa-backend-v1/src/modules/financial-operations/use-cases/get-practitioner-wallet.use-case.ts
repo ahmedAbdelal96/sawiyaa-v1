@@ -32,7 +32,7 @@ export class GetPractitionerWalletUseCase {
     const primary = wallets.find((wallet) => wallet.status === 'ACTIVE');
     if (!primary) {
       throw new NotFoundException({
-        messageKey: 'financialOperations.errors.walletNotFound',
+        messageKey: 'financialOperations.errors.practitionerWalletNotFound',
         error: FINANCIAL_OPS_ERROR_CODES.practitionerWalletNotFound,
       });
     }

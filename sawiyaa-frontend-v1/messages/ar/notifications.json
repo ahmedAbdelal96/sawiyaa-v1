@@ -65,6 +65,22 @@
       "title": "تم إعادة جدولة الجلسة",
       "subtitle": "جلسة · جدولة"
     },
+    "sessions-session-reminder-60": {
+      "title": "تذكير بموعد جلستك",
+      "subtitle": "جلسة · تبدأ خلال ساعة"
+    },
+    "sessions-session-reminder-15": {
+      "title": "اقترب موعد جلستك",
+      "subtitle": "جلسة · تبدأ خلال 15 دقيقة"
+    },
+    "sessions-session-starting-now": {
+      "title": "جلستك تبدأ الآن",
+      "subtitle": "جلسة · حان وقت الانضمام"
+    },
+    "sessions-session-late-join": {
+      "title": "جلستك بدأت",
+      "subtitle": "جلسة · يمكنك الانضمام الآن"
+    },
     "support-ticket-created": {
       "title": "تم إنشاء تذكرة دعم جديدة",
       "subtitle": "دعم · عمليات"

@@ -39,19 +39,8 @@ import {
   formatViewerDateTime,
 } from "../../../src/lib/time-formatting";
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
 
-const COMPLETE_ALLOWED: SessionPresentationStatus[] = ["READY_TO_JOIN", "IN_PROGRESS"];
-const NO_SHOW_ALLOWED: SessionPresentationStatus[] = [
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
-const RUNTIME_CHECKABLE: SessionPresentationStatus[] = [
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
-const PREPARE_ELIGIBLE: SessionPresentationStatus[] = ["UPCOMING", "READY_TO_JOIN"];
 
 export default function PractitionerSessionDetailScreen() {
   const router = useRouter();
@@ -88,7 +77,7 @@ export default function PractitionerSessionDetailScreen() {
 
   const session = sessionQuery.data?.item ?? null;
   const sessionId = session?.id ?? null;
-  const sessionPresentationStatus = session?.presentationStatus;
+  const sessionPresentationStatus = session ? operationalState(session) : null;
   const sessionMode = session?.sessionMode;
 
   const resolveJoinContract = useCallback(
@@ -103,9 +92,9 @@ export default function PractitionerSessionDetailScreen() {
   useEffect(() => {
     if (
       !sessionId ||
-      !sessionPresentationStatus ||
+      !session?.operational?.join.canPrepareRuntime ||
       !sessionMode ||
-      !shouldAutoCheckJoin(sessionPresentationStatus, sessionMode)
+      !session?.operational?.join.canPrepareRuntime
     ) {
       autoJoinKeyRef.current = null;
       setJoinContract(null);
@@ -165,11 +154,11 @@ export default function PractitionerSessionDetailScreen() {
 
   const isRoomClosed =
     roomCloseResult?.wasAlreadyClosed === true ||
-    session?.joinAvailability?.blockedReason === "SESSION_ROOM_CLOSED";
+    session?.operational?.room.state === "CLOSED";
   const canCloseRoom =
     session?.sessionMode === "VIDEO" &&
     !isRoomClosed &&
-    session ? ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(session.status) : false;
+    session?.operational?.room.state === "OPEN";
   const roomCloseAfterEnd = Boolean(
     session?.scheduledEndAt &&
       Date.now() >= new Date(session.scheduledEndAt).getTime(),
@@ -201,11 +190,11 @@ export default function PractitionerSessionDetailScreen() {
     );
   }
 
-  const canComplete = COMPLETE_ALLOWED.includes(session.status);
-  const canNoShow = NO_SHOW_ALLOWED.includes(session.status);
+  const canComplete = session.operational?.actions.canComplete === true;
+  const canNoShow = session.operational?.actions.canMarkPatientNoShow === true;
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
-  const canJoinNow = session.joinAvailability?.canJoin === true;
+  const canJoinNow = operationalJoinAllowed(session);
   const canOpenMessages = session.chatAvailability?.canRead === true;
   const messagesAreReadOnly = session.chatAvailability?.readOnly;
   const joinUrl = buildJoinUrl(joinContract);
@@ -221,7 +210,7 @@ export default function PractitionerSessionDetailScreen() {
           ? t("practitioner.detail.prepareReady")
           : t("practitioner.detail.preparePending"),
       );
-      if (shouldAutoCheckJoin(session.presentationStatus, session.sessionMode)) {
+      if (session.operational?.join.canPrepareRuntime) {
         await resolveJoinContract(session.id).catch(() => {});
       }
     } catch {
@@ -907,47 +896,18 @@ function SessionSecondaryActionRow({
   );
 }
 
-function shouldAutoCheckJoin(
-  presentationStatus: SessionPresentationStatus,
-  sessionMode: PractitionerSessionDetails["sessionMode"],
-) {
-  return (
-    sessionMode === "VIDEO" &&
-    RUNTIME_CHECKABLE.includes(presentationStatus)
-  );
-}
-
 function canShowPrepareAction(
   session: PractitionerSessionDetails,
   joinContract: PractitionerSessionJoinContract | null,
 ) {
-  if (session.sessionMode !== "VIDEO") return false;
-  if (!PREPARE_ELIGIBLE.includes(session.presentationStatus)) return false;
-  if (session.joinAvailability?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
-    return false;
-  }
-  if (joinContract?.canJoin) return false;
-
-  return (
-    !joinContract ||
-    joinContract.blockedReason === "SESSION_RUNTIME_NOT_PREPARED" ||
-    joinContract.blockedReason === "SESSION_TIME_WINDOW_NOT_OPEN"
-  );
+  return session.operational?.actions.canPrepareRuntime === true && !joinContract?.canJoin;
 }
 
 function canShowJoinCheckAction(
   session: PractitionerSessionDetails,
   joinContract: PractitionerSessionJoinContract | null,
 ) {
-  if (session.sessionMode !== "VIDEO") return false;
-  if (!RUNTIME_CHECKABLE.includes(session.presentationStatus)) return false;
-  if (session.joinAvailability?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
-    return false;
-  }
-  if (joinContract?.blockedReason === "SESSION_JOIN_WINDOW_CLOSED") {
-    return false;
-  }
-  return !joinContract?.canJoin;
+  return session.operational?.join.canPrepareRuntime === true && !joinContract?.canJoin;
 }
 
 function buildJoinUrl(joinContract: PractitionerSessionJoinContract | null) {

@@ -117,13 +117,18 @@ const sessionReminderNotificationCandidateSelect = {
 const sessionSummaryCandidateSelect = {
   id: true,
   status: true,
+  flowType: true,
   sessionMode: true,
   scheduledStartAt: true,
   scheduledEndAt: true,
+  joinOpenAt: true,
+  joinCloseAt: true,
+  expiresAt: true,
   provider: true,
   providerRoomId: true,
   providerSessionRef: true,
   videoRoomClosedAt: true,
+  originalSessionId: true,
 } as const;
 
 export type SessionReminderNotificationCandidate = Prisma.SessionGetPayload<{
@@ -1657,6 +1662,7 @@ export class SessionRepository {
     id: true,
     sessionCode: true,
     status: true,
+    flowType: true,
     sessionMode: true,
     paymentCoverageType: true,
     scheduledStartAt: true,
@@ -1664,6 +1670,9 @@ export class SessionRepository {
     cancelledAt: true,
     durationMinutes: true,
     joinOpenAt: true,
+    joinCloseAt: true,
+    expiresAt: true,
+    originalSessionId: true,
     provider: true,
     providerRoomId: true,
     providerSessionRef: true,

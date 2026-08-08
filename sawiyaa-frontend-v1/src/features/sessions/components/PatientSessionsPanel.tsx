@@ -565,6 +565,7 @@ export default function PatientSessionsPanel() {
           <SessionStatusBadge
             status={row.status}
             presentationStatus={row.presentationStatus}
+            operational={row.operational}
             labelOverride={row.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined}
           />
         ),

@@ -26,6 +26,7 @@ import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator'
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtRefreshAuthGuard } from '@common/guards/authentication/jwt-refresh-auth.guard';
+import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { Public } from '@common/decorators/public.decorator';
 import { ThrottlePolicy } from '@common/decorators/throttle-policy.decorator';
 import { AuthenticatedRequest } from '@common/interfaces/authenticated-request.interface';
@@ -35,6 +36,7 @@ import {
   PasswordResetOtpVerifiedEnvelopeResponseDto,
 } from '../dto/auth-response.dto';
 import { ConfirmPasswordResetDto } from '../dto/confirm-password-reset.dto';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { PatientEmailPasswordLoginDto } from '../dto/patient-email-password-login.dto';
 import { PatientEmailPasswordRegisterDto } from '../dto/patient-email-password-register.dto';
 import { PatientGoogleAuthDto } from '../dto/patient-google-auth.dto';
@@ -52,6 +54,8 @@ import { RequestPatientPasswordResetUseCase } from '../use-cases/request-patient
 import { ResetPatientPasswordUseCase } from '../use-cases/reset-patient-password.use-case';
 import { VerifyPatientPasswordResetOtpUseCase } from '../use-cases/verify-patient-password-reset-otp.use-case';
 import { getRequestDeviceContext } from '../utils/request-device-context.util';
+import { ChangePasswordUseCase } from '../use-cases/change-password.use-case';
+import { UserRoleType } from '@prisma/client';
 
 @ApiTags('Auth - Patient')
 @Controller('auth/patient')
@@ -68,7 +72,30 @@ export class PatientAuthController {
     private readonly verifyPatientPasswordResetOtpUseCase: VerifyPatientPasswordResetOtpUseCase,
     private readonly confirmPatientPasswordResetUseCase: ConfirmPatientPasswordResetUseCase,
     private readonly resetPatientPasswordUseCase: ResetPatientPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
   ) {}
+
+  @UseGuards(JwtAccessAuthGuard)
+  @Post('change-password')
+  @HttpCode(200)
+  @ThrottlePolicy('auth-patient-change-password')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change the authenticated patient password' })
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() request: AuthenticatedRequest,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    await this.changePasswordUseCase.execute({
+      userId: request.user!.id,
+      role: UserRoleType.PATIENT,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+      ipAddress: request.ip ?? null,
+      userAgent: request.headers['user-agent'] ?? null,
+    });
+    return { message: this.i18nService.t('auth.success.passwordChanged', locale), currentSessionInvalidated: true };
+  }
 
   /** Google patient auth acts as register-or-login depending on whether the Google identity already exists. */
   @Public()
@@ -99,7 +126,7 @@ export class PatientAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 
@@ -144,7 +171,7 @@ export class PatientAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 
@@ -185,7 +212,7 @@ export class PatientAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 
@@ -237,7 +264,7 @@ export class PatientAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
       });
     }
 
@@ -316,13 +343,17 @@ export class PatientAuthController {
   @ApiForbiddenResponse({ description: 'OTP code is invalid' })
   async verifyPasswordResetOtp(
     @Body() dto: VerifyPasswordResetOtpDto,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    return this.verifyPatientPasswordResetOtpUseCase.execute({
+    const result = await this.verifyPatientPasswordResetOtpUseCase.execute({
       email: dto.email,
       code: dto.code,
       locale,
     });
+    this.setPasswordResetCookie(res, result.resetToken, result.expiresAt);
+    const { resetToken: _resetToken, ...safeResult } = result;
+    return safeResult;
   }
 
   @Public()
@@ -336,13 +367,22 @@ export class PatientAuthController {
   @ApiUnauthorizedResponse({ description: 'Reset token is invalid or expired' })
   async confirmPasswordReset(
     @Body() dto: ConfirmPasswordResetDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    return this.confirmPatientPasswordResetUseCase.execute({
-      resetToken: dto.resetToken,
+    const result = await this.confirmPatientPasswordResetUseCase.execute({
+      resetToken: this.readPasswordResetCookie(request),
       newPassword: dto.newPassword,
       locale,
+      deviceContext: getRequestDeviceContext(request),
     });
+    res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
+      httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/',
+      maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
+    });
+    this.clearPasswordResetCookie(res);
+    return result;
   }
 
   /** Reset-password consumes a reset OTP and rotates the patient password hash. */
@@ -370,5 +410,28 @@ export class PatientAuthController {
       newPassword: dto.newPassword,
       locale,
     });
+  }
+
+  private setPasswordResetCookie(res: Response, token: string, expiresAt: string) {
+    res.cookie('sawiyaa_password_reset', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/v1/auth/patient',
+      expires: new Date(expiresAt),
+    });
+  }
+
+  private clearPasswordResetCookie(res: Response) {
+    res.clearCookie('sawiyaa_password_reset', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/api/v1/auth/patient',
+    });
+  }
+
+  private readPasswordResetCookie(request: Request): string {
+    return (request as Request & { cookies?: Record<string, string> }).cookies?.sawiyaa_password_reset ?? '';
   }
 }

@@ -7,6 +7,7 @@ import {
   patientForgotPassword,
   patientVerifyPasswordResetOtp,
   patientConfirmPasswordReset,
+  patientChangePassword,
   patientGoogleAuth,
   patientLogin,
   patientLogout,
@@ -16,9 +17,11 @@ import {
   practitionerForgotPassword,
   practitionerVerifyPasswordResetOtp,
   practitionerConfirmPasswordReset,
+  practitionerChangePassword,
   practitionerLogin,
   practitionerLogout,
   practitionerRefresh,
+  practitionerResendLoginOtp,
   practitionerRegister,
   practitionerVerifyRegistrationOtp,
   practitionerResendRegistrationOtp,
@@ -183,6 +186,15 @@ export function usePractitionerVerifyOtp() {
   });
 }
 
+export function usePatientChangePassword() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: patientChangePassword, onSuccess: onLogoutSuccess, retry: false });
+}
+
+export function usePractitionerResendLoginOtp() {
+  return useMutation({ mutationFn: practitionerResendLoginOtp, retry: false });
+}
+
 export function usePractitionerRefresh() {
   const { onAuthSuccess } = useAuthMutationInvalidation();
   return useMutation({
@@ -199,6 +211,11 @@ export function usePractitionerLogout() {
     onSuccess: onLogoutSuccess,
     retry: false,
   });
+}
+
+export function usePractitionerChangePassword() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: practitionerChangePassword, onSuccess: onLogoutSuccess, retry: false });
 }
 
 export function usePractitionerForgotPassword() {

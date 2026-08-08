@@ -111,6 +111,7 @@
     "languages": "Languages",
     "rating": "Rating",
     "onlineNow": "Online now",
+    "instantAvailable": "Available for an instant session",
     "offline": "Offline",
     "matchesFilter": "Matches filter"
   },

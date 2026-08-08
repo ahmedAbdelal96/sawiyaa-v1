@@ -6,6 +6,8 @@ import { SessionPatientRepository } from '../repositories/session-patient.reposi
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { ResolvePractitionerSessionCommandActionsService } from '../services/resolve-practitioner-session-command-actions.service';
 
 /**
  * Session details stay ownership-aware so patient and practitioner reads remain separated
@@ -20,6 +22,8 @@ export class GetSessionDetailsUseCase {
     private readonly sessionMapper: SessionMapper,
     private readonly sessionAccessPolicy: SessionAccessPolicy,
     private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
+    private readonly practitionerCommandActions: ResolvePractitionerSessionCommandActionsService,
   ) {}
 
   async execute(input: {
@@ -89,6 +93,16 @@ export class GetSessionDetailsUseCase {
             now,
           })
         : undefined;
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      actor: input.actorType,
+      now,
+      finalManualDecision: latestDecision?.decisionType ?? null,
+      patientActions: actions,
+      practitionerCommandActions: input.actorType === 'PRACTITIONER'
+        ? await this.practitionerCommandActions.resolve({ session, now })
+        : undefined,
+    });
 
     return {
       item: this.sessionMapper.toDetails(
@@ -97,6 +111,7 @@ export class GetSessionDetailsUseCase {
         0,
         latestDecision?.decisionType ?? null,
         actions,
+        operational,
       ),
     };
   }

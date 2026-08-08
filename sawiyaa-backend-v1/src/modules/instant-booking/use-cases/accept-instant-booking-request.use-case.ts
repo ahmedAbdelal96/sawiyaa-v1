@@ -208,6 +208,7 @@ export class AcceptInstantBookingRequestUseCase {
       await this.operationalNotificationService.notifyInstantBookingAccepted({
         patientProfileId: accepted.patient.id,
         requestId: accepted.id,
+        createdSessionId: accepted.linkedSessionId,
       });
     }
 

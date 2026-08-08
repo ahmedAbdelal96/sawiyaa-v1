@@ -41,8 +41,14 @@ export class UserEmailRepository {
       include: {
         user: {
           include: {
-            roles: true,
-            emails: {
+          roles: true,
+          practitionerProfile: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+          emails: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
             },
             phones: {

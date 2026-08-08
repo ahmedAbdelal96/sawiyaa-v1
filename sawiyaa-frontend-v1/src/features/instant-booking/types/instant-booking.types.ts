@@ -75,7 +75,6 @@ export type InstantBookingEligiblePractitionersResponseData = {
 export type CreatePatientInstantBookingRequestInput = {
   practitionerSlug: string;
   durationMinutes: InstantBookingDiscoveryDuration;
-  sessionMode?: SessionMode;
 };
 
 /**

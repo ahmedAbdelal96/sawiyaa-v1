@@ -135,7 +135,7 @@ export const seedCredentials = {
     password: 'Practitioner@12345',
   },
   practitionerB: {
-    email: 'dr.mohamed@hesba.local',
+    email: 'amohamef206@gmail.com',
     password: 'Practitioner2@12345',
   },
   practitionerC: {

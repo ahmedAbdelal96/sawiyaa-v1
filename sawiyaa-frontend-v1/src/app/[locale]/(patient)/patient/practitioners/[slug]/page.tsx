@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import {
   fetchPublicPractitionerBySlug,
-  fetchPublicPractitionerPresence,
+  fetchPublicPractitionerInstantBookingAvailability,
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
 import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
+import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
 import {
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
@@ -132,16 +133,16 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
     tProfile(`countries.${profile.country}` as Parameters<typeof tProfile>[0]) ??
     profile.country;
 
-  let presence = null;
+  let instantBookingAvailability = null;
   try {
-    presence = await fetchPublicPractitionerPresence(slug, locale);
+    instantBookingAvailability = await fetchPublicPractitionerInstantBookingAvailability(slug, locale);
   } catch {
-    // Non-critical: booking panel handles missing presence data.
+    // Non-critical: booking panel fails closed when availability is unavailable.
   }
 
   return (
     <div className="px-4 py-4 sm:py-6">
-      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
+      <div className="mx-auto max-w-6xl space-y-4">
         <ProfileHeader
           profile={profile}
           countryLabel={countryLabel}
@@ -152,15 +153,27 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
           messageHref={`/patient/care-chat?practitionerSlug=${slug}`}
         />
 
-        <ProfileBookingPanel profile={profile} presence={presence} />
-
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-          <div className="space-y-6">
-            <ProfileAbout profile={profile} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
+          {/* Left Column: Compact Practitioner Details Sidebar */}
+          <div className="space-y-4 lg:sticky lg:top-24">
+            <div className="app-panel rounded-2xl p-4 sm:p-5 space-y-4">
+              <ProfileAbout profile={profile} compact />
+              <ProfileSpecialties
+                profile={profile}
+                specialtyLabels={specialtyLabels}
+                languageLabels={languageLabels}
+                compact
+              />
+              <ProfileCredentials profile={profile} compact />
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <ProfileCredentials profile={profile} />
+          {/* Right Column: Schedule & Booking Area */}
+          <div className="space-y-4 min-w-0">
+            <ProfileBookingPanel
+              profile={profile}
+              instantBookingAvailability={instantBookingAvailability}
+            />
           </div>
         </div>
       </div>

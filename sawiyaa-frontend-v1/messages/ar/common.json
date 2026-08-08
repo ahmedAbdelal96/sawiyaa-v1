@@ -65,7 +65,7 @@
     "actions": "الإجراءات"
   },
   "money": {
-    "currency": { "usd": { "full": "دولار أمريكي" }, "egp": { "full": "جنيه مصري" } },
+    "currency": { "usd": { "full": "دولار" }, "egp": { "full": "جنيه" } },
     "pricing": { "free": "مجاني", "unavailable": "تعذر عرض السعر حالياً", "sessionFees": "رسوم الجلسة", "packagePrice": "سعر الباقة", "coursePrice": "سعر الدورة", "total": "الإجمالي" }
   },
   "notFound": {

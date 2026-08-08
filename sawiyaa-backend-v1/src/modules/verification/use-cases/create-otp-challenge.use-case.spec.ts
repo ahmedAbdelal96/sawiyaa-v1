@@ -137,4 +137,32 @@ describe('CreateOtpChallengeUseCase', () => {
       expect.anything(),
     );
   });
+
+  it('atomically invalidates prior password-reset challenges before creating a replacement', async () => {
+    otpPolicyResolverService.resolve = jest.fn().mockReturnValue({
+      codeLength: 6,
+      maxAttempts: 5,
+      resendCooldownSeconds: 30,
+      ttlMinutes: 15,
+      allowedChannels: [OtpChannel.EMAIL],
+    });
+    otpChallengeRepository.listRecentChallengesForTarget = jest.fn().mockResolvedValue([]);
+    otpChallengeRepository.create = jest.fn().mockResolvedValue({ id: 'reset-2' });
+
+    await useCase.execute({
+      userId: 'user-1',
+      purpose: OtpPurpose.PASSWORD_RESET,
+      channel: OtpChannel.EMAIL,
+      target: 'test@example.com',
+    });
+
+    expect(otpChallengeRepository.lockScope).toHaveBeenCalledWith(
+      expect.anything(),
+      'otp-challenge:PASSWORD_RESET:user:user-1',
+    );
+    expect(otpChallengeRepository.invalidateActiveChallengesByScope).toHaveBeenCalledWith(
+      expect.objectContaining({ purpose: OtpPurpose.PASSWORD_RESET }),
+      expect.anything(),
+    );
+  });
 });

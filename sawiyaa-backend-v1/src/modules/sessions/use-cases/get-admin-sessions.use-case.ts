@@ -6,6 +6,7 @@ import {
 } from '../dto/list-admin-sessions.dto';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionRepository } from '../repositories/session.repository';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 
 const DELAYED_STATUSES = new Set<SessionStatus>([
   SessionStatus.PENDING_PRACTITIONER_CONFIRMATION,
@@ -19,6 +20,7 @@ export class GetAdminSessionsUseCase {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { query: ListAdminSessionsDto }) {
@@ -53,19 +55,26 @@ export class GetAdminSessionsUseCase {
     );
 
     return {
-      items: sessions.map((session) => ({
+      items: await Promise.all(sessions.map(async (session) => ({
         ...this.sessionMapper.toListItem(
           session,
           now,
           0,
           decisionMap.get(session.id) ?? null,
+          undefined,
+          await this.operationalInterpreter.interpret({
+            session,
+            actor: 'ADMIN',
+            now,
+            finalManualDecision: decisionMap.get(session.id) ?? null,
+          }),
         ),
         isDelayed: this.isDelayed(
           session.status,
           session.scheduledStartAt,
           now,
         ),
-      })),
+      }))),
       pagination: {
         page,
         limit,

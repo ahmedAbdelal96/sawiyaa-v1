@@ -1,22 +1,24 @@
 import { useTranslations } from "next-intl";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
-import type { SessionPresentationStatus, SessionStatus } from "../types/sessions.types";
+import type { SessionOperationalInterpretation, SessionPresentationStatus, SessionStatus } from "../types/sessions.types";
 
 type Props = {
   status?: SessionStatus;
   presentationStatus?: SessionPresentationStatus;
   labelOverride?: string;
+  operational?: SessionOperationalInterpretation;
 };
 
 export default function SessionStatusBadge({
   status,
   presentationStatus,
   labelOverride,
+  operational,
 }: Props) {
   const t = useTranslations("sessions");
   // The canonical status is the only lifecycle input. Missing status is
   // rendered conservatively rather than inferred from presentation fields.
-  const displayStatus = status ?? "DRAFT";
+  const displayStatus = operational?.state ?? status ?? "DRAFT";
   const tone = displayStatus === "IN_PROGRESS"
       ? "success"
       : displayStatus === "PENDING_PAYMENT" ||

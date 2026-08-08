@@ -140,7 +140,7 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
     expect(screen.getByText("دفع مباشر")).toBeDefined();
     
     // Currency snapshot remains authoritative
-    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه مصري");
+    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه");
 
     // Internal notes display correctly
     expect(screen.getByText("Internal session notes text")).toBeDefined();

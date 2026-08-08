@@ -320,6 +320,8 @@ export class ResolveSessionJoinContractUseCase {
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
       videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
+      joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
+      joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
       finalManualDecision,
       now,
     });

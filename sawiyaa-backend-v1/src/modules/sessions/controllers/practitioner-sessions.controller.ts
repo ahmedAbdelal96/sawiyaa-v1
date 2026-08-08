@@ -226,7 +226,7 @@ export class PractitionerSessionsController {
     });
   }
 
-  @Post(':id/mark-completed')
+  @Post(':id/complete')
   @HttpCode(200)
   @ApiOperation({
     summary: 'Mark a practitioner-owned session as completed',
@@ -279,9 +279,10 @@ export class PractitionerSessionsController {
     @CurrentLocale() locale: SupportedLocale,
     @Param('id') sessionId: string,
   ) {
-    throw new ConflictException({
-      messageKey: 'sessions.errors.adminResolutionRequired',
-      error: 'SESSION_RESOLUTION_REQUIRED',
+    return this.markSessionNoShowByPractitionerUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      sessionId,
     });
   }
 }

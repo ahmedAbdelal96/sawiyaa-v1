@@ -34,16 +34,12 @@ import {
 import {
   buildProviderLaunchUrl,
   canLaunchProviderRuntime,
-  canPrepareSessionRuntime,
   formatProviderDisplayName,
   getRuntimeBlockedReasonKey,
   getRuntimePreparedState,
   getRuntimeProvider,
   getRuntimeRoomName,
-  hasSessionRuntimeAccess,
-  isJoinWindowOpen,
 } from "../lib/session-runtime";
-import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import SessionStatusBadge from "./SessionStatusBadge";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
@@ -316,21 +312,13 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  // Old client caches may not contain the new backend-owned action contract.
-  // Deny every action until a fresh response arrives rather than inferring from status.
-  const actions = session.actions ?? {
-    canCancel: false,
-    canPrepareRoom: false,
-    canJoin: false,
-    canPay: false,
-    canReview: false,
-  };
+  const operational = session.operational;
+  const operationalState = operational?.state ?? null;
   const reviewCompletedAt =
-    session.completedAt ?? (actions.canReview ? session.scheduledEndAt : null);
-  const isCancellable = actions.canCancel;
+    session.completedAt ?? (operational?.actions.canReview ? session.scheduledEndAt : null);
+  const isCancellable = operational?.actions.canCancel === true;
   const hasRuntimeAccess =
-    hasSessionRuntimeAccess(session.status) &&
-    (actions.canPrepareRoom || actions.canJoin);
+    operational?.actions.canPrepareRuntime === true || operational?.actions.canJoin === true;
   const paymentStateKey =
     session.status === "PENDING_PAYMENT"
       ? "PENDING_PAYMENT"
@@ -362,39 +350,37 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       ["CREATED", "PENDING", "REQUIRES_ACTION"].includes(sessionPayment.status) &&
       !isPaymentAttemptExpired
   );
-  const canJoinNow = joinResult?.canJoin ?? actions.canJoin;
+  const canJoinNow = joinResult?.canJoin ?? operational?.join.allowed ?? false;
   const blockedJoinReason =
-    joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
-  const isRoomClosed = blockedJoinReason === "SESSION_ROOM_CLOSED";
-  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
-    session.presentationStatus,
-  );
+    joinResult?.blockedReason ?? operational?.join.reasonCode ?? null;
+  const isRoomClosed = operational?.room.state === "CLOSED";
+  const canOpenSessionChat = Boolean(operationalState);
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed =
-    actions.canPrepareRoom &&
+    operational?.actions.canPrepareRuntime === true &&
     hasRuntimeAccess &&
     !isRoomClosed &&
     !runtimePrepared &&
-    canPrepareSessionRuntime(session, joinResult);
-  const joinWindowOpen = isJoinWindowOpen(session, joinResult);
+    operational?.join.canPrepareRuntime === true;
+  const joinWindowOpen = operational?.join.allowed === true;
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
   const cancellationPreview = previewCancellationMutation.data;
-  const runtimeStatusNote = t(`detail.presentation.${session.presentationStatus}.note` as Parameters<
+  const runtimeStatusNote = t(`detail.presentation.${operationalState ?? session.presentationStatus}.note` as Parameters<
     typeof t
   >[0]);
-  const runtimeStatusTitle = t(`detail.presentation.${session.presentationStatus}.title` as Parameters<
+  const runtimeStatusTitle = t(`detail.presentation.${operationalState ?? session.presentationStatus}.title` as Parameters<
     typeof t
   >[0]);
   const runtimeStatusCloseout = t(
-    `detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0],
+    `detail.presentation.${operationalState ?? session.presentationStatus}.closeout` as Parameters<typeof t>[0],
   );
   const sessionModeLabel = t(`detail.mode.${session.sessionMode}` as Parameters<
     typeof t
@@ -584,6 +570,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
               <SessionStatusBadge
                 status={isReservationExpired ? "EXPIRED" : session.status}
                 presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
+                operational={session.operational}
               />
             </div>
           </div>
@@ -773,7 +760,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           </div>
         </PatientSectionCard>
 
-        {actions.canReview ? (
+        {operational?.actions.canReview === true ? (
           <PatientSectionCard className="border-border-soft bg-white p-5 shadow-[0_8px_24px_rgba(36,86,79,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1.5">
@@ -844,7 +831,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
             {/* Actions list */}
             <div className="pt-2 flex flex-col gap-2">
-              {actions.canPay && !isPaymentWindowExpired && (
+              {operational?.actions.canPay === true && !isPaymentWindowExpired && (
                 <Link
                   href={`/patient/sessions/${session.id}/pay` as never}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-hover transition"
@@ -992,6 +979,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                     <SessionStatusBadge
                       status={isReservationExpired ? "EXPIRED" : session.status}
                       presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
+                      operational={session.operational}
                     />
                   }
                 />

@@ -42,7 +42,6 @@ import type {
   InstantBookingDiscoveryDuration,
   InstantBookingEligiblePractitionerItem,
   InstantBookingRequest,
-  SessionMode,
 } from "../types/instant-booking.types";
 import { mapInstantBookingDiscoveryMoney } from "../lib/instant-booking-money";
 import { formatPatientDateTime, formatViewerTime } from "@/lib/time-formatting";
@@ -447,7 +446,6 @@ export default function PatientInstantBookingScreen() {
       const request = await createMutation.mutateAsync({
         practitionerSlug,
         durationMinutes,
-        sessionMode: "VIDEO" satisfies SessionMode,
       });
       navigateWithRequestId(request.id);
     } catch (error) {

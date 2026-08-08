@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,7 @@ import {
   useAdminLogin,
   usePatientLogin,
   usePractitionerLogin,
+  usePractitionerResendLoginOtp,
   usePractitionerVerifyOtp,
 } from "@/features/auth/hooks/use-auth";
 import { getAuthLockoutErrorMessage } from "@/features/auth/lib/auth-lockout-errors";
@@ -53,6 +54,7 @@ type PractitionerChallengeState = {
   challengeId: string;
   maskedTarget: string;
   expiresAt: string;
+  resendAvailableAt?: string;
 };
 
 type PractitionerLoginResponse =
@@ -253,6 +255,8 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [challenge, setChallenge] = useState<PractitionerChallengeState | null>(null);
+  const [resendNow, setResendNow] = useState(Date.now());
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
   const [showDevPanel, setShowDevPanel] = useState(false);
   const credentialsSubmitLockRef = useRef(false);
   const otpSubmitLockRef = useRef(false);
@@ -260,12 +264,14 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const patientLogin = usePatientLogin();
   const practitionerLogin = usePractitionerLogin();
   const practitionerVerifyOtp = usePractitionerVerifyOtp();
+  const practitionerResendLoginOtp = usePractitionerResendLoginOtp();
   const adminLogin = useAdminLogin();
 
   const isSubmitting =
     patientLogin.isPending ||
     practitionerLogin.isPending ||
     practitionerVerifyOtp.isPending ||
+    practitionerResendLoginOtp.isPending ||
     adminLogin.isPending;
 
   const credentialsForm = useForm<CredentialsFormData>({
@@ -318,6 +324,36 @@ export default function SignInForm({ mode }: SignInFormProps) {
     otpSubmitLockRef.current = false;
   };
 
+  useEffect(() => {
+    if (!challenge?.resendAvailableAt) return;
+    const id = window.setInterval(() => setResendNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [challenge?.resendAvailableAt]);
+
+  const resendSeconds = challenge?.resendAvailableAt
+    ? Math.max(0, Math.ceil((new Date(challenge.resendAvailableAt).getTime() - resendNow) / 1000))
+    : 0;
+
+  const onResendOtp = async () => {
+    if (!challenge || resendSeconds > 0 || practitionerResendLoginOtp.isPending) return;
+    setError(null);
+    setResendNotice(null);
+    try {
+      const next = await practitionerResendLoginOtp.mutateAsync({ challengeId: challenge.challengeId });
+      setChallenge({
+        challengeId: next.challengeId,
+        maskedTarget: next.maskedTarget,
+        expiresAt: next.expiresAt,
+        resendAvailableAt: next.resendAvailableAt,
+      });
+      otpForm.reset({ code: "" });
+      setResendNow(Date.now());
+      setResendNotice(isRtl ? "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني." : "A new verification code has been sent to your email.");
+    } catch (cause) {
+      setError(getSafeOtpErrorMessage(cause));
+    }
+  };
+
   const getSafeCredentialsErrorMessage = (cause: unknown) =>
     getAuthLockoutErrorMessage(
       cause,
@@ -362,6 +398,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
           challengeId: loginResponse.challengeId,
           maskedTarget: loginResponse.maskedTarget,
           expiresAt: loginResponse.expiresAt,
+          resendAvailableAt: loginResponse.resendAvailableAt,
         });
         otpForm.reset({ code: "" });
         setError(null);
@@ -658,6 +695,22 @@ export default function SignInForm({ mode }: SignInFormProps) {
               </div>
 
               <AuthOtpTimer expiresAt={challenge.expiresAt} />
+
+              <div className="text-center text-xs text-text-secondary">
+                <p>{isRtl ? "لم يصلك الرمز؟" : "Didn't receive the code?"}</p>
+                <button
+                  type="button"
+                  onClick={onResendOtp}
+                  disabled={resendSeconds > 0 || practitionerResendLoginOtp.isPending}
+                  className="mt-1 font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {resendSeconds > 0
+                    ? `${isRtl ? "إعادة إرسال الرمز خلال" : "Resend code in"} ${String(Math.floor(resendSeconds / 60)).padStart(2, "0")}:${String(resendSeconds % 60).padStart(2, "0")}`
+                    : t("forgotPassword.resendButton")}
+                </button>
+              </div>
+
+              {resendNotice && <div className="rounded-2xl bg-success-50 p-3 text-xs text-success-600 dark:bg-success-500/10">{resendNotice}</div>}
 
               {error && (
                 <div className="rounded-2xl bg-error-50 p-3.5 text-xs text-error-500 dark:bg-error-500/10">

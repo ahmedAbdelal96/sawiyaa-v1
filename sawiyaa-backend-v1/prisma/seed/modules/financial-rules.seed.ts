@@ -47,6 +47,18 @@ export const financialRulesSeedModule: SeedModule = {
         priority: 10,
         isDefault: true,
       },
+      {
+        slug: 'session-booking-instant-default',
+        ruleName: 'Default instant booking commission',
+        ruleScope: CommissionRuleScope.GLOBAL,
+        marketType: MarketType.ANY,
+        sessionFlowType: SessionFlowType.INSTANT,
+        sessionMode: SessionMode.VIDEO,
+        platformRatePercent: '20.00',
+        practitionerRatePercent: '80.00',
+        priority: 100,
+        isDefault: true,
+      },
     ] as const;
 
     for (const rule of rules) {

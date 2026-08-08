@@ -599,6 +599,27 @@ export const curatedDevSeedModule: SeedModule = {
       });
     }
 
+    for (const profile of practitionerRows) {
+      const currencyCode = profile.countryId === seedIds.countries.egypt ? 'EGP' : 'USD';
+      await prisma.practitionerWallet.upsert({
+        where: {
+          practitionerId_currencyCode: {
+            practitionerId: profile.profileId,
+            currencyCode,
+          },
+        },
+        create: {
+          practitionerId: profile.profileId,
+          currencyCode,
+          status: 'ACTIVE',
+        },
+        update: {
+          status: 'ACTIVE',
+          closedAt: null,
+        },
+      });
+    }
+
     await ensureSeedAvatarFiles(practitionerRows);
     for (const profile of practitionerRows) {
       await prisma.practitionerProfile.update({

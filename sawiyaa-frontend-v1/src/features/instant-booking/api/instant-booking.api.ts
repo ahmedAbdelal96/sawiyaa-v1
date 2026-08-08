@@ -10,12 +10,23 @@ import type {
   InstantBookingRequestResponseData,
   InstantBookingRequestsListResponseData,
 } from "../types/instant-booking.types";
+import type { PublicPractitionerInstantBookingAvailability } from "@/features/practitioner-profile/types/profile";
 
 export type PatientInstantBookingPractitionersParams = {
   duration?: InstantBookingDiscoveryDuration;
   page?: number;
   limit?: number;
 };
+
+export async function getPublicPractitionerInstantBookingAvailability(
+  slug: string,
+): Promise<PublicPractitionerInstantBookingAvailability> {
+  const response = await httpClient.get<
+    ApiPayload<PublicPractitionerInstantBookingAvailability>
+  >(`/public/practitioners/${encodeURIComponent(slug)}/instant-booking-availability`);
+
+  return extractData(response.data);
+}
 
 /**
  * Lists the practitioners currently eligible for instant booking.

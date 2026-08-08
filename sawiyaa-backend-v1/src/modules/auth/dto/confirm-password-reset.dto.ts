@@ -2,10 +2,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength } from 'class-validator';
 
 export class ConfirmPasswordResetDto {
-  @ApiProperty()
-  @IsString()
-  resetToken!: string;
-
   @ApiProperty({ minLength: 8 })
   @IsString()
   @MinLength(8)

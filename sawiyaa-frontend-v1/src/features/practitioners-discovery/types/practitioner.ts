@@ -52,6 +52,8 @@ export type PublicPractitioner = {
     };
   };
   isOnlineNow?: boolean;
+  availableNow?: boolean;
+  isInstantBookingAvailable?: boolean;
   acceptsCoupon?: boolean;
   acceptsPackage: boolean;
   rating: number;

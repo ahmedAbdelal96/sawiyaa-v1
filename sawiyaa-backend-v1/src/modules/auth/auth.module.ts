@@ -60,6 +60,7 @@ import { ConfirmPractitionerPasswordResetUseCase } from './use-cases/confirm-pra
 import { RevokeAuthSessionUseCase } from './use-cases/revoke-auth-session.use-case';
 import { VerifyPasswordUseCase } from './use-cases/verify-password.use-case';
 import { VerifyPractitionerLoginOtpUseCase } from './use-cases/verify-practitioner-login-otp.use-case';
+import { ChangePasswordUseCase } from './use-cases/change-password.use-case';
 import { PresenceModule } from '../presence/presence.module';
 import { VerificationModule } from '../verification/verification.module';
 import { CountryRepository } from '../patients/repositories/country.repository';
@@ -98,6 +99,7 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     AuthRequestContextMiddleware,
     HashPasswordUseCase,
     VerifyPasswordUseCase,
+    ChangePasswordUseCase,
     IssueAuthTokensUseCase,
     CountryRepository,
     InvalidateUserTokensUseCase,

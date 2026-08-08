@@ -254,6 +254,17 @@ export const notificationsSeedModule: SeedModule = {
         supportsInApp: true,
       },
       {
+        slug: 'instant-booking.request-created',
+        displayName: 'Instant Booking Request Created',
+        description:
+          'Practitioner notification when a patient creates an instant booking request',
+        category: NotificationCategory.SESSION,
+        supportsEmail: false,
+        supportsSms: false,
+        supportsPush: true,
+        supportsInApp: true,
+      },
+      {
         slug: 'instant-booking.request-accepted',
         displayName: 'Instant Booking Request Accepted',
         description:

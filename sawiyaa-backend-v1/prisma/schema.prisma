@@ -3104,6 +3104,7 @@ model InstantBookingRequest {
   expiresAt      DateTime
   respondedAt    DateTime?
   responseReason String?   @db.VarChar(500)
+  idempotencyKey String?   @db.VarChar(128)
   metadataJson   Json?
 
   createdAt DateTime @default(now())
@@ -3119,6 +3120,7 @@ model InstantBookingRequest {
   @@index([patientId, status, createdAt])
   @@index([requestedAt])
   @@index([expiresAt])
+  @@unique([patientId, idempotencyKey])
 }
 
 //////////////////////////////

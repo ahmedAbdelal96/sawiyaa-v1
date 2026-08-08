@@ -65,6 +65,10 @@ describe('ListPublicPractitionersUseCase', () => {
     sessionPrice30Usd: new Prisma.Decimal('8.00'),
     sessionPrice60Egp: new Prisma.Decimal('450.00'),
     sessionPrice60Usd: new Prisma.Decimal('15.00'),
+    instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+    instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+    instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+    instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
     avatarUrl: null,
     acceptsPackages: true,
     yearsOfExperience: 7,
@@ -112,6 +116,10 @@ describe('ListPublicPractitionersUseCase', () => {
     expect(result.items[0].sessionPrice60).toBe(15);
     expect(result.items[0].sessionPrice30Egp).toBe(250);
     expect(result.items[0].sessionPrice30Usd).toBe(8);
+    expect(result.items[0].instantBookingPrice30Egp).toBe(520);
+    expect(result.items[0].instantBookingPrice30Usd).toBe(31);
+    expect(result.items[0].instantBookingPrice60Egp).toBe(940);
+    expect(result.items[0].instantBookingPrice60Usd).toBe(56);
     expect(result.items[0].ratingSummary).toEqual({
       averageRating: null,
       ratingsCount: 0,

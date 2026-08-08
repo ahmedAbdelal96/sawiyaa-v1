@@ -130,16 +130,20 @@ export function buildProviderLaunchUrl(source: RuntimeSource): string | null {
     return null;
   }
 
+  // Daily private rooms require the provider meeting token. The backend may
+  // describe the launch as a redirect, but that must not discard the token.
+  if (runtime.name === "DAILY") {
+    return runtime.token
+      ? buildTokenizedSessionRoomUrl(runtime.roomUrl, runtime.token)
+      : null;
+  }
+
   if (
     runtime.joinMode === "redirect_url" ||
     runtime.joinMode === "embedded" ||
     runtime.joinMode === "external_url"
   ) {
     return runtime.roomUrl;
-  }
-
-  if (runtime.name === "DAILY" && runtime.token) {
-    return buildTokenizedSessionRoomUrl(runtime.roomUrl, runtime.token);
   }
 
   return runtime.roomUrl;

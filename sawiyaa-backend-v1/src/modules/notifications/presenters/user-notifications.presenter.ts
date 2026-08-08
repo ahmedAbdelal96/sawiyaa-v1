@@ -113,6 +113,14 @@ export class UserNotificationsPresenter {
       normalized.sessionId = raw.sessionId;
     }
 
+    if (typeof raw.createdSessionId === 'string') {
+      normalized.createdSessionId = raw.createdSessionId;
+    }
+
+    if (typeof raw.requestId === 'string') {
+      normalized.requestId = raw.requestId;
+    }
+
     if (typeof raw.sessionCode === 'string' && raw.sessionCode.trim()) {
       normalized.sessionCode = raw.sessionCode.trim();
     }

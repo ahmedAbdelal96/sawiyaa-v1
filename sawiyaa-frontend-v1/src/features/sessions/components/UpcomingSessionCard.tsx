@@ -9,7 +9,9 @@ import { Skeleton } from "@/components/shared/LoadingStates";
 import { useMyNextSession } from "../hooks/use-sessions";
 
 function formatRemaining(target: string, locale: string, now: number): string {
-  const minutes = Math.max(0, Math.ceil((new Date(target).getTime() - now) / 60_000));
+  const targetMs = Date.parse(target);
+  if (!Number.isFinite(targetMs)) return locale === "ar" ? "موعد الجلسة غير متاح" : "Session time unavailable";
+  const minutes = Math.max(0, Math.ceil((targetMs - now) / 60_000));
   if (minutes < 60) return locale === "ar" ? `بعد ${minutes} دقيقة` : `in ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -41,7 +43,11 @@ export function UpcomingSessionCard() {
   }
   if (query.isError || !session) return null;
 
-  const timeLabel = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: session.displayTimezone }).format(new Date(session.startsAt));
+  const startsAtMs = Date.parse(session.startsAt);
+  const displayTimezone = session.displayTimezone?.trim();
+  if (!Number.isFinite(startsAtMs) || !displayTimezone) return null;
+
+  const timeLabel = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: displayTimezone }).format(new Date(startsAtMs));
   const countdownTarget = session.joinAvailableAt ?? session.startsAt;
 
   return (
@@ -51,11 +57,11 @@ export function UpcomingSessionCard() {
           <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><CalendarClock className="h-4 w-4" />{copy.eyebrow}</div>
           <div><h2 className="text-xl font-semibold text-text-primary dark:text-white">{copy.title}</h2><p className="mt-1 text-base font-medium text-text-primary dark:text-white/90">{session.counterpart.displayName ?? (locale === "ar" ? "الطرف الآخر" : "Your practitioner")}</p></div>
           <div className="flex flex-wrap gap-2 text-sm text-text-secondary"><span className="inline-flex items-center gap-1.5"><Clock3 className="h-4 w-4" />{timeLabel}</span><span>{copy.timezone}: {session.displayTimezone}</span><span>{copy.duration}: {session.durationMinutes}m</span></div>
-          <p className="text-sm font-medium text-primary">{session.joinAvailable ? copy.status : `${copy.starts} ${formatRemaining(countdownTarget, locale, now)}`}</p>
+          <p className="text-sm font-medium text-primary">{session.operational.join.allowed ? copy.status : `${copy.starts} ${formatRemaining(countdownTarget, locale, now)}`}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
-          <SurfaceActionLink href={(session.joinAvailable ? session.joinRoute : session.detailsRoute) as never} variant="primary"><span className="inline-flex items-center gap-2"><Video className="h-4 w-4" />{session.joinAvailable ? copy.join : copy.details}</span></SurfaceActionLink>
-          {session.joinAvailable ? <Link href={session.detailsRoute as never} className="text-center text-sm font-semibold text-primary hover:underline">{copy.details}</Link> : null}
+          <SurfaceActionLink href={(session.operational.join.allowed ? session.joinRoute : session.detailsRoute) as never} variant="primary"><span className="inline-flex items-center gap-2"><Video className="h-4 w-4" />{session.operational.join.allowed ? copy.join : copy.details}</span></SurfaceActionLink>
+          {session.operational.join.allowed ? <Link href={session.detailsRoute as never} className="text-center text-sm font-semibold text-primary hover:underline">{copy.details}</Link> : null}
         </div>
       </div>
     </SurfaceCard>

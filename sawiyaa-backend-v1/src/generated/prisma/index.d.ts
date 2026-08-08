@@ -109151,6 +109151,7 @@ export namespace Prisma {
     expiresAt: Date | null
     respondedAt: Date | null
     responseReason: string | null
+    idempotencyKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -109167,6 +109168,7 @@ export namespace Prisma {
     expiresAt: Date | null
     respondedAt: Date | null
     responseReason: string | null
+    idempotencyKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -109183,6 +109185,7 @@ export namespace Prisma {
     expiresAt: number
     respondedAt: number
     responseReason: number
+    idempotencyKey: number
     metadataJson: number
     createdAt: number
     updatedAt: number
@@ -109210,6 +109213,7 @@ export namespace Prisma {
     expiresAt?: true
     respondedAt?: true
     responseReason?: true
+    idempotencyKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -109226,6 +109230,7 @@ export namespace Prisma {
     expiresAt?: true
     respondedAt?: true
     responseReason?: true
+    idempotencyKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -109242,6 +109247,7 @@ export namespace Prisma {
     expiresAt?: true
     respondedAt?: true
     responseReason?: true
+    idempotencyKey?: true
     metadataJson?: true
     createdAt?: true
     updatedAt?: true
@@ -109346,6 +109352,7 @@ export namespace Prisma {
     expiresAt: Date
     respondedAt: Date | null
     responseReason: string | null
+    idempotencyKey: string | null
     metadataJson: JsonValue | null
     createdAt: Date
     updatedAt: Date
@@ -109382,6 +109389,7 @@ export namespace Prisma {
     expiresAt?: boolean
     respondedAt?: boolean
     responseReason?: boolean
+    idempotencyKey?: boolean
     metadataJson?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -109402,6 +109410,7 @@ export namespace Prisma {
     expiresAt?: boolean
     respondedAt?: boolean
     responseReason?: boolean
+    idempotencyKey?: boolean
     metadataJson?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -109422,6 +109431,7 @@ export namespace Prisma {
     expiresAt?: boolean
     respondedAt?: boolean
     responseReason?: boolean
+    idempotencyKey?: boolean
     metadataJson?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -109442,12 +109452,13 @@ export namespace Prisma {
     expiresAt?: boolean
     respondedAt?: boolean
     responseReason?: boolean
+    idempotencyKey?: boolean
     metadataJson?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type InstantBookingRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "patientId" | "practitionerId" | "linkedSessionId" | "requestedDurationMinutes" | "preferredMode" | "status" | "requestedAt" | "expiresAt" | "respondedAt" | "responseReason" | "metadataJson" | "createdAt" | "updatedAt", ExtArgs["result"]["instantBookingRequest"]>
+  export type InstantBookingRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "patientId" | "practitionerId" | "linkedSessionId" | "requestedDurationMinutes" | "preferredMode" | "status" | "requestedAt" | "expiresAt" | "respondedAt" | "responseReason" | "idempotencyKey" | "metadataJson" | "createdAt" | "updatedAt", ExtArgs["result"]["instantBookingRequest"]>
   export type InstantBookingRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     patient?: boolean | PatientProfileDefaultArgs<ExtArgs>
     practitioner?: boolean | PractitionerProfileDefaultArgs<ExtArgs>
@@ -109483,6 +109494,7 @@ export namespace Prisma {
       expiresAt: Date
       respondedAt: Date | null
       responseReason: string | null
+      idempotencyKey: string | null
       metadataJson: Prisma.JsonValue | null
       createdAt: Date
       updatedAt: Date
@@ -109923,6 +109935,7 @@ export namespace Prisma {
     readonly expiresAt: FieldRef<"InstantBookingRequest", 'DateTime'>
     readonly respondedAt: FieldRef<"InstantBookingRequest", 'DateTime'>
     readonly responseReason: FieldRef<"InstantBookingRequest", 'String'>
+    readonly idempotencyKey: FieldRef<"InstantBookingRequest", 'String'>
     readonly metadataJson: FieldRef<"InstantBookingRequest", 'Json'>
     readonly createdAt: FieldRef<"InstantBookingRequest", 'DateTime'>
     readonly updatedAt: FieldRef<"InstantBookingRequest", 'DateTime'>
@@ -223545,6 +223558,7 @@ export namespace Prisma {
     expiresAt: 'expiresAt',
     respondedAt: 'respondedAt',
     responseReason: 'responseReason',
+    idempotencyKey: 'idempotencyKey',
     metadataJson: 'metadataJson',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -235189,6 +235203,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     respondedAt?: DateTimeNullableFilter<"InstantBookingRequest"> | Date | string | null
     responseReason?: StringNullableFilter<"InstantBookingRequest"> | string | null
+    idempotencyKey?: StringNullableFilter<"InstantBookingRequest"> | string | null
     metadataJson?: JsonNullableFilter<"InstantBookingRequest">
     createdAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     updatedAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
@@ -235209,6 +235224,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     respondedAt?: SortOrderInput | SortOrder
     responseReason?: SortOrderInput | SortOrder
+    idempotencyKey?: SortOrderInput | SortOrder
     metadataJson?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -235220,6 +235236,7 @@ export namespace Prisma {
   export type InstantBookingRequestWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     linkedSessionId?: string
+    patientId_idempotencyKey?: InstantBookingRequestPatientIdIdempotencyKeyCompoundUniqueInput
     AND?: InstantBookingRequestWhereInput | InstantBookingRequestWhereInput[]
     OR?: InstantBookingRequestWhereInput[]
     NOT?: InstantBookingRequestWhereInput | InstantBookingRequestWhereInput[]
@@ -235232,13 +235249,14 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     respondedAt?: DateTimeNullableFilter<"InstantBookingRequest"> | Date | string | null
     responseReason?: StringNullableFilter<"InstantBookingRequest"> | string | null
+    idempotencyKey?: StringNullableFilter<"InstantBookingRequest"> | string | null
     metadataJson?: JsonNullableFilter<"InstantBookingRequest">
     createdAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     updatedAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     patient?: XOR<PatientProfileScalarRelationFilter, PatientProfileWhereInput>
     practitioner?: XOR<PractitionerProfileScalarRelationFilter, PractitionerProfileWhereInput>
     linkedSession?: XOR<SessionNullableScalarRelationFilter, SessionWhereInput> | null
-  }, "id" | "linkedSessionId">
+  }, "id" | "linkedSessionId" | "patientId_idempotencyKey">
 
   export type InstantBookingRequestOrderByWithAggregationInput = {
     id?: SortOrder
@@ -235252,6 +235270,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     respondedAt?: SortOrderInput | SortOrder
     responseReason?: SortOrderInput | SortOrder
+    idempotencyKey?: SortOrderInput | SortOrder
     metadataJson?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -235277,6 +235296,7 @@ export namespace Prisma {
     expiresAt?: DateTimeWithAggregatesFilter<"InstantBookingRequest"> | Date | string
     respondedAt?: DateTimeNullableWithAggregatesFilter<"InstantBookingRequest"> | Date | string | null
     responseReason?: StringNullableWithAggregatesFilter<"InstantBookingRequest"> | string | null
+    idempotencyKey?: StringNullableWithAggregatesFilter<"InstantBookingRequest"> | string | null
     metadataJson?: JsonNullableWithAggregatesFilter<"InstantBookingRequest">
     createdAt?: DateTimeWithAggregatesFilter<"InstantBookingRequest"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"InstantBookingRequest"> | Date | string
@@ -253402,6 +253422,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -253422,6 +253443,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -253436,6 +253458,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -253456,6 +253479,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -253473,6 +253497,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -253487,6 +253512,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -253504,6 +253530,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -271247,6 +271274,11 @@ export namespace Prisma {
     not?: NestedEnumInstantBookingRequestStatusFilter<$PrismaModel> | $Enums.InstantBookingRequestStatus
   }
 
+  export type InstantBookingRequestPatientIdIdempotencyKeyCompoundUniqueInput = {
+    patientId: string
+    idempotencyKey: string
+  }
+
   export type InstantBookingRequestCountOrderByAggregateInput = {
     id?: SortOrder
     patientId?: SortOrder
@@ -271259,6 +271291,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     respondedAt?: SortOrder
     responseReason?: SortOrder
+    idempotencyKey?: SortOrder
     metadataJson?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -271280,6 +271313,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     respondedAt?: SortOrder
     responseReason?: SortOrder
+    idempotencyKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -271296,6 +271330,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     respondedAt?: SortOrder
     responseReason?: SortOrder
+    idempotencyKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -310873,6 +310908,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -310891,6 +310927,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -312087,6 +312124,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     respondedAt?: DateTimeNullableFilter<"InstantBookingRequest"> | Date | string | null
     responseReason?: StringNullableFilter<"InstantBookingRequest"> | string | null
+    idempotencyKey?: StringNullableFilter<"InstantBookingRequest"> | string | null
     metadataJson?: JsonNullableFilter<"InstantBookingRequest">
     createdAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
     updatedAt?: DateTimeFilter<"InstantBookingRequest"> | Date | string
@@ -313962,6 +314000,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -313980,6 +314019,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -328064,6 +328104,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -328082,6 +328123,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -330038,6 +330080,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -330056,6 +330099,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -388808,6 +388852,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -389346,6 +389391,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -389364,6 +389410,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -389380,6 +389427,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -391039,6 +391087,7 @@ export namespace Prisma {
     expiresAt: Date | string
     respondedAt?: Date | string | null
     responseReason?: string | null
+    idempotencyKey?: string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -392036,6 +392085,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -392054,6 +392104,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -392070,6 +392121,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     respondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseReason?: NullableStringFieldUpdateOperationsInput | string | null
+    idempotencyKey?: NullableStringFieldUpdateOperationsInput | string | null
     metadataJson?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

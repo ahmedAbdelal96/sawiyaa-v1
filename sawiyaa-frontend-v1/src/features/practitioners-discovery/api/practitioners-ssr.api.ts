@@ -125,6 +125,8 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
       },
     },
     isOnlineNow: item.isOnlineNow ?? false,
+    availableNow: (item as unknown as { availableNow?: boolean }).availableNow ?? (item as unknown as { isInstantBookingAvailable?: boolean }).isInstantBookingAvailable ?? false,
+    isInstantBookingAvailable: (item as unknown as { availableNow?: boolean }).availableNow ?? (item as unknown as { isInstantBookingAvailable?: boolean }).isInstantBookingAvailable ?? false,
     acceptsCoupon: item.acceptsCoupon ?? false,
     acceptsPackage: item.acceptsPackage ?? false,
     rating: item.ratingSummary?.averageRating ?? 0,

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ChevronLeft, Eye, EyeOff, UserRound, Stethoscope } from "lucide-react";
+import { ChevronLeft, UserRound, Stethoscope } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import AuthPasswordField from "./AuthPasswordField";
@@ -110,7 +110,6 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
   const router = useRouter();
 
   const [step, setStep] = useState<"request" | "otp" | "password" | "success">("request");
-  const [resetToken, setResetToken] = useState<string | null>(null);
   const [lockedEmail, setLockedEmail] = useState<string>("");
   const [serverError, setServerError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState<CooldownState>({ active: false, remainingSeconds: 0 });
@@ -190,11 +189,16 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     const isRawBackendKey = (value: string | null) =>
       typeof value === "string" && value.startsWith("auth.errors.");
 
-    if (errorCode === "PASSWORD_RESET_ACCOUNT_NOT_FOUND") {
-      return isPractitioner
-        ? tFp("errors.practitionerAccountNotFound")
-        : tFp("errors.patientAccountNotFound");
+    const typedErrors: Record<string, string> = {
+      EMAIL_NOT_REGISTERED: "emailNotRegistered",
+      ACCOUNT_EMAIL_UNAVAILABLE: "accountEmailUnavailable",
+      ACCOUNT_NOT_ELIGIBLE: "accountNotEligible",
+      OTP_DELIVERY_FAILED: "otpDeliveryFailed",
+    };
+    if (errorCode && typedErrors[errorCode]) {
+      return tFp(`errors.${typedErrors[errorCode]}`);
     }
+    if (errorCode === "PASSWORD_RESET_ACCOUNT_NOT_FOUND") return tFp("errors.emailNotRegistered");
 
     if (isRawBackendKey(messageKey)) {
       return tFp("errorMessage");
@@ -218,6 +222,9 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     try {
       const normalizedEmail = data.email.trim().toLowerCase();
       const response = await requestMutation.mutateAsync({ email: normalizedEmail });
+      if (response.nextStep !== "VERIFY_OTP") {
+        throw new Error("PASSWORD_RESET_OTP_NOT_ACCEPTED");
+      }
       setLockedEmail(normalizedEmail);
       otpForm.reset();
       setStep("otp");
@@ -236,6 +243,9 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     setServerError(null);
     try {
       const response = await requestMutation.mutateAsync({ email: lockedEmail });
+      if (response.nextStep !== "VERIFY_OTP") {
+        throw new Error("PASSWORD_RESET_OTP_NOT_ACCEPTED");
+      }
       startCooldown(parseCooldownSeconds(response) ?? RESEND_COOLDOWN_SECONDS);
     } catch (err) {
       const cooldownSeconds = parseCooldownSeconds(err);
@@ -258,7 +268,7 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
         email: lockedEmail,
         code: otpData.code,
       });
-      setResetToken(response.resetToken);
+      setOtpExpiresAt(new Date(response.expiresAt));
       setStep("password");
       otpForm.resetField("code");
     } catch (err) {
@@ -269,17 +279,11 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
 
   const handleConfirmSubmit = async (data: PasswordFormData) => {
     setServerError(null);
-    if (!resetToken) {
-      setServerError(tFp("errorMessage"));
-      return;
-    }
-
     try {
       await confirmMutation.mutateAsync({
-        resetToken,
         newPassword: data.newPassword,
       });
-      setStep("success");
+      router.replace(isPractitioner ? "/practitioner" : "/patient");
     } catch (err) {
       setServerError(getErrorMessage(err));
     }
@@ -290,7 +294,6 @@ export default function ForgotPasswordForm({ mode }: ForgotPasswordFormProps) {
     setLockedEmail("");
     otpForm.reset();
     passwordForm.reset();
-    setResetToken(null);
     setServerError(null);
     setCooldown({ active: false, remainingSeconds: 0 });
   };

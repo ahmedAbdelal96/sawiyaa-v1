@@ -5,6 +5,7 @@ export type SessionStatus =
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
+  | "AWAITING_ADMIN_RESOLUTION"
   | "AWAITING_COMPLETION_CONFIRMATION"
   | "COMPLETED"
   | "CANCELLED"
@@ -65,6 +66,7 @@ export interface PractitionerSessionListItem {
   patient: SessionPatientSummary | null;
   joinAvailability: SessionJoinAvailability;
   chatAvailability: SessionChatAvailability;
+  operational?: SessionOperationalInterpretation;
 }
 
 export interface PractitionerSessionDetails extends PractitionerSessionListItem {
@@ -156,6 +158,15 @@ export interface PractitionerSessionJoinContract {
   roomUrl: string | null;
   joinToken: string | null;
   providerRuntime?: PractitionerSessionProviderRuntime | null;
+}
+
+export interface SessionOperationalInterpretation {
+  state: SessionStatus;
+  reasonCode: "LIFECYCLE_STATUS" | "ROOM_CLOSED_OUTCOME_UNRESOLVED" | "ADMIN_RESOLUTION_REQUIRED" | "REPLACED_BY_SUCCESSOR";
+  join: { allowed: boolean; reasonCode: SessionJoinBlockedReason | null; canPrepareRuntime: boolean };
+  actions: { canJoin: boolean; canPrepareRuntime: boolean; canCancel: boolean; canPay: boolean; canReview: boolean; canComplete: boolean; canMarkPatientNoShow: boolean; noShowReasonCode: string | null };
+  room: { state: "NOT_APPLICABLE" | "OPEN" | "CLOSED" | "NOT_PREPARED"; closedAt: string | null };
+  resolution: { required: boolean; finalDecision: string | null };
 }
 
 export type PractitionerSessionRoomCloseReason =

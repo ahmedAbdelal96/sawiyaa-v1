@@ -22,8 +22,7 @@ import { buildPublicMetadata } from "@/lib/seo/public-metadata";
 import { getUserData } from "@/lib/auth/server";
 import {
   fetchPublicPractitionerBySlug,
-  fetchPublicPractitionerPresence,
-  fetchPublicPractitionerTrustBlock,
+  fetchPublicPractitionerInstantBookingAvailability,
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
@@ -31,7 +30,6 @@ import ProfileCredentials from "@/features/practitioner-profile/components/Profi
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
 import RelatedPractitioners from "@/features/practitioner-profile/components/RelatedPractitioners";
 import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
-import ProfileTrustSection from "@/features/practitioner-profile/components/ProfileTrustSection";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import { type PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
@@ -153,55 +151,52 @@ export default async function PractitionerProfilePage({ params }: Props) {
     // Non-critical: related practitioners should not block page rendering.
   }
 
-  let presence = null;
+  let instantBookingAvailability = null;
   try {
-    presence = await fetchPublicPractitionerPresence(slug, locale);
+    instantBookingAvailability = await fetchPublicPractitionerInstantBookingAvailability(slug, locale);
   } catch {
-    // Non-critical: booking panel gracefully falls back when presence is unavailable.
-  }
-
-  let trustBlock = null;
-  try {
-    trustBlock = await fetchPublicPractitionerTrustBlock(slug, locale);
-  } catch {
-    // Non-critical: trust block is additive and should not block the profile page.
+    // Non-critical: booking panel fails closed when availability is unavailable.
   }
 
   return (
-    <>
-      <ProfileHeader
-        profile={profile}
-        countryLabel={countryLabel}
-        specialtyLabels={specialtyLabels}
-        languageLabels={languageLabels}
-      />
+    <div className="px-4 py-4 sm:py-6">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <ProfileHeader
+          profile={profile}
+          countryLabel={countryLabel}
+          specialtyLabels={specialtyLabels}
+          languageLabels={languageLabels}
+        />
 
-      <div className="bg-surface px-6 py-10 dark:bg-surface">
-        <div className="mx-auto max-w-7xl space-y-8">
-          <ProfileBookingPanel profile={profile} presence={presence} />
-
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-            <div className="space-y-6">
-              <ProfileAbout profile={profile} />
-              {trustBlock ? <ProfileTrustSection trustBlock={trustBlock} /> : null}
-            </div>
-
-            <div className="grid gap-6">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
+          {/* Left Column: Compact Practitioner Details Sidebar */}
+          <div className="space-y-4 lg:sticky lg:top-24">
+            <div className="app-panel rounded-2xl p-4 sm:p-5 space-y-4">
+              <ProfileAbout profile={profile} compact />
               <ProfileSpecialties
                 profile={profile}
                 specialtyLabels={specialtyLabels}
                 languageLabels={languageLabels}
+                compact
               />
-              <ProfileCredentials profile={profile} />
+              <ProfileCredentials profile={profile} compact />
             </div>
           </div>
-        </div>
-      </div>
 
-      <RelatedPractitioners
-        practitioners={related}
-        specialtyLabels={specialtyLabels}
-      />
-    </>
+          {/* Right Column: Schedule & Booking Area */}
+          <div className="space-y-4 min-w-0">
+            <ProfileBookingPanel
+              profile={profile}
+              instantBookingAvailability={instantBookingAvailability}
+            />
+          </div>
+        </div>
+
+        <RelatedPractitioners
+          practitioners={related}
+          specialtyLabels={specialtyLabels}
+        />
+      </div>
+    </div>
   );
 }

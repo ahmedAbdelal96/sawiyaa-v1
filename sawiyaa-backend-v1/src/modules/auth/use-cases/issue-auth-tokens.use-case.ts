@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { UserRoleType } from '@prisma/client';
+import { PractitionerStatus, UserRoleType, UserStatus } from '@prisma/client';
+import { ForbiddenException } from '@nestjs/common';
 import { AuthUserContextMapper } from '../mappers/auth-user-context.mapper';
 import { UserRepository } from '../repositories/user.repository';
 import { AuthSessionDeviceContext } from '../types/auth-session.types';
@@ -25,6 +26,7 @@ export class IssueAuthTokensUseCase {
     userId: string;
     role: UserRoleType;
     deviceContext: AuthSessionDeviceContext;
+    requireCurrentEligibility?: boolean;
   }) {
     const sessionId = randomUUID();
     const user = await this.userRepository.findByIdWithAuthContext(
@@ -35,6 +37,9 @@ export class IssueAuthTokensUseCase {
       throw new NotFoundException(
         `Authenticated user "${input.userId}" was not found`,
       );
+    }
+    if (input.requireCurrentEligibility && (user.status !== UserStatus.ACTIVE || (input.role === UserRoleType.PRACTITIONER && (!user.practitionerProfile || user.practitionerProfile.status === PractitionerStatus.REJECTED || user.practitionerProfile.status === PractitionerStatus.SUSPENDED || user.practitionerProfile.status === PractitionerStatus.INACTIVE)))) {
+      throw new ForbiddenException({ messageKey: 'auth.errors.accountNotEligible', error: 'ACCOUNT_NOT_ELIGIBLE' });
     }
 
     const tokens = await this.authTokenService.issueTokens({

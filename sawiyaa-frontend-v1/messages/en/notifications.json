@@ -65,6 +65,22 @@
       "title": "Session rescheduled",
       "subtitle": "Session · Schedule"
     },
+    "sessions-session-reminder-60": {
+      "title": "Your session is coming up",
+      "subtitle": "Session · starts in about 1 hour"
+    },
+    "sessions-session-reminder-15": {
+      "title": "Your session starts soon",
+      "subtitle": "Session · starts in 15 minutes"
+    },
+    "sessions-session-starting-now": {
+      "title": "Your session starts now",
+      "subtitle": "Session · it is time to join"
+    },
+    "sessions-session-late-join": {
+      "title": "Your session has started",
+      "subtitle": "Session · join now"
+    },
     "support-ticket-created": {
       "title": "New support ticket",
       "subtitle": "Support · Operations"

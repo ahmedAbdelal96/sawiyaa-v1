@@ -123,7 +123,7 @@ export default function PatientSessionNextStepsPanel({ session }: Props) {
           </p>
         </div>
 
-      <SessionStatusBadge presentationStatus={session.presentationStatus} />
+      <SessionStatusBadge status={session.status} operational={session.operational} />
       </div>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.9fr)]">

@@ -11,6 +11,12 @@ export type PublicPractitionerPresence = {
   lastSeenAt: string | null;
 };
 
+export type PublicPractitionerInstantBookingAvailability = {
+  availableNow: boolean;
+  durations: { 30: boolean; 60: boolean };
+  checkedAt: string;
+};
+
 export type PractitionerProfile = PublicPractitioner & {
   bioAr: string;
   bioEn: string;

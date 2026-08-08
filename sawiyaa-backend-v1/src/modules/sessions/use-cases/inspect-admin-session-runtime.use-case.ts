@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 import { buildParticipantsSummary, type SessionWithParticipants } from '../utils/session-participant-identity.util';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class InspectAdminSessionRuntimeUseCase {
   constructor(
     private readonly sessionRepository: SessionRepository,
     private readonly resolveSessionJoinReadinessService: ResolveSessionJoinReadinessService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { sessionId: string }) {
@@ -36,6 +38,11 @@ export class InspectAdminSessionRuntimeUseCase {
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
       videoRoomClosedAt: session.videoRoomClosedAt,
+      now,
+    });
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      actor: 'ADMIN',
       now,
     });
 
@@ -86,6 +93,7 @@ export class InspectAdminSessionRuntimeUseCase {
         id: session.id,
         sessionCode: session.sessionCode,
         status: session.status,
+        operational,
         sessionMode: session.sessionMode,
         scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
         scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,

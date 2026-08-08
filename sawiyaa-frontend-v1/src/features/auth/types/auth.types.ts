@@ -60,6 +60,13 @@ export interface AuthSuccessResponse {
 
 export interface MessageResponse {
   message: string;
+  currentSessionInvalidated?: boolean;
+  nextStep?: "VERIFY_OTP";
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface OtpChallengeResponse {
@@ -68,6 +75,7 @@ export interface OtpChallengeResponse {
   channel: string;
   maskedTarget: string;
   expiresAt: string;
+  resendAvailableAt?: string;
   requiresOtpVerification: boolean;
   nextStep?: "OTP_REQUIRED";
 }
@@ -184,6 +192,10 @@ export interface PractitionerVerifyOtpRequest {
   deviceId?: string;
 }
 
+export interface PractitionerResendLoginOtpRequest {
+  challengeId: string;
+}
+
 export interface PractitionerForgotPasswordRequest {
   email: string;
 }
@@ -195,13 +207,11 @@ export interface PractitionerVerifyPasswordResetOtpRequest {
 
 export interface PractitionerVerifyPasswordResetOtpResponse {
   message: string;
-  resetToken: string;
   expiresAt: string;
   nextStep: string;
 }
 
 export interface PractitionerConfirmPasswordResetRequest {
-  resetToken: string;
   newPassword: string;
 }
 
@@ -222,13 +232,11 @@ export interface PatientVerifyPasswordResetOtpRequest {
 
 export interface PatientVerifyPasswordResetOtpResponse {
   message: string;
-  resetToken: string;
   expiresAt: string;
   nextStep: string;
 }
 
 export interface PatientConfirmPasswordResetRequest {
-  resetToken: string;
   newPassword: string;
 }
 

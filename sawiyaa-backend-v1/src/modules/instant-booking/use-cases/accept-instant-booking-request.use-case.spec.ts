@@ -151,6 +151,7 @@ describe('AcceptInstantBookingRequestUseCase', () => {
       {
         patientProfileId: 'patient-1',
         requestId: pendingRequest.id,
+        createdSessionId: acceptedRequest.linkedSessionId,
       },
     );
     expect(result.item).toBe(acceptedRequest);

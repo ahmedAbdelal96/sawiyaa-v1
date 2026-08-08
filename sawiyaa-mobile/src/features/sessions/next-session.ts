@@ -16,6 +16,14 @@ export type MobileNextSession = {
   joinExpiresAt: string | null;
   detailsRoute: string;
   joinRoute: string;
+  operational: {
+    state: string;
+    reasonCode: string;
+    join: { allowed: boolean; reasonCode: string | null; canPrepareRuntime: boolean };
+    actions: { canJoin: boolean; canPrepareRuntime: boolean; canCancel: boolean; canPay: boolean; canReview: boolean; canComplete: boolean; canMarkPatientNoShow: boolean; noShowReasonCode: string | null };
+    room: { state: "NOT_APPLICABLE" | "OPEN" | "CLOSED" | "NOT_PREPARED"; closedAt: string | null };
+    resolution: { required: boolean; finalDecision: string | null };
+  };
 };
 
 async function getMyNextSession() {

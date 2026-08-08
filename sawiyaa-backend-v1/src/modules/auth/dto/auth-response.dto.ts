@@ -113,6 +113,9 @@ export class OtpChallengeResponseDto {
   @ApiProperty()
   expiresAt!: Date;
 
+  @ApiProperty({ required: false })
+  resendAvailableAt?: Date;
+
   @ApiProperty()
   requiresOtpVerification!: boolean;
 
@@ -153,9 +156,6 @@ export class PasswordResetRequestedResponseDto {
 export class PasswordResetOtpVerifiedResponseDto {
   @ApiProperty()
   message!: string;
-
-  @ApiProperty()
-  resetToken!: string;
 
   @ApiProperty()
   expiresAt!: string;

@@ -38,6 +38,7 @@ import { extractApiErrorMessage } from "../../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { openSessionGeneralChat } from "../../../src/features/messages/api";
+import { operationalCanCancel, operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
 
 export default function SessionDetailScreen() {
   const router = useRouter();
@@ -55,8 +56,8 @@ export default function SessionDetailScreen() {
   const [isOpeningMessages, setIsOpeningMessages] = useState(false);
 
   const canAttemptJoin = useMemo(
-    () => sessionQuery.data?.actions?.canJoin === true,
-    [sessionQuery.data?.actions?.canJoin],
+    () => sessionQuery.data ? operationalJoinAllowed(sessionQuery.data) : false,
+    [sessionQuery.data],
   );
 
   if (sessionQuery.isLoading) {
@@ -78,25 +79,23 @@ export default function SessionDetailScreen() {
   }
 
   const session = sessionQuery.data;
-  const presentationStatus = session.status;
-  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus);
+  const presentationStatus = operationalState(session) ?? "DRAFT";
+  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus as SessionPresentationStatus);
   // Older persisted query data may predate the backend-owned action contract.
   // Missing flags deny actions instead of recreating lifecycle rules on mobile.
-  const needsPayment = session.actions?.canPay === true;
-  const cancellationEligible = session.actions?.canCancel === true;
+  const needsPayment = session.operational?.actions.canPay === true;
+  const cancellationEligible = operationalCanCancel(session);
   const canOpenMessages = Boolean(
     session.practitioner?.slug && session.chatAvailability?.canRead === true,
   );
   const showJoinBlockedReason =
     Boolean(
       !canAttemptJoin &&
-        (presentationStatus === "READY_TO_JOIN" ||
-          presentationStatus === "IN_PROGRESS") &&
-        session.joinAvailability.blockedReason,
+        session.operational?.join.reasonCode,
     );
   const joinBlockedReasonText = showJoinBlockedReason
     ? t(
-        `patientSessionsFlow.detail.blocked.${session.joinAvailability.blockedReason}` as const,
+        `patientSessionsFlow.detail.blocked.${session.operational?.join.reasonCode}` as const,
       )
     : null;
   const joinAvailableAtText =
@@ -107,7 +106,7 @@ export default function SessionDetailScreen() {
       : null;
   const actionStateText = getActionStateText(
     t,
-    presentationStatus,
+    presentationStatus as SessionPresentationStatus,
     canAttemptJoin,
     joinAvailableAtText,
     joinBlockedReasonText,
@@ -117,7 +116,7 @@ export default function SessionDetailScreen() {
       ? t("patientSessionsFlow.detail.messagesReadOnly")
       : t("patientSessionsFlow.detail.actionSummary.messages");
   const roomClosedHelpVisible =
-    session.joinAvailability.blockedReason === "SESSION_ROOM_CLOSED";
+    session.operational?.room.state === "CLOSED";
   const roomClosedSupportSubject = t(
     "patientSessionsFlow.detail.roomClosed.supportSubject",
     {
@@ -169,7 +168,7 @@ export default function SessionDetailScreen() {
       trackAnalyticsEvent("session_joined", {
         role: "patient",
         sessionId: session.id,
-        sessionStatus: session.presentationStatus,
+        sessionStatus: presentationStatus,
         provider: contract.provider,
         source: "session_detail",
       });

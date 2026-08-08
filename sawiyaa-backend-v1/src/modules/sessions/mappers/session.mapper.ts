@@ -10,6 +10,7 @@ import {
   SessionListItemViewModel,
 } from '../types/sessions.types';
 import type { PatientSessionActionsViewModel } from '../services/resolve-patient-session-actions.service';
+import type { SessionOperationalInterpretation } from '../types/session-operational-interpretation.types';
 
 type SessionWithRelations = Session & {
   practitioner: {
@@ -35,6 +36,7 @@ export class SessionMapper {
     unreadCount = 0,
     finalManualDecision: SessionAdminDecisionType | null = null,
     actions?: PatientSessionActionsViewModel,
+    operational?: SessionOperationalInterpretation,
   ): SessionListItemViewModel {
     const joinAvailability = buildSessionJoinAvailabilityViewModel({
       status: session.status,
@@ -96,6 +98,7 @@ export class SessionMapper {
       }),
       unreadCount,
       hasUnread: unreadCount > 0,
+      ...(operational ? { operational } : {}),
     };
   }
 
@@ -105,6 +108,7 @@ export class SessionMapper {
     unreadCount = 0,
     finalManualDecision: SessionAdminDecisionType | null = null,
     actions?: PatientSessionActionsViewModel,
+    operational?: SessionOperationalInterpretation,
   ): SessionDetailsViewModel {
     const base = this.toListItem(
       session,
@@ -112,6 +116,7 @@ export class SessionMapper {
       unreadCount,
       finalManualDecision,
       actions,
+      operational,
     );
 
     const rich = session as any;

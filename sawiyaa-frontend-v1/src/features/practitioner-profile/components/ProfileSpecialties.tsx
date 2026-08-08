@@ -6,31 +6,31 @@ type Props = {
   profile: PractitionerProfile;
   specialtyLabels: Record<string, string>;
   languageLabels: Record<string, string>;
+  compact?: boolean;
 };
 
 export default async function ProfileSpecialties({
   profile: p,
   specialtyLabels,
   languageLabels,
+  compact = false,
 }: Props) {
   const t = await getTranslations("practitioner-profile.sections");
 
   return (
-    <div className="space-y-6 app-panel rounded-[30px] p-6">
+    <div className={compact ? "space-y-3 pt-3 border-t border-border-light/50 dark:border-white/10" : "app-panel rounded-2xl p-5 space-y-4"}>
       <div>
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary ring-1 ring-inset ring-primary/8 dark:bg-primary/15">
-            <Brain size={19} />
-          </div>
-          <h2 className="text-xl font-bold text-text-primary dark:text-white/90">
+        <div className="mb-2 flex items-center gap-2">
+          <Brain size={15} className="text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
             {t("specialties")}
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {p.specialties.map((specId) => (
             <span
               key={specId}
-              className="app-chip rounded-full px-4 py-2 text-sm font-medium"
+              className="rounded-full bg-primary-light/70 dark:bg-primary/10 border border-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-text-brand"
             >
               {specialtyLabels[specId] ?? specId}
             </span>
@@ -38,20 +38,18 @@ export default async function ProfileSpecialties({
         </div>
       </div>
 
-      <div className="border-t border-border-light pt-6 dark:border-border-light">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-light text-primary ring-1 ring-inset ring-primary/8 dark:bg-primary/15">
-            <Globe size={19} />
-          </div>
-          <h2 className="text-xl font-bold text-text-primary dark:text-white/90">
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <Globe size={15} className="text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">
             {t("languages")}
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {p.languages.map((code) => (
             <span
               key={code}
-              className="app-panel-soft rounded-full px-4 py-2 text-sm font-medium text-text-secondary dark:text-white/75"
+              className="rounded-full bg-surface-secondary dark:bg-white/5 border border-border-light/40 px-2.5 py-0.5 text-[11px] font-medium text-text-secondary"
             >
               {languageLabels[code] ?? code}
             </span>

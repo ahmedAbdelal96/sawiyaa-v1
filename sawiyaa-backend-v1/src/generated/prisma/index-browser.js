@@ -1236,6 +1236,7 @@ exports.Prisma.InstantBookingRequestScalarFieldEnum = {
   expiresAt: 'expiresAt',
   respondedAt: 'respondedAt',
   responseReason: 'responseReason',
+  idempotencyKey: 'idempotencyKey',
   metadataJson: 'metadataJson',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

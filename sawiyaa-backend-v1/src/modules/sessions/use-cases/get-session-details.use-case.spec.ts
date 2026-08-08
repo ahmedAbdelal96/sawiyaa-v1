@@ -49,6 +49,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       sessionMapper as never,
       new SessionAccessPolicy(),
       resolvePatientSessionActionsService as never,
+      { interpret: jest.fn().mockResolvedValue({ state: 'UPCOMING' }) } as never,
+      { resolve: jest.fn().mockResolvedValue({ canComplete: false, canMarkPatientNoShow: false, noShowReasonCode: null }) } as never,
     );
 
     return { useCase };
@@ -116,6 +118,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       };
       const uc = new GetSessionDetailsUseCase(
         sessionRepository as never,
+        {} as never,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,

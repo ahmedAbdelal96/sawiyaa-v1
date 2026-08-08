@@ -10,6 +10,7 @@ export type SessionStatus =
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
+  | "AWAITING_ADMIN_RESOLUTION"
   | "AWAITING_COMPLETION_CONFIRMATION"
   | "COMPLETED"
   | "CANCELLED"
@@ -142,6 +143,7 @@ export type SessionItem = {
   packagePurchase: { id: string; packagePlan: { title: string } } | null;
   unreadCount?: number;
   hasUnread?: boolean;
+  operational?: SessionOperationalInterpretation;
   conversationId: string | null;
   patientDetails: {
     dateOfBirth: string | null;
@@ -235,6 +237,7 @@ export type SessionListItem = {
   chatAvailability: SessionChatAvailability;
   unreadCount?: number;
   hasUnread?: boolean;
+  operational: SessionOperationalInterpretation;
 };
 
 export type SessionsPagination = {
@@ -367,6 +370,17 @@ export type SessionCancellationPreviewResponseData = {
   item: SessionCancellationPreviewItem;
 };
 
+export type SessionOperationalInterpretation = {
+  state: SessionStatus;
+  reasonCode: "LIFECYCLE_STATUS" | "ROOM_CLOSED_OUTCOME_UNRESOLVED" | "ADMIN_RESOLUTION_REQUIRED" | "REPLACED_BY_SUCCESSOR";
+  join: { allowed: boolean; reasonCode: SessionJoinBlockedReason | null; canPrepareRuntime: boolean };
+  actions: { canJoin: boolean; canPrepareRuntime: boolean; canCancel: boolean; canPay: boolean; canReview: boolean; canComplete: boolean; canMarkPatientNoShow: boolean; noShowReasonCode: string | null };
+  attendance: { patientTrustedAttendance: boolean; practitionerTrustedAttendance: boolean; reconciliationStatus: "NOT_AVAILABLE" | "CONFIRMED" | "UNCERTAIN"; outcomeRecommendation: unknown | null };
+  room: { state: "NOT_APPLICABLE" | "OPEN" | "CLOSED" | "NOT_PREPARED"; closedAt: string | null };
+  resolution: { required: boolean; finalDecision: string | null };
+  replacement: { replacesSessionId: string | null };
+};
+
 export type NextSession = {
   sessionId: string;
   role: "PATIENT" | "PRACTITIONER";
@@ -384,6 +398,7 @@ export type NextSession = {
   joinRoute: string;
   isReplacement: boolean;
   statusReasonCode: string | null;
+  operational: SessionOperationalInterpretation;
 };
 
 export type JoinBootstrapItem = {
