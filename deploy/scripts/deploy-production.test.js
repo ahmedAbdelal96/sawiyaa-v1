@@ -47,16 +47,24 @@ test('deployment validates backend log access inside the container', () => {
   assert.match(script, /Backend container user cannot write to \/app\/logs/);
 });
 
-test('detached target preflight resolves relative Compose paths from the target worktree', () => {
+test('detached target receives canonical env files before preflight', () => {
   const preflight = fs.readFileSync(
     path.join(__dirname, 'validate-production-preflight.sh'),
     'utf8',
   );
-  assert.match(preflight, /cd -- "\$PROJECT_DIR"/);
-  assert.ok(
-    preflight.indexOf('cd -- "$PROJECT_DIR"') <
-      preflight.indexOf('docker compose'),
+  assert.match(script, /stage-release-env\.sh/);
+  assert.doesNotMatch(preflight, /cd -- "\$PROJECT_DIR"/);
+});
+
+test('deployment stages canonical env files into the detached target and avoids Compose env overrides', () => {
+  assert.match(script, /stage-release-env\.sh/);
+  const preflight = fs.readFileSync(
+    path.join(__dirname, 'validate-production-preflight.sh'),
+    'utf8',
   );
+  assert.doesNotMatch(preflight, /compose-env-override/);
+  assert.doesNotMatch(preflight, /COMPOSE_EXTRA_ARGS/);
+  assert.match(preflight, /SANITIZED_COMPOSE_CONFIG_ERROR_BEGIN/);
 });
 
 test('deployment gates the build on database-backed provider state', () => {

@@ -8,9 +8,8 @@ ENVIRONMENT=production
 BACKEND_ENV=""; FRONTEND_ENV=""; DB_ENV=""; COMPOSE_FILE=""
 MIN_FREE_MB="${SAWIYAA_MIN_FREE_MB:-2048}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
-MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""
+MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""; COMPOSE_MODEL_OK=0
 BACKEND_IMAGE=""; FRONTEND_IMAGE=""; PROVIDER_STATE_FILE=""
-COMPOSE_EXTRA_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -34,11 +33,6 @@ while [[ $# -gt 0 ]]; do
     *) printf 'BLOCKING UNKNOWN_ARGUMENT\n'; exit 2;;
   esac
 done
-
-# All relative Compose paths must resolve from the release being validated.
-# This is especially important when deploy-production.sh invokes preflight
-# against a detached target worktree while the active checkout remains elsewhere.
-cd -- "$PROJECT_DIR"
 
 block() { printf 'BLOCKING %s\n' "$1"; BLOCKERS=$((BLOCKERS + 1)); }
 warn() { printf 'WARNING %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); }
@@ -214,7 +208,7 @@ else
   block DISK_SPACE_PROJECT_UNAVAILABLE
 fi
 
-# 13-14. Compose model validation with a temporary, non-tracked override.
+# 13-14. Compose model validation against the release's canonical env files.
 COMPOSE_FILE="${COMPOSE_FILE:-$PROJECT_DIR/docker-compose.prod.yml}"
 if [[ ! -f "$COMPOSE_FILE" ]]; then
   block COMPOSE_FILE_MISSING
@@ -224,18 +218,26 @@ elif (( contract_exit != 0 )) || [[ ! -r "$BACKEND_ENV" || ! -r "$FRONTEND_ENV" 
   skip COMPOSE_VALIDATION_DEPENDENCY_ENVIRONMENT_CONTRACT
 else
   if [[ -z "$TEMP_DIR" ]]; then TEMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sawiyaa-preflight.XXXXXX")"; fi
-  override="$TEMP_DIR/compose-env-override.yml"
-  { printf 'services:\n'; printf '  postgres:\n    env_file:\n      - %s\n' "$DB_ENV"; printf '  backend:\n    env_file:\n      - %s\n' "$BACKEND_ENV"; printf '  frontend:\n    env_file:\n      - %s\n' "$FRONTEND_ENV"; } > "$override"
-  COMPOSE_EXTRA_ARGS=(-f "$override")
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" config --quiet >/dev/null 2>&1 && pass COMPOSE_MODEL || block COMPOSE_MODEL_INVALID
+  compose_error="$TEMP_DIR/compose-config.err"
+  if docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" config --quiet > /dev/null 2>"$compose_error"; then
+    COMPOSE_MODEL_OK=1
+    pass COMPOSE_MODEL
+  else
+    echo "SANITIZED_COMPOSE_CONFIG_ERROR_BEGIN"
+    sed -E 's/([A-Za-z_]*(password|secret|token|api[_-]?key|authorization|database[_-]?url)[A-Za-z_]*[=:][[:space:]]*)[^[:space:],;]+/\1[REDACTED]/Ig' "$compose_error" | head -n 80
+    echo "SANITIZED_COMPOSE_CONFIG_ERROR_END"
+    block COMPOSE_MODEL_INVALID
+  fi
 fi
 
 # 15-16. PostgreSQL running and non-mutating readiness/connectivity.
 if (( MOCK )); then
   warn POSTGRES_CHECK_MOCKED
+elif (( COMPOSE_MODEL_OK == 0 )); then
+  skip POSTGRES_CHECK_COMPOSE_MODEL_INVALID
 elif (( contract_exit == 0 )) && [[ -f "$COMPOSE_FILE" ]]; then
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
-  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" "${COMPOSE_EXTRA_ARGS[@]}" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" ps --status running --services 2>/dev/null | grep -Fxq postgres && pass POSTGRES_CONTAINER_RUNNING || block POSTGRES_CONTAINER_UNAVAILABLE
+  docker compose --env-file "$FRONTEND_ENV" -f "$COMPOSE_FILE" exec -T postgres pg_isready >/dev/null 2>&1 && pass POSTGRES_CONNECTIVITY || block POSTGRES_UNHEALTHY
 else
   skip POSTGRES_CHECK_DEPENDENCY_ENVIRONMENT_CONTRACT
 fi

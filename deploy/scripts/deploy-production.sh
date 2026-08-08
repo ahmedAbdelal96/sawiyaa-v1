@@ -200,6 +200,8 @@ esac
 echo "Materializing target $TARGET_SHA in a temporary detached worktree..."
 git worktree add --detach "$VALIDATION_WORKTREE" "$TARGET_SHA" >/dev/null
 WORKTREE_CREATED=1
+bash "$VALIDATION_WORKTREE/deploy/scripts/stage-release-env.sh" \
+  "$PROJECT_DIR" "$VALIDATION_WORKTREE"
 
 echo "Validating target-release environment contract and Compose model..."
 if ! bash "$VALIDATION_WORKTREE/deploy/scripts/validate-production-preflight.sh" \
