@@ -8,6 +8,7 @@ import {
   SessionOperationalReasonCode,
   SessionOperationalState,
 } from '../types/session-operational-interpretation.types';
+import type { SessionJoinPolicyResolution } from '../utils/session-join-policy.util';
 
 const TERMINAL_STATES = new Set<SessionStatus>([
   SessionStatus.COMPLETED,
@@ -34,9 +35,9 @@ export class SessionOperationalInterpreterService {
     input: SessionOperationalInput,
   ): Promise<SessionOperationalInterpretation> {
     const now = new Date(input.now.getTime());
-    const state = this.resolveState(input);
-    const reasonCode = this.resolveReasonCode(input, state);
     const join = this.joinReadiness.resolve({ ...input.session, now, finalManualDecision: input.finalManualDecision ?? null });
+    const state = this.resolveState(input, join);
+    const reasonCode = this.resolveReasonCode(input, state);
     const patientActionView = input.actor === 'PATIENT'
       ? input.patientActions ?? await this.patientActions.resolveOne({
           session: input.session,
@@ -54,11 +55,14 @@ export class SessionOperationalInterpreterService {
 
     return {
       state,
+      timelineBucket: this.resolveTimelineBucket(state),
       reasonCode,
       join: {
         allowed: join.canJoin,
         reasonCode: join.blockedReason,
         canPrepareRuntime: join.canPrepareRuntime,
+        opensAt: join.joinOpensAt,
+        closesAt: join.joinClosesAt,
       },
       actions: patientActionView
         ? {
@@ -67,19 +71,17 @@ export class SessionOperationalInterpreterService {
             canCancel: patientActionView.canCancel,
             canPay: patientActionView.canPay,
             canReview: patientActionView.canReview,
-            canComplete: false,
             canMarkPatientNoShow: false,
             noShowReasonCode: null,
           }
         : {
-            // No practitioner/admin command policy is duplicated here. Their
-            // mutating commands remain the enforcement boundary until Phase 2B.
+            // Practitioner sessions expose only non-finalizing commands. Admin
+            // completion is intentionally not part of participant contracts.
             canJoin: input.actor === 'PRACTITIONER' && join.canJoin,
             canPrepareRuntime: input.actor === 'PRACTITIONER' && join.canPrepareRuntime,
             canCancel: false,
             canPay: false,
             canReview: false,
-            canComplete: input.practitionerCommandActions?.canComplete ?? false,
             canMarkPatientNoShow: input.practitionerCommandActions?.canMarkPatientNoShow ?? false,
             noShowReasonCode: input.practitionerCommandActions?.noShowReasonCode ?? null,
           },
@@ -98,7 +100,10 @@ export class SessionOperationalInterpreterService {
     };
   }
 
-  private resolveState(input: SessionOperationalInput): SessionOperationalState {
+  private resolveState(
+    input: SessionOperationalInput,
+    join: Pick<SessionJoinPolicyResolution, 'blockedReason'>,
+  ): SessionOperationalState {
     // Phase 1 writes this state on room closure. This guard safely interprets
     // legacy inconsistent rows without mutating them or inventing an outcome.
     if (
@@ -107,6 +112,19 @@ export class SessionOperationalInterpreterService {
       input.session.status !== SessionStatus.AWAITING_ADMIN_RESOLUTION
     ) {
       return SessionStatus.AWAITING_ADMIN_RESOLUTION;
+    }
+    if (
+      ( [
+        SessionStatus.UPCOMING,
+        SessionStatus.READY_TO_JOIN,
+        SessionStatus.IN_PROGRESS,
+      ] as SessionStatus[]).includes(input.session.status) &&
+      join.blockedReason === 'SESSION_JOIN_WINDOW_CLOSED'
+    ) {
+      // A missed lifecycle sweep must not make an expired session appear
+      // actionable. This is a read-only convergence guard; the sweeper still
+      // persists the canonical outcome through SessionLifecycleService.
+      return SessionStatus.AWAITING_COMPLETION_CONFIRMATION;
     }
     return input.session.status;
   }
@@ -121,5 +139,28 @@ export class SessionOperationalInterpreterService {
         : 'ADMIN_RESOLUTION_REQUIRED';
     }
     return input.session.originalSessionId ? 'REPLACED_BY_SUCCESSOR' : 'LIFECYCLE_STATUS';
+  }
+
+  private resolveTimelineBucket(state: SessionOperationalState) {
+    if (state === SessionStatus.COMPLETED) return 'COMPLETED' as const;
+    if (
+      state === SessionStatus.CANCELLED ||
+      state === SessionStatus.PATIENT_NO_SHOW ||
+      state === SessionStatus.PRACTITIONER_NO_SHOW ||
+      state === SessionStatus.BOTH_NO_SHOW ||
+      state === SessionStatus.EXPIRED ||
+      state === SessionStatus.AWAITING_ADMIN_RESOLUTION ||
+      state === SessionStatus.AWAITING_COMPLETION_CONFIRMATION
+    ) return 'TERMINAL' as const;
+    if (
+      state === SessionStatus.UPCOMING ||
+      state === SessionStatus.READY_TO_JOIN ||
+      state === SessionStatus.IN_PROGRESS
+    ) return 'ACTIONABLE' as const;
+    if (
+      state === SessionStatus.PENDING_PAYMENT ||
+      state === SessionStatus.PENDING_PRACTITIONER_CONFIRMATION
+    ) return 'PENDING' as const;
+    return 'OTHER' as const;
   }
 }

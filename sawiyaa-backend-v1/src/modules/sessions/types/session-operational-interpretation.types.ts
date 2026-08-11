@@ -15,6 +15,12 @@ import type { PatientSessionActionsViewModel } from '../services/resolve-patient
  * as an input to financial settlement.
  */
 export type SessionOperationalState = SessionStatus;
+export type SessionOperationalTimelineBucket =
+  | 'PENDING'
+  | 'ACTIONABLE'
+  | 'COMPLETED'
+  | 'TERMINAL'
+  | 'OTHER';
 
 export type SessionOperationalReasonCode =
   | 'LIFECYCLE_STATUS'
@@ -59,7 +65,6 @@ export type SessionOperationalInput = {
   /** Batch-resolved by list callers to avoid per-row review/cancellation reads. */
   patientActions?: PatientSessionActionsViewModel;
   practitionerCommandActions?: {
-    canComplete: boolean;
     canMarkPatientNoShow: boolean;
     noShowReasonCode: string | null;
   };
@@ -67,11 +72,15 @@ export type SessionOperationalInput = {
 
 export type SessionOperationalInterpretation = {
   state: SessionOperationalState;
+  /** Canonical UI-safe lifecycle grouping; consumers must not recreate status sets. */
+  timelineBucket: SessionOperationalTimelineBucket;
   reasonCode: SessionOperationalReasonCode;
   join: {
     allowed: boolean;
     reasonCode: SessionJoinBlockedReason | null;
     canPrepareRuntime: boolean;
+    opensAt: Date | null;
+    closesAt: Date | null;
   };
   actions: {
     canJoin: boolean;
@@ -79,7 +88,6 @@ export type SessionOperationalInterpretation = {
     canCancel: boolean;
     canPay: boolean;
     canReview: boolean;
-    canComplete: boolean;
     canMarkPatientNoShow: boolean;
     noShowReasonCode: string | null;
   };

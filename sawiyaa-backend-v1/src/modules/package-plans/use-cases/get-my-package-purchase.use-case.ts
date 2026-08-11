@@ -44,7 +44,7 @@ export class GetMyPackagePurchaseUseCase {
     const now = new Date();
 
     return {
-      item: this.packagePurchasePresenter.toViewModel({ purchase, now }),
+      item: await this.packagePurchasePresenter.toViewModel({ purchase, now }),
     };
   }
 }

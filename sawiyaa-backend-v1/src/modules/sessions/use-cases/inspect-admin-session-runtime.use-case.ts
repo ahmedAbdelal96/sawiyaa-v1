@@ -49,7 +49,7 @@ export class InspectAdminSessionRuntimeUseCase {
     });
 
     const participants = buildParticipantsSummary(
-      session as unknown as SessionWithParticipants,
+      session satisfies SessionWithParticipants,
     );
     const packagePurchase = session.packagePurchase
       ? {
@@ -70,23 +70,24 @@ export class InspectAdminSessionRuntimeUseCase {
         }
       : null;
 
-    const packageEntitlementDecision = (session as any).packageEntitlementDecision
+    const packageEntitlementDecision = session.packageEntitlementDecision
       ? {
-          id: (session as any).packageEntitlementDecision.id,
-          sessionId: (session as any).packageEntitlementDecision.sessionId,
-          packagePurchaseId: (session as any).packageEntitlementDecision.packagePurchaseId,
-          sessionStatusSnapshot: (session as any).packageEntitlementDecision.sessionStatusSnapshot,
-          decisionType: (session as any).packageEntitlementDecision.decisionType,
-          reasonCode: (session as any).packageEntitlementDecision.reasonCode,
-          adminNote: (session as any).packageEntitlementDecision.adminNote,
+          id: session.packageEntitlementDecision.id,
+          sessionId: session.packageEntitlementDecision.sessionId,
+          packagePurchaseId: session.packageEntitlementDecision.packagePurchaseId,
+          sessionStatusSnapshot:
+            session.packageEntitlementDecision.sessionStatusSnapshot,
+          decisionType: session.packageEntitlementDecision.decisionType,
+          reasonCode: session.packageEntitlementDecision.reasonCode,
+          adminNote: session.packageEntitlementDecision.adminNote,
           resultingSessionEarningReviewId:
-            (session as any).packageEntitlementDecision.resultingSessionEarningReviewId,
+            session.packageEntitlementDecision.resultingSessionEarningReviewId,
           decidedBy: {
-            userId: (session as any).packageEntitlementDecision.decidedByUser.id,
-            displayName: (session as any).packageEntitlementDecision.decidedByUser.displayName,
+            userId: session.packageEntitlementDecision.decidedByUser.id,
+            displayName: session.packageEntitlementDecision.decidedByUser.displayName,
           },
-          decidedAt: (session as any).packageEntitlementDecision.decidedAt.toISOString(),
-          idempotencyKey: (session as any).packageEntitlementDecision.idempotencyKey,
+          decidedAt: session.packageEntitlementDecision.decidedAt.toISOString(),
+          idempotencyKey: session.packageEntitlementDecision.idempotencyKey,
         }
       : null;
 

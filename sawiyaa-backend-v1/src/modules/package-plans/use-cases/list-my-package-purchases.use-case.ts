@@ -46,8 +46,10 @@ export class ListMyPackagePurchasesUseCase {
     const now = new Date();
 
     return {
-      items: purchases.map((purchase) =>
-        this.packagePurchasePresenter.toViewModel({ purchase, now }),
+      items: await Promise.all(
+        purchases.map((purchase) =>
+          this.packagePurchasePresenter.toViewModel({ purchase, now }),
+        ),
       ),
       pagination: {
         page,

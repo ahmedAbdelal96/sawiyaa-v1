@@ -279,7 +279,7 @@ export class CreatePackagePurchaseUseCase {
       });
 
       return {
-        item: this.packagePurchasePresenter.toViewModel({
+        item: await this.packagePurchasePresenter.toViewModel({
           purchase: created.purchase,
           sessions: created.sessions,
         }),
