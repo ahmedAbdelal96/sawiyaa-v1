@@ -15,6 +15,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 Set-Location -LiteralPath $repoRoot
 $backendDir = Join-Path $repoRoot 'sawiyaa-backend-v1'
 $frontendDir = Join-Path $repoRoot 'sawiyaa-frontend-v1'
+$generatedPrismaDir = Join-Path $backendDir 'src\generated\prisma'
 $temporaryEnvFiles = @(
   (Join-Path $backendDir '.env'),
   (Join-Path $backendDir '.env.postgres'),
@@ -73,5 +74,8 @@ try {
 } finally {
   foreach ($file in $createdEnvFiles) {
     if (Test-Path -LiteralPath $file) { Remove-Item -LiteralPath $file -Force }
+  }
+  if (Test-Path -LiteralPath $generatedPrismaDir) {
+    git restore --source=HEAD --worktree -- $generatedPrismaDir
   }
 }
