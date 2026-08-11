@@ -73,6 +73,7 @@
     "JOINABLE": "Ready to join",
     "IN_PROGRESS": "In progress",
     "AWAITING_COMPLETION_CONFIRMATION": "Waiting for session confirmation",
+    "AWAITING_ADMIN_RESOLUTION": "Awaiting admin resolution",
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled",
     "NO_SHOW": "No show",

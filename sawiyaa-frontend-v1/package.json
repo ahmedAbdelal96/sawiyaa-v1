@@ -15,6 +15,7 @@
     "validate": "npm run i18n:check && npm run ux-copy:check && npm run typecheck",
     "test:signup-routing": "node scripts/validate-signup-routing.mjs",
     "test:practitioner-consistency": "node scripts/validate-practitioner-consistency.mjs",
+    "test:session-contract": "node scripts/validate-session-contract.mjs",
     "typecheck": "next typegen && tsc -p tsconfig.typecheck.json --noEmit --incremental false",
     "test:country-contract": "playwright test tests/admin-practitioner-direct-create-country.spec.ts",
     "test:practitioner-country-contract": "playwright test tests/practitioner-country-source.spec.ts",

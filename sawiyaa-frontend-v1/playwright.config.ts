@@ -25,6 +25,10 @@ export default defineConfig({
   },
   projects: [
     { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "admin-chromium-en", testMatch: /admin-session-resolution\.spec\.ts/, use: { ...devices["Desktop Chrome"], locale: "en-US" } },
+    { name: "admin-chromium-ar", testMatch: /admin-session-resolution\.spec\.ts/, use: { ...devices["Desktop Chrome"], locale: "ar-EG" } },
+    { name: "admin-golden-en", testMatch: /admin-session-resolution-golden\.spec\.ts/, use: { ...devices["Desktop Chrome"], locale: "en-US", storageState: "test-artifacts/auth/admin.json" } },
+    { name: "admin-auth-setup", testMatch: /admin-auth\.setup\.ts/ },
     { name: "chromium-ar", use: { ...devices["Desktop Chrome"], locale: "ar-EG" }, dependencies: ["setup"] },
     { name: "chromium-en", use: { ...devices["Desktop Chrome"], locale: "en-US" }, dependencies: ["setup"] },
     { name: "mobile-ar", use: { ...devices["Pixel 7"], locale: "ar-EG" }, dependencies: ["setup"] },
@@ -33,12 +37,12 @@ export default defineConfig({
     {
       command: "node ../sawiyaa-frontend-v1/scripts/start-e2e-backend.mjs",
       cwd: path.resolve(__dirname, "..", "sawiyaa-backend-v1"),
-      url: process.env.E2E_BACKEND_URL ?? "http://127.0.0.1:7000/health",
+      url: process.env.E2E_BACKEND_URL ?? "http://127.0.0.1:7000/api/v1/health",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
     },
     {
-      command: "npm run start",
+      command: "npm run dev",
       url: baseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
