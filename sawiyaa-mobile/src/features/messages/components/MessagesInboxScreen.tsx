@@ -122,7 +122,13 @@ export function MessagesInboxScreen({
 
   const tabItems = useMemo(() => {
     if (activeTab === "all") return allItems;
-    if (activeTab === "sessions") return allItems.filter((item) => item.sourceType === "session");
+    if (activeTab === "sessions") {
+      return allItems.filter((item) => {
+        if (item.sourceType !== "session") return false;
+        const conversation = item.raw as unknown as CanonicalConversation;
+        return Boolean(conversation.lastMessage) || conversation.canSend;
+      });
+    }
     if (activeTab === "support") return allItems.filter((item) => item.sourceType === "support");
     if (activeTab === "followup") return allItems.filter((item) => item.sourceType === "care");
     return allItems;

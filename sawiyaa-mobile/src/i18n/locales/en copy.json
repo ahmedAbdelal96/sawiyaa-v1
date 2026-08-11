@@ -1847,11 +1847,8 @@
         "SESSION_RUNTIME_NOT_PREPARED": "The session runtime is not prepared yet."
       },
       "closeout": "Closeout",
-      "markCompleted": "Confirm session ended",
-      "completing": "Completing...",
       "markNoShow": "Record no-show",
       "markingNoShow": "Updating...",
-      "completedFeedback": "The session was marked as completed.",
       "noShowFeedback": "The session was marked as no show.",
       "flowTypeValue": {
         "SCHEDULED": "Scheduled appointment",

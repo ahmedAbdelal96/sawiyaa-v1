@@ -26,9 +26,7 @@ import {
   usePatientSession,
   useResolvePatientSessionJoinContract,
 } from "../../../src/features/patient/sessions/hooks";
-import type {
-  SessionPresentationStatus,
-} from "../../../src/features/patient/sessions/types";
+import type { SessionStatus } from "../../../src/features/patient/sessions/types";
 import {
   formatLocalizedDateTime,
   formatLocalizedDate,
@@ -37,7 +35,7 @@ import {
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { openSessionGeneralChat } from "../../../src/features/messages/api";
+import { getSessionGeneralChatConversation } from "../../../src/features/messages/api";
 import { operationalCanCancel, operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
 
 export default function SessionDetailScreen() {
@@ -80,7 +78,7 @@ export default function SessionDetailScreen() {
 
   const session = sessionQuery.data;
   const presentationStatus = operationalState(session) ?? "DRAFT";
-  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus as SessionPresentationStatus);
+  const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus as SessionStatus);
   // Older persisted query data may predate the backend-owned action contract.
   // Missing flags deny actions instead of recreating lifecycle rules on mobile.
   const needsPayment = session.operational?.actions.canPay === true;
@@ -99,14 +97,14 @@ export default function SessionDetailScreen() {
       )
     : null;
   const joinAvailableAtText =
-    !canAttemptJoin && session.joinAvailability.availableAt
+    !canAttemptJoin && session.operational.join.opensAt
       ? t("patientSessionsFlow.detail.joinAvailableAt", {
-          datetime: formatLocalizedDateTime(session.joinAvailability.availableAt, locale),
+          datetime: formatLocalizedDateTime(session.operational.join.opensAt, locale),
         })
       : null;
   const actionStateText = getActionStateText(
     t,
-    presentationStatus as SessionPresentationStatus,
+    presentationStatus as SessionStatus,
     canAttemptJoin,
     joinAvailableAtText,
     joinBlockedReasonText,
@@ -186,8 +184,16 @@ export default function SessionDetailScreen() {
     setIsOpeningMessages(true);
 
     try {
-      const payload = await openSessionGeneralChat(session.id);
-      router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
+      const payload = await getSessionGeneralChatConversation(session.id);
+      if (payload.item?.conversationId) {
+        router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
+      } else {
+        setMessagesError(
+          isRtl
+            ? "لا توجد رسائل سابقة لهذه الجلسة."
+            : "No previous messages for this session.",
+        );
+      }
     } catch (error) {
       setMessagesError(extractApiErrorMessage(error));
     } finally {
@@ -208,7 +214,7 @@ export default function SessionDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Lifecycle Stepper */}
-        <SessionProgressStepper status={session.status} t={t} isRtl={isRtl} />
+        <SessionProgressStepper status={presentationStatus as SessionStatus} t={t} isRtl={isRtl} />
 
         {/* Summary Card */}
         <Card
@@ -243,7 +249,7 @@ export default function SessionDetailScreen() {
             <View style={styles.cardStatusWrap}>
               <StatusChip
                 label={presentationStatusText}
-                tone={resolveSessionTone(session.status)}
+                tone={resolveSessionTone(presentationStatus as SessionStatus)}
                 showDot={false}
               />
             </View>
@@ -483,7 +489,7 @@ export default function SessionDetailScreen() {
             />
           ) : null}
 
-          {session.presentationStatus === "CANCELLED" &&
+          {session.operational?.state === "CANCELLED" &&
           session.cancellationReason ? (
             <DetailRow
               direction={direction}
@@ -507,9 +513,9 @@ export default function SessionDetailScreen() {
 
 function formatPresentationStatusLabel(
   t: ReturnType<typeof useTranslation>["t"],
-  status: SessionPresentationStatus,
+  status: SessionStatus,
 ) {
-  const map: Partial<Record<SessionPresentationStatus, string>> = {
+  const map: Partial<Record<SessionStatus, string>> = {
     UPCOMING: t("patientSessionsFlow.presentationStatus.UPCOMING"),
     READY_TO_JOIN: t("patientSessionsFlow.presentationStatus.READY_TO_JOIN"),
     IN_PROGRESS: t("patientSessionsFlow.presentationStatus.IN_PROGRESS"),
@@ -559,7 +565,7 @@ function formatFlowTypeLabel(
 
 function getActionStateText(
   t: ReturnType<typeof useTranslation>["t"],
-  presentationStatus: SessionPresentationStatus,
+  presentationStatus: SessionStatus,
   canAttemptJoin: boolean,
   joinAvailableAtText: string | null,
   joinBlockedReasonText: string | null,

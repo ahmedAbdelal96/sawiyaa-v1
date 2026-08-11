@@ -52,14 +52,6 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
-const CONFIRMED_SESSION_STATUSES = new Set([
-  "UPCOMING",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-]);
-
 function formatMoney(amount: string, currencyCode: string | null | undefined, locale: string): string {
   const money = parseMoney(amount, currencyCode);
   return money ? formatCentralMoney(money, locale) : "-";
@@ -80,25 +72,17 @@ function toNumber(value: string | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function isConfirmedSessionStatus(status: string | null | undefined): boolean {
-  return Boolean(status && CONFIRMED_SESSION_STATUSES.has(status));
-}
-
-function resolveBlockedMessageKey(status: string, expiresAt: string | null) {
-  if (status === "EXPIRED" || isSessionExpired(expiresAt)) {
+function resolveBlockedMessageKey(input: {
+  state: string | null | undefined;
+  timelineBucket: string | null | undefined;
+  expiresAt: string | null;
+}) {
+  if (input.state === "EXPIRED" || isSessionExpired(input.expiresAt)) {
     return "patientPaymentsFlow.checkout.sessionExpired";
   }
 
-  if (isConfirmedSessionStatus(status)) {
+  if (input.timelineBucket === "ACTIONABLE" || input.timelineBucket === "COMPLETED") {
     return "patientPaymentsFlow.checkout.sessionAlreadyPaid";
-  }
-
-  if (status === "REFUND_PENDING") {
-    return "patientPaymentsFlow.checkout.sessionRefundPending";
-  }
-
-  if (status === "REFUNDED") {
-    return "patientPaymentsFlow.checkout.sessionRefunded";
   }
 
   return "patientPaymentsFlow.checkout.sessionNotPayable";
@@ -409,9 +393,7 @@ export default function SessionPaymentCheckoutScreen() {
     return { walletUsed: walletPart, gatewayRemaining: gatewayPart };
   }, [breakdown, useWalletBalance, walletBalance]);
 
-  const payableSession =
-    session?.status === "PENDING_PAYMENT" &&
-    !isSessionExpired(session.expiresAt ?? null);
+  const payableSession = session?.operational?.actions.canPay === true;
   const gatewayPaymentRequired = split.gatewayRemaining > 0;
   const refundPolicyQuery = useRefundPolicy("SESSION", {
     enabled: Boolean(id),
@@ -832,7 +814,11 @@ export default function SessionPaymentCheckoutScreen() {
         <Header showBack />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
-            {t(resolveBlockedMessageKey(session.status, session.expiresAt))}
+            {t(resolveBlockedMessageKey({
+              state: session.operational?.state,
+              timelineBucket: session.operational?.timelineBucket,
+              expiresAt: session.expiresAt,
+            }))}
           </Text>
           <Button
             title={t("patientPaymentsFlow.checkout.backToSession")}

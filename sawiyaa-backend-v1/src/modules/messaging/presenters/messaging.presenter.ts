@@ -28,6 +28,8 @@ export class MessagingPresenter {
       contextLabel: input.publicType === 'SESSION' ? 'Session' : input.publicType === 'CARE' ? 'Care request' : 'Support ticket',
       contextId: input.conversation.sessionId ?? input.conversation.supportTicketId ?? input.conversation.id,
       sessionCode: input.conversation.session?.sessionCode ?? null,
+      sessionStatus: input.conversation.session?.status ?? null,
+      sessionScheduledStartAt: input.conversation.session?.scheduledStartAt?.toISOString() ?? null,
       status: input.conversation.status,
       isResolved: input.publicType === 'SUPPORT' && input.conversation.supportTicket?.status === 'RESOLVED',
       isReadOnly: input.publicType === 'SUPPORT' && input.conversation.supportTicket?.status === 'RESOLVED',

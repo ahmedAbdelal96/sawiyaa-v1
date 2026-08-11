@@ -449,7 +449,7 @@ export class MessagingRepository {
         take: 50,
         select: { id: true, senderUserId: true, messageType: true, status: true, contentText: true, sentAt: true, deliveredAt: true, readAt: true },
       },
-      session: { select: { sessionCode: true, status: true } },
+      session: { select: { sessionCode: true, status: true, scheduledStartAt: true } },
       supportTicket: { select: { status: true, subject: true } },
       chatApprovalRequest: { select: { status: true, expiresAt: true } },
     };

@@ -9,7 +9,6 @@ import {
   previewPatientSessionCancellation,
   preparePatientSessionRuntime,
   resolvePatientSessionJoinContract,
-  markPractitionerSessionCompleted,
   markPractitionerSessionNoShow,
   getPractitionerSession,
   getPractitionerSessions,
@@ -195,20 +194,6 @@ export function usePractitionerSession(sessionId: string | null) {
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
-  });
-}
-
-export function useMarkPractitionerSessionCompleted() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sessionId: string) => markPractitionerSessionCompleted(sessionId),
-    onSuccess: async (updatedSession) => {
-      queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(updatedSession.id),
-        updatedSession,
-      );
-      await invalidateOperationalSessionViews(queryClient, updatedSession.id);
-    },
   });
 }
 

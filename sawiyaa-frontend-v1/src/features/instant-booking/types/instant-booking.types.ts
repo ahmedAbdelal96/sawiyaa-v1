@@ -87,6 +87,7 @@ export type InstantBookingRequest = {
   requestedDurationMinutes: number;
   sessionMode: SessionMode;
   requestedAt: string;
+  createdAt?: string;
   expiresAt: string;
   respondedAt: string | null;
   responseReason: string | null;

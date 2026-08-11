@@ -81,6 +81,10 @@
       "title": "جلستك بدأت",
       "subtitle": "جلسة · يمكنك الانضمام الآن"
     },
+    "instant-booking-request-created": {
+      "title": "طلب حجز فوري جديد",
+      "subtitle": "لديك طلب حجز فوري جديد"
+    },
     "support-ticket-created": {
       "title": "تم إنشاء تذكرة دعم جديدة",
       "subtitle": "دعم · عمليات"

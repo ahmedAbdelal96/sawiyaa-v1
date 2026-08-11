@@ -249,7 +249,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('allows a final decision for an elapsed IN_PROGRESS session', async () => {
+  it('rejects completion from an elapsed IN_PROGRESS session', async () => {
     mockRepo.findById.mockResolvedValue(pastInProgressSession as any);
     await expect(
       useCase.execute({
@@ -261,7 +261,33 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticRefund: true,
         confirmNoAutomaticPayout: true,
       }),
-    ).resolves.toBeDefined();
+    ).rejects.toMatchObject({
+      response: { error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW' },
+    });
+  });
+
+  it.each([
+    SessionStatus.UPCOMING,
+    SessionStatus.READY_TO_JOIN,
+    SessionStatus.AWAITING_ADMIN_RESOLUTION,
+  ])('rejects MARK_COMPLETED from %s', async (status) => {
+    mockRepo.findById.mockResolvedValue({
+      ...pastAwaitingSession,
+      status,
+    } as any);
+    await expect(
+      useCase.execute({
+        sessionId: 'session_1',
+        decisionType: SessionAdminDecisionType.MARK_COMPLETED,
+        decidedByUserId: 'admin_1',
+        reasonCode: 'TEST',
+        confirmEvidenceReviewed: true,
+        confirmNoAutomaticRefund: true,
+        confirmNoAutomaticPayout: true,
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW' },
+    });
   });
 
   it('throws SESSION_DECISION_ALREADY_FINAL when a final decision exists and supersedePrevious is not true', async () => {
@@ -318,6 +344,45 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
           tx: expect.any(Object),
         }),
       );
+    });
+
+    it('rejects normal completion when evidence is insufficient', async () => {
+      mockAttendanceUseCase.execute.mockResolvedValue({
+        ...mockAttendanceData,
+        extendedSummary: {
+          ...mockAttendanceData.extendedSummary,
+          recommendation: {
+            recommendedOutcome: 'INSUFFICIENT_EVIDENCE',
+            riskFlags: ['RECONCILIATION_NOT_AVAILABLE'],
+          },
+          reviewDecision: {
+            canApproveNormally: false,
+            requiresResolution: true,
+            reasonCode: 'INSUFFICIENT_EVIDENCE',
+            recommendation: 'INSUFFICIENT_EVIDENCE',
+          },
+        },
+      } as any);
+      setupTransactionMock({
+        decisionType: SessionAdminDecisionType.MARK_COMPLETED,
+        nextSessionStatus: SessionStatus.COMPLETED,
+      });
+
+      await expect(
+        useCase.execute({
+          sessionId: 'session_1',
+          decisionType: SessionAdminDecisionType.MARK_COMPLETED,
+          decidedByUserId: 'admin_1',
+          reasonCode: 'EVIDENCE_SUPPORTS_COMPLETION',
+          confirmEvidenceReviewed: true,
+          confirmNoAutomaticRefund: true,
+          confirmNoAutomaticPayout: true,
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          error: 'SESSION_COMPLETION_REQUIRES_RESOLUTION',
+        }),
+      });
     });
 
     it('MARK_PATIENT_NO_SHOW sets nextSessionStatus to PATIENT_NO_SHOW', async () => {
@@ -544,9 +609,9 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
       });
 
-      expect(mockAttendanceUseCase.execute).toHaveBeenCalledWith({
-        sessionId: 'session_1',
-      });
+      expect(mockAttendanceUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionId: 'session_1', tx: expect.anything() }),
+      );
     });
 
     it('execute() does not have evidenceSnapshot in its input type signature', () => {

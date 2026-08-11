@@ -20,7 +20,7 @@ import {
   StateCard,
 } from "@/components/shared/ContentStates";
 import Button from "@/components/ui/button/Button";
-import { ConfirmModal, DestructiveConfirmModal } from "@/components/ui/modal";
+import { DestructiveConfirmModal } from "@/components/ui/modal";
 import { toAppError } from "@/lib/api/errors";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import {
@@ -29,7 +29,6 @@ import {
 } from "@/lib/time-formatting";
 import {
   useClosePractitionerSessionRuntime,
-  useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
   usePreparePractitionerSessionRuntime,
   usePractitionerSession,
@@ -85,10 +84,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const profileQuery = usePractitionerProfile();
 
   const [confirmingAction, setConfirmingAction] = useState<
-    "complete" | "no-show" | "close-room" | null
+    "no-show" | "close-room" | null
   >(null);
   const [recentAction, setRecentAction] = useState<
-    "complete" | "no-show" | null
+    "no-show" | null
   >(null);
   const [joinResult, setJoinResult] = useState<SessionJoinItem | null>(null);
   const [prepareResult, setPrepareResult] = useState<SessionRuntimeItem | null>(
@@ -104,7 +103,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     isLoading,
     isError,
   } = usePractitionerSession(sessionId);
-  const completeMutation = useMarkPractitionerSessionCompleted();
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
@@ -152,11 +150,9 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const hasRuntimeAccess = Boolean(
     operational?.actions.canPrepareRuntime || operational?.actions.canJoin,
   );
-  const canMarkCompleted = operational?.actions.canComplete === true;
   const canMarkNoShow = operational?.actions.canMarkPatientNoShow === true;
-  const isActive = hasRuntimeAccess || canMarkCompleted || canMarkNoShow;
+  const isActive = hasRuntimeAccess || canMarkNoShow;
   const isBusy =
-    completeMutation.isPending ||
     noShowMutation.isPending ||
     joinMutation.isPending ||
     closeRoomMutation.isPending;
@@ -189,19 +185,19 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     joinResult?.blockedReason ??
     operational?.join.reasonCode ??
     null;
-  const canOpenSessionChat = Boolean(operationalState);
+  const canOpenSessionChat = session.sessionChat?.available === true;
   const presentationTitle = t(
-    `detail.presentation.${operationalState ?? session.presentationStatus}.title` as Parameters<
+    `detail.presentation.${operationalState}.title` as Parameters<
       typeof t
     >[0],
   );
   const presentationNote = t(
-    `detail.presentation.${operationalState ?? session.presentationStatus}.note` as Parameters<
+    `detail.presentation.${operationalState}.note` as Parameters<
       typeof t
     >[0],
   );
   const presentationCloseout = t(
-    `detail.presentation.${operationalState ?? session.presentationStatus}.closeout` as Parameters<
+    `detail.presentation.${operationalState}.closeout` as Parameters<
       typeof t
     >[0],
   );
@@ -216,7 +212,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
     t,
     "detail.roomClose.support.note",
     locale.startsWith("ar")
-      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
+      ? "هل تحتاج إلى مساعدة في هذه الجلسة؟"
       : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
   );
   const roomCloseActionLabel = getSafeTranslation(
@@ -247,23 +243,11 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               ? "readyToPrepare"
               : "awaitingWindow";
 
-  const handleMarkCompleted = async () => {
-    try {
-      await completeMutation.mutateAsync(session.id);
-      setConfirmingAction(null);
-      setRecentAction("complete");
-      noShowMutation.reset();
-    } catch {
-      setRecentAction(null);
-    }
-  };
-
   const handleMarkNoShow = async () => {
     try {
       await noShowMutation.mutateAsync(session.id);
       setConfirmingAction(null);
       setRecentAction("no-show");
-      completeMutation.reset();
     } catch {
       setRecentAction(null);
     }
@@ -335,7 +319,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* ═══ HERO SECTION ═══ */}
+      {/* ??? HERO SECTION ??? */}
       <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -359,7 +343,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   ? formatPractitionerOrViewerDateTime(
                       session.scheduledStartAt,
                       practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
                     )
                   : t("detail.noSchedule")}
               </span>
@@ -378,7 +361,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                       ? "صوتي"
                       : "Audio"
                     : locale === "ar"
-                      ? "محادثة"
+                      ? "صوتي"
                       : "Chat"}
               </span>
             </div>
@@ -387,7 +370,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           <div className="flex items-center gap-3">
             <SessionStatusBadge
               status={session.status}
-              presentationStatus={session.presentationStatus}
               operational={session.operational}
             />
             {/* Quick Action: Join Button */}
@@ -406,9 +388,9 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         </div>
       </div>
 
-      {/* ═══ TWO COLUMN LAYOUT ═══ */}
+      {/* ??? TWO COLUMN LAYOUT ??? */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* ═══ LEFT COLUMN: SUMMARY, MEETING, CLINICAL, TIMELINE (65-70%) ═══ */}
+        {/* ??? LEFT COLUMN: SUMMARY, MEETING, CLINICAL, TIMELINE (65-70%) ??? */}
         <div className="space-y-6">
           {/* Session Summary Card */}
           <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
@@ -424,7 +406,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   {formatPractitionerOrViewerDateTime(
                     session.createdAt,
                     practitionerTimeZone,
-                    { locale: numLocale, fallbackText: "—" },
                   )}
                 </span>
               </div>
@@ -435,10 +416,10 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {session.flowType === "INSTANT"
                     ? locale === "ar"
-                      ? "جلسة فورية"
+                      ? "صوتي"
                       : "Instant Session"
                     : locale === "ar"
-                      ? "جلسة مجدولة"
+                      ? "صوتي"
                       : "Scheduled Session"}
                 </span>
               </div>
@@ -447,7 +428,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   {locale === "ar" ? "المنطقة الزمنية" : "Timezone"}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
-                  {practitionerTimeZoneLabel ?? session.timezone ?? "—"}
+                  {practitionerTimeZoneLabel ?? session.timezone ?? "�"}
                 </span>
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
@@ -459,9 +440,8 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                     ? formatPractitionerOrViewerDateTime(
                         session.scheduledEndAt,
                         practitionerTimeZone,
-                        { locale: numLocale, fallbackText: "—" },
                       )
-                    : "—"}
+                    : "�"}
                 </span>
               </div>
             </div>
@@ -663,7 +643,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
             <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
               <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
                 {locale === "ar"
-                  ? "سجل الأحداث والجدول الزمني"
+                  ? "ملاحظات إدارية داخلية"
                   : "Event Timeline & History"}
               </h3>
               <div className="border-border-light relative ml-2 space-y-5 border-l pl-4 rtl:mr-2 rtl:border-r rtl:border-l-0 rtl:pr-4 rtl:pl-0 dark:border-white/10">
@@ -676,7 +656,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                         {formatPractitionerOrViewerDateTime(
                           event.occurredAt,
                           practitionerTimeZone,
-                          { locale: numLocale, fallbackText: "—" },
                         )}
                       </span>
                       <p className="text-text-primary mt-0.5 text-sm font-semibold dark:text-white/90">
@@ -698,7 +677,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           )}
         </div>
 
-        {/* ═══ RIGHT COLUMN: UNIFIED SIDEBAR (COMPACT) ═══ */}
+        {/* ??? RIGHT COLUMN: UNIFIED SIDEBAR (COMPACT) ??? */}
         <div className="space-y-4">
           <div className="border-border-light bg-surface-primary rounded-2xl border p-4 shadow-sm space-y-4 divide-y divide-border-light/60 dark:bg-white/5 dark:divide-white/10">
             {/* 1. Patient Profile */}
@@ -712,7 +691,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-text-primary truncate text-sm font-bold dark:text-white/95">
-                    {session.patient?.displayName ?? "—"}
+                    {session.patient?.displayName ?? "�"}
                   </p>
                   <p className="text-text-muted text-[11px]">
                     ID: {session.patient?.id.substring(0, 8)}...
@@ -846,12 +825,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 {t("detail.actions.heading")}
               </h3>
 
-              {recentAction === "complete" && !completeMutation.isError && (
-                <div className="bg-primary-light border border-primary/20 text-xs text-text-primary rounded-lg p-2 mb-2 flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  <span>{t("detail.actions.completeSuccess")}</span>
-                </div>
-              )}
               {recentAction === "no-show" && !noShowMutation.isError && (
                 <div className="bg-primary-light border border-primary/20 text-xs text-text-primary rounded-lg p-2 mb-2 flex items-center gap-1.5">
                   <CheckCircle2 size={14} className="text-primary shrink-0" />
@@ -859,37 +832,20 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 </div>
               )}
 
-              {canMarkCompleted || canMarkNoShow ? (
+              {canMarkNoShow ? (
                 <div className="flex flex-wrap gap-2">
-                  {canMarkCompleted && (
-                    <Button
-                      size="sm"
-                      className="flex-1 text-xs py-2"
-                      onClick={() => {
-                        setConfirmingAction("complete");
-                        setRecentAction(null);
-                        noShowMutation.reset();
-                      }}
-                      disabled={isBusy}
-                    >
-                      {t("detail.actions.complete")}
-                    </Button>
-                  )}
-                  {canMarkNoShow && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-xs py-2"
-                      onClick={() => {
-                        setConfirmingAction("no-show");
-                        setRecentAction(null);
-                        completeMutation.reset();
-                      }}
-                      disabled={isBusy}
-                    >
-                      {t("detail.actions.noShow")}
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs py-2"
+                    onClick={() => {
+                      setConfirmingAction("no-show");
+                      setRecentAction(null);
+                    }}
+                    disabled={isBusy}
+                  >
+                    {t("detail.actions.noShow")}
+                  </Button>
                 </div>
               ) : (
                 <p className="text-xs text-text-muted">
@@ -901,7 +857,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         </div>
       </div>
 
-      {/* Back to sessions — inactive sessions only */}
+      {/* Back to sessions � inactive sessions only */}
       {!isActive && (
         <div className="pt-1">
           <Link
@@ -913,51 +869,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
         </div>
       )}
 
-      {/* ═══ MODALS ═══ */}
-      <ConfirmModal
-        isOpen={confirmingAction === "complete"}
-        onClose={() => {
-          setConfirmingAction(null);
-          completeMutation.reset();
-        }}
-        size="sm"
-        title={t("detail.actions.completeConfirm.heading")}
-        description={t("detail.actions.completeConfirm.note")}
-        confirmLabel={
-          completeMutation.isPending ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              {t("detail.actions.completePending")}
-            </>
-          ) : (
-            t("detail.actions.completeConfirm.confirm")
-          )
-        }
-        cancelLabel={t("detail.actions.completeConfirm.back")}
-        onConfirm={handleMarkCompleted}
-        loading={isBusy}
-      >
-        <div className="border-primary/15 bg-primary-light text-text-brand dark:border-primary/20 dark:bg-primary/10 dark:text-primary-light rounded-xl border px-4 py-4 text-sm">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 size={16} className="text-primary mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium">
-                {session.patient?.displayName ?? "-"}
-              </p>
-              <p className="mt-1 text-xs opacity-80">
-                {session.scheduledStartAt
-                  ? formatPractitionerOrViewerDateTime(
-                      session.scheduledStartAt,
-                      practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
-                    )
-                  : t("detail.noSchedule")}
-              </p>
-            </div>
-          </div>
-        </div>
-      </ConfirmModal>
-
+      {/* ??? MODALS ??? */}
       <DestructiveConfirmModal
         isOpen={confirmingAction === "no-show"}
         onClose={() => {
@@ -993,7 +905,6 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                   ? formatPractitionerOrViewerDateTime(
                       session.scheduledStartAt,
                       practitionerTimeZone,
-                      { locale: numLocale, fallbackText: "—" },
                     )
                   : t("detail.noSchedule")}
               </p>
@@ -1097,41 +1008,41 @@ function formatEventTypeAr(eventType: string) {
     case "SESSION_CREATED":
       return "تم إنشاء الجلسة";
     case "PAYMENT_PENDING":
-      return "بانتظار الدفع";
+      return "تم إنشاء الجلسة";
     case "PAYMENT_CONFIRMED":
-      return "تم تأكيد الدفع بنجاح";
+      return "تم إنشاء الجلسة";
     case "PRACTITIONER_ACCEPTED":
-      return "تم قبول الجلسة من المختص";
+      return "تم إنشاء الجلسة";
     case "PRACTITIONER_REJECTED":
-      return "تم رفض الجلسة من المختص";
+      return "تم إنشاء الجلسة";
     case "SESSION_CONFIRMED":
-      return "تم تأكيد موعد الجلسة";
+      return "تم إنشاء الجلسة";
     case "SESSION_READY_TO_JOIN":
-      return "الجلسة جاهزة للانضمام الآن";
+      return "تم إنشاء الجلسة";
     case "PATIENT_JOINED":
-      return "انضم المريض للغرفة";
+      return "تم إنشاء الجلسة";
     case "PRACTITIONER_JOINED":
-      return "انضم المختص للغرفة";
+      return "تم إنشاء الجلسة";
     case "SESSION_STARTED":
-      return "بدأت الجلسة الفعلية";
+      return "تم إنشاء الجلسة";
     case "SESSION_AWAITING_COMPLETION_CONFIRMATION":
-      return "بانتظار تأكيد إتمام الجلسة";
+      return "تم إنشاء الجلسة";
     case "SESSION_COMPLETED":
-      return "اكتملت الجلسة بنجاح";
+      return "تم إنشاء الجلسة";
     case "CANCELLED_BY_PATIENT":
-      return "تم إلغاء الجلسة من قبل المريض";
+      return "تم إنشاء الجلسة";
     case "CANCELLED_BY_PRACTITIONER":
-      return "تم إلغاء الجلسة من قبل المختص";
+      return "تم إنشاء الجلسة";
     case "EXPIRED_UNPAID":
-      return "انتهت الجلسة لعدم إتمام الدفع";
+      return "تم إنشاء الجلسة";
     case "NO_SHOW_PATIENT":
-      return "لم يحضر المريض";
+      return "تم إنشاء الجلسة";
     case "NO_SHOW_PRACTITIONER":
-      return "لم يحضر المختص";
+      return "تم إنشاء الجلسة";
     case "PROVIDER_ROOM_CREATED":
-      return "تم تجهيز غرفة البث المباشر";
+      return "تم إنشاء الجلسة";
     case "PROVIDER_ROOM_ENDED":
-      return "تم إغلاق غرفة البث المباشر";
+      return "تم إنشاء الجلسة";
     default:
       return eventType;
   }
@@ -1185,15 +1096,15 @@ function formatEventTypeEn(eventType: string) {
 function formatPaymentStatusAr(status: string) {
   switch (status) {
     case "CREATED":
-      return "تم الإنشاء";
+      return "تم إنشاء الجلسة";
     case "CAPTURED":
-      return "مقبول ومؤكد";
+      return "تم إنشاء الجلسة";
     case "FAILED":
-      return "فشل الدفع";
+      return "تم إنشاء الجلسة";
     case "CANCELLED":
-      return "ملغي";
+      return "تم إنشاء الجلسة";
     case "REFUNDED":
-      return "مسترجع";
+      return "تم إنشاء الجلسة";
     default:
       return status;
   }

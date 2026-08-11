@@ -36,7 +36,6 @@ import type {
   PractitionerSessionJoinContract,
   PractitionerSessionListItem,
   SessionPresentationFilter,
-  SessionPresentationStatus,
 } from "../../../src/features/practitioner/sessions/types";
 import { getAppDirection } from "../../../src/i18n/direction";
 import { useTheme } from "../../../src/providers/ThemeProvider";
@@ -607,7 +606,7 @@ function SessionWorkspaceCard({
 }) {
   const rowDirection = direction === "rtl" ? "row-reverse" : "row";
   const textAlign = direction === "rtl" ? "right" : "left";
-  const statusTone = mapSessionPresentationTone(session.presentationStatus);
+  const statusTone = mapSessionPresentationTone(session.operational.state);
   const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
   const isArabic = direction === "rtl";
@@ -617,12 +616,12 @@ function SessionWorkspaceCard({
       defaultValue: isArabic ? "مريض غير معروف" : "Unknown Patient",
     });
 
-  const statusLabelKey = `practitioner.presentationStatus.${session.presentationStatus}`;
+  const statusLabelKey = `practitioner.presentationStatus.${session.operational.state}`;
   const translatedStatus = t(statusLabelKey);
   const statusLabel = translatedStatus.includes("presentationStatus.")
-    ? session.presentationStatus === "READY_TO_JOIN"
+    ? session.operational.state === "READY_TO_JOIN"
       ? (isArabic ? "جاهزة للانضمام" : "Ready to Join")
-      : session.presentationStatus
+      : session.operational.state
     : translatedStatus;
 
   return (
@@ -771,14 +770,14 @@ function PrioritySessionCard({
     t("practitioner.sessions.unknownPatient", {
       defaultValue: isArabic ? "مريض غير معروف" : "Unknown Patient",
     });
-  const statusTone = mapSessionPresentationTone(session.presentationStatus);
+  const statusTone = mapSessionPresentationTone(session.operational.state);
 
-  const statusLabelKey = `practitioner.presentationStatus.${session.presentationStatus}`;
+  const statusLabelKey = `practitioner.presentationStatus.${session.operational.state}`;
   const translatedStatus = t(statusLabelKey);
   const statusLabel = translatedStatus.includes("presentationStatus.")
-    ? session.presentationStatus === "READY_TO_JOIN"
+    ? session.operational.state === "READY_TO_JOIN"
       ? (isArabic ? "جاهزة للانضمام" : "Ready to Join")
-      : session.presentationStatus
+      : session.operational.state
     : translatedStatus;
 
   return (
@@ -908,7 +907,7 @@ function buildSessionSummary(sessions: PractitionerSessionListItem[]): {
 } {
   return sessions.reduce(
     (acc, item) => {
-      switch (item.presentationStatus) {
+      switch (item.operational.state) {
         case "UPCOMING":
           acc.upcoming += 1;
           break;
@@ -969,25 +968,17 @@ function pickPrioritySession(
   }
 
   const upcoming = items.find(
-    (item) => item.presentationStatus === "UPCOMING",
+    (item) => item.operational?.timelineBucket === "ACTIONABLE",
   );
   return upcoming ?? null;
 }
 
 function isSessionJoinableNow(session: PractitionerSessionListItem) {
-  return (
-    session.presentationStatus === "READY_TO_JOIN" ||
-    session.presentationStatus === "IN_PROGRESS" ||
-    !!session.joinAvailability?.canJoin
-  );
+  return session.operational?.join.allowed === true;
 }
 
 function canAttemptPrepare(session: PractitionerSessionListItem) {
-  return (
-    session.status === "UPCOMING" ||
-    session.status === "READY_TO_JOIN" ||
-    session.status === "IN_PROGRESS"
-  );
+  return session.operational?.join.canPrepareRuntime === true;
 }
 
 function buildJoinUrl(contract: PractitionerSessionJoinContract): string | null {

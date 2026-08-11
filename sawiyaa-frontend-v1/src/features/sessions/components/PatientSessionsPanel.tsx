@@ -26,7 +26,6 @@ import PatientSessionReviewCard from "./PatientSessionReviewCard";
 import SessionStatusBadge from "./SessionStatusBadge";
 import type {
   SessionListItem,
-  SessionPresentationStatus,
   SessionStatus,
 } from "../types/sessions.types";
 import type { PatientReviewItem } from "@/features/reviews/types/reviews.types";
@@ -421,26 +420,22 @@ export default function PatientSessionsPanel() {
   };
 
   const pageSummary = useMemo(() => {
-    const countStatus = (statuses: SessionStatus[]) => {
-      const statusSet = new Set(statuses);
-      return (data?.items ?? []).filter((item) => statusSet.has(item.status)).length;
-    };
-    const countPres = (statuses: SessionPresentationStatus[]) => {
-      const statusSet = new Set(statuses);
-      return (data?.items ?? []).filter((item) => statusSet.has(item.presentationStatus)).length;
-    };
+    const countState = (state: SessionStatus) =>
+      (data?.items ?? []).filter((item) => item.operational?.state === state).length;
+    const countBucket = (bucket: "PENDING" | "ACTIONABLE" | "COMPLETED" | "TERMINAL" | "OTHER") =>
+      (data?.items ?? []).filter((item) => item.operational?.timelineBucket === bucket).length;
 
     return {
-      pendingPayment: countStatus(["PENDING_PAYMENT"]),
-      pendingPractitionerResponse: countStatus(["PENDING_PRACTITIONER_CONFIRMATION"]),
-      readyToJoin: countPres(["READY_TO_JOIN"]),
-      confirmed: countStatus(["UPCOMING"]),
-      upcoming: countStatus(["UPCOMING"]),
-      inProgress: countStatus(["IN_PROGRESS"]),
-      completed: countStatus(["COMPLETED"]),
-      cancelled: countStatus(["CANCELLED"]),
-      noShow: countStatus(["PATIENT_NO_SHOW", "PRACTITIONER_NO_SHOW", "BOTH_NO_SHOW"]),
-      expired: countStatus(["EXPIRED"]),
+      pendingPayment: countState("PENDING_PAYMENT"),
+      pendingPractitionerResponse: countState("PENDING_PRACTITIONER_CONFIRMATION"),
+      readyToJoin: countState("READY_TO_JOIN"),
+      confirmed: countState("UPCOMING"),
+      upcoming: countBucket("ACTIONABLE"),
+      inProgress: countState("IN_PROGRESS"),
+      completed: countBucket("COMPLETED"),
+      cancelled: countState("CANCELLED"),
+      noShow: (data?.items ?? []).filter((item) => item.operational?.state === "PATIENT_NO_SHOW" || item.operational?.state === "PRACTITIONER_NO_SHOW" || item.operational?.state === "BOTH_NO_SHOW").length,
+      expired: countState("EXPIRED"),
       refundPending: 0,
       refunded: 0,
     };
@@ -564,7 +559,6 @@ export default function PatientSessionsPanel() {
         cell: (row) => (
           <SessionStatusBadge
             status={row.status}
-            presentationStatus={row.presentationStatus}
             operational={row.operational}
             labelOverride={row.status === "EXPIRED" ? copy.expiredPaymentBadge : undefined}
           />

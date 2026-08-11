@@ -85,8 +85,8 @@ describe('SessionOutcomeEvaluator', () => {
       }),
     );
 
-    expect(result.classification).toBe('AUTO_COMPLETABLE');
-    expect(result.eligibleForAutomaticFinalization).toBe(true);
+    expect(result.classification).toBe('COMPLETION_CANDIDATE');
+    expect(result.eligibleForAdminApproval).toBe(true);
     expect(result.recommendedTerminalStatus).toBe('COMPLETED');
     expect(result.reasonCodes).toEqual(
       expect.arrayContaining([
@@ -102,7 +102,7 @@ describe('SessionOutcomeEvaluator', () => {
     );
 
     expect(result.classification).toBe('NEEDS_ADMIN_REVIEW');
-    expect(result.eligibleForAutomaticFinalization).toBe(false);
+    expect(result.eligibleForAdminApproval).toBe(false);
     expect(result.reasonCodes).toEqual(
       expect.arrayContaining(['COMPLETION_OVERLAP_THRESHOLD_NOT_MET']),
     );
@@ -131,7 +131,7 @@ describe('SessionOutcomeEvaluator', () => {
     );
 
     expect(result.classification).toBe('NEEDS_ADMIN_REVIEW');
-    expect(result.eligibleForAutomaticFinalization).toBe(false);
+    expect(result.eligibleForAdminApproval).toBe(false);
     expect(result.recommendedTerminalStatus).toBe('PATIENT_NO_SHOW');
   });
 
@@ -149,7 +149,7 @@ describe('SessionOutcomeEvaluator', () => {
 
     expect(result.classification).toBe('NEEDS_ADMIN_REVIEW');
     expect(result.confidence).toBe('MEDIUM');
-    expect(result.eligibleForAutomaticFinalization).toBe(false);
+    expect(result.eligibleForAdminApproval).toBe(false);
     expect(result.reasonCodes).toContain('RECONCILIATION_NOT_AVAILABLE');
   });
 
@@ -165,7 +165,7 @@ describe('SessionOutcomeEvaluator', () => {
     );
 
     expect(result.classification).toBe('NEEDS_ADMIN_REVIEW');
-    expect(result.eligibleForAutomaticFinalization).toBe(false);
+    expect(result.eligibleForAdminApproval).toBe(false);
     expect(result.recommendedTerminalStatus).toBe('PRACTITIONER_NO_SHOW');
   });
 
@@ -231,6 +231,6 @@ describe('SessionOutcomeEvaluator', () => {
     const result = evaluator.evaluate(input({ session: { status } }));
 
     expect(result.classification).toBe('NOT_READY_FOR_EVALUATION');
-    expect(result.eligibleForAutomaticFinalization).toBe(false);
+    expect(result.eligibleForAdminApproval).toBe(false);
   });
 });

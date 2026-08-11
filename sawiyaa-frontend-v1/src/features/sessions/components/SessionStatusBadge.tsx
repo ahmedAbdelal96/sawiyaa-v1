@@ -1,17 +1,15 @@
 import { useTranslations } from "next-intl";
 import { AdminStatusBadge } from "@/components/shared/admin/AdminDashboardKit";
-import type { SessionOperationalInterpretation, SessionPresentationStatus, SessionStatus } from "../types/sessions.types";
+import type { SessionOperationalInterpretation, SessionStatus } from "../types/sessions.types";
 
 type Props = {
   status?: SessionStatus;
-  presentationStatus?: SessionPresentationStatus;
   labelOverride?: string;
   operational?: SessionOperationalInterpretation;
 };
 
 export default function SessionStatusBadge({
   status,
-  presentationStatus,
   labelOverride,
   operational,
 }: Props) {

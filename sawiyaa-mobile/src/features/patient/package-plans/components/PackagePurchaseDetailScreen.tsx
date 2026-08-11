@@ -43,14 +43,9 @@ function SessionTimelineRow({
 }: {
   session: {
     id: string;
-    presentationStatus: Parameters<
-      typeof getPackagePurchaseSessionPresentationStatusTranslationKey
-    >[0];
-    joinAvailability: {
-      canJoin: boolean;
-      blockedReason: string | null;
-      availableAt: string | null;
-      expiresAt: string | null;
+    operational: {
+      state: Parameters<typeof getPackagePurchaseSessionPresentationStatusTranslationKey>[0];
+      join: { allowed: boolean; opensAt: string | null };
     };
     scheduledStartAt: string | null;
     scheduledEndAt: string | null;
@@ -66,13 +61,13 @@ function SessionTimelineRow({
   const { theme } = useTheme();
   const { rowDirection, textAlign, chevronForward } = useAppDirection();
   const statusLabel = t(
-    getPackagePurchaseSessionPresentationStatusTranslationKey(session.presentationStatus),
+    getPackagePurchaseSessionPresentationStatusTranslationKey(session.operational.state),
     {
-      defaultValue: session.presentationStatus,
+      defaultValue: session.operational.state,
     },
   );
   const statusTone = getPackagePurchaseSessionPresentationStatusTone(
-    session.presentationStatus,
+    session.operational.state,
   );
   const sessionModeLabel = t(getPackagePurchaseSessionModeTranslationKey(session.sessionMode), {
     defaultValue: session.sessionMode,
@@ -85,12 +80,12 @@ function SessionTimelineRow({
     session.scheduledEndAt,
     locale,
   );
-  const joinAvailabilityNote = session.joinAvailability.canJoin
+  const joinAvailabilityNote = session.operational.join.allowed
     ? null
-    : session.joinAvailability.availableAt &&
-      new Date(session.joinAvailability.availableAt).getTime() > Date.now()
+    : session.operational.join.opensAt &&
+      new Date(session.operational.join.opensAt).getTime() > Date.now()
       ? t("packagePurchases.detail.joinAvailableAt", {
-          datetime: formatDatetime(session.joinAvailability.availableAt, locale),
+          datetime: formatDatetime(session.operational.join.opensAt, locale),
         })
       : null;
 

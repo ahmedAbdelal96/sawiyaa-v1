@@ -3,8 +3,8 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { Platform } from "react-native";
 import i18n from "../i18n";
+import { MOBILE_API_URL } from "../config/mobile-environment";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -24,41 +24,8 @@ let apiAuthSessionHandlers: ApiAuthSessionHandlers | null = null;
 let refreshAccessTokenPromise: Promise<string | null> | null = null;
 let authFailurePromise: Promise<void> | null = null;
 
-function resolveBaseUrl() {
-  const publicEnv = process.env as Record<string, string | undefined>;
-  const configured = publicEnv.EXPO_PUBLIC_API_URL?.trim();
-  if (configured) {
-    let parsed: URL;
-    try {
-      parsed = new URL(configured);
-    } catch {
-      throw new Error("EXPO_PUBLIC_API_URL must be a valid absolute URL.");
-    }
-
-    if (!(typeof __DEV__ !== "undefined" && __DEV__) && parsed.protocol !== "https:") {
-      throw new Error("EXPO_PUBLIC_API_URL must use https:// in production builds.");
-    }
-
-    return configured;
-  }
-
-  if (typeof __DEV__ !== "undefined" && __DEV__) {
-    if (Platform.OS === "android") {
-      return "http://10.0.2.2:7000/api/v1";
-    }
-
-    return "http://localhost:7000/api/v1";
-  }
-
-  if (Platform.OS === "android") {
-    throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
-  }
-
-  throw new Error("EXPO_PUBLIC_API_URL is required in production builds.");
-}
-
 export const apiClient = axios.create({
-  baseURL: resolveBaseUrl(),
+  baseURL: MOBILE_API_URL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",

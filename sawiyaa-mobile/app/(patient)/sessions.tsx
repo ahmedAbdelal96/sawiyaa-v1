@@ -31,7 +31,7 @@ import {
 import type {
   SessionJoinContract,
   SessionListItem,
-  SessionPresentationStatus,
+  SessionStatus,
 } from "../../src/features/patient/sessions/types";
 import { getAppDirection } from "../../src/i18n/direction";
 import { useTheme } from "../../src/providers/ThemeProvider";
@@ -559,8 +559,8 @@ function SessionCard({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const canonicalState = operationalState(session) ?? session.presentationStatus;
-  const tone = mapSessionPresentationTone(canonicalState as SessionPresentationStatus);
+  const canonicalState = operationalState(session) ?? "DRAFT";
+  const tone = mapSessionPresentationTone(canonicalState as SessionStatus);
   const isJoinable = isSessionJoinableNow(session);
   const isJoining = joiningSessionId === session.id;
   
@@ -705,7 +705,7 @@ function SessionTimelineItem({
 }) {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const canonicalState = operationalState(session) ?? session.presentationStatus;
+  const canonicalState = operationalState(session) ?? "DRAFT";
   const practitionerName =
     session.practitioner.displayName ??
     t("patientSessionsFlow.common.practitionerFallback");
@@ -766,7 +766,7 @@ function SessionTimelineItem({
           </Text>
           <StatusChip
             label={t(`patientSessionsFlow.presentationStatus.${canonicalState}`)}
-            tone={mapSessionPresentationTone(canonicalState as SessionPresentationStatus)}
+            tone={mapSessionPresentationTone(canonicalState as SessionStatus)}
             showDot={false}
           />
         </View>
@@ -848,7 +848,7 @@ function isSessionJoinableNow(session: SessionListItem) {
   return session.actions?.canJoin === true;
 }
 
-function mapSessionPresentationTone(status: SessionPresentationStatus) {
+function mapSessionPresentationTone(status: SessionStatus) {
   switch (status) {
     case "READY_TO_JOIN":
     case "IN_PROGRESS":

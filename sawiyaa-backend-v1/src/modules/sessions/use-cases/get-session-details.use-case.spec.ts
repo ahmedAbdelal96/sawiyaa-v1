@@ -42,6 +42,9 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       }),
     };
 
+    const resolveSessionChatAvailability = {
+      resolve: jest.fn().mockReturnValue({ available: true }),
+    };
     const useCase = new GetSessionDetailsUseCase(
       sessionRepository as never,
       sessionPatientRepository as never,
@@ -50,10 +53,11 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       new SessionAccessPolicy(),
       resolvePatientSessionActionsService as never,
       { interpret: jest.fn().mockResolvedValue({ state: 'UPCOMING' }) } as never,
-      { resolve: jest.fn().mockResolvedValue({ canComplete: false, canMarkPatientNoShow: false, noShowReasonCode: null }) } as never,
+      { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as never,
+      resolveSessionChatAvailability as never,
     );
 
-    return { useCase };
+    return { useCase, resolveSessionChatAvailability };
   }
 
   it('patient owner can retrieve session details', async () => {
@@ -66,6 +70,15 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         actorType: 'PATIENT',
       }),
     ).resolves.toMatchObject({ item: { id: 'session_1' } });
+  });
+
+  it('fails closed in the Patient details projection when Chat policy denies', async () => {
+    const { useCase, resolveSessionChatAvailability } = buildUseCase();
+    resolveSessionChatAvailability.resolve.mockReturnValue({ available: false });
+
+    await expect(useCase.execute({
+      userId: 'user_1', locale: 'ar', sessionId: 'session_1', actorType: 'PATIENT',
+    })).resolves.toMatchObject({ item: { sessionChat: { available: false } } });
   });
 
   it('patient A cannot read patient B session (ForbiddenException)', async () => {
@@ -124,6 +137,7 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         {} as never,
         {} as never,
         new SessionAccessPolicy(),
+        {} as never,
         {} as never,
       );
       return { useCase: uc };

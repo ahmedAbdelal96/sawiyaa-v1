@@ -63,6 +63,15 @@ export async function openSessionGeneralChat(sessionId: string) {
   return extractApiData<GeneralChatOpenSessionResponse>(response);
 }
 
+export async function getSessionGeneralChatConversation(sessionId: string) {
+  const response = await apiClient.get(`/chat/sessions/${sessionId}/conversation`);
+  return extractApiData<{
+    item: GeneralChatConversationDetailResponse["item"] | null;
+    sessionId: string;
+    chatAvailability: GeneralChatConversationDetailResponse["item"]["chatAvailability"];
+  }>(response);
+}
+
 export async function createOrGetGeneralChatConversation(
   payload: CreateGeneralChatConversationInput,
 ) {

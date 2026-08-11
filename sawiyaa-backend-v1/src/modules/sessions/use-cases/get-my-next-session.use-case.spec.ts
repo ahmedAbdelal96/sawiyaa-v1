@@ -24,7 +24,6 @@ describe('GetMyNextSessionUseCase', () => {
     const operational = { state: SessionStatus.READY_TO_JOIN, join: { allowed: true } };
     const useCase = new GetMyNextSessionUseCase(
       prisma as never,
-      { parseSnapshot: jest.fn().mockReturnValue(null), resolve: jest.fn().mockResolvedValue({ join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 15 } }), withScheduleRevision: jest.fn((value) => value) } as never,
       { interpret: jest.fn().mockResolvedValue(operational) } as never,
     );
 

@@ -320,11 +320,11 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const hasRuntimeAccess =
     operational?.actions.canPrepareRuntime === true || operational?.actions.canJoin === true;
   const paymentStateKey =
-    session.status === "PENDING_PAYMENT"
+    operationalState === "PENDING_PAYMENT"
       ? "PENDING_PAYMENT"
-      : session.status === "EXPIRED"
+      : operationalState === "EXPIRED"
         ? "EXPIRED"
-        : ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status)
+        : operational?.timelineBucket === "ACTIONABLE" || operational?.timelineBucket === "COMPLETED"
             ? "SECURED"
           : null;
   const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
@@ -337,7 +337,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const isPaymentWindowExpired = isReservationExpired;
 
   const paymentDisplayStateKey =
-    isReservationExpired && session.status === "PENDING_PAYMENT"
+    isReservationExpired && operationalState === "PENDING_PAYMENT"
       ? "EXPIRED"
       : paymentStateKey;
 
@@ -354,7 +354,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const blockedJoinReason =
     joinResult?.blockedReason ?? operational?.join.reasonCode ?? null;
   const isRoomClosed = operational?.room.state === "CLOSED";
-  const canOpenSessionChat = Boolean(operationalState);
+  const canOpenSessionChat = session.sessionChat?.available === true;
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
@@ -373,14 +373,14 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
   const cancellationPreview = previewCancellationMutation.data;
-  const runtimeStatusNote = t(`detail.presentation.${operationalState ?? session.presentationStatus}.note` as Parameters<
+  const runtimeStatusNote = t(`detail.presentation.${operationalState}.note` as Parameters<
     typeof t
   >[0]);
-  const runtimeStatusTitle = t(`detail.presentation.${operationalState ?? session.presentationStatus}.title` as Parameters<
+  const runtimeStatusTitle = t(`detail.presentation.${operationalState}.title` as Parameters<
     typeof t
   >[0]);
   const runtimeStatusCloseout = t(
-    `detail.presentation.${operationalState ?? session.presentationStatus}.closeout` as Parameters<typeof t>[0],
+    `detail.presentation.${operationalState}.closeout` as Parameters<typeof t>[0],
   );
   const sessionModeLabel = t(`detail.mode.${session.sessionMode}` as Parameters<
     typeof t
@@ -569,7 +569,6 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             <div className="sm:self-center">
               <SessionStatusBadge
                 status={isReservationExpired ? "EXPIRED" : session.status}
-                presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
                 operational={session.operational}
               />
             </div>
@@ -978,7 +977,6 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   value={
                     <SessionStatusBadge
                       status={isReservationExpired ? "EXPIRED" : session.status}
-                      presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
                       operational={session.operational}
                     />
                   }

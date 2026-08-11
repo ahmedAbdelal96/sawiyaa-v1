@@ -23,7 +23,7 @@ import {
 } from "../../src/features/practitioner/profile/hooks";
 import { useMyPresence } from "../../src/features/practitioner/presence/hooks";
 import { usePractitionerSessions } from "../../src/features/practitioner/sessions/hooks";
-import type { SessionStatus } from "../../src/features/practitioner/sessions/types";
+import type { PractitionerSessionListItem, SessionStatus } from "../../src/features/practitioner/sessions/types";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import {
@@ -71,10 +71,8 @@ export default function PractitionerHomeScreen() {
   const unreadNotifications = unreadCountQuery.data?.item?.unreadCount ?? 0;
 
   const upcomingItems = useMemo(() => {
-    return (sessionsQuery.data?.items ?? []).filter((item) =>
-      ["UPCOMING", "UPCOMING", "READY_TO_JOIN", "IN_PROGRESS"].includes(
-        item.status,
-      ),
+    return ((sessionsQuery.data?.items ?? []) as PractitionerSessionListItem[]).filter((item) =>
+      item.operational?.timelineBucket === "ACTIONABLE",
     );
   }, [sessionsQuery.data?.items]);
 
@@ -188,7 +186,7 @@ export default function PractitionerHomeScreen() {
     : readinessQuery.isError || applicationQuery.isError
       ? "error"
       : "ready";
-  const upcomingSessionActionLabel = isJoinableSessionStatus(upcomingSession?.status)
+  const upcomingSessionActionLabel = upcomingSession?.operational?.join.allowed
     ? isArabic
       ? "انضم الآن"
       : "Join now"
@@ -508,8 +506,8 @@ export default function PractitionerHomeScreen() {
               </View>
               <View style={[styles.nextSessionFooterRow, { flexDirection: rowDirection }]}>
                 <StatusChip
-                  label={t(`practitioner.sessionStatus.${upcomingSession.status}`)}
-                  tone={mapSessionBadge(upcomingSession.status)}
+                  label={t(`practitioner.sessionStatus.${upcomingSession.operational?.state ?? upcomingSession.status}`)}
+                  tone={mapSessionBadge(upcomingSession.operational?.state ?? upcomingSession.status)}
                   showDot={false}
                 />
                 <Button
@@ -517,7 +515,7 @@ export default function PractitionerHomeScreen() {
                   onPress={() =>
                     router.push(`/(practitioner)/sessions/${upcomingSession.id}`)
                   }
-                  variant={isJoinableSessionStatus(upcomingSession.status) ? "primary" : "secondary"}
+                  variant={upcomingSession.operational?.join.allowed ? "primary" : "secondary"}
                   style={styles.sessionActionButton}
                 />
               </View>
@@ -788,9 +786,6 @@ function mapSessionBadge(status: SessionStatus) {
   }
 }
 
-function isJoinableSessionStatus(status: SessionStatus | null | undefined) {
-  return status === "READY_TO_JOIN" || status === "IN_PROGRESS";
-}
 
 function mapApplicationSummaryTone(status: string | null | undefined) {
   switch (status) {

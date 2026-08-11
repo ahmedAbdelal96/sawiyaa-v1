@@ -36,23 +36,9 @@ const baseEnvSchema = z.object({
     .regex(/^\d+(?:\.\d+)?\s*(?:b|kb|mb|gb)?$/i)
     .default('20m'),
 
-  // Phase 3A: completion-only rollout control. Unset/false keeps manual
-  // completion available while automatic completion remains disabled.
-  SESSION_AUTOMATIC_COMPLETION_ENABLED: z
+  SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED: z
     .enum(['true', 'false'])
-    .default('false'),
-  SESSION_AUTOMATIC_COMPLETION_BATCH_SIZE: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(25),
-  SESSION_AUTOMATIC_PATIENT_NO_SHOW_ENABLED: z
-    .literal('false')
-    .default('false'),
-  SESSION_AUTOMATIC_PRACTITIONER_NO_SHOW_ENABLED: z
-    .literal('false')
-    .default('false'),
+    .default('true'),
 
   // Practitioner weekly session schedule
   AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce

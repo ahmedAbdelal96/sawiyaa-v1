@@ -89,6 +89,9 @@ export interface CanonicalConversation {
   subject: string | null;
   contextLabel: string;
   contextId: string;
+  sessionCode?: string | null;
+  sessionStatus?: string | null;
+  sessionScheduledStartAt?: string | null;
   status: string;
   isResolved: boolean;
   isReadOnly: boolean;

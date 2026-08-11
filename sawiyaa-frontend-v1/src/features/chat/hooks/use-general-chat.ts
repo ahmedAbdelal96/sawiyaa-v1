@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   closeGeneralChatConversation,
+  getSessionGeneralChatConversation,
   getGeneralChatMessages,
   openSessionGeneralChat,
   sendGeneralChatMessage,
@@ -11,7 +12,7 @@ import type { ListGeneralChatMessagesParams } from "../types/general-chat.types"
 export const generalChatQueryKeys = {
   all: ["general-chat"] as const,
   sessionConversation: (sessionId: string) =>
-    [...generalChatQueryKeys.all, "session-open", sessionId] as const,
+    [...generalChatQueryKeys.all, "session-conversation", sessionId] as const,
   messages: (conversationId: string, params?: ListGeneralChatMessagesParams) =>
     [...generalChatQueryKeys.all, "messages", conversationId, params ?? {}] as const,
 };
@@ -26,6 +27,16 @@ export function useOpenSessionGeneralChat(sessionId: string | null) {
         queryClient.setQueryData(generalChatQueryKeys.sessionConversation(sessionId), data);
       }
     },
+  });
+}
+
+export function useSessionGeneralChatConversation(sessionId: string | null) {
+  return useQuery({
+    queryKey: generalChatQueryKeys.sessionConversation(sessionId ?? ""),
+    queryFn: () => getSessionGeneralChatConversation(sessionId!),
+    enabled: Boolean(sessionId),
+    retry: false,
+    staleTime: 5_000,
   });
 }
 

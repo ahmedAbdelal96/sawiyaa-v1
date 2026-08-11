@@ -3,6 +3,9 @@ import { IntlErrorCode } from "next-intl";
 import { routing } from "./routing";
 import { warnMissingTranslation } from "./missing-key-warning";
 import { resolveRequestTimeZone } from "./resolve-request-time-zone";
+import arSessions from "../../messages/ar/sessions.json";
+import enSessions from "../../messages/en/sessions.json";
+// Force i18n request config refresh
 
 export default getRequestConfig(async ({ requestLocale }) => {
   let locale = await requestLocale;
@@ -12,6 +15,9 @@ export default getRequestConfig(async ({ requestLocale }) => {
   }
 
   const loadNamespace = async (namespace: string) => {
+    if (namespace === "sessions") {
+      return locale === "ar" ? arSessions : enSessions;
+    }
     try {
       const messageModule = await import(`../../messages/${locale}/${namespace}.json`);
       return messageModule.default;

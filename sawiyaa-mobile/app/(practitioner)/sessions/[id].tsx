@@ -16,7 +16,6 @@ import {
 } from "../../../src/components/ui";
 import {
   useClosePractitionerSessionRuntime,
-  useMarkPractitionerSessionCompleted,
   useMarkPractitionerSessionNoShow,
   usePractitionerSession,
   usePreparePractitionerSessionRuntime,
@@ -26,12 +25,12 @@ import type {
   PractitionerSessionRoomCloseReason,
   PractitionerSessionDetails,
   PractitionerSessionJoinContract,
-  SessionPresentationStatus,
+  SessionStatus,
 } from "../../../src/features/practitioner/sessions/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { openSessionGeneralChat } from "../../../src/features/messages/api";
+import { getSessionGeneralChatConversation } from "../../../src/features/messages/api";
 import { getAppDirection } from "../../../src/i18n/direction";
 import {
   formatPractitionerDateTime,
@@ -58,7 +57,6 @@ export default function PractitionerSessionDetailScreen() {
   const prepareMutation = usePreparePractitionerSessionRuntime();
   const joinMutation = useResolvePractitionerSessionJoinContract();
   const closeRoomMutation = useClosePractitionerSessionRuntime();
-  const completeMutation = useMarkPractitionerSessionCompleted();
   const noShowMutation = useMarkPractitionerSessionNoShow();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [joinContract, setJoinContract] =
@@ -132,21 +130,21 @@ export default function PractitionerSessionDetailScreen() {
 
     return [
       {
-        label: t("practitioner.detail.sessionType", "نوع الموعد"),
+        label: t("practitioner.detail.sessionType", "Ù†ÙˆØ¹ Ø§Ù„Ù…ÙˆØ¹Ø¯"),
         value: getFlowTypeLabel(session.flowType, t),
       },
       {
-        label: t("practitioner.detail.mode", "نوع الجلسة"),
+        label: t("practitioner.detail.mode", "Ù†ÙˆØ¹ Ø§Ù„Ø¬Ù„Ø³Ø©"),
         value: t(`practitioner.detail.modeValue.${session.sessionMode}`),
       },
       {
-        label: t("practitioner.detail.duration", "المدة"),
+        label: t("practitioner.detail.duration", "Ø§Ù„Ù…Ø¯Ø©"),
         value: t("practitioner.sessions.duration", {
           minutes: session.durationMinutes,
         }),
       },
       {
-        label: t("practitioner.detail.timezone", "المنطقة الزمنية"),
+        label: t("practitioner.detail.timezone", "Ø§Ù„Ù…Ù†Ø·Ù‚Ø© Ø§Ù„Ø²Ù…Ù†ÙŠØ©"),
         value: getFriendlyTimezone(session.timezone, i18n.language, t),
       },
     ];
@@ -190,7 +188,6 @@ export default function PractitionerSessionDetailScreen() {
     );
   }
 
-  const canComplete = session.operational?.actions.canComplete === true;
   const canNoShow = session.operational?.actions.canMarkPatientNoShow === true;
   const canPrepare = canShowPrepareAction(session, joinContract);
   const canCheckJoin = canShowJoinCheckAction(session, joinContract);
@@ -263,8 +260,16 @@ export default function PractitionerSessionDetailScreen() {
   const handleOpenMessages = async () => {
     if (!canOpenMessages) return;
     try {
-      const payload = await openSessionGeneralChat(session.id);
-      router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
+      const payload = await getSessionGeneralChatConversation(session.id);
+      if (payload.item?.conversationId) {
+        router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
+      } else {
+        setFeedback(
+          isRTL
+            ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø³Ø§Ø¨Ù‚Ø© Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©."
+            : "No previous messages for this session.",
+        );
+      }
     } catch {
       setFeedback(t("practitioner.detail.openMessagesError"));
     }
@@ -335,18 +340,6 @@ export default function PractitionerSessionDetailScreen() {
     }
   };
 
-  const handleComplete = async () => {
-    setFeedback(null);
-    try {
-      await completeMutation.mutateAsync(session.id);
-      setJoinContract(null);
-      setFeedback(t("practitioner.detail.completedFeedback"));
-      await sessionQuery.refetch();
-    } catch {
-      setFeedback(t("practitioner.detail.closeoutError"));
-    }
-  };
-
   const handleNoShow = async () => {
     setFeedback(null);
     try {
@@ -374,15 +367,10 @@ export default function PractitionerSessionDetailScreen() {
             onPress: () => void handleCheckJoin(),
             disabled: joinMutation.isPending,
           }
-        : canComplete
-          ? {
-              onPress: () => void handleComplete(),
-              disabled: completeMutation.isPending,
-            }
-          : null;
+        : null;
 
   const primaryActionTitle = canOpenJoinAction
-    ? t("practitioner.detail.openRoom", { defaultValue: isRTL ? "انضم الآن" : "Join now" })
+    ? t("practitioner.detail.openRoom", { defaultValue: isRTL ? "Ø§Ù†Ø¶Ù… Ø§Ù„Ø¢Ù†" : "Join now" })
     : canPrepare
       ? (prepareMutation.isPending
         ? t("practitioner.detail.preparing")
@@ -391,10 +379,6 @@ export default function PractitionerSessionDetailScreen() {
         ? (joinMutation.isPending
           ? t("practitioner.detail.checkingJoin")
           : t("practitioner.detail.checkJoin"))
-        : canComplete
-          ? (completeMutation.isPending
-            ? t("practitioner.detail.completing")
-            : t("practitioner.detail.markCompleted", { defaultValue: isRTL ? "تحديد كمكتملة" : "Mark completed" }))
           : null;
 
   return (
@@ -429,8 +413,8 @@ export default function PractitionerSessionDetailScreen() {
               </Text>
             </View>
             <StatusBadge
-              label={t(`practitioner.presentationStatus.${session.presentationStatus}`)}
-              status={mapSessionBadge(session.presentationStatus)}
+              label={t(`practitioner.presentationStatus.${sessionPresentationStatus ?? session.operational.state}`)}
+              status={mapSessionBadge((sessionPresentationStatus ?? session.operational.state) as SessionStatus)}
             />
           </View>
 
@@ -466,7 +450,7 @@ export default function PractitionerSessionDetailScreen() {
           </View>
 
           {/* Incomplete Warning Note if ENDED */}
-          {session.status === "AWAITING_COMPLETION_CONFIRMATION" ? (
+          {session.operational?.state === "AWAITING_COMPLETION_CONFIRMATION" ? (
             <View
               style={[
                 styles.warningBox,
@@ -487,7 +471,7 @@ export default function PractitionerSessionDetailScreen() {
                 {t(
                   "practitioner.detail.endedWarningNote",
                   isRTL
-                    ? "هذه الجلسة لم تُسجل كمكتملة. راجع التفاصيل أو رسائل الجلسة إذا لزم الأمر."
+                    ? "Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø© Ù„Ù… ØªÙØ³Ø¬Ù„ ÙƒÙ…ÙƒØªÙ…Ù„Ø©. Ø±Ø§Ø¬Ø¹ Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø£Ùˆ Ø±Ø³Ø§Ø¦Ù„ Ø§Ù„Ø¬Ù„Ø³Ø© Ø¥Ø°Ø§ Ù„Ø²Ù… Ø§Ù„Ø£Ù…Ø±."
                     : "This session was not recorded as completed. Review details or messages if needed.",
                 )}
               </Text>
@@ -498,7 +482,7 @@ export default function PractitionerSessionDetailScreen() {
         {/* Actions Card Section */}
         <Card variant="outlined" padding="md" style={styles.sectionCard}>
           <Text weight="700" style={[styles.sectionTitle, { textAlign }]} color={theme.colors.textPrimary}>
-            {isRTL ? "الإجراءات المتاحة" : "Available actions"}
+            {isRTL ? "Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª Ø§Ù„Ù…ØªØ§Ø­Ø©" : "Available actions"}
           </Text>
 
           {primaryActionTitle && stateCopy.summary ? (
@@ -528,7 +512,7 @@ export default function PractitionerSessionDetailScreen() {
               <View style={styles.noActionWrapper}>
                 <Text color={theme.colors.textSecondary} style={[styles.noActionText, { textAlign }]}>
                   {isRTL
-                    ? "لا توجد إجراءات مطلوبة لهذه الجلسة الآن."
+                    ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª Ù…Ø·Ù„ÙˆØ¨Ø© Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ø¢Ù†."
                     : "No session action is required right now."}
                 </Text>
               </View>
@@ -610,16 +594,16 @@ export default function PractitionerSessionDetailScreen() {
               })}
             </Text>
           ) : null}
-          {!session.joinAvailability?.canJoin &&
-          session.joinAvailability?.availableAt &&
-          session.presentationStatus === "UPCOMING" ? (
+          {!session.operational?.join.allowed &&
+          session.operational.join.opensAt &&
+          session.operational?.timelineBucket === "ACTIONABLE" ? (
             <Text
               color={theme.colors.textSecondary}
               style={[styles.helperText, { textAlign }]}
             >
               {t("practitioner.detail.joinAvailableAt", {
                 datetime: formatSessionDate(
-                  session.joinAvailability.availableAt,
+                  session.operational.join.opensAt,
                   locale,
                   session.timezone,
                 ),
@@ -998,11 +982,11 @@ function getFriendlyTimezone(
   const cityToken = timezone.split("/").pop()?.replace(/_/g, " ") ?? timezone;
   const cityMap = language?.startsWith("ar")
     ? {
-        Cairo: "القاهرة",
-        Riyadh: "الرياض",
-        Dubai: "دبي",
-        Kuwait: "الكويت",
-        Doha: "الدوحة",
+        Cairo: "Ø§Ù„Ù‚Ø§Ù‡Ø±Ø©",
+        Riyadh: "Ø§Ù„Ø±ÙŠØ§Ø¶",
+        Dubai: "Ø¯Ø¨ÙŠ",
+        Kuwait: "Ø§Ù„ÙƒÙˆÙŠØª",
+        Doha: "Ø§Ù„Ø¯ÙˆØ­Ø©",
       }
     : {
         Cairo: "Cairo",
@@ -1018,7 +1002,7 @@ function getFriendlyTimezone(
     fallbackText: "",
   });
 
-  // Extract offset inside parentheses, e.g. "(GMT+2)" or "(غرينتش +2)"
+  // Extract offset inside parentheses, e.g. "(GMT+2)" or "(ØºØ±ÙŠÙ†ØªØ´ +2)"
   const offsetMatch = fullLabel.match(/\(([^)]+)\)/);
   const offset = offsetMatch ? ` (${offsetMatch[1]})` : "";
 
@@ -1037,11 +1021,11 @@ function getSessionStateCopy(
       return {
         summary: t("practitioner.detail.stateNote.UPCOMING"),
         hint:
-          !session.joinAvailability?.canJoin &&
-          session.joinAvailability?.availableAt
+          !session.operational.join.allowed &&
+          session.operational.join.opensAt
             ? t("practitioner.detail.joinAvailableAt", {
                 datetime: formatSessionDate(
-                  session.joinAvailability.availableAt,
+                  session.operational.join.opensAt,
                   locale,
                   session.timezone,
                 ),
@@ -1068,7 +1052,7 @@ function getSessionStateCopy(
       };
     case "COMPLETED":
       return {
-        summary: isRTL ? "تمت الجلسة بنجاح." : "The session completed successfully.",
+        summary: isRTL ? "ØªÙ…Øª Ø§Ù„Ø¬Ù„Ø³Ø© Ø¨Ù†Ø¬Ø§Ø­." : "The session completed successfully.",
         hint: null,
       };
     case "CANCELLED":
@@ -1078,7 +1062,7 @@ function getSessionStateCopy(
       };
     case "AWAITING_COMPLETION_CONFIRMATION":
       return {
-        summary: isRTL ? "الجلسة غير مكتملة." : "The session is incomplete.",
+        summary: isRTL ? "Ø§Ù„Ø¬Ù„Ø³Ø© ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø©." : "The session is incomplete.",
         hint: null,
       };
     case "EXPIRED":
@@ -1088,13 +1072,13 @@ function getSessionStateCopy(
       };
     case "PATIENT_NO_SHOW":
       return {
-        summary: isRTL ? "لم يحضر المريض الموعد." : "The patient did not show up.",
+        summary: isRTL ? "Ù„Ù… ÙŠØ­Ø¶Ø± Ø§Ù„Ù…Ø±ÙŠØ¶ Ø§Ù„Ù…ÙˆØ¹Ø¯." : "The patient did not show up.",
         hint: null,
       };
     case "PRACTITIONER_NO_SHOW":
     case "BOTH_NO_SHOW":
       return {
-        summary: isRTL ? "الجلسة قيد المراجعة." : "The session is under review.",
+        summary: isRTL ? "Ø§Ù„Ø¬Ù„Ø³Ø© Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©." : "The session is under review.",
         hint: null,
       };
     default:
@@ -1105,7 +1089,7 @@ function getSessionStateCopy(
   }
 }
 
-function mapSessionBadge(status: SessionPresentationStatus) {
+function mapSessionBadge(status: SessionStatus) {
   switch (status) {
     case "READY_TO_JOIN":
     case "IN_PROGRESS":

@@ -39,7 +39,17 @@ vi.mock("@/features/sessions/hooks/use-sessions", () => ({
 }));
 
 vi.mock("../hooks/use-general-chat", () => ({
-  useOpenSessionGeneralChat: vi.fn(),
+  useSessionGeneralChatConversation: vi.fn(() => ({
+    data: {
+      item: {
+        conversationId: "conv-1",
+        conversationRef: "ref-1",
+        chatAvailability: { canRead: true, canSend: true, readOnly: false },
+      },
+    },
+    isLoading: false,
+    isError: false,
+  })),
   useGeneralChatMessages: vi.fn(),
   useSendGeneralChatMessage: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useUploadGeneralChatAttachment: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
@@ -55,7 +65,10 @@ vi.mock("../hooks/use-session-chat-realtime", () => ({
   }),
 }));
 
-import { useOpenSessionGeneralChat, useGeneralChatMessages } from "../hooks/use-general-chat";
+import {
+  useGeneralChatMessages,
+  useSessionGeneralChatConversation,
+} from "../hooks/use-general-chat";
 
 describe("SessionChatPanel Component", () => {
   const renderWithQueryClient = (ui: React.ReactElement) => {
@@ -75,18 +88,6 @@ describe("SessionChatPanel Component", () => {
   ];
 
   it("1. & 7. Existing conversation opens and renders previous messages correctly", async () => {
-    (useOpenSessionGeneralChat as any).mockReturnValue({
-      mutateAsync: vi.fn().mockResolvedValue({
-        item: {
-          conversationId: "conv-1",
-          conversationRef: "ref-1",
-          chatAvailability: { canRead: true, canSend: true, readOnly: false },
-        },
-      }),
-      isPending: false,
-      isError: false,
-    });
-
     (useGeneralChatMessages as any).mockReturnValue({
       data: { items: mockMessages },
       isLoading: false,
@@ -100,9 +101,9 @@ describe("SessionChatPanel Component", () => {
   });
 
   it("6. No false 'no messages' empty state displays while conversationId is resolving (loading state)", () => {
-    (useOpenSessionGeneralChat as any).mockReturnValue({
-      mutateAsync: vi.fn().mockReturnValue(new Promise(() => {})), // never resolves to keep conversationId null
-      isPending: true, // open is pending
+    (useSessionGeneralChatConversation as any).mockReturnValue({
+      data: null,
+      isLoading: true,
       isError: false,
     });
 

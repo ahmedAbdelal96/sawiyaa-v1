@@ -3,8 +3,6 @@ import { AppRole } from '@common/enums/app-role.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { buildSessionJoinAvailabilityViewModel } from '../utils/session-join-policy.util';
-import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 import { buildOperationalNextSessionCandidateWhere } from '../utils/session-operational-candidate-predicates.util';
 
@@ -12,7 +10,6 @@ import { buildOperationalNextSessionCandidateWhere } from '../utils/session-oper
 export class GetMyNextSessionUseCase {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
     private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
@@ -74,28 +71,6 @@ export class GetMyNextSessionUseCase {
       return null;
     }
 
-    const schedulePolicy =
-      this.sessionSchedulePolicyService.parseSnapshot(
-        session.schedulePolicySnapshotJson,
-      ) ??
-      this.sessionSchedulePolicyService.withScheduleRevision(
-        await this.sessionSchedulePolicyService.resolve(),
-        session.scheduleRevision,
-      );
-
-    const joinAvailability = buildSessionJoinAvailabilityViewModel({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
-      videoRoomClosedAt: session.videoRoomClosedAt,
-      joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
-      joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
-      now,
-    });
     const operational = await this.operationalInterpreter.interpret({
       session,
       actor: role === AppRole.PATIENT ? 'PATIENT' : 'PRACTITIONER',
@@ -123,14 +98,10 @@ export class GetMyNextSessionUseCase {
       displayTimezone: session.timezoneSnapshot ?? 'UTC',
       status: session.status,
       operational,
-      joinAvailable: joinAvailability.canJoin,
-      joinAvailableAt: joinAvailability.availableAt,
-      joinExpiresAt: joinAvailability.expiresAt,
       countdownReferenceTime: now.toISOString(),
       detailsRoute: `/${input.locale}/${rolePath}/sessions/${session.id}`,
       joinRoute: `/${input.locale}/${rolePath}/sessions/${session.id}/join`,
       isReplacement: Boolean(session.originalSessionId),
-      statusReasonCode: joinAvailability.blockedReason,
     };
   }
 }

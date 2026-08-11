@@ -8,18 +8,11 @@ import { ListStateSkeleton, StateCard } from "@/components/shared/ContentStates"
 import { formatViewerDateTime } from "@/lib/time-formatting";
 import { useSessionFinancialBreakdown } from "@/features/sessions/hooks/use-session-financial";
 import { usePatientSession } from "@/features/sessions/hooks/use-sessions";
-import type { SessionItem, SessionStatus } from "@/features/sessions/types/sessions.types";
+import type { SessionItem } from "@/features/sessions/types/sessions.types";
+import type { PaymentStatus } from "../types/payments.types";
 import { formatMoney as formatFinanceMoney } from "@/lib/finance-format";
 import { reconcileSessionPaymentReturn } from "../api/payments-return.api";
 import PatientMoneyClarityPanel from "./PatientMoneyClarityPanel";
-
-/** These session statuses all mean payment was accepted and booking is real. */
-const CONFIRMED_STATUSES: SessionStatus[] = [
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-];
 
 /** Poll interval and max duration while waiting for webhook confirmation. */
 const POLL_INTERVAL_MS = 3_000;
@@ -57,6 +50,7 @@ export default function PaymentReturnPanel({
 
   // Stop polling after MAX_POLL_DURATION_MS regardless of session state.
   const [pollingActive, setPollingActive] = useState(isPotentiallySucceeded);
+  const [reconciledPaymentStatus, setReconciledPaymentStatus] = useState<PaymentStatus | null>(null);
   const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconcileAttemptedRef = useRef(false);
 
@@ -77,9 +71,10 @@ export default function PaymentReturnPanel({
       if (!pollingActive) return false;
       const data = query.state.data as SessionItem | undefined;
       if (!data) return false;
-      // Stop polling once the session has moved out of PENDING_PAYMENT
-      if (CONFIRMED_STATUSES.includes(data.status)) return false;
-      if (data.status === "EXPIRED" || data.status === "CANCELLED") return false;
+      // Session activation is observed through the canonical operational view;
+      // payment settlement itself is never inferred from this query.
+      if (data.operational?.timelineBucket !== "PENDING") return false;
+      if (data.operational?.actions.canPay !== true) return false;
       return POLL_INTERVAL_MS;
     },
     refetchIntervalInBackground: false,
@@ -90,7 +85,7 @@ export default function PaymentReturnPanel({
 
   // Cancel the timer once session is confirmed — no need to wait the full duration.
   useEffect(() => {
-    if (session && CONFIRMED_STATUSES.includes(session.status)) {
+    if (session && session.operational?.timelineBucket !== "PENDING") {
       if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
     }
   }, [session]);
@@ -107,21 +102,25 @@ export default function PaymentReturnPanel({
       redirectStatus,
       success: redirectStatus === "succeeded",
       pending: redirectStatus === "succeeded" ? false : null,
+    }).then((result) => {
+      setReconciledPaymentStatus(result.item?.status ?? null);
     }).catch(() => {
       // Best-effort reconciliation only. Polling still keeps the UI truthful.
     });
   }, [isPotentiallySucceeded, providerReference, redirectStatus, session, sessionId]);
 
   useEffect(() => {
-    if (!session || !CONFIRMED_STATUSES.includes(session.status)) return;
+    if (!session || !["CAPTURED", "AUTHORIZED"].includes(reconciledPaymentStatus ?? "")) return;
     router.replace(sessionDetailHref);
   }, [router, session, sessionDetailHref]);
 
-  const sessionStatus = session?.status as SessionStatus | undefined;
-  const isSessionConfirmed = sessionStatus && CONFIRMED_STATUSES.includes(sessionStatus);
-  const isSessionExpired = sessionStatus === "EXPIRED";
-  const isSessionCancelled = sessionStatus === "CANCELLED";
-  const isSessionPending = sessionStatus === "PENDING_PAYMENT";
+  const operationalState = session?.operational?.state ?? null;
+  const isPaymentConfirmed = reconciledPaymentStatus === "CAPTURED" || reconciledPaymentStatus === "AUTHORIZED";
+  const isSessionActivated = session?.operational?.timelineBucket !== "PENDING";
+  const isSessionConfirmed = isPaymentConfirmed && isSessionActivated;
+  const isSessionExpired = operationalState === "EXPIRED";
+  const isSessionCancelled = operationalState === "CANCELLED";
+  const isSessionPending = session?.operational?.actions.canPay === true;
 
   // --- Loading skeleton ---
   if (isLoading) {

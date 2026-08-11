@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode, SessionStatus } from '@prisma/client';
-import { SessionJoinAvailabilityDto } from '@modules/sessions/dto/session-response.dto';
-import { SessionPresentationStatus } from '@modules/sessions/utils/session-join-policy.util';
 
 export class PackagePurchaseLinkedSessionResponseDto {
   @ApiProperty()
@@ -12,25 +10,6 @@ export class PackagePurchaseLinkedSessionResponseDto {
 
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
-
-  @ApiProperty({
-    enum: [
-      'UPCOMING',
-      'READY_TO_JOIN',
-      'IN_PROGRESS',
-      'AWAITING_COMPLETION_CONFIRMATION',
-      'COMPLETED',
-      'CANCELLED',
-      'PATIENT_NO_SHOW',
-      'PRACTITIONER_NO_SHOW',
-      'BOTH_NO_SHOW',
-      'EXPIRED',
-    ],
-  })
-  presentationStatus!: SessionPresentationStatus;
-
-  @ApiProperty({ type: SessionJoinAvailabilityDto })
-  joinAvailability!: SessionJoinAvailabilityDto;
 
   @ApiProperty({ nullable: true })
   scheduledStartAt!: string | null;

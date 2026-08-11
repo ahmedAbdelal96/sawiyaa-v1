@@ -1,5 +1,5 @@
 import type { PaymentStatus } from "@/features/payments/types/payments.types";
-import type { SessionMode, SessionStatus } from "@/features/sessions/types/sessions.types";
+import type { SessionMode, SessionOperationalInterpretation, SessionStatus } from "@/features/sessions/types/sessions.types";
 
 export type PatientJourneyNextStepType =
   | "COMPLETE_PAYMENT"
@@ -28,6 +28,7 @@ export type PatientJourney = {
     session: {
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: string | null;
       scheduledEndAt: string | null;
       practitioner: PatientJourneyPractitionerSummary;
@@ -55,6 +56,7 @@ export type PatientJourney = {
     sessions: Array<{
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: string | null;
       scheduledEndAt: string | null;
       practitioner: PatientJourneyPractitionerSummary;

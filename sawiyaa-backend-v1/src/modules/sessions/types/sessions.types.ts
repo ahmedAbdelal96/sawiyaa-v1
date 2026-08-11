@@ -1,9 +1,6 @@
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { GeneralChatAvailabilityViewModel } from '@modules/chat/types/general-chat.types';
-import {
-  SessionJoinBlockedReason,
-  SessionPresentationStatus,
-} from './session-video.types';
+import { SessionJoinBlockedReason } from './session-video.types';
 import type { PatientSessionActionsViewModel } from '../services/resolve-patient-session-actions.service';
 import type { SessionOperationalInterpretation } from './session-operational-interpretation.types';
 
@@ -14,7 +11,6 @@ export interface SessionListItemViewModel {
   id: string;
   sessionCode: string;
   status: SessionStatus;
-  presentationStatus: SessionPresentationStatus;
   createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
@@ -29,7 +25,6 @@ export interface SessionListItemViewModel {
     id: string;
     displayName: string | null;
   } | null;
-  joinAvailability: SessionJoinAvailabilityViewModel;
   actions: PatientSessionActionsViewModel;
   chatAvailability: GeneralChatAvailabilityViewModel;
   unreadCount?: number;
@@ -39,6 +34,9 @@ export interface SessionListItemViewModel {
 }
 
 export interface SessionDetailsViewModel extends SessionListItemViewModel {
+  sessionChat?: {
+    available: boolean;
+  };
   flowType: string;
   expiresAt: string | null;
   cancelledAt: string | null;

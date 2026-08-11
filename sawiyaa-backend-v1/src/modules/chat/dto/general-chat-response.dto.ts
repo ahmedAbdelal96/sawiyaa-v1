@@ -161,6 +161,28 @@ export class GeneralChatConversationDetailDataDto {
   item!: GeneralChatConversationDetailItemDto;
 }
 
+export class SessionChatConversationDataDto {
+  @ApiProperty({
+    type: GeneralChatConversationDetailItemDto,
+    nullable: true,
+  })
+  item!: GeneralChatConversationDetailItemDto | null;
+
+  @ApiProperty()
+  sessionId!: string;
+
+  @ApiProperty({ type: GeneralChatAvailabilityDto })
+  chatAvailability!: GeneralChatAvailabilityDto;
+}
+
+export class SessionChatConversationSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: true;
+
+  @ApiProperty({ type: SessionChatConversationDataDto })
+  data!: SessionChatConversationDataDto;
+}
+
 export class GeneralChatMessageAttachmentDto {
   @ApiProperty()
   fileId!: string;

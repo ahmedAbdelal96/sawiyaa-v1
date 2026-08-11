@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -13,6 +13,8 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { GeneralChatConversationSuccessResponseDto } from '../dto/create-general-chat-conversation.dto';
 import { OpenSessionGeneralChatUseCase } from '../use-cases/open-session-general-chat.use-case';
+import { GetSessionGeneralChatConversationUseCase } from '../use-cases/get-session-general-chat-conversation.use-case';
+import { SessionChatConversationSuccessResponseDto } from '../dto/general-chat-response.dto';
 
 @ApiTags('General Chat')
 @ApiBearerAuth()
@@ -21,7 +23,33 @@ import { OpenSessionGeneralChatUseCase } from '../use-cases/open-session-general
 export class GeneralChatSessionController {
   constructor(
     private readonly openSessionGeneralChatUseCase: OpenSessionGeneralChatUseCase,
+    private readonly getSessionGeneralChatConversationUseCase: GetSessionGeneralChatConversationUseCase,
   ) {}
+
+  @Get(':sessionId/conversation')
+  @ApiOperation({
+    summary: 'Read a session-linked chat without opening or creating it',
+    description:
+      'Returns the existing session conversation and current read/send capability. Historical reads remain available to legitimate participants outside the send window.',
+  })
+  @ApiParam({ name: 'sessionId', description: 'Session id' })
+  @ApiResponse({
+    status: 200,
+    type: SessionChatConversationSuccessResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Access token is required' })
+  @ApiForbiddenResponse({
+    description: 'Only session participants may read this chat',
+  })
+  conversation(
+    @CurrentUser() authenticatedUser: AuthenticatedUser,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.getSessionGeneralChatConversationUseCase.execute({
+      authenticatedUser,
+      sessionId,
+    });
+  }
 
   @Post(':sessionId/open')
   @ApiOperation({

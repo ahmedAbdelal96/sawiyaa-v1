@@ -10,7 +10,6 @@ import {
   getPractitionerSession,
   getPractitionerSessions,
   getPractitionerSessionSummary,
-  markPractitionerSessionCompleted,
   markPractitionerSessionNoShow,
   preparePractitionerSessionRuntime,
   resolvePractitionerSessionJoinContract,
@@ -142,23 +141,6 @@ export function useClosePractitionerSessionRuntime() {
       });
       queryClient.invalidateQueries({
         queryKey: practitionerSessionQueryKeys.detail(data.item.sessionId),
-      });
-    },
-  });
-}
-
-export function useMarkPractitionerSessionCompleted() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sessionId: string) =>
-      markPractitionerSessionCompleted(sessionId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(data.item.id),
-        data,
-      );
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.all,
       });
     },
   });

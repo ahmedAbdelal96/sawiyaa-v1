@@ -8,6 +8,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
 import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 import { ResolvePractitionerSessionCommandActionsService } from '../services/resolve-practitioner-session-command-actions.service';
+import { ResolveSessionChatAvailabilityService } from '@modules/chat/services/resolve-session-chat-availability.service';
 
 /**
  * Session details stay ownership-aware so patient and practitioner reads remain separated
@@ -24,6 +25,7 @@ export class GetSessionDetailsUseCase {
     private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
     private readonly operationalInterpreter: SessionOperationalInterpreterService,
     private readonly practitionerCommandActions: ResolvePractitionerSessionCommandActionsService,
+    private readonly resolveSessionChatAvailability: ResolveSessionChatAvailabilityService,
   ) {}
 
   async execute(input: {
@@ -104,15 +106,28 @@ export class GetSessionDetailsUseCase {
         : undefined,
     });
 
-    return {
-      item: this.sessionMapper.toDetails(
+    const details = this.sessionMapper.toDetails(
         session,
         now,
         0,
         latestDecision?.decisionType ?? null,
         actions,
         operational,
-      ),
+      );
+
+    return {
+      item: {
+        ...details,
+        sessionChat: this.resolveSessionChatAvailability.resolve({
+          status: session.status,
+          sessionMode: session.sessionMode,
+          scheduledStartAt: session.scheduledStartAt,
+          scheduledEndAt: session.scheduledEndAt,
+          provider: session.provider,
+          providerRoomId: session.providerRoomId,
+          providerSessionRef: session.providerSessionRef,
+        }),
+      },
     };
   }
 }

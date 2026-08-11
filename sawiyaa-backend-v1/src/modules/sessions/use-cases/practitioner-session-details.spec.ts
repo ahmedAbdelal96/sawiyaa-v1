@@ -127,6 +127,9 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
       sessionMapper,
       new SessionAccessPolicy(),
       resolvePatientSessionActionsService as any,
+      { interpret: jest.fn().mockResolvedValue({ state: 'UPCOMING', actions: {}, join: {}, room: {} }) } as any,
+      { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as any,
+      { resolve: jest.fn().mockReturnValue({ available: true }) } as any,
     );
 
     return { useCase, sessionRepository, sessionPractitionerRepository };
@@ -214,7 +217,7 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
     expect(result.item.packagePurchase?.packagePlan.code).toBe('PKG-PSY');
   });
 
-  it('8. Meeting readiness join availability is returned', async () => {
+  it('8. Chat CTA availability is returned from the Session Details projection', async () => {
     const { useCase } = setupTestContext();
     const result = await useCase.execute({
       userId: 'user-id-prac',
@@ -223,8 +226,7 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
       actorType: 'PRACTITIONER',
     });
 
-    expect(result.item.joinAvailability).toBeDefined();
-    expect(typeof result.item.joinAvailability.canJoin).toBe('boolean');
+    expect(result.item.sessionChat).toEqual({ available: true });
   });
 
   it('9. Conversation metadata is returned when present', async () => {

@@ -9,6 +9,7 @@ export const practitionerNavigation: NavigationConfig = [
     items: [
       { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard", namespace: "main" },
       { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions", namespace: "main" },
+      { key: "instantBooking", icon: <NavigationIcons.instantBooking />, path: "/instant-booking", namespace: "main" },
       { key: "availability", icon: <NavigationIcons.availability />, path: "/availability", namespace: "main" },
     ],
   },

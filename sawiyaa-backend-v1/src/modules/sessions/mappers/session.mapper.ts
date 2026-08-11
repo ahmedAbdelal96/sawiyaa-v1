@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Session, SessionAdminDecisionType } from '@prisma/client';
-import {
-  buildSessionJoinAvailabilityViewModel,
-  DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-} from '../utils/session-join-policy.util';
+import { DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES } from '../utils/session-join-policy.util';
 import { resolveSessionChatAvailability } from '../utils/session-chat-policy.util';
 import {
   SessionDetailsViewModel,
@@ -38,28 +35,10 @@ export class SessionMapper {
     actions?: PatientSessionActionsViewModel,
     operational?: SessionOperationalInterpretation,
   ): SessionListItemViewModel {
-    const joinAvailability = buildSessionJoinAvailabilityViewModel({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      joinOpenAt: session.joinOpenAt,
-      joinCloseAt: session.joinCloseAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
-      videoRoomClosedAt: session.videoRoomClosedAt,
-      now,
-      runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-      finalManualDecision,
-    });
-
     return {
       id: session.id,
       sessionCode: session.sessionCode,
-      status: session.status,
-      // Compatibility only: this no longer derives a competing display state.
-      presentationStatus: session.status,
+      status: operational?.state ?? session.status,
       createdAt: session.createdAt.toISOString(),
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
       scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
@@ -74,11 +53,10 @@ export class SessionMapper {
         id: session.patient.id,
         displayName: session.patient.user.displayName ?? null,
       },
-      joinAvailability,
       actions: actions ?? {
         canCancel: false,
         canPrepareRoom: false,
-        canJoin: joinAvailability.canJoin,
+        canJoin: operational?.actions.canJoin ?? false,
         canPay:
           session.status === 'PENDING_PAYMENT' &&
           Boolean(session.expiresAt && session.expiresAt > now),

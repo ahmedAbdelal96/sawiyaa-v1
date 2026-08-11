@@ -33,7 +33,7 @@ import {
 import {
   useCloseGeneralChatConversation,
   useGeneralChatMessages,
-  useOpenSessionGeneralChat,
+  useSessionGeneralChatConversation,
   useSendGeneralChatMessage,
   useUploadGeneralChatAttachment,
 } from "../hooks/use-general-chat";
@@ -103,14 +103,29 @@ export default function SessionChatPanel({
   const session = sessionQuery.data ?? null;
   const chatAllowed = session?.chatAvailability?.canRead ?? false;
 
-  const openMutation = useOpenSessionGeneralChat(sessionId);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [conversationIdentity, setConversationIdentity] =
-    useState<GeneralChatConversationIdentity | null>(null);
+  const sessionConversationQuery = useSessionGeneralChatConversation(
+    chatAllowed ? sessionId : null,
+  );
+  const conversationId =
+    sessionConversationQuery.data?.item?.conversationId ?? null;
+  const conversationIdentity = useMemo<GeneralChatConversationIdentity | null>(() => {
+    const item = sessionConversationQuery.data?.item;
+    if (!item) return null;
+    return {
+      ...item,
+      conversationType: "SYSTEM",
+      wasCreated: false,
+    } as GeneralChatConversationIdentity;
+  }, [sessionConversationQuery.data?.item]);
   const sessionChatAvailability =
-    conversationIdentity?.chatAvailability ?? session?.chatAvailability ?? null;
+    conversationIdentity?.chatAvailability ??
+    sessionConversationQuery.data?.chatAvailability ??
+    session?.chatAvailability ??
+    null;
 
-  const errorObj = openMutation.error ? toAppError(openMutation.error) : null;
+  const errorObj = sessionConversationQuery.error
+    ? toAppError(sessionConversationQuery.error)
+    : null;
   const isForbidden =
     errorObj?.status === 403 ||
     errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
@@ -126,33 +141,6 @@ export default function SessionChatPanel({
     : locale === "ar"
       ? "حاول مرة أخرى."
       : "Please try again.";
-
-  const hasCalledOpen = useRef(false);
-
-  useEffect(() => {
-    // Reset the conversation when the session identity changes.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConversationId(null);
-    setConversationIdentity(null);
-    hasCalledOpen.current = false;
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!chatAllowed) return;
-    if (conversationId) return;
-    if (hasCalledOpen.current) return;
-
-    hasCalledOpen.current = true;
-    openMutation
-      .mutateAsync()
-      .then((data) => {
-        setConversationId(data.item.conversationId);
-        setConversationIdentity(data.item);
-      })
-      .catch(() => {
-        // handled by UI states
-      });
-  }, [chatAllowed, conversationId, openMutation]);
 
   const messagesQuery = useGeneralChatMessages(
     conversationId,
@@ -243,12 +231,19 @@ export default function SessionChatPanel({
     sessionChatAvailability?.readOnly !== true;
   const showAvailabilityLoading =
     sessionChatAvailability == null ||
-    !conversationId ||
-    openMutation.isPending;
+    sessionConversationQuery.isLoading;
   const showReadOnlyNotice =
     !showAvailabilityLoading &&
     (sessionChatAvailability?.canSend !== true ||
       sessionChatAvailability?.readOnly === true);
+  const readOnlyNotice =
+    sessionChatAvailability?.reason === "SESSION_NOT_STARTED"
+      ? locale === "ar"
+        ? "المحادثة متاحة للقراءة فقط حاليًا. سيصبح إرسال الرسائل متاحًا عند بدء نافذة المحادثة."
+        : "This conversation is currently read-only. Messaging will become available when the session chat opens."
+      : locale === "ar"
+        ? "انتهت إمكانية إرسال رسائل لهذه الجلسة. يمكنك مراجعة المحادثة السابقة."
+        : "Messaging for this session has ended. You can still review the previous conversation.";
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -425,7 +420,7 @@ export default function SessionChatPanel({
                   targetId={conversationId}
                 />
                 <span className="rounded-full border border-teal-100/30 bg-teal-50/70 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
-                  {session?.presentationStatus?.replaceAll("_", " ")}
+                  {session?.operational?.state?.replaceAll("_", " ") ?? ""}
                 </span>
               </div>
             }
@@ -441,9 +436,7 @@ export default function SessionChatPanel({
           ) : showReadOnlyNotice ? (
             <div className="text-text-secondary shrink-0 border-t border-slate-100 bg-slate-50 p-4 text-xs leading-5 font-medium dark:border-white/10 dark:bg-slate-900">
               <p className="text-text-primary font-bold dark:text-white/90">
-                {locale.startsWith("ar")
-                  ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة."
-                  : "Messaging is no longer available in this conversation. You can review the previous messages."}
+                {readOnlyNotice}
               </p>
             </div>
           ) : showComposer ? (
@@ -461,26 +454,30 @@ export default function SessionChatPanel({
           ) : null
         }
       >
-        {openMutation.isError || messagesQuery.isError ? (
+        {sessionConversationQuery.isError || messagesQuery.isError ? (
           <div className="p-4 text-center">
             <p className="mb-2 text-xs text-rose-500">
-              {openMutation.isError
+              {sessionConversationQuery.isError
                 ? openErrorTitle
                 : t("detail.chat.states.messagesError.heading")}
             </p>
             {!isForbidden && (
               <p className="text-text-secondary text-xs">
-                {openMutation.isError
+                {sessionConversationQuery.isError
                   ? openErrorNote
                   : t("detail.chat.states.messagesError.note")}
               </p>
             )}
           </div>
-        ) : openMutation.isPending ||
-          messagesQuery.isLoading ||
-          !conversationId ? (
+        ) : sessionConversationQuery.isLoading || messagesQuery.isLoading ? (
           <div className="text-text-muted flex animate-pulse items-center justify-center p-8 text-xs font-semibold">
             {locale === "ar" ? "جاري التحميل..." : "Loading..."}
+          </div>
+        ) : !conversationId ? (
+          <div className="text-text-muted p-8 text-center text-xs font-medium">
+            {locale === "ar"
+              ? "لا توجد رسائل سابقة لهذه الجلسة."
+              : "No previous messages for this session."}
           </div>
         ) : ordered.length === 0 ? (
           <div className="text-text-muted p-8 text-center text-xs font-medium">
@@ -618,7 +615,7 @@ export default function SessionChatPanel({
         </div>
 
         <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:px-4">
-          {openMutation.isError ? (
+          {sessionConversationQuery.isError ? (
             <StateCard
               title={openErrorTitle}
               note={openErrorNote}
@@ -627,19 +624,29 @@ export default function SessionChatPanel({
                   ? undefined
                   : {
                       label: t("detail.chat.states.openError.retry"),
-                      onClick: () => {
-                        hasCalledOpen.current = false;
-                        openMutation.reset();
-                      },
+                      onClick: () => sessionConversationQuery.refetch(),
                     }
               }
               centered={false}
               className="rounded-[24px] p-5"
             />
-          ) : openMutation.isPending ||
-            messagesQuery.isLoading ||
-            !conversationId ? (
+          ) : sessionConversationQuery.isLoading || messagesQuery.isLoading ? (
             <ListStateSkeleton items={6} heightClass="h-20" />
+          ) : !conversationId ? (
+            <StateCard
+              title={
+                locale === "ar"
+                  ? "لا توجد رسائل سابقة لهذه الجلسة."
+                  : "No previous messages for this session."
+              }
+              note={
+                locale === "ar"
+                  ? "يمكنك مراجعة المحادثة هنا عند توفر رسائل."
+                  : "Historical messages will appear here when available."
+              }
+              centered={false}
+              className="rounded-[24px] p-5"
+            />
           ) : messagesQuery.isError ? (
             <StateCard
               title={t("detail.chat.states.messagesError.heading")}
@@ -826,9 +833,7 @@ export default function SessionChatPanel({
           ) : showReadOnlyNotice ? (
             <div className="border-border-light bg-surface-tertiary text-text-secondary rounded-2xl border px-4 py-3 text-xs leading-6 dark:bg-white/5">
               <p className="text-text-primary font-semibold dark:text-white/90">
-                {locale.startsWith("ar")
-                  ? "انتهت إمكانية إرسال الرسائل في هذه المحادثة، ويمكنك مراجعة الرسائل السابقة."
-                  : "Messaging is no longer available in this conversation. You can review the previous messages."}
+                {readOnlyNotice}
               </p>
             </div>
           ) : showComposer ? (

@@ -81,6 +81,10 @@
       "title": "Your session has started",
       "subtitle": "Session · join now"
     },
+    "instant-booking-request-created": {
+      "title": "New instant booking request",
+      "subtitle": "You have a new instant booking request"
+    },
     "support-ticket-created": {
       "title": "New support ticket",
       "subtitle": "Support · Operations"

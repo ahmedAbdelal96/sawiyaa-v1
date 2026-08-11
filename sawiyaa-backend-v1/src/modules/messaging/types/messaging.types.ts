@@ -53,7 +53,7 @@ export type MessagingConversationRecord = {
     deliveredAt: Date | null;
     readAt: Date | null;
   }>;
-  session: { sessionCode: string; status: string } | null;
+  session: { sessionCode: string; status: string; scheduledStartAt: Date | null } | null;
   chatApprovalRequest: { status: string; expiresAt: Date | null } | null;
 };
 
