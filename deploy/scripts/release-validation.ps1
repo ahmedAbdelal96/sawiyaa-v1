@@ -48,6 +48,12 @@ try {
     Invoke-Required 'backend Prisma generate' { npm run prisma:generate }
     Invoke-Required 'backend typecheck' { npm run typecheck }
     Invoke-Required 'backend production build' { npm run build }
+    Invoke-Required 'backend package-plans tests' {
+      npm test -- --runInBand src/modules/package-plans
+    }
+    Invoke-Required 'backend sessions tests' {
+      npm test -- --runInBand src/modules/sessions --testPathIgnorePatterns=integration
+    }
   } finally { Pop-Location }
 
   Push-Location $frontendDir
