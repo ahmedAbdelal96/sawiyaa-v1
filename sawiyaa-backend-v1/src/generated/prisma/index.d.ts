@@ -91794,6 +91794,8 @@ export namespace Prisma {
     caseId: string | null
     sessionId: string | null
     attendanceOutcome: $Enums.SessionStatus | null
+    findingCode: string | null
+    customReasonNote: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy | null
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy | null
     reasonCode: string | null
@@ -91810,6 +91812,8 @@ export namespace Prisma {
     caseId: string | null
     sessionId: string | null
     attendanceOutcome: $Enums.SessionStatus | null
+    findingCode: string | null
+    customReasonNote: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy | null
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy | null
     reasonCode: string | null
@@ -91826,6 +91830,8 @@ export namespace Prisma {
     caseId: number
     sessionId: number
     attendanceOutcome: number
+    findingCode: number
+    customReasonNote: number
     patientRemedy: number
     practitionerRemedy: number
     reasonCode: number
@@ -91846,6 +91852,8 @@ export namespace Prisma {
     caseId?: true
     sessionId?: true
     attendanceOutcome?: true
+    findingCode?: true
+    customReasonNote?: true
     patientRemedy?: true
     practitionerRemedy?: true
     reasonCode?: true
@@ -91862,6 +91870,8 @@ export namespace Prisma {
     caseId?: true
     sessionId?: true
     attendanceOutcome?: true
+    findingCode?: true
+    customReasonNote?: true
     patientRemedy?: true
     practitionerRemedy?: true
     reasonCode?: true
@@ -91878,6 +91888,8 @@ export namespace Prisma {
     caseId?: true
     sessionId?: true
     attendanceOutcome?: true
+    findingCode?: true
+    customReasonNote?: true
     patientRemedy?: true
     practitionerRemedy?: true
     reasonCode?: true
@@ -91969,6 +91981,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode: string
+    customReasonNote: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -92004,6 +92018,8 @@ export namespace Prisma {
     caseId?: boolean
     sessionId?: boolean
     attendanceOutcome?: boolean
+    findingCode?: boolean
+    customReasonNote?: boolean
     patientRemedy?: boolean
     practitionerRemedy?: boolean
     reasonCode?: boolean
@@ -92026,6 +92042,8 @@ export namespace Prisma {
     caseId?: boolean
     sessionId?: boolean
     attendanceOutcome?: boolean
+    findingCode?: boolean
+    customReasonNote?: boolean
     patientRemedy?: boolean
     practitionerRemedy?: boolean
     reasonCode?: boolean
@@ -92048,6 +92066,8 @@ export namespace Prisma {
     caseId?: boolean
     sessionId?: boolean
     attendanceOutcome?: boolean
+    findingCode?: boolean
+    customReasonNote?: boolean
     patientRemedy?: boolean
     practitionerRemedy?: boolean
     reasonCode?: boolean
@@ -92070,6 +92090,8 @@ export namespace Prisma {
     caseId?: boolean
     sessionId?: boolean
     attendanceOutcome?: boolean
+    findingCode?: boolean
+    customReasonNote?: boolean
     patientRemedy?: boolean
     practitionerRemedy?: boolean
     reasonCode?: boolean
@@ -92083,7 +92105,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type SessionResolutionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "caseId" | "sessionId" | "attendanceOutcome" | "patientRemedy" | "practitionerRemedy" | "reasonCode" | "adminNotes" | "actedByAdminId" | "actedAt" | "requestId" | "evidenceSnapshotJson" | "effectsSnapshotJson" | "replacementSessionId" | "createdAt", ExtArgs["result"]["sessionResolution"]>
+  export type SessionResolutionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "caseId" | "sessionId" | "attendanceOutcome" | "findingCode" | "customReasonNote" | "patientRemedy" | "practitionerRemedy" | "reasonCode" | "adminNotes" | "actedByAdminId" | "actedAt" | "requestId" | "evidenceSnapshotJson" | "effectsSnapshotJson" | "replacementSessionId" | "createdAt", ExtArgs["result"]["sessionResolution"]>
   export type SessionResolutionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     resolutionCase?: boolean | SessionResolutionCaseDefaultArgs<ExtArgs>
     session?: boolean | SessionDefaultArgs<ExtArgs>
@@ -92116,6 +92138,8 @@ export namespace Prisma {
       caseId: string
       sessionId: string
       attendanceOutcome: $Enums.SessionStatus
+      findingCode: string
+      customReasonNote: string | null
       patientRemedy: $Enums.SessionResolutionPatientRemedy
       practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
       reasonCode: string
@@ -92558,6 +92582,8 @@ export namespace Prisma {
     readonly caseId: FieldRef<"SessionResolution", 'String'>
     readonly sessionId: FieldRef<"SessionResolution", 'String'>
     readonly attendanceOutcome: FieldRef<"SessionResolution", 'SessionStatus'>
+    readonly findingCode: FieldRef<"SessionResolution", 'String'>
+    readonly customReasonNote: FieldRef<"SessionResolution", 'String'>
     readonly patientRemedy: FieldRef<"SessionResolution", 'SessionResolutionPatientRemedy'>
     readonly practitionerRemedy: FieldRef<"SessionResolution", 'SessionResolutionPractitionerRemedy'>
     readonly reasonCode: FieldRef<"SessionResolution", 'String'>
@@ -223250,6 +223276,8 @@ export namespace Prisma {
     caseId: 'caseId',
     sessionId: 'sessionId',
     attendanceOutcome: 'attendanceOutcome',
+    findingCode: 'findingCode',
+    customReasonNote: 'customReasonNote',
     patientRemedy: 'patientRemedy',
     practitionerRemedy: 'practitionerRemedy',
     reasonCode: 'reasonCode',
@@ -233609,6 +233637,8 @@ export namespace Prisma {
     caseId?: UuidFilter<"SessionResolution"> | string
     sessionId?: UuidFilter<"SessionResolution"> | string
     attendanceOutcome?: EnumSessionStatusFilter<"SessionResolution"> | $Enums.SessionStatus
+    findingCode?: StringFilter<"SessionResolution"> | string
+    customReasonNote?: StringNullableFilter<"SessionResolution"> | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFilter<"SessionResolution"> | string
@@ -233631,6 +233661,8 @@ export namespace Prisma {
     caseId?: SortOrder
     sessionId?: SortOrder
     attendanceOutcome?: SortOrder
+    findingCode?: SortOrder
+    customReasonNote?: SortOrderInput | SortOrder
     patientRemedy?: SortOrder
     practitionerRemedy?: SortOrder
     reasonCode?: SortOrder
@@ -233658,6 +233690,8 @@ export namespace Prisma {
     caseId?: UuidFilter<"SessionResolution"> | string
     sessionId?: UuidFilter<"SessionResolution"> | string
     attendanceOutcome?: EnumSessionStatusFilter<"SessionResolution"> | $Enums.SessionStatus
+    findingCode?: StringFilter<"SessionResolution"> | string
+    customReasonNote?: StringNullableFilter<"SessionResolution"> | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFilter<"SessionResolution"> | string
@@ -233678,6 +233712,8 @@ export namespace Prisma {
     caseId?: SortOrder
     sessionId?: SortOrder
     attendanceOutcome?: SortOrder
+    findingCode?: SortOrder
+    customReasonNote?: SortOrderInput | SortOrder
     patientRemedy?: SortOrder
     practitionerRemedy?: SortOrder
     reasonCode?: SortOrder
@@ -233702,6 +233738,8 @@ export namespace Prisma {
     caseId?: UuidWithAggregatesFilter<"SessionResolution"> | string
     sessionId?: UuidWithAggregatesFilter<"SessionResolution"> | string
     attendanceOutcome?: EnumSessionStatusWithAggregatesFilter<"SessionResolution"> | $Enums.SessionStatus
+    findingCode?: StringWithAggregatesFilter<"SessionResolution"> | string
+    customReasonNote?: StringNullableWithAggregatesFilter<"SessionResolution"> | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyWithAggregatesFilter<"SessionResolution"> | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyWithAggregatesFilter<"SessionResolution"> | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringWithAggregatesFilter<"SessionResolution"> | string
@@ -251618,6 +251656,8 @@ export namespace Prisma {
   export type SessionResolutionCreateInput = {
     id?: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -251638,6 +251678,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -251654,6 +251696,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -251674,6 +251718,8 @@ export namespace Prisma {
     caseId?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -251692,6 +251738,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -251708,6 +251756,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -251724,6 +251774,8 @@ export namespace Prisma {
     caseId?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -270072,6 +270124,8 @@ export namespace Prisma {
     caseId?: SortOrder
     sessionId?: SortOrder
     attendanceOutcome?: SortOrder
+    findingCode?: SortOrder
+    customReasonNote?: SortOrder
     patientRemedy?: SortOrder
     practitionerRemedy?: SortOrder
     reasonCode?: SortOrder
@@ -270090,6 +270144,8 @@ export namespace Prisma {
     caseId?: SortOrder
     sessionId?: SortOrder
     attendanceOutcome?: SortOrder
+    findingCode?: SortOrder
+    customReasonNote?: SortOrder
     patientRemedy?: SortOrder
     practitionerRemedy?: SortOrder
     reasonCode?: SortOrder
@@ -270106,6 +270162,8 @@ export namespace Prisma {
     caseId?: SortOrder
     sessionId?: SortOrder
     attendanceOutcome?: SortOrder
+    findingCode?: SortOrder
+    customReasonNote?: SortOrder
     patientRemedy?: SortOrder
     practitionerRemedy?: SortOrder
     reasonCode?: SortOrder
@@ -304499,6 +304557,8 @@ export namespace Prisma {
   export type SessionResolutionCreateWithoutActedByAdminInput = {
     id?: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -304518,6 +304578,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -306987,6 +307049,8 @@ export namespace Prisma {
     caseId?: UuidFilter<"SessionResolution"> | string
     sessionId?: UuidFilter<"SessionResolution"> | string
     attendanceOutcome?: EnumSessionStatusFilter<"SessionResolution"> | $Enums.SessionStatus
+    findingCode?: StringFilter<"SessionResolution"> | string
+    customReasonNote?: StringNullableFilter<"SessionResolution"> | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFilter<"SessionResolution"> | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFilter<"SessionResolution"> | string
@@ -329273,6 +329337,8 @@ export namespace Prisma {
   export type SessionResolutionCreateWithoutSessionInput = {
     id?: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -329291,6 +329357,8 @@ export namespace Prisma {
     id?: string
     caseId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -329317,6 +329385,8 @@ export namespace Prisma {
   export type SessionResolutionCreateWithoutReplacementSessionInput = {
     id?: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -329336,6 +329406,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -330638,6 +330710,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateWithoutReplacementSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -330657,6 +330731,8 @@ export namespace Prisma {
     caseId?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -330992,6 +331068,8 @@ export namespace Prisma {
   export type SessionResolutionCreateWithoutResolutionCaseInput = {
     id?: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -331010,6 +331088,8 @@ export namespace Prisma {
     id?: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -384461,6 +384541,8 @@ export namespace Prisma {
     caseId: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -388171,6 +388253,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateWithoutActedByAdminInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -388190,6 +388274,8 @@ export namespace Prisma {
     caseId?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -388207,6 +388293,8 @@ export namespace Prisma {
     caseId?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -395441,6 +395529,8 @@ export namespace Prisma {
     id?: string
     caseId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -396811,6 +396901,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateWithoutSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -396829,6 +396921,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     caseId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -396846,6 +396940,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     caseId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -397053,6 +397149,8 @@ export namespace Prisma {
     id?: string
     sessionId: string
     attendanceOutcome: $Enums.SessionStatus
+    findingCode?: string
+    customReasonNote?: string | null
     patientRemedy: $Enums.SessionResolutionPatientRemedy
     practitionerRemedy: $Enums.SessionResolutionPractitionerRemedy
     reasonCode: string
@@ -397069,6 +397167,8 @@ export namespace Prisma {
   export type SessionResolutionUpdateWithoutResolutionCaseInput = {
     id?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -397087,6 +397187,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string
@@ -397104,6 +397206,8 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     sessionId?: StringFieldUpdateOperationsInput | string
     attendanceOutcome?: EnumSessionStatusFieldUpdateOperationsInput | $Enums.SessionStatus
+    findingCode?: StringFieldUpdateOperationsInput | string
+    customReasonNote?: NullableStringFieldUpdateOperationsInput | string | null
     patientRemedy?: EnumSessionResolutionPatientRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPatientRemedy
     practitionerRemedy?: EnumSessionResolutionPractitionerRemedyFieldUpdateOperationsInput | $Enums.SessionResolutionPractitionerRemedy
     reasonCode?: StringFieldUpdateOperationsInput | string

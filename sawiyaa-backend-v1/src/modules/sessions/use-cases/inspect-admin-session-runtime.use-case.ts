@@ -34,6 +34,8 @@ export class InspectAdminSessionRuntimeUseCase {
       sessionMode: session.sessionMode,
       scheduledStartAt: session.scheduledStartAt,
       scheduledEndAt: session.scheduledEndAt,
+      joinOpenAt: session.joinOpenAt,
+      joinCloseAt: session.joinCloseAt,
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
@@ -109,6 +111,11 @@ export class InspectAdminSessionRuntimeUseCase {
         packagePurchase,
         packageEntitlementDecision,
         paymentCoverageType: session.paymentCoverageType,
+        fundingSource: session.fundingSource,
+        earningEntitlementId: session.earningEntitlementId,
+        payment: session.payments[0]
+          ? { amount: session.payments[0].amountTotal.toString(), currency: session.payments[0].currencyCode, status: session.payments[0].status }
+          : null,
         packageSessionIndex: session.packageSessionIndex ?? null,
         packageSessionCount: session.packageSessionCount ?? null,
       },

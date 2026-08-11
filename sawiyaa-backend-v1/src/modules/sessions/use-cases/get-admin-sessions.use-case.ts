@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { SessionStatus } from '@prisma/client';
 import {
+  AdminSessionComplaintFilterDto,
+  AdminSessionQueueViewDto,
+  AdminSessionResolutionFilterDto,
   AdminSessionsSortDto,
   ListAdminSessionsDto,
 } from '../dto/list-admin-sessions.dto';
@@ -32,7 +35,14 @@ export class GetAdminSessionsUseCase {
     const [sessions, totalItems] =
       await this.sessionRepository.listAdminSessions({
         status: input.query.status,
-        sort: input.query.sort ?? AdminSessionsSortDto.NEWEST,
+        sort:
+          input.query.sort ??
+          (input.query.view === AdminSessionQueueViewDto.REVIEW
+            ? AdminSessionsSortDto.OLDEST
+            : AdminSessionsSortDto.NEWEST),
+        view: input.query.view,
+        complaint: input.query.complaint,
+        resolution: input.query.resolution,
         query: input.query.query,
         practitionerId: input.query.practitionerId,
         patientId: input.query.patientId,
@@ -54,8 +64,18 @@ export class GetAdminSessionsUseCase {
       sessions.map((s) => s.id),
     );
 
+    const activeComplaintCounts = this.sessionRepository.findActiveSupportTicketCounts
+      ? await this.sessionRepository.findActiveSupportTicketCounts(
+          sessions.map((session) => session.id),
+        )
+      : new Map<string, number>();
+
     return {
       items: await Promise.all(sessions.map(async (session) => ({
+        ...this.toReviewProjection(
+          session,
+          activeComplaintCounts.get(session.id) ?? 0,
+        ),
         ...this.sessionMapper.toListItem(
           session,
           now,
@@ -81,6 +101,76 @@ export class GetAdminSessionsUseCase {
         totalItems,
         totalPages: Math.max(1, Math.ceil(totalItems / limit)),
       },
+    };
+  }
+
+  private toReviewProjection(
+    session: {
+      id: string;
+      status: SessionStatus;
+      scheduledStartAt: Date | null;
+      scheduledEndAt: Date | null;
+      attendanceReconciliations?: Array<{
+        status: string;
+        confidence: string;
+        patientTotalPresenceSeconds: number;
+        practitionerTotalPresenceSeconds: number;
+        reasonCodesJson: unknown;
+        reconciledAt: Date;
+      }>;
+      events?: Array<{ occurredAt: Date | null }>;
+      resolutionCase?: {
+        status: string;
+        openedAt: Date;
+        suggestedOutcome: SessionStatus;
+      } | null;
+    },
+    activeComplaintCount: number,
+  ) {
+    const reconciliation = session.attendanceReconciliations?.[0] ?? null;
+    const patientSeconds = reconciliation?.patientTotalPresenceSeconds ?? 0;
+    const practitionerSeconds =
+      reconciliation?.practitionerTotalPresenceSeconds ?? 0;
+    const overlapSeconds = Math.min(patientSeconds, practitionerSeconds);
+    const durationSeconds = Math.max(
+      1,
+      (session.scheduledEndAt?.getTime() ?? 0) -
+        (session.scheduledStartAt?.getTime() ?? 0),
+    ) / 1000;
+    const reasonCodes = Array.isArray(reconciliation?.reasonCodesJson)
+      ? reconciliation.reasonCodesJson.filter(
+          (value): value is string => typeof value === 'string',
+        )
+      : [];
+    const enteredAt = session.events?.[0]?.occurredAt ?? null;
+
+    return {
+      reviewEnteredAt:
+        session.resolutionCase?.status === 'OPEN'
+          ? session.resolutionCase.openedAt.toISOString()
+          : enteredAt?.toISOString() ?? null,
+      queueAgeSeconds: enteredAt
+        ? Math.max(0, (Date.now() - enteredAt.getTime()) / 1000)
+        : null,
+      attendance: {
+        classification: session.resolutionCase?.suggestedOutcome ?? null,
+        patientMinutes: Math.round(patientSeconds / 60),
+        practitionerMinutes: Math.round(practitionerSeconds / 60),
+        overlapMinutes: Math.round(overlapSeconds / 60),
+        overlapPercent: Math.round((overlapSeconds / durationSeconds) * 100),
+        confidence: reconciliation?.confidence ?? null,
+        status: reconciliation?.status ?? null,
+      },
+      activeComplaintCount,
+      hasActiveComplaint: activeComplaintCount > 0,
+      recommendation: session.resolutionCase?.suggestedOutcome ?? null,
+      riskFlags: reasonCodes.slice(0, 4),
+      resolutionCase: session.resolutionCase
+        ? {
+            status: session.resolutionCase.status,
+            openedAt: session.resolutionCase.openedAt.toISOString(),
+          }
+        : null,
     };
   }
 

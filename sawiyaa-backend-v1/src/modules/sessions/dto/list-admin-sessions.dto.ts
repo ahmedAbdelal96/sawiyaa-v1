@@ -8,7 +8,46 @@ export enum AdminSessionsSortDto {
   OLDEST = 'oldest',
 }
 
+export enum AdminSessionQueueViewDto {
+  ALL = 'all',
+  REVIEW = 'review',
+}
+
+export enum AdminSessionComplaintFilterDto {
+  ACTIVE = 'active',
+  NONE = 'none',
+}
+
+export enum AdminSessionResolutionFilterDto {
+  OPEN = 'open',
+  NONE = 'none',
+}
+
 export class ListAdminSessionsDto extends ListSessionsDto {
+  @ApiPropertyOptional({ enum: AdminSessionQueueViewDto, default: AdminSessionQueueViewDto.REVIEW })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() ? value.trim().toLowerCase() : undefined,
+  )
+  @IsEnum(AdminSessionQueueViewDto)
+  view?: AdminSessionQueueViewDto = AdminSessionQueueViewDto.REVIEW;
+
+  @ApiPropertyOptional({ enum: AdminSessionComplaintFilterDto })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() ? value.trim().toLowerCase() : undefined,
+  )
+  @IsEnum(AdminSessionComplaintFilterDto)
+  complaint?: AdminSessionComplaintFilterDto;
+
+  @ApiPropertyOptional({ enum: AdminSessionResolutionFilterDto })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' && value.trim() ? value.trim().toLowerCase() : undefined,
+  )
+  @IsEnum(AdminSessionResolutionFilterDto)
+  resolution?: AdminSessionResolutionFilterDto;
+
   @ApiPropertyOptional({
     description: 'Sort sessions by scheduled start datetime.',
     enum: AdminSessionsSortDto,

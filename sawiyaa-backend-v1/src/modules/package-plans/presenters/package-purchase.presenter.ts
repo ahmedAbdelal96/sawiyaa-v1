@@ -2,14 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { SessionProvider } from '@prisma/client';
 import { PaymentRegionalPricingMode } from '@common/payments/payment-region.resolver';
 import {
-  buildSessionJoinAvailabilityViewModel,
-  DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-  resolveSessionPresentationStatus,
-} from '@modules/sessions/utils/session-join-policy.util';
-import {
   PatientPackagePurchaseViewModel,
   PackagePurchaseSessionSummaryViewModel,
 } from '../types/package-purchases.types';
+import { SessionOperationalInterpreterService } from '@modules/sessions/services/session-operational-interpreter.service';
 
 type PurchaseRecord = {
   id: string;
@@ -47,6 +43,7 @@ type PurchaseRecord = {
     id: string;
     sessionCode: string;
     status: PackagePurchaseSessionSummaryViewModel['status'];
+    flowType: import('@prisma/client').SessionFlowType;
     provider: SessionProvider;
     providerRoomId: string | null;
     providerSessionRef: string | null;
@@ -54,9 +51,13 @@ type PurchaseRecord = {
     scheduledEndAt: Date | null;
     joinOpenAt: Date | null;
     joinCloseAt: Date | null;
+    expiresAt: Date | null;
+    videoRoomClosedAt: Date | null;
+    originalSessionId: string | null;
     durationMinutes: number;
     sessionMode: PackagePurchaseSessionSummaryViewModel['sessionMode'];
     packageSessionIndex: number | null;
+    packageEntitlementDecision?: { decisionType: string } | null;
   }>;
 };
 
@@ -68,23 +69,26 @@ const SCHEDULED_STATUSES = new Set([
 
 @Injectable()
 export class PackagePurchasePresenter {
-  toViewModel(input: {
+  constructor(private readonly operationalInterpreter: SessionOperationalInterpreterService) {}
+
+  async toViewModel(input: {
     purchase: PurchaseRecord;
     sessions?: PurchaseRecord['sessions'];
     now?: Date;
-  }): PatientPackagePurchaseViewModel {
+  }): Promise<PatientPackagePurchaseViewModel> {
     const now = input.now ?? new Date();
     const rawSessions = input.sessions ?? input.purchase.sessions ?? [];
 
-    const linkedSessionItems = rawSessions.map((session) =>
-      this.toSessionViewModel(session, now),
+    const linkedSessionItems = await Promise.all(
+      rawSessions.map((session) => this.toSessionViewModel(session, now)),
     );
 
     const totalSessions = input.purchase.sessionCountSnapshot;
-    const rawCompletedCount = linkedSessionItems.filter(
-      (s) => s.status === 'COMPLETED',
+    const consumedSessions = rawSessions.filter((session) =>
+      new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'PATIENT_NO_SHOW', 'PRACTITIONER_NO_SHOW', 'BOTH_NO_SHOW']).has(session.status)
+      && session.packageEntitlementDecision?.decisionType !== 'RESTORE_TO_PACKAGE',
     ).length;
-    const completedSessions = Math.min(totalSessions, rawCompletedCount);
+    const completedSessions = Math.min(totalSessions, consumedSessions);
     const scheduledSessions = linkedSessionItems.filter((s) =>
       SCHEDULED_STATUSES.has(s.status),
     ).length;
@@ -192,40 +196,24 @@ export class PackagePurchasePresenter {
       : 'INTERNATIONAL';
   }
 
-  private toSessionViewModel(
+  private async toSessionViewModel(
     session: PurchaseRecord['sessions'][number],
     now: Date,
-  ): PackagePurchaseSessionSummaryViewModel {
-    const presentationStatus = resolveSessionPresentationStatus({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
+  ): Promise<PackagePurchaseSessionSummaryViewModel> {
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      // Package rows have no participant-action batch available.  ADMIN gives
+      // the actor-neutral lifecycle/join/room projection without triggering
+      // per-row patient-action reads; package entitlement remains package-owned.
+      actor: 'ADMIN',
       now,
-      runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
     });
 
     return {
       id: session.id,
       sessionCode: session.sessionCode,
       status: session.status,
-      presentationStatus,
-      joinAvailability: buildSessionJoinAvailabilityViewModel({
-        status: session.status,
-        sessionMode: session.sessionMode,
-        scheduledStartAt: session.scheduledStartAt,
-        scheduledEndAt: session.scheduledEndAt,
-        joinOpenAt: session.joinOpenAt,
-        joinCloseAt: session.joinCloseAt,
-        provider: session.provider,
-        providerRoomId: session.providerRoomId,
-        providerSessionRef: session.providerSessionRef,
-        now,
-        runtimePrepareLeadMinutes: DEFAULT_SESSION_RUNTIME_PREPARE_LEAD_MINUTES,
-      }),
+      operational,
       scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
       scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
       durationMinutes: session.durationMinutes,

@@ -9,6 +9,7 @@ import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallet
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ConfigModule } from '@modules/config/config.module';
+import { ChatModule } from '@modules/chat/chat.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
@@ -52,7 +53,6 @@ import { GetSessionDetailsUseCase } from './use-cases/get-session-details.use-ca
 import { PreviewSessionCancellationUseCase } from './use-cases/preview-session-cancellation.use-case';
 import { InspectAdminSessionRuntimeUseCase } from './use-cases/inspect-admin-session-runtime.use-case';
 import { HandleDailyAttendanceWebhookUseCase } from './use-cases/handle-daily-attendance-webhook.use-case';
-import { MarkSessionCompletedByPractitionerUseCase } from './use-cases/mark-session-completed-by-practitioner.use-case';
 import { MarkSessionNoShowByPractitionerUseCase } from './use-cases/mark-session-no-show-by-practitioner.use-case';
 import { PrepareSessionRuntimeUseCase } from './use-cases/prepare-session-runtime.use-case';
 import { ResolveSessionJoinContractUseCase } from './use-cases/resolve-session-join-contract.use-case';
@@ -75,9 +75,8 @@ import { SESSION_ATTENDANCE_RECONCILIATION_PROVIDER } from './providers/session-
 import { ReconcileSessionAttendanceUseCase } from './use-cases/reconcile-session-attendance.use-case';
 import { SessionAttendanceReconciliationSweeperService } from './services/session-attendance-reconciliation-sweeper.service';
 import { CompleteSessionTransactionService } from './services/complete-session-transaction.service';
-import { FinalizeSessionAutomaticallyAsCompletedUseCase } from './use-cases/finalize-session-automatically-as-completed.use-case';
-import { SessionAutomaticCompletionSweeperService } from './services/session-automatic-completion-sweeper.service';
 import { AdminSessionResolutionService } from './services/admin-session-resolution.service';
+import { AdminSessionResolutionPolicyService } from './services/admin-session-resolution-policy.service';
 import { MySessionController } from './controllers/my-session.controller';
 import { GetMyNextSessionUseCase } from './use-cases/get-my-next-session.use-case';
 import { SessionJoinBootstrapController } from './controllers/session-join-bootstrap.controller';
@@ -99,6 +98,7 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     FinancialOperationsModule,
     forwardRef(() => PaymentsModule),
     ConfigModule,
+    ChatModule,
   ],
   controllers: [
     PatientSessionsController,
@@ -154,7 +154,6 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     PreviewSessionCancellationUseCase,
     InspectAdminSessionRuntimeUseCase,
     HandleDailyAttendanceWebhookUseCase,
-    MarkSessionCompletedByPractitionerUseCase,
     MarkSessionNoShowByPractitionerUseCase,
     PrepareSessionRuntimeUseCase,
     ResolveSessionJoinContractUseCase,
@@ -181,9 +180,8 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     RescheduleSessionService,
     SessionAttendanceReconciliationSweeperService,
     CompleteSessionTransactionService,
-    FinalizeSessionAutomaticallyAsCompletedUseCase,
-    SessionAutomaticCompletionSweeperService,
     AdminSessionResolutionService,
+    AdminSessionResolutionPolicyService,
     GetMyNextSessionUseCase,
     RescheduleSessionService,
   ],
@@ -195,6 +193,7 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     ValidateSessionConflictsService,
     ValidateSessionStatusTransitionService,
     SessionLifecycleService,
+    SessionOperationalInterpreterService,
     ExpireUnpaidSessionUseCase,
     ReconcileSessionAttendanceUseCase,
   ],

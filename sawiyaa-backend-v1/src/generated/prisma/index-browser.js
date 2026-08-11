@@ -970,6 +970,8 @@ exports.Prisma.SessionResolutionScalarFieldEnum = {
   caseId: 'caseId',
   sessionId: 'sessionId',
   attendanceOutcome: 'attendanceOutcome',
+  findingCode: 'findingCode',
+  customReasonNote: 'customReasonNote',
   patientRemedy: 'patientRemedy',
   practitionerRemedy: 'practitionerRemedy',
   reasonCode: 'reasonCode',

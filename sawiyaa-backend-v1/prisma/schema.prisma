@@ -2742,6 +2742,8 @@ model SessionResolution {
   caseId               String                              @db.Uuid
   sessionId            String                              @db.Uuid
   attendanceOutcome    SessionStatus
+  findingCode          String                              @default("PATIENT_NO_SHOW") @db.VarChar(80)
+  customReasonNote     String?                             @db.VarChar(2000)
   patientRemedy        SessionResolutionPatientRemedy
   practitionerRemedy   SessionResolutionPractitionerRemedy
   reasonCode           String                              @db.VarChar(100)
