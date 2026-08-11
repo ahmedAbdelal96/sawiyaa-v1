@@ -85,6 +85,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
         canPrepareRuntime: true,
         canJoin: overrides?.canJoin ?? true,
         blockedReason: overrides?.blockedReason ?? null,
+        prepareOpensAt: new Date('2026-04-01T10:30:00.000Z'),
+        joinOpensAt: new Date(expectedAvailableAt),
+        joinClosesAt: new Date(expectedExpiresAt),
       }),
     };
     const sessionVideoProviderRegistryService = {

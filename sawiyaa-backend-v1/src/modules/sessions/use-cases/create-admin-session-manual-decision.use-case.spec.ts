@@ -249,7 +249,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('allows a final decision for an elapsed IN_PROGRESS session', async () => {
+  it('rejects completion for an elapsed IN_PROGRESS session until it enters admin review', async () => {
     mockRepo.findById.mockResolvedValue(pastInProgressSession as any);
     await expect(
       useCase.execute({
@@ -261,7 +261,11 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticRefund: true,
         confirmNoAutomaticPayout: true,
       }),
-    ).resolves.toBeDefined();
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW',
+      }),
+    });
   });
 
   it('throws SESSION_DECISION_ALREADY_FINAL when a final decision exists and supersedePrevious is not true', async () => {
@@ -544,9 +548,9 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
       });
 
-      expect(mockAttendanceUseCase.execute).toHaveBeenCalledWith({
-        sessionId: 'session_1',
-      });
+      expect(mockAttendanceUseCase.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionId: 'session_1', tx: expect.anything() }),
+      );
     });
 
     it('execute() does not have evidenceSnapshot in its input type signature', () => {
