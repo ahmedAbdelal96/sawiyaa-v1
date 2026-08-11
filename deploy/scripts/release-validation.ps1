@@ -25,6 +25,7 @@ $createdEnvFiles = @()
 
 try {
   if ((git status --porcelain) -join "`n") { throw 'Release gate requires a clean Git worktree.' }
+  Invoke-Required 'Git diff check' { git diff --check }
   foreach ($file in $temporaryEnvFiles) {
     if (Test-Path -LiteralPath $file) {
       throw "Release gate requires no local secret env file: $file"
