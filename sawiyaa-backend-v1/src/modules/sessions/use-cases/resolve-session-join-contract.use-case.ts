@@ -17,10 +17,7 @@ import { SessionRepository } from '../repositories/session.repository';
 import { ResolveSessionJoinReadinessService } from '../services/resolve-session-join-readiness.service';
 import { SessionVideoProviderRegistryService } from '../services/session-video-provider-registry.service';
 import { SessionVideoProviderResolverService } from '../services/session-video-provider-resolver.service';
-import {
-  computeSessionPostEndReconnectGraceClosesAt,
-  resolveSessionJoinPolicy,
-} from '../utils/session-join-policy.util';
+import { computeSessionPostEndReconnectGraceClosesAt } from '../utils/session-join-policy.util';
 import { PrepareSessionRuntimeUseCase } from './prepare-session-runtime.use-case';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
 import {
@@ -97,6 +94,8 @@ export class ResolveSessionJoinContractUseCase {
       sessionMode: effectiveSession.sessionMode,
       scheduledStartAt: effectiveSession.scheduledStartAt,
       scheduledEndAt: effectiveSession.scheduledEndAt,
+      joinOpenAt: effectiveSession.joinOpenAt,
+      joinCloseAt: effectiveSession.joinCloseAt,
       provider: effectiveSession.provider,
       providerRoomId: effectiveSession.providerRoomId,
       providerSessionRef: effectiveSession.providerSessionRef,
@@ -125,6 +124,8 @@ export class ResolveSessionJoinContractUseCase {
         sessionMode: effectiveSession.sessionMode,
         scheduledStartAt: effectiveSession.scheduledStartAt,
         scheduledEndAt: effectiveSession.scheduledEndAt,
+        joinOpenAt: effectiveSession.joinOpenAt,
+        joinCloseAt: effectiveSession.joinCloseAt,
         provider: effectiveSession.provider,
         providerRoomId: effectiveSession.providerRoomId,
         providerSessionRef: effectiveSession.providerSessionRef,
@@ -152,6 +153,7 @@ export class ResolveSessionJoinContractUseCase {
       if (graceJoinAllowed) {
         usedPostEndReconnectGrace = true;
         readiness = {
+          ...readiness,
           canPrepareRuntime: false,
           canJoin: true,
           blockedReason: null,
@@ -161,21 +163,6 @@ export class ResolveSessionJoinContractUseCase {
 
     // JOIN_BLOCKED — emitted when the user is not allowed to join
     if (!readiness.canJoin) {
-      const policy = resolveSessionJoinPolicy({
-        status: effectiveSession.status,
-        sessionMode: effectiveSession.sessionMode,
-        scheduledStartAt: effectiveSession.scheduledStartAt,
-        scheduledEndAt: effectiveSession.scheduledEndAt,
-        provider: effectiveSession.provider,
-        providerRoomId: effectiveSession.providerRoomId,
-        providerSessionRef: effectiveSession.providerSessionRef,
-        videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
-        joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
-        joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
-        finalManualDecision,
-        now,
-      });
-
       await this.emitEvent({
         sessionId: effectiveSession.id,
         eventType: SessionEventType.JOIN_BLOCKED,
@@ -195,8 +182,8 @@ export class ResolveSessionJoinContractUseCase {
           provider: effectiveSession.provider,
           canJoin: false,
           blockedReason: readiness.blockedReason,
-          availableAt: policy.joinOpensAt?.toISOString() ?? null,
-          expiresAt: policy.joinClosesAt?.toISOString() ?? null,
+          availableAt: readiness.joinOpensAt?.toISOString() ?? null,
+          expiresAt: readiness.joinClosesAt?.toISOString() ?? null,
           roomName: effectiveSession.providerRoomId,
           roomUrl: effectiveSession.providerSessionRef,
           joinToken: null,
@@ -237,20 +224,7 @@ export class ResolveSessionJoinContractUseCase {
                 effectiveSession.scheduledEndAt,
                 schedulePolicy.join.joinAfterEndGraceMinutes,
               )
-            : resolveSessionJoinPolicy({
-                status: effectiveSession.status,
-                sessionMode: effectiveSession.sessionMode,
-                scheduledStartAt: effectiveSession.scheduledStartAt,
-                scheduledEndAt: effectiveSession.scheduledEndAt,
-                provider: effectiveSession.provider,
-                providerRoomId: effectiveSession.providerRoomId,
-                providerSessionRef: effectiveSession.providerSessionRef,
-                videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
-                joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
-                joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
-                finalManualDecision,
-                now,
-              }).joinClosesAt,
+            : readiness.joinClosesAt,
       });
       joinToken = tokenResult.token;
       tokenExpiresAt = this.normalizeDate(tokenResult.expiresAt);
@@ -311,20 +285,6 @@ export class ResolveSessionJoinContractUseCase {
       ))!;
     }
 
-    const policy = resolveSessionJoinPolicy({
-      status: effectiveSession.status,
-      sessionMode: effectiveSession.sessionMode,
-      scheduledStartAt: effectiveSession.scheduledStartAt,
-      scheduledEndAt: effectiveSession.scheduledEndAt,
-      provider: effectiveSession.provider,
-      providerRoomId: effectiveSession.providerRoomId,
-      providerSessionRef: effectiveSession.providerSessionRef,
-      videoRoomClosedAt: effectiveSession.videoRoomClosedAt,
-      joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
-      joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
-      finalManualDecision,
-      now,
-    });
     const reconnectGraceClosesAt = usedPostEndReconnectGrace
       ? computeSessionPostEndReconnectGraceClosesAt(
           effectiveSession.scheduledEndAt,
@@ -339,10 +299,10 @@ export class ResolveSessionJoinContractUseCase {
         provider: effectiveSession.provider,
         canJoin: true,
         blockedReason: null,
-        availableAt: policy.joinOpensAt?.toISOString() ?? null,
+        availableAt: readiness.joinOpensAt?.toISOString() ?? null,
         expiresAt:
           reconnectGraceClosesAt?.toISOString() ??
-          policy.joinClosesAt?.toISOString() ??
+          readiness.joinClosesAt?.toISOString() ??
           null,
         roomName: effectiveSession.providerRoomId,
         roomUrl: effectiveSession.providerSessionRef,

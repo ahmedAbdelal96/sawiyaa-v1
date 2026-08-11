@@ -1,10 +1,10 @@
 import { SessionStatus } from '@prisma/client';
 
 export type SessionOutcomeClassification =
-  | 'AUTO_COMPLETABLE'
-  | 'AUTO_PATIENT_NO_SHOW'
-  | 'AUTO_PRACTITIONER_NO_SHOW'
-  | 'AUTO_BOTH_NO_SHOW'
+  | 'COMPLETION_CANDIDATE'
+  | 'PATIENT_NO_SHOW_CANDIDATE'
+  | 'PRACTITIONER_NO_SHOW_CANDIDATE'
+  | 'BOTH_NO_SHOW_CANDIDATE'
   | 'NEEDS_ADMIN_REVIEW'
   | 'NOT_READY_FOR_EVALUATION';
 
@@ -101,7 +101,7 @@ export type SessionOutcomeEvaluationInput = {
 export type SessionOutcomeEvaluationResult = {
   classification: SessionOutcomeClassification;
   confidence: SessionOutcomeConfidence;
-  eligibleForAutomaticFinalization: boolean;
+  eligibleForAdminApproval: boolean;
   recommendedTerminalStatus:
     | 'COMPLETED'
     | 'PATIENT_NO_SHOW'
@@ -118,4 +118,12 @@ export type SessionOutcomeEvaluationResult = {
   };
   policySnapshot: SessionOutcomeEvaluationPolicy;
   evaluatedAt: Date;
+};
+
+/** Backend-owned decision boundary consumed by Admin review clients. */
+export type SessionReviewDecision = {
+  canApproveNormally: boolean;
+  requiresResolution: boolean;
+  reasonCode: string;
+  recommendation: string;
 };
