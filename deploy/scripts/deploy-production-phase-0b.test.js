@@ -24,3 +24,15 @@ test('migration command is guarded by backup and scanner failure checks', () => 
   assert.match(script, /bash "\$PROJECT_DIR\/deploy\/scripts\/backup-db\.sh"/);
   assert.match(script, /SAWIYAA_TARGET_SHA=\"\$TARGET_SHA\"/);
 });
+
+test('applied Prisma migration discovery uses the canonical migration_name column', () => {
+  const script = fs.readFileSync(path.join(__dirname, 'deploy-production.sh'), 'utf8');
+  assert.match(
+    script,
+    /SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name/,
+  );
+  assert.doesNotMatch(
+    script,
+    /SELECT name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY name/,
+  );
+});

@@ -119,6 +119,12 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
     const resolvePatientSessionActionsService = {
       resolveOne: jest.fn().mockResolvedValue({}),
     };
+    const operationalInterpreter = {
+      interpret: jest.fn().mockResolvedValue({}),
+    };
+    const practitionerCommandActions = {
+      resolve: jest.fn().mockResolvedValue({}),
+    };
 
     const useCase = new GetSessionDetailsUseCase(
       sessionRepository as any,

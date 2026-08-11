@@ -25,6 +25,7 @@ $createdEnvFiles = @()
 
 try {
   if ((git status --porcelain) -join "`n") { throw 'Release gate requires a clean Git worktree.' }
+  Invoke-Required 'Git diff check' { git diff --check }
   foreach ($file in $temporaryEnvFiles) {
     if (Test-Path -LiteralPath $file) {
       throw "Release gate requires no local secret env file: $file"
@@ -48,6 +49,12 @@ try {
     Invoke-Required 'backend Prisma generate' { npm run prisma:generate }
     Invoke-Required 'backend typecheck' { npm run typecheck }
     Invoke-Required 'backend production build' { npm run build }
+    Invoke-Required 'backend package-plans tests' {
+      npm test -- --runInBand src/modules/package-plans
+    }
+    Invoke-Required 'backend sessions tests' {
+      npm test -- --runInBand src/modules/sessions --testPathIgnorePatterns=integration
+    }
   } finally { Pop-Location }
 
   Push-Location $frontendDir

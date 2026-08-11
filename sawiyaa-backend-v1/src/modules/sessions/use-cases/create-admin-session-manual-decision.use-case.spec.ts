@@ -249,7 +249,7 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('rejects completion from an elapsed IN_PROGRESS session', async () => {
+  it('rejects completion for an elapsed IN_PROGRESS session until it enters admin review', async () => {
     mockRepo.findById.mockResolvedValue(pastInProgressSession as any);
     await expect(
       useCase.execute({
@@ -262,7 +262,9 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
       }),
     ).rejects.toMatchObject({
-      response: { error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW' },
+      response: expect.objectContaining({
+        error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW',
+      }),
     });
   });
 
@@ -286,7 +288,9 @@ describe('CreateAdminSessionManualDecisionUseCase', () => {
         confirmNoAutomaticPayout: true,
       }),
     ).rejects.toMatchObject({
-      response: { error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW' },
+      response: expect.objectContaining({
+        error: 'SESSION_COMPLETION_REQUIRES_ADMIN_REVIEW',
+      }),
     });
   });
 

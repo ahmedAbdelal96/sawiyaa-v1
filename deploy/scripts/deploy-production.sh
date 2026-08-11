@@ -258,7 +258,7 @@ docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-
 
 APPLIED_MIGRATIONS_FILE="$(mktemp "${TMPDIR:-/tmp}/sawiyaa-applied-migrations.XXXXXX")"
 docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres sh -lc \
-  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY name"' > "$APPLIED_MIGRATIONS_FILE" || {
+  'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atqc "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name"' > "$APPLIED_MIGRATIONS_FILE" || {
     echo "Unable to read applied Prisma migrations; migration was not run." >&2
     exit 1
   }
