@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 umask 077
 
+export COMPOSE_PROJECT_NAME=sawiyaa
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-/opt/sawiyaa}"
 BACKUP_DIR="${SAWIYAA_BACKUP_DIR:-/opt/sawiyaa-backups/db}"
 COMPOSE_FILE="${SAWIYAA_COMPOSE_FILE:-$PROJECT_DIR/docker-compose.prod.yml}"

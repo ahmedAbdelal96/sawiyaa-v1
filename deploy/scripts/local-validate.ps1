@@ -4,6 +4,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$env:COMPOSE_PROJECT_NAME = 'sawiyaa'
 
 function Write-Info {
   param([string]$Message)

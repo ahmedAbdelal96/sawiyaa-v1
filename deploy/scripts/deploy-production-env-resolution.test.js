@@ -70,6 +70,26 @@ function runBash(script, args, env = {}) {
   });
 }
 
+function createPreflightFixture() {
+  const root = tempDirectory('sawiyaa-preflight-project-');
+  const sourceRoot = tempDirectory('sawiyaa-preflight-env-');
+  const files = canonicalFiles(sourceRoot);
+  fs.mkdirSync(path.join(root, 'deploy/scripts'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'deploy/config'), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/validate-production-preflight.sh'), path.join(root, 'deploy/scripts/validate-production-preflight.sh'));
+  fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/validate-environment-contract.js'), path.join(root, 'deploy/scripts/validate-environment-contract.js'));
+  fs.copyFileSync(path.join(repoRoot, 'deploy/config/environment-contract.yaml'), path.join(root, 'deploy/config/environment-contract.yaml'));
+  fs.copyFileSync(path.join(repoRoot, 'deploy/scripts/backup-db.sh'), path.join(root, 'deploy/scripts/backup-db.sh'));
+  fs.cpSync(path.join(repoRoot, 'sawiyaa-backend-v1/src/config'), path.join(root, 'sawiyaa-backend-v1/src/config'), { recursive: true });
+  fs.cpSync(path.join(repoRoot, 'sawiyaa-frontend-v1/src'), path.join(root, 'sawiyaa-frontend-v1/src'), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, 'sawiyaa-frontend-v1/next.config.ts'), path.join(root, 'sawiyaa-frontend-v1/next.config.ts'));
+  fs.writeFileSync(path.join(root, 'docker-compose.prod.yml'), 'name: sawiyaa\nservices:\n  postgres:\n    image: postgres:16\n');
+  childProcess.execFileSync('git', ['init', '-q', root]);
+  childProcess.execFileSync('git', ['-C', root, 'add', '.']);
+  childProcess.execFileSync('git', ['-C', root, '-c', 'user.email=fixture@example.test', '-c', 'user.name=fixture', 'commit', '-qm', 'fixture']);
+  return { root, sourceRoot, files };
+}
+
 test('detached release stages canonical env files and cleanup removes only the temporary copies', {
   skip: !bashAvailable,
 }, () => {
@@ -124,10 +144,11 @@ test('Docker Compose config succeeds after detached env staging when Docker Comp
     assert.equal(staged.status, 0, `${staged.stdout}\n${staged.stderr}`);
     const config = childProcess.spawnSync(
       'docker',
-      ['compose', '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
+      ['compose', '-p', 'sawiyaa', '--env-file', path.join(releaseRoot, 'sawiyaa-frontend-v1/.env'), '-f', path.join(releaseRoot, 'docker-compose.prod.yml'), 'config'],
       { encoding: 'utf8' },
     );
     assert.equal(config.status, 0, `${config.stdout}\n${config.stderr}`);
+    assert.match(config.stdout, /name:\s*sawiyaa/);
     assert.deepEqual(fs.readFileSync(files.backend), fs.readFileSync(path.join(sourceRoot, 'sawiyaa-backend-v1/.env')));
   } finally {
     fs.rmSync(sourceRoot, { recursive: true, force: true });
@@ -203,6 +224,65 @@ echo 'unexpected docker readiness call' >&2; exit 99
     assert.match(output, /SKIPPED POSTGRES_CHECK_COMPOSE_MODEL_INVALID/);
     assert.doesNotMatch(output, /BLOCKING POSTGRES_CONTAINER_UNAVAILABLE|BLOCKING POSTGRES_UNHEALTHY/);
     assert.doesNotMatch(fs.readFileSync(calls, 'utf8'), /\bps\b|\bexec\b/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(sourceRoot, { recursive: true, force: true });
+  }
+});
+
+test('detached release preflight discovers the live sawiyaa PostgreSQL project', {
+  skip: !bashAvailable,
+}, () => {
+  const { root, sourceRoot, files } = createPreflightFixture();
+  try {
+    const bin = path.join(root, 'bin');
+    const calls = path.join(root, 'docker-calls.log');
+    fs.mkdirSync(bin);
+    const nodeExecutable = process.execPath.replaceAll('\\', '/');
+    fs.writeFileSync(path.join(bin, 'docker'), `#!/usr/bin/env bash
+node_executable="${nodeExecutable}"
+echo "COMPOSE_PROJECT_NAME=\${COMPOSE_PROJECT_NAME} \$*" >> "${calls.replaceAll('\\\\', '/')}"
+if [[ "\$1" == "info" ]]; then exit 0; fi
+if [[ "\$1" == "compose" && "\$2" == "version" ]]; then exit 0; fi
+if [[ "\$1" == "compose" && "\$*" == *" config "* ]]; then exit 0; fi
+if [[ "\$1" == "compose" && "\$*" == *" ps --status running --services"* ]]; then echo postgres; exit 0; fi
+if [[ "\$1" == "compose" && "\$*" == *" exec -T postgres pg_isready"* ]]; then echo "sawiyaa-postgres-1" | tee -a "${calls.replaceAll('\\\\', '/')}"; exit 0; fi
+if [[ "\$1" == "run" ]]; then
+  workspace=""; backend_env=""; frontend_env=""; db_env=""
+  while [[ \$# -gt 0 ]]; do
+    if [[ "\$1" == "-v" ]]; then
+      mount="\$2"
+      case "\$mount" in
+        *:/workspace:ro) workspace="\${mount%:/workspace:ro}" ;;
+        *:/inputs/backend.env:ro) backend_env="\${mount%:/inputs/backend.env:ro}" ;;
+        *:/inputs/frontend.env:ro) frontend_env="\${mount%:/inputs/frontend.env:ro}" ;;
+        *:/inputs/db.env:ro) db_env="\${mount%:/inputs/db.env:ro}" ;;
+      esac
+      shift 2
+    else
+      shift
+    fi
+  done
+  "\$node_executable" "\$workspace/deploy/scripts/validate-environment-contract.js" --backend-env "\$backend_env" --frontend-env "\$frontend_env" --db-env "\$db_env" --environment production
+  exit \$?
+fi
+echo 'unexpected docker call' >&2; exit 99
+`);
+    fs.chmodSync(path.join(bin, 'docker'), 0o755);
+    const shellPath = process.platform === 'win32' ? process.env.PATH.replaceAll(';', ':') : process.env.PATH;
+    const run = runBash(
+      path.join(root, 'deploy/scripts/validate-production-preflight.sh'),
+      ['--project-dir', root, '--backend-env', files.backend, '--frontend-env', files.frontend, '--db-env', files.postgres, '--target-only', '--skip-lock', '--min-free-mb', '1'],
+      { PATH: `${bin}:${shellPath}` },
+    );
+    const output = `${run.stdout}\n${run.stderr}`;
+    assert.equal(run.status, 0, output);
+    assert.match(output, /PASS POSTGRES_CONTAINER_RUNNING/);
+    assert.match(output, /PASS POSTGRES_CONNECTIVITY/);
+    const callsText = fs.readFileSync(calls, 'utf8');
+    assert.match(callsText, /COMPOSE_PROJECT_NAME=sawiyaa/);
+    assert.match(callsText, /exec -T postgres pg_isready/);
+    assert.match(callsText, /sawiyaa-postgres-1/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
     fs.rmSync(sourceRoot, { recursive: true, force: true });

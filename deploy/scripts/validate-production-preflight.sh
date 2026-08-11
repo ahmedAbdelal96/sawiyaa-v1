@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export COMPOSE_PROJECT_NAME=sawiyaa
 # Phase 0A read-only preflight. It never fetches, resets, builds, starts,
 # recreates, migrates, seeds, backs up, or modifies environment files.
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-$(pwd)}"

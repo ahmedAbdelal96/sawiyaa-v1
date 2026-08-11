@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export COMPOSE_PROJECT_NAME=sawiyaa
 PROJECT_DIR="${SAWIYAA_PROJECT_DIR:-/opt/sawiyaa}"
 RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
 RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"

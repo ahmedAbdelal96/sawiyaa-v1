@@ -41,6 +41,19 @@ test('deployment defaults to canonical application env files', () => {
   assert.doesNotMatch(script, /\.env\.production\.(backend|frontend|db)/);
 });
 
+test('production Compose identity is fixed across deployment phases', () => {
+  const compose = fs.readFileSync(path.resolve(__dirname, '../../docker-compose.prod.yml'), 'utf8');
+  const backup = fs.readFileSync(path.join(__dirname, 'backup-db.sh'), 'utf8');
+  const preflight = fs.readFileSync(path.join(__dirname, 'validate-production-preflight.sh'), 'utf8');
+  assert.match(compose, /^name: sawiyaa$/m);
+  assert.match(script, /^export COMPOSE_PROJECT_NAME=sawiyaa$/m);
+  assert.match(backup, /^export COMPOSE_PROJECT_NAME=sawiyaa$/m);
+  assert.match(preflight, /^export COMPOSE_PROJECT_NAME=sawiyaa$/m);
+  assert.match(script, /docker compose[\s\S]*ps/);
+  assert.match(script, /docker compose[\s\S]*logs/);
+  assert.ok((script.match(/docker compose/g) || []).length > 10);
+});
+
 test('deployment validates backend log access inside the container', () => {
   assert.doesNotMatch(script, /runuser/);
   assert.match(script, /run --rm --no-deps backend[\s\S]*touch \/app\/logs\/\.write-test/);
