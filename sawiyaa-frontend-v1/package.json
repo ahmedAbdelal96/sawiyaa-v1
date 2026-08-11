@@ -30,6 +30,8 @@
     "lint": "npm run i18n:check && eslint ."
   },
   "dependencies": {
+    "@fontsource-variable/cairo": "^5.3.0",
+    "@fontsource-variable/outfit": "^5.3.0",
     "@hookform/resolvers": "^3.9.0",
     "@stripe/react-stripe-js": "^6.0.0",
     "@stripe/stripe-js": "^9.0.0",
