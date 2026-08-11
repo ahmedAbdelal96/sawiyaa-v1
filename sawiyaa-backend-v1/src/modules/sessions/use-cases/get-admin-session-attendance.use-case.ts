@@ -503,9 +503,14 @@ export class GetAdminSessionAttendanceUseCase {
                 ? 'INSUFFICIENT_EVIDENCE'
                 : 'MANUAL_REVIEW_REQUIRED';
 
+    const eligibleForAdminApproval =
+      evaluation.eligibleForAdminApproval ??
+      evaluation.eligibleForAutomaticFinalization ??
+      false;
     const canApproveNormally =
-      evaluation.eligibleForAdminApproval &&
-      evaluation.classification === 'COMPLETION_CANDIDATE' &&
+      eligibleForAdminApproval &&
+      (evaluation.classification === 'COMPLETION_CANDIDATE' ||
+        evaluation.classification === 'AUTO_COMPLETABLE') &&
       evaluation.recommendedTerminalStatus === 'COMPLETED' &&
       !hasActiveComplaint &&
       !hasOpenResolutionCase;
@@ -527,7 +532,7 @@ export class GetAdminSessionAttendanceUseCase {
         recommendedReason: evaluation.reasonCodes.join(', '),
         riskFlags: evaluation.reasonCodes,
         isFinalDecision: false,
-        requiresAdminReview: !evaluation.eligibleForAdminApproval,
+        requiresAdminReview: !eligibleForAdminApproval,
       },
       reviewDecision,
     };

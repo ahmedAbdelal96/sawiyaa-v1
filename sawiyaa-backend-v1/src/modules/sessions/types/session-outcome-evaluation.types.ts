@@ -1,6 +1,7 @@
 import { SessionStatus } from '@prisma/client';
 
 export type SessionOutcomeClassification =
+  | 'AUTO_COMPLETABLE'
   | 'COMPLETION_CANDIDATE'
   | 'PATIENT_NO_SHOW_CANDIDATE'
   | 'PRACTITIONER_NO_SHOW_CANDIDATE'
@@ -101,7 +102,9 @@ export type SessionOutcomeEvaluationInput = {
 export type SessionOutcomeEvaluationResult = {
   classification: SessionOutcomeClassification;
   confidence: SessionOutcomeConfidence;
-  eligibleForAdminApproval: boolean;
+  /** Legacy automatic-finalization gate retained for existing workers. */
+  eligibleForAutomaticFinalization?: boolean;
+  eligibleForAdminApproval?: boolean;
   recommendedTerminalStatus:
     | 'COMPLETED'
     | 'PATIENT_NO_SHOW'
