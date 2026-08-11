@@ -353,23 +353,20 @@ export class GetAdminSessionAttendanceUseCase {
       },
     });
 
-    const presentationStatus = session.status;
-    const automaticCompletionEvent = platformEvents.find((event) => {
-      const metadata = event.metadataJson;
-      return (
-        event.newStatus === 'COMPLETED' &&
-        metadata &&
-        typeof metadata === 'object' &&
-        (metadata as Record<string, unknown>).completionMode ===
-          'AUTOMATIC_COMPLETION'
-      );
-    });
-    const automaticCompletionMetadata =
-      automaticCompletionEvent?.metadataJson &&
-      typeof automaticCompletionEvent.metadataJson === 'object'
-        ? (automaticCompletionEvent.metadataJson as Record<string, unknown>)
-        : null;
+    const activeComplaintCount = relatedSupportTickets.filter((ticket) =>
+      ['OPEN', 'IN_PROGRESS', 'WAITING_FOR_USER', 'ESCALATED'].includes(
+        ticket.status,
+      ),
+    ).length;
+    const db = input.tx ?? this.prisma;
+    const openResolutionCase = db.sessionResolutionCase?.findUnique
+      ? await db.sessionResolutionCase.findUnique({
+          where: { sessionId: input.sessionId },
+          select: { status: true },
+        })
+      : null;
 
+    const presentationStatus = session.status;
     return {
       sessionId: input.sessionId,
       summary,
@@ -410,7 +407,12 @@ export class GetAdminSessionAttendanceUseCase {
         updatedAt: ticket.updatedAt.toISOString(),
       })),
       presentationStatus,
-      extendedSummary: this.mapExtendedSummary(extendedSummary, evaluation),
+      extendedSummary: this.mapExtendedSummary(
+        extendedSummary,
+        evaluation,
+        activeComplaintCount > 0,
+        openResolutionCase?.status === 'OPEN',
+      ),
       outcomeEvaluation: {
         ...evaluation,
         evaluatedAt: evaluation.evaluatedAt.toISOString(),
@@ -462,30 +464,9 @@ export class GetAdminSessionAttendanceUseCase {
             source: policySnapshot.source,
           }
         : null,
-      finalization: automaticCompletionEvent
-        ? {
-            mode: 'AUTOMATIC_COMPLETION',
-            finalizedAt: (
-              automaticCompletionEvent.occurredAt ??
-              automaticCompletionEvent.createdAt
-            ).toISOString(),
-            auditEventId: automaticCompletionEvent.id,
-            policyVersion:
-              typeof automaticCompletionMetadata?.policyVersion === 'number'
-                ? automaticCompletionMetadata.policyVersion
-                : null,
-            reconciliationVersion:
-              typeof automaticCompletionMetadata?.reconciliationVersion ===
-              'number'
-                ? automaticCompletionMetadata.reconciliationVersion
-                : null,
-            reasonCodes: Array.isArray(automaticCompletionMetadata?.reasonCodes)
-              ? automaticCompletionMetadata.reasonCodes.filter(
-                  (value): value is string => typeof value === 'string',
-                )
-              : [],
-          }
-        : null,
+      // Completion is now Admin-owned. Historical completion events remain in
+      // the timeline but are never projected as an automatic finalization.
+      finalization: null,
     };
   }
 
@@ -506,6 +487,8 @@ export class GetAdminSessionAttendanceUseCase {
   private mapExtendedSummary(
     engine: SessionAttendanceSummary,
     evaluation: ReturnType<SessionOutcomeEvaluator['evaluate']>,
+    hasActiveComplaint: boolean,
+    hasOpenResolutionCase: boolean,
   ): SessionAttendanceSummary {
     const recommendedOutcome =
       evaluation.recommendedTerminalStatus === 'COMPLETED'
@@ -520,6 +503,23 @@ export class GetAdminSessionAttendanceUseCase {
                 ? 'INSUFFICIENT_EVIDENCE'
                 : 'MANUAL_REVIEW_REQUIRED';
 
+    const canApproveNormally =
+      evaluation.eligibleForAdminApproval &&
+      evaluation.classification === 'COMPLETION_CANDIDATE' &&
+      evaluation.recommendedTerminalStatus === 'COMPLETED' &&
+      !hasActiveComplaint &&
+      !hasOpenResolutionCase;
+    const reviewDecision = {
+      canApproveNormally,
+      requiresResolution: !canApproveNormally,
+      reasonCode: hasOpenResolutionCase
+        ? 'OPEN_RESOLUTION_CASE'
+        : hasActiveComplaint
+          ? 'ACTIVE_COMPLAINT'
+          : evaluation.reasonCodes[0] ?? evaluation.classification,
+      recommendation: recommendedOutcome,
+    };
+
     return {
       ...engine,
       recommendation: {
@@ -527,8 +527,9 @@ export class GetAdminSessionAttendanceUseCase {
         recommendedReason: evaluation.reasonCodes.join(', '),
         riskFlags: evaluation.reasonCodes,
         isFinalDecision: false,
-        requiresAdminReview: !evaluation.eligibleForAutomaticFinalization,
+        requiresAdminReview: !evaluation.eligibleForAdminApproval,
       },
+      reviewDecision,
     };
   }
 

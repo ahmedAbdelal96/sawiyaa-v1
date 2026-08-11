@@ -6,6 +6,10 @@ const path = require('node:path');
 const test = require('node:test');
 
 const script = fs.readFileSync(path.join(__dirname, 'deploy-production.sh'), 'utf8');
+const releaseGate = fs.readFileSync(
+  path.join(__dirname, 'release-validation.ps1'),
+  'utf8',
+);
 
 function position(text) {
   const value = script.indexOf(text);
@@ -123,4 +127,13 @@ test('Compose frontend build args come from interpolation, not duplicated produc
   assert.match(compose, /API_PROXY_TARGET: \$\{API_PROXY_TARGET\}/);
   assert.doesNotMatch(compose, /NEXT_PUBLIC_API_URL: \/api\/v1/);
   assert.doesNotMatch(compose, /NEXT_PUBLIC_APP_URL: https:\/\/sawiyaa\.com/);
+});
+
+test('release gate cannot report READY without the exact backend/frontend Docker build', () => {
+  assert.match(releaseGate, /git status --porcelain/);
+  const dockerBuild = releaseGate.indexOf('docker compose --env-file $frontendDir/.env -f docker-compose.prod.yml build backend frontend');
+  const ready = releaseGate.indexOf('RELEASE_CANDIDATE: READY');
+  assert.ok(dockerBuild >= 0);
+  assert.ok(dockerBuild < ready);
+  assert.match(releaseGate, /RELEASE_CANDIDATE: NOT_READY/);
 });

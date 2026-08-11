@@ -1494,6 +1494,18 @@ export class SessionRepository {
     });
   }
 
+  findDueAutomaticCompletionSessions(input: { now: Date; batchSize: number }) {
+    return this.prisma.session.findMany({
+      where: {
+        status: SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+        scheduledEndAt: { not: null, lte: input.now },
+      },
+      orderBy: [{ scheduledEndAt: 'asc' }, { id: 'asc' }],
+      take: input.batchSize,
+      select: { id: true, status: true, scheduledEndAt: true },
+    });
+  }
+
   upsertAttendanceReconciliation(
     data: Prisma.SessionAttendanceReconciliationUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
