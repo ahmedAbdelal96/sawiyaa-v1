@@ -49,6 +49,7 @@ try {
     Invoke-Required 'backend Prisma generate' { npm run prisma:generate }
     Invoke-Required 'backend typecheck' { npm run typecheck }
     Invoke-Required 'backend production build' { npm run build }
+    Invoke-Required 'backend runtime config validation' { npm run config:validate:production }
     Invoke-Required 'backend package-plans tests' {
       npm test -- --runInBand src/modules/package-plans
     }

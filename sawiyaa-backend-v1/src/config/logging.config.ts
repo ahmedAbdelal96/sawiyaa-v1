@@ -1,5 +1,11 @@
 import { registerAs } from '@nestjs/config';
 import { resolveServiceName } from '@common/logging/service-name.util';
+import {
+  DEFAULT_LOG_MAX_FILE_SIZE,
+  parseLogFileSize,
+} from './log-file-size';
+
+export { parseLogFileSize } from './log-file-size';
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug', 'verbose'] as const;
 type LogLevel = (typeof LOG_LEVELS)[number];
@@ -19,21 +25,6 @@ function toNonNegativeInteger(
 ): number {
   const parsed = value ? Number(value) : Number.NaN;
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : defaultValue;
-}
-
-export function parseLogFileSize(
-  value: string | undefined,
-  defaultValue = 20 * 1024 * 1024,
-): number {
-  if (!value?.trim()) return defaultValue;
-  const match = /^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i.exec(value.trim());
-  if (!match) return defaultValue;
-  const multiplier =
-    { b: 1, kb: 1024, mb: 1024 ** 2, gb: 1024 ** 3 }[
-      match[2]?.toLowerCase() ?? 'b'
-    ] ?? 1;
-  const bytes = Number(match[1]) * multiplier;
-  return Number.isFinite(bytes) && bytes > 0 ? Math.floor(bytes) : defaultValue;
 }
 
 export default registerAs('logging', () => {
@@ -67,7 +58,8 @@ export default registerAs('logging', () => {
     process.env.LOG_RETENTION_DAYS,
     30,
   );
-  const maxFileSize = process.env.LOG_MAX_FILE_SIZE?.trim() || '20m';
+  const maxFileSize =
+    process.env.LOG_MAX_FILE_SIZE?.trim() || DEFAULT_LOG_MAX_FILE_SIZE;
   const maxFileSizeBytes = parseLogFileSize(maxFileSize);
   const serviceName = resolveServiceName();
   const version =

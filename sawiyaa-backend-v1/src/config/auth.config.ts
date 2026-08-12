@@ -1,5 +1,12 @@
 import { registerAs } from '@nestjs/config';
 
+export function parseOptionalInteger(
+  value: string | undefined,
+): number | undefined {
+  const normalized = value?.trim();
+  return normalized ? parseInt(normalized, 10) : undefined;
+}
+
 export default registerAs('auth', () => ({
   cookieAuthEnabled:
     process.env.AUTH_COOKIE_AUTH_ENABLED !== undefined
@@ -27,20 +34,20 @@ export default registerAs('auth', () => ({
       10,
     ),
     password: {
-      maxAttempts: process.env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS
-        ? parseInt(process.env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS, 10)
-        : undefined,
-      durationMinutes: process.env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES
-        ? parseInt(process.env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES, 10)
-        : undefined,
+      maxAttempts: parseOptionalInteger(
+        process.env.AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS,
+      ),
+      durationMinutes: parseOptionalInteger(
+        process.env.AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES,
+      ),
     },
     otp: {
-      maxAttempts: process.env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS
-        ? parseInt(process.env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS, 10)
-        : undefined,
-      durationMinutes: process.env.AUTH_OTP_LOCKOUT_DURATION_MINUTES
-        ? parseInt(process.env.AUTH_OTP_LOCKOUT_DURATION_MINUTES, 10)
-        : undefined,
+      maxAttempts: parseOptionalInteger(
+        process.env.AUTH_OTP_LOCKOUT_MAX_ATTEMPTS,
+      ),
+      durationMinutes: parseOptionalInteger(
+        process.env.AUTH_OTP_LOCKOUT_DURATION_MINUTES,
+      ),
     },
   },
   otp: {

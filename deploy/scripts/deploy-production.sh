@@ -249,6 +249,13 @@ fi
 echo "Building backend and frontend images..."
 docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build backend frontend
 
+echo "Validating backend runtime configuration before backup and migrations..."
+docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
+  npm run config:validate:production || {
+    echo "Backend runtime environment validation failed; backup and migrations were not run." >&2
+    exit 1
+  }
+
 echo "Checking backend log bind-mount write access..."
 docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps backend \
   sh -c 'touch /app/logs/.write-test && rm /app/logs/.write-test' || {
