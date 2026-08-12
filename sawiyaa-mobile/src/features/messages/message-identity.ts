@@ -1,15 +1,8 @@
 import type { CanonicalMessage } from "./types";
+import { createMobileUuid } from "../../lib/mobile-uuid";
 
 function createClientMessageId(): string {
-  const runtimeCrypto = globalThis.crypto as Crypto & { randomUUID?: () => string } | undefined;
-  if (runtimeCrypto?.randomUUID) {
-    return runtimeCrypto.randomUUID();
-  }
-
-  const randomPart = Array.from({ length: 4 }, () => Math.random().toString(36).slice(2))
-    .join("")
-    .slice(0, 32);
-  return `msg_${randomPart}`;
+  return createMobileUuid();
 }
 
 export type MessageSendDescriptor = {

@@ -162,6 +162,17 @@ export function extractApiData<T>(response: AxiosResponse<ApiEnvelope<T>>) {
   return response.data.data;
 }
 
+export function extractApiErrorCode(error: unknown): string | null {
+  if (!(error instanceof AxiosError)) return null;
+
+  const payload = error.response?.data as
+    | { errorCode?: unknown; error?: unknown }
+    | undefined;
+  if (typeof payload?.errorCode === "string") return payload.errorCode;
+  if (typeof payload?.error === "string") return payload.error;
+  return null;
+}
+
 export function extractApiErrorMessage(error: unknown) {
   if (error instanceof AxiosError) {
     if (error.response?.status === 401) {

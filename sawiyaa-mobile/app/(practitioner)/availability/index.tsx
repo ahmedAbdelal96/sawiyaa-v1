@@ -6,6 +6,7 @@ import { Button, Card, ErrorState, Header, LoadingState, Screen, Text } from "..
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { useMyAvailabilityWeeks, useMyBookingSettings, useUpdateMyBookingSettings } from "../../../src/features/practitioner/availability/hooks";
 import { useMyPresence, useSetInstantBooking } from "../../../src/features/practitioner/presence/hooks";
+import { extractApiErrorCode } from "../../../src/lib/api";
 import { formatWeekRange } from "../../../src/features/practitioner/availability/utils";
 import type { AvailabilityWeekWindowEntry } from "../../../src/features/practitioner/availability/types";
 
@@ -23,6 +24,22 @@ export default function PractitionerAvailabilityScreen() {
   const presenceQuery = useMyPresence();
   const instantBookingMutation = useSetInstantBooking();
   const isRtl = i18n.dir() === "rtl";
+  const setInstantBooking = (value: boolean) => {
+    if (instantBookingMutation.isPending) return;
+    instantBookingMutation.mutate({ isInstantBookingEnabled: value }, {
+      onError: (error) => {
+        if (extractApiErrorCode(error) === "PRESENCE_INSTANT_BOOKING_PRICING_REQUIRED") {
+          Alert.alert(
+            t("practitioner.availability.errors.instantBookingPricingRequiredTitle"),
+            t("practitioner.availability.errors.instantBookingPricingRequired"),
+            [{ text: t("practitioner.availability.openPricingSettings"), onPress: () => router.push("/(practitioner)/instant-booking-pricing" as never) }, { text: t("common.cancel"), style: "cancel" }],
+          );
+        } else {
+          Alert.alert(t("common.error"), t("practitioner.availability.actionError"));
+        }
+      },
+    });
+  };
 
   if (weeksQuery.isLoading || settingsQuery.isLoading) return <Screen><Header title={t("practitioner.availability.title")} /><LoadingState message={t("practitioner.availability.loading")} /></Screen>;
   if (weeksQuery.isError || !weeksQuery.data) return <Screen><Header title={t("practitioner.availability.title")} /><ErrorState title={t("practitioner.availability.loadError")} onRetry={() => void weeksQuery.refetch()} /></Screen>;
@@ -99,7 +116,7 @@ export default function PractitionerAvailabilityScreen() {
                 {t("practitioner.availability.presenceStatus", { defaultValue: "Presence: {{status}}", status: presenceQuery.data?.presence.status ?? "OFFLINE" })}
               </Text>
             </View>
-            <Switch value={Boolean(presenceQuery.data?.presence.isInstantBookingEnabled)} onValueChange={(value) => instantBookingMutation.mutate({ isInstantBookingEnabled: value })} disabled={instantBookingMutation.isPending || presenceQuery.isLoading} accessibilityLabel={t("practitioner.availability.instantBooking", { defaultValue: "Instant booking" })} />
+            <Switch value={Boolean(presenceQuery.data?.presence.isInstantBookingEnabled)} onValueChange={setInstantBooking} disabled={instantBookingMutation.isPending || presenceQuery.isLoading} accessibilityLabel={t("practitioner.availability.instantBooking", { defaultValue: "Instant booking" })} />
           </View>
         </Card>
         {!data.timezone ? <Card variant="outlined" padding="md" style={styles.warning}><Text weight="700">{t("practitioner.availability.timezoneRequired")}</Text><Text variant="caption" color={theme.colors.textSecondary}>{t("practitioner.availability.timezoneRequiredBody")}</Text><Button title={t("practitioner.availability.openTimezoneSettings")} variant="secondary" onPress={() => router.push("/(practitioner)/account" as never)} style={styles.settingsButton} /></Card> : <Text variant="caption" color={theme.colors.textSecondary} style={styles.timezone}>{t("practitioner.availability.timezone", { timezone: data.timezone })}</Text>}

@@ -15,6 +15,7 @@ import { useTheme } from "../../../src/providers/ThemeProvider";
 import { createPractitionerSupportTicket } from "../../../src/features/messages/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { extractApiErrorMessage } from "../../../src/lib/api";
+import { createMobileUuid } from "../../../src/lib/mobile-uuid";
 
 export default function PractitionerSupportNewScreen() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function PractitionerSupportNewScreen() {
   const queryClient = useQueryClient();
 
   const [message, setMessage] = useState("");
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(createMobileUuid);
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -64,7 +65,7 @@ export default function PractitionerSupportNewScreen() {
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-support-new-screen">
       <Header
         title={t("messages.inbox.newSupportTitle", "Message Support")}
         showBack

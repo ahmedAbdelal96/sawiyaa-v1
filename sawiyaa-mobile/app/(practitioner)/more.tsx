@@ -135,6 +135,22 @@ export default function PractitionerMoreScreen() {
               onPress: () => router.push("/(practitioner)/account"),
             },
             {
+              key: "settings",
+              title: t("settings.title", { defaultValue: "الإعدادات" }),
+              subtitle: t("settings.subtitle", { defaultValue: isArabic ? "اللغة والمظهر" : "Language & Appearance" }),
+              icon: "settings-outline" as const,
+              tone: "account" as PractitionerTone,
+              onPress: () => router.push("/(practitioner)/settings"),
+            },
+            {
+              key: "instantBookingPricing",
+              title: t("practitioner.more.rows.instantBookingPricing.title"),
+              subtitle: t("practitioner.more.rows.instantBookingPricing.subtitle"),
+              icon: "flash-outline" as const,
+              tone: "info" as PractitionerTone,
+              onPress: () => router.push("/(practitioner)/instant-booking-pricing"),
+            },
+            {
               key: "support",
               title: t("practitioner.more.rows.support.title"),
               subtitle: t("practitioner.more.rows.support.subtitle"),

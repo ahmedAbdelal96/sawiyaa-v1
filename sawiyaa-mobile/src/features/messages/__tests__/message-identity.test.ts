@@ -6,6 +6,10 @@ import {
 } from "../message-identity";
 import type { CanonicalMessage } from "../types";
 
+jest.mock("expo-crypto", () => ({
+  randomUUID: jest.fn(() => "00000000-0000-4000-8000-000000000000"),
+}));
+
 function message(id: string, clientMessageId?: string, body = "hello"): CanonicalMessage {
   return {
     id,

@@ -42,6 +42,8 @@ export const arAvailabilityCatalog = {
     publicAvailabilityNotFound:
       'تعذر العثور على إتاحة المعالج العامة',
     weekNotFound: 'تعذر العثور على الجدول الأسبوعي',
+    weekAlreadyExists:
+      'يوجد جدول بالفعل لهذا الأسبوع. يمكنك تعديل الجدول الحالي.',
     weekNotDraft: 'هذا الجدول منشور بالفعل ولا يمكن نشره مرة أخرى',
     weekNotEditable: 'لا يمكن تعديل هذا الجدول.',
     slotInPast: 'لا يمكن تعديل وقت انتهى بالفعل.',

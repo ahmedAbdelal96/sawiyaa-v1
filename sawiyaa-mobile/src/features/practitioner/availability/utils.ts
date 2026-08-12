@@ -4,24 +4,43 @@ export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type DurationMinutes = 30 | 60;
 export type SelectedTimes = Record<DurationMinutes, Record<DayOfWeek, number[]>>;
 
+export type SelectedTimesInitialization = {
+  selected: SelectedTimes;
+  invalidLegacy60Starts: number[];
+  invalidLegacy60Slots: Array<Pick<AvailabilityWeekSlot, "dayOfWeek" | "startMinuteOfDay" | "endMinuteOfDay">>;
+};
+
 export function emptySelectedTimes(): SelectedTimes {
   return { 30: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] }, 60: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] } };
 }
 
-export function slotsToSelectedTimes(slots: Pick<AvailabilityWeekSlot, "dayOfWeek" | "durationMinutes" | "startMinuteOfDay">[]): SelectedTimes {
+export function slotsToSelectedTimes(slots: Pick<AvailabilityWeekSlot, "dayOfWeek" | "durationMinutes" | "startMinuteOfDay" | "endMinuteOfDay">[]): SelectedTimesInitialization {
   const result = emptySelectedTimes();
+  const invalidLegacy60Starts: number[] = [];
+  const invalidLegacy60Slots: SelectedTimesInitialization["invalidLegacy60Slots"] = [];
   for (const slot of slots) {
     const duration = slot.durationMinutes === 60 ? 60 : 30;
     const day = slot.dayOfWeek as DayOfWeek;
+    if (duration === 60 && slot.startMinuteOfDay % 60 !== 0) {
+      invalidLegacy60Starts.push(slot.startMinuteOfDay);
+      invalidLegacy60Slots.push({
+        dayOfWeek: slot.dayOfWeek,
+        startMinuteOfDay: slot.startMinuteOfDay,
+        endMinuteOfDay: slot.endMinuteOfDay ?? slot.startMinuteOfDay + 60,
+      });
+      continue;
+    }
     if (result[duration][day] && !result[duration][day].includes(slot.startMinuteOfDay)) result[duration][day].push(slot.startMinuteOfDay);
   }
-  return result;
+  return { selected: result, invalidLegacy60Starts, invalidLegacy60Slots };
 }
 
 export function selectedTimesToSlots(value: SelectedTimes): AvailabilityWeekSlotInput[] {
   return ([30, 60] as DurationMinutes[]).flatMap((duration) =>
     ([0, 1, 2, 3, 4, 5, 6] as DayOfWeek[]).flatMap((dayOfWeek) =>
-      value[duration][dayOfWeek].map((startMinuteOfDay) => ({ dayOfWeek, durationMinutes: duration, startMinuteOfDay, endMinuteOfDay: startMinuteOfDay + duration })),
+      value[duration][dayOfWeek]
+        .filter((startMinuteOfDay) => startMinuteOfDay % duration === 0)
+        .map((startMinuteOfDay) => ({ dayOfWeek, durationMinutes: duration, startMinuteOfDay, endMinuteOfDay: startMinuteOfDay + duration })),
     ),
   );
 }
