@@ -168,7 +168,7 @@ export function assertPaymobControlBootstrapAllowed(input: {
 }
 
 export function createPaymobControlBootstrapCommands(
-  expectedUpdatedAt: Date,
+  expectedUpdatedAt: Date | null = null,
 ): UpdateConfigurationCommand[] {
   const scope = {
     scopeType: ConfigScopeType.GLOBAL,

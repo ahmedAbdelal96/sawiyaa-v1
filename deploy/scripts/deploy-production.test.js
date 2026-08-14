@@ -121,6 +121,29 @@ test('Paymob control bootstrap is explicit and occurs before startup validation'
   assert.match(script, /Skipping Paymob provider-control bootstrap; explicit operator opt-in was not provided/);
 });
 
+test('Paymob bootstrap runs from compiled production-image artifacts', () => {
+  const backendPackage = JSON.parse(
+    fs.readFileSync(
+      path.resolve(__dirname, '../../sawiyaa-backend-v1/package.json'),
+      'utf8',
+    ),
+  );
+  const dockerfile = fs.readFileSync(
+    path.resolve(__dirname, '../../sawiyaa-backend-v1/Dockerfile'),
+    'utf8',
+  );
+  assert.equal(
+    backendPackage.scripts['db:bootstrap:paymob-provider-control'],
+    'node scripts/bootstrap-paymob-provider-control.js',
+  );
+  assert.match(dockerfile, /COPY --from=build \/app\/dist \.\/dist/);
+  assert.match(dockerfile, /COPY --from=build \/app\/scripts \.\/scripts/);
+  assert.doesNotMatch(
+    backendPackage.scripts['db:bootstrap:paymob-provider-control'],
+    /ts-node|prisma\/scripts/,
+  );
+});
+
 test('deployment verifies checkout safety before destructive Git operations', () => {
   assert.ok(position('assert_active_checkout_safe') < position('git checkout -f main'));
   assert.match(script, /Unexpected tracked change before active checkout reset/);

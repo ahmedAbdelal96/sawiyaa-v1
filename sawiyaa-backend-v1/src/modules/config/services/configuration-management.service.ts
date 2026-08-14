@@ -160,6 +160,7 @@ export class ConfigurationManagementService {
       tx: Prisma.TransactionClient,
       results: readonly ConfigurationWriteResult[],
     ) => T | Promise<T>,
+    options: { requireAbsent?: boolean } = {},
   ): Promise<T> {
     if (commands.length === 0) {
       throw new BadRequestException({
@@ -225,6 +226,9 @@ export class ConfigurationManagementService {
             orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
           });
 
+          if (options.requireAbsent && current) {
+            throw this.staleConflict();
+          }
           this.assertExpectedVersion(current, command.expectedUpdatedAt);
 
           const now = new Date();

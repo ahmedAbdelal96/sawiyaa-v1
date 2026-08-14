@@ -26,7 +26,7 @@ describe('Paymob provider-control bootstrap policy', () => {
     const empty = assessPaymobControlBootstrap(new Map());
     expect(empty.status).toBe('EMPTY');
 
-    const commands = createPaymobControlBootstrapCommands(new Date(0));
+    const commands = createPaymobControlBootstrapCommands();
     expect(commands.map((command) => command.key)).toEqual(
       expect.arrayContaining(PAYMOB_PROVIDER_CONTROL_BOOTSTRAP_KEYS),
     );
@@ -50,7 +50,7 @@ describe('Paymob provider-control bootstrap policy', () => {
   });
 
   it('writes only the Paymob EGP/CARD control shape and no secrets or USD settings', () => {
-    const commands = createPaymobControlBootstrapCommands(new Date(0));
+    const commands = createPaymobControlBootstrapCommands();
     const serialized = JSON.stringify(commands);
     expect(commands.every((command) => command.scopeType === ConfigScopeType.GLOBAL)).toBe(true);
     expect(commands.map((command) => command.key).join('|')).not.toMatch(/stripe|USD/i);
