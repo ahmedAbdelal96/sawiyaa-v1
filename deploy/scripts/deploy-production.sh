@@ -12,6 +12,7 @@ FRONTEND_ENV_FILE="${SAWIYAA_FRONTEND_ENV_FILE:-$PROJECT_DIR/sawiyaa-frontend-v1
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-}"
 APPROVE_BLOCKING="${SAWIYAA_APPROVE_BLOCKING_MIGRATIONS:-false}"
+ALLOW_PAYMOB_CONTROL_BOOTSTRAP="${SAWIYAA_ALLOW_PAYMOB_CONTROL_BOOTSTRAP:-${ALLOW_PAYMOB_CONTROL_BOOTSTRAP:-false}}"
 VALIDATION_ROOT="${SAWIYAA_VALIDATION_ROOT:-${TMPDIR:-/tmp}/sawiyaa-release-validation}"
 TARGET_SHA_ARG=""
 VALIDATION_WORKTREE=""
@@ -325,6 +326,13 @@ echo "MIGRATE_DEPLOY: SUCCESS"
 
 echo "Bootstrapping production config..."
 docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm -e ALLOW_CONFIG_BOOTSTRAP=true backend npm run db:bootstrap:config
+if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
+  echo "Running explicitly authorized first-time Paymob provider-control bootstrap..."
+  docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps \
+    -e ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true backend npm run db:bootstrap:paymob-provider-control
+else
+  echo "Skipping Paymob provider-control bootstrap; explicit operator opt-in was not provided."
+fi
 read_provider_state true || exit 1
 if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --target-only --skip-lock \

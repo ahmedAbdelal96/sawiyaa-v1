@@ -113,6 +113,14 @@ test('deployment uses the target validator and only the safe config bootstrap', 
   assert.doesNotMatch(script, /db:bootstrap:payment-routes/);
 });
 
+test('Paymob control bootstrap is explicit and occurs before startup validation', () => {
+  assert.match(script, /ALLOW_PAYMOB_CONTROL_BOOTSTRAP/);
+  assert.match(script, /db:bootstrap:paymob-provider-control/);
+  assert.ok(position('db:bootstrap:paymob-provider-control') < position('read_provider_state true'));
+  assert.ok(position('read_provider_state true') < position('up -d backend frontend nginx'));
+  assert.match(script, /Skipping Paymob provider-control bootstrap; explicit operator opt-in was not provided/);
+});
+
 test('deployment verifies checkout safety before destructive Git operations', () => {
   assert.ok(position('assert_active_checkout_safe') < position('git checkout -f main'));
   assert.match(script, /Unexpected tracked change before active checkout reset/);
