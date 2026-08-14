@@ -145,8 +145,8 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     await Promise.all([
       this.refreshProviderSnapshot(PaymentProvider.PAYMOB),
       this.refreshProviderSnapshot(PaymentProvider.STRIPE),
-      this.refreshRoutingSnapshot(),
     ]);
+    await this.refreshRoutingSnapshot();
   }
 
   updatePaymobSnapshot(snapshot: PaymobGatewayControlRuntimeSnapshot): void {
