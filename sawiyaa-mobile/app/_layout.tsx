@@ -5,6 +5,8 @@ import { AuthProvider } from "../src/providers/AuthProvider";
 import { AuthGatewayProvider } from "../src/providers/AuthGatewayProvider";
 import { NavigationHistoryProvider } from "../src/providers/NavigationHistoryProvider";
 import { ViewerTimeZoneProvider } from "../src/providers/ViewerTimeZoneProvider";
+import { RuntimeErrorBoundary } from "../src/components/RuntimeErrorBoundary";
+import { useRouter } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
@@ -40,6 +42,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const router = useRouter();
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
@@ -48,7 +51,17 @@ export default function RootLayout() {
             <ViewerTimeZoneProvider>
               <AuthGatewayProvider>
                 <NavigationHistoryProvider>
-                  <Slot />
+                  <RuntimeErrorBoundary
+                    onBack={() => {
+                      if (typeof router.canGoBack === "function" && router.canGoBack()) {
+                        router.back();
+                      } else {
+                        router.replace("/");
+                      }
+                    }}
+                  >
+                    <Slot />
+                  </RuntimeErrorBoundary>
                 </NavigationHistoryProvider>
               </AuthGatewayProvider>
             </ViewerTimeZoneProvider>

@@ -155,7 +155,7 @@ export default function PractitionerNotificationsScreen() {
   }
 
   return (
-    <Screen safeArea bg="background">
+    <Screen safeArea bg="background" testID="notifications-screen">
       <Header title={t("practitionerNotifications.title")} showBack />
 
       {notificationsQuery.isLoading && !notifications.length ? (

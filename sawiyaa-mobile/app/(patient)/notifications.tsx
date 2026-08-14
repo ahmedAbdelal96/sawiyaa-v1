@@ -262,7 +262,7 @@ export default function PatientNotificationsScreen() {
   };
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="notifications-screen">
       <Header
         title={t("patientNotifications.title")}
         rightElement={

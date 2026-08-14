@@ -92,4 +92,30 @@ describe('SessionReviewRatingAggregationService', () => {
       latestPublishedReviewAt: null,
     });
   });
+
+  it('preserves a single eligible review as a real public rating', async () => {
+    (prisma.sessionReview.groupBy as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          practitionerId: 'practitioner-1',
+          publicRatingValue: 5,
+          _count: { id: 1 },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          practitionerId: 'practitioner-1',
+          _count: { id: 1 },
+          _max: { publishedAt: new Date('2026-04-01T12:00:00.000Z') },
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.aggregateByPractitionerId('practitioner-1');
+
+    expect(result.averageRating).toBe(5);
+    expect(result.ratingsCount).toBe(1);
+    expect(result.publishedRatingsCount).toBe(1);
+    expect(result.writtenReviewsCount).toBe(0);
+  });
 });

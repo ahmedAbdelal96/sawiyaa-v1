@@ -179,6 +179,13 @@ describe("Public Mobile Design System Validation", () => {
 
     expect(authProviderContent).toContain("signOut");
     expect(authProviderContent).toContain('router.replace("/(public)")');
+    const logoutBlock = authProviderContent.slice(authProviderContent.indexOf("const signOut"));
+    expect(logoutBlock.indexOf("await patientLogout")).toBeGreaterThan(-1);
+    expect(logoutBlock.indexOf("await practitionerLogout")).toBeGreaterThan(-1);
+    expect(logoutBlock.indexOf("await clearAuthenticatedState()"))
+      .toBeGreaterThan(logoutBlock.indexOf("await patientLogout"));
+    expect(logoutBlock.indexOf("await clearAuthenticatedState()"))
+      .toBeGreaterThan(logoutBlock.indexOf("await practitionerLogout"));
 
     expect(heroContent).toContain('router.push("/(auth');
   });

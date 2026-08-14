@@ -56,7 +56,7 @@ export type PublicPractitioner = {
   isInstantBookingAvailable?: boolean;
   acceptsCoupon?: boolean;
   acceptsPackage: boolean;
-  rating: number;
+  rating: number | null;
   reviewCount: number;
   sessionCount: number | null; // null = not provided by backend public contract
   yearsExperience: number;

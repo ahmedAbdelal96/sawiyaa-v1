@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
+import { hasPublicPractitionerRating } from "../rating";
 
 export interface TherapistCardProps {
   practitioner: PublicPractitionerListItem;
@@ -29,6 +30,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
   const priceState = mapPractitionerDurationPrice({ amount: price, currencyCode });
   const averageRating = practitioner.ratingSummary.averageRating;
   const totalReviews = practitioner.ratingSummary.totalReviews;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
   const visibleLanguages = practitioner.languages
     .slice(0, 3)
     .map(
@@ -105,11 +107,11 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
           </View>
 
           <View style={styles.statsRow}>
-            {averageRating ? (
+            {hasRating ? (
               <View style={styles.statItem}>
                 <Ionicons name="star" size={14} color="#eab308" />
                 <Text weight="600" style={styles.statText}>
-                  {averageRating.toFixed(1)}
+                  {averageRating!.toFixed(1)}
                   <Text color={theme.colors.textMuted} weight="normal">
                     {" "}
                     {t("discovery.profile.reviews", { count: totalReviews })}
@@ -124,7 +126,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
                   color={theme.colors.textMuted}
                 />
                 <Text color={theme.colors.textMuted} style={styles.statText}>
-                  {t("discovery.list.newBadge")}
+                  {t("discovery.list.noRatings")}
                 </Text>
               </View>
             )}

@@ -886,7 +886,8 @@
         "existingDetailsUnavailable": "This week already exists, but its session times are not available yet.",
         "protectedTime": "This time overlaps a protected booking and cannot be removed.",
         "endOfDay": "A 60-minute session cannot end after midnight.",
-        "invalidLegacy60": "{count, plural, one {One existing 60-minute time uses an invalid half-hour start and was excluded from saving.} other {# existing 60-minute times use invalid half-hour starts and were excluded from saving.}}"
+        "invalidLegacy60": "{count, plural, one {One existing 60-minute time uses an invalid half-hour start and was excluded from saving.} other {# existing 60-minute times use invalid half-hour starts and were excluded from saving.}}",
+        "weekSlotsLimit": "A weekly schedule can contain at most {count} session start times. Remove an extra time before saving."
       },
       "publish": {
         "title": "Publish this schedule?",

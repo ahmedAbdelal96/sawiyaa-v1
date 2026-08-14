@@ -175,6 +175,7 @@ else
   TARGET_SHA="$(git rev-parse FETCH_HEAD)"
 fi
 TARGET_SHA="$(git rev-parse "$TARGET_SHA^{commit}")"
+export SAWIYAA_RELEASE_SHA="$TARGET_SHA"
 
 echo "Deployment target resolved from approved remote commit."
 echo "Active checkout commit: $ACTIVE_HEAD"

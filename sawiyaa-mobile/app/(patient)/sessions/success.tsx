@@ -25,7 +25,7 @@ export default function BookingSuccessScreen() {
   }>();
 
   return (
-    <Screen bg="background" style={styles.screen}>
+    <Screen bg="background" testID="patient-booking-screen" style={styles.screen}>
       <View style={styles.contentWrap}>
         <View style={styles.iconWrap}>
           <Card variant="elevated" padding="lg" style={styles.iconCard}>

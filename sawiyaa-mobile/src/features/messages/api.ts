@@ -16,6 +16,7 @@ import type {
   CanonicalMessageListResponse,
   CanonicalUnreadSummaryResponse,
 } from "./types";
+import type { SupportTicketCategory } from "../support/contracts";
 
 export async function listMyGeneralChatConversations(
   params?: ListGeneralChatConversationsParams,
@@ -117,13 +118,33 @@ export async function getCanonicalUnreadSummary() {
   return extractApiData<CanonicalUnreadSummaryResponse>(response);
 }
 
-export async function createPatientSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
-  const response = await apiClient.post("/patients/me/support/tickets", payload);
+type NewSupportTicketPayload = {
+  category?: SupportTicketCategory;
+  description: string;
+  newConversation?: boolean;
+  idempotencyKey?: string;
+};
+
+function normalizeNewSupportTicketPayload(payload: NewSupportTicketPayload) {
+  return {
+    ...payload,
+    category: payload.category ?? "GENERAL",
+  };
+}
+
+export async function createPatientSupportTicket(payload: NewSupportTicketPayload) {
+  const response = await apiClient.post(
+    "/patients/me/support/tickets",
+    normalizeNewSupportTicketPayload(payload),
+  );
   return extractApiData<any>(response);
 }
 
-export async function createPractitionerSupportTicket(payload: { description: string; newConversation?: boolean; idempotencyKey?: string }) {
-  const response = await apiClient.post("/practitioners/me/support/tickets", payload);
+export async function createPractitionerSupportTicket(payload: NewSupportTicketPayload) {
+  const response = await apiClient.post(
+    "/practitioners/me/support/tickets",
+    normalizeNewSupportTicketPayload(payload),
+  );
   return extractApiData<any>(response);
 }
 

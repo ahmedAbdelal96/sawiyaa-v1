@@ -185,7 +185,7 @@ export function MessagesInboxScreen({
   };
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="messages-inbox-screen">
       <Header
         title={t("messages.inbox.title", "Messages")}
         showBack

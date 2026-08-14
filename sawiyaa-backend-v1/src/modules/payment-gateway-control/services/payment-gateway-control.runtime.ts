@@ -23,6 +23,7 @@ import {
   PaymentRouteCatalogEntry,
   PaymentRouteReadiness,
   PaymentRoutingRuntimeSnapshot,
+  PaymobGatewayControlState,
   PaymobGatewayControlRuntimeSnapshot,
   StripeGatewayControlRuntimeSnapshot,
 } from '../types/payment-gateway-control.types';
@@ -58,7 +59,6 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     await this.refreshAllSnapshots();
-    this.logRoutingSnapshotDiagnostics();
   }
 
   getProviderSnapshot(
@@ -588,6 +588,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
     });
 
     const merged = this.mergePaymobSnapshots(envSnapshot, configOverrides);
+    const controlState = this.resolvePaymobControlState(enabled);
     const validation = this.validatePaymobSnapshot(merged);
 
     if (!validation.healthy) {
@@ -598,6 +599,7 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
 
     return {
       ...merged,
+      controlState,
       validation,
       updatedAt: new Date().toISOString(),
     };
@@ -671,12 +673,13 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
   private buildPaymobEnvSnapshot(): PaymobGatewayControlRuntimeSnapshot {
     return {
       provider: PaymentProvider.PAYMOB,
+      controlState: 'UNINITIALIZED',
       enabled: false,
       checkoutFlow: 'legacy' as PaymobCheckoutFlowValue,
       defaultMethod: null,
       maintenanceMode: false,
       allowedCountryIsoCodes: [],
-      methodRegistry: [],
+      methodRegistry: this.buildPaymobEnvironmentMethodRegistry(),
       sources: {
         enabled: 'env',
         checkoutFlow: 'env',
@@ -688,6 +691,73 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
       validation: { healthy: true, issues: [] },
       updatedAt: null,
     };
+  }
+
+  private buildPaymobEnvironmentMethodRegistry(): PaymobMethodRegistryEntry[] {
+    const paymob = this.paymentCfg.paymob;
+    const supportedCheckoutFlows = [
+      PaymobCheckoutFlow.LEGACY,
+      PaymobCheckoutFlow.INTENTION,
+    ];
+    const registry: PaymobMethodRegistryEntry[] = [];
+
+    if (paymob.egpCardIntegrationId) {
+      registry.push({
+        key: PaymobCheckoutMethod.CARD,
+        label: 'Card',
+        type: PaymobCheckoutMethod.CARD,
+        enabled: true,
+        priority: 100,
+        integrationId: paymob.egpCardIntegrationId,
+        currencyCodes: ['EGP'],
+        supportedCheckoutFlows,
+        countryIsoCodes: [],
+      });
+    }
+
+    if (paymob.egpWalletIntegrationId) {
+      registry.push({
+        key: PaymobCheckoutMethod.WALLET,
+        label: 'Mobile Wallet',
+        type: PaymobCheckoutMethod.WALLET,
+        enabled: true,
+        priority: 90,
+        integrationId: paymob.egpWalletIntegrationId,
+        currencyCodes: ['EGP'],
+        supportedCheckoutFlows,
+        countryIsoCodes: ['EG', 'EGY'],
+      });
+    }
+
+    if (paymob.usdCardIntegrationId) {
+      registry.push({
+        key: PaymobCheckoutMethod.CARD,
+        label: 'Card',
+        type: PaymobCheckoutMethod.CARD,
+        enabled: true,
+        priority: 80,
+        integrationId: paymob.usdCardIntegrationId,
+        currencyCodes: ['USD'],
+        supportedCheckoutFlows,
+        countryIsoCodes: [],
+      });
+    }
+
+    return registry;
+  }
+
+  private resolvePaymobControlState(
+    enabled: ResolvedConfig | null,
+  ): PaymobGatewayControlState {
+    if (enabled?.source === 'database' && enabled.value === true) {
+      return 'DATABASE_ENABLED';
+    }
+
+    if (enabled?.source === 'database' && enabled.value === false) {
+      return 'DATABASE_DISABLED';
+    }
+
+    return 'UNINITIALIZED';
   }
 
   private buildStripeEnvSnapshot(): StripeGatewayControlRuntimeSnapshot {
@@ -1004,6 +1074,11 @@ export class PaymentGatewayControlRuntimeService implements OnModuleInit {
           alias.configured,
         issues: [
           ...(paymob.enabled ? [] : ['PAYMENT_PROVIDER_DISABLED']),
+          ...(paymob.controlState === 'DATABASE_DISABLED'
+            ? ['PAYMOB_DISABLED_BY_DATABASE']
+            : paymob.controlState === 'UNINITIALIZED'
+              ? ['PAYMOB_CONTROL_UNINITIALIZED']
+              : []),
           ...(paymob.maintenanceMode ? ['PAYMOB_MAINTENANCE_MODE'] : []),
           ...(alias.configured ? [] : [alias.variable]),
         ],

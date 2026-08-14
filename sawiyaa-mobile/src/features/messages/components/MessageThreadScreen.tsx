@@ -323,12 +323,12 @@ export function MessageThreadScreen({
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    const timer = setTimeout(() => {
       listRef.current?.scrollToEnd({ animated: false });
       didInitialScrollRef.current = true;
     }, 0);
 
-    return () => window.clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [legacyMessages.length]);
 
   useEffect(() => {
@@ -390,7 +390,7 @@ export function MessageThreadScreen({
 
   if (isInitialError || !conversation) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID={`${role}-message-thread-screen`}>
         <Header showBack title={headerTitle} />
         <ErrorState
           fullScreen
@@ -407,7 +407,7 @@ export function MessageThreadScreen({
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID={`${role}-message-thread-screen`}>
       <Header showBack title={headerTitle} subtitle={headerSubtitle} />
 
       <KeyboardAvoidingView

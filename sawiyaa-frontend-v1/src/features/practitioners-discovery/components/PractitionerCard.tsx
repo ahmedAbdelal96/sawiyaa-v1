@@ -12,6 +12,7 @@ import { mapPractitionerDurationMoney } from "../lib/practitioner-price";
 import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 import { getLocalizedLanguageLabel } from "@/constants/reference-data";
+import { hasPublicPractitionerRating } from "../lib/practitioner-rating";
 
 type Props = {
   practitioner: PublicPractitioner;
@@ -43,14 +44,15 @@ export default function PractitionerCard({
   const duration60Label = isArabic ? "60 دقيقة" : t("duration60");
   const name = (isArabic ? practitioner.nameAr : practitioner.nameEn) || practitioner.slug;
   const title = (isArabic ? practitioner.titleAr : practitioner.titleEn) || "-";
-  const rating = typeof practitioner.rating === "number" ? practitioner.rating : 0;
+  const rating = practitioner.rating;
   const reviewCount =
     typeof practitioner.reviewCount === "number" ? practitioner.reviewCount : 0;
   const sessionCount =
     typeof practitioner.sessionCount === "number" ? practitioner.sessionCount : reviewCount;
   const yearsExperience =
     typeof practitioner.yearsExperience === "number" ? practitioner.yearsExperience : 0;
-  const filledStars = Math.max(0, Math.min(5, Math.round(rating)));
+  const hasRating = hasPublicPractitionerRating(rating, reviewCount);
+  const filledStars = hasRating ? Math.max(0, Math.min(5, Math.round(rating))) : 0;
 
   const visibleSpecialties = practitioner.specialties.slice(0, 3);
   const sessionPrices = getPublicSessionPrices(practitioner);
@@ -96,7 +98,7 @@ export default function PractitionerCard({
           <div className="mt-2 flex items-center gap-2">
             <div
               className="inline-flex items-center gap-0.5"
-              aria-label={`${t("rating")} ${rating.toFixed(1)}`}
+              aria-label={hasRating ? `${t("rating")} ${rating.toFixed(1)}` : t("noRatings")}
             >
               {Array.from({ length: 5 }).map((_, index) => (
                 <Star
@@ -111,7 +113,9 @@ export default function PractitionerCard({
               ))}
             </div>
             <p className="text-[11px] text-text-muted font-medium pt-0.5">
-              {rating.toFixed(1)} · {reviewCount} {t("reviews")}
+              {hasRating
+                ? `${rating.toFixed(1)} · ${reviewCount} ${t("reviews")}`
+                : t("noRatings")}
             </p>
           </div>
         </div>

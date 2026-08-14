@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
 import { useAppDirection } from "../../../../i18n/direction";
+import { hasPublicPractitionerRating } from "../rating";
 
 const DEFAULT_AVATAR = require("../../../../../assets/user.avif");
 
@@ -25,7 +26,7 @@ export interface PractitionerCompactCardProps {
 }
 
 function renderStarRating(rating: number) {
-  const score = rating || 5;
+  const score = Math.max(0, Math.min(5, rating));
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (score >= i) {
@@ -66,9 +67,7 @@ export const PractitionerCompactCard = ({
   const averageRating = practitioner.ratingSummary?.averageRating;
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
-  // Prominent rating fallback for mock data
-  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
-  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
 
   const handlePress = () => {
     if (onPress) {
@@ -146,17 +145,23 @@ export const PractitionerCompactCard = ({
             </Text>
 
             {/* Prominent Stars & Rating Row */}
-            <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-              <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
-                {renderStarRating(displayRating)}
+            {hasRating ? (
+              <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
+                <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                  {renderStarRating(averageRating!)}
+                </View>
+                <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
+                  {averageRating!.toFixed(1)}
+                </Text>
+                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                  ({totalReviews!})
+                </Text>
               </View>
-              <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
-                {displayRating.toFixed(1)}
-              </Text>
+            ) : (
               <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
-                ({displayReviews})
+                {t("discovery.list.noRatings")}
               </Text>
-            </View>
+            )}
 
             {/* Specialties Chips */}
             {practitioner.specialties.length > 0 ? (

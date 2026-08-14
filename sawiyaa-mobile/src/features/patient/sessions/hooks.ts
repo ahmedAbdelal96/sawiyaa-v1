@@ -71,10 +71,15 @@ export function useCreateScheduledSession() {
     onSuccess: (payload) => {
       queryClient.invalidateQueries({ queryKey: patientSessionsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: patientJourneyQueryKey });
-      queryClient.setQueryData(
-        patientSessionsQueryKeys.details(payload.item.id),
-        payload.item,
-      );
+      // The create-session response is intentionally a lightweight booking
+      // acknowledgement and does not include the full operational action
+      // contract used by the payment screen. Do not seed the details cache
+      // with that partial shape; the details query must fetch the canonical
+      // patient session representation before deciding whether payment is
+      // allowed.
+      queryClient.removeQueries({
+        queryKey: patientSessionsQueryKeys.details(payload.item.id),
+      });
     },
   });
 }

@@ -164,7 +164,7 @@ export default function PractitionerSessionDetailScreen() {
 
   if (sessionQuery.isLoading) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-session-details-screen">
         <Header
           showBack
           onBack={handleBackToSessions}
@@ -177,7 +177,7 @@ export default function PractitionerSessionDetailScreen() {
 
   if (sessionQuery.isError || !session) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-session-details-screen">
         <Header
           showBack
           onBack={handleBackToSessions}
@@ -382,7 +382,7 @@ export default function PractitionerSessionDetailScreen() {
           : null;
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-session-details-screen">
       <Header
         showBack
         onBack={handleBackToSessions}

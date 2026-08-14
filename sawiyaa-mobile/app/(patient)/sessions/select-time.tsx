@@ -474,6 +474,7 @@ export default function SelectSessionTimeScreen() {
 
   return (
     <Screen
+      testID="patient-booking-screen"
       bg="background"
       style={styles.screen}
       edges={["top", "left", "right"]}

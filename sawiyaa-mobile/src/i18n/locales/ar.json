@@ -1,4 +1,29 @@
 {
+  "settings": {
+    "title": "الإعدادات",
+    "screenTitle": "الإعدادات",
+    "subtitle": "اللغة والمظهر",
+    "sections": {
+      "preferences": "التفضيلات العامّة"
+    },
+    "language": {
+      "title": "اللغة",
+      "subtitle": "اختر لغة التطبيق",
+      "options": {
+        "ar": "العربية",
+        "en": "English"
+      }
+    },
+    "appearance": {
+      "title": "المظهر",
+      "subtitle": "تخصيص ثيم وألوان التطبيق",
+      "options": {
+        "system": "حسب إعداد الجهاز",
+        "light": "فاتح",
+        "dark": "داكن"
+      }
+    }
+  },
   "welcome": "مرحباً بك في سويّـة",
   "brand": {
     "name": "سويّـة",
@@ -829,6 +854,7 @@
       "loadMoreErrorSubtitle": "حاول مرة أخرى لتحميل مجموعة النتائج التالية.",
       "professionalFallback": "معالج مرخص",
       "newBadge": "جديد",
+      "noRatings": "لا توجد تقييمات بعد",
       "experience": "{{years}} سنوات خبرة",
       "priceLabel": "يبدأ من",
       "priceValue": "{{value}}",
@@ -1118,6 +1144,7 @@
       "workspace": {
         "title": "مساحة الجلسات",
         "subtitle": "جلساتك في لمحة واحدة",
+        "loading": "جارٍ تحميل الجلسات...",
         "heroNote": "تم تجميع الجلسات القادمة والنشطة والحديثة حتى تتصرف بسرعة من غير بحث.",
         "viewDetails": "عرض التفاصيل",
         "viewDetailsWithName": "عرض تفاصيل جلسة مع {{name}}",
@@ -1493,6 +1520,9 @@
     },
     "checkout": {
       "title": "ملخص الدفع",
+      "screenTitle": "مراجعة الدفع",
+      "headingSubtitle": "راجع تفاصيل جلستك واختر طريقة الدفع المناسبة لإتمام حجزك بأمان.",
+      "footerTrustNote": "دفع آمن ومعلوماتك محمية.",
       "loadingSession": "جاري تحميل تفاصيل الجلسة...",
       "loadingBreakdown": "جاري حساب التكلفة...",
       "errorTitle": "تعذر تحميل الحساب",
@@ -2129,6 +2159,7 @@
       "rolePractitioner": "المختص"
     },
     "inbox": {
+      "supportHeaderTitle": "محادثات الدعم",
       "title": "الرسائل",
       "tabEmpty": "لا توجد محادثات بعد.",
       "tabEmptySessions": "لا توجد محادثات جلسات بعد.",
@@ -2194,6 +2225,21 @@
     }
   },
   "practitioner": {
+    "presentationStatus": {
+      "DRAFT": "مسودة",
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PRACTITIONER_CONFIRMATION": "بانتظار تأكيد المعالج",
+      "UPCOMING": "قادمة",
+      "READY_TO_JOIN": "جاهزة للانضمام",
+      "IN_PROGRESS": "جارية الآن",
+      "AWAITING_COMPLETION_CONFIRMATION": "بانتظار تأكيد اكتمال الجلسة",
+      "COMPLETED": "مكتملة",
+      "CANCELLED": "ملغاة",
+      "PATIENT_NO_SHOW": "عدم حضور المريض",
+      "PRACTITIONER_NO_SHOW": "عدم حضور المعالج",
+      "BOTH_NO_SHOW": "عدم حضور الطرفين",
+      "EXPIRED": "منتهية"
+    },
     "tab": {
       "dashboard": "الرئيسية",
       "sessions": "الجلسات",
@@ -2214,6 +2260,10 @@
       "financeSubtitle": "الوصول إلى الماليات من دون ازدحام أو تشتيت.",
       "accountSupportSubtitle": "الحساب والدعم وتسجيل الخروج من مسار واحد.",
       "rows": {
+        "instantBookingPricing": {
+          "title": "أسعار الحجز الفوري",
+          "subtitle": "اضبط الأسعار الأربعة المستقلة للجلسات الفورية"
+        },
         "sessions": {
           "title": "الجلسات",
           "subtitle": "تابع الجلسات القادمة والحالية والحديثة"
@@ -2584,10 +2634,14 @@
       "REFUNDED": "تم الاسترداد"
     },
     "presentationStatus": {
+      "DRAFT": "مسودة",
+      "PENDING_PAYMENT": "بانتظار الدفع",
+      "PENDING_PRACTITIONER_CONFIRMATION": "بانتظار تأكيد المعالج",
       "UPCOMING": "قادمة",
       "JOINABLE": "جاهزة للانضمام",
       "READY_TO_JOIN": "جاهزة للانضمام",
       "IN_PROGRESS": "جارية الآن",
+      "AWAITING_COMPLETION_CONFIRMATION": "بانتظار تأكيد اكتمال الجلسة",
       "COMPLETED": "مكتملة",
       "CANCELLED": "ملغاة",
       "ENDED": "غير مكتملة",
@@ -3170,6 +3224,7 @@
       "workspace": {
         "title": "مساحة الجلسات",
         "subtitle": "تابع الجلسات من شاشة موبايل واحدة مختصرة وواضحة.",
+        "loading": "جارٍ تحميل الجلسات...",
         "listTitle": "الجلسات",
         "listSubtitle": "استخدم الفلاتر لتضييق القائمة بسرعة ثم افتح أي جلسة للتفاصيل أو الانضمام.",
         "priorityHeading": "الأولوية الآن",
@@ -3562,6 +3617,7 @@
         "weekAlreadyExists": "يوجد جدول بالفعل لهذا الأسبوع. يمكنك تعديل الجدول الحالي.",
         "invalidGranularity": "لم يتم إرسال وقت قديم مدته 60 دقيقة لأنه لا يبدأ في ساعة كاملة. راجع الجدول واحفظ مرة أخرى.",
         "invalidLegacy60": "هناك {{count}} من الأوقات القديمة لمدّة 60 دقيقة تبدأ بين الساعات. صحّحها بإضافة بداية في ساعة كاملة أو احذفها قبل الحفظ.",
+        "weekSlotsLimit": "يمكن أن يحتوي جدول الأسبوع على {{count}} وقت بدء جلسة كحد أقصى. احذف وقتًا إضافيًا قبل الحفظ.",
         "removeInvalidLegacy60": "حذف وقت الـ60 دقيقة غير الصحيح",
         "instantBookingPricingRequiredTitle": "أكمل أسعار الحجز الفوري",
         "instantBookingPricingRequired": "أدخل أسعار جلسات 30 و60 دقيقة بالجنيه المصري والدولار قبل تفعيل الحجز الفوري."

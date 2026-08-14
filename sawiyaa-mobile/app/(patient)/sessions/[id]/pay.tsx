@@ -393,7 +393,7 @@ export default function SessionPaymentCheckoutScreen() {
     return { walletUsed: walletPart, gatewayRemaining: gatewayPart };
   }, [breakdown, useWalletBalance, walletBalance]);
 
-  const payableSession = session?.operational?.actions.canPay === true;
+  const payableSession = session?.operational?.actions?.canPay === true;
   const gatewayPaymentRequired = split.gatewayRemaining > 0;
   const refundPolicyQuery = useRefundPolicy("SESSION", {
     enabled: Boolean(id),

@@ -3,6 +3,10 @@ import type { AvailabilityWeekSlot, AvailabilityWeekSlotInput } from "./types";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type DurationMinutes = 30 | 60;
 export type SelectedTimes = Record<DurationMinutes, Record<DayOfWeek, number[]>>;
+export const AVAILABILITY_WEEK_MAX_SLOTS = 7 * ((24 * 60) / 30 + (24 * 60) / 60);
+export function countSelectedAvailabilitySlots(value: SelectedTimes) {
+  return ([30, 60] as DurationMinutes[]).reduce<number>((total, duration) => total + ([0, 1, 2, 3, 4, 5, 6] as DayOfWeek[]).reduce<number>((dayTotal, day) => dayTotal + value[duration][day].filter((start) => start % duration === 0).length, 0), 0);
+}
 
 export type SelectedTimesInitialization = {
   selected: SelectedTimes;
@@ -54,18 +58,30 @@ export function timeOptions(duration: DurationMinutes) {
   return Array.from({ length: limit }, (_, index) => index * duration);
 }
 
-export function formatMinuteRange(start: number, duration: number, rtl: boolean) {
-  const toTime = (minute: number) => {
-    const hours = Math.floor(minute / 60);
-    const mins = minute % 60;
-    const suffix = hours >= 12 ? (rtl ? "م" : "PM") : (rtl ? "ص" : "AM");
-    const hour = hours % 12 || 12;
-    return `${hour}:${String(mins).padStart(2, "0")} ${suffix}`;
+function formatMinuteTime(minute: number, rtl: boolean) {
+  const normalizedMinute = minute % (24 * 60);
+  const hours = Math.floor(normalizedMinute / 60);
+  const mins = normalizedMinute % 60;
+  const suffix = hours >= 12 ? (rtl ? "م" : "PM") : (rtl ? "ص" : "AM");
+  const hour = hours % 12 || 12;
+  return `${hour}:${String(mins).padStart(2, "0")} ${suffix}`;
+}
+
+export function formatMinuteRangeParts(start: number, duration: number, rtl: boolean) {
+  return {
+    start: formatMinuteTime(start, rtl),
+    end: formatMinuteTime(start + duration, rtl),
   };
+}
+
+export function getAvailabilityRangeFlexDirection(rtl: boolean): "row" | "row-reverse" {
+  return rtl ? "row-reverse" : "row";
+}
+
+export function formatMinuteRange(start: number, duration: number, rtl: boolean) {
+  const { start: startTime, end: endTime } = formatMinuteRangeParts(start, duration, rtl);
   const isolate = (value: string) => rtl ? `\u2066${value}\u2069` : value;
-  return rtl
-    ? `من ${isolate(toTime(start))} إلى ${isolate(toTime(start + duration))}`
-    : `${isolate(toTime(start))} – ${isolate(toTime(start + duration))}`;
+  return `${isolate(startTime)} \u2013 ${isolate(endTime)}`;
 }
 
 export function formatWeekRange(start: string, end: string, locale: string) {

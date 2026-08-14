@@ -14,6 +14,7 @@ import { mapPractitionerDurationMoney } from "@/features/practitioners-discovery
 import { MoneyText } from "@/components/money/MoneyText";
 import type { PractitionerProfile } from "../types/profile";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
+import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
 
 type Props = {
   profile: PractitionerProfile;
@@ -49,8 +50,8 @@ export default async function ProfileHeader({
     .join(" / ");
   const sessionPrices = getPublicSessionPrices(p);
 
-  const displayRating = typeof p.rating === "number" ? p.rating : 0;
   const displayReviewCount = typeof p.reviewCount === "number" ? p.reviewCount : 0;
+  const hasRating = hasPublicPractitionerRating(p.rating, displayReviewCount);
 
   const resolvedMessageHref = messageHref ?? `/patient/care-chat?practitionerSlug=${p.slug}`;
 
@@ -106,11 +107,20 @@ export default async function ProfileHeader({
               {/* Rating & Location inline */}
               <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
                 <div className="flex items-center gap-1">
-                  <Star size={13} className="fill-amber-400 text-amber-400" />
-                  <span className="font-bold text-text-primary dark:text-white/95">
-                    {displayRating.toFixed(1)}
-                  </span>
-                  <span>({displayReviewCount} {isAr ? "تقييم" : "reviews"})</span>
+                  <Star
+                    size={13}
+                    className={hasRating ? "fill-amber-400 text-amber-400" : "text-text-muted"}
+                  />
+                  {hasRating ? (
+                    <>
+                      <span className="font-bold text-text-primary dark:text-white/95">
+                        {p.rating!.toFixed(1)}
+                      </span>
+                      <span>({displayReviewCount} {isAr ? "تقييم" : "reviews"})</span>
+                    </>
+                  ) : (
+                    <span>{t("trust.summary.noRating")}</span>
+                  )}
                 </div>
 
                 <span className="text-border-light">•</span>

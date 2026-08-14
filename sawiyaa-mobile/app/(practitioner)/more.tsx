@@ -136,11 +136,11 @@ export default function PractitionerMoreScreen() {
             },
             {
               key: "settings",
-              title: t("settings.title", { defaultValue: "الإعدادات" }),
-              subtitle: t("settings.subtitle", { defaultValue: isArabic ? "اللغة والمظهر" : "Language & Appearance" }),
+              title: t("settings.title"),
+              subtitle: t("settings.subtitle"),
               icon: "settings-outline" as const,
               tone: "account" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/settings"),
+              onPress: () => router.push("/(settings)"),
             },
             {
               key: "instantBookingPricing",
@@ -148,7 +148,7 @@ export default function PractitionerMoreScreen() {
               subtitle: t("practitioner.more.rows.instantBookingPricing.subtitle"),
               icon: "flash-outline" as const,
               tone: "info" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/instant-booking-pricing"),
+              onPress: () => router.push("/(mobile-tools)/instant-booking-pricing"),
             },
             {
               key: "support",

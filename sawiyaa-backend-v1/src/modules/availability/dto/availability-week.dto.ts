@@ -15,6 +15,7 @@ import {
 } from 'class-validator';
 import { AvailabilityWeekStatus, AvailabilityWeekday } from '@prisma/client';
 import { AvailabilityWeekUiStatus } from '../types/availability-week.types';
+import { AVAILABILITY_WEEK_MAX_SLOTS } from '../constants/availability-capacity.constants';
 
 const AVAILABILITY_WEEK_UI_STATUSES: AvailabilityWeekUiStatus[] = [
   'NOT_SET',
@@ -92,7 +93,9 @@ export class CreateAvailabilityWeekDto {
   })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(100)
+  @ArrayMaxSize(AVAILABILITY_WEEK_MAX_SLOTS, {
+    message: 'availability.errors.weekSlotsLimit',
+  })
   @ValidateNested({ each: true })
   @Type(() => AvailabilityWeekSlotInputDto)
   slots?: AvailabilityWeekSlotInputDto[];
@@ -115,7 +118,9 @@ export class UpdateAvailabilityWeekDto {
   })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(100)
+  @ArrayMaxSize(AVAILABILITY_WEEK_MAX_SLOTS, {
+    message: 'availability.errors.weekSlotsLimit',
+  })
   @ValidateNested({ each: true })
   @Type(() => AvailabilityWeekSlotInputDto)
   slots?: AvailabilityWeekSlotInputDto[];

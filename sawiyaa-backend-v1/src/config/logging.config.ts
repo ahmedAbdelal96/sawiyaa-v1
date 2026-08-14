@@ -27,9 +27,23 @@ function toNonNegativeInteger(
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : defaultValue;
 }
 
+function isPlaceholderReleaseValue(value: string | undefined): boolean {
+  return !value || ['local', 'dev', 'development', 'unknown'].includes(value.toLowerCase());
+}
+
+function resolveReleaseId(): string | null {
+  const value =
+    process.env.SAWIYAA_RELEASE_SHA?.trim() ||
+    process.env.GIT_SHA?.trim() ||
+    process.env.COMMIT_SHA?.trim() ||
+    process.env.SOURCE_VERSION?.trim();
+  return value && !isPlaceholderReleaseValue(value) ? value : null;
+}
+
 export default registerAs('logging', () => {
   const nodeEnv = process.env.NODE_ENV ?? 'development';
-  const isProduction = nodeEnv === 'production';
+  const isProduction =
+    (process.env.APP_ENV ?? nodeEnv).trim().toLowerCase() === 'production';
 
   const level = isLogLevel(process.env.LOG_LEVEL)
     ? process.env.LOG_LEVEL
@@ -62,11 +76,22 @@ export default registerAs('logging', () => {
     process.env.LOG_MAX_FILE_SIZE?.trim() || DEFAULT_LOG_MAX_FILE_SIZE;
   const maxFileSizeBytes = parseLogFileSize(maxFileSize);
   const serviceName = resolveServiceName();
+  const releaseId = resolveReleaseId();
+  const configuredVersion = process.env.APP_VERSION?.trim();
   const version =
-    process.env.APP_VERSION?.trim() ||
+    (!isProduction || !isPlaceholderReleaseValue(configuredVersion)
+      ? configuredVersion
+      : null) ||
+    (isProduction ? releaseId : null) ||
     process.env.npm_package_version?.trim() ||
     '0.0.1';
-  const deploymentId = process.env.DEPLOYMENT_ID?.trim() || null;
+  const configuredDeploymentId = process.env.DEPLOYMENT_ID?.trim();
+  const deploymentId =
+    (!isProduction || !isPlaceholderReleaseValue(configuredDeploymentId)
+      ? configuredDeploymentId
+      : null) ||
+    (isProduction ? releaseId : null) ||
+    null;
 
   return {
     nodeEnv,

@@ -60,7 +60,7 @@ export default function SessionDetailScreen() {
 
   if (sessionQuery.isLoading) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="patient-session-details-screen">
         <Header showBack />
         <LoadingState fullScreen />
       </Screen>
@@ -69,7 +69,7 @@ export default function SessionDetailScreen() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="patient-session-details-screen">
         <Header showBack />
         <ErrorState fullScreen onRetry={sessionQuery.refetch} />
       </Screen>
@@ -81,7 +81,7 @@ export default function SessionDetailScreen() {
   const presentationStatusText = formatPresentationStatusLabel(t, presentationStatus as SessionStatus);
   // Older persisted query data may predate the backend-owned action contract.
   // Missing flags deny actions instead of recreating lifecycle rules on mobile.
-  const needsPayment = session.operational?.actions.canPay === true;
+  const needsPayment = session.operational?.actions?.canPay === true;
   const cancellationEligible = operationalCanCancel(session);
   const canOpenMessages = Boolean(
     session.practitioner?.slug && session.chatAvailability?.canRead === true,
@@ -89,15 +89,15 @@ export default function SessionDetailScreen() {
   const showJoinBlockedReason =
     Boolean(
       !canAttemptJoin &&
-        session.operational?.join.reasonCode,
+        session.operational?.join?.reasonCode,
     );
   const joinBlockedReasonText = showJoinBlockedReason
     ? t(
-        `patientSessionsFlow.detail.blocked.${session.operational?.join.reasonCode}` as const,
+        `patientSessionsFlow.detail.blocked.${session.operational?.join?.reasonCode}` as const,
       )
     : null;
   const joinAvailableAtText =
-    !canAttemptJoin && session.operational.join.opensAt
+    !canAttemptJoin && session.operational?.join?.opensAt
       ? t("patientSessionsFlow.detail.joinAvailableAt", {
           datetime: formatLocalizedDateTime(session.operational.join.opensAt, locale),
         })
@@ -110,11 +110,11 @@ export default function SessionDetailScreen() {
     joinBlockedReasonText,
   );
   const messagesHelperText =
-    session.chatAvailability.readOnly
+    session.chatAvailability?.readOnly
       ? t("patientSessionsFlow.detail.messagesReadOnly")
       : t("patientSessionsFlow.detail.actionSummary.messages");
   const roomClosedHelpVisible =
-    session.operational?.room.state === "CLOSED";
+    session.operational?.room?.state === "CLOSED";
   const roomClosedSupportSubject = t(
     "patientSessionsFlow.detail.roomClosed.supportSubject",
     {
@@ -209,7 +209,7 @@ export default function SessionDetailScreen() {
     t("patientSessionsFlow.common.practitionerFallback");
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-session-details-screen">
       <Header showBack title={t("patientSessionsFlow.detail.title")} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

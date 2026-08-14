@@ -177,7 +177,7 @@ export default function PatientProfileScreen() {
             style={[styles.viewProfileRow, { flexDirection: rowDirection }]}
           >
             <Text weight="600" color={theme.colors.primary} style={styles.viewProfileText}>
-              {t("profileScreen.details.screenTitle") || "عرض الملف الشخصي"}
+              {t("profileScreen.details.screenTitle")}
             </Text>
             <Ionicons
               name={chevronForward}
@@ -282,20 +282,28 @@ export default function PatientProfileScreen() {
 
         {/* Group 2: Preferences - Warm Card to create rhythm variety */}
         <SectionHeader
-          title={t("profileScreen.hub.rows.preferences.title") || "التفضيلات"}
+          title={t("profileScreen.hub.rows.preferences.title")}
           style={{ flexDirection: isRTL ? "row-reverse" : "row" }}
         />
         <Card variant="elevated" style={[styles.groupedCardWarm, { backgroundColor: theme.colors.surface }]} padding="none">
           <MoreRow
-            title={t("profileScreen.language.title") || "اللغة"}
+            title={t("settings.title")}
+            subtitle={t("settings.subtitle")}
+            iconName="settings-outline"
+            iconBgColor="#E8F1F8"
+            iconColor={theme.colors.primary}
+            onPress={() => router.push("/(settings)" as any)}
+          />
+          <MoreRow
+            title={t("profileScreen.language.title")}
             subtitle={currentLocaleLabel}
             iconName="language-outline"
             iconBgColor="#E8F1F8"
             iconColor={theme.colors.primary}
-            onPress={() => router.push("/(patient)/profile-preferences" as any)}
+            onPress={() => router.push("/(settings)" as any)}
           />
           <MoreRow
-            title={t("profileScreen.preferences.timezoneTitle") || "المنطقة الزمنية"}
+            title={t("profileScreen.preferences.timezoneTitle")}
             subtitle={currentTimezone}
             iconName="time-outline"
             iconBgColor="#E8F1F8"
@@ -303,7 +311,7 @@ export default function PatientProfileScreen() {
             onPress={() => router.push("/(patient)/profile-preferences" as any)}
           />
           <MoreRow
-            title={t("profileScreen.notifications.screenTitle") || "إعدادات الإشعارات"}
+            title={t("profileScreen.notifications.screenTitle")}
             subtitle={
               canManageNotifications
                 ? t("profileScreen.hub.rows.notificationPreferences.subtitle")

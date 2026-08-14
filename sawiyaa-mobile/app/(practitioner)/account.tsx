@@ -73,7 +73,7 @@ export default function PractitionerAccountScreen() {
 
   if (isBusy) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
@@ -89,7 +89,7 @@ export default function PractitionerAccountScreen() {
 
   if (profileQuery.isError || !profile) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
@@ -125,7 +125,7 @@ export default function PractitionerAccountScreen() {
   const alignSelfStart = isArabic ? "flex-end" : "flex-start";
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-profile-edit-screen">
       <Header
         title={t("practitioner.account.title")}
         rightElement={

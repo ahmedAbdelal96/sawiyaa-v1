@@ -129,7 +129,7 @@ export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem):
     isInstantBookingAvailable: (item as unknown as { availableNow?: boolean }).availableNow ?? (item as unknown as { isInstantBookingAvailable?: boolean }).isInstantBookingAvailable ?? false,
     acceptsCoupon: item.acceptsCoupon ?? false,
     acceptsPackage: item.acceptsPackage ?? false,
-    rating: item.ratingSummary?.averageRating ?? 0,
+    rating: item.ratingSummary?.averageRating ?? null,
     reviewCount: item.ratingSummary?.totalReviews ?? 0,
     sessionCount: null,
     yearsExperience: item.yearsExperience ?? 0,

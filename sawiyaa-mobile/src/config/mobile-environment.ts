@@ -2,6 +2,11 @@ import { Platform } from 'react-native';
 
 export const PRODUCTION_API_URL = 'https://sawiyaa.com/api/v1';
 
+// Keep every Expo public environment access static so Metro can inline it for native releases.
+export const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+export const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
 type ResolveOptions = {
   configuredUrl?: string;
   isDevelopment?: boolean;

@@ -31,6 +31,8 @@ export const enAvailabilityCatalog = {
     invalidDurationMinutes:
       'Weekly availability slot duration must be 30 or 60 minutes',
     invalidGranularity: 'Weekly availability must use 30-minute granularity',
+    weekSlotsLimit:
+      'A weekly schedule can contain at most 504 session start times',
     overlappingWeeklySlots:
       'Weekly availability contains overlapping slots on the same day',
     invalidExceptionRange: 'Availability exception range is invalid',

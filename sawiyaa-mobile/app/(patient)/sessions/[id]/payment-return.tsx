@@ -314,7 +314,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (!sessionId) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header
           showBack
           onBack={() => router.replace("/(patient)/sessions")}
@@ -336,7 +336,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (sessionQuery.isLoading && !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <LoadingState fullScreen />
       </Screen>
@@ -345,7 +345,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
@@ -363,7 +363,7 @@ export default function SessionPaymentReturnScreen() {
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="payment-return-screen">
       <Header showBack title={t("patientPaymentsFlow.return.title")} />
 
       <ScrollView contentContainerStyle={styles.content}>

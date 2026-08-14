@@ -23,7 +23,7 @@ import type {
   AvailabilityWeekWindowEntry,
   AvailabilityWorkspaceData,
 } from "../types/availability.types";
-import { canFitAvailabilityDuration } from "../utils/availability-time-grid";
+import { AVAILABILITY_WEEK_MAX_SLOTS, canFitAvailabilityDuration } from "../utils/availability-time-grid";
 import AvailabilityTimeGrid from "./AvailabilityTimeGrid";
 
 type DialogState =
@@ -109,6 +109,8 @@ export function ScheduleEditorModal({ week, timezone, onClose }: { week: Availab
   const isCreate = !week.weekId;
   const canEditExisting = isCreate || Boolean(details && details.isEditable && week.canEdit);
   const pending = createWeek.isPending || updateWeek.isPending;
+  const slots = useMemo(() => DAYS.flatMap((dayOfWeek) => ([30, 60] as Duration[]).flatMap((slotDuration) => starts[dayOfWeek][slotDuration].filter((startMinuteOfDay) => startMinuteOfDay % slotDuration === 0).map((startMinuteOfDay) => ({ dayOfWeek, durationMinutes: slotDuration, startMinuteOfDay, endMinuteOfDay: startMinuteOfDay + slotDuration })))), [starts]);
+  const exceedsSlotLimit = slots.length > AVAILABILITY_WEEK_MAX_SLOTS;
 
   useEffect(() => {
     if (!details) return;
@@ -129,7 +131,7 @@ export function ScheduleEditorModal({ week, timezone, onClose }: { week: Availab
   }
 
   function save() {
-    const slots = DAYS.flatMap((dayOfWeek) => ([30, 60] as Duration[]).flatMap((slotDuration) => starts[dayOfWeek][slotDuration].filter((startMinuteOfDay) => startMinuteOfDay % slotDuration === 0).map((startMinuteOfDay) => ({ dayOfWeek, durationMinutes: slotDuration, startMinuteOfDay, endMinuteOfDay: startMinuteOfDay + slotDuration }))));
+    if (exceedsSlotLimit) return;
     if (isCreate) createWeek.mutate({ weekStartDate: week.weekStartDate, timezone, slots }, { onSuccess: onClose });
     else if (week.weekId && details && canEditExisting) updateWeek.mutate({ weekId: week.weekId, timezone, slots }, { onSuccess: onClose });
   }
@@ -160,9 +162,10 @@ export function ScheduleEditorModal({ week, timezone, onClose }: { week: Availab
           onToggle={toggle}
         />
         {invalidLegacy60Starts.length > 0 ? <p role="alert" className="rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 text-sm leading-6 text-warning-700">{t("dialogs.editor.invalidLegacy60", { count: invalidLegacy60Starts.length })}</p> : null}
+        {exceedsSlotLimit ? <p role="alert" className="rounded-2xl border border-error-200 bg-error-50 px-4 py-3 text-sm leading-6 text-error-700">{t("dialogs.editor.weekSlotsLimit", { count: AVAILABILITY_WEEK_MAX_SLOTS })}</p> : null}
         <p className="text-xs leading-5 text-text-muted">{t("dialogs.editor.saveHint")}</p>
       </ModalBody>
-      <ModalFooter><button type="button" onClick={onClose} className="rounded-xl border border-border-light px-4 py-2.5 text-sm font-semibold text-text-secondary">{t("actions.cancel")}</button><button type="button" onClick={save} disabled={!canEditExisting || pending} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{pending ? t("actions.saving") : t("actions.save")}</button></ModalFooter>
+      <ModalFooter><button type="button" onClick={onClose} className="rounded-xl border border-border-light px-4 py-2.5 text-sm font-semibold text-text-secondary">{t("actions.cancel")}</button><button type="button" onClick={save} disabled={!canEditExisting || pending || exceedsSlotLimit} className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{pending ? t("actions.saving") : t("actions.save")}</button></ModalFooter>
     </Modal>
   );
 }

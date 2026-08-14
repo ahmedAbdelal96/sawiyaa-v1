@@ -7,7 +7,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Header, Text, Input } from "../../../src/components/ui";
@@ -16,6 +16,7 @@ import { createPractitionerSupportTicket } from "../../../src/features/messages/
 import { useQueryClient } from "@tanstack/react-query";
 import { extractApiErrorMessage } from "../../../src/lib/api";
 import { createMobileUuid } from "../../../src/lib/mobile-uuid";
+import { normalizeSupportTicketCategory } from "../../../src/features/support/contracts";
 
 export default function PractitionerSupportNewScreen() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function PractitionerSupportNewScreen() {
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language?.startsWith("ar") ?? false;
   const queryClient = useQueryClient();
+  const { category: routeCategory } = useLocalSearchParams<{ category?: string }>();
+  const category = normalizeSupportTicketCategory(routeCategory);
 
   const [message, setMessage] = useState("");
   const [idempotencyKey] = useState(createMobileUuid);
@@ -44,6 +47,7 @@ export default function PractitionerSupportNewScreen() {
     setIsPending(true);
     try {
       const res = await createPractitionerSupportTicket({
+        category,
         description: trimmed,
         newConversation: true,
         idempotencyKey,

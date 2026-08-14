@@ -17,6 +17,8 @@ import { fetchPublicSpecialties } from "@/features/specialties-public/api/specia
 import { Link } from "@/i18n/navigation";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
+import { getUserData } from "@/lib/auth/server";
+import PatientPractitionerViewTracker from "@/features/practitioner-profile/components/PatientPractitionerViewTracker";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -58,6 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PatientPractitionerProfilePage({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
+  const user = await getUserData();
 
   const tUnavailable = await getTranslations({
     locale,
@@ -142,6 +145,7 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
 
   return (
     <div className="px-4 py-4 sm:py-6">
+      <PatientPractitionerViewTracker slug={slug} enabled={user?.role === "PATIENT"} />
       <div className="mx-auto max-w-6xl space-y-4">
         <ProfileHeader
           profile={profile}

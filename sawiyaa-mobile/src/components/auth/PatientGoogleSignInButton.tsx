@@ -12,11 +12,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../ui";
 import { useTheme } from "../../providers/ThemeProvider";
 import { extractApiErrorMessage } from "../../lib/api";
+import {
+  GOOGLE_ANDROID_CLIENT_ID,
+  GOOGLE_IOS_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
+} from "../../config/mobile-environment";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const G_BLUE = "#4285F4";
 const G_DARK = "#3c4043";
+const FALLBACK_CLIENT_ID = "__GOOGLE_CLIENT_ID_NOT_CONFIGURED__";
 
 interface PatientGoogleSignInButtonProps {
   onTokenReceived: (idToken: string) => Promise<void>;
@@ -32,24 +38,20 @@ export function PatientGoogleSignInButton({
   const { theme } = useTheme();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
-  const publicEnv = process.env as Record<string, string | undefined>;
-
-  const fallbackClientId = "__GOOGLE_CLIENT_ID_NOT_CONFIGURED__";
-
   const clientIds = useMemo(
     () => ({
-      androidClientId: publicEnv.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? fallbackClientId,
-      iosClientId: publicEnv.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? fallbackClientId,
-      webClientId: publicEnv.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? fallbackClientId,
+      androidClientId: GOOGLE_ANDROID_CLIENT_ID ?? FALLBACK_CLIENT_ID,
+      iosClientId: GOOGLE_IOS_CLIENT_ID ?? FALLBACK_CLIENT_ID,
+      webClientId: GOOGLE_WEB_CLIENT_ID ?? FALLBACK_CLIENT_ID,
     }),
-    [publicEnv],
+    [],
   );
 
   const isConfigured = useMemo(() => {
-    if (Platform.OS === "android") return clientIds.androidClientId !== fallbackClientId;
-    if (Platform.OS === "ios") return clientIds.iosClientId !== fallbackClientId;
-    return clientIds.webClientId !== fallbackClientId;
-  }, [clientIds.androidClientId, clientIds.iosClientId, clientIds.webClientId, fallbackClientId]);
+    if (Platform.OS === "android") return clientIds.androidClientId !== FALLBACK_CLIENT_ID;
+    if (Platform.OS === "ios") return clientIds.iosClientId !== FALLBACK_CLIENT_ID;
+    return clientIds.webClientId !== FALLBACK_CLIENT_ID;
+  }, [clientIds.androidClientId, clientIds.iosClientId, clientIds.webClientId]);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest(clientIds);
 

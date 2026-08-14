@@ -51,7 +51,7 @@ export default function PractitionerWalletScreen() {
 
   if (walletQuery.isLoading) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-wallet-screen">
         <Header title={t("practitioner.finance.wallet.title")} showBack />
         <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
       </Screen>
@@ -60,7 +60,7 @@ export default function PractitionerWalletScreen() {
 
   if (walletQuery.isError) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-wallet-screen">
         <Header title={t("practitioner.finance.wallet.title")} showBack />
         <ErrorState
           fullScreen
@@ -73,7 +73,7 @@ export default function PractitionerWalletScreen() {
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-wallet-screen">
       <Header
         title={t("practitioner.finance.wallet.title")}
         showBack

@@ -23,6 +23,21 @@ describe("support-new native initialization", () => {
     }
   });
 
+  it("sends the backend support category contract for both role-specific screens", () => {
+    const screens = [
+      "app/(patient)/support/new.tsx",
+      "app/(practitioner)/support/new.tsx",
+    ].map((file) => readFileSync(resolve(root, file), "utf8"));
+
+    for (const source of screens) {
+      expect(source).toContain("normalizeSupportTicketCategory");
+      expect(source).toContain("category,");
+    }
+
+    const api = readFileSync(resolve(root, "src/features/messages/api.ts"), "utf8");
+    expect(api).toContain('category: payload.category ?? "GENERAL"');
+  });
+
   it("generates the initialization ID when browser crypto is absent", () => {
     const previousCrypto = (globalThis as { crypto?: unknown }).crypto;
     try {

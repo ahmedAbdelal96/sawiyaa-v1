@@ -49,6 +49,22 @@ export class PaymentConfigStartupValidationService implements OnModuleInit {
       }
     }
 
+    if (!isDevelopment) {
+      const paymobRoutes = this.paymentRuntimeConfigService
+        .getPaymentRoutingConfig()
+        .routeReadiness.filter(
+          ({ route }) => route.provider === PaymentProvider.PAYMOB && route.enabled,
+        );
+
+      for (const readiness of paymobRoutes) {
+        if (!readiness.ready) {
+          issues.push(
+            `Paymob route ${readiness.route.currencyCode}/${readiness.route.paymentMethod} is not ready: ${readiness.issues.join('; ')}`,
+          );
+        }
+      }
+    }
+
     if (stripe.enabled || paymob.enabled) {
       try {
         this.paymentRuntimeConfigService.getRedirectUrls();

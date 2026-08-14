@@ -48,7 +48,14 @@ export function usePatientHome() {
 }
 
 export function useTrackPractitionerView() {
+  const enabled = useAuthenticatedQueryEnabled("patient");
+
   return useMutation({
-    mutationFn: trackPractitionerView,
+    mutationFn: (slug: string) => {
+      if (!enabled) {
+        return Promise.resolve(null);
+      }
+      return trackPractitionerView(slug);
+    },
   });
 }

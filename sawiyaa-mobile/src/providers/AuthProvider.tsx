@@ -672,14 +672,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       await revokeCurrentPushRegistration();
+    } catch {
+      // Push deregistration is best effort and must not skip auth revocation.
+    }
 
+    try {
       if (current?.role === "patient") {
         await patientLogout(current.tokens.refreshToken);
       } else if (current?.role === "practitioner") {
         await practitionerLogout(current.tokens.refreshToken);
       }
     } catch {
-      // Ignore logout transport errors and always clear local session.
+      // Auth revocation is best effort; local state must still be cleared.
     } finally {
       await clearAuthenticatedState();
       router.replace("/(public)");

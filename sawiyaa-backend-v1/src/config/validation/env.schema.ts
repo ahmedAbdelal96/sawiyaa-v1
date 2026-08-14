@@ -29,6 +29,12 @@ const baseEnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   APP_NAME: z.string().default('sawiyaa-backend-v1'),
   SERVICE_NAME: z.string().optional(),
+  APP_VERSION: z.string().optional(),
+  DEPLOYMENT_ID: z.string().optional(),
+  SAWIYAA_RELEASE_SHA: z.string().optional(),
+  GIT_SHA: z.string().optional(),
+  COMMIT_SHA: z.string().optional(),
+  SOURCE_VERSION: z.string().optional(),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
   // Public Web application origin used only for safe, stable links in

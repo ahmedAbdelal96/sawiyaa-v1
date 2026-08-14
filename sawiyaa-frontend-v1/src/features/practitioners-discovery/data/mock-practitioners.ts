@@ -198,6 +198,6 @@ export function filterAndSortPractitioners(
   return filtered.sort((a, b) => {
     if (sort === "experience") return b.yearsExperience - a.yearsExperience;
     if (sort === "sessions") return (b.sessionCount ?? 0) - (a.sessionCount ?? 0);
-    return b.rating - a.rating;
+    return (b.rating ?? 0) - (a.rating ?? 0);
   });
 }

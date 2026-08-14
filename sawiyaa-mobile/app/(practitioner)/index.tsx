@@ -145,7 +145,7 @@ export default function PractitionerHomeScreen() {
 
   if (profileQuery.isLoading) {
     return (
-      <Screen bg="background" safeArea edges={["top", "left", "right"]}>
+      <Screen bg="background" testID="practitioner-dashboard-screen" safeArea edges={["top", "left", "right"]}>
         <LoadingState fullScreen />
       </Screen>
     );
@@ -153,7 +153,7 @@ export default function PractitionerHomeScreen() {
 
   if (profileQuery.isError || !profileQuery.data?.profile) {
     return (
-      <Screen bg="background" safeArea edges={["top", "left", "right"]}>
+      <Screen bg="background" testID="practitioner-dashboard-screen" safeArea edges={["top", "left", "right"]}>
         <ErrorState fullScreen onRetry={profileQuery.refetch} />
       </Screen>
     );
@@ -199,7 +199,7 @@ export default function PractitionerHomeScreen() {
   }));
 
   return (
-    <Screen bg="background" safeArea edges={["left", "right", "bottom"]}>
+    <Screen bg="background" testID="practitioner-dashboard-screen" safeArea edges={["left", "right", "bottom"]}>
       {/* Premium Compact Top Header with Brand Logo & Actions */}
       <View
         style={[

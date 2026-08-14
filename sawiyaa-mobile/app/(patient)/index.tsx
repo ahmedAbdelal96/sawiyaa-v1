@@ -42,7 +42,7 @@ export default function PatientHomeScreen() {
   const heroBody = matchingCard?.description || t("home.matching.body");
 
   return (
-    <Screen bg="background" style={styles.root} edges={["top", "left", "right"]}>
+    <Screen bg="background" testID="patient-home-screen" style={styles.root} edges={["top", "left", "right"]}>
       <Header variant="home" />
 
       {patientRegistrationNotice === "phone-not-saved" ? (

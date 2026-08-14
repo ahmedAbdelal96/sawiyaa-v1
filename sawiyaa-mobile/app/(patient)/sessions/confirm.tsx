@@ -267,7 +267,7 @@ export default function BookingConfirmationScreen() {
   const showAvatar = params.practitionerAvatarUrl && !avatarFailed;
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-booking-screen">
       <Header showBack />
 
       <ScrollView

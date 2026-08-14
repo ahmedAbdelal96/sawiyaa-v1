@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Find a practitioner|البحث عن ممارس"
+- assertVisible:
+    text: "Practitioners|الممارسون"
+- tapOn:
+    text: "View details|عرض التفاصيل"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

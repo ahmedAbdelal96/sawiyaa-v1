@@ -1,4 +1,29 @@
 {
+  "settings": {
+    "title": "Settings",
+    "screenTitle": "Settings",
+    "subtitle": "Language & Appearance",
+    "sections": {
+      "preferences": "General Preferences"
+    },
+    "language": {
+      "title": "Language",
+      "subtitle": "Choose application language",
+      "options": {
+        "ar": "العربية",
+        "en": "English"
+      }
+    },
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Customize app theme and colors",
+      "options": {
+        "system": "System default",
+        "light": "Light",
+        "dark": "Dark"
+      }
+    }
+  },
   "welcome": "Welcome to Sawiyaa",
   "assessments": {
     "tab": "Assessments",
@@ -117,10 +142,20 @@
   "sessions": "Sessions",
   "profile": "Profile",
   "profileScreen": {
+    "moreTitle": "More",
     "fallbackName": "Patient",
     "fallbackEmail": "Email not available",
     "none": "Not set",
     "logout": "Log Out",
+    "moreSections": {
+      "account": "Account",
+      "accountSubtitle": "Account information and personal details",
+      "contentSupport": "Content & support",
+      "contentSupportSubtitle": "Articles, messages, notifications, and support",
+      "learningPurchases": "Learning & purchases",
+      "learningPurchasesSubtitle": "Academy content and session packages",
+      "accountLogoutSubtitle": "Sign out of this account"
+    },
     "hub": {
       "hero": {
         "caption": "Manage your personal information, preferences, alerts, and account support without digging through one crowded screen.",
@@ -165,6 +200,14 @@
           "title": "Wallet & payments",
           "subtitle": "Review wallet balance, payment history, and payment-related activity"
         },
+        "messages": {
+          "title": "Messages",
+          "subtitle": "Open your conversations with practitioners"
+        },
+        "articles": {
+          "title": "Articles",
+          "subtitle": "Browse health articles and guidance"
+        },
         "support": {
           "title": "Support",
           "subtitle": "Open a support request or continue an existing one"
@@ -173,6 +216,12 @@
       "onboarding": {
         "pendingTitle": "Profile setup is not yet complete",
         "pendingBody": "Finishing your personal details helps bookings, reminders, and support work correctly for your account."
+      }
+    },
+    "more": {
+      "rows": {
+        "academy": { "title": "Academy", "subtitle": "Browse learning content and health guidance" },
+        "packages": { "title": "Session packages", "subtitle": "Review available and purchased packages" }
       }
     },
     "wallet": {
@@ -535,6 +584,7 @@
       "loadMoreErrorSubtitle": "Try again to load the next set of results.",
       "professionalFallback": "Licensed therapist",
       "newBadge": "New",
+      "noRatings": "No ratings yet",
       "experience": "{{years}} yrs exp",
       "priceLabel": "Starting from",
       "priceValue": "{{value}}",
@@ -774,6 +824,7 @@
       "workspace": {
         "title": "Sessions workspace",
         "subtitle": "Your sessions at a glance",
+        "loading": "Loading sessions...",
         "heroNote": "Upcoming, active, and recent sessions are grouped so you can act quickly without digging.",
         "viewDetails": "View details",
         "loadingMore": "Loading more sessions...",
@@ -994,6 +1045,9 @@
     },
     "checkout": {
       "title": "Payment Summary",
+      "screenTitle": "Review and pay",
+      "headingSubtitle": "Review your session details and choose a payment method to complete your booking securely.",
+      "footerTrustNote": "Secure payment. Your information is protected.",
       "loadingSession": "Loading session details...",
       "loadingBreakdown": "Calculating cost...",
       "errorTitle": "Could not load payment details",
@@ -1291,6 +1345,7 @@
       "rolePractitioner": "Practitioner"
     },
     "inbox": {
+      "supportHeaderTitle": "Support conversations",
       "title": "Messages",
       "tabEmpty": "No conversations yet.",
       "tabEmptySessions": "No session conversations yet.",
@@ -1356,10 +1411,50 @@
     }
   },
   "practitioner": {
+    "presentationStatus": {
+      "DRAFT": "Draft",
+      "PENDING_PAYMENT": "Pending payment",
+      "PENDING_PRACTITIONER_CONFIRMATION": "Awaiting practitioner confirmation",
+      "UPCOMING": "Upcoming",
+      "READY_TO_JOIN": "Ready to join",
+      "IN_PROGRESS": "In progress",
+      "AWAITING_COMPLETION_CONFIRMATION": "Awaiting completion confirmation",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled",
+      "PATIENT_NO_SHOW": "Patient no-show",
+      "PRACTITIONER_NO_SHOW": "Practitioner no-show",
+      "BOTH_NO_SHOW": "Both no-show",
+      "EXPIRED": "Expired"
+    },
     "tab": {
       "dashboard": "Dashboard",
       "sessions": "Sessions",
-      "availability": "Availability"
+      "availability": "Availability",
+      "more": "More"
+    },
+    "more": {
+      "title": "More",
+      "subtitle": "Quick access to your daily work tools in one place.",
+      "sections": { "daily": "Daily work", "workTools": "Work tools", "finance": "Finance", "accountSupport": "Account & support" },
+      "dailySubtitle": "Sessions, communication, availability, and notifications in one place.",
+      "workToolsSubtitle": "Quick tools for daily tasks and notifications.",
+      "financeSubtitle": "Access financial information without clutter.",
+      "accountSupportSubtitle": "Account, support, and sign-out in one place.",
+      "rows": {
+        "sessions": { "title": "Sessions", "subtitle": "Review upcoming, current, and recent sessions" },
+        "messages": { "title": "Messages", "subtitle": "All session, support, and follow-up conversations in one place" },
+        "availability": { "title": "Availability", "subtitle": "Edit your weekly schedule and temporary states" },
+        "notifications": { "title": "Notifications", "subtitle": "Review recent alerts and notifications" },
+        "finance": { "title": "Finance", "subtitle": "Your financial summary and activity overview" },
+        "wallet": { "title": "Wallet", "subtitle": "Your current balance and financial movements" },
+        "ledger": { "title": "Ledger", "subtitle": "All financial entries ordered by newest" },
+        "settlements": { "title": "Settlements", "subtitle": "Payout records and related statuses" },
+        "promoCodes": { "title": "Promo codes", "subtitle": "Create and review your promo codes" },
+        "account": { "title": "Account", "subtitle": "Identity, preferences, and profile details" },
+        "support": { "title": "Support", "subtitle": "Request help or continue support conversations" },
+        "logout": { "title": "Log out", "subtitle": "End the session on this device" },
+        "instantBookingPricing": { "title": "Instant Booking prices", "subtitle": "Set the four independent prices used for instant sessions." }
+      }
     },
     "common": {
       "loadError": "Could not load the practitioner workspace right now.",
@@ -1664,14 +1759,6 @@
         "viewStatus": "View status"
       }
     },
-    "more": {
-      "rows": {
-        "instantBookingPricing": {
-          "title": "Instant Booking prices",
-          "subtitle": "Set the four independent prices used for instant sessions."
-        }
-      }
-    },
     "account": {
       "quickAccess": "Account",
       "profileCard": "Profile",
@@ -1947,6 +2034,7 @@
       "workspace": {
         "title": "Sessions workspace",
         "subtitle": "Track upcoming, active, and recent sessions in one mobile view.",
+        "loading": "Loading sessions...",
         "viewDetails": "View details",
         "loadingMore": "Loading more sessions...",
         "endOfList": "You have reached the end of the list.",
@@ -2206,6 +2294,7 @@
         "weekAlreadyExists": "A schedule already exists for this week. You can edit the current schedule.",
         "invalidGranularity": "One older 60-minute time was not submitted because it does not start on a full hour. Review the schedule and save again.",
         "invalidLegacy60": "{{count}} older 60-minute time(s) start between hours. Correct them by adding a full-hour start, or remove them before saving.",
+        "weekSlotsLimit": "A weekly schedule can contain at most {{count}} session start times. Remove an extra time before saving.",
         "removeInvalidLegacy60": "Remove this invalid 60-minute time",
         "instantBookingPricingRequiredTitle": "Complete instant booking prices",
         "instantBookingPricingRequired": "Set prices for 30- and 60-minute sessions in both EGP and USD before enabling instant booking."

@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { Star, BadgeCheck, ArrowRight } from "lucide-react";
 import type { PublicPractitioner } from "@/features/practitioners-discovery/types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
+import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
 
 type Props = {
   practitioners: PublicPractitioner[];
@@ -77,12 +78,18 @@ export default async function RelatedPractitioners({
                     <span className="app-chip rounded-full px-2.5 py-1 text-[11px] font-medium">
                       {specialtyLabels[p.specialties[0]] ?? p.specialties[0]}
                     </span>
-                    <div className="flex items-center gap-0.5">
-                      <Star size={11} className="fill-secondary text-secondary" />
-                      <span className="text-xs font-bold text-text-primary dark:text-white/80">
-                        {p.rating.toFixed(1)}
+                    {hasPublicPractitionerRating(p.rating, p.reviewCount) ? (
+                      <div className="flex items-center gap-0.5">
+                        <Star size={11} className="fill-secondary text-secondary" />
+                        <span className="text-xs font-bold text-text-primary dark:text-white/80">
+                          {p.rating.toFixed(1)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-medium text-text-muted">
+                        {t("trust.summary.noRating")}
                       </span>
-                    </div>
+                    )}
                   </div>
                 </div>
 

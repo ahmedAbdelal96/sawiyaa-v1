@@ -32,7 +32,7 @@ export default function PractitionerAvailabilityScreen() {
           Alert.alert(
             t("practitioner.availability.errors.instantBookingPricingRequiredTitle"),
             t("practitioner.availability.errors.instantBookingPricingRequired"),
-            [{ text: t("practitioner.availability.openPricingSettings"), onPress: () => router.push("/(practitioner)/instant-booking-pricing" as never) }, { text: t("common.cancel"), style: "cancel" }],
+            [{ text: t("practitioner.availability.openPricingSettings"), onPress: () => router.push("/(mobile-tools)/instant-booking-pricing" as never) }, { text: t("common.cancel"), style: "cancel" }],
           );
         } else {
           Alert.alert(t("common.error"), t("practitioner.availability.actionError"));
