@@ -9,6 +9,7 @@ import { ensureProductionFinancialRules } from './modules/financial-rules.seed';
 import { seedConfigData } from './modules/config.seed';
 import { assessmentsSeedModule } from './modules/assessments.seed';
 import { notificationsSeedModule } from './modules/notifications.seed';
+import { PRODUCTION_COUNTRY_CATALOG } from './modules/country-catalog';
 
 export const PRODUCTION_BASELINE_SPECIALTIES = [
   { category: 'mental-health', specialty: 'anxiety-therapy', name: 'Anxiety Therapy' },
@@ -80,26 +81,10 @@ async function ensureAccessBaseline(prisma: PrismaClient) {
   };
 }
 
-async function ensureReferenceBaseline(prisma: PrismaClient) {
-  const countries = [
-    { isoCode: 'EG', slug: 'egypt', name: 'Egypt', nativeName: 'Egypt', phoneCode: '+20', currencyCode: 'EGP' },
-    { isoCode: 'SA', slug: 'saudi-arabia', name: 'Saudi Arabia', nativeName: 'Saudi Arabia', phoneCode: '+966', currencyCode: 'SAR' },
-    { isoCode: 'AE', slug: 'united-arab-emirates', name: 'United Arab Emirates', nativeName: 'United Arab Emirates', phoneCode: '+971', currencyCode: 'AED' },
-    { isoCode: 'KW', slug: 'kuwait', name: 'Kuwait', nativeName: 'Kuwait', phoneCode: '+965', currencyCode: 'KWD' },
-    { isoCode: 'QA', slug: 'qatar', name: 'Qatar', nativeName: 'Qatar', phoneCode: '+974', currencyCode: 'QAR' },
-  ];
-  const languages = [
-    { code: 'ar', slug: 'arabic', name: 'Arabic', nativeName: 'Arabic' },
-    { code: 'en', slug: 'english', name: 'English', nativeName: 'English' },
-    { code: 'fr', slug: 'french', name: 'French', nativeName: 'French' },
-    { code: 'de', slug: 'german', name: 'German', nativeName: 'German' },
-    { code: 'es', slug: 'spanish', name: 'Spanish', nativeName: 'Spanish' },
-    { code: 'tr', slug: 'turkish', name: 'Turkish', nativeName: 'Turkish' },
-    { code: 'ru', slug: 'russian', name: 'Russian', nativeName: 'Russian' },
-  ];
+export async function ensureProductionCountryCatalog(prisma: PrismaClient) {
   let countriesCreated = 0;
   let countriesPreserved = 0;
-  for (const country of countries) {
+  for (const country of PRODUCTION_COUNTRY_CATALOG) {
     const existing = await prisma.country.findUnique({
       where: { isoCode: country.isoCode },
       select: { id: true },
@@ -110,6 +95,20 @@ async function ensureReferenceBaseline(prisma: PrismaClient) {
       countriesCreated += 1;
     }
   }
+  return { created: countriesCreated, preserved: countriesPreserved };
+}
+
+async function ensureReferenceBaseline(prisma: PrismaClient) {
+  const countries = await ensureProductionCountryCatalog(prisma);
+  const languages = [
+    { code: 'ar', slug: 'arabic', name: 'Arabic', nativeName: 'Arabic' },
+    { code: 'en', slug: 'english', name: 'English', nativeName: 'English' },
+    { code: 'fr', slug: 'french', name: 'French', nativeName: 'French' },
+    { code: 'de', slug: 'german', name: 'German', nativeName: 'German' },
+    { code: 'es', slug: 'spanish', name: 'Spanish', nativeName: 'Spanish' },
+    { code: 'tr', slug: 'turkish', name: 'Turkish', nativeName: 'Turkish' },
+    { code: 'ru', slug: 'russian', name: 'Russian', nativeName: 'Russian' },
+  ];
   let languagesCreated = 0;
   let languagesPreserved = 0;
   for (const language of languages) {
@@ -124,7 +123,7 @@ async function ensureReferenceBaseline(prisma: PrismaClient) {
     }
   }
   return {
-    countries: { created: countriesCreated, preserved: countriesPreserved },
+    countries,
     languages: { created: languagesCreated, preserved: languagesPreserved },
   };
 }

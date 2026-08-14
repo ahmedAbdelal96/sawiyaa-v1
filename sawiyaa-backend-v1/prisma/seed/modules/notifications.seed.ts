@@ -341,28 +341,23 @@ export const notificationsSeedModule: SeedModule = {
     ];
 
     for (const type of typeSeed) {
-      await prisma.notificationType.upsert({
+      const existing = await prisma.notificationType.findUnique({
         where: { slug: type.slug },
-        create: {
-          ...type,
-          defaultEnabled: true,
-          supportsEmail: type.supportsEmail ?? true,
-          supportsSms: type.supportsSms ?? true,
-          supportsPush: type.supportsPush ?? false,
-          supportsInApp: type.supportsInApp ?? true,
-          isMandatory: false,
-        },
-        update: {
-          displayName: type.displayName,
-          description: type.description,
-          category: type.category,
-          defaultEnabled: true,
-          supportsEmail: type.supportsEmail ?? true,
-          supportsSms: type.supportsSms ?? true,
-          supportsPush: type.supportsPush ?? false,
-          supportsInApp: type.supportsInApp ?? true,
-        },
+        select: { id: true },
       });
+      if (!existing) {
+        await prisma.notificationType.create({
+          data: {
+            ...type,
+            defaultEnabled: true,
+            supportsEmail: type.supportsEmail ?? true,
+            supportsSms: type.supportsSms ?? true,
+            supportsPush: type.supportsPush ?? false,
+            supportsInApp: type.supportsInApp ?? true,
+            isMandatory: false,
+          },
+        });
+      }
     }
 
     const templateSeed = [
@@ -1212,24 +1207,22 @@ export const notificationsSeedModule: SeedModule = {
         where: { slug: template.typeSlug },
       });
 
-      const templateRecord = await prisma.notificationTemplate.upsert({
+      const existingTemplate = await prisma.notificationTemplate.findUnique({
         where: { slug: template.slug },
-        create: {
-          notificationTypeId: type.id,
-          channel: template.channel,
-          slug: template.slug,
-          isActive: true,
-          isSystemTemplate: true,
-          version: 1,
-        },
-        update: {
-          notificationTypeId: type.id,
-          channel: template.channel,
-          isActive: true,
-          isSystemTemplate: true,
-          version: 1,
-        },
+        select: { id: true },
       });
+      const templateRecord = existingTemplate
+        ? existingTemplate
+        : await prisma.notificationTemplate.create({
+            data: {
+              notificationTypeId: type.id,
+              channel: template.channel,
+              slug: template.slug,
+              isActive: true,
+              isSystemTemplate: true,
+              version: 1,
+            },
+          });
 
       const translations = [
         {
@@ -1243,30 +1236,29 @@ export const notificationsSeedModule: SeedModule = {
       ];
 
       for (const translation of translations) {
-        await prisma.notificationTemplateTranslation.upsert({
-          where: {
-            notificationTemplateId_locale: {
+        const existingTranslation =
+          await prisma.notificationTemplateTranslation.findUnique({
+            where: {
+              notificationTemplateId_locale: {
+                notificationTemplateId: templateRecord.id,
+                locale: translation.locale,
+              },
+            },
+            select: { id: true },
+          });
+        if (!existingTranslation) {
+          await prisma.notificationTemplateTranslation.create({
+            data: {
               notificationTemplateId: templateRecord.id,
               locale: translation.locale,
+              subjectTemplate: translation.subjectTemplate,
+              titleTemplate: translation.titleTemplate,
+              bodyTemplate: translation.bodyTemplate,
+              ctaLabel: translation.ctaLabel ?? null,
+              ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
             },
-          },
-          create: {
-            notificationTemplateId: templateRecord.id,
-            locale: translation.locale,
-            subjectTemplate: translation.subjectTemplate,
-            titleTemplate: translation.titleTemplate,
-            bodyTemplate: translation.bodyTemplate,
-            ctaLabel: translation.ctaLabel ?? null,
-            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
-          },
-          update: {
-            subjectTemplate: translation.subjectTemplate,
-            titleTemplate: translation.titleTemplate,
-            bodyTemplate: translation.bodyTemplate,
-            ctaLabel: translation.ctaLabel ?? null,
-            ctaUrlTemplate: translation.ctaUrlTemplate ?? null,
-          },
-        });
+          });
+        }
       }
     }
   },
