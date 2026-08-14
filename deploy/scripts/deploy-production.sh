@@ -21,7 +21,8 @@ ACTIVE_HEAD=""
 MIGRATION_STATUS="NOT_RUN"
 APPLIED_MIGRATIONS_FILE=""
 PROVIDER_STATE_FILE=""
-RELEASE_MARKER="${SAWIYAA_RELEASE_MARKER:-$PROJECT_DIR/.sawiyaa-release}"
+RELEASE_STATE_DIR="${SAWIYAA_RELEASE_STATE_DIR:-/opt/sawiyaa-release-state}"
+RELEASE_MARKER="${SAWIYAA_RELEASE_MARKER:-$RELEASE_STATE_DIR/.sawiyaa-release}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -381,6 +382,7 @@ for attempt in {1..30}; do
 done
 curl -fsS https://sawiyaa.com >/dev/null
 
+mkdir -p -- "$(dirname -- "$RELEASE_MARKER")"
 marker_tmp="$(mktemp "${RELEASE_MARKER}.XXXXXX")"
 printf 'targetSha=%s\ndeployedAt=%s\nstatus=success\n' \
   "$TARGET_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$marker_tmp"

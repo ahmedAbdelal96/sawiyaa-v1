@@ -39,6 +39,8 @@
     "qa:finance:settlement-clean": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/clean-finance-settlement-qa-scenario.ts",
     "db:bootstrap:development-payment-routes": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/bootstrap-development-payment-routes.ts",
     "db:bootstrap:payment-routes": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/bootstrap-payment-routes.ts",
+    "db:seed:production": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/seed-production-baseline.ts",
+    "db:verify:production-seed": "ts-node -r tsconfig-paths/register --preferTsExts prisma/scripts/verify-production-baseline.ts",
     "db:bootstrap:paymob-provider-control": "node scripts/bootstrap-paymob-provider-control.js",
     "db:sync:permissions": "ts-node --preferTsExts prisma/scripts/sync-permissions.ts",
     "db:sync:countries": "ts-node --preferTsExts prisma/scripts/sync-countries.ts",
