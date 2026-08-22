@@ -92,7 +92,7 @@ export interface AdminApplicantPhoneSummary {
 
 export interface AdminApplicantBasics {
   userId: string;
-  practitionerProfileId: string;
+  practitionerProfileId: string | null;
   displayName: string | null;
   avatarUrl?: string | null;
   accountStatus: UserStatus;
@@ -214,7 +214,7 @@ export interface PractitionerApplicationDetails {
   applicant: AdminApplicantBasics;
   liveApplicant: AdminApplicantBasics;
   profile: AdminPractitionerProfileSection;
-  liveProfile: AdminPractitionerProfileSection;
+  liveProfile: AdminPractitionerProfileSection | null;
   credentials: AdminPractitionerCredential[];
   payoutDestination: PractitionerPayoutDestination | null;
   livePayoutDestination: PractitionerPayoutDestination | null;

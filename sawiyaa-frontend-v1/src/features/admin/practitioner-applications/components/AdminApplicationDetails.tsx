@@ -414,7 +414,7 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     const { applicant, profile, liveApplicant, liveProfile, application } = data.details;
     const hasAvatar = Boolean(
       normalizeAvatarUrl(
-        applicant.avatarUrl ?? profile.avatarUrl ?? liveApplicant.avatarUrl ?? liveProfile.avatarUrl ?? null,
+        applicant.avatarUrl ?? profile.avatarUrl ?? liveApplicant.avatarUrl ?? liveProfile?.avatarUrl ?? null,
       ),
     );
     if (!hasAvatar) {
@@ -675,49 +675,49 @@ export default function AdminApplicationDetails({ applicationId }: Props) {
     {
       key: "practitionerType",
       label: t("applicationDetails.profile.type"),
-      current: liveProfile.practitionerType ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`) : "-",
+      current: liveProfile?.practitionerType ? t(`practitionerType.${liveProfile.practitionerType as PractitionerType}`) : "-",
       requested: profile.practitionerType ? t(`practitionerType.${profile.practitionerType as PractitionerType}`) : "-",
     },
     {
       key: "professionalTitle",
       label: t("applicationDetails.profile.title"),
-      current: getProfessionalTitleLabel(liveProfile.professionalTitle, locale) || getReadableValue(liveProfile.professionalTitle),
+      current: getProfessionalTitleLabel(liveProfile?.professionalTitle, locale) || getReadableValue(liveProfile?.professionalTitle),
       requested: getProfessionalTitleLabel(profile.professionalTitle, locale) || getReadableValue(profile.professionalTitle),
     },
     {
       key: "sessionPrice30Egp",
       label: t("applicationDetails.profile.sessionPrice30Egp"),
-      current: formatMoneyValue(liveProfile.pricing.session30.egp, locale),
+      current: formatMoneyValue(liveProfile?.pricing.session30.egp, locale),
       requested: formatMoneyValue(profile.pricing.session30.egp, locale),
     },
     {
       key: "sessionPrice60Egp",
       label: t("applicationDetails.profile.sessionPrice60Egp"),
-      current: formatMoneyValue(liveProfile.pricing.session60.egp, locale),
+      current: formatMoneyValue(liveProfile?.pricing.session60.egp, locale),
       requested: formatMoneyValue(profile.pricing.session60.egp, locale),
     },
     {
       key: "instantBookingPrice30Egp",
       label: t("applicationDetails.profile.instantBookingPrice30Egp"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice30Egp, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice30Egp, locale),
       requested: formatMoneyValue(profile.instantBookingPrice30Egp, locale),
     },
     {
       key: "instantBookingPrice60Egp",
       label: t("applicationDetails.profile.instantBookingPrice60Egp"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice60Egp, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice60Egp, locale),
       requested: formatMoneyValue(profile.instantBookingPrice60Egp, locale),
     },
     {
       key: "instantBookingPrice30Usd",
       label: t("applicationDetails.profile.instantBookingPrice30Usd"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice30Usd, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice30Usd, locale),
       requested: formatMoneyValue(profile.instantBookingPrice30Usd, locale),
     },
     {
       key: "instantBookingPrice60Usd",
       label: t("applicationDetails.profile.instantBookingPrice60Usd"),
-      current: formatMoneyValue(liveProfile.instantBookingPrice60Usd, locale),
+      current: formatMoneyValue(liveProfile?.instantBookingPrice60Usd, locale),
       requested: formatMoneyValue(profile.instantBookingPrice60Usd, locale),
     },
   ].filter((item) => normalizeForDiff(item.current) !== normalizeForDiff(item.requested));
