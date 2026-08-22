@@ -3,9 +3,10 @@ import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Card, Header, Screen, Text } from "../../src/components/ui";
+import { Header, Screen, Text } from "../../src/components/ui";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../src/i18n/direction";
 import {
   CompactSectionHeader,
   resolvePractitionerTone,
@@ -25,58 +26,9 @@ export default function PractitionerMoreScreen() {
     () =>
       [
         {
-          key: "daily",
-          title: t("practitioner.more.sections.daily"),
-          subtitle: t("practitioner.more.dailySubtitle"),
-          tone: "daily" as PractitionerTone,
-          rows: [
-            {
-              key: "sessions",
-              title: t("practitioner.more.rows.sessions.title"),
-              subtitle: t("practitioner.more.rows.sessions.subtitle"),
-              icon: "calendar-outline" as const,
-              tone: "daily" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/sessions"),
-            },
-            {
-              key: "messages",
-              title: t("practitioner.more.rows.messages.title"),
-              subtitle: t("practitioner.more.rows.messages.subtitle"),
-              icon: "chatbubbles-outline" as const,
-              tone: "messages" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/messages"),
-            },
-            {
-              key: "availability",
-              title: t("practitioner.more.rows.availability.title"),
-              subtitle: t("practitioner.more.rows.availability.subtitle"),
-              icon: "pulse-outline" as const,
-              tone: "info" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/availability"),
-            },
-          ],
-        },
-        {
-          key: "workTools",
-          title: t("practitioner.more.sections.workTools"),
-          subtitle: t("practitioner.more.workToolsSubtitle"),
-          tone: "info" as PractitionerTone,
-          rows: [
-            {
-              key: "notifications",
-              title: t("practitioner.more.rows.notifications.title"),
-              subtitle: t("practitioner.more.rows.notifications.subtitle"),
-              icon: "notifications-outline" as const,
-              tone: "warning" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/notifications"),
-            },
-          ],
-        },
-        {
-          key: "finance",
-          title: t("practitioner.more.sections.finance"),
-          subtitle: t("practitioner.more.financeSubtitle"),
-          tone: "finance" as PractitionerTone,
+          key: "workEarnings",
+          title: t("practitioner.more.sections.workEarnings"),
+          subtitle: t("practitioner.more.workEarningsSubtitle"),
           rows: [
             {
               key: "finance",
@@ -87,28 +39,12 @@ export default function PractitionerMoreScreen() {
               onPress: () => router.push("/(practitioner)/finance"),
             },
             {
-              key: "wallet",
-              title: t("practitioner.more.rows.wallet.title"),
-              subtitle: t("practitioner.more.rows.wallet.subtitle"),
-              icon: "wallet-outline" as const,
-              tone: "finance" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/finance/wallet"),
-            },
-            {
-              key: "ledger",
-              title: t("practitioner.more.rows.ledger.title"),
-              subtitle: t("practitioner.more.rows.ledger.subtitle"),
-              icon: "receipt-outline" as const,
+              key: "instantBookingPricing",
+              title: t("practitioner.more.rows.instantBookingPricing.title"),
+              subtitle: t("practitioner.more.rows.instantBookingPricing.subtitle"),
+              icon: "flash-outline" as const,
               tone: "info" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/finance/ledger"),
-            },
-            {
-              key: "settlements",
-              title: t("practitioner.more.rows.settlements.title"),
-              subtitle: t("practitioner.more.rows.settlements.subtitle"),
-              icon: "layers-outline" as const,
-              tone: "warning" as PractitionerTone,
-              onPress: () => router.push("/(practitioner)/finance/settlements"),
+              onPress: () => router.push("/(mobile-tools)/instant-booking-pricing"),
             },
             {
               key: "promoCodes",
@@ -121,10 +57,9 @@ export default function PractitionerMoreScreen() {
           ],
         },
         {
-          key: "accountSupport",
-          title: t("practitioner.more.sections.accountSupport"),
-          subtitle: t("practitioner.more.accountSupportSubtitle"),
-          tone: "support" as PractitionerTone,
+          key: "account",
+          title: t("practitioner.more.sections.account"),
+          subtitle: t("practitioner.more.accountSubtitle"),
           rows: [
             {
               key: "account",
@@ -142,14 +77,13 @@ export default function PractitionerMoreScreen() {
               tone: "account" as PractitionerTone,
               onPress: () => router.push("/(settings)"),
             },
-            {
-              key: "instantBookingPricing",
-              title: t("practitioner.more.rows.instantBookingPricing.title"),
-              subtitle: t("practitioner.more.rows.instantBookingPricing.subtitle"),
-              icon: "flash-outline" as const,
-              tone: "info" as PractitionerTone,
-              onPress: () => router.push("/(mobile-tools)/instant-booking-pricing"),
-            },
+          ],
+        },
+        {
+          key: "help",
+          title: t("practitioner.more.sections.help"),
+          subtitle: t("practitioner.more.helpSubtitle"),
+          rows: [
             {
               key: "support",
               title: t("practitioner.more.rows.support.title"),
@@ -158,6 +92,13 @@ export default function PractitionerMoreScreen() {
               tone: "support" as PractitionerTone,
               onPress: () => router.push("/(practitioner)/messages?tab=support"),
             },
+          ],
+        },
+        {
+          key: "accountAction",
+          title: t("practitioner.more.sections.accountAction"),
+          subtitle: t("practitioner.more.accountActionSubtitle"),
+          rows: [
             {
               key: "logout",
               title: t("practitioner.more.rows.logout.title"),
@@ -177,38 +118,15 @@ export default function PractitionerMoreScreen() {
       <Header title={t("practitioner.more.title")} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Card variant="outlined" padding="sm" style={styles.introCard}>
-          <View style={styles.introHeader}>
-            <View style={styles.introCopy}>
-              <Text weight="700" style={styles.introTitle} color={theme.colors.textPrimary}>
-                {t("practitioner.more.title")}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.introSubtitle}>
-                {t("practitioner.more.subtitle")}
-              </Text>
-            </View>
-            <View style={[styles.introPill, { backgroundColor: theme.colors.primaryLight }]}>
-              <Ionicons name="grid-outline" size={14} color={theme.colors.primary} />
-              <Text weight="600" style={styles.introPillText} color={theme.colors.primary}>
-                {t("practitioner.tab.more")}
-              </Text>
-            </View>
-          </View>
-        </Card>
+        <Text color={theme.colors.textSecondary} style={styles.subtitle}>
+          {t("practitioner.more.subtitle")}
+        </Text>
 
         {sections.map((section) => {
           return (
-          <Card
+          <View
             key={section.key}
-            variant="outlined"
-            padding="sm"
-            style={[
-              styles.sectionCard,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.borderLight,
-              },
-            ]}
+            style={styles.section}
           >
             <CompactSectionHeader
               title={section.title}
@@ -227,7 +145,7 @@ export default function PractitionerMoreScreen() {
                 />
               ))}
             </View>
-          </Card>
+          </View>
           );
         })}
       </ScrollView>
@@ -251,18 +169,19 @@ function MoreRow({
   onPress: () => void;
 }) {
   const { theme } = useTheme();
+  const { chevronForward } = useAppDirection();
   const palette = resolvePractitionerTone(theme, tone);
 
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.82}
+      accessibilityRole="button"
+      accessibilityLabel={title}
       style={[
         styles.row,
         {
           flexDirection: direction,
-          borderColor: palette.border,
-          backgroundColor: palette.surface,
         },
       ]}
     >
@@ -297,7 +216,7 @@ function MoreRow({
       </View>
 
       <Ionicons
-        name={direction === "row-reverse" ? "chevron-back" : "chevron-forward"}
+        name={chevronForward}
         size={16}
         color={theme.colors.textMuted}
       />
@@ -312,51 +231,27 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 10,
   },
-  introCard: {
-    gap: 0,
+  subtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 2,
   },
-  introHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  introCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  introTitle: {
-    fontSize: 16,
-    lineHeight: 21,
-  },
-  introSubtitle: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  introPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  introPillText: {
-    fontSize: 11,
-  },
-  sectionCard: {
-    gap: 8,
+  section: {
+    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   rows: {
-    gap: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(105, 95, 80, 0.18)",
   },
   row: {
     alignItems: "center",
     gap: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(105, 95, 80, 0.18)",
   },
   iconWrap: {
     width: 34,

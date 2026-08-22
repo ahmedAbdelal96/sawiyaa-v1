@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { AppRole } from '@common/enums/app-role.enum';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { PermissionResolverService } from '@common/guards/authorization/permission-resolver.service';
@@ -8,12 +14,13 @@ import { OperationalNotificationService } from '@modules/notifications/services/
 import { MessagingPolicyRegistry } from '../policies/messaging-policy-registry';
 import { MessagingPresenter } from '../presenters/messaging.presenter';
 import { MessagingRepository } from '../repositories/messaging.repository';
-import { MessagingActor, MessagingConversationRecord } from '../types/messaging.types';
+import { MessagingConversationRecord } from '../types/messaging.types';
 import { GeneralChatAttachmentStorageService } from '@modules/chat/services/general-chat-attachment-storage.service';
 import { createHash } from 'node:crypto';
 import { MessagingRealtimePublisher } from '../services/messaging-realtime.publisher';
-
-const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+import { FilePolicyService } from '@modules/files/file-policy.service';
+import { StoredFilePurpose } from '@prisma/client';
+import { HARD_UPLOAD_CEILING_BYTES } from '@modules/files/file.types';
 
 @Injectable()
 export class MessagingUseCase {
@@ -25,15 +32,32 @@ export class MessagingUseCase {
     private readonly attachmentStorage: GeneralChatAttachmentStorageService,
     private readonly permissionResolver: PermissionResolverService,
     private readonly realtimePublisher: MessagingRealtimePublisher,
+    @Optional() private readonly filePolicies?: FilePolicyService,
   ) {}
 
   async listConversations(actor: AuthenticatedUser, page = 1, limit = 20) {
     await this.assertSupportStaffPermission(actor);
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
-    const result = await this.repository.listConversations(actor, safePage, safeLimit);
-    const items = await Promise.all(result.items.map((conversation) => this.presentConversation(conversation, actor)));
-    return { items, pagination: { page: safePage, limit: safeLimit, totalItems: result.totalItems, totalPages: Math.max(1, Math.ceil(result.totalItems / safeLimit)) } };
+    const result = await this.repository.listConversations(
+      actor,
+      safePage,
+      safeLimit,
+    );
+    const items = await Promise.all(
+      result.items.map((conversation) =>
+        this.presentConversation(conversation, actor),
+      ),
+    );
+    return {
+      items,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        totalItems: result.totalItems,
+        totalPages: Math.max(1, Math.ceil(result.totalItems / safeLimit)),
+      },
+    };
   }
 
   async getConversation(actor: AuthenticatedUser, conversationId: string) {
@@ -43,13 +67,22 @@ export class MessagingUseCase {
     return { item: await this.presentConversation(conversation, actor) };
   }
 
-  async listMessages(actor: AuthenticatedUser, conversationId: string, page = 1, limit = 30) {
+  async listMessages(
+    actor: AuthenticatedUser,
+    conversationId: string,
+    page = 1,
+    limit = 30,
+  ) {
     const conversation = await this.requireConversation(conversationId);
     await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(50, Math.max(1, limit));
-    const result = await this.repository.listMessages(conversationId, safePage, safeLimit);
+    const result = await this.repository.listMessages(
+      conversationId,
+      safePage,
+      safeLimit,
+    );
     const identities = await this.buildIdentities(
       conversation,
       [],
@@ -59,7 +92,10 @@ export class MessagingUseCase {
     );
     return {
       items: result.items.map((message) => ({
-        ...this.presenter.presentMessage(message as MessagingConversationRecord['messages'][number], identities),
+        ...this.presenter.presentMessage(
+          message as MessagingConversationRecord['messages'][number],
+          identities,
+        ),
         conversationId,
         attachments: (message.attachments ?? []).map((attachment) => ({
           id: attachment.id,
@@ -69,7 +105,34 @@ export class MessagingUseCase {
           originalName: attachment.originalName,
         })),
       })),
-      pagination: { page: safePage, limit: safeLimit, totalItems: result.totalItems, totalPages: Math.max(1, Math.ceil(result.totalItems / safeLimit)) },
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        totalItems: result.totalItems,
+        totalPages: Math.max(1, Math.ceil(result.totalItems / safeLimit)),
+      },
+    };
+  }
+
+  async getAttachmentPolicy() {
+    return {
+      item: this.filePolicies
+        ? await this.filePolicies.getChatAttachmentPolicy()
+        : {
+            enabled: true,
+            imageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            documentTypes: [
+              'application/pdf',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              'text/plain',
+            ],
+            maxImageBytes: 10 * 1024 * 1024,
+            maxDocumentBytes: 10 * 1024 * 1024,
+            maxFilesPerMessage: 3,
+            maxCombinedBytesPerMessage: 20 * 1024 * 1024,
+          },
     };
   }
 
@@ -90,19 +153,80 @@ export class MessagingUseCase {
     await this.assertSupportStaffPermission(actor, conversation);
     const authorization = this.policies.canSend(conversation, actor);
     if (!authorization.allowed) {
-      throw new BadRequestException({ messageKey: 'messages.errors.conversationNotSendable', errorCode: `MESSAGING_${authorization.reason}` });
+      throw new BadRequestException({
+        messageKey: 'messages.errors.conversationNotSendable',
+        errorCode: `MESSAGING_${authorization.reason}`,
+      });
+    }
+    const chatPolicy = this.filePolicies
+      ? await this.filePolicies.getChatLimits()
+      : { maxFilesPerMessage: 3, maxCombinedBytes: 20 * 1024 * 1024 };
+    if (attachments.length > chatPolicy.maxFilesPerMessage) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidAttachment',
+        errorCode: 'MESSAGING_ATTACHMENT_LIMIT_EXCEEDED',
+      });
+    }
+    let combinedAttachmentBytes = 0;
+    for (const attachment of attachments) {
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          attachment.fileId,
+        )
+      ) {
+        combinedAttachmentBytes += attachment.fileSize ?? 0;
+        continue;
+      }
+      const storedFile = await this.attachmentStorage.resolveStoredFile(
+        attachment.fileId,
+      );
+      if (
+        !storedFile ||
+        storedFile.purpose !== StoredFilePurpose.CHAT_ATTACHMENT ||
+        storedFile.chatConversationId !== conversationId
+      ) {
+        throw new BadRequestException({
+          messageKey: 'messages.errors.invalidAttachment',
+          errorCode: 'MESSAGING_ATTACHMENT_CONVERSATION_MISMATCH',
+        });
+      }
+      combinedAttachmentBytes += storedFile.sizeBytes;
+    }
+    if (combinedAttachmentBytes > chatPolicy.maxCombinedBytes) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidAttachment',
+        errorCode: 'MESSAGING_ATTACHMENT_LIMIT_EXCEEDED',
+      });
     }
     const normalized = message.trim();
-    if (!normalized) throw new BadRequestException({ messageKey: 'messages.errors.messageRequired', errorCode: 'MESSAGING_MESSAGE_REQUIRED' });
+    if (!normalized && attachments.length === 0)
+      throw new BadRequestException({
+        messageKey: 'messages.errors.messageRequired',
+        errorCode: 'MESSAGING_MESSAGE_REQUIRED',
+      });
     const normalizedClientMessageId = clientMessageId?.trim() || undefined;
-    if (normalizedClientMessageId && !/^[A-Za-z0-9_-]{1,191}$/.test(normalizedClientMessageId)) {
-      throw new BadRequestException({ messageKey: 'messages.errors.invalidClientMessageId', errorCode: 'MESSAGE_INVALID_CLIENT_MESSAGE_ID' });
+    if (
+      normalizedClientMessageId &&
+      !/^[A-Za-z0-9_-]{1,191}$/.test(normalizedClientMessageId)
+    ) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidClientMessageId',
+        errorCode: 'MESSAGE_INVALID_CLIENT_MESSAGE_ID',
+      });
     }
     const clientMessagePayloadHash = normalizedClientMessageId
       ? this.buildMessagePayloadHash(normalized, attachments)
       : undefined;
     const senderRole = this.resolveSenderRole(conversation, actor);
-    const stored = await this.repository.appendMessage({ conversationId, senderUserId: actor.id, senderRole, message: normalized, attachments, clientMessageId: normalizedClientMessageId, clientMessagePayloadHash });
+    const stored = await this.repository.appendMessage({
+      conversationId,
+      senderUserId: actor.id,
+      senderRole,
+      message: normalized,
+      attachments,
+      clientMessageId: normalizedClientMessageId,
+      clientMessagePayloadHash,
+    });
     const fresh = await this.requireConversation(conversationId);
     const item = this.presenter.presentMessage(
       stored.message as MessagingConversationRecord['messages'][number],
@@ -124,7 +248,12 @@ export class MessagingUseCase {
       this.realtimePublisher.publishNewMessage({
         conversationId,
         clientMessageId: normalizedClientMessageId,
-        item: { ...item, conversationId, attachments, conversationLatestActivityAt: fresh.updatedAt.toISOString() },
+        item: {
+          ...item,
+          conversationId,
+          attachments,
+          conversationLatestActivityAt: fresh.updatedAt.toISOString(),
+        },
       });
     }
     return {
@@ -140,7 +269,13 @@ export class MessagingUseCase {
 
   private buildMessagePayloadHash(
     message: string,
-    attachments: Array<{ fileId: string; fileUrl: string; mimeType: string; fileSize?: number; originalName?: string }>,
+    attachments: Array<{
+      fileId: string;
+      fileUrl: string;
+      mimeType: string;
+      fileSize?: number;
+      originalName?: string;
+    }>,
   ) {
     const payload = JSON.stringify({
       messageType: 'TEXT',
@@ -156,7 +291,11 @@ export class MessagingUseCase {
     return createHash('sha256').update(payload, 'utf8').digest('hex');
   }
 
-  async markRead(actor: AuthenticatedUser, conversationId: string, messageId: string) {
+  async markRead(
+    actor: AuthenticatedUser,
+    conversationId: string,
+    messageId: string,
+  ) {
     const conversation = await this.requireConversation(conversationId);
     await this.assertSupportStaffPermission(actor, conversation);
     this.policies.assertCanView(conversation, actor);
@@ -173,21 +312,73 @@ export class MessagingUseCase {
       messageId,
       participantRole,
     });
-    const unreadCount = await this.repository.countUnread(conversationId, actor.id, result.lastReadAt, result.lastReadMessageId);
-    return { item: { conversationId, ...result, lastReadAt: result.lastReadAt?.toISOString() ?? null, unreadCount, hasUnread: unreadCount > 0 } };
+    const unreadCount = await this.repository.countUnread(
+      conversationId,
+      actor.id,
+      result.lastReadAt,
+      result.lastReadMessageId,
+    );
+    return {
+      item: {
+        conversationId,
+        ...result,
+        lastReadAt: result.lastReadAt?.toISOString() ?? null,
+        unreadCount,
+        hasUnread: unreadCount > 0,
+      },
+    };
   }
 
   async uploadAttachment(
     actor: AuthenticatedUser,
     conversationId: string,
-    file: { buffer: Buffer; mimetype: string; size: number; originalname?: string },
+    file: {
+      buffer: Buffer;
+      mimetype: string;
+      size: number;
+      originalname?: string;
+    },
     options: { allowLegacyAdmin?: boolean } = {},
   ) {
-    await this.assertAttachmentAccess(actor, conversationId, options);
+    const conversation = await this.assertAttachmentAccess(
+      actor,
+      conversationId,
+      options,
+    );
     if (
-      !file.buffer?.length ||
-      file.size > MAX_ATTACHMENT_SIZE ||
-      !this.attachmentStorage.isAllowedMimeType(file.mimetype)
+      !options.allowLegacyAdmin &&
+      !this.policies.canSend(conversation, actor).allowed
+    ) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.conversationNotSendable',
+        errorCode: 'MESSAGING_ATTACHMENT_UPLOAD_NOT_ALLOWED',
+      });
+    }
+    if (!file.buffer?.length || file.size > HARD_UPLOAD_CEILING_BYTES) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidAttachment',
+        errorCode: 'MESSAGING_ATTACHMENT_INVALID',
+      });
+    }
+    const policy = this.filePolicies
+      ? await this.filePolicies.getPolicy(
+          StoredFilePurpose.CHAT_ATTACHMENT,
+          file.mimetype,
+        )
+      : {
+          enabled: true,
+          allowedMimeTypes: this.attachmentStorage.getAllowedMimeTypes(),
+          maxBytes: 10 * 1024 * 1024,
+        };
+    if (!policy.enabled) {
+      throw new BadRequestException({
+        messageKey: 'messages.errors.invalidAttachment',
+        errorCode: 'MESSAGING_ATTACHMENT_FEATURE_DISABLED',
+      });
+    }
+    if (
+      !policy.allowedMimeTypes.includes(file.mimetype) ||
+      file.size > policy.maxBytes
     ) {
       throw new BadRequestException({
         messageKey: 'messages.errors.invalidAttachment',
@@ -199,6 +390,7 @@ export class MessagingUseCase {
       fileBuffer: file.buffer,
       mimeType: file.mimetype,
       originalFileName: file.originalname ?? null,
+      uploadedByUserId: actor.id,
     });
     return {
       fileId: stored.fileId,
@@ -232,7 +424,10 @@ export class MessagingUseCase {
     options: { allowLegacyAdmin?: boolean } = {},
   ) {
     await this.assertAttachmentAccess(actor, conversationId, options);
-    const resolved = await this.attachmentStorage.resolve({ conversationId, fileId });
+    const resolved = await this.attachmentStorage.resolve({
+      conversationId,
+      fileId,
+    });
     if (!resolved) {
       throw new NotFoundException({
         messageKey: 'messages.errors.attachmentNotFound',
@@ -276,7 +471,11 @@ export class MessagingUseCase {
 
   private async requireConversation(conversationId: string) {
     const conversation = await this.repository.findConversation(conversationId);
-    if (!conversation) throw new NotFoundException({ messageKey: 'messages.errors.conversationNotFound', errorCode: 'MESSAGING_CONVERSATION_NOT_FOUND' });
+    if (!conversation)
+      throw new NotFoundException({
+        messageKey: 'messages.errors.conversationNotFound',
+        errorCode: 'MESSAGING_CONVERSATION_NOT_FOUND',
+      });
     return conversation;
   }
 
@@ -287,7 +486,9 @@ export class MessagingUseCase {
     if (conversation && conversation.conversationType !== 'SUPPORT') return;
 
     const isSupportStaff = actor.roles.some((role) =>
-      [AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT].includes(role),
+      [AppRole.ADMIN, AppRole.SUPER_ADMIN, AppRole.SUPPORT_AGENT].includes(
+        role,
+      ),
     );
     if (!isSupportStaff) return;
 
@@ -313,16 +514,38 @@ export class MessagingUseCase {
     await this.assertSupportStaffPermission(actor, conversation);
     const isLegacyAdmin =
       options.allowLegacyAdmin === true &&
-      actor.roles.some((role) => ['ADMIN', 'SUPER_ADMIN'].includes(role as string));
+      actor.roles.some((role) =>
+        ['ADMIN', 'SUPER_ADMIN'].includes(role as string),
+      );
     if (!isLegacyAdmin) this.policies.assertCanView(conversation, actor);
     return conversation;
   }
 
-  private async presentConversation(conversation: MessagingConversationRecord, actor: AuthenticatedUser) {
-    const participant = conversation.participants.find((item) => item.userId === actor.id);
-    const unreadCount = participant ? await this.repository.countUnread(conversation.id, actor.id, participant.lastReadAt, participant.lastReadMessageId) : 0;
+  private async presentConversation(
+    conversation: MessagingConversationRecord,
+    actor: AuthenticatedUser,
+  ) {
+    const participant = conversation.participants.find(
+      (item) => item.userId === actor.id,
+    );
+    const unreadCount = participant
+      ? await this.repository.countUnread(
+          conversation.id,
+          actor.id,
+          participant.lastReadAt,
+          participant.lastReadMessageId,
+        )
+      : 0;
     const authorization = this.policies.canSend(conversation, actor);
-    return this.presenter.presentConversation({ conversation, actorId: actor.id, participants: await this.buildIdentities(conversation), unreadCount, canSend: authorization.allowed, sendDisabledReason: authorization.allowed ? null : authorization.reason, publicType: this.policies.getPublicType(conversation) });
+    return this.presenter.presentConversation({
+      conversation,
+      actorId: actor.id,
+      participants: await this.buildIdentities(conversation),
+      unreadCount,
+      canSend: authorization.allowed,
+      sendDisabledReason: authorization.allowed ? null : authorization.reason,
+      publicType: this.policies.getPublicType(conversation),
+    });
   }
 
   private async buildIdentities(
@@ -343,22 +566,48 @@ export class MessagingUseCase {
     const users = await this.repository.loadUsers(userIds);
     const map = new Map(users.map((user) => [user.id, user]));
     const roles = new Map(
-      conversation.participants.map((participant) => [participant.userId, participant.participantRole]),
+      conversation.participants.map((participant) => [
+        participant.userId,
+        participant.participantRole,
+      ]),
     );
     for (const extra of extras) roles.set(extra.id, extra.role);
     return userIds.map((userId) => {
       const user = map.get(userId);
-      const role = roles.get(userId) ?? (conversation.conversationType === 'SUPPORT' ? ConversationParticipantRole.SUPPORT_AGENT : ConversationParticipantRole.SYSTEM);
-      const displayName = user?.displayName ?? user?.patientProfile?.displayName ?? user?.practitionerProfile?.professionalTitle ?? 'Platform user';
-      return { userId, displayName, avatarUrl: user?.practitionerProfile?.avatarUrl ?? null, publicRoleLabel: MessagingPresenter.roleLabel(role) };
+      const role =
+        roles.get(userId) ??
+        (conversation.conversationType === 'SUPPORT'
+          ? ConversationParticipantRole.SUPPORT_AGENT
+          : ConversationParticipantRole.SYSTEM);
+      const displayName =
+        user?.displayName ??
+        user?.patientProfile?.displayName ??
+        user?.practitionerProfile?.professionalTitle ??
+        'Platform user';
+      return {
+        userId,
+        displayName,
+        avatarUrl: user?.practitionerProfile?.avatarUrl ?? null,
+        publicRoleLabel: MessagingPresenter.roleLabel(role),
+      };
     });
   }
 
-  private resolveSenderRole(conversation: MessagingConversationRecord, actor: AuthenticatedUser) {
-    const existing = conversation.participants.find((participant) => participant.userId === actor.id);
+  private resolveSenderRole(
+    conversation: MessagingConversationRecord,
+    actor: AuthenticatedUser,
+  ) {
+    const existing = conversation.participants.find(
+      (participant) => participant.userId === actor.id,
+    );
     if (existing) return existing.participantRole;
-    if (actor.roles.includes('SUPPORT_AGENT' as never)) return ConversationParticipantRole.SUPPORT_AGENT;
-    if (actor.roles.includes('ADMIN' as never) || actor.roles.includes('SUPER_ADMIN' as never)) return ConversationParticipantRole.ADMIN;
+    if (actor.roles.includes('SUPPORT_AGENT' as never))
+      return ConversationParticipantRole.SUPPORT_AGENT;
+    if (
+      actor.roles.includes('ADMIN' as never) ||
+      actor.roles.includes('SUPER_ADMIN' as never)
+    )
+      return ConversationParticipantRole.ADMIN;
     return ConversationParticipantRole.SYSTEM;
   }
 }

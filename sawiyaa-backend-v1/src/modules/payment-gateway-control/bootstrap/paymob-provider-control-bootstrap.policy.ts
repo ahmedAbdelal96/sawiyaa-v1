@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { ConfigScopeType } from '@prisma/client';
 import { CONFIG_KEYS } from '@modules/config/registry/config-key.constants';
+import { PLATFORM_DEFAULTS } from '@modules/config/registry/platform-defaults';
 import type { UpdateConfigurationCommand } from '@modules/config/types/configuration-write.types';
 import { paymobGatewayControlDraftSchema } from '../schemas/paymob-gateway-control.schema';
 
@@ -17,24 +18,7 @@ const PAYMOB_PROVIDER_CONTROL_BOOTSTRAP_REASON =
   'Explicit operator bootstrap of the production Paymob EGP CARD provider control.';
 
 export const PAYMOB_PROVIDER_CONTROL_BOOTSTRAP_SNAPSHOT = {
-  enabled: true,
-  checkoutFlow: 'legacy',
-  defaultMethod: 'CARD',
-  maintenanceMode: false,
-  allowedCountryIsoCodes: ['EG'],
-  methodRegistry: [
-    {
-      key: 'CARD',
-      label: 'Card',
-      type: 'CARD',
-      enabled: true,
-      priority: 100,
-      supportedCheckoutFlows: ['legacy'],
-      currencyCodes: ['EGP'],
-      countryIsoCodes: ['EG'],
-      integrationId: 'paymob-egp-card',
-    },
-  ],
+  ...PLATFORM_DEFAULTS.paymobControl,
 };
 
 const validatedSnapshot = paymobGatewayControlDraftSchema.parse(

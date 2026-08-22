@@ -29,6 +29,10 @@ vi.mock("../hooks/use-platform-settings", () => ({
   usePlatformSettingHistory: mocks.history,
 }));
 
+vi.mock("./AdminPlatformCommissionCard", () => ({
+  default: () => null,
+}));
+
 const editableSetting = {
   key: "booking.default_duration_minutes",
   label: "Default duration",
@@ -274,6 +278,34 @@ describe("AdminPlatformSettingsScreen", () => {
     // Must show human-readable timeline preview
     expect(screen.getByText("المعاينة الحية للجدول الزمني")).toBeTruthy();
     expect(screen.getAllByText("قبل الجلسة بساعة").length).toBeGreaterThan(0);
+  });
+
+  it("can activate the virtual session schedule category without a temporal-dead-zone error", async () => {
+    const user = userEvent.setup();
+    const sessionSetting = {
+      ...editableSetting,
+      key: "SESSION_REMINDER_OFFSETS_MINUTES",
+      domain: "sessions",
+      valueType: "JSON" as const,
+      value: [60, 15],
+      defaultValue: [60, 15],
+    };
+
+    mocks.settings.mockReturnValue({
+      data: {
+        categories: ["NOTIFICATION"],
+        settings: [sessionSetting],
+      },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+      refetch: mocks.refetch,
+    });
+
+    render(<AdminPlatformSettingsScreen />);
+    await user.click(screen.getByRole("button", { name: /مواعيد الجلسات/ }));
+
+    expect(screen.getByText(sessionSetting.key)).toBeTruthy();
   });
 });
 

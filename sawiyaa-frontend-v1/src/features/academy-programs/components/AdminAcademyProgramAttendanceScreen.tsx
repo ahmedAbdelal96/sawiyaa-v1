@@ -143,11 +143,13 @@ function AttendanceLearnerRow({
   item,
   locale,
   draftStatus,
+  disabled,
   onChange,
 }: {
   item: AcademyProgramAttendanceItem;
   locale: string;
   draftStatus: SaveAdminAcademyProgramAttendanceStatus;
+  disabled: boolean;
   onChange: (status: SaveAdminAcademyProgramAttendanceStatus) => void;
 }) {
   const t = useTranslations("academy");
@@ -197,6 +199,7 @@ function AttendanceLearnerRow({
         <button
           type="button"
           onClick={() => onChange("PRESENT")}
+          disabled={disabled}
           aria-pressed={draftStatus === "PRESENT"}
           className={getStatusButtonClass("PRESENT", draftStatus)}
         >
@@ -206,6 +209,7 @@ function AttendanceLearnerRow({
         <button
           type="button"
           onClick={() => onChange("ABSENT")}
+          disabled={disabled}
           aria-pressed={draftStatus === "ABSENT"}
           className={getStatusButtonClass("ABSENT", draftStatus)}
         >
@@ -215,6 +219,7 @@ function AttendanceLearnerRow({
         <button
           type="button"
           onClick={() => onChange("UNMARKED")}
+          disabled={disabled}
           aria-pressed={draftStatus === "UNMARKED"}
           className={getStatusButtonClass("UNMARKED", draftStatus)}
         >
@@ -251,6 +256,7 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
     attendance?.selectedSession ??
     null;
   const items = attendance?.items ?? [];
+  const sessionNotEnded = Boolean(selectedSession?.endsAt && new Date(selectedSession.endsAt).getTime() > Date.now());
 
   useEffect(() => {
     if (!attendance) {
@@ -305,7 +311,7 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
 
   const handleSave = async () => {
     const sessionId = attendance?.selectedSessionId ?? selectedSessionId;
-    if (!sessionId || changedItems.length === 0) {
+    if (!sessionId || changedItems.length === 0 || sessionNotEnded) {
       return;
     }
     if (isCorrection && !correctionReason.trim()) {
@@ -337,6 +343,13 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
         message: t(errorKey as Parameters<typeof t>[0]),
       });
     }
+  };
+
+  const handleMarkAllPresent = () => {
+    if (sessionNotEnded) return;
+    setDraftStatusByEnrollmentId((current) =>
+      Object.fromEntries(items.map((item) => [item.id, "PRESENT" as const])) || current,
+    );
   };
 
   const loading = attendanceQuery.isLoading || isSessionSwitching;
@@ -438,6 +451,11 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
             <p className="mt-4 text-xs leading-5 text-text-secondary">
               {t("admin.detail.attendance.sessionNote")}
             </p>
+            {sessionNotEnded ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                {t("admin.detail.attendance.sessionNotEnded")}
+              </p>
+            ) : null}
           </div>
 
           <AdminMetricCard
@@ -503,15 +521,24 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
           </div>
         }
         actions={
-          <Button
-            onClick={handleSave}
-            disabled={dirtyCount === 0 || saveMutation.isPending || !attendance || loading}
-            startIcon={<Save className="h-4 w-4" />}
-          >
-            {saveMutation.isPending
-              ? t("admin.detail.attendance.actions.saving")
-              : t("admin.detail.attendance.actions.save")}
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={handleMarkAllPresent}
+              disabled={!hasLearners || sessionNotEnded || saveMutation.isPending || loading}
+            >
+              {t("admin.detail.attendance.actions.markAllPresent")}
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={dirtyCount === 0 || saveMutation.isPending || !attendance || loading || sessionNotEnded}
+              startIcon={<Save className="h-4 w-4" />}
+            >
+              {saveMutation.isPending
+                ? t("admin.detail.attendance.actions.saving")
+                : t("admin.detail.attendance.actions.save")}
+            </Button>
+          </div>
         }
         flushContent
       >
@@ -547,6 +574,7 @@ export default function AdminAcademyProgramAttendanceScreen({ programId }: Props
                     item={item}
                     locale={locale}
                     draftStatus={draftStatus}
+                    disabled={sessionNotEnded}
                     onChange={(status) =>
                       setDraftStatusByEnrollmentId((current) => ({
                         ...current,

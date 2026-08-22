@@ -18,6 +18,7 @@ import { Screen, Text, PrimaryButton } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { setOnboardingCompleted } from "../../src/features/onboarding/services/onboarding-preferences";
 import { resolveNextIndex } from "../../src/features/onboarding/utils/gesture-resolver";
+import { getDirectionalIcon } from "../../src/i18n/direction";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -425,7 +426,7 @@ export default function OnboardingScreen() {
             rightIcon={
               activeIndex < 2 ? (
                 <Ionicons
-                  name={isRTL ? "arrow-back" : "arrow-forward"}
+                  name={getDirectionalIcon("forward", isRTL)}
                   size={18}
                   color={theme.colors.onPrimary}
                 />

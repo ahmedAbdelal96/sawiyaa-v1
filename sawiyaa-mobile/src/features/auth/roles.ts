@@ -3,7 +3,7 @@ import type { AuthenticatedUser, MobileSupportedRole } from "./contracts";
 /**
  * Resolves the mobile runtime role for an authenticated user.
  *
- * Returns null for any user that is not PATIENT or PRACTITIONER —
+ * Returns null for any user that is not PATIENT, TRAINEE, or PRACTITIONER —
  * including all admin-class roles. Callers must treat null as an
  * unsupported role and clear the session / show unsupported-role state.
  *
@@ -16,6 +16,10 @@ export function resolveMobileRole(
 
   if (roles.includes("PATIENT")) {
     return "patient";
+  }
+
+  if (roles.includes("TRAINEE")) {
+    return "trainee";
   }
 
   if (roles.includes("PRACTITIONER")) {

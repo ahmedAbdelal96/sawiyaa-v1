@@ -1,6 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { GetSessionDetailsUseCase } from './get-session-details.use-case';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 describe('GetSessionDetailsUseCase — ownership', () => {
   const session = {
@@ -32,6 +33,9 @@ describe('GetSessionDetailsUseCase — ownership', () => {
     const sessionMapper = {
       toDetails: jest.fn().mockReturnValue({ id: session.id }),
     };
+    const professionalContentRepository = {
+      findByPractitionerProfileId: jest.fn().mockResolvedValue(null),
+    };
     const resolvePatientSessionActionsService = {
       resolveOne: jest.fn().mockResolvedValue({
         canCancel: false,
@@ -55,6 +59,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
       { interpret: jest.fn().mockResolvedValue({ state: 'UPCOMING' }) } as never,
       { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as never,
       resolveSessionChatAvailability as never,
+      professionalContentRepository as never,
+      new PractitionerProfessionalContentResolver(),
     );
 
     return { useCase, resolveSessionChatAvailability };
@@ -139,6 +145,8 @@ describe('GetSessionDetailsUseCase — ownership', () => {
         new SessionAccessPolicy(),
         {} as never,
         {} as never,
+        {} as never,
+        new PractitionerProfessionalContentResolver(),
       );
       return { useCase: uc };
     })();

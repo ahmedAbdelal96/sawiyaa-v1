@@ -57,6 +57,8 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
               category: {
                 id: 'cat-1',
                 slug: 'mental-health',
+                nameAr: 'النفسي',
+                nameEn: 'Mental Health',
                 name: 'نفسي',
               },
               translations: [
@@ -97,6 +99,8 @@ describe('ListPublicPractitionerFiltersUseCase', () => {
               category: {
                 id: 'cat-1',
                 slug: 'mental-health',
+                nameAr: 'النفسي',
+                nameEn: 'Mental Health',
                 name: 'نفسي',
               },
               translations: [{ locale: 'en', title: 'Anxiety Therapy' }],

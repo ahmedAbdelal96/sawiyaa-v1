@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   ConversationParticipantRole,
   ConversationType,
@@ -8,7 +12,10 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
-import { MessagingActor, MessagingConversationRecord } from '../types/messaging.types';
+import {
+  MessagingActor,
+  MessagingConversationRecord,
+} from '../types/messaging.types';
 
 @Injectable()
 export class MessagingRepository {
@@ -53,7 +60,9 @@ export class MessagingRepository {
     return message;
   }
 
-  async findConversation(conversationId: string): Promise<MessagingConversationRecord | null> {
+  async findConversation(
+    conversationId: string,
+  ): Promise<MessagingConversationRecord | null> {
     return this.prisma.conversation.findUnique({
       where: { id: conversationId },
       select: this.conversationSelect(),
@@ -82,7 +91,10 @@ export class MessagingRepository {
       }),
       this.prisma.conversation.count({ where }),
     ]);
-    return { items: items as unknown as MessagingConversationRecord[], totalItems };
+    return {
+      items: items as unknown as MessagingConversationRecord[],
+      totalItems,
+    };
   }
 
   async listMessages(conversationId: string, page: number, limit: number) {
@@ -139,55 +151,68 @@ export class MessagingRepository {
       originalName?: string;
     }>;
   }) {
-    const createMessage = async () => this.prisma.$transaction(async (tx) => {
-      const message = await tx.message.create({
-        data: {
-          conversationId: input.conversationId,
-          senderUserId: input.senderUserId,
-          messageType: MessageType.TEXT,
-          status: MessageStatus.SENT,
-          visibility: MessageVisibility.NORMAL,
-          contentText: input.message,
-          clientMessageId: input.clientMessageId ?? null,
-          clientMessagePayloadHash: input.clientMessagePayloadHash ?? null,
-        },
-        select: {
-          id: true,
-          conversationId: true,
-          senderUserId: true,
-          messageType: true,
-          status: true,
-          contentText: true,
-          sentAt: true,
-          deliveredAt: true,
-          readAt: true,
-        },
-      });
-      if (input.attachments?.length) {
-        await tx.messageAttachment.createMany({
-          data: input.attachments.map((attachment) => ({
-            messageId: message.id,
-            fileUrl: attachment.fileUrl,
-            mimeType: attachment.mimeType,
-            fileSize: attachment.fileSize ?? null,
-            originalName: attachment.originalName ?? null,
-            storageProvider: `ref:${attachment.fileId}`,
-          })),
+    const createMessage = async () =>
+      this.prisma.$transaction(async (tx) => {
+        const message = await tx.message.create({
+          data: {
+            conversationId: input.conversationId,
+            senderUserId: input.senderUserId,
+            messageType: MessageType.TEXT,
+            status: MessageStatus.SENT,
+            visibility: MessageVisibility.NORMAL,
+            contentText: input.message,
+            clientMessageId: input.clientMessageId ?? null,
+            clientMessagePayloadHash: input.clientMessagePayloadHash ?? null,
+          },
+          select: {
+            id: true,
+            conversationId: true,
+            senderUserId: true,
+            messageType: true,
+            status: true,
+            contentText: true,
+            sentAt: true,
+            deliveredAt: true,
+            readAt: true,
+          },
         });
-      }
-      await tx.conversation.update({
-        where: { id: input.conversationId },
-        data: { updatedAt: message.sentAt },
-      });
-      if (input.senderRole !== ConversationParticipantRole.SUPPORT_AGENT &&
-          input.senderRole !== ConversationParticipantRole.ADMIN) {
-        await tx.conversationParticipant.updateMany({
-          where: { conversationId: input.conversationId, userId: input.senderUserId, isActive: true },
-          data: { lastReadMessageId: message.id, lastReadAt: message.sentAt },
+        if (input.attachments?.length) {
+          await tx.messageAttachment.createMany({
+            data: input.attachments.map((attachment) => ({
+              messageId: message.id,
+              fileUrl: attachment.fileUrl,
+              mimeType: attachment.mimeType,
+              fileSize: attachment.fileSize ?? null,
+              originalName: attachment.originalName ?? null,
+              storageProvider: `ref:${attachment.fileId}`,
+              storedFileId:
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+                  attachment.fileId,
+                )
+                  ? attachment.fileId
+                  : null,
+            })),
+          });
+        }
+        await tx.conversation.update({
+          where: { id: input.conversationId },
+          data: { updatedAt: message.sentAt },
         });
-      }
-      return message;
-    });
+        if (
+          input.senderRole !== ConversationParticipantRole.SUPPORT_AGENT &&
+          input.senderRole !== ConversationParticipantRole.ADMIN
+        ) {
+          await tx.conversationParticipant.updateMany({
+            where: {
+              conversationId: input.conversationId,
+              userId: input.senderUserId,
+              isActive: true,
+            },
+            data: { lastReadMessageId: message.id, lastReadAt: message.sentAt },
+          });
+        }
+        return message;
+      });
 
     try {
       return { message: await createMessage(), created: true };
@@ -221,7 +246,9 @@ export class MessagingRepository {
       });
 
       if (!existing) throw error;
-      if (existing.clientMessagePayloadHash !== input.clientMessagePayloadHash) {
+      if (
+        existing.clientMessagePayloadHash !== input.clientMessagePayloadHash
+      ) {
         throw new ConflictException({
           messageKey: 'messages.errors.idempotencyConflict',
           errorCode: 'MESSAGE_IDEMPOTENCY_CONFLICT',
@@ -247,8 +274,12 @@ export class MessagingRepository {
       },
       select: { id: true, senderUserId: true, sentAt: true },
     });
-    if (!target) throw new NotFoundException({ messageKey: 'messages.errors.messageNotFound', errorCode: 'MESSAGING_MESSAGE_NOT_FOUND' });
-    let participant = input.participantRole
+    if (!target)
+      throw new NotFoundException({
+        messageKey: 'messages.errors.messageNotFound',
+        errorCode: 'MESSAGING_MESSAGE_NOT_FOUND',
+      });
+    const participant = input.participantRole
       ? await this.prisma.conversationParticipant.upsert({
           where: {
             conversationId_userId: {
@@ -265,7 +296,11 @@ export class MessagingRepository {
           select: { lastReadMessageId: true, lastReadAt: true },
         })
       : await this.prisma.conversationParticipant.findFirst({
-          where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
+          where: {
+            conversationId: input.conversationId,
+            userId: input.userId,
+            isActive: true,
+          },
           select: { lastReadMessageId: true, lastReadAt: true },
         });
     if (!participant) return { lastReadMessageId: null, lastReadAt: null };
@@ -279,7 +314,11 @@ export class MessagingRepository {
       const now = new Date();
       await this.prisma.$transaction([
         this.prisma.conversationParticipant.updateMany({
-          where: { conversationId: input.conversationId, userId: input.userId, isActive: true },
+          where: {
+            conversationId: input.conversationId,
+            userId: input.userId,
+            isActive: true,
+          },
           data: { lastReadMessageId: target.id, lastReadAt: target.sentAt },
         }),
         this.prisma.message.updateMany({
@@ -299,7 +338,10 @@ export class MessagingRepository {
       ]);
       return { lastReadMessageId: target.id, lastReadAt: target.sentAt };
     }
-    return { lastReadMessageId: participant.lastReadMessageId, lastReadAt: participant.lastReadAt };
+    return {
+      lastReadMessageId: participant.lastReadMessageId,
+      lastReadAt: participant.lastReadAt,
+    };
   }
 
   async markMessageDelivered(input: {
@@ -365,7 +407,9 @@ export class MessagingRepository {
                 { sentAt: { gt: lastReadAt } },
                 {
                   sentAt: lastReadAt,
-                  ...(lastReadMessageId ? { id: { gt: lastReadMessageId } } : {}),
+                  ...(lastReadMessageId
+                    ? { id: { gt: lastReadMessageId } }
+                    : {}),
                 },
               ],
             }
@@ -395,20 +439,24 @@ export class MessagingRepository {
       },
     });
 
-    return (conversations as Array<{
-      messages: Array<{ senderUserId: string | null }>;
-      participants: Array<{
-        userId: string;
-        participantRole: ConversationParticipantRole;
-      }>;
-    }>).filter((conversation) => {
+    return (
+      conversations as Array<{
+        messages: Array<{ senderUserId: string | null }>;
+        participants: Array<{
+          userId: string;
+          participantRole: ConversationParticipantRole;
+        }>;
+      }>
+    ).filter((conversation) => {
       const latestSenderId = conversation.messages[0]?.senderUserId;
       if (!latestSenderId) return true;
       const sender = conversation.participants.find(
         (participant) => participant.userId === latestSenderId,
       );
-      return sender?.participantRole === ConversationParticipantRole.PATIENT ||
-        sender?.participantRole === ConversationParticipantRole.PRACTITIONER;
+      return (
+        sender?.participantRole === ConversationParticipantRole.PATIENT ||
+        sender?.participantRole === ConversationParticipantRole.PRACTITIONER
+      );
     }).length;
   }
 
@@ -419,12 +467,14 @@ export class MessagingRepository {
         id: true,
         displayName: true,
         patientProfile: { select: { displayName: true } },
-        practitionerProfile: { select: { avatarUrl: true, professionalTitle: true } },
+        practitionerProfile: {
+          select: { avatarUrl: true, professionalTitle: true },
+        },
       },
     });
   }
 
-  private conversationSelect(): any {
+  private conversationSelect(): Prisma.ConversationSelect {
     return {
       id: true,
       conversationType: true,
@@ -441,15 +491,41 @@ export class MessagingRepository {
       practitionerSendingEnabledAt: true,
       participants: {
         where: { isActive: true },
-        select: { userId: true, participantRole: true, lastReadMessageId: true, lastReadAt: true },
+        select: {
+          userId: true,
+          participantRole: true,
+          lastReadMessageId: true,
+          lastReadAt: true,
+        },
       },
       messages: {
         where: { deletedAt: null, visibility: MessageVisibility.NORMAL },
         orderBy: [{ sentAt: 'desc' }, { id: 'desc' }],
         take: 50,
-        select: { id: true, senderUserId: true, messageType: true, status: true, contentText: true, sentAt: true, deliveredAt: true, readAt: true },
+        select: {
+          id: true,
+          senderUserId: true,
+          messageType: true,
+          status: true,
+          contentText: true,
+          sentAt: true,
+          deliveredAt: true,
+          readAt: true,
+          attachments: {
+            orderBy: [{ uploadedAt: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              fileUrl: true,
+              mimeType: true,
+              fileSize: true,
+              originalName: true,
+            },
+          },
+        },
       },
-      session: { select: { sessionCode: true, status: true, scheduledStartAt: true } },
+      session: {
+        select: { sessionCode: true, status: true, scheduledStartAt: true },
+      },
       supportTicket: { select: { status: true, subject: true } },
       chatApprovalRequest: { select: { status: true, expiresAt: true } },
     };

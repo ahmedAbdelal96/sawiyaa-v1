@@ -128,14 +128,14 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-hover"
                   >
                     <User size={16} />
-                    <span>اختر مختصاً لتقديم طلب</span>
+                    <span>{t("patientPresentation.chooseSpecialist")}</span>
                   </Link>
                   <Link
                     href="/patient/sessions"
                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-white px-5 py-3 text-sm font-semibold text-text-primary hover:border-primary/30 dark:bg-white/5 dark:text-white"
                   >
                     <Calendar size={16} strokeWidth={1.75} />
-                    <span>مراجعة الجلسات</span>
+                    <span>{t("patientPresentation.reviewSessions")}</span>
                   </Link>
                 </div>
               ),
@@ -169,11 +169,11 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                  محادثة رعاية
+                  {t("patientPresentation.eyebrow")}
                 </span>
               </div>
               <h1 className="text-xl font-extrabold text-text-primary dark:text-white sm:text-2xl mt-0.5">
-                طلب تواصل مباشر مع المختص
+                {t("patientPresentation.requestTitle")}
               </h1>
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light bg-white px-4 py-2.5 text-sm font-semibold text-text-primary shadow-xs transition hover:border-primary/40 hover:text-primary dark:border-white/15 dark:bg-white/5 dark:text-white"
           >
             <ArrowRight size={16} className="rtl:rotate-180" />
-            <span>العودة لملف المختص</span>
+            <span>{t("patientPresentation.backToProfile")}</span>
           </Link>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
           {/* Target Practitioner Info Card */}
           <div className="rounded-[28px] border border-primary/20 bg-white p-5 shadow-sm dark:bg-surface">
             <p className="text-[11px] font-bold uppercase tracking-wider text-primary mb-3">
-              المختص المستهدف بالطلب
+              {t("patientPresentation.targetLabel")}
             </p>
 
             <div className="flex items-center gap-4">
@@ -211,12 +211,12 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
                   <BadgeCheck size={18} className="text-primary shrink-0" />
                 </div>
                 <p className="text-xs text-text-secondary mt-0.5">
-                  معالج نفسي معتمد في منصة سويّة
+                  {t("patientPresentation.specialistType")}
                 </p>
                 {relatedSessionId ? (
                   <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-surface-secondary px-2.5 py-1 text-xs font-semibold text-text-secondary border border-border-light/60 dark:bg-white/5">
                     <Calendar size={13} className="text-primary" />
-                    <span>جلسة مرتبطة: {relatedSessionId}</span>
+                  <span>{t("patientPresentation.relatedSession", { id: relatedSessionId })}</span>
                   </div>
                 ) : null}
               </div>
@@ -229,18 +229,18 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-primary" />
                 <h2 className="text-base font-bold text-text-primary dark:text-white">
-                  تفاصيل وسبب تقديم الطلب
+                  {t("patientPresentation.reasonHeading")}
                 </h2>
               </div>
               <p className="mt-1 text-xs text-text-secondary leading-relaxed">
-                اكتب توضيحاً مختصراً للهدف من المحادثة ليتمكن الفريق الطبي من مراجعتها واعتمادها سريعاً.
+                {t("patientPresentation.reasonHelp")}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-text-primary dark:text-white/90 mb-2">
-                  لماذا تحتاج إلى محادثة الرعاية مع هذا المختص؟ <span className="text-rose-500">*</span>
+                  {t("patientPresentation.reasonLabel")} <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   rows={4}
@@ -252,7 +252,7 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
                       reason: event.target.value,
                     }))
                   }
-                  placeholder="مثال: أود متابعة تطور الخطة العلاجية أو الاستفسار عن ملاحظات الجلسة الأخيرة..."
+                  placeholder={t("patientPresentation.reasonPlaceholder")}
                   className="w-full rounded-2xl border border-border-light bg-surface-secondary/50 p-4 text-sm text-text-primary outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 dark:bg-white/5 dark:text-white dark:focus:border-primary"
                 />
               </div>
@@ -261,11 +261,11 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
               <div className="rounded-2xl border border-primary/15 bg-primary-light/30 p-4 dark:bg-primary/10 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-primary">
                   <Sparkles size={15} />
-                  <span>خطوات معالجة طلبك</span>
+                  <span>{t("patientPresentation.stepsHeading")}</span>
                 </div>
                 <ul className="text-xs text-text-secondary space-y-1.5 list-disc list-inside">
-                  <li>يتم مراجعة الطلب من فريق الرعاية لضمان الملاءمة والأمان الطبي.</li>
-                  <li>تتلقى إشعاراً فور قبول الطلب وفتح قناة المحادثة المباشرة.</li>
+                  <li>{t("patientPresentation.stepOne")}</li>
+                  <li>{t("patientPresentation.stepTwo")}</li>
                 </ul>
               </div>
 
@@ -280,7 +280,7 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
                   href="/patient/sessions"
                   className="text-xs font-semibold text-text-muted hover:text-primary transition"
                 >
-                  راجع جلساتك السابقة 📅
+                  {t("patientPresentation.reviewPrevious")} 📅
                 </Link>
 
                 <button
@@ -291,8 +291,8 @@ export default function PatientCareChatHomeScreen({ prefill }: Props) {
                   <Send size={16} />
                   <span>
                     {createRequest.isPending
-                      ? "جاري إرسال الطلب..."
-                      : "إرسال طلب محادثة الرعاية"}
+                      ? t("patientPresentation.submitting")
+                      : t("patientPresentation.submit")}
                   </span>
                 </button>
               </div>
@@ -321,11 +321,9 @@ function RequestsHistorySection({
   setStatusFilter,
   requests,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
   statusFilter: CareChatRequestStatus | "ALL";
   setStatusFilter: (v: CareChatRequestStatus | "ALL") => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requests: any;
 }) {
   return (
@@ -333,12 +331,12 @@ function RequestsHistorySection({
       <div className="flex items-center justify-between border-b border-border-light/50 pb-3 dark:border-white/10">
         <div>
           <h2 className="text-base font-bold text-text-primary dark:text-white">
-            طلبات المحادثة السابقة
+            {t("patientPresentation.historyHeading")}
           </h2>
-          <p className="text-xs text-text-muted mt-0.5">متابعة حالة الطلبات المقدمة</p>
+          <p className="text-xs text-text-muted mt-0.5">{t("patientPresentation.historyNote")}</p>
         </div>
         <span className="rounded-full bg-surface-secondary border border-border-light/60 px-3 py-1 text-xs font-bold text-primary dark:bg-white/5">
-          {requests.data ? `${requests.data.pagination.totalItems} طلب` : "..."}
+          {requests.data ? t("patientPresentation.requestCount", { count: requests.data.pagination.totalItems }) : "..."}
         </span>
       </div>
 
@@ -358,12 +356,12 @@ function RequestsHistorySection({
               }`}
             >
               {status === "ALL"
-                ? "الكل"
+                ? t("patientPresentation.filters.all")
                 : status === "PENDING"
-                ? "معلقة"
+                ? t("patientPresentation.filters.pending")
                 : status === "APPROVED"
-                ? "مقبولة"
-                : "مرفوضة"}
+                ? t("patientPresentation.filters.approved")
+                : t("patientPresentation.filters.rejected")}
             </button>
           );
         })}
@@ -377,10 +375,10 @@ function RequestsHistorySection({
       ) : requests.isError ? (
         <div className="py-4 text-center">
           <StateCard
-            title="تعذر تحميل الطلبات"
-            note="تأكد من الاتصال بالإنترنت وحاول مجدداً"
+            title={t("patientPresentation.historyErrorTitle")}
+            note={t("patientPresentation.historyErrorNote")}
             action={{
-              label: "إعادة المحاولة",
+              label: t("patientPresentation.retry"),
               onClick: () => requests.refetch(),
             }}
           />
@@ -398,7 +396,7 @@ function RequestsHistorySection({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-border-light/70 p-6 text-center text-xs text-text-muted">
-          لا توجد طلبات محادثة سابقة بهذا الفلتر.
+          {t("patientPresentation.noPrevious")}
         </div>
       )}
     </div>

@@ -27,7 +27,6 @@ import InputField from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import { ApplicationStepCard } from "./ApplicationStepCard";
 import { ApplicationIssuePanel } from "./ApplicationIssuePanel";
-import { PricingDurationRow } from "./PricingDurationRow";
 import Label from "@/components/form/Label";
 import MultiSelect from "@/components/form/MultiSelect";
 import { SearchableCombobox } from "@/components/form/SearchableCombobox";
@@ -107,14 +106,6 @@ type WizardState = {
   bio: string;
   yearsOfExperience: string;
   languageCodes: string[];
-  sessionPrice30Egp: string;
-  sessionPrice30Usd: string;
-  sessionPrice60Egp: string;
-  sessionPrice60Usd: string;
-  instantBookingPrice30Egp: string;
-  instantBookingPrice30Usd: string;
-  instantBookingPrice60Egp: string;
-  instantBookingPrice60Usd: string;
   payoutMethodType: PractitionerPayoutMethodType | "";
   payoutCountryCode: string;
   payoutAccountHolderName: string;
@@ -142,7 +133,7 @@ const UI_STEPS: Array<{
   { key: "credentials", backendKeys: ["qualifications", "documents"] },
   {
     key: "paymentSubmit",
-    backendKeys: ["pricing", "payoutDetails", "reviewSubmit"],
+    backendKeys: ["payoutDetails", "reviewSubmit"],
   },
 ];
 
@@ -173,13 +164,6 @@ const LOCKED_STATUSES: PractitionerApplicationStatus[] = [
   "APPROVED",
   "ARCHIVED",
 ];
-
-function normalizeMoney(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 function isCatalogValueCompatibleWithCountry(
   value: string,
@@ -231,38 +215,6 @@ function createInitialState(
         ? String(profile.yearsOfExperience)
         : "",
     languageCodes: profile.languages ?? [],
-    sessionPrice30Egp:
-      profile.pricing.session30.egp != null
-        ? String(profile.pricing.session30.egp)
-        : "",
-    sessionPrice30Usd:
-      profile.pricing.session30.usd != null
-        ? String(profile.pricing.session30.usd)
-        : "",
-    sessionPrice60Egp:
-      profile.pricing.session60.egp != null
-        ? String(profile.pricing.session60.egp)
-        : "",
-    sessionPrice60Usd:
-      profile.pricing.session60.usd != null
-        ? String(profile.pricing.session60.usd)
-        : "",
-    instantBookingPrice30Egp:
-      profile.instantBookingPrice30Egp != null
-        ? String(profile.instantBookingPrice30Egp)
-        : "",
-    instantBookingPrice30Usd:
-      profile.instantBookingPrice30Usd != null
-        ? String(profile.instantBookingPrice30Usd)
-        : "",
-    instantBookingPrice60Egp:
-      profile.instantBookingPrice60Egp != null
-        ? String(profile.instantBookingPrice60Egp)
-        : "",
-    instantBookingPrice60Usd:
-      profile.instantBookingPrice60Usd != null
-        ? String(profile.instantBookingPrice60Usd)
-        : "",
     payoutMethodType: profile.payoutDestination?.methodType ?? "",
     payoutCountryCode: profile.countryCode ?? "",
     payoutAccountHolderName: profile.payoutDestination?.accountHolderName ?? "",
@@ -360,23 +312,6 @@ function buildUpdatePayload(
   }
 
   if (step === "paymentSubmit") {
-    payload.sessionPrice30Egp = normalizeMoney(state.sessionPrice30Egp);
-    payload.sessionPrice30Usd = normalizeMoney(state.sessionPrice30Usd);
-    payload.sessionPrice60Egp = normalizeMoney(state.sessionPrice60Egp);
-    payload.sessionPrice60Usd = normalizeMoney(state.sessionPrice60Usd);
-    payload.instantBookingPrice30Egp = normalizeMoney(
-      state.instantBookingPrice30Egp,
-    );
-    payload.instantBookingPrice30Usd = normalizeMoney(
-      state.instantBookingPrice30Usd,
-    );
-    payload.instantBookingPrice60Egp = normalizeMoney(
-      state.instantBookingPrice60Egp,
-    );
-    payload.instantBookingPrice60Usd = normalizeMoney(
-      state.instantBookingPrice60Usd,
-    );
-
     if (state.payoutMethodType) {
       const payoutDestination: NonNullable<
         UpdatePractitionerProfileRequest["payoutDestination"]
@@ -818,7 +753,7 @@ export default function PractitionerApplicationWizardThreeStep() {
       basic: t("practitionerApplication.steps.basicProfile"),
       professional: t("practitionerApplication.steps.professionalDetails"),
       credentials: t("practitionerApplication.steps.qualifications"),
-      paymentSubmit: t("practitionerApplication.steps.pricing"),
+      paymentSubmit: t("practitionerApplication.steps.payoutDetails"),
     };
 
     return UI_STEPS.map((step) => {
@@ -1131,10 +1066,6 @@ export default function PractitionerApplicationWizardThreeStep() {
         effectiveState.practitionerGender === "FEMALE"
           ? effectiveState.practitionerGender
           : null,
-      sessionPrice30Egp: normalizeMoney(effectiveState.sessionPrice30Egp),
-      sessionPrice30Usd: normalizeMoney(effectiveState.sessionPrice30Usd),
-      sessionPrice60Egp: normalizeMoney(effectiveState.sessionPrice60Egp),
-      sessionPrice60Usd: normalizeMoney(effectiveState.sessionPrice60Usd),
       locale:
         effectiveState.locale === "ar" || effectiveState.locale === "en"
           ? effectiveState.locale
@@ -2097,122 +2028,6 @@ export default function PractitionerApplicationWizardThreeStep() {
         data-testid="practitioner-application-step-panel-paymentSubmit"
         className="space-y-5"
       >
-        <section className="border-border-light bg-surface-tertiary/50 rounded-2xl border p-5">
-          <div className="flex items-start gap-3">
-            <Sparkles className="text-primary mt-0.5 h-5 w-5" />
-            <div className="min-w-0">
-              <p className="text-text-primary text-sm font-semibold">
-                {locale === "ar" ? "أسعار الجلسات" : "Session pricing"}
-              </p>
-              <p className="text-text-secondary mt-1 text-sm leading-6">
-                {locale === "ar"
-                  ? "اضبط أسعار الجلسات التي تريد مراجعتها قبل الإرسال."
-                  : "Set the session prices you want reviewed before submission."}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <PricingDurationRow
-              durationLabel={
-                locale === "ar" ? "جلسة 30 دقيقة" : "30-Minute Session"
-              }
-              egpId="price30egp"
-              usdId="price30usd"
-              egpLabel={t("profile.fields.sessionPrice30Egp.label")}
-              usdLabel={t("profile.fields.sessionPrice30Usd.label")}
-              egpValue={effectiveState.sessionPrice30Egp}
-              usdValue={effectiveState.sessionPrice30Usd}
-              onEgpChange={(val: string) =>
-                patchState({ sessionPrice30Egp: val })
-              }
-              onUsdChange={(val: string) =>
-                patchState({ sessionPrice30Usd: val })
-              }
-              disabled={!canEdit}
-              locale={locale}
-            />
-            <PricingDurationRow
-              durationLabel={
-                locale === "ar" ? "جلسة 60 دقيقة" : "60-Minute Session"
-              }
-              egpId="price60egp"
-              usdId="price60usd"
-              egpLabel={t("profile.fields.sessionPrice60Egp.label")}
-              usdLabel={t("profile.fields.sessionPrice60Usd.label")}
-              egpValue={effectiveState.sessionPrice60Egp}
-              usdValue={effectiveState.sessionPrice60Usd}
-              onEgpChange={(val: string) =>
-                patchState({ sessionPrice60Egp: val })
-              }
-              onUsdChange={(val: string) =>
-                patchState({ sessionPrice60Usd: val })
-              }
-              disabled={!canEdit}
-              locale={locale}
-            />
-          </div>
-        </section>
-
-        <section className="border-border-light bg-surface-tertiary/50 rounded-2xl border p-5">
-          <div className="flex items-start gap-3">
-            <Sparkles className="text-primary mt-0.5 h-5 w-5" />
-            <div className="min-w-0">
-              <p className="text-text-primary text-sm font-semibold">
-                {t("profile.sections.instantBookingPricing")}
-              </p>
-              <p className="text-text-secondary mt-1 text-sm leading-6">
-                {t("profile.instantBooking.pricingNote")}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <PricingDurationRow
-              durationLabel={
-                locale === "ar"
-                  ? "حجز فوري 30 دقيقة"
-                  : "30-Minute Instant Booking"
-              }
-              egpId="instant-price30egp"
-              usdId="instant-price30usd"
-              egpLabel={t("profile.fields.instantBookingPrice30Egp.label")}
-              usdLabel={t("profile.fields.instantBookingPrice30Usd.label")}
-              egpValue={effectiveState.instantBookingPrice30Egp}
-              usdValue={effectiveState.instantBookingPrice30Usd}
-              onEgpChange={(val: string) =>
-                patchState({ instantBookingPrice30Egp: val })
-              }
-              onUsdChange={(val: string) =>
-                patchState({ instantBookingPrice30Usd: val })
-              }
-              disabled={!canEdit}
-              locale={locale}
-            />
-            <PricingDurationRow
-              durationLabel={
-                locale === "ar"
-                  ? "حجز فوري 60 دقيقة"
-                  : "60-Minute Instant Booking"
-              }
-              egpId="instant-price60egp"
-              usdId="instant-price60usd"
-              egpLabel={t("profile.fields.instantBookingPrice60Egp.label")}
-              usdLabel={t("profile.fields.instantBookingPrice60Usd.label")}
-              egpValue={effectiveState.instantBookingPrice60Egp}
-              usdValue={effectiveState.instantBookingPrice60Usd}
-              onEgpChange={(val: string) =>
-                patchState({ instantBookingPrice60Egp: val })
-              }
-              onUsdChange={(val: string) =>
-                patchState({ instantBookingPrice60Usd: val })
-              }
-              disabled={!canEdit}
-              locale={locale}
-            />
-          </div>
-        </section>
-
         <section className="border-border-light rounded-2xl border bg-white/70 p-5">
           <div className="flex items-start gap-3">
             <UserRound className="text-primary mt-0.5 h-5 w-5" />

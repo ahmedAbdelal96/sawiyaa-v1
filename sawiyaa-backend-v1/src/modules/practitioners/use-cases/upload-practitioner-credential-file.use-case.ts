@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, Optional } from '@nestjs/common';
-import { CredentialLifecycleState, CredentialType, PractitionerStatus, SecurityAuditOutcome } from '@prisma/client';
+import { CredentialLifecycleState, CredentialType, PractitionerStatus, ReviewSection, SecurityAuditOutcome } from '@prisma/client';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PractitionerCredentialMapper } from '../mappers/practitioner-credential.mapper';
@@ -10,6 +10,8 @@ import { PrismaService } from '@common/prisma/prisma.service';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
 import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
+import { PractitionerReviewCaseService } from '../services/practitioner-review-case.service';
+import { PractitionerApplicationRepository } from '../repositories/practitioner-application.repository';
 
 type UploadedCredentialFile = {
   buffer: Buffer;
@@ -27,9 +29,11 @@ export class UploadPractitionerCredentialFileUseCase {
     private readonly practitionerCredentialRepository: PractitionerCredentialRepository,
     private readonly practitionerCredentialMapper: PractitionerCredentialMapper,
     private readonly practitionerCredentialStorageService: PractitionerCredentialStorageService,
+    private readonly practitionerApplicationRepository: PractitionerApplicationRepository,
     @Optional() private readonly prisma?: PrismaService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
     @Optional() private readonly changeReviewService?: PractitionerChangeReviewService,
+    @Optional() private readonly reviewCaseService?: PractitionerReviewCaseService,
   ) {}
 
   async execute(input: {
@@ -64,17 +68,29 @@ export class UploadPractitionerCredentialFileUseCase {
       });
     }
 
-    const profile = await this.createPractitionerProfileUseCase.execute(
-      input.userId,
-    );
+    const profile = await this.prisma?.practitionerProfile.findUnique({
+      where: { userId: input.userId },
+      select: { id: true, status: true },
+    });
+    const application = profile
+      ? null
+      : await this.practitionerApplicationRepository.findLatestByUserId(input.userId);
+    if (!profile && !application) {
+      throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_NOT_FOUND' });
+    }
 
     if (input.credentialType !== CredentialType.OTHER) {
       const existingType =
-        await this.practitionerCredentialRepository.findExistingByType({
-          practitionerId: profile.id,
-          credentialType: input.credentialType,
-        });
-      if (existingType && !(profile.status === PractitionerStatus.APPROVED && existingType.reviewStatus === 'APPROVED')) {
+        profile
+          ? await this.practitionerCredentialRepository.findExistingByType({
+              practitionerId: profile.id,
+              credentialType: input.credentialType,
+            })
+          : await this.practitionerCredentialRepository.findExistingByTypeForApplication({
+              applicationId: application!.id,
+              credentialType: input.credentialType,
+            });
+      if (existingType && !(profile?.status === PractitionerStatus.APPROVED && existingType.reviewStatus === 'APPROVED')) {
         throw new ConflictException({
           messageKey: 'practitioners.errors.credentialAlreadyExists',
           error: 'PRACTITIONER_CREDENTIAL_TYPE_ALREADY_EXISTS',
@@ -84,18 +100,24 @@ export class UploadPractitionerCredentialFileUseCase {
 
     const stored = await this.practitionerCredentialStorageService.saveCredentialFile(
       {
-        practitionerProfileId: profile.id,
+        ...(profile ? { practitionerProfileId: profile.id } : { applicationId: application!.id }),
         mimeType: input.file.mimetype,
         fileBuffer: input.file.buffer,
       },
     );
 
     const existing =
-      await this.practitionerCredentialRepository.findExistingByTypeAndFileUrl({
-        practitionerId: profile.id,
-        credentialType: input.credentialType,
-        fileUrl: stored.fileUrl,
-      });
+      profile
+        ? await this.practitionerCredentialRepository.findExistingByTypeAndFileUrl({
+            practitionerId: profile.id,
+            credentialType: input.credentialType,
+            fileUrl: stored.fileUrl,
+          })
+        : await this.practitionerCredentialRepository.findExistingByTypeAndFileUrlForApplication({
+            applicationId: application!.id,
+            credentialType: input.credentialType,
+            fileUrl: stored.fileUrl,
+          });
 
     if (existing) {
       await this.practitionerCredentialStorageService.deleteCredential(stored.fileUrl);
@@ -107,19 +129,34 @@ export class UploadPractitionerCredentialFileUseCase {
 
     try {
       const data = {
-        practitionerId: profile.id,
+        practitionerId: profile?.id,
+        applicationId: application?.id,
         credentialType: input.credentialType,
         fileUrl: stored.fileUrl,
+        storedFileId: stored.storedFileId ?? null,
         expiresAt: input.expiresAt,
         lifecycleState:
-          profile.status === PractitionerStatus.APPROVED
+          profile?.status === PractitionerStatus.APPROVED
             ? CredentialLifecycleState.REPLACEMENT_PENDING
             : CredentialLifecycleState.ACTIVE,
       };
       const credential = this.prisma && this.securityAuditService
         ? await this.prisma.$transaction(async (tx) => {
             const created = await this.practitionerCredentialRepository.create(data, tx);
-            await this.changeReviewService?.upsert({ practitionerId: profile.id, tx });
+            if (profile) await this.changeReviewService?.upsert({ practitionerId: profile.id, tx });
+            if (application) {
+              const section = input.credentialType === CredentialType.NATIONAL_ID || input.credentialType === CredentialType.NATIONAL_ID_FRONT || input.credentialType === CredentialType.NATIONAL_ID_BACK
+                ? ReviewSection.IDENTITY
+                : input.credentialType === CredentialType.DEGREE
+                  ? ReviewSection.ACADEMIC_CREDENTIALS
+                  : ReviewSection.PROFESSIONAL_CREDENTIALS;
+              await this.reviewCaseService?.markApplicationRequirementSubmitted({
+                applicationId: application.id,
+                section,
+                credentialType: input.credentialType,
+                tx,
+              });
+            }
             await this.securityAuditService!.recordRequired(tx, {
               action: 'security.practitioner.credential.upload',
               outcome: SecurityAuditOutcome.SUCCESS,
@@ -134,7 +171,7 @@ export class UploadPractitionerCredentialFileUseCase {
             return created;
           })
         : await this.practitionerCredentialRepository.create(data).then(async (created) => {
-            await this.changeReviewService?.upsert({ practitionerId: profile.id });
+            if (profile) await this.changeReviewService?.upsert({ practitionerId: profile.id });
             return created;
           });
 

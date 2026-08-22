@@ -55,8 +55,9 @@ function sortPlans(plans: PackagePlanQuotedItem[]) {
 }
 
 function QuoteMoney({ amount, currencyCode }: { amount: string; currencyCode: string | null }) {
+  const t = useTranslations("common");
   const money = mapPackageQuoteMoney({ amount, selectedCurrencyCode: currencyCode });
-  return money ? <MoneyText money={money} /> : <>Price unavailable</>;
+  return money ? <MoneyText money={money} /> : <>{t("money.pricing.unavailable")}</>;
 }
 
 function StepBadge({

@@ -2,6 +2,7 @@ import {
   buildMessageSendPayload,
   createMessageSendDescriptor,
   findMessageIdentityIndex,
+  normalizeCanonicalMessage,
   reconcileCanonicalMessage,
 } from "../message-identity";
 import type { CanonicalMessage } from "../types";
@@ -64,5 +65,16 @@ describe("message identity reconciliation", () => {
     const first = message("server-1", "client-1");
     const second = message("server-2", "client-2");
     expect(reconcileCanonicalMessage([first], second)).toHaveLength(2);
+  });
+
+  it("normalizes received attachment ids to the stored file id in fileUrl", () => {
+    const canonical = message("server-1");
+    canonical.attachments = [{
+      id: "message-attachment-row-id",
+      fileUrl: "/api/v1/messages/conversations/conversation-1/attachments/stored-file-id",
+      mimeType: "image/png",
+    }];
+
+    expect(normalizeCanonicalMessage(canonical).attachments?.[0]?.id).toBe("stored-file-id");
   });
 });

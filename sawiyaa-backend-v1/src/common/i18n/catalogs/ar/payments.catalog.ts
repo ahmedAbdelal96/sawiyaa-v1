@@ -20,6 +20,8 @@ export const arPaymentsCatalog = {
     paymentAlreadyCompleted: 'توجد عملية دفع ناجحة بالفعل لهذه الجلسة.',
     activePaymentAlreadyExists: 'توجد محاولة دفع نشطة بالفعل لهذه الجلسة.',
     pricingUnavailable: 'سعر الجلسة غير متاح.',
+    financialConfigurationUnavailable:
+      'الدفع غير متاح مؤقتًا حتى يتم التحقق من الإعدادات المالية.',
     currencyUnavailable: 'عملة الدفع غير متاحة.',
     invalidStatusTransition: 'الانتقال من حالة الدفع {{from}} إلى {{to}} غير صالح.',
     providerNotFound: 'لم يتم العثور على مزود الدفع {{provider}}.',

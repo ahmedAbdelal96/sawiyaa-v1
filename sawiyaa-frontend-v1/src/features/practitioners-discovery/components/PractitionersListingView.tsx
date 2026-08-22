@@ -307,10 +307,7 @@ export default async function PractitionersListingView({
     return query ? `?${query}` : "";
   };
 
-  const resultLabel =
-    pagination.totalItems === 1
-      ? tPage("resultCountSingle")
-      : tPage("resultCount", { count: pagination.totalItems });
+  const resultLabel = tPage("resultCount", { count: pagination.totalItems });
   const startItem = pagination.totalItems === 0 ? 0 : (currentPage - 1) * safeLimit + 1;
   const endItem = Math.min(currentPage * safeLimit, pagination.totalItems);
   const activeFeeFilter: ActiveFeeFilterContext = {

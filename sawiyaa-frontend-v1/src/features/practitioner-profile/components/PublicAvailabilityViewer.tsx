@@ -164,14 +164,10 @@ export default function PublicAvailabilityViewer({
   const locale = useLocale();
   const numLocale = locale === "ar" ? "ar-SA" : "en-US";
   const isRtl = locale === "ar";
-  const sessionFeesLabel = isRtl ? "رسوم الجلسة" : "Session fees";
-  const selectedPriceLabel = isRtl ? "السعر المختار" : "Selected price";
-  const noTimesInDayLabel = isRtl ? "لا توجد مواعيد" : "No times available";
-  const showBookedSessionsLabel = isRtl ? "إظهار الجلسات المحجوزة" : "Show booked sessions";
-  const bookedSlotsUnavailableLabel = isRtl
-    ? "لا يوجد عقد بيانات حالي يعرض المواعيد المحجوزة"
-    : "Current data contract does not expose booked slots.";
-  const browseNextDatesLabel = isRtl ? "عرض التواريخ التالية" : "Show next dates";
+  const sessionFeesLabel = tBook("sessionFees");
+  const selectedPriceLabel = tBook("selectedPriceLabel");
+  const noTimesInDayLabel = tAvail("noSlots");
+  const browseNextDatesLabel = tAvail("browseNextWeek");
 
   const { user, isLoading: isAuthLoading } = useAuthState();
   const isPatient = user?.role === "PATIENT";
@@ -409,7 +405,7 @@ export default function PublicAvailabilityViewer({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            aria-label={isRtl ? "السابق" : "Previous"}
+            aria-label={tAvail("prevWeek")}
             onClick={() => setDateWindowOffsetDays((n) => n - VISIBLE_DATE_COLUMNS)}
             className="rounded-xl border border-border-light bg-white p-2 text-text-muted transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface"
           >
@@ -417,7 +413,7 @@ export default function PublicAvailabilityViewer({
           </button>
           <button
             type="button"
-            aria-label={isRtl ? "التالي" : "Next"}
+            aria-label={tAvail("nextWeek")}
             onClick={() => setDateWindowOffsetDays((n) => n + VISIBLE_DATE_COLUMNS)}
             className="rounded-xl border border-border-light bg-white p-2 text-text-muted transition hover:border-primary hover:text-primary dark:border-border-light dark:bg-surface"
           >

@@ -1,184 +1,53 @@
 import { Injectable } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { PrismaService } from '@common/prisma/prisma.service';
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
 
-export type StoredPractitionerAvatar = {
-  absolutePath: string;
-  mimeType: string;
-  updatedAtMs: number;
-};
-
-type AvatarMetadata = {
-  avatarUrl: string;
-  updatedAtMs: number;
-};
-
-const MIME_TO_EXTENSION: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-};
+export type StoredPractitionerAvatar = { absolutePath: string; mimeType: string; updatedAtMs: number };
+type AvatarMetadata = { avatarUrl: string; updatedAtMs: number };
+const MIME_TO_EXTENSION: Record<string, string> = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
 
 @Injectable()
 export class PractitionerAvatarStorageService {
-  private readonly baseDir = path.resolve(process.cwd(), 'storage', 'practitioners');
+  constructor(private readonly prisma: PrismaService, private readonly files: UnifiedFileStorageService) {}
 
-  getAllowedMimeTypes(): string[] {
-    return Object.keys(MIME_TO_EXTENSION);
-  }
+  getAllowedMimeTypes(): string[] { return Object.keys(MIME_TO_EXTENSION); }
+  isAllowedMimeType(mimeType?: string | null): boolean { return !!mimeType && mimeType in MIME_TO_EXTENSION; }
 
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    if (!mimeType) return false;
-    return mimeType in MIME_TO_EXTENSION;
-  }
-
-  async saveAvatar(params: {
-    practitionerProfileId: string;
-    fileBuffer: Buffer;
-    mimeType: string;
-  }): Promise<AvatarMetadata> {
-    const extension = MIME_TO_EXTENSION[params.mimeType];
-    if (!extension) {
-      throw new Error('Unsupported avatar mime type');
-    }
-
-    const practitionerDir = this.getPractitionerAvatarDirectory(params.practitionerProfileId);
-    await fs.mkdir(practitionerDir, { recursive: true });
-    await this.removeAvatarFiles(practitionerDir);
-
-    const fileName = `${randomUUID()}${extension}`;
-    const absolutePath = path.join(practitionerDir, fileName);
-    await fs.writeFile(absolutePath, params.fileBuffer);
-    const stat = await fs.stat(absolutePath);
-
-    return {
-      avatarUrl: this.toApiAvatarUrl(stat.mtimeMs),
-      updatedAtMs: stat.mtimeMs,
-    };
+  async saveAvatar(params: { practitionerProfileId: string; fileBuffer: Buffer; mimeType: string }): Promise<AvatarMetadata> {
+    const stored = await this.files.store({ purpose: StoredFilePurpose.PRACTITIONER_AVATAR, fileBuffer: params.fileBuffer, mimeType: params.mimeType, maxBytes: 5 * 1024 * 1024, allowedMimeTypes: this.getAllowedMimeTypes() });
+    const previous = await this.prisma.practitionerProfile.findUnique({ where: { id: params.practitionerProfileId }, select: { avatarFileId: true } });
+    try { await this.prisma.practitionerProfile.update({ where: { id: params.practitionerProfileId }, data: { avatarFileId: stored.id } }); }
+    catch (error) { await this.files.delete(stored.id).catch(() => undefined); throw error; }
+    if (previous?.avatarFileId && previous.avatarFileId !== stored.id) await this.files.delete(previous.avatarFileId).catch(() => undefined);
+    return { avatarUrl: this.toApiAvatarUrl(stored.updatedAt.getTime()), updatedAtMs: stored.updatedAt.getTime() };
   }
 
   async resolveAvatarMetadata(practitionerProfileId: string): Promise<AvatarMetadata | null> {
     const stored = await this.findStoredAvatar(practitionerProfileId);
-    if (!stored) return null;
-
-    return {
-      avatarUrl: this.toApiAvatarUrl(stored.updatedAtMs),
-      updatedAtMs: stored.updatedAtMs,
-    };
+    return stored ? { avatarUrl: this.toApiAvatarUrl(stored.updatedAtMs), updatedAtMs: stored.updatedAtMs } : null;
   }
 
-  async getAvatarFile(practitionerProfileId: string): Promise<StoredPractitionerAvatar | null> {
-    return this.findStoredAvatar(practitionerProfileId);
-  }
+  async getAvatarFile(practitionerProfileId: string): Promise<StoredPractitionerAvatar | null> { return this.findStoredAvatar(practitionerProfileId); }
 
   async deleteAvatar(practitionerProfileId: string): Promise<boolean> {
-    const practitionerDir = this.getPractitionerAvatarDirectory(practitionerProfileId);
-    const files = await this.readDirectorySafe(practitionerDir);
-    if (files.length === 0) return false;
-
-    let removed = false;
-    await Promise.all(
-      files.map(async (name) => {
-        const extension = path.extname(name).toLowerCase();
-        const mimeType = this.extensionToMimeType(extension);
-        if (!mimeType) return;
-
-        const absolutePath = path.join(practitionerDir, name);
-        if (!(await this.isSafeFilePath(absolutePath))) return null;
-        const stat = await fs.stat(absolutePath).catch(() => null);
-        if (!stat?.isFile()) return;
-
-        await fs.unlink(absolutePath).catch(() => undefined);
-        removed = true;
-      }),
-    );
-
+    const profile = await this.prisma.practitionerProfile.findFirst({ where: { OR: [{ id: practitionerProfileId }, { userId: practitionerProfileId }] }, select: { id: true, avatarFileId: true } });
+    const current = profile;
+    if (!current?.avatarFileId) return false;
+    const removed = await this.files.delete(current.avatarFileId);
+    await this.prisma.practitionerProfile.update({ where: { id: current.id }, data: { avatarFileId: null } });
     return removed;
   }
 
-  private getPractitionerAvatarDirectory(practitionerProfileId: string): string {
-    const safeId = practitionerProfileId.replace(/[^a-zA-Z0-9-]/g, '');
-    return path.join(this.baseDir, safeId, 'avatar');
+  private async findStoredAvatar(practitionerProfileId: string): Promise<StoredPractitionerAvatar | null> {
+    const current = await this.prisma.practitionerProfile.findUnique({ where: { id: practitionerProfileId }, select: { avatarFileId: true } });
+    if (!current?.avatarFileId) return null;
+    const stored = await this.files.resolve(current.avatarFileId);
+    return stored ? { absolutePath: stored.absolutePath, mimeType: stored.mimeType, updatedAtMs: stored.updatedAt.getTime() } : null;
   }
 
-  private extensionToMimeType(extension: string): string | null {
-    const ext = extension.toLowerCase();
-    for (const [mime, mimeExt] of Object.entries(MIME_TO_EXTENSION)) {
-      if (mimeExt === ext) return mime;
-    }
-    return null;
-  }
-
-  private async removeAvatarFiles(practitionerDir: string): Promise<void> {
-    const files = await this.readDirectorySafe(practitionerDir);
-    await Promise.all(
-      files.map(async (name) => {
-        const absolutePath = path.join(practitionerDir, name);
-        const stat = await fs.stat(absolutePath).catch(() => null);
-        if (!stat?.isFile()) return;
-        await fs.unlink(absolutePath).catch(() => undefined);
-      }),
-    );
-  }
-
-  private async findStoredAvatar(
-    practitionerProfileId: string,
-  ): Promise<StoredPractitionerAvatar | null> {
-    const practitionerDir = this.getPractitionerAvatarDirectory(practitionerProfileId);
-    const files = await this.readDirectorySafe(practitionerDir);
-    if (files.length === 0) return null;
-
-    const candidates = await Promise.all(
-      files.map(async (name) => {
-        const extension = path.extname(name).toLowerCase();
-        const mimeType = this.extensionToMimeType(extension);
-        if (!mimeType) return null;
-
-        const absolutePath = path.join(practitionerDir, name);
-        const stat = await fs.stat(absolutePath).catch(() => null);
-        if (!stat?.isFile()) return null;
-
-        return {
-          absolutePath,
-          mimeType,
-          updatedAtMs: stat.mtimeMs,
-        } satisfies StoredPractitionerAvatar;
-      }),
-    );
-
-    const existing = candidates
-      .filter((item): item is StoredPractitionerAvatar => item !== null)
-      .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
-
-    return existing[0] ?? null;
-  }
-
-  private async readDirectorySafe(dir: string): Promise<string[]> {
-    try {
-      return await fs.readdir(dir);
-    } catch {
-      return [];
-    }
-  }
-
-  private toApiAvatarUrl(updatedAtMs: number): string {
-    const version = Math.floor(updatedAtMs);
-    return `/api/v1/practitioners/me/avatar?v=${version}`;
-  }
-
-  private async isSafeFilePath(absolutePath: string): Promise<boolean> {
-    const baseRealPath = await fs.realpath(this.baseDir).catch(() => null);
-    const fileRealPath = await fs.realpath(absolutePath).catch(() => null);
-    if (!baseRealPath || !fileRealPath) return false;
-    const base = baseRealPath.endsWith(path.sep)
-      ? baseRealPath
-      : baseRealPath + path.sep;
-    return fileRealPath.startsWith(base);
-  }
-
-  toPublicAvatarUrl(publicSlug: string, updatedAtMs: number): string {
-    const version = Math.floor(updatedAtMs);
-    return `/api/v1/public/practitioners/${encodeURIComponent(publicSlug)}/avatar?v=${version}`;
-  }
+  private toApiAvatarUrl(updatedAtMs: number): string { return `/api/v1/practitioners/me/avatar?v=${Math.floor(updatedAtMs)}`; }
+  toPublicAvatarUrl(publicSlug: string, updatedAtMs: number): string { return `/api/v1/public/practitioners/${encodeURIComponent(publicSlug)}/avatar?v=${Math.floor(updatedAtMs)}`; }
 }

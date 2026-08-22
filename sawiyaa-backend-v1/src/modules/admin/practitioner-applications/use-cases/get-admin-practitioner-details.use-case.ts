@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { AdminPractitionerProfessionalContentReadinessService } from '../services/admin-practitioner-professional-content-readiness.service';
 
 @Injectable()
 export class GetAdminPractitionerDetailsUseCase {
   constructor(
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
+    private readonly professionalContentReadiness: AdminPractitionerProfessionalContentReadinessService,
   ) {}
 
   async execute(input: { id: string; locale: SupportedLocale }) {
@@ -28,6 +30,14 @@ export class GetAdminPractitionerDetailsUseCase {
           },
         },
         payoutDestination: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' },
+          select: {
+            locale: true,
+            professionalTitle: true,
+            bio: true,
+          },
+        },
         specialties: {
           include: {
             specialty: {
@@ -101,6 +111,8 @@ export class GetAdminPractitionerDetailsUseCase {
       : null;
 
     const latestApplication = profile.applications[0] ?? null;
+    const professionalContent =
+      this.professionalContentReadiness.fromLive(profile);
 
     return {
       message: this.i18nService.t(
@@ -127,6 +139,7 @@ export class GetAdminPractitionerDetailsUseCase {
         practitionerGender: profile.practitionerGender,
         professionalTitle: profile.professionalTitle,
         bio: profile.bio,
+        professionalContentReadiness: professionalContent.readiness,
         yearsOfExperience: profile.yearsOfExperience,
         languages: profile.languages.map((l) => l.language.code),
         acceptsPackages: profile.acceptsPackages,

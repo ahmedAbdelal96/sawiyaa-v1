@@ -63,7 +63,9 @@ describe('GetSessionGeneralChatConversationUseCase', () => {
   });
 
   it('returns the existing conversation for a participant without checking send eligibility as read access', async () => {
-    repository.findConversationsBySessionId.mockResolvedValue([{ id: 'conv-1' }]);
+    repository.findConversationsBySessionId.mockResolvedValue([
+      { id: 'conv-1' },
+    ]);
     detail.execute.mockResolvedValue({
       item: {
         conversationId: 'conv-1',
@@ -85,6 +87,7 @@ describe('GetSessionGeneralChatConversationUseCase', () => {
     expect(detail.execute).toHaveBeenCalledWith({
       authenticatedUser: { id: 'practitioner-1', roles: [] },
       conversationId: 'conv-1',
+      locale: 'ar',
     });
   });
 

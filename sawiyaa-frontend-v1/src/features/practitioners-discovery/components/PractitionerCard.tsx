@@ -39,11 +39,11 @@ export default function PractitionerCard({
   const locale = useLocale();
 
   const isArabic = locale === "ar";
-  const sessionFeesLabel = isArabic ? "رسوم الجلسة" : t("sessionFees");
-  const duration30Label = isArabic ? "30 دقيقة" : t("duration30");
-  const duration60Label = isArabic ? "60 دقيقة" : t("duration60");
+  const sessionFeesLabel = t("sessionFees");
+  const duration30Label = t("duration30");
+  const duration60Label = t("duration60");
   const name = (isArabic ? practitioner.nameAr : practitioner.nameEn) || practitioner.slug;
-  const title = (isArabic ? practitioner.titleAr : practitioner.titleEn) || "-";
+  const title = practitioner.professionalTitle?.trim() || "-";
   const rating = practitioner.rating;
   const reviewCount =
     typeof practitioner.reviewCount === "number" ? practitioner.reviewCount : 0;

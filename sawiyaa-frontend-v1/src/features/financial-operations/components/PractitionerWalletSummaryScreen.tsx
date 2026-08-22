@@ -209,7 +209,7 @@ export default function PractitionerWalletSummaryScreen() {
     () => [
       {
         id: "status",
-        header: locale.startsWith("ar") ? "الحالة" : "Status",
+        header: t("ui.statusLabel"),
         accessor: (row) => row.status,
         cell: (row) => (
           <AdminStatusBadge tone={STATUS_TONES[row.status]}>
@@ -219,35 +219,35 @@ export default function PractitionerWalletSummaryScreen() {
       },
       {
         id: "amountAdded",
-        header: locale.startsWith("ar") ? "الصافي" : "Net",
+        header: t("settlements.columns.net"),
         accessor: (row) => Number(row.amountAdded),
         cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountAdded, row.currency, "text-sm font-semibold"),
       },
       /*
       {
         id: "amountGross",
-        header: locale.startsWith("ar") ? "الإجمالي" : "Gross",
+        header: t("settlements.columns.gross"),
         accessor: (row) => Number(row.amountGross),
         cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountGross, row.currency, "text-sm font-normal text-text-secondary"),
         hideOnMobile: true,
       },
       {
         id: "amountAdjustments",
-        header: locale.startsWith("ar") ? "التعديلات" : "Adjustments",
+        header: t("settlements.columns.adjustments"),
         accessor: (row) => Number(row.amountAdjustments),
         cell: (row) => formatMoneyWithSmallCurrency(locale, row.amountAdjustments, row.currency, "text-sm font-normal text-text-secondary"),
         hideOnMobile: true,
       },
       {
         id: "batchId",
-        header: locale.startsWith("ar") ? "الدفعة" : "Batch",
+        header: t("settlements.columns.batch"),
         accessor: (row) => row.batchId,
         cell: (row) => <span className="font-mono text-xs text-text-secondary">{shortId(row.batchId)}</span>,
         hideOnMobile: true,
       },
       {
         id: "externalPayoutRef",
-        header: locale.startsWith("ar") ? "مرجع الصرف" : "Reference",
+        header: t("settlements.columns.reference"),
         accessor: (row) => row.externalPayoutRef ?? "",
         cell: (row) =>
           row.externalPayoutRef ? (
@@ -259,13 +259,13 @@ export default function PractitionerWalletSummaryScreen() {
       },
       {
         id: "createdAt",
-        header: locale.startsWith("ar") ? "تاريخ الإنشاء" : "Created",
+        header: t("settlements.columns.created"),
         accessor: (row) => new Date(row.createdAt).getTime(),
         cell: (row) => formatDate(row.createdAt, locale, practitionerTimeZone),
       },
       {
         id: "paidAt",
-        header: locale.startsWith("ar") ? "تاريخ الصرف" : "Paid At",
+        header: t("settlements.columns.paidAt"),
         accessor: (row) => (row.paidAt ? new Date(row.paidAt).getTime() : 0),
         cell: (row) => <span className="text-xs text-text-secondary">{formatDateTime(row.paidAt, locale, practitionerTimeZone)}</span>,
         hideOnMobile: true,
@@ -273,13 +273,13 @@ export default function PractitionerWalletSummaryScreen() {
       */
       {
         id: "date",
-        header: locale.startsWith("ar") ? "Date" : "Date",
+        header: t("ui.date"),
         accessor: (row) => row.date ? new Date(row.date).getTime() : 0,
         cell: (row) => formatDate(row.date, locale, practitionerTimeZone),
       },
       {
         id: "payoutStatus",
-        header: locale.startsWith("ar") ? "Payout" : "Payout",
+        header: t("ui.payoutStatus"),
         accessor: (row) => row.payoutStatus,
         cell: (row) => <span className="text-xs text-text-secondary">{row.payoutStatus}</span>,
         hideOnMobile: true,
@@ -371,7 +371,7 @@ export default function PractitionerWalletSummaryScreen() {
       <SurfaceCard variant="compact" className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold text-text-secondary">
-            {locale === "ar" ? "تصفية حسب الحالة:" : "Filter by status:"}
+            {t("ui.filterStatus")}
           </span>
           <select
             value={settlementStatus}
@@ -470,7 +470,7 @@ export default function PractitionerWalletSummaryScreen() {
             </span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="font-semibold text-text-muted">{locale === "ar" ? "العملة" : "Currency"}</span>
+            <span className="font-semibold text-text-muted">{t("ui.currency")}</span>
             <span className="text-text-primary dark:text-white/90 font-medium">
               {summary.currency}
             </span>

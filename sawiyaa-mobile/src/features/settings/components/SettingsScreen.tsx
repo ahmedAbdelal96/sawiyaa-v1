@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
   Header,
@@ -19,11 +20,14 @@ import {
 import { useTheme, type ThemeMode } from "../../../providers/ThemeProvider";
 import { setAppLanguage, type AppLanguage } from "../../../i18n";
 import { useAppDirection } from "../../../i18n/direction";
+import { useAuth } from "../../../providers/AuthProvider";
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { theme, themeMode, setThemeMode } = useTheme();
   const { t, i18n } = useTranslation();
   const { isRtl, rowDirection, chevronForward } = useAppDirection();
+  const { role } = useAuth();
 
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
   const [isAppearanceModalVisible, setIsAppearanceModalVisible] =
@@ -264,6 +268,58 @@ export default function SettingsScreen() {
               />
             </View>
           </TouchableOpacity>
+
+          {role === "practitioner" ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => router.push("/(settings)/notifications" as any)}
+              style={[
+                styles.rowButton,
+                {
+                  flexDirection: rowDirection,
+                  borderBottomColor: theme.colors.divider,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.iconWrapper,
+                  { backgroundColor: theme.colors.primarySoft },
+                ]}
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.rowTextWrap,
+                  { alignItems: isRtl ? "flex-end" : "flex-start" },
+                ]}
+              >
+                <Text
+                  weight="600"
+                  style={styles.rowTitle}
+                  color={theme.colors.textPrimary}
+                >
+                  {t("settings.notifications.screenTitle")}
+                </Text>
+                <Text style={styles.rowSubtitle} color={theme.colors.textSecondary}>
+                  {t("settings.notifications.subtitle")}
+                </Text>
+              </View>
+
+              <Ionicons
+                name={chevronForward}
+                size={18}
+                color={theme.colors.textMuted}
+                style={{ opacity: 0.6 }}
+              />
+            </TouchableOpacity>
+          ) : null}
         </Card>
       </ScrollView>
 

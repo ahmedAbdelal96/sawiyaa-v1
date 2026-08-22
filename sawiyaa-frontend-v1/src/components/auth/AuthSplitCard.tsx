@@ -9,7 +9,7 @@ import { ChevronLeft } from "lucide-react";
 type AuthSplitCardProps = {
   title: string;
   subtitle?: string;
-  mode: "patient" | "practitioner" | "admin" | "forgot";
+  mode: "patient" | "trainee" | "practitioner" | "admin" | "forgot";
   activeTab?: "signin" | "signup" | "otp" | "forgot";
   children: React.ReactNode;
   backHref?: string;

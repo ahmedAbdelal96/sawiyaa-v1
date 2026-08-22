@@ -19,6 +19,9 @@ export type PublicPractitioner = {
   slug: string;
   nameAr: string;
   nameEn: string;
+  /** Backend-resolved professional content for the request locale. */
+  professionalTitle?: string | null;
+  bioSnippet?: string | null;
   titleAr: string;
   titleEn: string;
   specialties: string[];

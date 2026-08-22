@@ -18,6 +18,8 @@ export type PublicPractitionerInstantBookingAvailability = {
 };
 
 export type PractitionerProfile = PublicPractitioner & {
+  /** Backend-resolved full professional bio for the request locale. */
+  bio?: string | null;
   bioAr: string;
   bioEn: string;
   approachAr: string;

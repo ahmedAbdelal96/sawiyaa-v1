@@ -35,6 +35,17 @@ const ALIASES: Record<string, { ar: string; en: string }> = {
   },
 };
 
+const DISPLAY_LABELS: Record<string, { ar: string; en: string }> = {
+  "Africa/Cairo": { ar: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629", en: "Cairo time" },
+  "Asia/Riyadh": { ar: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0631\u064a\u0627\u0636", en: "Riyadh time" },
+  "Asia/Dubai": { ar: "\u062a\u0648\u0642\u064a\u062a \u062f\u0628\u064a", en: "Dubai time" },
+  "Asia/Kuwait": { ar: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0643\u0648\u064a\u062a", en: "Kuwait time" },
+  "Asia/Amman": { ar: "\u062a\u0648\u0642\u064a\u062a \u0639\u0645\u0627\u0646", en: "Amman time" },
+  "Europe/London": { ar: "\u062a\u0648\u0642\u064a\u062a \u0644\u0646\u062f\u0646", en: "London time" },
+  "Europe/Paris": { ar: "\u062a\u0648\u0642\u064a\u062a \u0628\u0627\u0631\u064a\u0633", en: "Paris time" },
+  "America/New_York": { ar: "\u062a\u0648\u0642\u064a\u062a \u0646\u064a\u0648\u064a\u0648\u0631\u0643", en: "New York time" },
+};
+
 let cachedIdentifiers: string[] | null = null;
 const cachedOptionsByLocale: Partial<Record<TimeZoneLocale, TimeZoneOption[]>> =
   {};
@@ -95,6 +106,15 @@ export function createTimeZoneOption(
     label: region ? `${city} — ${region}` : city,
     searchText: normalizeSearch(`${normalized} ${city} ${region} ${alias}`),
   };
+}
+
+export function getTimeZoneDisplayLabel(
+  value: string | null | undefined,
+  locale: TimeZoneLocale,
+): string | null {
+  const normalized = value ? normalizeIanaTimeZone(value) : null;
+  if (!normalized) return null;
+  return DISPLAY_LABELS[normalized]?.[locale] ?? ALIASES[normalized]?.[locale] ?? createTimeZoneOption(normalized, locale)?.city ?? null;
 }
 
 function getBaseOptions(locale: TimeZoneLocale): TimeZoneOption[] {

@@ -23,6 +23,11 @@ export class UserEmailRepository {
           include: {
             roles: true,
             practitionerProfile: true,
+            practitionerApplications: {
+              orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+              take: 1,
+              select: { id: true, status: true },
+            },
             emails: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
             },
@@ -48,6 +53,11 @@ export class UserEmailRepository {
               status: true,
             },
           },
+          practitionerApplications: {
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            take: 1,
+            select: { id: true, status: true },
+          },
           emails: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
             },
@@ -72,6 +82,11 @@ export class UserEmailRepository {
                 id: true,
                 status: true,
               },
+            },
+            practitionerApplications: {
+              orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+              take: 1,
+              select: { id: true, status: true },
             },
             emails: {
               orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],

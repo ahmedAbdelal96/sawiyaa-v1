@@ -10,6 +10,7 @@ import { CareChatModule } from '@modules/care-chat/care-chat.module';
 import { ModerationModule } from '@modules/moderation/moderation.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { MessagingModule } from '@modules/messaging/messaging.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { SupportModule } from '@modules/support/support.module';
 import { GeneralChatAttachmentsController } from './controllers/general-chat-attachments.controller';
 import { AdminGeneralChatConversationsController } from './controllers/admin-general-chat-conversations.controller';
@@ -54,6 +55,7 @@ import { ConversationAccessPolicy } from './policies/conversation-access.policy'
     SupportModule,
     CareChatModule,
     MessagingModule,
+    PractitionersModule,
   ],
   controllers: [
     AdminGeneralChatConversationsController,

@@ -20,6 +20,7 @@ export const PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS = [
   'messages.session-message-received.in-app.v1', 'messages.session-message-received.push.v1', 'messages.support-message-received.in-app.v1', 'messages.support-message-received.push.v1', 'messages.follow-up-message-received.in-app.v1', 'messages.follow-up-message-received.push.v1',
   'care-chat.request-approved.in-app.v1', 'care-chat.request-approved.push.v1', 'care-chat.request-rejected.in-app.v1', 'care-chat.request-rejected.push.v1', 'care-chat.request-revoked.in-app.v1', 'care-chat.request-revoked.push.v1',
   'sessions.session-reminder-60.in-app.v1', 'sessions.session-reminder-60.email.v1', 'sessions.session-reminder-15.in-app.v1', 'sessions.session-reminder-15.email.v1', 'sessions.session-starting-now.in-app.v1', 'sessions.session-starting-now.email.v1', 'sessions.session-late-join.in-app.v1', 'sessions.session-late-join.email.v1', 'sessions.session-reminder-before-start.in-app.v1', 'sessions.session-reminder-before-start.email.v1',
+  'instant-booking.request-created.email.v1', 'instant-booking.request-accepted.email.v1', 'instant-booking.request-rejected.email.v1', 'instant-booking.request-expired.email.v1',
   'availability.week-ending-reminder.in-app.v1', 'availability.week-ending-reminder.email.v1', 'availability.week-ending-reminder.push.v1', 'moderation.report-created.in-app.v1', 'moderation.report-reviewed.in-app.v1',
 ] as const;
 

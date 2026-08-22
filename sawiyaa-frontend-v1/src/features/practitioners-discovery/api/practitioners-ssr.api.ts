@@ -9,7 +9,6 @@
  * profile API can extend the same shape without duplicating the mapping logic.
  */
 import { serverGet } from "@/lib/api/server-http-client";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import type {
   PublicPractitioner,
   PractitionerFiltersMetadata,
@@ -30,6 +29,7 @@ export type BackendPublicPractitionerListItem = {
   slug: string;
   displayName: string | null;
   professionalTitle: string | null;
+  bioSnippet: string | null;
   specialties: BackendSpecialty[];
   languages: string[];
   countryCode: string | null;
@@ -79,16 +79,19 @@ function buildInitials(displayName: string | null): string {
 
 export function mapBackendListItemToUi(item: BackendPublicPractitionerListItem): PublicPractitioner {
   const displayName = item.displayName ?? "";
-  const titleAr = getProfessionalTitleLabel(item.professionalTitle, "ar");
-  const titleEn = getProfessionalTitleLabel(item.professionalTitle, "en");
+  const professionalTitle = item.professionalTitle ?? null;
 
   return {
     id: item.slug,
     slug: item.slug,
     nameAr: displayName,
     nameEn: displayName,
-    titleAr,
-    titleEn,
+    professionalTitle,
+    bioSnippet: item.bioSnippet ?? null,
+    // Retained for legacy mock consumers; public API consumers use the
+    // backend-resolved professionalTitle above and do not select by locale.
+    titleAr: professionalTitle ?? "",
+    titleEn: professionalTitle ?? "",
     specialties: item.specialties.map((s) => s.slug),
     languages: item.languages ?? [],
     country: (item.countryCode ?? "").toLowerCase(),

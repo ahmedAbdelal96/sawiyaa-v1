@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   cancelPatientSession,
   closePractitionerSessionRuntime,
@@ -30,7 +31,8 @@ export const patientSessionQueryKeys = {
   all: ["patient-sessions"] as const,
   list: (params?: ListSessionsParams) =>
     [...patientSessionQueryKeys.all, "list", params ?? {}] as const,
-  detail: (sessionId: string) => [...patientSessionQueryKeys.all, sessionId] as const,
+  detail: (sessionId: string, locale = "ar") =>
+    [...patientSessionQueryKeys.all, "detail", sessionId, locale] as const,
 };
 
 export const nextSessionQueryKey = ["my-next-session"] as const;
@@ -80,8 +82,10 @@ export function usePatientSession(
   sessionId: string | null,
   extraOptions?: PatientSessionExtraOptions,
 ) {
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
+
   return useQuery<SessionItem>({
-    queryKey: patientSessionQueryKeys.detail(sessionId ?? ""),
+    queryKey: patientSessionQueryKeys.detail(sessionId ?? "", locale),
     queryFn: () => getPatientSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
@@ -119,13 +123,14 @@ export function usePatientSessionSummary() {
  */
 export function useCancelPatientSession() {
   const queryClient = useQueryClient();
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: ({ sessionId, reason }: { sessionId: string; reason?: string }) =>
       cancelPatientSession(sessionId, reason),
     onSuccess: async (updatedSession) => {
       // Update the detail cache immediately
       queryClient.setQueryData(
-        patientSessionQueryKeys.detail(updatedSession.id),
+        patientSessionQueryKeys.detail(updatedSession.id, locale),
         updatedSession,
       );
       // Invalidate list so it reflects the new status
@@ -165,8 +170,8 @@ export const practitionerSessionQueryKeys = {
   all: ["practitioner-sessions"] as const,
   list: (params?: ListSessionsParams) =>
     [...practitionerSessionQueryKeys.all, "list", params ?? {}] as const,
-  detail: (sessionId: string) =>
-    [...practitionerSessionQueryKeys.all, sessionId] as const,
+  detail: (sessionId: string, locale = "ar") =>
+    [...practitionerSessionQueryKeys.all, "detail", sessionId, locale] as const,
 };
 
 /**
@@ -189,8 +194,10 @@ export function usePractitionerSessions(params?: ListSessionsParams) {
  * GET /practitioners/me/sessions/:id
  */
 export function usePractitionerSession(sessionId: string | null) {
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
+
   return useQuery<SessionItem>({
-    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? ""),
+    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? "", locale),
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
@@ -199,11 +206,12 @@ export function usePractitionerSession(sessionId: string | null) {
 
 export function useMarkPractitionerSessionNoShow() {
   const queryClient = useQueryClient();
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: (sessionId: string) => markPractitionerSessionNoShow(sessionId),
     onSuccess: async (updatedSession) => {
       queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(updatedSession.id),
+        practitionerSessionQueryKeys.detail(updatedSession.id, locale),
         updatedSession,
       );
       await invalidateOperationalSessionViews(queryClient, updatedSession.id);

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   PractitionerApplicationStatus,
@@ -32,6 +33,8 @@ import { AdminPractitionerApplicationNotificationService } from '../services/adm
 import { PractitionerReviewCaseService } from '@modules/practitioners/services/practitioner-review-case.service';
 import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
 import { PractitionerTimezoneChangeGuardService } from '@modules/practitioners/services/practitioner-timezone-change-guard.service';
+import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
+import { buildDraftPractitionerSlug } from '@modules/practitioners/utils/build-draft-practitioner-slug.util';
 
 type SubmissionSnapshot = {
   applicant?: {
@@ -41,12 +44,22 @@ type SubmissionSnapshot = {
   };
   profile?: {
     practitionerType?: string | null;
+    practitionerTypeExplicit?: boolean;
     practitionerGender?: string | null;
     professionalTitle?: string | null;
     bio?: string | null;
     yearsOfExperience?: number | null;
     countryCode?: string | null;
     avatarUrl?: string | null;
+    primaryContentLocale?: 'ar' | 'en' | null;
+    professionalContent?: {
+      version?: number;
+      primaryContentLocale?: 'ar' | 'en' | null;
+      locales?: {
+        ar?: { professionalTitle?: string | null; bio?: string | null };
+        en?: { professionalTitle?: string | null; bio?: string | null };
+      };
+    };
   };
   languageCodes?: string[] | null;
   specialtySelection?: {
@@ -94,7 +107,89 @@ export class ApprovePractitionerApplicationUseCase {
     private readonly practitionerReviewCaseService: PractitionerReviewCaseService,
     private readonly practitionerCurrencyLifecycleService: PractitionerCurrencyLifecycleService,
     private readonly practitionerTimezoneChangeGuardService: PractitionerTimezoneChangeGuardService,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
+
+  private async approveApplicationOwned(input: {
+    id: string;
+    locale: SupportedLocale;
+    adminUserId: string;
+    operatorRoles: string[];
+    reason?: string;
+    note?: string;
+  }, existing: any) {
+    const reviewedAt = new Date();
+    const reason = input.reason?.trim() || null;
+    const note = input.note?.trim() || null;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const latest = await this.applicationRepository.findById(input.id, tx);
+      if (!latest || latest.practitioner) throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_STATE_CHANGED' });
+      const snapshot = (latest.submissionSnapshot ?? {}) as any;
+      const reviewCase = await tx.practitionerReviewCase.findFirst({ where: { applicationId: latest.id, status: { in: ['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED'] } }, include: { requirements: true } });
+      if (reviewCase?.requirements.some((requirement) => requirement.status === 'OPEN' && requirement.severity === 'BLOCKING')) {
+        throw new BadRequestException({ error: 'PRACTITIONER_REVIEW_REQUIREMENTS_OPEN' });
+      }
+      const profileSnapshot = snapshot.profile ?? {};
+      const specialtySelection = snapshot.specialtySelection ?? {};
+      const country = profileSnapshot.countryCode
+        ? await tx.country.findFirst({ where: { isoCode: String(profileSnapshot.countryCode).toUpperCase(), isActive: true }, select: { id: true } })
+        : null;
+      const profile = await tx.practitionerProfile.create({
+        data: {
+          userId: latest.userId,
+          publicSlug: buildDraftPractitionerSlug(latest.user?.displayName ?? latest.userId),
+          practitionerType: profileSnapshot.practitionerType ?? PractitionerType.OTHER,
+          practitionerGender: profileSnapshot.practitionerGender ?? null,
+          professionalTitle: profileSnapshot.professionalTitle ?? null,
+          bio: profileSnapshot.bio ?? null,
+          yearsOfExperience: profileSnapshot.yearsOfExperience ?? null,
+          countryId: country?.id ?? null,
+          primarySpecialtyCategoryId: specialtySelection.primarySpecialtyCategoryId ?? null,
+          status: PractitionerStatus.APPROVED,
+          isPublicProfilePublished: false,
+        },
+      });
+      const specialtyIds = Array.isArray(specialtySelection.specialties)
+        ? specialtySelection.specialties.map((item: any) => item?.specialtyId).filter((id: unknown): id is string => typeof id === 'string')
+        : [];
+      if (specialtyIds.length) {
+        const activeSpecialties = await tx.specialty.findMany({ where: { id: { in: specialtyIds }, isActive: true }, select: { id: true } });
+        await tx.practitionerSpecialty.createMany({
+          data: activeSpecialties.map((item) => ({ practitionerId: profile.id, specialtyId: item.id, isPrimary: item.id === specialtySelection.specialties?.[0]?.specialtyId })),
+          skipDuplicates: true,
+        });
+      }
+      await tx.practitionerCredential.updateMany({ where: { applicationId: latest.id }, data: { applicationId: null, practitionerId: profile.id } });
+      await tx.practitionerReviewCase.updateMany({ where: { applicationId: latest.id }, data: { applicationId: null, practitionerId: profile.id, userId: latest.userId } });
+      const decision = await this.applicationRepository.updateDecision(input.id, {
+        status: PractitionerApplicationStatus.APPROVED,
+        reviewedAt,
+        reviewedByUserId: input.adminUserId,
+        reviewDecisionReason: reason,
+        reviewNotes: note,
+      }, tx);
+      await this.securityAuditService.recordRequired(tx, {
+        action: 'security.practitioner.application.approve',
+        outcome: SecurityAuditOutcome.SUCCESS,
+        actorType: SecurityAuditActorType.USER,
+        source: SecurityAuditSource.HTTP_REQUEST,
+        actorUserId: input.adminUserId,
+        actorRoles: input.operatorRoles,
+        resourceType: 'PractitionerApplication',
+        resourceId: input.id,
+        targetUserId: latest.userId,
+        reason,
+        metadata: { practitionerProfileId: profile.id, isPublicProfilePublished: false },
+      });
+      return decision;
+    });
+    await this.notificationService.sendApproved({ userId: existing.userId, applicationId: updated.id, locale: input.locale });
+    return {
+      message: this.i18nService.t('admin.practitionerApplications.success.applicationApproved', input.locale),
+      application: this.mapper.toDecision({ applicationId: updated.id, practitionerProfileId: updated.practitioner.id, userId: updated.practitioner.userId, status: updated.status, reviewedAt: updated.reviewedAt, reviewedByUserId: updated.reviewedByUserId ?? null, reviewDecisionReason: updated.reviewDecisionReason ?? null, reviewNotes: updated.reviewNotes ?? null }),
+    };
+  }
 
   async execute(input: {
     id: string;
@@ -122,7 +217,26 @@ export class ApprovePractitionerApplicationUseCase {
       });
     }
 
+    if (existing.status === PractitionerApplicationStatus.APPROVED && existing.practitioner) {
+      return {
+        message: this.i18nService.t('admin.practitionerApplications.success.applicationApproved', input.locale),
+        application: this.mapper.toDecision({
+          applicationId: existing.id,
+          practitionerProfileId: existing.practitioner.id,
+          userId: existing.practitioner.userId ?? existing.userId,
+          status: existing.status,
+          reviewedAt: existing.reviewedAt,
+          reviewedByUserId: existing.reviewedByUserId ?? null,
+          reviewDecisionReason: existing.reviewDecisionReason ?? null,
+          reviewNotes: existing.reviewNotes ?? null,
+        }),
+      };
+    }
     this.transitionPolicy.assertCanApprove(existing.status);
+
+    if (!existing.practitioner) {
+      return this.approveApplicationOwned(input, existing);
+    }
 
     const [profile, user, specialtyLinks, credentials] = await Promise.all([
       this.profileRepository.findById(existing.practitioner.id),
@@ -193,6 +307,7 @@ export class ApprovePractitionerApplicationUseCase {
       hasYearsOfExperience:
         typeof requestedYearsOfExperience === 'number' &&
         requestedYearsOfExperience > 0,
+      hasPractitionerType: snapshot?.profile?.practitionerTypeExplicit === true,
       hasLanguage: requestedLanguageCodes.length > 0,
       hasRequiredSpecialties: requestedSpecialties.length > 0,
       hasRequiredCredentials:
@@ -362,6 +477,14 @@ export class ApprovePractitionerApplicationUseCase {
             },
             tx,
           );
+
+          if (this.professionalContentAuthoringService) {
+            await this.professionalContentAuthoringService.applySnapshot(
+              tx,
+              latest.practitioner.id,
+              { profile: requestedProfile },
+            );
+          }
 
           if (requestedProfile.avatarUrl !== undefined) {
             await this.profileRepository.updateAvatar(

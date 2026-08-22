@@ -14,6 +14,8 @@ import {
   uploadPractitionerCredentialFile,
   deletePractitionerCredential,
   viewPractitionerCredential,
+  saveApplicationDraft,
+  getPractitionerRequirements,
 } from "../api/practitioners.api";
 import { practitionersQueryKeys } from "../constants/query-keys";
 import type { SubmitPractitionerApplicationRequest } from "../types/practitioners.types";
@@ -223,6 +225,37 @@ export function usePractitionerReadiness(enabled = true) {
   return useQuery({
     queryKey: practitionersQueryKeys.meReadiness(),
     queryFn: getPractitionerReadiness,
+    enabled,
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+  });
+}
+
+/**
+ * Saves practitioner application draft and refetches status/readiness.
+ */
+export function useSaveApplicationDraft() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: saveApplicationDraft,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: practitionersQueryKeys.meApplication(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: practitionersQueryKeys.meReadiness(),
+      });
+    },
+  });
+}
+
+/**
+ * Reads persistent practitioner requirements throughout lifecycle.
+ */
+export function usePractitionerRequirements(enabled = true) {
+  return useQuery({
+    queryKey: practitionersQueryKeys.meRequirements(),
+    queryFn: getPractitionerRequirements,
     enabled,
     staleTime: 30_000,
     gcTime: 10 * 60_000,

@@ -1,93 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { StoredFilePurpose } from '@prisma/client';
+import { UnifiedFileStorageService } from '@modules/files/unified-file-storage.service';
 
 const CERTIFICATE_MIME_TYPE = 'application/pdf';
-
-export type StoredAcademyProgramCertificate = {
-  absolutePath: string;
-  storagePath: string;
-  mimeType: string;
-  fileSizeBytes: number;
-};
+export type StoredAcademyProgramCertificate = { absolutePath: string; storagePath: string; storedFileId: string; mimeType: string; fileSizeBytes: number };
 
 @Injectable()
 export class AcademyProgramCertificateStorageService {
-  private readonly baseDir = path.resolve(
-    process.cwd(),
-    'storage',
-    'academy-program-certificates',
-  );
+  private readonly legacyRoot = path.resolve(process.cwd(), 'storage');
+  constructor(private readonly files: UnifiedFileStorageService) {}
+  isAllowedMimeType(mimeType?: string | null): boolean { return mimeType?.trim().toLowerCase() === CERTIFICATE_MIME_TYPE; }
 
-  isAllowedMimeType(mimeType?: string | null): boolean {
-    return mimeType?.trim().toLowerCase() === CERTIFICATE_MIME_TYPE;
-  }
-
-  async saveCertificate(input: {
-    enrollmentId: string;
-    fileBuffer: Buffer;
-  }): Promise<StoredAcademyProgramCertificate> {
-    const fileName = `${Date.now()}-${randomUUID().replace(/-/g, '')}.pdf`;
-    const relativeDir = path.join(
-      'academy-program-certificates',
-      this.sanitizeSegment(input.enrollmentId),
-    );
-    const storagePath = path.join(relativeDir, fileName);
-    const absolutePath = path.join(process.cwd(), 'storage', storagePath);
-
-    await fs.mkdir(this.baseDir, { recursive: true });
-    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-    await fs.writeFile(absolutePath, input.fileBuffer);
-
-    const stat = await fs.stat(absolutePath);
-    return {
-      absolutePath,
-      storagePath,
-      mimeType: CERTIFICATE_MIME_TYPE,
-      fileSizeBytes: stat.size,
-    };
+  async saveCertificate(input: { enrollmentId: string; fileBuffer: Buffer; originalFileName?: string | null }): Promise<StoredAcademyProgramCertificate> {
+    const stored = await this.files.store({ purpose: StoredFilePurpose.ACADEMY_CERTIFICATE, fileBuffer: input.fileBuffer, mimeType: CERTIFICATE_MIME_TYPE, originalFileName: input.originalFileName ?? 'certificate.pdf', maxBytes: 10 * 1024 * 1024, allowedMimeTypes: [CERTIFICATE_MIME_TYPE] });
+    return { absolutePath: stored.absolutePath, storagePath: `file:${stored.id}`, storedFileId: stored.id, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes };
   }
 
   async resolveCertificate(storagePath: string): Promise<StoredAcademyProgramCertificate | null> {
+    const id = String(storagePath ?? '').replace(/^file:/, '').trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+      const stored = await this.files.resolve(id);
+      if (stored?.purpose === StoredFilePurpose.ACADEMY_CERTIFICATE) return { absolutePath: stored.absolutePath, storagePath, storedFileId: stored.id, mimeType: stored.mimeType, fileSizeBytes: stored.sizeBytes };
+    }
     const normalized = String(storagePath ?? '').trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const absolutePath = path.resolve(process.cwd(), 'storage', normalized);
-    const storageBase = path.resolve(process.cwd(), 'storage');
-    const storageBasePrefix = storageBase.endsWith(path.sep)
-      ? storageBase
-      : `${storageBase}${path.sep}`;
-    if (!(absolutePath === storageBase || absolutePath.startsWith(storageBasePrefix))) {
-      return null;
-    }
-
+    if (!normalized || normalized.includes('..') || path.isAbsolute(normalized)) return null;
+    const absolutePath = path.resolve(this.legacyRoot, normalized);
+    const rootPrefix = this.legacyRoot.endsWith(path.sep) ? this.legacyRoot : `${this.legacyRoot}${path.sep}`;
+    if (!absolutePath.startsWith(rootPrefix)) return null;
     const stat = await fs.stat(absolutePath).catch(() => null);
-    if (!stat?.isFile()) {
-      return null;
-    }
-
-    return {
-      absolutePath,
-      storagePath: normalized,
-      mimeType: CERTIFICATE_MIME_TYPE,
-      fileSizeBytes: stat.size,
-    };
+    return stat?.isFile() ? { absolutePath, storagePath: normalized, storedFileId: '', mimeType: CERTIFICATE_MIME_TYPE, fileSizeBytes: stat.size } : null;
   }
 
   async deleteCertificate(storagePath: string): Promise<boolean> {
+    const id = String(storagePath ?? '').replace(/^file:/, '').trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return this.files.delete(id);
     const resolved = await this.resolveCertificate(storagePath);
-    if (!resolved) {
-      return false;
-    }
-
+    if (!resolved) return false;
     await fs.unlink(resolved.absolutePath).catch(() => undefined);
     return true;
-  }
-
-  private sanitizeSegment(value: string): string {
-    return value.replace(/[^a-zA-Z0-9-]/g, '');
   }
 }

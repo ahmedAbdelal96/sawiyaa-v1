@@ -658,3 +658,56 @@ Simple.
 Predictable.
 Safe.
 Maintainable.
+
+---
+
+# 18. Unified File Storage Backup and Restore
+
+All new application file bytes live under the persistent `backend_storage`
+volume at `/app/storage/files`. Database dumps and file bundles are separate
+artifacts but must be kept together by the same UTC timestamp and release SHA.
+
+Create the verified database backup first, then create the matching file bundle:
+
+```bash
+SAWIYAA_TARGET_SHA="$(git rev-parse HEAD)" \
+  bash /opt/sawiyaa/deploy/scripts/backup-db.sh
+
+SAWIYAA_TARGET_SHA="$(git rev-parse HEAD)" \
+SAWIYAA_BACKUP_TIMESTAMP=YYYYMMDD-HHMMSS \
+SAWIYAA_DB_BACKUP_FILE=/opt/sawiyaa-backups/db/sawiyaa-YYYYMMDD-HHMMSS-<sha>.dump \
+  bash /opt/sawiyaa/deploy/scripts/backup-files.sh
+```
+
+The file bundle contains only `storage/files`, has a SHA-256 sidecar, and is
+not considered verified until the archive command, non-empty check, and
+checksum verification pass. Copy both artifacts and their sidecars to the
+approved off-host backup location.
+
+## Restore order
+
+1. Stop application writes and identify the matching database dump and file
+   bundle by UTC timestamp, release SHA, and metadata checksums.
+2. Restore the database into an isolated database first, or restore the
+   approved production database during the incident window using the existing
+   PostgreSQL restore procedure.
+3. Verify that `StoredFile.storageKey` rows with `ACTIVE` status map to files
+   in the bundle under `/app/storage/files`; report missing or untracked files
+   before enabling traffic.
+4. Verify the backend container runs as UID/GID `10001:10001` and that the
+   volume permissions remain `0750` for `/app/storage`.
+5. Restore the bundle only with the explicit confirmation guard:
+
+```bash
+SAWIYAA_CONFIRM_FILE_RESTORE=YES \
+  bash /opt/sawiyaa/deploy/scripts/restore-files.sh \
+  /opt/sawiyaa-backups/sawiyaa-YYYYMMDD-HHMMSS-<sha>.files.tar.gz
+```
+
+6. Start the backend, run the file reconciliation check, verify private
+   attachment authorization and public cover/avatar routes, then re-enable
+   writes.
+
+The restore script refuses unknown bundle names, missing checksums, failed
+checksums, and runs without explicit confirmation. It does not delete the
+volume; any cleanup or database cutover remains an approved operator action.

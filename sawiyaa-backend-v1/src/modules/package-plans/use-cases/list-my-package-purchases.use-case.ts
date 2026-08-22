@@ -5,6 +5,9 @@ import { ListMyPackagePurchasesDto } from '../dto/list-my-package-purchases.dto'
 import { PackagePurchasePresenter } from '../presenters/package-purchase.presenter';
 import { PatientPackagePurchaseRepository } from '../repositories/package-purchase.repository';
 import { PatientPackagePurchasesListResultViewModel } from '../types/package-purchases.types';
+import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { resolvePackageProfessionalTitle } from '../utils/resolve-package-professional-title.util';
 
 @Injectable()
 export class ListMyPackagePurchasesUseCase {
@@ -12,6 +15,8 @@ export class ListMyPackagePurchasesUseCase {
     private readonly patientProfileRepository: PatientProfileRepository,
     private readonly packagePurchaseRepository: PatientPackagePurchaseRepository,
     private readonly packagePurchasePresenter: PackagePurchasePresenter,
+    private readonly professionalContentRepository: PractitionerProfessionalContentRepository,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
@@ -44,11 +49,29 @@ export class ListMyPackagePurchasesUseCase {
       });
 
     const now = new Date();
+    const professionalContentRecords =
+      await this.professionalContentRepository.findByPractitionerProfileIds(
+        Array.from(
+          new Set(purchases.map((purchase) => purchase.practitionerId)),
+        ),
+      );
+    const professionalContentById = new Map(
+      professionalContentRecords.map((record) => [record.id, record]),
+    );
 
     return {
       items: await Promise.all(
         purchases.map((purchase) =>
-          this.packagePurchasePresenter.toViewModel({ purchase, now }),
+          this.packagePurchasePresenter.toViewModel({
+            purchase,
+            now,
+            resolvedProfessionalTitle: resolvePackageProfessionalTitle({
+              requestedLocale: input.locale,
+              resolver: this.professionalContentResolver,
+              record: professionalContentById.get(purchase.practitionerId),
+              legacyProfessionalTitle: purchase.practitioner?.professionalTitle,
+            }),
+          }),
         ),
       ),
       pagination: {

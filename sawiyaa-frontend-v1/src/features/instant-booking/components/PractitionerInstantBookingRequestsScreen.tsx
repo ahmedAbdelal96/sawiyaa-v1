@@ -34,31 +34,33 @@ import {
 import { getPractitionerInstantBookingErrorKey } from "../lib/instant-booking-errors";
 import type { InstantBookingRequest } from "../types/instant-booking.types";
 
-function formatRelativeExpiry(expiresAt: string, locale: string, nowMs: number): string {
+function formatRelativeExpiry(
+  expiresAt: string,
+  nowMs: number,
+  format: (key: string, values?: Record<string, number>) => string,
+): string {
   const diffMs = new Date(expiresAt).getTime() - nowMs;
   if (diffMs <= 0) {
-    return locale === "ar" ? "انتهت الصلاحية" : "Expired";
+    return format("queue.expiredShort");
   }
 
   const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  const numberFormat = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US");
 
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    if (locale === "ar") {
-      return `خلال ${numberFormat.format(hours)} س ${numberFormat.format(remainingMinutes)} د`;
-    }
-    return `in ${numberFormat.format(hours)}h ${numberFormat.format(remainingMinutes)}m`;
+    return format("queue.summary.nearestExpiryInHours", {
+      hours,
+      minutes: remainingMinutes,
+    });
   }
 
-  if (locale === "ar") {
-    return `خلال ${numberFormat.format(minutes)} د ${numberFormat.format(seconds)} ث`;
-  }
-
-  return `in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
+  return format("queue.summary.nearestExpiryInMinutes", {
+    minutes,
+    seconds,
+  });
 }
 
 function getInitials(name: string | null | undefined): string {
@@ -189,7 +191,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
     () => [
       {
         id: "patient",
-        header: locale === "ar" ? "المريض" : "Patient",
+        header: t("queue.patientLabel"),
         accessor: (row) => row.patient?.displayName,
         cell: (row) => {
           const name = row.patient?.displayName?.trim() || t("queue.unknownPatient");
@@ -209,7 +211,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
       },
       {
         id: "details",
-        header: locale === "ar" ? "تفاصيل الجلسة" : "Session Details",
+        header: t("queue.sessionDetailsLabel"),
         cell: (row) => {
           const durationLabel = t("queue.durationLabel", { n: row.requestedDurationMinutes });
           const modeLabel = t(`queue.sessionModes.${row.sessionMode}` as Parameters<typeof t>[0]);
@@ -227,7 +229,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
       },
       {
         id: "createdAt",
-        header: locale === "ar" ? "تاريخ الطلب" : "Request Time",
+        header: t("queue.requestTimeLabel"),
         sortable: true,
         accessor: (row) => row.createdAt,
         cell: (row) => {
@@ -243,7 +245,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
       },
       {
         id: "expiresAt",
-        header: locale === "ar" ? "العد التنازلي / الصلاحية" : "Expiry / Countdown",
+        header: t("queue.expiryLabel"),
         sortable: true,
         accessor: (row) => row.expiresAt,
         cell: (row) => {
@@ -260,7 +262,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
                 )}
               >
                 <Clock3 className="h-3 w-3 shrink-0" />
-                {requestExpired ? t("queue.expiredShort") : formatRelativeExpiry(row.expiresAt, locale, nowMs)}
+                {requestExpired ? t("queue.expiredShort") : formatRelativeExpiry(row.expiresAt, nowMs, t)}
               </span>
             );
           }
@@ -277,7 +279,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
       },
       {
         id: "status",
-        header: locale === "ar" ? "الحالة" : "Status",
+        header: t("queue.statusLabel"),
         sortable: true,
         accessor: (row) => row.status,
         cell: (row) => {
@@ -302,7 +304,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
       },
       {
         id: "actions",
-        header: locale === "ar" ? "الإجراءات" : "Actions",
+        header: t("queue.actionsLabel"),
         cell: (row) => {
           const isPending = row.status === "PENDING";
           const isAccepting = acceptMutation.isPending && acceptMutation.variables === row.id;
@@ -368,12 +370,12 @@ export default function PractitionerInstantBookingRequestsScreen() {
 
   const filterTabs: { id: StatusFilter; label: string; count: number }[] = useMemo(
     () => [
-      { id: "ALL", label: locale === "ar" ? "الكل" : "All", count: requests.length },
-      { id: "PENDING", label: locale === "ar" ? "معلقة" : "Pending", count: pendingRequests.length },
-      { id: "ACCEPTED", label: locale === "ar" ? "مقبولة" : "Accepted", count: acceptedRequests.length },
-      { id: "REJECTED", label: locale === "ar" ? "مرفوضة" : "Rejected", count: rejectedRequests.length },
-      { id: "EXPIRED", label: locale === "ar" ? "منتهية" : "Expired", count: expiredRequests.length },
-      { id: "CANCELLED", label: locale === "ar" ? "ملغاة" : "Cancelled", count: cancelledRequests.length },
+      { id: "ALL", label: t("queue.filters.all"), count: requests.length },
+      { id: "PENDING", label: t("queue.filters.pending"), count: pendingRequests.length },
+      { id: "ACCEPTED", label: t("queue.filters.accepted"), count: acceptedRequests.length },
+      { id: "REJECTED", label: t("queue.filters.rejected"), count: rejectedRequests.length },
+      { id: "EXPIRED", label: t("queue.filters.expired"), count: expiredRequests.length },
+      { id: "CANCELLED", label: t("queue.filters.cancelled"), count: cancelledRequests.length },
     ],
     [locale, requests.length, pendingRequests.length, acceptedRequests.length, rejectedRequests.length, expiredRequests.length, cancelledRequests.length],
   );
@@ -415,10 +417,10 @@ export default function PractitionerInstantBookingRequestsScreen() {
           onClick={() => void requestsQuery.refetch()}
           disabled={requestsQuery.isFetching}
           className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-text-secondary shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:bg-surface-secondary dark:text-white/80 dark:hover:bg-white/5"
-          title={locale === "ar" ? "تحديث البيانات" : "Refresh data"}
+          title={t("queue.ui.refreshTitle")}
         >
           <RefreshCw className={cn("h-3.5 w-3.5", requestsQuery.isFetching && "animate-spin")} />
-          <span>{locale === "ar" ? "تحديث" : "Refresh"}</span>
+          <span>{t("queue.ui.refresh")}</span>
         </button>
       }
       notice={
@@ -435,28 +437,28 @@ export default function PractitionerInstantBookingRequestsScreen() {
             value={pendingRequests.length}
             hint={
               nearestExpiry
-                ? formatRelativeExpiry(nearestExpiry.expiresAt, locale, nowMs)
-                : locale === "ar" ? "لا توجد طلبات معلقة" : "No pending requests"
+                ? formatRelativeExpiry(nearestExpiry.expiresAt, nowMs, t)
+                : t("queue.ui.noPending")
             }
             tone="warning"
             icon={<Clock3 className="h-4 w-4" />}
           />
           <PractitionerSummaryCard
-            label={locale === "ar" ? "طلبات مرفوضة" : "Rejected Requests"}
+            label={t("queue.ui.rejected")}
             value={rejectedRequests.length}
-            hint={locale === "ar" ? "طلبات تم رفضها" : "Rejected requests"}
+            hint={t("queue.ui.rejectedHint")}
             tone="danger"
             icon={<XCircle className="h-4 w-4" />}
           />
           <PractitionerSummaryCard
-            label={locale === "ar" ? "طلبات مقبولة" : "Accepted Requests"}
+            label={t("queue.ui.accepted")}
             value={acceptedRequests.length}
-            hint={locale === "ar" ? "تم تحويلها إلى جلسات" : "Converted to sessions"}
+            hint={t("queue.ui.acceptedHint")}
             tone="success"
             icon={<CheckCircle2 className="h-4 w-4" />}
           />
           <PractitionerSummaryCard
-            label={locale === "ar" ? "إجمالي الطلبات" : "Total Requests"}
+            label={t("queue.ui.total")}
             value={requests.length}
             hint={practitionerTimeZoneLabel ? `توقيت ${practitionerTimeZoneLabel}` : undefined}
             tone="primary"
@@ -505,18 +507,14 @@ export default function PractitionerInstantBookingRequestsScreen() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={locale === "ar" ? "بحث باسم المريض..." : "Search patient..."}
+              placeholder={t("queue.ui.searchPlaceholder")}
               className="w-full rounded-lg border border-slate-200/80 bg-white py-1.5 pe-3 ps-8 text-xs text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none dark:border-white/10 dark:bg-surface-secondary dark:text-white"
             />
           </div>
         </div>
       }
-      tableTitle={locale === "ar" ? "قائمة طلبات الحجز الفوري" : "Instant Booking Requests List"}
-      tableSubtitle={
-        locale === "ar"
-          ? "يتم عرض الطلبات مرتبة من الأحدث إلى الأقدم مع إمكانية التصفية لاتخاذ الإجراء السريع"
-          : "Requests sorted newest first with filtering options for quick action"
-      }
+      tableTitle={t("queue.ui.tableTitle")}
+      tableSubtitle={t("queue.ui.tableSubtitle")}
     >
       <DataTable<InstantBookingRequest>
         data={filteredRequests}
@@ -528,15 +526,11 @@ export default function PractitionerInstantBookingRequestsScreen() {
           title:
             statusFilter === "ALL"
               ? t("queue.empty.title")
-              : locale === "ar"
-                ? "لا توجد نتائج بهذه التصفية"
-                : "No requests found for this filter",
+              : t("queue.ui.filterEmptyTitle"),
           description:
             statusFilter === "ALL"
               ? t("queue.empty.note")
-              : locale === "ar"
-                ? "جرّب اختيار فلتر آخر مثل 'الكل' أو 'مرفوضة'."
-                : "Try selecting another filter.",
+              : t("queue.ui.filterEmptyNote"),
           icon: <Zap className="h-6 w-6 text-primary" />,
         }}
         pageSizeOptions={[10, 20, 50]}
@@ -575,7 +569,7 @@ export default function PractitionerInstantBookingRequestsScreen() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
             <p className="font-semibold">{rejectingRequest.patient?.displayName}</p>
             <p className="mt-1 text-[11px] opacity-80">
-              {formatRelativeExpiry(rejectingRequest.expiresAt, locale, nowMs)}
+              {formatRelativeExpiry(rejectingRequest.expiresAt, nowMs, t)}
             </p>
           </div>
         ) : null}

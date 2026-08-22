@@ -105,6 +105,7 @@ export const enAdminCatalog = {
       professionalTitle: 'A professional title is required',
       bio: 'A professional biography is required',
       specialty: 'At least one active specialty is required',
+      pricingRequired: 'All required session prices must be configured before publication',
     },
   },
 };

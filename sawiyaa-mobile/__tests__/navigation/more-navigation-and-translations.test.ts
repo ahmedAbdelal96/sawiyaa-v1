@@ -27,6 +27,7 @@ const patientMoreKeys = [
   "profileScreen.hub.rows.preferences.title",
   "settings.title",
   "settings.subtitle",
+  "profileScreen.preferences.summary",
   "profileScreen.language.title",
   "profileScreen.preferences.timezoneTitle",
   "profileScreen.notifications.screenTitle",
@@ -52,10 +53,18 @@ const practitionerMoreKeys = [
   "practitioner.more.sections.workTools",
   "practitioner.more.sections.finance",
   "practitioner.more.sections.accountSupport",
+  "practitioner.more.sections.workEarnings",
+  "practitioner.more.sections.account",
+  "practitioner.more.sections.help",
+  "practitioner.more.sections.accountAction",
   "practitioner.more.dailySubtitle",
   "practitioner.more.workToolsSubtitle",
   "practitioner.more.financeSubtitle",
   "practitioner.more.accountSupportSubtitle",
+  "practitioner.more.workEarningsSubtitle",
+  "practitioner.more.accountSubtitle",
+  "practitioner.more.helpSubtitle",
+  "practitioner.more.accountActionSubtitle",
   "practitioner.tab.more",
   ...[
     "sessions",
@@ -109,19 +118,85 @@ describe("authenticated More navigation and translation contract", () => {
       expect(layout).not.toMatch(/Tabs\.Screen[\s\S]{0,120}name=["']support\/new["'][\s\S]{0,160}tabBarIcon/);
     }
     expect(patientLayout).toMatch(/name="index"/);
+    expect(patientLayout).toMatch(/name="discovery\/index"/);
     expect(patientLayout).toMatch(/name="sessions"/);
-    expect(patientLayout).toMatch(/name="notifications"/);
+    expect(patientLayout).toMatch(/name="messages\/index"/);
     expect(patientLayout).toMatch(/name="profile"/);
+    expect(patientLayout).toMatch(/name="notifications"[\s\S]{0,100}href: null/);
     expect(practitionerLayout).toMatch(/name="index"/);
-    expect(practitionerLayout).toMatch(/name="sessions\/index"/);
     expect(practitionerLayout).toMatch(/name="availability\/index"/);
+    expect(practitionerLayout).toMatch(/name="sessions\/index"/);
+    expect(practitionerLayout).toMatch(/name="messages\/index"/);
     expect(practitionerLayout).toMatch(/name="more"/);
   });
 
-  test("both More screens reach the shared non-tab Settings route", () => {
-    expect(read("app/(patient)/profile.tsx")).toContain('router.push("/(settings)"');
+  test("Practitioner primary destinations are not duplicated in More", () => {
+    const more = read("app/(practitioner)/more.tsx");
+    expect(more).not.toMatch(/key: "sessions"/);
+    expect(more).not.toMatch(/key: "messages"/);
+    expect(more).not.toMatch(/key: "availability"/);
+  });
+
+  test("Patient Home does not duplicate primary tabs as quick actions", () => {
+    const home = read("app/(patient)/index.tsx");
+    const profile = read("app/(patient)/profile.tsx");
+    expect(home).toContain("PatientHomeDiscoverySurface");
+    expect(home).not.toContain("QuickAction");
+    expect(home).not.toContain('/(patient)/sessions"');
+    expect(home).not.toContain('/(patient)/payments"');
+    expect(profile).not.toContain('profileScreen.hub.rows.messages.title');
+  });
+
+  test.each(["ar", "en"] as const)("has focused Patient Home copy in %s", (language) => {
+    const translations = locale(language);
+    for (const key of [
+      "home.discoverTab",
+      "home.sessionsTab",
+      "home.messagesTab",
+      "home.moreTab",
+      "home.discovery.title",
+      "home.discovery.body",
+      "home.discovery.cta",
+      "home.session.paymentTitle",
+      "home.session.joinTitle",
+      "home.session.upcomingTitle",
+    ]) {
+      expect(at(translations, key)).toEqual(expect.any(String));
+      expect(at(translations, key)).not.toBe("");
+    }
+  });
+
+  test("More screens reach their role-owned Settings routes", () => {
+    expect(read("app/(patient)/profile.tsx")).toContain('router.push("/(patient)/profile-preferences"');
     expect(read("app/(practitioner)/more.tsx")).toContain('router.push("/(settings)"');
     expect(fs.existsSync(path.join(root, "app/(settings)/index.tsx"))).toBe(true);
     expect(read("app/(settings)/_layout.tsx")).toContain("Stack");
+  });
+
+  test("Patient More keeps primary tabs and Notification Center out of the secondary menu", () => {
+    const more = read("app/(patient)/profile.tsx");
+    expect(more).not.toContain("notificationCenter.title");
+    expect(more).not.toContain('router.push("/(patient)/notifications"');
+    expect(more).not.toContain("P-{ ");
+    expect(more).toContain('router.push("/(patient)/messages?tab=support"');
+    expect(more).toContain('router.push("/(patient)/payments"');
+  });
+
+  test("Practitioner More owns only secondary destinations and approved vocabulary", () => {
+    const more = read("app/(practitioner)/more.tsx");
+    expect(more).toContain('router.push("/(practitioner)/finance")');
+    expect(more).toContain('router.push("/(settings)")');
+    expect(more).toContain('router.push("/(practitioner)/messages?tab=support")');
+    expect(more).not.toContain('router.push("/(practitioner)/notifications")');
+    expect(more).not.toMatch(/key: "(sessions|messages|availability|notifications|wallet|ledger|settlements)"/);
+
+    expect(at(locale("ar"), "practitioner.more.rows.finance.title")).toBe("الأرباح");
+    expect(at(locale("en"), "practitioner.more.rows.finance.title")).toBe("Earnings");
+    expect(at(locale("ar"), "practitioner.more.rows.account.title")).toBe("الملف الشخصي");
+    expect(at(locale("en"), "practitioner.more.rows.account.title")).toBe("Profile");
+    expect(at(locale("ar"), "practitioner.more.rows.instantBookingPricing.title")).toBe("الحجز الفوري");
+    expect(at(locale("en"), "practitioner.more.rows.instantBookingPricing.title")).toBe("Instant booking");
+    expect(at(locale("ar"), "practitioner.more.rows.logout.title")).toBe("تسجيل الخروج");
+    expect(at(locale("en"), "practitioner.more.rows.logout.title")).toBe("Log out");
   });
 });

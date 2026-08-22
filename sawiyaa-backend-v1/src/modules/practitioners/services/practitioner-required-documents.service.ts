@@ -12,7 +12,8 @@ export type RequiredDocumentGroups = {
   groups: {
     identity: {
       complete: boolean;
-      satisfiedBy: 'PASSPORT_IDENTITY_PAGE' | 'NATIONAL_ID' | null;
+      satisfiedBy: 'NATIONAL_ID' | null;
+      policy: PractitionerIdentityRequirement;
       missing: string[];
     };
     academic: { complete: boolean; count: number };
@@ -26,10 +27,46 @@ export type RequiredDocumentGroups = {
   missingDocumentTypes: string[];
 };
 
+export type PractitionerIdentityRequirement = {
+  countryCode: string | null;
+  acceptedCredentialTypes: Array<'NATIONAL_ID' | 'NATIONAL_ID_FRONT' | 'NATIONAL_ID_BACK'>;
+  requiredCredentialSets: Array<Array<'NATIONAL_ID' | 'NATIONAL_ID_FRONT' | 'NATIONAL_ID_BACK'>>;
+  requireBackImage: boolean;
+};
+
+/**
+ * Country-aware identity configuration. Egypt is the launch configuration;
+ * unknown countries use the existing single-document NATIONAL_ID semantic so
+ * the domain does not globally require a front/back pair.
+ */
+export function resolvePractitionerIdentityRequirement(
+  countryCode?: string | null,
+): PractitionerIdentityRequirement {
+  const normalizedCountryCode = countryCode?.trim().toUpperCase() || null;
+  if (normalizedCountryCode === 'EG' || normalizedCountryCode === null) {
+    return {
+      countryCode: normalizedCountryCode,
+      acceptedCredentialTypes: ['NATIONAL_ID_FRONT', 'NATIONAL_ID_BACK'],
+      requiredCredentialSets: [['NATIONAL_ID_FRONT', 'NATIONAL_ID_BACK']],
+      requireBackImage: true,
+    };
+  }
+
+  return {
+    countryCode: normalizedCountryCode,
+    acceptedCredentialTypes: ['NATIONAL_ID'],
+    requiredCredentialSets: [['NATIONAL_ID']],
+    requireBackImage: false,
+  };
+}
+
 /** Single authoritative interpretation of the mandatory practitioner documents. */
 @Injectable()
 export class PractitionerRequiredDocumentsService {
-  evaluate(records: RequiredDocumentRecord[]): RequiredDocumentGroups {
+  evaluate(
+    records: RequiredDocumentRecord[],
+    input: { countryCode?: string | null } = {},
+  ): RequiredDocumentGroups {
     const valid = records.filter((record) => {
       if (!record.fileUrl?.trim()) return false;
       if (record.reviewStatus && !['PENDING', 'APPROVED'].includes(record.reviewStatus)) return false;
@@ -37,21 +74,22 @@ export class PractitionerRequiredDocumentsService {
       return true;
     });
     const types = new Set(valid.map((record) => record.credentialType));
-    const hasPassport = types.has('PASSPORT');
+    const identityPolicy = resolvePractitionerIdentityRequirement(input.countryCode);
     const hasFront = types.has('NATIONAL_ID_FRONT');
     const hasBack = types.has('NATIONAL_ID_BACK');
     const hasAcademic = valid.filter((record) => record.credentialType === 'DEGREE').length;
     const hasSyndicate = types.has('MEMBERSHIP');
     const hasLicense = types.has('LICENSE');
-    const identityComplete = hasPassport || (hasFront && hasBack);
+    // Passport is intentionally excluded from every country policy.
+    const identityComplete = identityPolicy.requiredCredentialSets.some((set) =>
+      set.every((credentialType) => types.has(credentialType)),
+    );
     const professionalComplete = hasSyndicate || hasLicense;
     const identityMissing = identityComplete
       ? []
-      : hasFront
-        ? ['NATIONAL_ID_BACK']
-        : hasBack
-          ? ['NATIONAL_ID_FRONT']
-          : ['PASSPORT_IDENTITY_PAGE', 'NATIONAL_ID_FRONT', 'NATIONAL_ID_BACK'];
+      : identityPolicy.requiredCredentialSets[0].filter(
+          (credentialType) => !types.has(credentialType),
+        );
     const missingRequirements: string[] = [];
     const missingDocumentTypes: string[] = [];
     if (!identityComplete) {
@@ -71,7 +109,8 @@ export class PractitionerRequiredDocumentsService {
       groups: {
         identity: {
           complete: identityComplete,
-          satisfiedBy: hasPassport ? 'PASSPORT_IDENTITY_PAGE' : identityComplete ? 'NATIONAL_ID' : null,
+          satisfiedBy: identityComplete ? 'NATIONAL_ID' : null,
+          policy: identityPolicy,
           missing: identityMissing,
         },
         academic: { complete: hasAcademic > 0, count: hasAcademic },

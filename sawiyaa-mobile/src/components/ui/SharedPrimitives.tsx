@@ -307,7 +307,7 @@ export const IconRow = ({
   ...props
 }: CompactActionRowProps) => {
   const { theme } = useTheme();
-  const { isRtl: isRTL } = useAppDirection();
+  const { isRtl: isRTL, arrowForward } = useAppDirection();
 
   return (
     <TouchableOpacity
@@ -335,7 +335,7 @@ export const IconRow = ({
         label
       )}
       <Ionicons
-        name={isRTL ? "arrow-back" : "arrow-forward"}
+        name={arrowForward}
         size={16}
         color={theme.colors.primary}
         style={styles.compactActionIcon}

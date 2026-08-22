@@ -236,7 +236,7 @@ export default function PatientAssessmentResultScreen({
             {/* Severity level indicators */}
             <div className={`mx-auto max-w-[200px] rounded-2xl border p-3 ${getBandStyles(result.band).bg} ${getBandStyles(result.band).border}`}>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                {locale === "ar" ? "مستوى الشدة" : "Severity Level"}
+                {t("result.severityLevel")}
               </p>
               <p className={`text-base font-bold mt-0.5 ${getBandStyles(result.band).text}`}>
                 {t(`result.bands.${result.band}.title` as Parameters<typeof t>[0])}
@@ -247,7 +247,7 @@ export default function PatientAssessmentResultScreen({
           {/* Direct Platform Actions Panel */}
           <div className="rounded-[28px] border border-border-light bg-white dark:bg-card p-4 shadow-sm space-y-3">
             <p className="text-xs font-bold text-text-muted uppercase tracking-wider px-2 pt-1">
-              {locale === "ar" ? "الخطوات التالية الموصى بها" : "Recommended Next Steps"}
+              {t("result.recommendedNextSteps")}
             </p>
 
             {/* Guided Matching */}

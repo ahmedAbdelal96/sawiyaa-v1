@@ -8,10 +8,7 @@ import {
   formatViewerDate,
   formatViewerDateTime,
 } from "../../../lib/time-formatting";
-
-function normalizeLocale(locale: string) {
-  return locale.startsWith("ar") ? "ar-EG" : "en-US";
-}
+import { formatMoney as formatCentralMoney, parseMoney } from "../../../lib/money";
 
 function safeNumber(value: string | number | null | undefined) {
   const parsed = typeof value === "number" ? value : Number(value ?? "0");
@@ -80,16 +77,13 @@ export function formatMoney(
   locale: string,
   fallbackText = "-",
 ) {
-  const currencyCode = currency?.trim().toUpperCase();
-  if (!currencyCode) {
+  const normalizedAmount = typeof amount === "number" ? amount.toFixed(2) : amount.trim();
+  const money = parseMoney(normalizedAmount, currency);
+  if (!money) {
     return fallbackText;
   }
 
-  return new Intl.NumberFormat(normalizeLocale(locale), {
-    style: "currency",
-    currency: currencyCode,
-    maximumFractionDigits: 2,
-  }).format(safeNumber(amount));
+  return formatCentralMoney(money, locale);
 }
 
 export function formatSignedMoney(
@@ -174,27 +168,13 @@ export function settlementStatusTone(status: PractitionerSettlementStatus) {
 
 export function settlementStatusLabel(
   status: PractitionerSettlementStatus,
-  locale: string,
+  translate: (key: string) => string,
 ) {
-  const labelsAr: Record<PractitionerSettlementStatus, string> = {
-    DRAFT: "مسودة",
-    READY: "جاهزة للصرف",
-    PROCESSING: "بانتظار الصرف",
-    PAID: "تم الصرف",
-    FAILED: "تعذر صرفها",
-    CANCELLED: "ملغاة",
-  };
+  return translate(settlementStatusTranslationKey(status));
+}
 
-  const labelsEn: Record<PractitionerSettlementStatus, string> = {
-    DRAFT: "Draft",
-    READY: "Ready for payout",
-    PROCESSING: "Waiting for payout",
-    PAID: "Paid out",
-    FAILED: "Payout failed",
-    CANCELLED: "Cancelled",
-  };
-
-  return locale.startsWith("ar") ? labelsAr[status] : labelsEn[status];
+export function settlementStatusTranslationKey(status: PractitionerSettlementStatus) {
+  return `practitioner.finance.settlements.statuses.${status}`;
 }
 
 export function ledgerTypeTone(entryType: PractitionerLedgerEntryType) {
@@ -216,67 +196,31 @@ export function ledgerTypeTone(entryType: PractitionerLedgerEntryType) {
 
 export function ledgerEntryTypeLabel(
   entryType: PractitionerLedgerEntryType,
-  locale: string,
+  translate: (key: string) => string,
 ) {
-  const labelsAr: Record<PractitionerLedgerEntryType, string> = {
-    SESSION_GROSS: "أرباح جلسة",
-    PLATFORM_COMMISSION: "عمولة المنصة",
-    PRACTITIONER_EARNING: "أرباح جلسة",
-    COUPON_PLATFORM_SHARE: "خصم كود ترويجي",
-    COUPON_PRACTITIONER_SHARE: "خصم كود ترويجي",
-    REFUND_PLATFORM_REVERSAL: "استرداد جلسة",
-    REFUND_PRACTITIONER_REVERSAL: "استرداد جلسة",
-    MANUAL_ADJUSTMENT: "تعديل مالي",
-    SETTLEMENT_PAYOUT: "صرف إلى حسابك",
-    SETTLEMENT_REVERSAL: "تعديل على تسوية",
-  };
+  return translate(ledgerEntryTypeTranslationKey(entryType));
+}
 
-  const labelsEn: Record<PractitionerLedgerEntryType, string> = {
-    SESSION_GROSS: "Session earnings",
-    PLATFORM_COMMISSION: "Platform fee",
-    PRACTITIONER_EARNING: "Practitioner earnings",
-    COUPON_PLATFORM_SHARE: "Coupon discount",
-    COUPON_PRACTITIONER_SHARE: "Coupon discount",
-    REFUND_PLATFORM_REVERSAL: "Refund correction",
-    REFUND_PRACTITIONER_REVERSAL: "Refund correction",
-    MANUAL_ADJUSTMENT: "Balance adjustment",
-    SETTLEMENT_PAYOUT: "Settlement payout",
-    SETTLEMENT_REVERSAL: "Settlement correction",
-  };
-
-  return locale.startsWith("ar") ? labelsAr[entryType] : labelsEn[entryType];
+export function ledgerEntryTypeTranslationKey(entryType: PractitionerLedgerEntryType) {
+  return `practitioner.finance.ledger.entryTypes.${entryType}`;
 }
 
 export function ledgerDirectionLabel(
   direction: PractitionerLedgerDirection,
-  locale: string,
+  translate: (key: string) => string,
 ) {
-  return locale.startsWith("ar")
-    ? direction === "CREDIT"
-      ? "إضافة"
-      : "خصم"
-    : direction === "CREDIT"
-      ? "Credit"
-      : "Debit";
+  return translate(`practitioner.finance.ledger.directions.${direction}`);
 }
 
 export function ledgerBucketLabel(
   bucket: PractitionerLedgerBalanceBucket,
-  locale: string,
+  translate: (key: string) => string,
 ) {
-  const labelsAr: Record<PractitionerLedgerBalanceBucket, string> = {
-    AVAILABLE: "متاح",
-    PENDING: "قيد التحصيل",
-    RESERVED: "قيد الصرف",
-  };
+  return translate(ledgerBucketTranslationKey(bucket));
+}
 
-  const labelsEn: Record<PractitionerLedgerBalanceBucket, string> = {
-    AVAILABLE: "Available",
-    PENDING: "Pending collection",
-    RESERVED: "In payout",
-  };
-
-  return locale.startsWith("ar") ? labelsAr[bucket] : labelsEn[bucket];
+export function ledgerBucketTranslationKey(bucket: PractitionerLedgerBalanceBucket) {
+  return `practitioner.finance.ledger.buckets.${bucket}`;
 }
 
 export function directionTone(direction: PractitionerLedgerDirection) {

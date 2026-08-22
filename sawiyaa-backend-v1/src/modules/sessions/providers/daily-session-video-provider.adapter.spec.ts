@@ -50,6 +50,25 @@ describe('DailySessionVideoProviderAdapter', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('reuses the provider room when Daily reports an existing name as a 400 response', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: 'invalid-request-error',
+        info: 'a room named fayed-session-session-1 already exists',
+      }), { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        name: 'fayed-session-session-1',
+        url: 'https://room.daily.co/fayed-session-session-1',
+      }), { status: 200 }));
+    const adapter = new DailySessionVideoProviderAdapter(config);
+
+    await expect(adapter.createRoom(input)).resolves.toMatchObject({
+      roomId: 'fayed-session-session-1',
+      roomUrl: 'https://room.daily.co/fayed-session-session-1',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('maps provider HTTP failures to a safe typed error without exposing the response body', async () => {
     const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'invalid-api-key', info: 'secret-provider-detail' }), { status: 401, statusText: 'Unauthorized' }),

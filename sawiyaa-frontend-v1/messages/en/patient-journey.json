@@ -10,10 +10,10 @@
   },
   "instantBooking": {
     "eyebrow": "Instant booking",
-    "title": "Book a session today with an available practitioner",
+    "title": "Book a session today with an available specialist",
     "cta": "Start instant booking",
     "chips": {
-      "availableNow": "Practitioners available now",
+      "availableNow": "Specialists available now",
       "duration": "Session length",
       "durationNote": "Choose 30 or 60 minutes when supported",
       "pricing": "Pricing"
@@ -88,7 +88,7 @@
       "noRecommendation": "No recommendation yet.",
       "completedAt": "Completed {date}",
       "viewMatching": "View result",
-      "viewPractitioner": "View practitioner",
+      "viewPractitioner": "View specialist",
       "viewAll": "View all"
     },
     "empty": {
@@ -134,7 +134,7 @@
     "utilityNote": "Important tools in one place.",
     "sessions": "Sessions",
     "payments": "Payments",
-    "practitioners": "Practitioners",
+    "practitioners": "Specialists",
     "profile": "Profile",
     "support": "Support"
   },
@@ -164,13 +164,13 @@
       },
       "START_GUIDED_MATCHING": {
         "title": "Start guided matching",
-        "note": "Guided matching helps you find the right practitioner.",
+      "note": "Guided matching helps you find the right specialist.",
         "cta": "Help me choose"
       },
       "BOOK_NEXT_SESSION": {
         "title": "Book your next session",
-        "note": "Browse practitioners and choose what fits your journey.",
-        "cta": "Browse practitioners"
+      "note": "Browse specialists and choose what fits your journey.",
+      "cta": "Browse specialists"
       }
     }
   },

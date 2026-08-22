@@ -15,10 +15,12 @@ const documentedWebFiles = new Map([
   ["src/features/patient/academy/navigation.ts", "web origin is optional and guarded"],
   ["src/features/patient/academy/components/AcademyEnrollmentDetailScreen.tsx", "redirect uses window only inside Platform.OS === web"],
   ["src/features/patient/academy/components/AcademyEnrollmentPaymentReturnScreen.tsx", "redirect uses window only inside Platform.OS === web"],
+  ["src/features/messages/components/MessageThreadScreen.tsx", "attachment preview/open uses browser URL and DOM APIs only inside Platform.OS === web"],
 ]);
 const nativeFormDataFiles = new Set([
   "src/features/practitioner/onboarding/api.ts",
   "src/features/patient/profile/api.ts",
+  "src/features/messages/api.ts",
 ]);
 
 function listSourceFiles(directory) {
@@ -75,7 +77,12 @@ for (const file of productionRoots.flatMap(listSourceFiles)) {
   }
 
   for (const match of matchesFor(source, /\bURL\s*\.\s*createObjectURL\b/g)) {
-    findings.push({ severity: "UNSAFE", file: normalizedFile, ...match, reason: "browser-only object URL API in native production source" });
+    findings.push({
+      severity: documentedReason ? "SAFE" : "UNSAFE",
+      file: normalizedFile,
+      ...match,
+      reason: documentedReason ?? "browser-only object URL API in native production source",
+    });
   }
 
   for (const match of matchesFor(source, /\b(?:eval|atob|btoa)\s*\(/g)) {

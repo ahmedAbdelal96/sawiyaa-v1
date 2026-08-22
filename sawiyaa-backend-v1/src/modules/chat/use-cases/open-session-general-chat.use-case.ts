@@ -9,6 +9,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { CreateOrGetGeneralChatConversationUseCase } from './create-or-get-general-chat-conversation.use-case';
 import { GeneralChatTargetRoleDto } from '../dto/create-general-chat-conversation.dto';
 import { ResolveSessionChatAvailabilityService } from '../services/resolve-session-chat-availability.service';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 
 @Injectable()
 export class OpenSessionGeneralChatUseCase {
@@ -21,6 +22,7 @@ export class OpenSessionGeneralChatUseCase {
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
     sessionId: string;
+    locale?: SupportedLocale;
   }) {
     const session = await this.resolveAvailableSession(input);
 
@@ -29,6 +31,7 @@ export class OpenSessionGeneralChatUseCase {
 
     return this.createOrGetGeneralChatConversationUseCase.execute({
       authenticatedUser: input.authenticatedUser,
+      locale: input.locale ?? 'ar',
       dto: {
         targetUserId: actorIsPatient
           ? session.practitioner.userId

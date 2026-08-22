@@ -224,11 +224,11 @@ export function DataTable<T = any>({
     const resolvedErrorMessage =
       typeof error === 'string'
         ? error
-        : error.message || 'Please try again';
+        : error.message || t("dataTable.retry");
 
     return (
       <DataTableEmpty
-        title={errorState?.title || 'An error occurred'}
+        title={errorState?.title || t("dataTable.errorOccurred")}
         description={errorState?.description || resolvedErrorMessage}
         action={errorState?.action}
       />

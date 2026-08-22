@@ -750,9 +750,17 @@ export const practitionersSeedModule: SeedModule = {
     ];
 
     for (const application of applications) {
+      const practitioner = await prisma.practitionerProfile.findUniqueOrThrow({
+        where: { id: application.practitionerId! },
+        select: { userId: true },
+      });
+
       await prisma.practitionerApplication.upsert({
         where: { id: application.id },
-        create: application,
+        create: {
+          ...application,
+          userId: practitioner.userId,
+        },
         update: {
           status: application.status,
           submittedAt: application.submittedAt,

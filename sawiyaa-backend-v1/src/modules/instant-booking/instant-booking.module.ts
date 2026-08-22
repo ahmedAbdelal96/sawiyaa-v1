@@ -9,6 +9,7 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { SessionsModule } from '@modules/sessions/sessions.module';
 import { PatientsModule } from '@modules/patients/patients.module';
 import { ConfigModule } from '@modules/config/config.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { PatientInstantBookingDiscoveryController } from './controllers/patient-instant-booking-discovery.controller';
 import { PublicPractitionerInstantBookingAvailabilityController } from './controllers/public-practitioner-instant-booking-availability.controller';
 import { PatientInstantBookingController } from './controllers/patient-instant-booking.controller';
@@ -47,6 +48,7 @@ import { GetPublicPractitionerInstantBookingAvailabilityUseCase } from './use-ca
     SessionsModule,
     PatientsModule,
     ConfigModule,
+    PractitionersModule,
   ],
   controllers: [
     PatientInstantBookingDiscoveryController,

@@ -1,4 +1,16 @@
 {
+  "modal": {
+    "close": "Close",
+    "title": "New support request",
+    "note": "Your request will be sent directly to Sawiyaa support.",
+    "prompt": "How can we help you? *",
+    "placeholder": "Explain the issue or request clearly...",
+    "createError": "Could not create the support request.",
+    "connectionError": "Could not connect to support. Try again.",
+    "submit": "Send support request",
+    "submitting": "Sending...",
+    "cancel": "Cancel"
+  },
   "meta": {
     "listTitle": "Sawiyaa | Support",
     "listDescription": "Create and follow real support tickets for booking, payment, account, or technical help.",
@@ -10,7 +22,16 @@
     "title": "Get practical help without losing your place in the care journey.",
     "note": "Use support for booking, payment, account, matching, or technical issues. This is separate from therapy and care conversations.",
     "assuranceTitle": "Simple and trustworthy",
-    "assuranceNote": "Support tickets help you follow one issue clearly from the first message to the latest reply."
+    "assuranceNote": "Support tickets help you follow one issue clearly from the first message to the latest reply.",
+    "searchPlaceholder": "Search tickets...",
+    "newTicket": "+ New Ticket",
+    "filterStatus": "Status",
+    "filterCategory": "Category",
+    "filterPriority": "Priority",
+    "resetFilters": "Reset filters",
+    "clickToView": "Click to view conversation...",
+    "previous": "Previous",
+    "next": "Next"
   },
   "create": {
     "heading": "Create a support ticket",

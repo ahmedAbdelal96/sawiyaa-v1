@@ -509,6 +509,12 @@ export class ConfigurationManagementService {
         ) {
           throw this.invalidType(definition, 'string array');
         }
+        if (
+          definition.allowedValues &&
+          value.some((item) => !definition.allowedValues!.includes(item))
+        ) {
+          throw this.invalidType(definition, 'allowed string array values');
+        }
         return;
       case 'JSON':
         if (!definition.jsonSchemaId) {

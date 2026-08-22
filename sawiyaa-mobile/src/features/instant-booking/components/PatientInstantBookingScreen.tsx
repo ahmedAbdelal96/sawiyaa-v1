@@ -10,8 +10,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { usePatientProfile } from "../../patient/profile/hooks";
-import { resolveSupportedCurrencyCode } from "../../../lib/currency";
 import {
   Button,
   Card,
@@ -24,6 +22,7 @@ import {
   Text,
 } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
+import { useAppDirection } from "../../../i18n/direction";
 import {
   useCancelPatientInstantBookingRequest,
   useCreatePatientInstantBookingRequest,
@@ -37,7 +36,6 @@ import type {
   InstantBookingDiscoveryDuration,
   InstantBookingEligiblePractitionerItem,
   InstantBookingRequest,
-  InstantBookingSessionMode,
 } from "../types";
 import {
   formatInstantBookingExpiry,
@@ -50,7 +48,6 @@ import {
 } from "../lib/instant-booking-errors";
 
 const DEFAULT_VISIBLE_RESULTS = 30;
-const DEFAULT_SESSION_MODE: InstantBookingSessionMode = "VIDEO";
 
 function getPractitionerInitials(displayName: string | null | undefined) {
   const clean = displayName?.trim() ?? "";
@@ -108,6 +105,7 @@ function PractitionerInstantBookingCard({
   compact: boolean;
 }) {
   const { theme } = useTheme();
+  const { chevronForward } = useAppDirection();
   const { t } = useTranslation();
   const isArabic = locale.startsWith("ar");
   const displayName = practitioner.displayName?.trim() || practitioner.slug;
@@ -253,7 +251,7 @@ function PractitionerInstantBookingCard({
                   {isPending ? (
                     <Ionicons name="reload" size={14} color={theme.colors.primary} />
                   ) : (
-                    <Ionicons name="chevron-forward" size={14} color={theme.colors.textMuted} />
+                    <Ionicons name={chevronForward} size={14} color={theme.colors.textMuted} />
                   )}
                 </View>
                 <Text weight="700" style={styles.durationButtonPrice} color={theme.colors.primary}>
@@ -437,20 +435,11 @@ export default function PatientInstantBookingScreen() {
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const requestIdFromUrl = firstParam(params.requestId);
 
-  const patientProfileQuery = usePatientProfile();
-  const currencyCode = useMemo(
-    () =>
-      resolveSupportedCurrencyCode({
-        countryCode: patientProfileQuery.data?.profile.countryCode ?? null,
-      }),
-    [patientProfileQuery.data?.profile.countryCode],
-  );
-
   const practitionersQuery = usePatientInstantBookingPractitioners({
     page: 1,
     limit: DEFAULT_VISIBLE_RESULTS,
-    currency: currencyCode,
   });
+  const currencyCode = practitionersQuery.data?.currencyCode ?? null;
   const requestsQuery = usePatientInstantBookingRequests();
   const latestActiveRequest = useMemo(() => {
     const requests = requestsQuery.data?.items ?? [];
@@ -499,7 +488,6 @@ export default function PatientInstantBookingScreen() {
       const request = await createMutation.mutateAsync({
         practitionerSlug,
         durationMinutes,
-        sessionMode: DEFAULT_SESSION_MODE,
       });
       navigateWithRequestId(request.item.id);
     } catch (error) {
@@ -528,8 +516,7 @@ export default function PatientInstantBookingScreen() {
   };
 
   const showBrowseState = !activeRequest || requestIsTerminal;
-  const isBrowseLoading =
-    practitionersQuery.isLoading || patientProfileQuery.isLoading || requestsQuery.isLoading;
+  const isBrowseLoading = practitionersQuery.isLoading || requestsQuery.isLoading;
   const requestStateCard =
     activeRequest && !requestIsTerminal ? (
       <InstantBookingRequestCard
@@ -684,29 +671,31 @@ export default function PatientInstantBookingScreen() {
                   {t("instantBooking.patient.list.note")}
                 </Text>
                 <View style={styles.entryMeta}>
-                  <StatusBadge label={currencyCode} status="default" />
+                  {currencyCode ? <StatusBadge label={currencyCode} status="default" /> : null}
                   <StatusBadge label={t("instantBooking.patient.list.currencyLabel")} status="info" />
                 </View>
               </Card>
             ) : null}
           </View>
         }
-        renderItem={({ item }) => (
-          <PractitionerInstantBookingCard
-            practitioner={item}
-            currency={currencyCode}
-            locale={locale}
-            numLocale={numLocale(locale)}
-            onBook={handleBook}
-            pendingSelectionKey={
-              createMutation.isPending && createMutation.variables
-                ? `${createMutation.variables.practitionerSlug}:${createMutation.variables.durationMinutes}`
-                : null
-            }
-            createPending={createMutation.isPending}
-            compact={isCompact}
-          />
-        )}
+        renderItem={({ item }) =>
+          currencyCode ? (
+            <PractitionerInstantBookingCard
+              practitioner={item}
+              currency={currencyCode}
+              locale={locale}
+              numLocale={numLocale(locale)}
+              onBook={handleBook}
+              pendingSelectionKey={
+                createMutation.isPending && createMutation.variables
+                  ? `${createMutation.variables.practitionerSlug}:${createMutation.variables.durationMinutes}`
+                  : null
+              }
+              createPending={createMutation.isPending}
+              compact={isCompact}
+            />
+          ) : null
+        }
         ListEmptyComponent={
           showBrowseState ? (
             isBrowseLoading ? (

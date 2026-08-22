@@ -25,6 +25,7 @@ import { PractitionerProfileRepository } from './repositories/practitioner-profi
 import { PractitionerSpecialtyRepository } from './repositories/practitioner-specialty.repository';
 import { PractitionerUserRepository } from './repositories/practitioner-user.repository';
 import { PublicPractitionerReadRepository } from './repositories/public-practitioner-read.repository';
+import { PractitionerProfessionalContentRepository } from './repositories/practitioner-professional-content.repository';
 import { SpecialtyRepository } from './repositories/specialty.repository';
 import { PractitionerApplicationSnapshotService } from './services/practitioner-application-snapshot.service';
 import { PractitionerApplicationCompletionService } from './services/practitioner-application-completion.service';
@@ -37,6 +38,8 @@ import { PublicPractitionerPricingContextService } from './services/public-pract
 import { PractitionerSpecialtyIntegrityService } from './services/practitioner-specialty-integrity.service';
 import { PractitionerChangeReviewPolicy } from './policies/practitioner-change-review.policy';
 import { PractitionerChangeReviewService } from './services/practitioner-change-review.service';
+import { PractitionerProfessionalContentResolver } from './services/practitioner-professional-content-resolver.service';
+import { PractitionerProfessionalContentAuthoringService } from './services/practitioner-professional-content-authoring.service';
 import { PractitionerReviewCaseService } from './services/practitioner-review-case.service';
 import { PractitionerCredentialComplianceSweeperService } from './services/practitioner-credential-compliance-sweeper.service';
 import { CreatePractitionerProfileUseCase } from './use-cases/create-practitioner-profile.use-case';
@@ -44,6 +47,8 @@ import { GetPublicPractitionerDetailsUseCase } from './use-cases/get-public-prac
 import { GetPublicPractitionerAvatarFileUseCase } from './use-cases/get-public-practitioner-avatar-file.use-case';
 import { GetPractitionerApplicationStatusUseCase } from './use-cases/get-practitioner-application-status.use-case';
 import { GetPractitionerProfileReadinessUseCase } from './use-cases/get-practitioner-profile-readiness.use-case';
+import { UpdatePractitionerApplicationDraftUseCase } from './use-cases/update-practitioner-application-draft.use-case';
+import { GetPractitionerRequirementsUseCase } from './use-cases/get-practitioner-requirements.use-case';
 import { GetPractitionerProfileUseCase } from './use-cases/get-practitioner-profile.use-case';
 import { ListPublicPractitionersUseCase } from './use-cases/list-public-practitioners.use-case';
 import { ListPublicPractitionerFiltersUseCase } from './use-cases/list-public-practitioner-filters.use-case';
@@ -68,7 +73,12 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
  * It does not include auth flows, admin review workflows, or session/payment concerns.
  */
 @Module({
-  imports: [ConfigModule, PatientsModule, ReviewsModule, FinancialOperationsModule],
+  imports: [
+    ConfigModule,
+    PatientsModule,
+    ReviewsModule,
+    FinancialOperationsModule,
+  ],
   controllers: [PractitionerProfileController, PublicPractitionerController],
   providers: [
     JwtAccessAuthGuard,
@@ -86,6 +96,7 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
     PractitionerSpecialtyRepository,
     SpecialtyRepository,
     PublicPractitionerReadRepository,
+    PractitionerProfessionalContentRepository,
     PractitionerCredentialRepository,
     PractitionerApplicationRepository,
     PractitionerUserRepository,
@@ -96,6 +107,8 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
     PractitionerSpecialtyIntegrityService,
     PractitionerChangeReviewPolicy,
     PractitionerChangeReviewService,
+    PractitionerProfessionalContentResolver,
+    PractitionerProfessionalContentAuthoringService,
     PractitionerReviewCaseService,
     PractitionerCredentialComplianceSweeperService,
     PractitionerPayoutDestinationValidationService,
@@ -124,6 +137,8 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
     SubmitPractitionerApplicationUseCase,
     GetPractitionerApplicationStatusUseCase,
     GetPractitionerProfileReadinessUseCase,
+    UpdatePractitionerApplicationDraftUseCase,
+    GetPractitionerRequirementsUseCase,
     ListPublicPractitionersUseCase,
     ListPublicPractitionerFiltersUseCase,
     GetPublicPractitionerDetailsUseCase,
@@ -131,6 +146,9 @@ import { FinancialOperationsModule } from '@modules/financial-operations/financi
   ],
   exports: [
     PublicPractitionerReadRepository,
+    PractitionerProfessionalContentRepository,
+    PractitionerProfessionalContentResolver,
+    PractitionerProfessionalContentAuthoringService,
     PublicPractitionerVisibilityPolicy,
     PublicPractitionerMapper,
     PractitionerChangeReviewService,

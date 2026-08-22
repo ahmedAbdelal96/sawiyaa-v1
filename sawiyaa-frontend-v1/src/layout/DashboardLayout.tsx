@@ -57,7 +57,7 @@ export default function DashboardLayout({
       <div
         className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${mainContentLayout}`}
       >
-        <AppHeader messagingRole={messagingRole} />
+        <AppHeader messagingRole={messagingRole} shellVariant={layoutVariant} />
 
         <div
           className={

@@ -83,7 +83,7 @@
     "title": "الجلسات"
   },
   "practitionerAvailability": {
-    "title": "التوفر"
+    "title": "الجدول"
   },
   "practitionerMessagesSupport": {
     "title": "الرسائل والدعم"
@@ -107,7 +107,27 @@
     "title": "الرسائل"
   },
   "practitionerFinance": {
-    "title": "الماليات"
+    "title": "الأرباح"
+  },
+  "practitionerNavigation": {
+    "home": "الرئيسية",
+    "sessions": "الجلسات",
+    "instantBooking": "الحجز الفوري",
+    "schedule": "الجدول",
+    "messages": "الرسائل",
+    "helpCenter": "مركز المساعدة",
+    "earnings": "الأرباح",
+    "transactions": "المعاملات",
+    "promoCodes": "أكواد الخصم",
+    "transfers": "التحويلات",
+    "profile": "الملف الشخصي",
+    "specialties": "التخصصات",
+    "credentials": "الاعتمادات",
+    "packageAvailability": "قبول حجوزات الباقات",
+    "application": "الطلب"
+  },
+  "patientNavigation": {
+    "practitioners": "المختصون"
   },
   "practitionerProfile": {
     "title": "الملف والجاهزية"

@@ -87,6 +87,7 @@ export class SessionMapper {
     finalManualDecision: SessionAdminDecisionType | null = null,
     actions?: PatientSessionActionsViewModel,
     operational?: SessionOperationalInterpretation,
+    resolvedProfessionalTitle?: string | null,
   ): SessionDetailsViewModel {
     const base = this.toListItem(
       session,
@@ -110,8 +111,8 @@ export class SessionMapper {
       } : null,
     } : null;
 
-    const practitionerDetails = rich.practitioner?.professionalTitle || rich.practitioner?.avatarUrl || rich.practitioner?.specialties ? {
-      professionalTitle: rich.practitioner.professionalTitle ?? null,
+    const practitionerDetails = resolvedProfessionalTitle || rich.practitioner?.professionalTitle || rich.practitioner?.avatarUrl || rich.practitioner?.specialties ? {
+      professionalTitle: resolvedProfessionalTitle ?? rich.practitioner.professionalTitle ?? null,
       avatarUrl: rich.practitioner.avatarUrl ?? null,
       specialties: (rich.practitioner.specialties || []).map((s: any) => ({
         id: s.specialty?.id,

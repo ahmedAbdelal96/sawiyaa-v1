@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  I18nManager,
   Image,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import {
   useGetPublicPractitionerDetails,
+  useGetPublicPractitionerInstantBookingAvailability,
   useGetPublicPractitionerPresence,
 } from "../../../src/features/patient/discovery/api";
 import { usePublicPractitionerPackagePlans } from "../../../src/features/patient/package-plans/hooks";
@@ -31,7 +31,6 @@ import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { PriceDisplay } from "../../../src/components/money";
 import { parseMoney, formatMoney as formatCentralMoney } from "../../../src/lib/money";
 import { mapPractitionerDurationPrice } from "../../../src/features/patient/discovery/practitioner-money";
-import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { useAppDirection } from "../../../src/i18n/direction";
 import { hasPublicPractitionerRating } from "../../../src/features/patient/discovery/rating";
 
@@ -122,7 +121,7 @@ export default function TherapistProfileScreen() {
   const { t, i18n } = useTranslation();
   const isArabicUi = i18n.language?.startsWith("ar") ?? true;
   const locale = isArabicUi ? "ar-SA" : "en-US";
-  const { isRtl, rowDirection, arrowBack } = useAppDirection();
+  const { isRtl, rowDirection } = useAppDirection();
 
   const authContext = useAuth();
   const isAuthenticated = Boolean(authContext?.user);
@@ -144,6 +143,7 @@ export default function TherapistProfileScreen() {
     slug || null,
   );
   const presenceQuery = useGetPublicPractitionerPresence(slug || null);
+  const instantAvailabilityQuery = useGetPublicPractitionerInstantBookingAvailability(slug || null);
 
   const practitioner = data?.data.item ?? null;
 
@@ -163,7 +163,7 @@ export default function TherapistProfileScreen() {
     ? { uri: rawAvatarUrl }
     : DEFAULT_AVATAR;
 
-  const isPresenceAvailable = presenceQuery.data?.data?.presence?.status === "ONLINE";
+  const isInstantAvailable = instantAvailabilityQuery.data?.data?.availableNow === true;
 
   const thirtyMinutePriceState = useMemo(() => {
     const rawPrice =
@@ -222,13 +222,13 @@ export default function TherapistProfileScreen() {
       }
 
       router.push({
-        pathname: "/(patient)/sessions/select-time",
+        pathname: "/(patient)/sessions/duration",
         params: {
           slug,
           practitionerName: practitioner.displayName || practitioner.slug,
           practitionerTitle:
-            getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-            t("discovery.profile.professionalFallback", "أخصائي"),
+            practitioner.professionalTitle?.trim() ||
+            t("discovery.profile.professionalFallback"),
           practitionerAvatarUrl: practitioner.avatarUrl || "",
         },
       });
@@ -282,8 +282,8 @@ export default function TherapistProfileScreen() {
 
   const displayName = practitioner.displayName || practitioner.slug;
   const displayTitle =
-    getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-    t("discovery.profile.professionalFallback", "أخصائي نفسيات وعلاج متكامل");
+    practitioner.professionalTitle?.trim() ||
+    t("discovery.profile.professionalFallback");
 
   const verified = Boolean(practitioner.isVerified);
   const averageRating = practitioner.ratingSummary?.averageRating;
@@ -333,7 +333,7 @@ export default function TherapistProfileScreen() {
                 <View
                   style={[
                     styles.onlineBadge,
-                    { backgroundColor: isPresenceAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
+                    { backgroundColor: isInstantAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
                   ]}
                 />
               </View>
@@ -356,7 +356,7 @@ export default function TherapistProfileScreen() {
                   style={[
                     styles.presencePill,
                     {
-                      backgroundColor: isPresenceAvailable ? `${ONLINE_GREEN}15` : "#F1F5F9",
+                      backgroundColor: isInstantAvailable ? `${ONLINE_GREEN}15` : "#F1F5F9",
                       flexDirection: rowDirection,
                     },
                   ]}
@@ -364,19 +364,19 @@ export default function TherapistProfileScreen() {
                   <View
                     style={[
                       styles.presenceDot,
-                      { backgroundColor: isPresenceAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
+                      { backgroundColor: isInstantAvailable ? ONLINE_GREEN : OFFLINE_GRAY },
                     ]}
                   />
                   <Text
                     weight="600"
                     style={[
                       styles.presenceText,
-                      { color: isPresenceAvailable ? ONLINE_GREEN : theme.colors.textMuted },
+                      { color: isInstantAvailable ? ONLINE_GREEN : theme.colors.textMuted },
                     ]}
                   >
-                    {isPresenceAvailable
-                      ? (isArabicUi ? "متاح الآن" : "Available now")
-                      : (isArabicUi ? "غير متاح الآن" : "Unavailable right now")}
+                    {isInstantAvailable
+                      ? t("instantBooking.profile.availableNow")
+                      : t("instantBooking.profile.unavailableNow")}
                   </Text>
                 </View>
               </View>
@@ -675,6 +675,28 @@ export default function TherapistProfileScreen() {
           },
         ]}
       >
+        {isInstantAvailable ? (
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() => {
+              if (!isAuthenticated) {
+                router.push({
+                  pathname: "/(auth)/signin/patient",
+                  params: { redirect: "/(patient)/instant-booking", redirectIntent: "instant-booking" },
+                });
+                return;
+              }
+              router.push("/(patient)/instant-booking" as never);
+            }}
+            style={[styles.instantBtn, { borderColor: theme.colors.tertiary, flexDirection: rowDirection }]}
+          >
+            <Ionicons name="flash-outline" size={18} color={theme.colors.tertiary} />
+            <Text weight="bold" color={theme.colors.tertiary} style={styles.bookBtnText}>
+              {t("instantBooking.profile.cta")}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         <TouchableOpacity
           activeOpacity={0.88}
           onPress={() => handleBookSession(30)}
@@ -976,6 +998,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
     borderTopWidth: 1,
+  },
+  instantBtn: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
   },
   bookBtn: {
     height: 44,

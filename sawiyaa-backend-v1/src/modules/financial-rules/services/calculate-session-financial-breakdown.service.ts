@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PaymentProvider, PaymentPurpose } from '@prisma/client';
+import { MarketType, PaymentProvider, PaymentPurpose } from '@prisma/client';
 import { CouponRepository } from '../repositories/coupon.repository';
 import { resolvePaymentRegionalResolution } from '@common/payments/payment-region.resolver';
 import {
@@ -31,6 +31,7 @@ export class CalculateSessionFinancialBreakdownService {
     session: SessionFinancialContext;
     requestCountryIsoCode?: string | null;
     couponCode?: string | null;
+    requireCommissionRule?: boolean;
   }): Promise<PaymentFinancialResolution> {
     const paymentSnapshot = this.resolvePaymentSnapshot(input.session);
     const regionalResolution = paymentSnapshot
@@ -54,8 +55,13 @@ export class CalculateSessionFinancialBreakdownService {
       ? paymentSnapshot.amountSubtotal
       : this.resolveGrossAmount(input.session, currencyCode);
 
+    // Instant booking prices are customer-facing quotes. Commission is an
+    // internal allocation and must not prevent the patient from seeing or
+    // paying the immutable quote when an admin rule is not configured yet.
     const commission =
-      await this.resolveCommissionRuleService.resolveForSession(input.session);
+      input.session.flowType === 'INSTANT' && !input.requireCommissionRule
+        ? null
+        : await this.resolveCommissionRuleService.resolveForSession(input.session);
 
     const couponCode = !paymentSnapshot && input.couponCode?.trim()
       ? normalizeCouponCode(input.couponCode)
@@ -84,16 +90,20 @@ export class CalculateSessionFinancialBreakdownService {
     const netPaidAmount = paymentSnapshot
       ? paymentSnapshot.amountTotal
       : this.moneyMathService.subtract(grossAmount, discountAmount).toFixed(2);
-    const platformCommissionAmount = this.moneyMathService
-      .percentOf(netPaidAmount, commission.platformRatePercent)
-      .toFixed(2);
-    const practitionerShareAmount = this.moneyMathService
-      .subtract(netPaidAmount, platformCommissionAmount)
-      .toFixed(2);
+    const platformCommissionAmount = commission
+      ? this.moneyMathService
+          .percentOf(netPaidAmount, commission.platformRatePercent)
+          .toFixed(2)
+      : null;
+    const practitionerShareAmount = commission
+      ? this.moneyMathService
+          .subtract(netPaidAmount, platformCommissionAmount!)
+          .toFixed(2)
+      : null;
 
     const breakdown: SessionFinancialBreakdownViewModel = {
       sessionId: input.session.id,
-      paymentPurpose: commission.paymentPurpose,
+      paymentPurpose: commission?.paymentPurpose ?? PaymentPurpose.SESSION_INSTANT_BOOKING,
       currency: currencyCode,
       regionalPricingMode: regionalResolution.regionalPricingMode,
       provider: regionalResolution.provider,
@@ -103,12 +113,14 @@ export class CalculateSessionFinancialBreakdownService {
       netPaidAmount,
       platformCommissionAmount,
       practitionerShareAmount,
-      commissionRule: {
-        id: commission.rule.id,
-        slug: commission.rule.slug,
-        platformRatePercent: commission.platformRatePercent,
-        practitionerRatePercent: commission.practitionerRatePercent,
-      },
+      commissionRule: commission
+        ? {
+            id: commission.rule.id,
+            slug: commission.rule.slug,
+            platformRatePercent: commission.platformRatePercent,
+            practitionerRatePercent: commission.practitionerRatePercent,
+          }
+        : null,
       coupon: validatedCoupon
         ? {
             id: validatedCoupon.id,
@@ -125,8 +137,9 @@ export class CalculateSessionFinancialBreakdownService {
     };
 
     return {
-      paymentPurpose: commission.paymentPurpose,
-      marketType: commission.rule.marketType,
+      paymentPurpose: commission?.paymentPurpose ?? PaymentPurpose.SESSION_INSTANT_BOOKING,
+      marketType: commission?.rule.marketType ??
+        (currencyCode === 'EGP' ? MarketType.LOCAL : MarketType.CROSS_BORDER),
       amountSubtotal: grossAmount,
       amountDiscount: discountAmount,
       amountTotal: netPaidAmount,
@@ -134,9 +147,9 @@ export class CalculateSessionFinancialBreakdownService {
       regionalPricingMode: regionalResolution.regionalPricingMode,
       provider: regionalResolution.provider,
       resolvedCountryIsoCode: regionalResolution.resolvedCountryIsoCode,
-      commissionRuleId: commission.rule.id,
-      commissionPlatformRatePercent: commission.platformRatePercent,
-      commissionPractitionerRatePercent: commission.practitionerRatePercent,
+      commissionRuleId: commission?.rule.id ?? null,
+      commissionPlatformRatePercent: commission?.platformRatePercent ?? null,
+      commissionPractitionerRatePercent: commission?.practitionerRatePercent ?? null,
       couponId: validatedCoupon?.id ?? null,
       couponCodeSnapshot: validatedCoupon?.code ?? null,
       couponDiscountSnapshot: validatedCoupon ? breakdown.discountAmount : null,

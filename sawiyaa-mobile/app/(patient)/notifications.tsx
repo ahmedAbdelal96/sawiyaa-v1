@@ -1,7 +1,6 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
-  I18nManager,
   SectionList,
   StyleSheet,
   TouchableOpacity,
@@ -11,17 +10,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
-  Card,
   EmptyState,
   ErrorState,
   Header,
-  LoadingState,
   Screen,
+  Skeleton,
   Text,
 } from "../../src/components/ui";
-import { useAuth } from "../../src/providers/AuthProvider";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { getDirectionalIcon } from "../../src/i18n/direction";
 import {
   useMarkAllPatientNotificationsRead,
   useMarkPatientNotificationRead,
@@ -29,6 +26,7 @@ import {
   usePatientUnreadNotificationCount,
 } from "../../src/features/patient/notifications/hooks";
 import { resolvePatientNotificationRoute } from "../../src/features/patient/notifications/routes";
+import { resolvePatientNotificationPresentation } from "../../src/features/patient/notifications/presentation";
 import type { UserNotificationItem } from "../../src/features/patient/notifications/types";
 import {
   formatViewerDate,
@@ -41,6 +39,8 @@ type NotificationSection = {
   title: string;
   data: UserNotificationItem[];
 };
+
+type NotificationFilter = "all" | "unread" | "read";
 
 function formatNotificationDateTime(dateString: string, locale: string) {
   return formatViewerDateTime(dateString, {
@@ -145,14 +145,9 @@ export default function PatientNotificationsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { t, i18n } = useTranslation();
-  const {
-    enablePushNotifications,
-    isPushRegistrationPending,
-    pushRegistrationStatus,
-    refreshPushRegistrationState,
-  } = useAuth();
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const isRTL = i18n.language?.startsWith("ar");
+  const [filter, setFilter] = useState<NotificationFilter>("all");
 
   const unreadCountQuery = usePatientUnreadNotificationCount();
   const listQuery = usePatientNotifications({ page: 1, limit: 20 });
@@ -164,9 +159,18 @@ export default function PatientNotificationsScreen() {
     () => listQuery.data?.items ?? [],
     [listQuery.data?.items],
   );
+  const filteredItems = useMemo(() => {
+    if (filter === "unread") {
+      return items.filter((item) => !item.readAt);
+    }
+    if (filter === "read") {
+      return items.filter((item) => Boolean(item.readAt));
+    }
+    return items;
+  }, [filter, items]);
   const sections = useMemo(
-    () => buildNotificationSections(items, locale),
-    [items, locale],
+    () => buildNotificationSections(filteredItems, locale),
+    [filteredItems, locale],
   );
 
   const handleOpenNotification = async (item: UserNotificationItem) => {
@@ -178,6 +182,11 @@ export default function PatientNotificationsScreen() {
       const targetRoute = resolvePatientNotificationRoute(
         item.action?.href ?? "/",
         item.typeSlug,
+        {
+          payload: item.payload,
+          context: item.context,
+          primaryAction: item.primaryAction,
+        },
       );
       if (!targetRoute) {
         Alert.alert(
@@ -198,11 +207,11 @@ export default function PatientNotificationsScreen() {
 
   const getNotificationIcon = (typeSlug: string) => {
     const slug = typeSlug.toLowerCase();
-    if (slug.includes("session")) {
-      return "calendar-outline" as const;
-    }
     if (slug.includes("message") || slug.includes("chat")) {
       return "chatbubble-ellipses-outline" as const;
+    }
+    if (slug.includes("session")) {
+      return "calendar-outline" as const;
     }
     if (slug.includes("payment") || slug.includes("wallet")) {
       return "card-outline" as const;
@@ -210,86 +219,13 @@ export default function PatientNotificationsScreen() {
     return "notifications-outline" as const;
   };
 
-  const resolveNotificationTitle = (item: UserNotificationItem) => {
-    if (!locale.startsWith("ar")) {
-      return item.title || item.typeSlug;
-    }
-
-    switch (item.typeSlug) {
-      case "sessions.session-confirmed":
-        return t("patientNotifications.feedTypes.sessionConfirmedTitle");
-      case "sessions.session-join-available":
-        return t("patientNotifications.feedTypes.sessionJoinAvailableTitle");
-      default:
-        return item.title || item.typeSlug;
-    }
-  };
-
-  const resolveNotificationBody = (item: UserNotificationItem) => {
-    if (!locale.startsWith("ar")) {
-      return item.body;
-    }
-
-    const payload = item.payload ?? {};
-    const packageSessionIndex = payload.packageSessionIndex;
-    const packageSessionCount = payload.packageSessionCount;
-    let packageContext = "";
-    if (
-      packageSessionIndex !== undefined &&
-      packageSessionCount !== undefined &&
-      Number(packageSessionCount) > 0
-    ) {
-      packageContext =
-        " " +
-        t("patientNotifications.feedTypes.packageSessionContext", {
-          packageSessionIndex,
-          packageSessionCount,
-        });
-    }
-
-    switch (item.typeSlug) {
-      case "sessions.session-confirmed":
-        return t("patientNotifications.feedTypes.sessionConfirmedBody", {
-          packageContext,
-        });
-      case "sessions.session-join-available":
-        return t("patientNotifications.feedTypes.sessionJoinAvailableBody", {
-          packageContext,
-        });
-      default:
-        return item.body;
-    }
-  };
-
   return (
     <Screen bg="background" testID="notifications-screen">
       <Header
         title={t("patientNotifications.title")}
-        rightElement={
-          unreadCount > 0 ? (
-            <TouchableOpacity
-              onPress={() => void markAllReadMutation.mutateAsync()}
-              disabled={markAllReadMutation.isPending}
-              style={[styles.markAllButton, isRTL ? styles.rowRtl : styles.rowLtr]}
-              activeOpacity={0.82}
-            >
-              <Ionicons
-                name="checkmark-done-outline"
-                size={16}
-                color={theme.colors.primary}
-                style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
-              />
-              <Text color={theme.colors.primary} weight="700" style={{ fontSize: 13 }}>
-                {markAllReadMutation.isPending
-                  ? t("patientNotifications.markAllLoading")
-                  : t("patientNotifications.markAll")}
-              </Text>
-            </TouchableOpacity>
-          ) : null
-        }
       />
 
-      {listQuery.isLoading ? <LoadingState fullScreen /> : null}
+      {listQuery.isLoading && !listQuery.data ? <NotificationFeedSkeleton /> : null}
 
       {listQuery.isError && !listQuery.isLoading ? (
         <ErrorState
@@ -312,7 +248,6 @@ export default function PatientNotificationsScreen() {
           contentContainerStyle={styles.scrollContent}
           ListHeaderComponent={
             <View style={styles.headerStack}>
-              {/* Compact Unread Summary Row */}
               <View
                 style={[
                   styles.summaryRowContainer,
@@ -320,13 +255,6 @@ export default function PatientNotificationsScreen() {
                 ]}
               >
                 <View style={[styles.summaryTextWrap, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
-                  <Text
-                    weight="700"
-                    variant="title"
-                    color={theme.colors.textPrimary}
-                  >
-                    {t("patientNotifications.summaryTitle")}
-                  </Text>
                   <Text
                     color={theme.colors.textSecondary}
                     style={styles.summaryBody}
@@ -353,59 +281,72 @@ export default function PatientNotificationsScreen() {
                   </View>
                 ) : null}
               </View>
-
-              {/* Compact Push Notifications Banner */}
-              <Card variant="outlined" padding="md" style={styles.pushCard}>
-                <View style={[styles.pushCardHeader, isRTL ? styles.rowRtl : styles.rowLtr]}>
-                  <View style={[styles.pushIconContainer, { backgroundColor: theme.colors.primaryLight }]}>
-                    <Ionicons name="notifications-circle-outline" size={24} color={theme.colors.primary} />
-                  </View>
-                  <View style={[styles.pushTextWrap, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
-                    <Text weight="700" style={styles.pushTitle} color={theme.colors.textPrimary}>
-                      {t("patientNotifications.pushCardTitle")}
-                    </Text>
-                    <Text color={theme.colors.textSecondary} style={styles.pushBody}>
-                      {t("patientNotifications.pushCardBody")}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.pushStatusDot,
-                      {
-                        backgroundColor:
-                          pushRegistrationStatus === "registered"
-                            ? theme.colors.success
-                            : pushRegistrationStatus === "failed" ||
-                                pushRegistrationStatus === "denied"
-                              ? theme.colors.error
-                              : theme.colors.primary,
-                      },
-                    ]}
+              {unreadCount > 0 ? (
+                <TouchableOpacity
+                  onPress={() => void markAllReadMutation.mutateAsync()}
+                  disabled={markAllReadMutation.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    markAllReadMutation.isPending
+                      ? t("patientNotifications.markAllLoading")
+                      : t("patientNotifications.markAll")
+                  }
+                  style={[styles.markAllButton, isRTL ? styles.rowRtl : styles.rowLtr]}
+                  activeOpacity={0.82}
+                >
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={16}
+                    color={theme.colors.primary}
+                    style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }}
                   />
-                </View>
-
-                <View style={styles.pushDivider} />
-
-                <View style={[styles.pushFooterRow, isRTL ? styles.rowRtl : styles.rowLtr]}>
-                  <Text color={theme.colors.textMuted} style={styles.pushStatusText}>
-                    {t(`patientNotifications.pushStatus.${pushRegistrationStatus}`)}
+                  <Text color={theme.colors.primary} weight="700" style={{ fontSize: 13 }}>
+                    {markAllReadMutation.isPending
+                      ? t("patientNotifications.markAllLoading")
+                      : t("patientNotifications.markAll")}
                   </Text>
-                  <Button
-                    title={
-                      pushRegistrationStatus === "registered"
-                        ? t("patientNotifications.pushRefreshAction")
-                        : t("patientNotifications.pushEnableAction")
-                    }
-                    onPress={() => {
-                      void (pushRegistrationStatus === "registered"
-                        ? refreshPushRegistrationState()
-                        : enablePushNotifications());
-                    }}
-                    disabled={isPushRegistrationPending}
-                    style={styles.pushBtn}
-                  />
+                </TouchableOpacity>
+              ) : null}
+              {items.length > 0 ? (
+                <View
+                  style={[
+                    styles.filterRow,
+                    { flexDirection: isRTL ? "row-reverse" : "row" },
+                  ]}
+                >
+                  {(["all", "unread", "read"] as const).map((value) => {
+                    const selected = filter === value;
+                    return (
+                      <TouchableOpacity
+                        key={value}
+                        testID={`notification-filter-${value}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setFilter(value)}
+                        style={[
+                          styles.filterButton,
+                          {
+                            backgroundColor: selected
+                              ? theme.colors.primary
+                              : "transparent",
+                            borderColor: selected
+                              ? theme.colors.primary
+                              : theme.colors.borderLight,
+                          },
+                        ]}
+                      >
+                        <Text
+                          weight={selected ? "700" : "600"}
+                          color={selected ? theme.colors.onPrimary : theme.colors.textSecondary}
+                          style={styles.filterText}
+                        >
+                          {t(`patientNotifications.filters.${value}`)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
-              </Card>
+              ) : null}
             </View>
           }
           renderSectionHeader={({ section }) => (
@@ -426,26 +367,31 @@ export default function PatientNotificationsScreen() {
           )}
           renderItem={({ item }) => {
             const isUnread = !item.readAt;
-            const itemTitle = resolveNotificationTitle(item);
-            const itemBody = resolveNotificationBody(item);
+            const presentation = resolvePatientNotificationPresentation(
+              item,
+              locale,
+              t,
+            );
+            const targetRoute = resolvePatientNotificationRoute(
+              item.action?.href ?? "/",
+              item.typeSlug,
+              {
+                payload: item.payload,
+                context: item.context,
+                primaryAction: item.primaryAction,
+              },
+            );
 
             return (
               <TouchableOpacity
                 activeOpacity={0.88}
                 onPress={() => void handleOpenNotification(item)}
+                testID={`patient-notification-${item.id}`}
                 accessibilityRole="button"
-                accessibilityLabel={`${isUnread ? t("patientNotifications.statusUnread") : t("patientNotifications.statusRead")}. ${itemTitle}. ${itemBody}`}
+                accessibilityLabel={`${isUnread ? t("patientNotifications.statusUnread") : t("patientNotifications.statusRead")}. ${presentation.title}. ${presentation.body}`}
                 style={[
                   styles.itemRowWrapper,
-                  isUnread
-                    ? {
-                        backgroundColor: "#EEF4EF",
-                        borderColor: theme.colors.primary + "28",
-                      }
-                    : {
-                        backgroundColor: "#FFFFFF",
-                        borderColor: "#E8DED0",
-                      },
+                  { borderBottomColor: theme.colors.borderLight },
                 ]}
               >
                 <View
@@ -499,7 +445,7 @@ export default function PatientNotificationsScreen() {
                         color={theme.colors.textPrimary}
                         style={styles.itemTitle}
                       >
-                        {itemTitle}
+                        {presentation.title}
                       </Text>
                       <Text
                         color={theme.colors.textMuted}
@@ -514,10 +460,10 @@ export default function PatientNotificationsScreen() {
                       numberOfLines={2}
                       style={styles.itemBody}
                     >
-                      {itemBody}
+                      {presentation.body}
                     </Text>
 
-                    {item.action ? (
+                    {targetRoute ? (
                       <View
                         style={[
                           styles.actionRow,
@@ -529,11 +475,10 @@ export default function PatientNotificationsScreen() {
                           weight="700"
                           style={styles.actionLabel}
                         >
-                          {item.action.label ??
-                            t("patientNotifications.openAction")}
+                          {t("patientNotifications.openAction")}
                         </Text>
                         <Ionicons
-                          name={isRTL ? "chevron-back" : "chevron-forward"}
+                          name={getDirectionalIcon("disclosure", Boolean(isRTL))}
                           size={14}
                           color={theme.colors.primary}
                         />
@@ -608,70 +553,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
   },
-  pushCard: {
-    borderRadius: 20,
-    backgroundColor: "#FCFAF6",
-    borderWidth: 1.5,
-    borderColor: "#E8DED0",
-    padding: 14,
-    gap: 10,
+  filterRow: {
+    gap: 8,
+    paddingTop: 12,
   },
-  pushCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  pushIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+  filterButton: {
+    minHeight: 34,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
   },
-  pushTextWrap: {
-    flex: 1,
-    gap: 2,
-  },
-  pushTitle: {
-    fontSize: 14.5,
-    lineHeight: 19,
-  },
-  pushBody: {
+  filterText: {
     fontSize: 12,
-    lineHeight: 18,
-  },
-  pushStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  pushDivider: {
-    height: 1.2,
-    backgroundColor: "#EEF4EF",
-    width: "100%",
-    marginVertical: 2,
-  },
-  pushFooterRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
-  pushStatusText: {
-    fontSize: 11,
-    flex: 1,
-  },
-  pushBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    minHeight: 32,
-    width: "auto",
-  },
-  pushBtnText: {
-    fontSize: 11,
+    lineHeight: 16,
   },
   sectionHeader: {
     paddingTop: 16,
@@ -692,10 +588,8 @@ const styles = StyleSheet.create({
   },
   itemRowWrapper: {
     paddingVertical: 14,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 2,
   },
   itemContentLayout: {
     flexDirection: "row",
@@ -758,6 +652,47 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   rowDivider: {
-    height: 0,
+    display: "none",
+  },
+  skeletonList: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  skeletonRow: {
+    minHeight: 84,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E8DED0",
+  },
+  skeletonCopy: {
+    flex: 1,
+    gap: 8,
+  },
+  skeletonHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
   },
 });
+
+function NotificationFeedSkeleton() {
+  return (
+    <View style={styles.skeletonList} testID="notifications-loading">
+      {["one", "two", "three", "four"].map((key) => (
+        <View key={key} style={styles.skeletonRow}>
+          <Skeleton width={36} height={36} borderRadius={12} />
+          <View style={styles.skeletonCopy}>
+            <View style={styles.skeletonHeader}>
+              <Skeleton width="58%" height={15} />
+              <Skeleton width={54} height={11} />
+            </View>
+            <Skeleton width="82%" height={13} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}

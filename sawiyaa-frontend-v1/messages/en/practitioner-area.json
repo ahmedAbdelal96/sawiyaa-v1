@@ -205,18 +205,18 @@
         "heading": "Quick access",
         "primaryHeading": "Operational now",
         "primaryNote": "These are the routes you are most likely to use during live work.",
-        "financeHeading": "Financial visibility",
+        "financeHeading": "Earnings",
         "secondaryHeading": "Keep your workspace ready",
         "sessions": "Sessions",
-        "availability": "Availability",
+        "availability": "Schedule",
         "support": "Support",
         "careChat": "Care chat",
-        "wallet": "Wallet",
-        "walletNote": "Review your current balance and top-level finance summary.",
-        "ledger": "Ledger",
-        "ledgerNote": "Inspect recent financial entries without leaving the practitioner area.",
-        "settlements": "Settlements",
-        "settlementsNote": "Check payout records and their current visibility states.",
+        "wallet": "Earnings",
+        "walletNote": "Review your current balance and earnings summary.",
+        "ledger": "Transactions",
+        "ledgerNote": "Inspect recent transactions without leaving the practitioner area.",
+        "settlements": "Transfers",
+        "settlementsNote": "Check transfer records and their current status.",
         "profile": "Profile",
         "careChatNote": "Review approved and pending care-chat requests without switching to a general chat flow.",
         "profileNote": "Keep your profile accurate and patient-ready.",
@@ -249,8 +249,8 @@
         },
         "clear": {
           "heading": "No urgent runtime action right now",
-          "note": "Your immediate queue looks clear. Keep your availability and presence ready for new work.",
-          "cta": "Review availability"
+          "note": "Your immediate queue looks clear. Keep your schedule and presence ready for new work.",
+          "cta": "Review schedule"
         }
       },
       "readiness": {
@@ -259,7 +259,7 @@
         "online": "You are online. Review instant booking if you want patients to book you immediately.",
         "away": "You are marked away, so check your status before upcoming work starts.",
         "busy": "You are marked busy. Switch back when you are ready to take live work.",
-        "offline": "You are currently offline. Update your presence before opening instant availability.",
+        "offline": "You are currently offline. Update your presence before opening instant booking.",
         "metrics": {
           "todaySessions": "Visible active sessions",
           "joinableNow": "Joinable now",
@@ -499,7 +499,7 @@
         "label": "Gender"
       },
       "timezone": {
-        "placeholder": "e.g. Asia/Riyadh",
+        "placeholder": "e.g. Riyadh time",
         "label": "Timezone"
       },
       "bio": {
@@ -733,30 +733,30 @@
       "to": "to"
     },
     "reminders": {
-      "currentMissing": "Add session times for this week so patients can see your availability."
+      "currentMissing": "Add session times for this week so patients can see your schedule."
     },
     "feedbackLabels": {
       "loadError": "Could not load your session schedules. Please try again.",
       "retry": "Try again"
     },
     "meta": {
-      "title": "Availability — Practitioner",
-      "description": "Manage your current and next week availability. Draft weeks stay private until published, and patients can book only from published weeks."
+      "title": "Schedule — Practitioner",
+      "description": "Manage your current and next week schedule. Draft weeks stay private until published, and patients can book only from published weeks."
     },
     "page": {
-      "title": "Availability",
-      "subtitle": "Manage your current and next week availability here. Draft weeks are private until published. Patients can only book times from published weeks."
+      "title": "Schedule",
+      "subtitle": "Manage your current and next week schedule here. Draft weeks are private until published. Patients can only book times from published weeks."
     },
     "workflow": {
-      "protectedTitle": "Availability is protected",
-      "protectedBody": "Availability cannot be edited while your application is under review or locked.",
-      "eyebrow": "Availability workflow",
-      "title": "Build your availability",
-      "description": "Set this week's schedule and prepare next week's draft without changing published availability.",
-      "bannerTitle": "How availability works",
+      "protectedTitle": "Your schedule is protected",
+      "protectedBody": "Your schedule cannot be edited while your application is under review or locked.",
+      "eyebrow": "Schedule workflow",
+      "title": "Build your schedule",
+      "description": "Set this week's schedule and prepare next week's draft without changing published times.",
+      "bannerTitle": "How your schedule works",
       "bullets": {
         "thisWeekOnly": "Edit the current week's schedule from this workspace.",
-        "publishedOnly": "Patients can book only published availability.",
+        "publishedOnly": "Patients can book only published times.",
         "nextWeekHidden": "Next week's draft stays hidden until published.",
         "bookedSessionsStay": "Existing booked sessions remain unchanged."
       },
@@ -780,7 +780,7 @@
       "actions": "Actions"
     },
     "timezone": {
-      "requiredTitle": "Add your timezone before setting availability",
+      "requiredTitle": "Add your timezone before setting your schedule",
       "requiredBody": "Your timezone is required to interpret weekly session times safely. Update it from your practitioner profile, then return here.",
       "openProfile": "Open profile settings"
     },
@@ -813,7 +813,7 @@
         "notSet": "Not set"
       },
       "card": {
-        "noSlots": "No availability slots"
+        "noSlots": "No session times"
       },
       "days": {
         "sunday": "Sunday",
@@ -827,19 +827,19 @@
       "duration30": "30 minutes",
       "duration60": "60 minutes",
       "empty": {
-        "title": "No availability yet",
-        "current": "You have not added availability for the current week yet.",
-        "noteTitle": "Add your availability",
+        "title": "No session times yet",
+        "current": "You have not added session times for the current week yet.",
+        "noteTitle": "Add session times",
         "noteBody": "Choose a day and add session times to build your weekly schedule."
       },
       "reminder": {
-        "currentMissing": "Add session times for the current week so patients can see your availability."
+        "currentMissing": "Add session times for the current week so patients can see your schedule."
       },
       "actions": {
         "createCurrentDraft": "Create current-week draft",
         "createDraftHint": "Start with an empty draft for this week.",
         "copyCurrentToNextDraft": "Copy current week to next-week draft",
-        "copyRequiresCurrent": "Add current-week availability before copying it to next week."
+        "copyRequiresCurrent": "Add current-week session times before copying them to next week."
       }
     },
     "actions": {
@@ -943,7 +943,7 @@
       }
     },
     "feedback": {
-      "loadError": "Could not load your availability. Please try again.",
+      "loadError": "Could not load your schedule. Please try again.",
       "retry": "Try again"
     },
     "bookingIntake": {
@@ -954,8 +954,13 @@
       "loading": "Loading booking settings",
       "loadError": "Could not load booking settings. Please try again.",
       "saveError": "Could not update booking settings. Please try again.",
-      "errors": { "paused": "Booking intake is currently paused." },
-      "toast": { "paused": "New scheduled bookings are paused.", "resumed": "New scheduled bookings are enabled." },
+      "errors": {
+        "paused": "Booking intake is currently paused."
+      },
+      "toast": {
+        "paused": "New scheduled bookings are paused.",
+        "resumed": "New scheduled bookings are enabled."
+      },
       "confirm": {
         "title": "Pause accepting bookings?",
         "body": "Patients will not be able to create new bookings, and existing bookings will remain unchanged.",
@@ -966,7 +971,7 @@
     },
     "presence": {
       "heading": "Online presence",
-      "description": "Control your current status and instant booking availability.",
+      "description": "Control your current status and instant booking readiness.",
       "statusLabel": "Your status",
       "ONLINE": "Online",
       "AWAY": "Away",
@@ -1042,19 +1047,19 @@
     },
     "exceptions": {
       "heading": "Edit a specific day",
-      "description": "Choose a date to adjust your availability without changing your weekly schedule.",
+      "description": "Choose a date to adjust your schedule without changing your weekly schedule.",
       "dayNote": "Specific-day adjustments apply only to this date and do not change your recurring weekly schedule.",
       "dateMode": {
         "eyebrow": "Date",
         "title": "Edit a specific day",
-        "subtitle": "Choose a date to adjust your availability without changing your weekly schedule.",
+        "subtitle": "Choose a date to adjust your schedule without changing your weekly schedule.",
         "today": "Today",
         "tomorrow": "Tomorrow",
         "pickDate": "Pick a date",
         "selectedDate": "Selected date"
       },
       "summary": {
-        "titlePrefix": "Adjust availability for",
+        "titlePrefix": "Adjust schedule for",
         "weeklySchedule": "Follows weekly schedule",
         "noWeeklySchedule": "Does not follow weekly schedule",
         "hasExceptions": "Has existing exceptions",
@@ -1890,14 +1895,14 @@
       "CHANGES_REQUESTED": "Changes requested",
       "ARCHIVED": "Archived"
     },
-      "completionIssues": {
-        "generic": {
-          "title": "Missing requirement",
-          "description": "One or more required items are missing for this step.",
-          "whyItMatters": "These items are required before the application can be submitted for review.",
-          "recommendedAction": "Complete the missing fields or uploads, then save the step again."
-        },
-        "codes": {
+    "completionIssues": {
+      "generic": {
+        "title": "Missing requirement",
+        "description": "One or more required items are missing for this step.",
+        "whyItMatters": "These items are required before the application can be submitted for review.",
+        "recommendedAction": "Complete the missing fields or uploads, then save the step again."
+      },
+      "codes": {
         "DOCUMENTS_IDENTITY_EVIDENCE_REQUIRED": {
           "title": "Identity document required"
         },
@@ -1917,6 +1922,28 @@
           "title": "Academic certificate required"
         }
       }
+    },
+    "documents": {
+      "nationalIdFront": {
+        "title": "National ID (Front Side)",
+        "description": "Clear photo of the front side of your valid National ID."
+      },
+      "nationalIdBack": {
+        "title": "National ID (Back Side)",
+        "description": "Clear photo of the back side of your valid National ID."
+      },
+      "nationalId": {
+        "title": "National Identity Document",
+        "description": "Clear photo of your official government-issued ID."
+      },
+      "degree": {
+        "title": "Qualification Degree Certificate",
+        "description": "University graduation degree in psychological or medical field."
+      },
+      "professionalLicense": {
+        "title": "Syndicate Card or Practice License",
+        "description": "Official syndicate membership card or verified practice authorization."
+      }
     }
   },
   "practitionerApplication": {
@@ -1929,5 +1956,26 @@
       "payoutDetails": "Payout Details",
       "reviewSubmit": "Review & Submit"
     }
+  },
+  "requirements": {
+    "bannerTitle": "Items Requiring Attention",
+    "bannerSubtitle": "The review team requested updates on some documents or details.",
+    "actionButton": "View & Fulfill",
+    "noRequirements": "No actionable requirements at this time",
+    "submittedForReview": "Submitted for Review",
+    "needsRevision": "Needs Revision",
+    "actionRequired": "Action Required"
+  },
+  "setup": {
+    "title": "Account Setup",
+    "welcomeTitle": "Welcome to Sawiyaa! Complete Your Account for Publication",
+    "welcomeSubtitle": "Your professional application is verified. Complete mandatory pricing to make your profile ready for publication.",
+    "readyToPublish": "Account Ready for Publication ✓",
+    "pricingTitle": "Standard Session Pricing (30 & 60 min)",
+    "instantTitle": "Instant Booking Pricing (Optional & Separate)",
+    "payoutTitle": "How would you like to receive your earnings?",
+    "savePricing": "Save Session Prices",
+    "saveInstant": "Save Instant Booking",
+    "savePayout": "Save Payout Details"
   }
 }

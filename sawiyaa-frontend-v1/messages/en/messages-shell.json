@@ -52,5 +52,7 @@
   "practitionerPendingNote": "Request is pending and appears here after activation.",
   "practitionerOpenFull": "Open full conversation (optional)",
   "sessionOpenFull": "Open full session chat (optional)",
-  "priorityBadge": "Priority"
+  "priorityBadge": "Priority",
+  "supportError": "Could not send your message to support. Please try again.",
+  "supportComposerPlaceholder": "Explain the issue or your request clearly..."
 }

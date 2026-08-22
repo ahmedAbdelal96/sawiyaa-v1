@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  I18nManager,
   Image,
   ScrollView,
   StyleSheet,
@@ -31,7 +30,6 @@ import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { PriceDisplay } from "../../../src/components/money";
 import { parseMoney, formatMoney as formatCentralMoney } from "../../../src/lib/money";
 import { mapPractitionerDurationPrice } from "../../../src/features/patient/discovery/practitioner-money";
-import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { useAppDirection } from "../../../src/i18n/direction";
 import { hasPublicPractitionerRating } from "../../../src/features/patient/discovery/rating";
 
@@ -122,7 +120,7 @@ export default function TherapistProfileScreen() {
   const { t, i18n } = useTranslation();
   const isArabicUi = i18n.language?.startsWith("ar") ?? true;
   const locale = isArabicUi ? "ar-SA" : "en-US";
-  const { isRtl, rowDirection, arrowBack } = useAppDirection();
+  const { isRtl, rowDirection } = useAppDirection();
 
   const authContext = useAuth();
   const isAuthenticated = Boolean(authContext?.user);
@@ -222,13 +220,13 @@ export default function TherapistProfileScreen() {
       }
 
       router.push({
-        pathname: "/(patient)/sessions/select-time",
+        pathname: "/(patient)/sessions/duration",
         params: {
           slug,
           practitionerName: practitioner.displayName || practitioner.slug,
           practitionerTitle:
-            getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-            t("discovery.profile.professionalFallback", "أخصائي"),
+            practitioner.professionalTitle?.trim() ||
+            t("discovery.profile.professionalFallback"),
           practitionerAvatarUrl: practitioner.avatarUrl || "",
         },
       });
@@ -277,8 +275,8 @@ export default function TherapistProfileScreen() {
 
   const displayName = practitioner.displayName || practitioner.slug;
   const displayTitle =
-    getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-    t("discovery.profile.professionalFallback", "أخصائي نفسيات وعلاج متكامل");
+    practitioner.professionalTitle?.trim() ||
+    t("discovery.profile.professionalFallback");
 
   const verified = Boolean(practitioner.isVerified);
   const averageRating = practitioner.ratingSummary?.averageRating;

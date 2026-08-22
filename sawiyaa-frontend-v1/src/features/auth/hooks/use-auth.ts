@@ -10,6 +10,9 @@ import {
   patientChangePassword,
   patientGoogleAuth,
   patientLogin,
+  traineeLogin,
+  traineeRefresh,
+  traineeLogout,
   patientLogout,
   patientRefresh,
   patientRegister,
@@ -184,6 +187,21 @@ export function usePractitionerVerifyOtp() {
       onAuthSuccess();
     },
   });
+}
+
+export function useTraineeLogin() {
+  const { onAuthSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: traineeLogin, onSuccess: onAuthSuccess, retry: false });
+}
+
+export function useTraineeRefresh() {
+  const { onAuthSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: (data?: RefreshTokenRequest) => traineeRefresh(data), onSuccess: onAuthSuccess, retry: false });
+}
+
+export function useTraineeLogout() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: traineeLogout, onSuccess: onLogoutSuccess, retry: false });
 }
 
 export function usePatientChangePassword() {

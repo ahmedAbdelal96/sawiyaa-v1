@@ -5,6 +5,7 @@ import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitio
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { ListPublicPractitionersUseCase } from './list-public-practitioners.use-case';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 describe('ListPublicPractitionersUseCase', () => {
   const publicReadRepository = {
@@ -25,6 +26,7 @@ describe('ListPublicPractitionersUseCase', () => {
     publicReadRepository,
     pricingContextService,
     sessionReviewRatingAggregationService,
+    new PractitionerProfessionalContentResolver(),
   );
 
   beforeEach(() => {
@@ -127,6 +129,47 @@ describe('ListPublicPractitionersUseCase', () => {
       writtenReviewsCount: 0,
       totalReviews: 0,
     });
+  });
+
+  it('resolves AR and EN independently while preserving partial and legacy fallback', async () => {
+    const localizedRow = {
+      ...baseRow,
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: null },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
+    };
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([localizedRow]);
+
+    const arabic = await useCase.execute({ locale: 'ar' });
+    const english = await useCase.execute({ locale: 'en' });
+
+    expect(arabic.items[0]).toEqual(
+      expect.objectContaining({
+        id: baseRow.id,
+        professionalTitle: 'أخصائي نفسي',
+        bioSnippet: 'English bio',
+      }),
+    );
+    expect(english.items[0]).toEqual(
+      expect.objectContaining({
+        id: baseRow.id,
+        professionalTitle: 'Clinical Psychologist',
+        bioSnippet: 'English bio',
+      }),
+    );
+
+    (publicReadRepository.listPublic as jest.Mock).mockResolvedValue([
+      { ...baseRow, primaryContentLocale: null, professionalContentTranslations: [] },
+    ]);
+    const legacy = await useCase.execute({ locale: 'ar' });
+    expect(legacy.items[0]).toEqual(
+      expect.objectContaining({
+        professionalTitle: 'Therapist',
+        bioSnippet: 'Bio',
+      }),
+    );
   });
 
   it('marks stale online presence as offline in the public list', async () => {

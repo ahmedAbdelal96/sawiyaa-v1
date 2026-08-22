@@ -1,18 +1,18 @@
 {
   "meta": {
     "siteTitle": "Sawiyaa",
-    "siteDescription": "Guided mental care with clearer entry paths, public practitioner discovery, specialties, and trust-backed content.",
+    "siteDescription": "Guided mental care with clearer entry paths, public specialist discovery, specialties, and trust-backed content.",
     "home": {
       "title": "Sawiyaa | Guided mental care entry",
-      "description": "Start with guided matching, assessments, practitioner discovery, or support through a clearer public entry into care."
+      "description": "Start with guided matching, assessments, specialist discovery, or support through a clearer public entry into care."
     },
     "practitioners": {
-      "title": "Sawiyaa | Browse practitioners",
-      "description": "Browse real public practitioner profiles, specialties, languages, and trust context to choose a clearer next care step."
+      "title": "Sawiyaa | Browse specialists",
+      "description": "Browse real public specialist profiles, specialties, languages, and trust context to choose a clearer next care step."
     },
     "practitionerProfileFallback": {
-      "title": "Sawiyaa | Practitioner profile",
-      "description": "Review a public practitioner profile, specialties, credentials, trust context, and booking availability."
+      "title": "Sawiyaa | Specialist profile",
+      "description": "Review a public specialist profile, specialties, credentials, trust context, and booking times."
     },
     "specialties": {
       "title": "Sawiyaa | Mental health specialties",
@@ -56,7 +56,7 @@
     "title": "This page is not available right now",
     "description": "The page may have moved, the link may be outdated, or this public item is no longer available.",
     "home": "Go to home",
-    "practitioners": "Browse practitioners",
+    "practitioners": "Browse specialists",
     "specialties": "Explore specialties"
   },
   "unavailable": {
@@ -65,7 +65,7 @@
     "description": "This does not necessarily mean the product is unavailable. You can try again or continue from another real public path.",
     "retry": "Try again",
     "home": "Go to home",
-    "practitioners": "Browse practitioners",
+    "practitioners": "Browse specialists",
     "specialties": "Explore specialties",
     "articles": "Read articles"
   }

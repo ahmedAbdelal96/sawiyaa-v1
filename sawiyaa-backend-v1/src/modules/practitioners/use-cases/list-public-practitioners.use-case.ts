@@ -14,6 +14,7 @@ import { SessionReviewRatingAggregationService } from '@modules/reviews/services
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
@@ -53,6 +54,7 @@ export class ListPublicPractitionersUseCase {
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
     private readonly avatarStorage?: PractitionerAvatarStorageService,
   ) {}
 
@@ -158,6 +160,10 @@ export class ListPublicPractitionersUseCase {
           hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
           hasBio: Boolean(profile.bio?.trim()),
           hasAtLeastOneActiveSpecialty: profile.specialties.length > 0,
+          sessionPrice30Egp: profile.sessionPrice30Egp,
+          sessionPrice30Usd: profile.sessionPrice30Usd,
+          sessionPrice60Egp: profile.sessionPrice60Egp,
+          sessionPrice60Usd: profile.sessionPrice60Usd,
         });
 
         if (!visibility.isVisible) {
@@ -179,6 +185,17 @@ export class ListPublicPractitionersUseCase {
           sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
           sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
         });
+        const professionalContent = this.professionalContentResolver.resolve({
+          requestedLocale: input.locale,
+          primaryContentLocale: profile.primaryContentLocale,
+          translations: (profile.professionalContentTranslations ?? []).map((translation) => ({
+            locale: translation.locale as SupportedLocale,
+            professionalTitle: translation.professionalTitle,
+            bio: translation.bio,
+          })),
+          legacyProfessionalTitle: profile.professionalTitle,
+          legacyBio: profile.bio,
+        });
 
         return [
           {
@@ -189,14 +206,19 @@ export class ListPublicPractitionersUseCase {
               id: profile.id,
               slug: profile.publicSlug,
               displayName: profile.user.displayName ?? null,
-              professionalTitle: profile.professionalTitle ?? null,
-              bioSnippet: this.mapper.toBioSnippet(profile.bio ?? null),
+              professionalTitle: professionalContent.professionalTitle,
+              bioSnippet: this.mapper.toBioSnippet(professionalContent.bio),
               specialties: profile.specialties.map((link) => ({
                 specialtyId: link.specialtyId,
                 slug: link.specialty.slug,
                 title: this.mapper.pickLocalizedTitle(
                   link.specialty.translations,
                   input.locale,
+                  {
+                    nameAr: link.specialty.nameAr,
+                    nameEn: link.specialty.nameEn,
+                    fallback: link.specialty.slug,
+                  },
                 ),
                 isPrimary: link.isPrimary,
               })),

@@ -151,7 +151,7 @@ export default function PatientSessionReviewCard({
                 onMouseEnter={() => setHoverRating(val)}
                 onMouseLeave={() => setHoverRating(null)}
                 className="relative cursor-pointer transition-transform hover:scale-110 active:scale-95 outline-none"
-                aria-label={`Rate ${val} stars`}
+                aria-label={t("patient.ratingModal.starAria", { value: val })}
               >
                 <Star
                   className={`h-9 w-9 transition-colors ${

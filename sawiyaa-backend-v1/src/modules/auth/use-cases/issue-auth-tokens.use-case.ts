@@ -38,7 +38,7 @@ export class IssueAuthTokensUseCase {
         `Authenticated user "${input.userId}" was not found`,
       );
     }
-    if (input.requireCurrentEligibility && (user.status !== UserStatus.ACTIVE || (input.role === UserRoleType.PRACTITIONER && (!user.practitionerProfile || user.practitionerProfile.status === PractitionerStatus.REJECTED || user.practitionerProfile.status === PractitionerStatus.SUSPENDED || user.practitionerProfile.status === PractitionerStatus.INACTIVE)))) {
+    if (input.requireCurrentEligibility && (user.status !== UserStatus.ACTIVE || (input.role === UserRoleType.PRACTITIONER && ((!user.practitionerProfile && !user.practitionerApplications?.[0]) || user.practitionerProfile?.status === PractitionerStatus.REJECTED || user.practitionerProfile?.status === PractitionerStatus.SUSPENDED || user.practitionerProfile?.status === PractitionerStatus.INACTIVE)))) {
       throw new ForbiddenException({ messageKey: 'auth.errors.accountNotEligible', error: 'ACCOUNT_NOT_ELIGIBLE' });
     }
 

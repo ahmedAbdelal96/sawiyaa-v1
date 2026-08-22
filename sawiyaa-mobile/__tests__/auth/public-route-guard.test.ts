@@ -25,6 +25,11 @@ describe("resolveMobileRole unit tests", () => {
     expect(resolveMobileRole(user)).toBe("practitioner");
   });
 
+  it("resolves TRAINEE role to trainee", () => {
+    const user = { ...mockBaseUser, roles: ["TRAINEE"] as any[] };
+    expect(resolveMobileRole(user)).toBe("trainee");
+  });
+
   it("rejects admin and other staff roles by returning null", () => {
     const userAdmin = { ...mockBaseUser, roles: ["ADMIN"] as any[] };
     expect(resolveMobileRole(userAdmin)).toBeNull();

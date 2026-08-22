@@ -2,14 +2,14 @@
   "page": {
     "brand": "Sawiyaa",
     "title": "Find your specialist",
-    "subtitle": "Browse a curated selection of certified mental health practitioners",
-    "breadcrumb": "Practitioners",
-    "resultCount": "{count} practitioners available",
-    "resultCountSingle": "1 practitioner available",
+    "subtitle": "Browse a curated selection of certified mental health specialists",
+    "breadcrumb": "Specialists",
+    "resultCount": "{count, plural, one {# specialist available} other {# specialists available}}",
+    "resultCountSingle": "1 specialist available",
     "showingOf": "Showing {count} of {total}"
   },
   "search": {
-    "placeholder": "Search by name or specialty...",
+    "placeholder": "Search by specialist name or specialty...",
     "button": "Search",
     "clear": "Clear search"
   },
@@ -23,8 +23,10 @@
     "specialty": "Specialty",
     "language": "Language",
     "country": "Country",
-    "practitionerType": "Practitioner type",
-    "practitionerTypeDoctor": "Doctor",
+    "countrySearchPlaceholder": "Search countries...",
+    "countryEmpty": "No countries found",
+    "practitionerType": "Specialist type",
+    "practitionerTypeDoctor": "Specialist",
     "practitionerTypeTherapist": "Therapist",
     "gender": "Gender",
     "genderMale": "Male",
@@ -125,12 +127,12 @@
     "title": "Failed to load page",
     "subtitle": "Something went wrong while fetching data. Please try again.",
     "retry": "Try again",
-    "back": "Back to practitioners"
+    "back": "Back to specialists"
   },
   "patientArea": {
     "meta": {
-      "title": "Sawiyaa | Choose Your Practitioner",
-      "description": "Browse the right practitioners for your needs inside the patient area."
+      "title": "Sawiyaa | Choose Your Specialist",
+      "description": "Browse the right specialists for your needs inside the patient area."
     }
   }
 }

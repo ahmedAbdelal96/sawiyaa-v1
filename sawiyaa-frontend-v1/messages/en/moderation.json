@@ -1,5 +1,9 @@
 {
   "title": "Report",
+  "eyebrow": "Safety and moderation",
+  "reportContent": "Report content",
+  "report": "Report",
+  "error": "The report could not be submitted. Please try again.",
   "hint": "Send a report to the moderation team to review content.",
   "fields": {
     "reason": "Reason",

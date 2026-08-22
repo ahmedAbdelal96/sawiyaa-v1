@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
   AlertCircle,
@@ -61,10 +61,8 @@ export default function InstantBookingModal({
   onAvailabilityChanged,
   availableDurations,
 }: Props) {
-  const t = useTranslations("instant-booking-modal");
-  const locale = useLocale();
+  const t = useTranslations("instant-booking");
   const router = useRouter();
-  const isArabic = locale === "ar";
 
   const [selectedDuration, setSelectedDuration] =
     useState<InstantBookingDiscoveryDuration>(30);
@@ -162,25 +160,17 @@ export default function InstantBookingModal({
         errorCode === "PRACTITIONER_NOT_ONLINE" ||
         messageKey === "instantBooking.errors.practitionerNotOnline"
       ) {
-        setApiError(
-          isArabic
-            ? "المختص غير متصل بالمنصة حالياً (تأكد من فتح صفحة المختص وإرسال إشارة الاتصال)."
-            : "Practitioner is currently offline.",
-        );
+        setApiError(t("modal.errors.practitionerOffline"));
       } else if (
         errorCode === "INSTANT_BOOKING_DISABLED" ||
         messageKey === "instantBooking.errors.instantBookingDisabled"
       ) {
-        setApiError(isArabic ? "المختص لا يستقبل طلبات جلسات فورية حالياً." : "Practitioner is not accepting instant booking requests.");
+        setApiError(t("modal.errors.instantBookingDisabled"));
       } else if (
         errorCode === "INSTANT_BOOKING_PENDING_REQUEST_ALREADY_EXISTS" ||
         messageKey === "instantBooking.errors.pendingRequestAlreadyExists"
       ) {
-        setApiError(
-          isArabic
-            ? "لديك طلب حجز فوري معلق بالفعل مع هذا المختص في انتظار رده."
-            : "You already have a pending instant booking request with this practitioner.",
-        );
+        setApiError(t("modal.errors.pendingRequestAlreadyExists"));
       } else if (
         errorCode === "INSTANT_BOOKING_PRACTITIONER_BUSY" ||
         messageKey === "instantBooking.errors.practitionerBusy" ||
@@ -189,12 +179,11 @@ export default function InstantBookingModal({
         messageKey === "sessions.errors.practitionerTimeConflict" ||
         errorCode === "SLOT_UNAVAILABLE"
       ) {
-        setApiError(isArabic ? "المختص مشغول حالياً أو لديه تعارض في المواعيد." : "Practitioner is currently busy or has a session conflict.");
+        setApiError(t("modal.errors.practitionerBusy"));
         await onAvailabilityChanged?.();
       } else {
         setApiError(
-          appError.message ||
-            (isArabic ? "تعذر إرسال الطلب. يرجى المحاولة مرة أخرى." : "Failed to send request. Please try again."),
+          appError.message || t("modal.errors.createFailed"),
         );
       }
     }
@@ -238,14 +227,14 @@ export default function InstantBookingModal({
                 <Clock size={16} />
               </span>
               <h2 id="instant-modal-title" className="text-base font-bold text-text-primary dark:text-white">
-                {isArabic ? "طلب جلسة فورية" : "Request Instant Session"}
+                {t("modal.title")}
               </h2>
             </div>
             <button
               type="button"
               onClick={onClose}
               className="rounded-full p-1 text-text-muted transition hover:bg-surface-tertiary hover:text-text-primary dark:hover:bg-white/10"
-              aria-label={isArabic ? "إغلاق" : "Close"}
+              aria-label={t("modal.actions.close")}
             >
               <X size={18} />
             </button>
@@ -260,12 +249,10 @@ export default function InstantBookingModal({
                 {/* Notice Box */}
                 <div className="rounded-2xl border border-primary/20 bg-primary-light/40 p-4 text-xs text-text-secondary dark:bg-primary/10 dark:text-text-secondary">
                   <p className="font-semibold text-text-primary dark:text-white">
-                    {isArabic ? "اطلب جلسة فيديو الآن" : "Request a video session now"}
+                {t("modal.form.heading")}
                   </p>
                   <p className="mt-1 leading-relaxed">
-                    {isArabic
-                      ? "سيتم إرسال طلب للمختص، وسيكون أمامه دقيقتان لقبول الطلب. لن يتم الدفع إلا بعد موافقته."
-                      : "A request will be sent to the practitioner with 2 minutes to respond. Payment occurs only after acceptance."}
+                    {t("modal.form.note")}
                   </p>
                 </div>
 
@@ -279,10 +266,10 @@ export default function InstantBookingModal({
                 {/* Duration Radio Selection */}
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted">
-                    {isArabic ? "مدة الجلسة" : "Session Duration"}
+                    {t("modal.form.duration")}
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={isArabic ? "اختر مدة الجلسة" : "Select session duration"}>
+                  <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label={t("modal.form.durationAria")}>
                     <button
                       type="button"
                       role="radio"
@@ -296,7 +283,7 @@ export default function InstantBookingModal({
                       }`}
                     >
                       <span className="text-xs font-semibold text-text-secondary">
-                        {isArabic ? "30 دقيقة" : "30 Minutes"}
+                        {t("modal.form.duration30")}
                       </span>
                       <span className="mt-2 text-base font-bold text-text-primary dark:text-white">
                         {price30Money ? <MoneyText money={price30Money} /> : "-"}
@@ -316,7 +303,7 @@ export default function InstantBookingModal({
                       }`}
                     >
                       <span className="text-xs font-semibold text-text-secondary">
-                        {isArabic ? "60 دقيقة" : "60 Minutes"}
+                        {t("modal.form.duration60")}
                       </span>
                       <span className="mt-2 text-base font-bold text-text-primary dark:text-white">
                         {price60Money ? <MoneyText money={price60Money} /> : "-"}
@@ -328,25 +315,25 @@ export default function InstantBookingModal({
                 {/* Request Summary Card */}
                 <div className="rounded-2xl border border-border-light/60 bg-surface-tertiary/60 p-4 text-xs space-y-2 dark:bg-white/5">
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{isArabic ? "المختص" : "Practitioner"}</span>
+                    <span className="text-text-muted">{t("modal.summary.practitioner")}</span>
                     <span className="font-semibold text-text-primary dark:text-white">{practitioner.displayName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{isArabic ? "نوع الجلسة" : "Session Type"}</span>
+                    <span className="text-text-muted">{t("modal.summary.sessionType")}</span>
                     <span className="inline-flex items-center gap-1 font-semibold text-text-brand">
                       <Video size={12} />
-                      {isArabic ? "جلسة فيديو" : "Video Session"}
+                      {t("modal.summary.videoSession")}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-text-muted">{isArabic ? "السعر المحدد" : "Instant Price"}</span>
+                    <span className="text-text-muted">{t("modal.summary.instantPrice")}</span>
                     <span className="font-bold text-text-primary dark:text-white">
                       {activeMoney ? <MoneyText money={activeMoney} /> : "-"}
                     </span>
                   </div>
                   <div className="flex justify-between border-t border-border-light/40 pt-2 dark:border-white/10">
-                    <span className="text-text-muted">{isArabic ? "مهلة الرد" : "Response Window"}</span>
-                    <span className="font-semibold text-amber-700 dark:text-amber-400">{isArabic ? "دقيقتان" : "2 minutes"}</span>
+                    <span className="text-text-muted">{t("modal.summary.responseWindow")}</span>
+                    <span className="font-semibold text-amber-700 dark:text-amber-400">{t("modal.summary.twoMinutes")}</span>
                   </div>
                 </div>
 
@@ -361,11 +348,11 @@ export default function InstantBookingModal({
                     {createMutation.isPending ? (
                       <span className="inline-flex items-center gap-2">
                         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        {isArabic ? "جاري الإرسال..." : "Sending..."}
+                        {t("modal.actions.sending")}
                       </span>
                     ) : (
                       <>
-                        {isArabic ? "إرسال طلب الجلسة" : "Send session request"}
+                        {t("modal.actions.sendRequest")}
                         <ArrowRight size={16} className="rtl:rotate-180" />
                       </>
                     )}
@@ -385,12 +372,10 @@ export default function InstantBookingModal({
 
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-text-primary dark:text-white">
-                    {isArabic ? "تم إرسال طلبك" : "Request sent"}
+                    {t("modal.pending.heading")}
                   </h3>
                   <p className="text-sm text-text-secondary">
-                    {isArabic
-                      ? `في انتظار رد د. ${practitioner.displayName}...`
-                      : `Waiting for Dr. ${practitioner.displayName} to respond...`}
+                    {t("modal.pending.waiting", { name: practitioner.displayName })}
                   </p>
                 </div>
 
@@ -401,7 +386,7 @@ export default function InstantBookingModal({
                 </div>
 
                 <p className="text-xs text-text-muted">
-                  {isArabic ? "سنبلغك فور رد المختص." : "We will notify you as soon as the practitioner responds."}
+                  {t("modal.pending.note")}
                 </p>
 
                 <div className="flex gap-3 pt-2">
@@ -410,14 +395,14 @@ export default function InstantBookingModal({
                     onClick={() => setConfirmCancel(true)}
                     className="flex-1 rounded-xl border border-border-light bg-surface-secondary py-2.5 text-xs font-semibold text-text-secondary transition hover:bg-surface-tertiary dark:border-white/10 dark:bg-white/5 cursor-pointer"
                   >
-                    {isArabic ? "إلغاء الطلب" : "Cancel Request"}
+                    {t("modal.actions.cancelRequest")}
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
                     className="flex-1 rounded-xl border border-primary/20 bg-primary-light/40 py-2.5 text-xs font-semibold text-text-brand transition hover:bg-primary-light/70 dark:bg-primary/10 cursor-pointer"
                   >
-                    {isArabic ? "إغلاق" : "Close Window"}
+                    {t("modal.actions.close")}
                   </button>
                 </div>
               </div>
@@ -434,12 +419,10 @@ export default function InstantBookingModal({
 
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-                    {isArabic ? "وافق المختص على طلبك!" : "Practitioner accepted your request!"}
+                    {t("modal.accepted.heading")}
                   </h3>
                   <p className="text-sm text-text-secondary">
-                    {isArabic
-                      ? "تم حجز الجلسة مؤقتاً في انتظار الدفع."
-                      : "Session temporarily reserved pending payment."}
+                    {t("modal.accepted.note")}
                   </p>
                 </div>
 
@@ -449,7 +432,7 @@ export default function InstantBookingModal({
                   className="sawiyaa-btn-press inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-primary-hover shadow-md cursor-pointer"
                 >
                   <ShieldCheck size={18} />
-                  <span>{isArabic ? "إكمال الدفع الآن" : "Complete Payment Now"}</span>
+                  <span>{t("modal.actions.completePayment")}</span>
                 </button>
               </div>
             ) : null}
@@ -465,12 +448,10 @@ export default function InstantBookingModal({
 
                 <div className="space-y-1.5">
                   <h3 className="text-base font-bold text-text-primary dark:text-white">
-                    {isArabic ? "تعذر قبول الطلب" : "Request could not be accepted"}
+                    {t("modal.rejected.heading")}
                   </h3>
                   <p className="text-xs leading-relaxed text-text-secondary">
-                    {isArabic
-                      ? "لم يتمكن المختص من قبول الجلسة الفورية هذه المرة. يمكنك حجز موعد لاحق أو اختيار مختص آخر."
-                      : "The practitioner could not accept this instant request. You can schedule a later appointment or select another practitioner."}
+                    {t("modal.rejected.note")}
                   </p>
                 </div>
 
@@ -484,7 +465,7 @@ export default function InstantBookingModal({
                       }}
                       className="rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover cursor-pointer"
                     >
-                      {isArabic ? "حجز موعد لاحق" : "Schedule appointment"}
+                      {t("modal.actions.scheduleAppointment")}
                     </button>
                   ) : null}
 
@@ -496,7 +477,7 @@ export default function InstantBookingModal({
                     }}
                     className="rounded-xl border border-border-light bg-surface-secondary px-4 py-2.5 text-xs font-semibold text-text-secondary transition hover:bg-surface-tertiary dark:border-white/10 dark:bg-white/5 cursor-pointer"
                   >
-                    {isArabic ? "عرض المختصين" : "View Practitioners"}
+                    {t("modal.actions.viewSpecialists")}
                   </button>
                 </div>
               </div>
@@ -513,12 +494,10 @@ export default function InstantBookingModal({
 
                 <div className="space-y-1.5">
                   <h3 className="text-base font-bold text-text-primary dark:text-white">
-                    {isArabic ? "انتهت مهلة الطلب" : "Request Expired"}
+                    {t("modal.expired.heading")}
                   </h3>
                   <p className="text-xs leading-relaxed text-text-secondary">
-                    {isArabic
-                      ? "لم يتم قبول الطلب خلال الوقت المحدد."
-                      : "The request was not accepted within the allocated time."}
+                    {t("modal.expired.note")}
                   </p>
                 </div>
 
@@ -530,7 +509,7 @@ export default function InstantBookingModal({
                     }}
                     className="flex-1 rounded-xl bg-primary py-2.5 text-xs font-semibold text-white transition hover:bg-primary-hover cursor-pointer"
                   >
-                    {isArabic ? "إرسال طلب جديد" : "Send new request"}
+                    {t("modal.actions.newRequest")}
                   </button>
                   <button
                     type="button"
@@ -540,7 +519,7 @@ export default function InstantBookingModal({
                     }}
                     className="flex-1 rounded-xl border border-border-light bg-surface-secondary py-2.5 text-xs font-semibold text-text-secondary transition hover:bg-surface-tertiary dark:border-white/10 dark:bg-white/5 cursor-pointer"
                   >
-                    {isArabic ? "عرض المختصين" : "View Practitioners"}
+                    {t("modal.actions.viewSpecialists")}
                   </button>
                 </div>
               </div>
@@ -553,14 +532,10 @@ export default function InstantBookingModal({
       <ConfirmModal
         isOpen={confirmCancel}
         onClose={() => setConfirmCancel(false)}
-        title={isArabic ? "إلغاء الطلب" : "Cancel Request"}
-        description={
-          isArabic
-            ? "هل تريد إلغاء طلب الجلسة الفورية؟"
-            : "Are you sure you want to cancel your instant session request?"
-        }
-        confirmLabel={cancelMutation.isPending ? (isArabic ? "جاري الإلغاء..." : "Cancelling...") : (isArabic ? "نعم، إلغاء الطلب" : "Yes, cancel request")}
-        cancelLabel={isArabic ? "التراجع" : "Go Back"}
+        title={t("modal.cancel.heading")}
+        description={t("modal.cancel.note")}
+        confirmLabel={cancelMutation.isPending ? t("modal.cancel.cancelling") : t("modal.cancel.confirm")}
+        cancelLabel={t("modal.cancel.back")}
         loading={cancelMutation.isPending}
         onConfirm={handleCancelRequest}
       />

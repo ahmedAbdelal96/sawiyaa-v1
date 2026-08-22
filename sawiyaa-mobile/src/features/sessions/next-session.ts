@@ -25,7 +25,19 @@ export type MobileNextSession = {
 
 async function getMyNextSession() {
   const response = await apiClient.get("/users/me/next-session");
-  return extractApiData<MobileNextSession | null>(response);
+  const session = extractApiData<MobileNextSession | null>(response);
+
+  if (!session) return null;
+
+  // The shared API contract contains localized Web routes. Mobile owns the
+  // route group for this screen, so keep navigation on the native session
+  // detail surface while preserving the Backend-owned action state above.
+  const mobileRoute = `/(patient)/sessions/${session.sessionId}`;
+  return {
+    ...session,
+    detailsRoute: mobileRoute,
+    joinRoute: mobileRoute,
+  };
 }
 
 export function useMyNextSession() {

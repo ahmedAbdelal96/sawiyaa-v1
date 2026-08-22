@@ -18,6 +18,7 @@ import type { UserNotificationItem } from "../types/user-notifications.types";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import { useMySettings } from "@/features/settings/hooks/use-settings";
+import { useAuthState } from "@/stores/auth-store";
 
 const TONE_CLASSES: Record<string, string> = {
   message: "bg-teal-50/50 text-teal-700 border border-teal-100 dark:bg-teal-500/5 dark:text-teal-300 dark:border-teal-500/10",
@@ -47,8 +48,11 @@ export default function UserNotificationDropdown({
   const locale = useLocale();
   const isRtl = locale.startsWith("ar");
   const t = useTranslations("notifications");
+  const { user } = useAuthState();
   const patientProfileQuery = usePatientProfile(role === "patient");
-  const practitionerProfileQuery = usePractitionerProfile(role === "practitioner");
+  const practitionerProfileQuery = usePractitionerProfile(
+    role === "practitioner" && user?.practitionerStatus === "APPROVED",
+  );
   const settingsQuery = useMySettings(role === "admin");
   const viewerTimeZone =
     role === "patient"

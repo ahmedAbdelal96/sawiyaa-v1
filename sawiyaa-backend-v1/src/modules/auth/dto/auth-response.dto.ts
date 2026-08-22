@@ -30,6 +30,9 @@ export class AuthenticatedUserResponseDto {
   @ApiProperty({ nullable: true })
   practitionerProfileId!: string | null;
 
+  @ApiProperty({ nullable: true })
+  practitionerApplicationId!: string | null;
+
   @ApiProperty({ enum: PractitionerStatus, nullable: true })
   practitionerStatus!: PractitionerStatus | null;
 }
@@ -58,6 +61,9 @@ export class CurrentAuthUserResponseDto {
 
   @ApiProperty({ nullable: true })
   practitionerProfileId!: string | null;
+
+  @ApiProperty({ nullable: true })
+  practitionerApplicationId!: string | null;
 
   @ApiProperty()
   isPractitionerOtpVerified!: boolean;

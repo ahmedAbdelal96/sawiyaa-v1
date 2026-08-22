@@ -54,6 +54,13 @@ export class SaveAdminAcademyProgramAttendanceUseCase {
       });
     }
 
+    if (selectedSession.endsAt > new Date()) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.attendanceSessionNotEnded',
+        error: 'ACADEMY_PROGRAM_ATTENDANCE_SESSION_NOT_ENDED',
+      });
+    }
+
     const confirmedEnrollments =
       await this.academyProgramEnrollmentRepository.listConfirmedEnrollmentsByProgramId(
         input.programId,

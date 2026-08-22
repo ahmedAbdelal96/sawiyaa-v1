@@ -10,7 +10,9 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => {
     if (key.includes("fallbackName")) return "المعالج";
     if (key.includes("states.empty.heading")) return "لا توجد رسائل بعد";
-    if (key.includes("states.availabilityLoading.heading")) return "جاري تحميل حالة المحادثة";
+    if (key.includes("states.availabilityLoading.heading"))
+      return "جاري تحميل حالة المحادثة";
+    if (key === "detail.chat.loading") return "جاري التحميل...";
     return key;
   },
 }));
@@ -22,7 +24,10 @@ vi.mock("@/i18n/navigation", () => ({
 
 // Mock hooks
 vi.mock("@/features/users/hooks/use-users", () => ({
-  useCurrentUser: () => ({ data: { userId: "user_patient" }, isLoading: false }),
+  useCurrentUser: () => ({
+    data: { userId: "user_patient" },
+    isLoading: false,
+  }),
 }));
 
 vi.mock("@/features/sessions/hooks/use-sessions", () => ({
@@ -51,9 +56,18 @@ vi.mock("../hooks/use-general-chat", () => ({
     isError: false,
   })),
   useGeneralChatMessages: vi.fn(),
-  useSendGeneralChatMessage: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
-  useUploadGeneralChatAttachment: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
-  useCloseGeneralChatConversation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useSendGeneralChatMessage: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useUploadGeneralChatAttachment: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
+  useCloseGeneralChatConversation: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 vi.mock("../hooks/use-session-chat-realtime", () => ({
@@ -73,9 +87,14 @@ import {
 describe("SessionChatPanel Component", () => {
   const renderWithQueryClient = (ui: React.ReactElement) => {
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
-    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    );
   };
   const mockMessages = [
     {
@@ -94,7 +113,13 @@ describe("SessionChatPanel Component", () => {
       isError: false,
     });
 
-    renderWithQueryClient(<SessionChatPanel sessionId="session-1" scope="patient" variant="embedded" />);
+    renderWithQueryClient(
+      <SessionChatPanel
+        sessionId="session-1"
+        scope="patient"
+        variant="embedded"
+      />,
+    );
 
     // Renders messages successfully by waiting for the state update
     expect(await screen.findByText("Hello there!")).toBeDefined();
@@ -113,10 +138,75 @@ describe("SessionChatPanel Component", () => {
       isError: false,
     });
 
-    renderWithQueryClient(<SessionChatPanel sessionId="session-1" scope="patient" variant="embedded" />);
+    renderWithQueryClient(
+      <SessionChatPanel
+        sessionId="session-1"
+        scope="patient"
+        variant="embedded"
+      />,
+    );
 
     // Should show loading spinner/skeleton/text, NOT empty state
     expect(screen.queryByText("لا توجد رسائل بعد")).toBeNull();
     expect(screen.getByText("جاري التحميل...")).toBeDefined();
+  });
+
+  it("renders the backend participant subtitle without selecting an AR/EN field in Web", async () => {
+    (useSessionGeneralChatConversation as any).mockReturnValue({
+      data: {
+        item: {
+          conversationId: "conv-1",
+          conversationRef: "ref-1",
+          participants: [
+            {
+              userId: "user_patient",
+              role: "PATIENT",
+              identity: {
+                participantId: "user_patient",
+                userId: "user_patient",
+                displayName: "Patient",
+                avatarUrl: null,
+                role: "PATIENT",
+                subtitle: null,
+                status: "ACTIVE",
+                verificationStatus: null,
+              },
+            },
+            {
+              userId: "user_practitioner",
+              role: "PRACTITIONER",
+              identity: {
+                participantId: "user_practitioner",
+                userId: "user_practitioner",
+                displayName: "Dr. Ahmed",
+                avatarUrl: null,
+                role: "PRACTITIONER",
+                subtitle: "Clinical Psychologist",
+                status: "APPROVED",
+                verificationStatus: "PUBLISHED",
+              },
+            },
+          ],
+          chatAvailability: { canRead: true, canSend: true, readOnly: false },
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    (useGeneralChatMessages as any).mockReturnValue({
+      data: { items: [] },
+      isLoading: false,
+      isError: false,
+    });
+
+    renderWithQueryClient(
+      <SessionChatPanel
+        sessionId="session-1"
+        scope="patient"
+        variant="embedded"
+      />,
+    );
+
+    expect(await screen.findByText("Clinical Psychologist")).toBeDefined();
   });
 });

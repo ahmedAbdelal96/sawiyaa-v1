@@ -7,10 +7,10 @@ export const practitionerNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "main",
     items: [
-      { key: "dashboard", icon: <NavigationIcons.dashboard />, path: "/dashboard", namespace: "main" },
-      { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions", namespace: "main" },
-      { key: "instantBooking", icon: <NavigationIcons.instantBooking />, path: "/instant-booking", namespace: "main" },
-      { key: "availability", icon: <NavigationIcons.availability />, path: "/availability", namespace: "main" },
+      { key: "home", icon: <NavigationIcons.dashboard />, path: "/dashboard", namespace: "practitionerNavigation" },
+      { key: "sessions", icon: <NavigationIcons.calendar />, path: "/sessions", namespace: "practitionerNavigation" },
+      { key: "instantBooking", icon: <NavigationIcons.instantBooking />, path: "/instant-booking", namespace: "practitionerNavigation" },
+      { key: "schedule", icon: <NavigationIcons.availability />, path: "/availability", namespace: "practitionerNavigation" },
     ],
   },
   {
@@ -18,8 +18,8 @@ export const practitionerNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "workspace",
     items: [
-      { key: "messages", icon: <NavigationIcons.chat />, path: "/messages", namespace: "workspace" },
-      { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help", namespace: "workspace" },
+      { key: "messages", icon: <NavigationIcons.chat />, path: "/messages", namespace: "practitionerNavigation" },
+      { key: "helpCenter", icon: <NavigationIcons.page />, path: "/help", namespace: "practitionerNavigation" },
     ],
   },
   {
@@ -27,10 +27,10 @@ export const practitionerNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "main",
     items: [
-      { key: "wallet", icon: <NavigationIcons.wallet />, path: "/wallet", namespace: "main" },
-      { key: "ledger", icon: <NavigationIcons.ledger />, path: "/ledger", namespace: "main" },
-      { key: "promoCodes", icon: <NavigationIcons.promoCodes />, path: "/promo-codes", namespace: "main" },
-      { key: "settlements", icon: <NavigationIcons.settlements />, path: "/settlements", namespace: "main" },
+      { key: "earnings", icon: <NavigationIcons.wallet />, path: "/wallet", namespace: "practitionerNavigation" },
+      { key: "transactions", icon: <NavigationIcons.ledger />, path: "/ledger", namespace: "practitionerNavigation" },
+      { key: "promoCodes", icon: <NavigationIcons.promoCodes />, path: "/promo-codes", namespace: "practitionerNavigation" },
+      { key: "transfers", icon: <NavigationIcons.settlements />, path: "/settlements", namespace: "practitionerNavigation" },
     ],
   },
   {
@@ -38,11 +38,11 @@ export const practitionerNavigation: NavigationConfig = [
     titleKey: "title",
     namespace: "settings",
     items: [
-      { key: "profile", icon: <NavigationIcons.auth />, path: "/profile", namespace: "settings" },
-      { key: "specialties", icon: <NavigationIcons.practitioners />, path: "/specialties", namespace: "settings" },
-      { key: "credentials", icon: <NavigationIcons.page />, path: "/credentials", namespace: "settings" },
-      { key: "packageAvailability", icon: <NavigationIcons.settings />, path: "/settings", namespace: "settings" },
-      { key: "application", icon: <NavigationIcons.operations />, path: "/application", namespace: "settings" },
+      { key: "profile", icon: <NavigationIcons.auth />, path: "/profile", namespace: "practitionerNavigation" },
+      { key: "specialties", icon: <NavigationIcons.practitioners />, path: "/specialties", namespace: "practitionerNavigation" },
+      { key: "credentials", icon: <NavigationIcons.page />, path: "/credentials", namespace: "practitionerNavigation" },
+      { key: "packageAvailability", icon: <NavigationIcons.settings />, path: "/settings", namespace: "practitionerNavigation" },
+      { key: "application", icon: <NavigationIcons.operations />, path: "/application", namespace: "practitionerNavigation" },
     ],
   },
 ];

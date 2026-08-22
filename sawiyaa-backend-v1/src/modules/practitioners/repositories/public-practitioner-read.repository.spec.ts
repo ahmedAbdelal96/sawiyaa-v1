@@ -155,4 +155,88 @@ describe('PublicPractitionerReadRepository', () => {
       }),
     );
   });
+
+  it('adds bilingual live professional-content matching without changing legacy or specialty branches', async () => {
+    await repository.listPublic({
+      locale: 'ar',
+      search: 'family',
+      currencyCode: 'USD',
+    });
+
+    const call = (
+      prisma.practitionerProfile.findMany as unknown as jest.Mock
+    ).mock.calls[0][0] as {
+      where: { OR: Array<Record<string, unknown>> };
+    };
+
+    expect(call.where.OR).toEqual(
+      expect.arrayContaining([
+        {
+          user: {
+            displayName: {
+              contains: 'family',
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          professionalTitle: {
+            contains: 'family',
+            mode: 'insensitive',
+          },
+        },
+        {
+          bio: {
+            contains: 'family',
+            mode: 'insensitive',
+          },
+        },
+        {
+          professionalContentTranslations: {
+            some: {
+              locale: { in: ['ar', 'en'] },
+              OR: [
+                {
+                  professionalTitle: {
+                    contains: 'family',
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  bio: {
+                    contains: 'family',
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ]),
+    );
+  });
+
+  it('keeps the requested locale first while allowing the supported fallback locale', async () => {
+    await repository.listPublic({
+      locale: 'en',
+      search: 'family',
+    });
+
+    const where = (
+      prisma.practitionerProfile.findMany as unknown as jest.Mock
+    ).mock.calls[0][0].where as {
+      OR: Array<Record<string, unknown>>;
+    };
+    const translatedBranch = where.OR.find(
+      (branch) => 'professionalContentTranslations' in branch,
+    );
+
+    expect(translatedBranch).toEqual(
+      expect.objectContaining({
+        professionalContentTranslations: expect.objectContaining({
+          some: expect.objectContaining({ locale: { in: ['en', 'ar'] } }),
+        }),
+      }),
+    );
+  });
 });

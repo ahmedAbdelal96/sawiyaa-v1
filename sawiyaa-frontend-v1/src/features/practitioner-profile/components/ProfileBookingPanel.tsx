@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import type {
   PractitionerProfile,
   PublicPractitionerInstantBookingAvailability,
@@ -16,11 +16,7 @@ export default async function ProfileBookingPanel({
   profile,
   instantBookingAvailability,
 }: Props) {
-  const [t, locale] = await Promise.all([
-    getTranslations("practitioner-profile"),
-    getLocale(),
-  ]);
-  const isAr = locale === "ar";
+  const t = await getTranslations("practitioner-profile");
 
   return (
     <div id="booking-panel" className="space-y-4">
@@ -34,12 +30,10 @@ export default async function ProfileBookingPanel({
       <div id="weekly-availability" className="app-panel rounded-2xl p-4 sm:p-5">
         <div className="mb-3 space-y-0.5 border-b border-border-light/50 pb-3 dark:border-white/10">
           <h2 className="text-base font-bold text-text-primary dark:text-white/95">
-            {isAr ? "احجز موعد الجلسة" : "Book a Session Appointment"}
+            {t("booking.panelTitle")}
           </h2>
           <p className="text-xs text-text-secondary">
-            {isAr
-              ? "اختر اليوم والوقت المناسبين من جدول مواعيد المختص المتاحة"
-              : "Choose your preferred date and time from the practitioner's availability schedule"}
+            {t("booking.panelSubtitle")}
           </p>
         </div>
 

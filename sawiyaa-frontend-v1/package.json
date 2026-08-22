@@ -12,6 +12,8 @@
     "dev:lan:turbo": "next dev --turbopack -H 0.0.0.0 -p 3000",
     "i18n:check": "node scripts/validate-i18n.mjs",
     "ux-copy:check": "node scripts/validate-ux-copy.mjs",
+    "ux-copy:canonical": "node scripts/validate-web-product-copy.mjs",
+    "ux-copy:hardcoded": "node scripts/validate-web-hardcoded-copy.mjs",
     "validate": "npm run i18n:check && npm run ux-copy:check && npm run typecheck",
     "test:signup-routing": "node scripts/validate-signup-routing.mjs",
     "test:practitioner-consistency": "node scripts/validate-practitioner-consistency.mjs",

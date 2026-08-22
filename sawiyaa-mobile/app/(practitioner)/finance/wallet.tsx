@@ -19,40 +19,29 @@ import {
 import {
   formatDateShort,
   formatMoney,
-  monthYearLabel,
   settlementStatusLabel,
   settlementStatusTone,
 } from "../../../src/features/practitioner/finance/utils";
 import type { PractitionerSettlementItem } from "../../../src/features/practitioner/finance/types";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import {
-  CompactActionLink,
-  CompactEmptyState,
-  CompactSectionHeader,
-  resolvePractitionerTone,
-} from "../../../src/features/practitioner/ui/compact";
+import { resolvePractitionerTone } from "../../../src/features/practitioner/ui/compact";
 
 const PREVIEW_LIMIT = 3;
+type TranslateFn = ReturnType<typeof useTranslation>["t"];
 
-export default function PractitionerWalletScreen() {
+export default function PractitionerEarningsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { theme } = useTheme();
-
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
   const walletQuery = usePractitionerWalletSummary();
-  const settlementsQuery = usePractitionerSettlementItems({
-    page: 1,
-    limit: PREVIEW_LIMIT,
-  });
-
+  const transfersQuery = usePractitionerSettlementItems({ page: 1, limit: PREVIEW_LIMIT });
   const wallet = walletQuery.data?.item ?? null;
-  const recentSettlements = settlementsQuery.data?.items.slice(0, 3) ?? [];
 
   if (walletQuery.isLoading) {
     return (
-      <Screen bg="background" testID="practitioner-wallet-screen">
-        <Header title={t("practitioner.finance.wallet.title")} showBack />
+      <Screen bg="background" testID="practitioner-earnings-screen">
+        <Header title={t("practitioner.finance.product.earnings")} showBack />
         <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
       </Screen>
     );
@@ -60,8 +49,8 @@ export default function PractitionerWalletScreen() {
 
   if (walletQuery.isError) {
     return (
-      <Screen bg="background" testID="practitioner-wallet-screen">
-        <Header title={t("practitioner.finance.wallet.title")} showBack />
+      <Screen bg="background" testID="practitioner-earnings-screen">
+        <Header title={t("practitioner.finance.product.earnings")} showBack />
         <ErrorState
           fullScreen
           title={t("practitioner.finance.wallet.errorTitle")}
@@ -73,12 +62,16 @@ export default function PractitionerWalletScreen() {
   }
 
   return (
-    <Screen bg="background" testID="practitioner-wallet-screen">
+    <Screen bg="background" testID="practitioner-earnings-screen">
       <Header
-        title={t("practitioner.finance.wallet.title")}
+        title={t("practitioner.finance.product.earnings")}
         showBack
         rightElement={
-          <TouchableOpacity onPress={() => walletQuery.refetch()} style={styles.headerAction}>
+          <TouchableOpacity
+            accessibilityLabel={t("practitioner.finance.common.refresh")}
+            onPress={() => void walletQuery.refetch()}
+            style={styles.headerAction}
+          >
             <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
@@ -86,173 +79,111 @@ export default function PractitionerWalletScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Card variant="outlined" padding="sm" style={styles.summaryCard}>
-          <CompactSectionHeader
-            title={t("practitioner.finance.wallet.summary")}
-            subtitle={t("practitioner.finance.wallet.balanceHint")}
-          />
-
-          <View style={styles.balanceBlock}>
-            <Text color={theme.colors.textMuted} style={styles.balanceLabel}>
-              {t("practitioner.finance.wallet.available")}
-            </Text>
-            <Text weight="700" style={styles.balanceValue}>
-              {formatMoney(
-                wallet?.availableBalance ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-            </Text>
-          </View>
-
-          <View style={styles.metricGrid}>
-            <MetricCard
-              tone="warning"
-              label={t("practitioner.finance.wallet.pending")}
-              hint={t("practitioner.finance.wallet.hints.pending")}
+          <Text color={theme.colors.textMuted} style={styles.eyebrow}>
+            {t("practitioner.finance.product.available")}
+          </Text>
+          <Text weight="700" style={styles.balanceValue}>
+            {formatMoney(
+              wallet?.availableBalance ?? "0",
+              wallet?.currency,
+              locale,
+              t("practitioner.finance.common.currencyUnavailable"),
+            )}
+          </Text>
+          <View style={[styles.summaryList, { borderColor: theme.colors.borderLight }]}>
+            <SummaryLine
+              label={t("practitioner.finance.product.underReview")}
               value={formatMoney(
                 wallet?.pendingBalance ?? "0",
-                wallet?.currency ?? null,
+                wallet?.currency,
                 locale,
                 t("practitioner.finance.common.currencyUnavailable"),
               )}
             />
-            <MetricCard
-              tone="neutral"
-              label={t("practitioner.finance.wallet.reserved")}
-              hint={t("practitioner.finance.wallet.hints.reserved")}
-              value={formatMoney(
-                wallet?.reservedBalance ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-            />
-            <MetricCard
-              tone="success"
-              label={t("practitioner.finance.wallet.totalEarned")}
-              hint={t("practitioner.finance.wallet.hints.totalEarned")}
+            <SummaryLine
+              label={t("practitioner.finance.product.earnings")}
               value={formatMoney(
                 wallet?.totalEarned ?? "0",
-                wallet?.currency ?? null,
+                wallet?.currency,
                 locale,
                 t("practitioner.finance.common.currencyUnavailable"),
               )}
             />
-            <MetricCard
-              tone="info"
-              label={t("practitioner.finance.wallet.lifetimePaidOut")}
-              hint={t("practitioner.finance.wallet.hints.lifetimePaidOut")}
+            <SummaryLine
+              label={t("practitioner.finance.product.transferred")}
               value={formatMoney(
                 wallet?.lifetimePaidOut ?? "0",
-                wallet?.currency ?? null,
+                wallet?.currency,
                 locale,
                 t("practitioner.finance.common.currencyUnavailable"),
               )}
-            />
-          </View>
-
-          <View style={styles.detailRows}>
-            <DetailRow
-              label={t("practitioner.finance.wallet.lastLedgerEntryAt")}
-              value={formatDateShort(wallet?.lastLedgerEntryAt ?? null, locale)}
-            />
-            <DetailRow
-              label={t("practitioner.finance.wallet.updatedAt")}
-              value={formatDateShort(wallet?.updatedAt ?? null, locale)}
             />
           </View>
         </Card>
 
-        <Card variant="outlined" padding="sm">
-          <CompactSectionHeader
-            title={t("practitioner.finance.wallet.recentSettlements")}
-            action={
-              <CompactActionLink
-                label={t("practitioner.finance.common.viewAll")}
-                onPress={() => router.push("/(practitioner)/finance/settlements")}
-              />
-            }
-          />
-          {settlementsQuery.isLoading ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("practitioner.finance.product.recentTransfers")}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t("practitioner.finance.product.viewAllTransfers")}
+              onPress={() => router.push("/(practitioner)/finance/settlements")}
+            >
+              <Text weight="600" style={[styles.actionLink, { color: theme.colors.primary }]}>
+                {t("practitioner.finance.common.viewAll")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {transfersQuery.isLoading ? (
             <LoadingState message={t("practitioner.finance.common.loading")} />
-          ) : settlementsQuery.isError ? (
+          ) : transfersQuery.isError ? (
             <ErrorState
               title={t("practitioner.finance.settlements.errorTitle")}
               message={t("practitioner.finance.settlements.errorBody")}
-              onRetry={settlementsQuery.refetch}
+              onRetry={transfersQuery.refetch}
             />
-          ) : recentSettlements.length ? (
-            <View style={styles.listWrap}>
-              {recentSettlements.map((item) => (
-                <SettlementRow key={item.id} item={item} locale={locale} t={t} />
+          ) : transfersQuery.data?.items.length ? (
+            <View style={[styles.transferList, { borderTopColor: theme.colors.borderLight }]}>
+              {transfersQuery.data.items.map((item) => (
+                <TransferRow key={item.id} item={item} locale={locale} t={t} />
               ))}
             </View>
           ) : (
-            <CompactEmptyState
-              title={t("practitioner.finance.settlements.emptyTitle")}
-              description={t("practitioner.finance.settlements.emptyBody")}
-              icon={<Ionicons name="layers-outline" size={28} color={theme.colors.textMuted} />}
-            />
+            <Text color={theme.colors.textSecondary} style={styles.emptyText}>
+              {t("practitioner.finance.product.noTransfers")}
+            </Text>
           )}
-        </Card>
+        </View>
       </ScrollView>
     </Screen>
   );
 }
 
-function MetricCard({
-  label,
-  hint,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  hint: string;
-  value: string;
-  tone?: "neutral" | "success" | "warning" | "info";
-}) {
+function SummaryLine({ label, value }: { label: string; value: string }) {
   const { theme } = useTheme();
-  const palette = resolvePractitionerTone(theme, tone);
-
   return (
-    <View style={[styles.metricCard, { backgroundColor: palette.surface, borderColor: palette.border }]}>
-      <Text color={theme.colors.textMuted} style={styles.metricLabel}>
+    <View style={[styles.summaryLine, { borderBottomColor: theme.colors.borderLight }]}>
+      <Text color={theme.colors.textSecondary} style={styles.summaryLabel}>
         {label}
       </Text>
-      <Text weight="600" style={[styles.metricValue, { color: palette.accent }]}>
-        {value}
-      </Text>
-      <Text color={theme.colors.textMuted} style={styles.metricHint}>
-        {hint}
-      </Text>
-    </View>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={[styles.detailRow, { borderColor: theme.colors.borderLight }]}>
-      <Text color={theme.colors.textMuted} style={styles.detailLabel}>
-        {label}
-      </Text>
-      <Text weight="600" style={styles.detailValue} numberOfLines={1}>
+      <Text weight="600" style={styles.summaryValue} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
 
-function SettlementRow({
+function TransferRow({
   item,
   locale,
   t,
 }: {
   item: PractitionerSettlementItem;
   locale: string;
-  t: ReturnType<typeof useTranslation>["t"];
+  t: TranslateFn;
 }) {
   const { theme } = useTheme();
   const palette = resolvePractitionerTone(
@@ -261,42 +192,34 @@ function SettlementRow({
       ? "success"
       : item.status === "FAILED" || item.status === "CANCELLED"
         ? "danger"
-        : item.status === "READY" || item.status === "PROCESSING"
-          ? "warning"
-          : "neutral",
+        : "warning",
+  );
+  const amount = formatMoney(
+    item.amountNet,
+    item.currency,
+    locale,
+    t("practitioner.finance.common.currencyUnavailable"),
   );
 
   return (
     <View
-      style={[
-        styles.settlementRow,
-        { backgroundColor: palette.surface, borderColor: palette.border },
-      ]}
+      accessible
+      accessibilityLabel={`${t("practitioner.finance.product.transfers")}. ${amount}. ${settlementStatusLabel(item.status, t)}. ${formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}`}
+      style={[styles.transferRow, { borderBottomColor: theme.colors.borderLight }]}
     >
-      <View style={styles.settlementTop}>
-        <View style={styles.settlementText}>
-          <Text weight="600" style={styles.settlementTitle} numberOfLines={1}>
-            {monthYearLabel(item.batchPeriodYear, item.batchPeriodMonth, locale)}
-          </Text>
-          <Text color={theme.colors.textMuted} style={styles.settlementMeta} numberOfLines={1}>
-            {formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}
-          </Text>
-        </View>
-        <Text weight="600" style={[styles.settlementAmount, { color: palette.accent }]}>
-          {formatMoney(
-            item.amountNet,
-            item.currency ?? null,
-            locale,
-            t("practitioner.finance.common.currencyUnavailable"),
-          )}
+      <View style={styles.transferCopy}>
+        <Text weight="600" style={styles.transferTitle} numberOfLines={1}>
+          {t("practitioner.finance.product.transfer")}
+        </Text>
+        <Text color={theme.colors.textMuted} style={styles.transferMeta} numberOfLines={1}>
+          {formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}
         </Text>
       </View>
-
-      <View style={styles.badgeRow}>
-        <StatusBadge
-          label={settlementStatusLabel(item.status, locale)}
-          status={settlementStatusTone(item.status)}
-        />
+      <View style={styles.transferAmountWrap}>
+        <Text weight="600" style={[styles.transferAmount, { color: palette.accent }]} numberOfLines={1}>
+          {amount}
+        </Text>
+        <StatusBadge label={settlementStatusLabel(item.status, t)} status={settlementStatusTone(item.status)} />
       </View>
     </View>
   );
@@ -306,103 +229,90 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    paddingBottom: 24,
-    gap: 10,
+    paddingBottom: 28,
+    gap: 18,
   },
   headerAction: {
     padding: 8,
   },
   summaryCard: {
-    gap: 10,
+    gap: 7,
   },
-  balanceBlock: {
-    borderRadius: 16,
-    paddingVertical: 8,
-    gap: 4,
-  },
-  balanceLabel: {
-    fontSize: 10,
+  eyebrow: {
+    fontSize: 11,
   },
   balanceValue: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 25,
+    lineHeight: 32,
   },
-  metricGrid: {
+  summaryList: {
+    borderTopWidth: 1,
+    marginTop: 5,
+  },
+  summaryLine: {
+    minHeight: 34,
+    borderBottomWidth: 1,
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  metricCard: {
-    width: "48%",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 2,
-  },
-  metricLabel: {
-    fontSize: 10,
-  },
-  metricValue: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  metricHint: {
-    fontSize: 9,
-    lineHeight: 12,
-  },
-  detailRows: {
-    gap: 6,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  detailLabel: {
-    fontSize: 10,
-    flex: 1,
-  },
-  detailValue: {
-    fontSize: 11,
-    flexShrink: 0,
-    maxWidth: "58%",
-    textAlign: "left",
-  },
-  listWrap: {
-    gap: 6,
-  },
-  settlementRow: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: 8,
-    gap: 5,
-  },
-  settlementTop: {
-    flexDirection: "row",
     justifyContent: "space-between",
     gap: 8,
   },
-  settlementText: {
+  summaryLabel: {
+    fontSize: 10,
     flex: 1,
   },
-  settlementTitle: {
-    fontSize: 12,
+  summaryValue: {
+    fontSize: 11,
+    maxWidth: "58%",
+    textAlign: "left",
   },
-  settlementMeta: {
-    fontSize: 9,
-    marginTop: 1,
+  section: {
+    gap: 0,
   },
-  settlementAmount: {
-    fontSize: 12,
-  },
-  badgeRow: {
+  sectionHeader: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 5,
+  },
+  sectionTitle: {
+    fontSize: 15,
+  },
+  actionLink: {
+    fontSize: 11,
+  },
+  transferList: {
+    borderTopWidth: 1,
+  },
+  transferRow: {
+    minHeight: 62,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  transferCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  transferTitle: {
+    fontSize: 11,
+  },
+  transferMeta: {
+    fontSize: 9,
+  },
+  transferAmountWrap: {
+    alignItems: "flex-end",
+    gap: 3,
+    maxWidth: "53%",
+  },
+  transferAmount: {
+    fontSize: 11,
+  },
+  emptyText: {
+    fontSize: 12,
+    paddingVertical: 14,
   },
 });

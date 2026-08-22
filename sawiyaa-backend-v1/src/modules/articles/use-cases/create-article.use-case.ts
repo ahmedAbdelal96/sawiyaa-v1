@@ -10,6 +10,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { CreateArticleDto } from '../dto/create-article.dto';
 import { ArticlePresenter } from '../presenters/article.presenter';
 import { ArticleRepository } from '../repositories/article.repository';
+import { extractStoredFileIdFromUrl } from '@modules/files/file-reference.utils';
 
 @Injectable()
 export class CreateArticleUseCase {
@@ -38,6 +39,7 @@ export class CreateArticleUseCase {
         primaryCategoryId: resolvedCategoryId,
         status: ArticleStatus.DRAFT,
         coverImageUrl: payload.coverImageUrl?.trim() || null,
+        coverStoredFileId: extractStoredFileIdFromUrl(payload.coverImageUrl, 'article-covers'),
         featuredImageAlt: payload.featuredImageAlt?.trim() || null,
         translations: {
           create: {

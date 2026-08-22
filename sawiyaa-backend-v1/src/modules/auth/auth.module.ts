@@ -10,6 +10,7 @@ import { JwtRefreshAuthGuard } from '@common/guards/authentication/jwt-refresh-a
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { CurrentAuthUserController } from './controllers/current-auth-user.controller';
 import { PatientAuthController } from './controllers/patient-auth.controller';
+import { TraineeAuthController } from './controllers/trainee-auth.controller';
 import { PractitionerAuthController } from './controllers/practitioner-auth.controller';
 import { AuthUserContextMapper } from './mappers/auth-user-context.mapper';
 import { AuthIdentityRepository } from './repositories/auth-identity.repository';
@@ -35,13 +36,16 @@ import { IssueAuthTokensUseCase } from './use-cases/issue-auth-tokens.use-case';
 import { InvalidateUserTokensUseCase } from './use-cases/invalidate-user-tokens.use-case';
 import { LoginAdminUseCase } from './use-cases/login-admin.use-case';
 import { LoginPatientWithEmailPasswordUseCase } from './use-cases/login-patient-with-email-password.use-case';
+import { LoginTraineeWithEmailPasswordUseCase } from './use-cases/login-trainee-with-email-password.use-case';
 import { LoginPractitionerPasswordUseCase } from './use-cases/login-practitioner-password.use-case';
 import { LogoutAdminUseCase } from './use-cases/logout-admin.use-case';
 import { LogoutPatientUseCase } from './use-cases/logout-patient.use-case';
+import { LogoutTraineeUseCase } from './use-cases/logout-trainee.use-case';
 import { LogoutPractitionerUseCase } from './use-cases/logout-practitioner.use-case';
 import { RefreshAdminTokenUseCase } from './use-cases/refresh-admin-token.use-case';
 import { RefreshAuthSessionUseCase } from './use-cases/refresh-auth-session.use-case';
 import { RefreshPatientTokenUseCase } from './use-cases/refresh-patient-token.use-case';
+import { RefreshTraineeTokenUseCase } from './use-cases/refresh-trainee-token.use-case';
 import { RefreshPractitionerTokenUseCase } from './use-cases/refresh-practitioner-token.use-case';
 import { RegisterPatientWithEmailPasswordUseCase } from './use-cases/register-patient-with-email-password.use-case';
 import { RegisterPatientWithGoogleUseCase } from './use-cases/register-patient-with-google.use-case';
@@ -67,11 +71,13 @@ import { CountryRepository } from '../patients/repositories/country.repository';
 import { PractitionerLoginOtpConfigurationWarningService } from './services/practitioner-login-otp-configuration-warning.service';
 import { PhoneNumberValidationService } from '@common/validation/phone-number-validation.service';
 import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/services/practitioner-specialty-integrity.service';
+import { PractitionerProfessionalContentAuthoringService } from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
 
 @Module({
   imports: [JwtModule.register({}), VerificationModule, PresenceModule],
   controllers: [
     PatientAuthController,
+    TraineeAuthController,
     PractitionerAuthController,
     AdminAuthController,
     CurrentAuthUserController,
@@ -109,8 +115,11 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     RegisterPatientWithGoogleUseCase,
     RegisterPatientWithEmailPasswordUseCase,
     LoginPatientWithEmailPasswordUseCase,
+    LoginTraineeWithEmailPasswordUseCase,
     RefreshPatientTokenUseCase,
+    RefreshTraineeTokenUseCase,
     LogoutPatientUseCase,
+    LogoutTraineeUseCase,
     RequestPatientPasswordResetUseCase,
     VerifyPatientPasswordResetOtpUseCase,
     ConfirmPatientPasswordResetUseCase,
@@ -133,6 +142,7 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     PractitionerLoginOtpConfigurationWarningService,
     PhoneNumberValidationService,
     PractitionerSpecialtyIntegrityService,
+    PractitionerProfessionalContentAuthoringService,
   ],
   exports: [
     JwtAccessAuthGuard,
@@ -143,6 +153,8 @@ import { PractitionerSpecialtyIntegrityService } from '@modules/practitioners/se
     UserPhoneRepository,
     AuthIdentityRepository,
     VerifyPasswordUseCase,
+    HashPasswordUseCase,
+    InvalidateUserTokensUseCase,
   ],
 })
 export class AuthModule implements NestModule {

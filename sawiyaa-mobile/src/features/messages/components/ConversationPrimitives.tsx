@@ -11,10 +11,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../../../components/ui";
 import { useTheme } from "../../../providers/ThemeProvider";
 import { useAppDirection } from "../../../i18n/direction";
+import { attachmentKindLabel, formatAttachmentSize, isAttachmentImage } from "../attachment-utils";
 
 type AttachmentItem = {
   key: string;
   label: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize?: number | null;
+  imageHeaders?: Record<string, string>;
+  onOpen?: () => void;
 };
 
 // Helper function to check if text starts with English letters
@@ -42,6 +48,7 @@ export function ConversationBubble({
   senderLabel: _senderLabel,
   onRetry,
   retryLabel,
+  onAttachmentOpen,
 }: {
   isMine: boolean;
   text: string;
@@ -53,8 +60,10 @@ export function ConversationBubble({
   senderLabel?: string;
   onRetry?: () => void;
   retryLabel?: string;
+  onAttachmentOpen?: (attachment: AttachmentItem) => void;
 }) {
   const { isRtl } = useAppDirection();
+  const { i18n, t } = useTranslation();
 
   // Clinical Warmth Colors
   const outgoingBg = "#24564F"; // Deep Teal
@@ -124,8 +133,12 @@ export function ConversationBubble({
       {attachments?.length ? (
         <View style={bubbleStyles.attachmentsWrap}>
           {attachments.map((attachment) => (
-            <View
+            <TouchableOpacity
               key={attachment.key}
+              onPress={() => onAttachmentOpen?.(attachment)}
+              disabled={!onAttachmentOpen}
+              accessibilityRole="button"
+              accessibilityLabel={isAttachmentImage(attachment.mimeType) ? t("messages.thread.previewAttachment") : t("messages.thread.openAttachment")}
               style={[
                 bubbleStyles.attachmentChip,
                 {
@@ -138,11 +151,10 @@ export function ConversationBubble({
                 },
               ]}
             >
-              <Ionicons
-                name="attach-outline"
-                size={14}
-                color={isMine ? "#FFFFFF" : textMuted}
-              />
+              {isAttachmentImage(attachment.mimeType) ? (
+                <Image source={{ uri: attachment.fileUrl, headers: attachment.imageHeaders }} style={bubbleStyles.imageThumb} resizeMode="cover" />
+              ) : <Ionicons name="document-text-outline" size={18} color={isMine ? "#FFFFFF" : textMuted} />}
+              <View style={bubbleStyles.attachmentTextWrap}>
               <Text
                 style={[
                   bubbleStyles.attachmentText,
@@ -152,7 +164,11 @@ export function ConversationBubble({
               >
                 {attachment.label}
               </Text>
-            </View>
+                <Text style={[bubbleStyles.attachmentMeta, { color: isMine ? "rgba(255,255,255,.72)" : textMuted }]}>
+                  {attachmentKindLabel(attachment.mimeType, i18n.language.startsWith("ar"))}{formatAttachmentSize(attachment.fileSize) ? ` • ${formatAttachmentSize(attachment.fileSize)}` : ""}
+                </Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </View>
       ) : null}
@@ -284,6 +300,11 @@ export function ConversationComposer({
   placeholder,
   error,
   hint,
+  attachments = [],
+  onRemoveAttachment,
+  onRetryAttachment,
+  onChooseAttachment,
+  attachmentEnabled = true,
 }: {
   value: string;
   onChangeText: (value: string) => void;
@@ -292,6 +313,11 @@ export function ConversationComposer({
   placeholder: string;
   error?: string | null;
   hint?: string | null;
+  attachments?: { localId: string; name: string; mimeType: string; size: number | null; state: string; errorCode?: string | null }[];
+  onRemoveAttachment?: (localId: string) => void;
+  onRetryAttachment?: (localId: string) => void;
+  onChooseAttachment?: () => void;
+  attachmentEnabled?: boolean;
 }) {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -328,6 +354,32 @@ export function ConversationComposer({
         </View>
       ) : null}
 
+      {attachments.length > 0 ? (
+        <View style={composerStyles.tray}>
+          {attachments.map((attachment) => (
+            <View key={attachment.localId} style={composerStyles.trayItem}>
+              <Ionicons name={attachment.mimeType.startsWith("image/") ? "image-outline" : "document-text-outline"} size={18} color="#24564F" />
+              <View style={composerStyles.trayText}>
+                <Text numberOfLines={1} style={composerStyles.trayName}>{attachment.name}</Text>
+                <Text color="#6F7E78" style={composerStyles.trayMeta}>
+                  {attachment.state === "uploading" ? t("messages.thread.uploadingAttachment") : attachment.state === "failed" ? t("messages.thread.attachmentFailed") : attachment.state === "ready" ? t("messages.thread.attachmentReady") : formatAttachmentSize(attachment.size)}
+                </Text>
+              </View>
+              {attachment.state === "failed" && onRetryAttachment ? (
+                <TouchableOpacity onPress={() => onRetryAttachment(attachment.localId)} accessibilityRole="button" accessibilityLabel={t("messages.thread.retryAttachment")} style={composerStyles.trayAction}>
+                  <Ionicons name="refresh-outline" size={18} color="#24564F" />
+                </TouchableOpacity>
+              ) : null}
+              {onRemoveAttachment ? (
+                <TouchableOpacity onPress={() => onRemoveAttachment(attachment.localId)} accessibilityRole="button" accessibilityLabel={t("messages.thread.removeAttachment")} style={composerStyles.trayAction}>
+                  <Ionicons name="close" size={18} color="#6F7E78" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <View
         style={[
           composerStyles.row,
@@ -335,16 +387,17 @@ export function ConversationComposer({
         ]}
       >
         <TouchableOpacity
-          disabled={true}
+          disabled={!attachmentEnabled || !onChooseAttachment}
+          onPress={onChooseAttachment}
           style={{
-            opacity: 0.4,
-            padding: 8,
+            opacity: attachmentEnabled ? 1 : 0.4,
+            padding: 6,
             justifyContent: "center",
             alignItems: "center",
             alignSelf: "center",
           }}
           accessibilityRole="button"
-          accessibilityLabel={t("messages.thread.attachmentComingSoon", "File sharing will be available soon.")}
+          accessibilityLabel={t("messages.thread.chooseAttachment")}
         >
           <Ionicons name="attach-outline" size={24} color="#6F7E78" />
         </TouchableOpacity>
@@ -363,6 +416,7 @@ export function ConversationComposer({
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
+            accessibilityLabel={t("messages.thread.composerInputLabel")}
             placeholderTextColor="#6F7E78"
             multiline
             maxLength={4000}
@@ -381,7 +435,7 @@ export function ConversationComposer({
           onPress={onSend}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityLabel={isRtl ? "إرسال" : "Send"}
+          accessibilityLabel={t("messages.thread.send")}
           style={[
             composerStyles.sendBtn,
             {
@@ -412,6 +466,7 @@ export function ConversationComposer({
       ) : null}
     </View>
   );
+
 }
 
 const bubbleStyles = StyleSheet.create({
@@ -510,6 +565,19 @@ const bubbleStyles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     flexShrink: 1,
+  },
+  attachmentTextWrap: {
+    flex: 1,
+    minWidth: 0,
+  },
+  attachmentMeta: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  imageThumb: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
   },
   metaRow: {
     alignItems: "center",
@@ -612,5 +680,37 @@ const composerStyles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     marginTop: 2,
+  },
+  tray: {
+    gap: 6,
+  },
+  trayItem: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E8DED0",
+    backgroundColor: "#FCFAF6",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+  },
+  trayText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  trayName: {
+    color: "#1F332F",
+    fontSize: 12,
+  },
+  trayMeta: {
+    fontSize: 10,
+    marginTop: 2,
+  },
+  trayAction: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

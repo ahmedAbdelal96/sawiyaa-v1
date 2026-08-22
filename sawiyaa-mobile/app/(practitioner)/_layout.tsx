@@ -5,7 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { usePractitionerPresenceHeartbeat } from "../../src/features/practitioner/presence/hooks";
+import { useCanonicalUnreadSummary } from "../../src/features/messages/hooks";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../src/i18n/direction";
 import {
   MOBILE_TAB_BAR_HEIGHT,
   MOBILE_TAB_ICON_SIZE,
@@ -23,8 +25,15 @@ export default function PractitionerLayout() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { direction } = useAppDirection();
   const { role, user, isLoading } = useAuth();
   const isApprovedPractitioner = user?.practitionerStatus === "APPROVED";
+  const messagesSummaryQuery = useCanonicalUnreadSummary(
+    "practitioner",
+    !isLoading && role === "practitioner" && isApprovedPractitioner,
+    { refetchInterval: 30_000 },
+  );
+  const unreadMessages = messagesSummaryQuery.data?.item.totalUnreadMessages ?? 0;
 
   usePractitionerPresenceHeartbeat(
     !isLoading && role === "practitioner" && isApprovedPractitioner,
@@ -40,6 +49,7 @@ export default function PractitionerLayout() {
         tabBarActiveBackgroundColor: theme.colors.primarySoft,
         tabBarInactiveBackgroundColor: theme.colors.surfaceRaised,
         tabBarStyle: {
+          direction,
           backgroundColor: theme.colors.surfaceRaised,
           borderTopColor: theme.colors.borderStrong,
           borderTopWidth: 1,
@@ -77,7 +87,17 @@ export default function PractitionerLayout() {
           href: isApprovedPractitioner ? undefined : null,
           title: t("practitioner.tab.dashboard"),
           tabBarIcon: ({ color }) => (
-            <TabIcon name="grid-outline" color={color} />
+            <TabIcon name="home-outline" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="availability/index"
+        options={{
+          href: isApprovedPractitioner ? undefined : null,
+          title: t("practitioner.tab.availability"),
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="time-outline" color={color} />
           ),
         }}
       />
@@ -92,12 +112,18 @@ export default function PractitionerLayout() {
         }}
       />
       <Tabs.Screen
-        name="availability/index"
+        name="messages/index"
         options={{
           href: isApprovedPractitioner ? undefined : null,
-          title: t("practitioner.tab.availability"),
+          title: t("practitioner.tab.messages"),
+          tabBarBadge:
+            unreadMessages > 0
+              ? unreadMessages > 99
+                ? "99+"
+                : unreadMessages
+              : undefined,
           tabBarIcon: ({ color }) => (
-            <TabIcon name="time-outline" color={color} />
+            <TabIcon name="chatbubbles-outline" color={color} />
           ),
         }}
       />
@@ -122,6 +148,10 @@ export default function PractitionerLayout() {
         }}
       />
       <Tabs.Screen
+        name="onboarding"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="support/index"
         options={{ href: null }}
       />
@@ -138,16 +168,8 @@ export default function PractitionerLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
-        name="onboarding"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="messages/index"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
         name="messages/[id]"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="care-chat/index"
@@ -159,7 +181,7 @@ export default function PractitionerLayout() {
       />
       <Tabs.Screen
         name="care-chat/[id]"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="finance/index"
@@ -183,7 +205,7 @@ export default function PractitionerLayout() {
       />
       <Tabs.Screen
         name="promo-codes/[id]"
-        options={{ href: null, tabBarStyle: { display: "none" } }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="sessions/[id]"

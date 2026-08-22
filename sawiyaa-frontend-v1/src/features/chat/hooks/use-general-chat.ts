@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   closeGeneralChatConversation,
   getSessionGeneralChatConversation,
@@ -11,28 +12,44 @@ import type { ListGeneralChatMessagesParams } from "../types/general-chat.types"
 
 export const generalChatQueryKeys = {
   all: ["general-chat"] as const,
-  sessionConversation: (sessionId: string) =>
-    [...generalChatQueryKeys.all, "session-conversation", sessionId] as const,
+  sessionConversation: (sessionId: string, locale: string) =>
+    [
+      ...generalChatQueryKeys.all,
+      "session-conversation",
+      sessionId,
+      locale,
+    ] as const,
   messages: (conversationId: string, params?: ListGeneralChatMessagesParams) =>
-    [...generalChatQueryKeys.all, "messages", conversationId, params ?? {}] as const,
+    [
+      ...generalChatQueryKeys.all,
+      "messages",
+      conversationId,
+      params ?? {},
+    ] as const,
 };
 
 export function useOpenSessionGeneralChat(sessionId: string | null) {
   const queryClient = useQueryClient();
+  const locale = useLocale();
 
   return useMutation({
     mutationFn: async () => openSessionGeneralChat(sessionId!),
     onSuccess: (data) => {
       if (sessionId) {
-        queryClient.setQueryData(generalChatQueryKeys.sessionConversation(sessionId), data);
+        queryClient.setQueryData(
+          generalChatQueryKeys.sessionConversation(sessionId, locale),
+          data,
+        );
       }
     },
   });
 }
 
 export function useSessionGeneralChatConversation(sessionId: string | null) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: generalChatQueryKeys.sessionConversation(sessionId ?? ""),
+    queryKey: generalChatQueryKeys.sessionConversation(sessionId ?? "", locale),
     queryFn: () => getSessionGeneralChatConversation(sessionId!),
     enabled: Boolean(sessionId),
     retry: false,
@@ -70,7 +87,8 @@ export function useSendGeneralChatMessage(conversationId: string | null) {
 
 export function useUploadGeneralChatAttachment(conversationId: string | null) {
   return useMutation({
-    mutationFn: (file: File) => uploadGeneralChatAttachment(conversationId!, file),
+    mutationFn: (file: File) =>
+      uploadGeneralChatAttachment(conversationId!, file),
   });
 }
 
@@ -83,4 +101,3 @@ export function useCloseGeneralChatConversation(conversationId: string | null) {
     },
   });
 }
-

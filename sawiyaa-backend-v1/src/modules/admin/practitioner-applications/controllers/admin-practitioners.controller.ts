@@ -12,6 +12,7 @@ import {
   StreamableFile,
   UseGuards,
   ParseUUIDPipe,
+  Optional,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -54,6 +55,8 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { PermissionKey } from '@common/enums/permission-key.enum';
+import { ManagePractitionerRequirementUseCase } from '../use-cases/manage-practitioner-requirement.use-case';
+import { UpdatePractitionerRequirementDto } from '../dto/update-practitioner-requirement.dto';
 
 /**
  * Admin practitioner directory controller.
@@ -73,6 +76,7 @@ export class AdminPractitionersController {
     private readonly getAdminPractitionerAvatarFileUseCase: GetAdminPractitionerAvatarFileUseCase,
     private readonly managePractitionerPublicationUseCase: ManagePractitionerPublicationUseCase,
     private readonly getAdminPractitionerDetailsUseCase: GetAdminPractitionerDetailsUseCase,
+    @Optional() private readonly managePractitionerRequirementUseCase: ManagePractitionerRequirementUseCase,
   ) {}
 
   @Get(':id')
@@ -95,7 +99,7 @@ export class AdminPractitionersController {
   }
 
   @Get(':id/publication')
-  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_READ)
+  @Permissions(PermissionKey.PRACTITIONER_PUBLICATION_READ)
   @ApiOperation({ summary: 'Get practitioner publication state and readiness' })
   @ApiResponse({ status: 200, type: PractitionerPublicationResponseDto })
   getPublication(@Param('id') id: string) {
@@ -105,7 +109,7 @@ export class AdminPractitionersController {
   }
 
   @Patch(':id/publication')
-  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @Permissions(PermissionKey.PRACTITIONER_PUBLICATION_WRITE)
   @ApiOperation({ summary: 'Publish or unpublish a practitioner profile' })
   @ApiResponse({ status: 200, type: PractitionerPublicationSuccessResponseDto })
   updatePublication(
@@ -119,6 +123,24 @@ export class AdminPractitionersController {
       actorUserId: user.id,
       locale,
       isPublished: body.isPublished,
+      reason: body.reason,
+    });
+  }
+
+  @Patch(':id/requirements/:requirementId')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @ApiOperation({ summary: 'Satisfy, reject, or reopen a practitioner requirement' })
+  updateRequirement(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('requirementId', new ParseUUIDPipe()) requirementId: string,
+    @Body() body: UpdatePractitionerRequirementDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    return this.managePractitionerRequirementUseCase.execute({
+      practitionerId: id,
+      requirementId,
+      actorUserId: currentUser.id,
+      action: body.action,
       reason: body.reason,
     });
   }
@@ -177,6 +199,7 @@ export class AdminPractitionersController {
   ) {
     const avatar = await this.getAdminPractitionerAvatarFileUseCase.execute(id);
     response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'private, max-age=300');
     return new StreamableFile(createReadStream(avatar.absolutePath));
   }

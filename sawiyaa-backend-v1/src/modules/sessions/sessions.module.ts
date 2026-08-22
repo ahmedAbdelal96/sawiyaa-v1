@@ -12,6 +12,7 @@ import { ConfigModule } from '@modules/config/config.module';
 import { ChatModule } from '@modules/chat/chat.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
 import { PatientSessionsController } from './controllers/patient-sessions.controller';
 import { PractitionerSessionsController } from './controllers/practitioner-sessions.controller';
@@ -99,6 +100,7 @@ import { ResolvePractitionerSessionCommandActionsService } from './services/reso
     forwardRef(() => PaymentsModule),
     ConfigModule,
     ChatModule,
+    PractitionersModule,
   ],
   controllers: [
     PatientSessionsController,

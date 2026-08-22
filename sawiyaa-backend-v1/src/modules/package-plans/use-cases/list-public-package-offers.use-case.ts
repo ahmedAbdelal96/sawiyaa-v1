@@ -7,6 +7,11 @@ import { PackagePlanRepository } from '../repositories/package-plan.repository';
 import { PackagePlanPolicyService } from '../services/package-plan-policy.service';
 import { PackageQuoteCalculatorService } from '../services/package-quote-calculator.service';
 import { PackagePlanQuotePresenter } from '../presenters/package-plan-quote.presenter';
+import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { getProfessionalContentSearchLocales } from '@modules/practitioners/utils/practitioner-professional-content.util';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
+import { resolvePackageProfessionalTitle } from '../utils/resolve-package-professional-title.util';
 import {
   PublicPackageOffersQueryDto,
   PackageOfferSortOption,
@@ -70,6 +75,8 @@ export class ListPublicPackageOffersUseCase {
     private readonly packagePlanQuotePresenter: PackagePlanQuotePresenter,
     private readonly packagePlanPolicyService: PackagePlanPolicyService,
     private readonly packageQuoteCalculatorService: PackageQuoteCalculatorService,
+    private readonly professionalContentRepository: PractitionerProfessionalContentRepository,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
@@ -101,6 +108,7 @@ export class ListPublicPackageOffersUseCase {
 
     // 2. Build practitioner query conditions
     const where: Prisma.PractitionerProfileWhereInput = {
+      ...publicPractitionerPricingWhere(),
       status: 'APPROVED',
       isPublicProfilePublished: true,
       acceptsPackages: true,
@@ -115,6 +123,24 @@ export class ListPublicPackageOffersUseCase {
         { user: { displayName: { contains: searchStr, mode: 'insensitive' } } },
         { professionalTitle: { contains: searchStr, mode: 'insensitive' } },
         { bio: { contains: searchStr, mode: 'insensitive' } },
+        {
+          professionalContentTranslations: {
+            some: {
+              locale: {
+                in: getProfessionalContentSearchLocales(input.locale),
+              },
+              OR: [
+                {
+                  professionalTitle: {
+                    contains: searchStr,
+                    mode: 'insensitive',
+                  },
+                },
+                { bio: { contains: searchStr, mode: 'insensitive' } },
+              ],
+            },
+          },
+        },
       ];
     }
 
@@ -175,6 +201,16 @@ export class ListPublicPackageOffersUseCase {
       },
     });
 
+    const professionalContentRecords =
+      await this.professionalContentRepository.findByPractitionerProfileIds(
+        Array.from(
+          new Set(practitioners.map((practitioner) => practitioner.id)),
+        ),
+      );
+    const professionalContentById = new Map(
+      professionalContentRecords.map((record) => [record.id, record]),
+    );
+
     // 3. Generate offer combinations and calculate quotes
     const offerItems: PackageOfferItemViewModel[] = [];
 
@@ -188,6 +224,12 @@ export class ListPublicPackageOffersUseCase {
           id: s.specialty.id,
           name: trans?.title || 'Specialty',
         };
+      });
+      const professionalTitle = resolvePackageProfessionalTitle({
+        requestedLocale: input.locale,
+        resolver: this.professionalContentResolver,
+        record: professionalContentById.get(practitioner.id),
+        legacyProfessionalTitle: practitioner.professionalTitle,
       });
 
       for (const plan of plans) {
@@ -241,7 +283,7 @@ export class ListPublicPackageOffersUseCase {
             publicSlug: practitioner.publicSlug || practitioner.id,
             displayName: practitionerDisplayName,
             avatarUrl: practitioner.avatarUrl,
-            professionalTitle: practitioner.professionalTitle,
+            professionalTitle,
             specialties,
           },
           packagePlan: {

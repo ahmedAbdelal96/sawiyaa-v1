@@ -105,7 +105,10 @@ export class PractitionerAuthController {
       ipAddress: request.ip ?? null,
       userAgent: request.headers['user-agent'] ?? null,
     });
-    return { message: this.i18nService.t('auth.success.passwordChanged', locale), currentSessionInvalidated: true };
+    return {
+      message: this.i18nService.t('auth.success.passwordChanged', locale),
+      currentSessionInvalidated: true,
+    };
   }
 
   /** Registration creates only the practitioner auth/account baseline and defers onboarding to the dedicated modules. */
@@ -134,14 +137,6 @@ export class PractitionerAuthController {
       phoneCountryCode: dto.phoneCountryCode,
       password: dto.password,
       displayName: dto.displayName,
-      practitionerType: dto.practitionerType,
-      professionalTitle: dto.professionalTitle,
-      bio: dto.bio,
-      yearsOfExperience: dto.yearsOfExperience,
-      countryCode: dto.countryCode,
-      primarySpecialtyCategoryId: dto.primarySpecialtyCategoryId,
-      specialtyIds: dto.specialtyIds,
-      initialCredential: dto.initialCredential,
       locale,
     });
 
@@ -224,11 +219,18 @@ export class PractitionerAuthController {
     @Body() dto: Pick<PractitionerVerifyOtpDto, 'challengeId'>,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    const current = await this.otpChallengeRepository.findActiveById(dto.challengeId);
+    const current = await this.otpChallengeRepository.findActiveById(
+      dto.challengeId,
+    );
     const isPractitioner = current?.user?.roles.some(
       (role) => role.role === UserRoleType.PRACTITIONER,
     );
-    if (!current || current.purpose !== OtpPurpose.PRACTITIONER_LOGIN || !current.userId || !isPractitioner) {
+    if (
+      !current ||
+      current.purpose !== OtpPurpose.PRACTITIONER_LOGIN ||
+      !current.userId ||
+      !isPractitioner
+    ) {
       throw new BadRequestException({
         messageKey: 'auth.errors.otpChallengeInvalid',
         error: 'OTP_CHALLENGE_INVALID',
@@ -327,7 +329,10 @@ export class PractitionerAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
+        maxAge: Math.max(
+          0,
+          result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+        ),
       });
     }
 
@@ -382,7 +387,10 @@ export class PractitionerAuthController {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
-        maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
+        maxAge: Math.max(
+          0,
+          result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+        ),
       });
     }
 
@@ -464,11 +472,13 @@ export class PractitionerAuthController {
     @Res({ passthrough: true }) res: Response,
     @CurrentLocale() locale: SupportedLocale,
   ) {
-    const result = await this.verifyPractitionerPasswordResetOtpUseCase.execute({
-      email: dto.email,
-      code: dto.code,
-      locale,
-    });
+    const result = await this.verifyPractitionerPasswordResetOtpUseCase.execute(
+      {
+        email: dto.email,
+        code: dto.code,
+        locale,
+      },
+    );
     this.setPasswordResetCookie(res, result.resetToken, result.expiresAt);
     const { resetToken: _resetToken, ...safeResult } = result;
     return safeResult;
@@ -498,8 +508,14 @@ export class PractitionerAuthController {
       deviceContext: getRequestDeviceContext(request),
     });
     res.cookie('sawiyaa_refresh_token', result.tokens.refreshToken, {
-      httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/',
-      maxAge: Math.max(0, result.tokens.refreshTokenExpiresAt.getTime() - Date.now()),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: Math.max(
+        0,
+        result.tokens.refreshTokenExpiresAt.getTime() - Date.now(),
+      ),
     });
     this.clearPasswordResetCookie(res);
     return result;
@@ -532,7 +548,11 @@ export class PractitionerAuthController {
     });
   }
 
-  private setPasswordResetCookie(res: Response, token: string, expiresAt: string) {
+  private setPasswordResetCookie(
+    res: Response,
+    token: string,
+    expiresAt: string,
+  ) {
     res.cookie('sawiyaa_password_reset', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -552,6 +572,9 @@ export class PractitionerAuthController {
   }
 
   private readPasswordResetCookie(request: Request): string {
-    return (request as Request & { cookies?: Record<string, string> }).cookies?.sawiyaa_password_reset ?? '';
+    return (
+      (request as Request & { cookies?: Record<string, string> }).cookies
+        ?.sawiyaa_password_reset ?? ''
+    );
   }
 }

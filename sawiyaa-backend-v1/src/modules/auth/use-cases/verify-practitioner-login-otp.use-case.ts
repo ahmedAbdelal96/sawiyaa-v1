@@ -124,7 +124,11 @@ export class VerifyPractitionerLoginOtpUseCase {
       });
     }
 
-    if (!currentUser.practitionerProfile) {
+    // Registration creates the account and draft application first. The live
+    // practitioner profile is created by the approval transaction, so an
+    // application-only account must still be able to complete authentication
+    // and continue its onboarding flow.
+    if (!currentUser.practitionerProfile && !currentUser.practitionerApplications?.[0]) {
       this.securityAuditService.logAsync({
         action: 'auth.practitioner.login.failure',
         outcome: SecurityAuditOutcome.FAILURE,
@@ -143,9 +147,10 @@ export class VerifyPractitionerLoginOtpUseCase {
     // Application approval controls practitioner-facing eligibility, not access
     // to the account needed to complete onboarding/application work.
     if (
-      currentUser.practitionerProfile.status === PractitionerStatus.REJECTED ||
-      currentUser.practitionerProfile.status === PractitionerStatus.SUSPENDED ||
-      currentUser.practitionerProfile.status === PractitionerStatus.INACTIVE
+      currentUser.practitionerProfile &&
+      (currentUser.practitionerProfile.status === PractitionerStatus.REJECTED ||
+        currentUser.practitionerProfile.status === PractitionerStatus.SUSPENDED ||
+        currentUser.practitionerProfile.status === PractitionerStatus.INACTIVE)
     ) {
       this.securityAuditService.logAsync({
         action: 'auth.practitioner.login.failure',
@@ -168,9 +173,11 @@ export class VerifyPractitionerLoginOtpUseCase {
       deviceContext: input.deviceContext,
     });
 
-    await this.practitionerPresenceRepository.markOnline(
-      currentUser.practitionerProfile.id,
-    );
+    if (currentUser.practitionerProfile) {
+      await this.practitionerPresenceRepository.markOnline(
+        currentUser.practitionerProfile.id,
+      );
+    }
     await this.authLockoutService.clear(
       AUTH_LOCKOUT_CONTEXTS.PRACTITIONER_OTP_VERIFY,
       `user:${challenge.user.id}`,

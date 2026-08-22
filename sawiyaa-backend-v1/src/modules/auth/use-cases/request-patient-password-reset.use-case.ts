@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { OtpPurpose, UserRoleType, UserStatus } from '@prisma/client';
@@ -29,6 +29,16 @@ export class RequestPatientPasswordResetUseCase {
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
+  private publicSuccess(locale: SupportedLocale) {
+    return {
+      message: this.i18nService.t(
+        'auth.success.patientPasswordResetRequested',
+        locale,
+      ),
+      nextStep: 'VERIFY_OTP',
+    };
+  }
+
   async execute(input: { email: string; locale: SupportedLocale }) {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
@@ -38,18 +48,12 @@ export class RequestPatientPasswordResetUseCase {
       (role) => role.role === UserRoleType.PATIENT,
     ) ?? false;
 
-    if (!userEmail || !hasPatientRole) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.emailNotRegistered',
-        error: 'EMAIL_NOT_REGISTERED',
-      });
-    }
+    // Keep the public response indistinguishable for unknown and wrong-role
+    // accounts. Eligible patients still create and deliver a real challenge.
+    if (!userEmail || !hasPatientRole) return this.publicSuccess(input.locale);
 
     if (userEmail.user.status !== undefined && userEmail.user.status !== UserStatus.ACTIVE) {
-      throw new ForbiddenException({
-        messageKey: 'auth.errors.accountNotEligible',
-        error: 'ACCOUNT_NOT_ELIGIBLE',
-      });
+      return this.publicSuccess(input.locale);
     }
 
     const twoFactorSetting = await this.twoFactorSettingRepository.findByUserId(
@@ -80,13 +84,12 @@ export class RequestPatientPasswordResetUseCase {
         );
       } catch (error) {
         if (error instanceof ForbiddenException) {
-          throw new ConflictException({
-            messageKey: 'auth.errors.accountEmailUnavailable',
-            error: 'ACCOUNT_EMAIL_UNAVAILABLE',
-          });
+          resolvedChannel = null;
+        } else {
+          throw error;
         }
-        throw error;
       }
+      if (!resolvedChannel) return this.publicSuccess(input.locale);
       const challenge = await this.createOtpChallengeUseCase.execute({
         userId: userEmail.user.id,
         purpose: OtpPurpose.PASSWORD_RESET,
@@ -128,13 +131,7 @@ export class RequestPatientPasswordResetUseCase {
       metadata: { channel: 'verified-contact' },
     });
 
-    return {
-      message: this.i18nService.t(
-        'auth.success.patientPasswordResetRequested',
-        input.locale,
-      ),
-      nextStep: 'VERIFY_OTP',
-    };
+    return this.publicSuccess(input.locale);
   }
 
 }

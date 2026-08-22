@@ -5,7 +5,6 @@ import { fetchPublicFeaturedPractitioners } from "@/features/home/api/featured-p
 import type { FeaturedPractitionerHomeCard } from "@/features/home/api/featured-practitioners.api";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
 
 const TRUST_INDICATORS = [
@@ -33,7 +32,7 @@ interface PractitionerCardProps {
 
 function FeaturedPractitionerCard({ practitioner, locale, t, eyebrow }: PractitionerCardProps) {
   const initials = getInitials(practitioner.displayName);
-  const displayTitle = getProfessionalTitleLabel(practitioner.professionalTitle, locale);
+  const displayTitle = practitioner.professionalTitle?.trim() || "-";
   const hasRating = hasPublicPractitionerRating(
     practitioner.averageRating,
     practitioner.totalReviews,
@@ -237,7 +236,7 @@ export default async function PractitionersSection() {
                             {locale === "ar" ? p.nameAr : p.nameEn}
                           </h4>
                           <p className="mt-0.5 text-sm text-text-secondary">
-                            {locale === "ar" ? p.titleAr : p.titleEn}
+                            {p.professionalTitle?.trim() || "-"}
                           </p>
                         </div>
                         {hasRating && (

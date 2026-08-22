@@ -8,7 +8,6 @@ import { mapPractitionerDurationPrice } from "../practitioner-money";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
 import { hasPublicPractitionerRating } from "../rating";
 
 export interface TherapistCardProps {
@@ -85,7 +84,7 @@ export const TherapistCard = ({ practitioner }: TherapistCardProps) => {
             style={styles.title}
             numberOfLines={1}
           >
-            {getProfessionalTitleLabel(practitioner.professionalTitle, i18n.language?.startsWith("ar") ?? false) ||
+            {practitioner.professionalTitle?.trim() ||
               primarySpecialty?.title ||
               t("discovery.list.professionalFallback")}
           </Text>

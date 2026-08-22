@@ -27,5 +27,6 @@ export const generalChatQueryKeys = {
   canonicalConversation: (conversationId: string) => ["canonical-conversation", conversationId] as const,
   canonicalMessages: (conversationId: string) => ["canonical-messages", conversationId] as const,
   canonicalUnreadSummary: () => ["canonical-unread-summary"] as const,
+  attachmentPolicy: () => ["chat-attachment-policy"] as const,
 };
 

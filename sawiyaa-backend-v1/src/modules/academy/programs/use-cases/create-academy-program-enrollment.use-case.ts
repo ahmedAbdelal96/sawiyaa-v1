@@ -12,7 +12,6 @@ import {
   PaymentPurpose,
   PaymentProvider,
   PaymentStatus,
-  UserStatus,
 } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -22,6 +21,7 @@ import { PaymentRepository } from '@modules/payments/repositories/payment.reposi
 import { PaymentGeoContextService } from '@modules/payments/services/payment-geo-context.service';
 import { PaymentProviderRegistryService } from '@modules/payments/services/payment-provider-registry.service';
 import { PaymentProviderResolverService } from '@modules/payments/services/payment-provider-resolver.service';
+import { PaymentRoute } from '@modules/payments/types/payment-routing.types';
 import { PaymentRuntimeConfigService } from '@modules/payments/services/payment-runtime-config.service';
 import { ValidatePaymentStatusTransitionService } from '@modules/payments/services/validate-payment-status-transition.service';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
@@ -150,20 +150,6 @@ export class CreateAcademyProgramEnrollmentUseCase {
       Date.now() + this.paymentReservationMinutes * 60 * 1000,
     );
 
-    const guestUserId =
-      !input.currentUser && !existing
-        ? (
-            await this.prisma.user.create({
-              data: {
-                displayName: input.payload.fullName.trim(),
-                status: UserStatus.PENDING_VERIFICATION,
-                defaultLocale: input.locale,
-              },
-              select: { id: true },
-            })
-          ).id
-        : null;
-
     const enrollment =
       existing ??
       (await this.createEnrollmentSafely({
@@ -190,13 +176,14 @@ export class CreateAcademyProgramEnrollmentUseCase {
         contactWhatsapp: input.payload.whatsappNumber?.trim() || null,
         contactCountry: countryResolution.resolvedCountryCode,
         contactNotes: input.payload.sourceLabel?.trim() || null,
-        userId: input.currentUser?.id ?? guestUserId,
+        userId: input.currentUser?.id ?? null,
       }));
 
-    const provider = this.resolveProvider({
+    const paymentRoute = this.resolvePaymentRoute({
       currencyCode: paymentCurrencyCode,
       learnerCountryIsoCode: learner.countryCode ?? null,
     });
+    const provider = paymentRoute.provider;
     const providerAdapter = this.paymentProviderRegistryService.get(provider);
 
     let paymentAttemptId: string | null = null;
@@ -280,6 +267,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
           lockedAt: null,
           seatReservedAt: now,
           seatReservationExpiresAt,
+          userId: input.currentUser?.id ?? null,
         },
         tx,
       );
@@ -303,6 +291,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
         sessionId: program.id,
         patientEmail: learner.email ?? null,
         redirectionUrl: academyProgramPaymentReturnUrl,
+        routeIntegrationKey: paymentRoute.integrationKey,
       });
 
       this.validatePaymentStatusTransitionService.assertCanTransition(
@@ -461,16 +450,16 @@ export class CreateAcademyProgramEnrollmentUseCase {
     };
   }
 
-  private resolveProvider(input: {
+  private resolvePaymentRoute(input: {
     currencyCode: string;
     learnerCountryIsoCode: string | null;
-  }) {
+  }): PaymentRoute {
     const provider = resolveProviderForCurrency(input.currencyCode);
     if (provider === PaymentProvider.PAYMOB) {
       const normalizedCurrencyCode = input.currencyCode.trim().toUpperCase();
 
       if (normalizedCurrencyCode === 'USD') {
-        return this.paymentProviderResolverService.resolveProvider({
+        return this.paymentProviderResolverService.resolveRoute({
           currencyCode: 'USD',
           commissionMarketType: MarketType.CROSS_BORDER,
           operatingCountryIsoCode: null,
@@ -478,7 +467,7 @@ export class CreateAcademyProgramEnrollmentUseCase {
         });
       }
 
-      return this.paymentProviderResolverService.resolveProvider({
+      return this.paymentProviderResolverService.resolveRoute({
         currencyCode: 'EGP',
         commissionMarketType: MarketType.LOCAL,
         operatingCountryIsoCode: input.learnerCountryIsoCode,

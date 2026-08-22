@@ -43,7 +43,7 @@ export default async function RelatedPractitioners({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {practitioners.map((p) => {
             const displayName = isAr ? p.nameAr : p.nameEn;
-            const displayTitle = isAr ? p.titleAr : p.titleEn;
+            const displayTitle = p.professionalTitle?.trim() || "-";
 
             return (
               <Link

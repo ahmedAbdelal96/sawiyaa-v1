@@ -202,6 +202,21 @@ builds `backend` and `frontend`, runs migrations, runs the idempotent Config
 bootstrap, recreates the app services, and checks backend/frontend health.
 Payment-route bootstrap remains manual and is never run by this command.
 
+## Production baseline bootstrap
+
+The production release runs the additive baseline bootstrap after migrations:
+
+```bash
+docker compose -f docker-compose.prod.yml run --rm \
+  -e ALLOW_PRODUCTION_BASELINE_SEED=true \
+  backend npm run db:seed:production
+```
+
+This creates missing required financial rules, catalogs, and Config defaults,
+preserves existing Admin values, and deactivates only the legacy seeded
+commission defaults so scheduled and instant sessions share the Platform
+Settings rules.
+
 ## Production Config bootstrap
 
 If the Config bootstrap ever needs to be run manually, initialize only the
@@ -231,7 +246,8 @@ The one-command release order is:
 5. Ensure `/opt/sawiyaa/logs/backend` is writable by the backend UID.
 6. Build only `backend` and `frontend`.
 7. Run migration safety checks, create a verified database backup, then apply migrations.
-8. Run the idempotent Config bootstrap with `ALLOW_CONFIG_BOOTSTRAP=true`.
+8. Run the idempotent production baseline bootstrap with
+   `ALLOW_PRODUCTION_BASELINE_SEED=true`.
 9. Recreate backend, frontend, and nginx, then verify health.
 
 After successful health checks, the script writes `.sawiyaa-release` with the

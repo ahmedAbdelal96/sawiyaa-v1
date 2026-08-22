@@ -28,6 +28,9 @@
     "staging:package:verify": "ts-node scripts/package-staging-readiness.ts",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:deploy:practitioner-translation-search-indexes": "node scripts/deploy-practitioner-translation-search-indexes.js",
+    "db:rollback:practitioner-translation-search-indexes": "node scripts/deploy-practitioner-translation-search-indexes.js --rollback",
+    "db:status:practitioner-translation-search-indexes": "node scripts/deploy-practitioner-translation-search-indexes.js --status",
     "prisma:studio": "prisma studio",
     "session-codes:backfill": "ts-node --preferTsExts prisma/scripts/backfill-session-codes.ts",
     "session-codes:concurrency-test": "ts-node --preferTsExts prisma/scripts/verify-session-code-concurrency.ts",
@@ -47,6 +50,7 @@
     "db:reconcile:practitioner-change-requests": "ts-node --preferTsExts prisma/scripts/reconcile-practitioner-change-requests.ts",
     "seed:practitioner-finance": "ts-node --preferTsExts prisma/seed/practitioner-finance.seed.ts",
     "seed:qa:testsprite": "ts-node --preferTsExts prisma/seed/qa.testsprite.seed.ts",
+    "seed:qa:instant-booking": "ts-node -r tsconfig-paths/register --preferTsExts scripts/seed-instant-booking-qa.ts",
     "db:reset": "prisma migrate reset",
     "logs:analyze": "ts-node --preferTsExts scripts/analyze-logs.ts"
   },

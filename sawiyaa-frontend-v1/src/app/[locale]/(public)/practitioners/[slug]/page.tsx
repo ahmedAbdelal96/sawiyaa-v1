@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { item: profile } = data;
     const description =
-      (locale === "ar" ? profile.bioAr : profile.bioEn).slice(0, 160) ||
+      profile.bio?.slice(0, 160) ||
       fallback("description");
 
     return buildPublicMetadata({

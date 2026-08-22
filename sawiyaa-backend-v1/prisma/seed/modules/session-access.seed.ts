@@ -263,7 +263,11 @@ async function seedSessionAccessFixtures(prisma: PrismaClient): Promise<void> {
   const inProgressId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.inProgress, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerE, startsAt: addMinutes(now, -180), status: SessionStatus.IN_PROGRESS, policy });
   await ensureCapturedPayment(prisma, { key: sessionAccessScenarioKeys.inProgress, sessionId: inProgressId, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerE, amount: '600.00', currency: 'USD', purpose: PaymentPurpose.SESSION_BOOKING });
   await ensureSession({ prisma, key: sessionAccessScenarioKeys.expired, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerF, startsAt: addMinutes(now, -300), status: SessionStatus.EXPIRED, policy });
-  const rescheduledStart = addMinutes(now, 240);
+  // Keep this patient-B fixture one full session interval before the curated
+  // patient-B ready-to-join fixture at now + 5h. The gap prevents a later
+  // refresh from overlapping the previous run's moving curated interval while
+  // preserving a dynamic, upcoming rescheduled scenario.
+  const rescheduledStart = addMinutes(now, 180);
   const rescheduledId = await ensureSession({ prisma, key: sessionAccessScenarioKeys.rescheduled, patientId: seedIds.patientProfiles.patientB, practitionerId: seedIds.practitionerProfiles.practitionerF, startsAt: rescheduledStart, status: SessionStatus.UPCOMING, policy, scheduleRevision: 2 });
   await scheduleReminders(prisma, { sessionId: rescheduledId, startsAt: rescheduledStart, policy, patientUserId: seedIds.users.patientB, practitionerUserId: seedIds.users.practitionerF, revision: 2 });
   const originalStart = addMinutes(now, 360);

@@ -42,7 +42,7 @@ export default async function ProfileHeader({
   ]);
   const isAr = locale === "ar";
   const displayName = isAr ? p.nameAr : p.nameEn;
-  const displayTitle = isAr ? p.titleAr : p.titleEn;
+  const displayTitle = p.professionalTitle?.trim() || "-";
   const primarySpecialties = p.specialties.slice(0, 3);
   const displayedLanguages = p.languages
     .slice(0, 2)
@@ -116,7 +116,7 @@ export default async function ProfileHeader({
                       <span className="font-bold text-text-primary dark:text-white/95">
                         {p.rating!.toFixed(1)}
                       </span>
-                      <span>({displayReviewCount} {isAr ? "تقييم" : "reviews"})</span>
+                      <span>({displayReviewCount} {t("stats.reviews")})</span>
                     </>
                   ) : (
                     <span>{t("trust.summary.noRating")}</span>
@@ -140,7 +140,7 @@ export default async function ProfileHeader({
               className="sawiyaa-btn-press inline-flex items-center justify-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary transition hover:bg-primary hover:text-white shadow-xs cursor-pointer dark:bg-primary/20 dark:text-primary-light"
             >
               <MessageSquare size={14} />
-              <span>{isAr ? "مراسلة المختص" : "Message Practitioner"}</span>
+              <span>{t("cta.messagePractitioner")}</span>
             </Link>
 
             <div className="hidden sm:flex flex-wrap gap-1">
@@ -163,7 +163,7 @@ export default async function ProfileHeader({
             <div>
               <p className="text-[10px] text-text-muted font-medium">{t("stats.experience")}</p>
               <p className="font-bold text-text-primary dark:text-white/95">
-                {p.yearsExperience} {isAr ? "سنة خبرة" : "years exp"}
+                {p.yearsExperience} {t("stats.experience")}
               </p>
             </div>
           </div>

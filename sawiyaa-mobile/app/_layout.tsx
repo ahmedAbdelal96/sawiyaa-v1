@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import "../src/i18n";
+import { NotificationRealtimeBridge } from "../src/features/notifications/NotificationRealtimeBridge";
 
 // Inject global web styles to remove Chrome/Safari autofill blue tint and outline
 if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -48,6 +49,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
+            <NotificationRealtimeBridge />
             <ViewerTimeZoneProvider>
               <AuthGatewayProvider>
                 <NavigationHistoryProvider>

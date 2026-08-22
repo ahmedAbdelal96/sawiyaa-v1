@@ -70,17 +70,18 @@ export class RefreshAuthSessionUseCase {
 
     const practitionerIsIneligible =
       payload.role === UserRoleType.PRACTITIONER &&
-      (!session.user.practitionerProfile ||
+      ((!session.user.practitionerProfile && !session.user.practitionerApplications?.[0]) ||
+      (Boolean(session.user.practitionerProfile) &&
         [
           'REJECTED',
           'SUSPENDED',
           'INACTIVE',
         ].includes(
-          session.user.practitionerProfile.status as
+          session.user.practitionerProfile?.status as
             | 'REJECTED'
             | 'SUSPENDED'
             | 'INACTIVE',
-        ));
+        )));
 
     if (session.user.status !== UserStatus.ACTIVE || practitionerIsIneligible) {
       throw new UnauthorizedException({

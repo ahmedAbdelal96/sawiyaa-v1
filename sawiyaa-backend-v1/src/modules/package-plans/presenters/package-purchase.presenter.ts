@@ -75,6 +75,7 @@ export class PackagePurchasePresenter {
     purchase: PurchaseRecord;
     sessions?: PurchaseRecord['sessions'];
     now?: Date;
+    resolvedProfessionalTitle?: string | null;
   }): Promise<PatientPackagePurchaseViewModel> {
     const now = input.now ?? new Date();
     const rawSessions = input.sessions ?? input.purchase.sessions ?? [];
@@ -125,7 +126,9 @@ export class PackagePurchasePresenter {
             'Practitioner',
           avatarUrl: input.purchase.practitioner.avatarUrl ?? null,
           professionalTitle:
-            input.purchase.practitioner.professionalTitle ?? null,
+            input.resolvedProfessionalTitle !== undefined
+              ? input.resolvedProfessionalTitle
+              : (input.purchase.practitioner.professionalTitle ?? null),
         }
       : undefined;
 

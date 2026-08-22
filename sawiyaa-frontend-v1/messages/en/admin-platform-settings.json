@@ -73,6 +73,23 @@
     "arrayAddPlaceholder": "Add item...",
     "dedicatedNotice": "This setting is managed via the dedicated Payment Control workspace."
   },
+  "commission": {
+    "eyebrow": "Financial control",
+    "title": "Platform Commission",
+    "description": "Set the single authoritative platform commission for future session allocations. The practitioner share is always the exact remainder to 100.00%.",
+    "platformLabel": "Platform commission",
+    "practitionerLabel": "Practitioner share",
+    "derivedHint": "Derived by the Backend as 100.00% minus platform commission.",
+    "reasonLabel": "Change reason (required)",
+    "reasonPlaceholder": "Explain why this financial split is changing...",
+    "mismatch": "The existing local and cross-border defaults are different. Choose one platform commission and save to explicitly unify both defaults.",
+    "ready": "Configured",
+    "save": "Save commission",
+    "saving": "Saving...",
+    "saved": "Commission saved for future allocations. Existing payment and ledger snapshots were not changed.",
+    "error": "The commission could not be saved. Reload the latest value and try again.",
+    "note": "This change is audited and applies prospectively. Accountant approval and immutable payment snapshots remain authoritative for historical earnings."
+  },
   "enumValues": {
     "platform": {
       "defaultLocale": {

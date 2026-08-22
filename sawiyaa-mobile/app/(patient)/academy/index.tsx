@@ -1,6 +1,6 @@
 import React from "react";
-import AcademyBrowseScreen from "../../../src/features/patient/academy/components/AcademyBrowseScreen";
+import AuthenticatedAcademyEnrollmentsScreen from "../../../src/features/patient/academy/components/AuthenticatedAcademyEnrollmentsScreen";
 
 export default function AcademyBrowseRoute() {
-  return <AcademyBrowseScreen />;
+  return <AuthenticatedAcademyEnrollmentsScreen />;
 }

@@ -38,17 +38,20 @@ import { SendDevTestPushNotificationUseCase } from './use-cases/send-dev-test-pu
 import { RegisterNotificationDeviceUseCase } from './use-cases/register-notification-device.use-case';
 import { RevokeNotificationDeviceUseCase } from './use-cases/revoke-notification-device.use-case';
 import { NotificationContextEnrichmentService } from './services/notification-context-enrichment.service';
+import { NotificationRealtimePublisher } from './services/notification-realtime.publisher';
+import { NotificationsGateway } from './gateways/notifications.gateway';
 import { EMAIL_PROVIDER } from './providers/email-provider.token';
 import { EmailProviderAdapter } from './providers/email-provider.adapter';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { BrevoEmailProvider } from './providers/brevo-email.provider';
 import { ConfigModule } from '@modules/config/config.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 
 /**
  * Notifications module provides the operational notification stack and the authenticated in-app feed.
  */
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, PractitionersModule],
   controllers: [
     AdminNotificationOpsController,
     AdminAuditLogController,
@@ -109,6 +112,7 @@ import { ConfigModule } from '@modules/config/config.module';
     NotificationOpsPresenter,
     UserNotificationsPresenter,
     NotificationContextEnrichmentService,
+    NotificationRealtimePublisher,
     NotificationIntentWriterService,
     AdminAuditPresenter,
     SessionReminderQueueRepository,
@@ -135,6 +139,7 @@ import { ConfigModule } from '@modules/config/config.module';
     OperationalNotificationService,
     NotificationIntentWriterService,
     SessionReminderQueueRepository,
+    NotificationRealtimePublisher,
   ],
 })
 export class NotificationsModule {}

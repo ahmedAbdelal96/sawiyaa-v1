@@ -4,6 +4,8 @@ import { PublicPractitionerSessionDuration } from '../dto/list-public-practition
 import { PractitionerType } from '@prisma/client';
 import { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
+import { localizeSpecialtyCategoryName } from '@modules/specialties/utils/localize-specialty-category.util';
+import { localizeSpecialtyTitle } from '@modules/specialties/utils/localize-specialty-title.util';
 
 type FilterSourceRow = Awaited<
   ReturnType<PublicPractitionerReadRepository['listPublicFilterMetadataSource']>
@@ -40,7 +42,11 @@ export class ListPublicPractitionerFiltersUseCase {
         id: string;
         slug: string;
         name: string;
-        category: { id: string; slug: string; name: string } | null;
+        category: {
+          id: string;
+          slug: string;
+          name: string;
+        } | null;
         practitionerIds: Set<string>;
       }
     >();
@@ -85,13 +91,13 @@ export class ListPublicPractitionerFiltersUseCase {
 
       for (const link of row.specialties) {
         const localizedTitle =
-          link.specialty.translations.find(
-            (translation) => translation.locale === input.locale,
-          )?.title ??
-          link.specialty.translations.find(
-            (translation) => translation.locale === 'en',
-          )?.title ??
-          link.specialty.slug;
+          localizeSpecialtyTitle({
+            locale: input.locale,
+            translations: link.specialty.translations,
+            nameAr: link.specialty.nameAr,
+            nameEn: link.specialty.nameEn,
+            fallback: link.specialty.slug,
+          }) ?? link.specialty.slug;
 
         const category = link.specialty.category
           ? {
@@ -101,6 +107,8 @@ export class ListPublicPractitionerFiltersUseCase {
                 link.specialty.category.slug,
                 input.locale,
                 link.specialty.category.name,
+                link.specialty.category.nameAr,
+                link.specialty.category.nameEn,
               ),
             }
           : null;
@@ -373,22 +381,15 @@ export class ListPublicPractitionerFiltersUseCase {
     slug: string,
     locale: SupportedLocale,
     fallbackValue: string | null | undefined,
+    nameAr?: string | null,
+    nameEn?: string | null,
   ): string {
-    const normalizedSlug = slug.trim().toLowerCase();
-    const arLabels: Record<string, string> = {
-      'mental-health': 'النفسي',
-      nutrition: 'التغذية',
-      fitness: 'الرياضة',
-    };
-    const enLabels: Record<string, string> = {
-      'mental-health': 'Mental health',
-      nutrition: 'Nutrition',
-      fitness: 'Fitness',
-    };
-
     return (
-      (locale === 'ar' ? arLabels[normalizedSlug] : enLabels[normalizedSlug]) ??
-      this.pickLocalizedLabel(locale, fallbackValue, fallbackValue)
+      localizeSpecialtyCategoryName(locale, {
+        nameAr,
+        nameEn,
+        fallback: fallbackValue,
+      }) ?? fallbackValue ?? slug
     );
   }
 

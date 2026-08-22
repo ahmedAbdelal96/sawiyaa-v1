@@ -10,7 +10,7 @@ export default async function ProfileAbout({ profile: p, compact = false }: Prop
     getLocale(),
   ]);
   const isAr = locale === "ar";
-  const bio = isAr ? p.bioAr : p.bioEn;
+  const bio = p.bio?.trim() || "";
   const approach = isAr ? p.approachAr : p.approachEn;
 
   if (!bio && !approach) return null;

@@ -5,7 +5,10 @@ import {
   permissionDefinitions,
   rolePermissionBundles,
 } from './modules/auth.permissions';
-import { ensureProductionFinancialRules } from './modules/financial-rules.seed';
+import {
+  deactivateLegacyProductionFinancialRules,
+  ensureProductionFinancialRules,
+} from './modules/financial-rules.seed';
 import { seedConfigData } from './modules/config.seed';
 import { assessmentsSeedModule } from './modules/assessments.seed';
 import { notificationsSeedModule } from './modules/notifications.seed';
@@ -231,6 +234,7 @@ export async function seedProductionBaseline(
         const specialties = await ensureSpecialtyBaseline(db);
         const packagePlans = await ensurePackagePlanBaseline(db);
         const financialRules = await ensureProductionFinancialRules(db);
+        await deactivateLegacyProductionFinancialRules(db);
         await assessmentsSeedModule.run(db);
         await notificationsSeedModule.run(db);
         return { access, reference, specialties, packagePlans, financialRules };

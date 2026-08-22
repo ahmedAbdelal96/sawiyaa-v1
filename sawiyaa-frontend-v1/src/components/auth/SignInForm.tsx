@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, Terminal } from "lucide-react";
+import { Eye, EyeOff, LayoutGrid, Stethoscope, UserRound, Terminal, GraduationCap } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import Input from "@/components/form/input/InputField";
 import AuthPasswordField from "./AuthPasswordField";
@@ -18,6 +18,7 @@ import PatientGoogleAuthButton from "@/components/auth/PatientGoogleAuthButton";
 import {
   useAdminLogin,
   usePatientLogin,
+  useTraineeLogin,
   usePractitionerLogin,
   usePractitionerResendLoginOtp,
   usePractitionerVerifyOtp,
@@ -32,7 +33,7 @@ import { getDefaultRouteByRole, resolveRole } from "@/config/route-access";
 import { normalizeCallbackPath } from "@/lib/auth/callback-url";
 import AuthSplitCard from "./AuthSplitCard";
 
-export const SIGN_IN_MODES = ["patient", "practitioner", "admin"] as const;
+export const SIGN_IN_MODES = ["patient", "practitioner", "admin", "trainee"] as const;
 export type SignInMode = (typeof SIGN_IN_MODES)[number];
 
 const credentialsSchema = z.object({
@@ -69,6 +70,7 @@ const MODE_CONFIG: Record<SignInMode, ModeConfig> = {
   patient: { icon: UserRound },
   practitioner: { icon: Stethoscope },
   admin: { icon: LayoutGrid },
+  trainee: { icon: GraduationCap },
 };
 
 function buildAuthHref(basePath: string, params: Record<string, string | null>) {
@@ -114,6 +116,12 @@ const TEST_CREDENTIALS_BY_MODE: Record<SignInMode, CredentialPreset> = {
     email: "admin@hesba.local",
     password: "Admin@12345",
     note: "SUPER_ADMIN",
+  },
+  trainee: {
+    label: "Trainee account",
+    email: "trainee@hesba.local",
+    password: "Trainee@12345",
+    note: "ACADEMY",
   },
 };
 
@@ -262,6 +270,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
   const otpSubmitLockRef = useRef(false);
 
   const patientLogin = usePatientLogin();
+  const traineeLogin = useTraineeLogin();
   const practitionerLogin = usePractitionerLogin();
   const practitionerVerifyOtp = usePractitionerVerifyOtp();
   const practitionerResendLoginOtp = usePractitionerResendLoginOtp();
@@ -272,7 +281,8 @@ export default function SignInForm({ mode }: SignInFormProps) {
     practitionerLogin.isPending ||
     practitionerVerifyOtp.isPending ||
     practitionerResendLoginOtp.isPending ||
-    adminLogin.isPending;
+    adminLogin.isPending ||
+    traineeLogin.isPending;
 
   const credentialsForm = useForm<CredentialsFormData>({
     resolver: zodResolver(credentialsSchema),
@@ -384,6 +394,12 @@ export default function SignInForm({ mode }: SignInFormProps) {
         return;
       }
 
+      if (mode === "trainee") {
+        const result = await traineeLogin.mutateAsync(data);
+        redirectAfterAuth(result.user);
+        return;
+      }
+
       const loginResponse = (await practitionerLogin.mutateAsync(
         data,
       )) as PractitionerLoginResponse;
@@ -461,6 +477,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     patient: PATIENT_TEST_CREDENTIALS,
     practitioner: PRACTITIONER_TEST_CREDENTIALS,
     admin: ADMIN_TEST_CREDENTIALS,
+    trainee: [TEST_CREDENTIALS_BY_MODE.trainee],
   };
   const quickAccounts = quickAccountsByMode[mode];
 
@@ -483,6 +500,7 @@ export default function SignInForm({ mode }: SignInFormProps) {
     patient: isRtl ? "بوابة تسجيل الدخول" : "Client Portal",
     practitioner: isRtl ? "بوابة المعالجين" : "Specialist Portal",
     admin: isRtl ? "بوابة الإدارة" : "Admin Portal",
+    trainee: isRtl ? "بوابة المتدربين" : "Trainee Portal",
   };
 
   const getDynamicTitle = () => {
@@ -494,6 +512,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
     }
     if (mode === "practitioner") {
       return isRtl ? "تسجيل دخول الممارس" : "Practitioner sign in";
+    }
+    if (mode === "trainee") {
+      return isRtl ? "تسجيل دخول المتدرب" : "Trainee sign in";
     }
     return isRtl ? "تسجيل دخول المستخدم " : "Patient sign in";
   };
@@ -507,6 +528,9 @@ export default function SignInForm({ mode }: SignInFormProps) {
     }
     if (mode === "practitioner") {
       return isRtl ? "ادخل لإدارة جلساتك ومواعيدك." : "Sign in to manage your sessions and availability.";
+    }
+    if (mode === "trainee") {
+      return isRtl ? "ادخل لمتابعة تدريباتك وحضورك وشهاداتك." : "Sign in to follow your trainings, attendance, and certificates.";
     }
     return isRtl ? "ادخل لحجز جلساتك ومتابعة مواعيدك." : "Sign in to book sessions and manage your appointments.";
   };

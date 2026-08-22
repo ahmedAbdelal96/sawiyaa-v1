@@ -132,7 +132,16 @@ export default function SessionPaymentReturnScreen() {
     if (!(paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED")) return;
     if (sessionQuery.data.operational?.timelineBucket === "PENDING") return;
 
-    router.replace(`/(patient)/sessions/${sessionId}`);
+    router.replace({
+      pathname: "/(patient)/sessions/success",
+      params: {
+        sessionId,
+        status: "CONFIRMED",
+        practitionerName: sessionQuery.data.practitioner.displayName ?? undefined,
+        sessionStartAt: sessionQuery.data.scheduledStartAt ?? undefined,
+        durationMinutes: String(sessionQuery.data.durationMinutes),
+      },
+    });
   }, [reconcileMutation.data?.item?.status, router, sessionId, sessionQuery.data]);
 
   useEffect(() => {

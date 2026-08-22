@@ -74,14 +74,14 @@
     "initiateConflict": "An active payment already exists for this session. Please refresh and try again.",
     "paymobMethod": {
       "heading": "Payment method",
-      "note": "Choose one of the Paymob methods that is actually enabled on your merchant account.",
+      "note": "Choose one of the payment methods enabled for your account.",
       "card": {
         "title": "Bank card",
         "note": "Pay with Visa, Mastercard, or any other card supported by your account."
       },
       "wallet": {
         "title": "Mobile wallet",
-        "note": "Pay from a mobile wallet when it is enabled on your Paymob account."
+        "note": "Pay from a mobile wallet when it is available for your account."
       }
     },
     "journey": {
@@ -238,7 +238,7 @@
       "heading": "Latest payment history",
       "note": "Review the latest financial operations linked to your sessions.",
       "columns": {
-        "sessionPractitioner": "Session / practitioner",
+        "sessionPractitioner": "Session / specialist",
         "date": "Date",
         "method": "Payment method",
         "amount": "Amount",
@@ -251,7 +251,7 @@
       "next": "Next"
     },
     "unknownSession": "Unknown session",
-    "unknownPractitioner": "Unknown practitioner",
+    "unknownPractitioner": "Unknown specialist",
     "emptyHeading": "No payments yet",
     "emptyNote": "Your payments will appear here after you book and pay for a session.",
     "emptyAction": "View my sessions",
@@ -294,7 +294,7 @@
     },
     "provider": {
       "STRIPE": "Card",
-      "PAYMOB": "Paymob",
+      "PAYMOB": "Payment provider",
       "INTERNAL_WALLET": "Wallet"
     },
     "split": {
@@ -361,7 +361,7 @@
     },
     "method": {
       "card": "Bank card",
-      "paymob": "Paymob",
+      "paymob": "Payment provider",
       "wallet": "Wallet",
       "stripe": "Stripe",
       "gateway": "Payment gateway"
@@ -437,11 +437,11 @@
     },
     "sidebar": {
       "heading": "What this page means",
-      "note": "This page is for patients who want a simple view of wallet balances and recent ledger activity.",
+    "note": "This page is for patients who want a simple view of wallet balances and recent transaction activity.",
       "currency": "Wallet currency",
       "currencyNote": "Your wallet uses the currency that matches your account market.",
       "updateLabel": "Latest update",
-      "updateNote": "The balance here is synced from your wallet ledger.",
+    "updateNote": "The balance here is synced from your wallet records.",
       "lastEntry": "Last activity:",
       "noActivity": "No wallet activity has been recorded yet.",
       "openPayments": "Open payment history",

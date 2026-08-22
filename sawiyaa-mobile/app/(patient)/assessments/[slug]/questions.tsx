@@ -23,6 +23,7 @@ import {
 } from "../../../../src/features/patient/assessments/api";
 import { getAssessmentCompatibility } from "../../../../src/features/patient/assessments/compatibility";
 import { extractApiErrorMessage } from "../../../../src/lib/api";
+import { getDirectionalIcon } from "../../../../src/i18n/direction";
 
 export default function AssessmentQuestionsScreen() {
   const router = useRouter();
@@ -276,7 +277,7 @@ export default function AssessmentQuestionsScreen() {
           disabled={submitMutation.isPending}
         >
           <Ionicons
-            name={isRTL ? "arrow-forward" : "arrow-back"}
+            name={getDirectionalIcon("back", isRTL)}
             size={18}
             color={theme.colors.primary}
           />

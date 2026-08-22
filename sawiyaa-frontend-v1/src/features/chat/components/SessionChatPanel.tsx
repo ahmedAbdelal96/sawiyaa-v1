@@ -108,15 +108,16 @@ export default function SessionChatPanel({
   );
   const conversationId =
     sessionConversationQuery.data?.item?.conversationId ?? null;
-  const conversationIdentity = useMemo<GeneralChatConversationIdentity | null>(() => {
-    const item = sessionConversationQuery.data?.item;
-    if (!item) return null;
-    return {
-      ...item,
-      conversationType: "SYSTEM",
-      wasCreated: false,
-    } as GeneralChatConversationIdentity;
-  }, [sessionConversationQuery.data?.item]);
+  const conversationIdentity =
+    useMemo<GeneralChatConversationIdentity | null>(() => {
+      const item = sessionConversationQuery.data?.item;
+      if (!item) return null;
+      return {
+        ...item,
+        conversationType: "SYSTEM",
+        wasCreated: false,
+      } as GeneralChatConversationIdentity;
+    }, [sessionConversationQuery.data?.item]);
   const sessionChatAvailability =
     conversationIdentity?.chatAvailability ??
     sessionConversationQuery.data?.chatAvailability ??
@@ -130,17 +131,11 @@ export default function SessionChatPanel({
     errorObj?.status === 403 ||
     errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
   const openErrorTitle = isForbidden
-    ? locale === "ar"
-      ? "لا يمكنك الوصول إلى محادثة هذه الجلسة."
-      : "You do not have access to this session's conversation."
-    : locale === "ar"
-      ? "تعذر فتح محادثة الجلسة الآن."
-      : "Could not open session chat right now.";
+    ? t("detail.chat.states.accessDenied.heading")
+    : t("detail.chat.states.openError.heading");
   const openErrorNote = isForbidden
-    ? ""
-    : locale === "ar"
-      ? "حاول مرة أخرى."
-      : "Please try again.";
+    ? t("detail.chat.states.accessDenied.note")
+    : t("detail.chat.states.openError.note");
 
   const messagesQuery = useGeneralChatMessages(
     conversationId,
@@ -230,20 +225,15 @@ export default function SessionChatPanel({
     sessionChatAvailability?.canSend === true &&
     sessionChatAvailability?.readOnly !== true;
   const showAvailabilityLoading =
-    sessionChatAvailability == null ||
-    sessionConversationQuery.isLoading;
+    sessionChatAvailability == null || sessionConversationQuery.isLoading;
   const showReadOnlyNotice =
     !showAvailabilityLoading &&
     (sessionChatAvailability?.canSend !== true ||
       sessionChatAvailability?.readOnly === true);
   const readOnlyNotice =
     sessionChatAvailability?.reason === "SESSION_NOT_STARTED"
-      ? locale === "ar"
-        ? "المحادثة متاحة للقراءة فقط حاليًا. سيصبح إرسال الرسائل متاحًا عند بدء نافذة المحادثة."
-        : "This conversation is currently read-only. Messaging will become available when the session chat opens."
-      : locale === "ar"
-        ? "انتهت إمكانية إرسال رسائل لهذه الجلسة. يمكنك مراجعة المحادثة السابقة."
-        : "Messaging for this session has ended. You can still review the previous conversation.";
+      ? t("detail.chat.states.readOnly.note")
+      : t("detail.chat.states.readOnly.sendBlocked");
 
   const handlePickFiles = () => {
     fileInputRef.current?.click();
@@ -291,7 +281,7 @@ export default function SessionChatPanel({
     if (!conversationId) return;
 
     const content = message.trim();
-    if (content.length === 0) return;
+    if (content.length === 0 && attachments.length === 0) return;
 
     try {
       setIsSending(true);
@@ -399,7 +389,7 @@ export default function SessionChatPanel({
                 />
                 {session?.scheduledStartAt && (
                   <p className="text-text-muted font-mono text-[10px] font-semibold tracking-wide opacity-75">
-                    {locale.startsWith("ar") ? "الموعد: " : "Scheduled: "}
+                    {t("detail.chat.scheduledLabel")}{" "}
                     {formatEffectiveViewerTime(
                       session.scheduledStartAt,
                       viewerTimeZone,
@@ -471,13 +461,11 @@ export default function SessionChatPanel({
           </div>
         ) : sessionConversationQuery.isLoading || messagesQuery.isLoading ? (
           <div className="text-text-muted flex animate-pulse items-center justify-center p-8 text-xs font-semibold">
-            {locale === "ar" ? "جاري التحميل..." : "Loading..."}
+            {t("detail.chat.loading")}
           </div>
         ) : !conversationId ? (
           <div className="text-text-muted p-8 text-center text-xs font-medium">
-            {locale === "ar"
-              ? "لا توجد رسائل سابقة لهذه الجلسة."
-              : "No previous messages for this session."}
+            {t("detail.chat.noMessages")}
           </div>
         ) : ordered.length === 0 ? (
           <div className="text-text-muted p-8 text-center text-xs font-medium">
@@ -506,6 +494,11 @@ export default function SessionChatPanel({
                   ),
                   direction: fromMe ? "outgoing" : "incoming",
                   status: (fromMe ? entry.localStatus : undefined) as any,
+                  attachments: entry.attachments.map((attachment) => ({
+                    id: attachment.fileId,
+                    originalName: attachment.originalName,
+                    mimeType: attachment.mimeType,
+                  })),
                 }}
               />
             );
@@ -634,16 +627,8 @@ export default function SessionChatPanel({
             <ListStateSkeleton items={6} heightClass="h-20" />
           ) : !conversationId ? (
             <StateCard
-              title={
-                locale === "ar"
-                  ? "لا توجد رسائل سابقة لهذه الجلسة."
-                  : "No previous messages for this session."
-              }
-              note={
-                locale === "ar"
-                  ? "يمكنك مراجعة المحادثة هنا عند توفر رسائل."
-                  : "Historical messages will appear here when available."
-              }
+              title={t("detail.chat.noMessages")}
+              note={t("detail.chat.noMessagesNote")}
               centered={false}
               className="rounded-[24px] p-5"
             />
@@ -907,7 +892,7 @@ export default function SessionChatPanel({
                 <button
                   type="submit"
                   disabled={
-                    message.trim().length === 0 ||
+                    (message.trim().length === 0 && attachments.length === 0) ||
                     isSending ||
                     closeMutation.isPending
                   }

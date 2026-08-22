@@ -11,6 +11,7 @@ import { AvailabilityWeekCalendarService } from '@modules/availability/services/
 import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
 import { ListPatientInstantBookingPractitionersUseCase } from './list-patient-instant-booking-practitioners.use-case';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 describe('ListPatientInstantBookingPractitionersUseCase', () => {
   const referenceTime = new Date('2026-06-25T12:00:00.000Z');
@@ -54,6 +55,7 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     buildPublishedWeekAvailabilityWindowsService,
     publicPractitionerVisibilityPolicy,
     sessionReviewRatingAggregationService,
+    new PractitionerProfessionalContentResolver(),
   );
   const executeWithTrustedCountry = useCase.execute.bind(useCase);
   useCase.execute = ((input: any) =>
@@ -85,6 +87,15 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
     isPublicProfilePublished: true,
     professionalTitle: 'Therapist',
     bio: 'A warm and experienced therapist with instant booking availability.',
+    primaryContentLocale: 'en',
+    professionalContentTranslations: [
+      { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: null },
+      {
+        locale: 'en',
+        professionalTitle: 'Clinical Psychologist',
+        bio: 'A warm and experienced therapist with instant booking availability.',
+      },
+    ],
     avatarUrl: 'https://example.com/avatar.jpg',
     yearsOfExperience: 8,
     instantBookingPrice30Egp: '520.00',
@@ -247,7 +258,7 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
           displayName: 'Dr. Salma',
           avatarUrl: 'https://example.com/avatar.jpg',
           primarySpecialty: 'القلق',
-          title: 'Therapist',
+          title: 'أخصائي نفسي',
           isOnline: true,
           availableNow: true,
           instantBookingEnabled: true,
@@ -274,6 +285,24 @@ describe('ListPatientInstantBookingPractitionersUseCase', () => {
         generatedAt: expect.any(String),
       },
     });
+  });
+
+  it('returns the English professional content for the same eligible practitioner', async () => {
+    const result = await useCase.execute({
+      locale: 'en',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        practitionerId: 'practitioner-1',
+        title: 'Clinical Psychologist',
+        shortBio:
+          'A warm and experienced therapist with instant booking availability.',
+        supportedDurations: [30, 60],
+      }),
+    );
   });
 
   it('defaults a missing trusted request country to USD before preparing discovery pricing', async () => {

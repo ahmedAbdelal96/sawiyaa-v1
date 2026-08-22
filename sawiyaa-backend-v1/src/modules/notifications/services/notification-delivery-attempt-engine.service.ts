@@ -8,6 +8,7 @@ import {
 } from './notification-channel-execution.service';
 import { NotificationRetryPolicyService } from './notification-retry-policy.service';
 import { NotificationDomainValidityGuardService } from './notification-domain-validity-guard.service';
+import { NotificationRealtimePublisher } from './notification-realtime.publisher';
 
 type ExecutionOutcome = 'SENT' | 'FAILED' | 'SKIPPED';
 
@@ -23,6 +24,7 @@ export class NotificationDeliveryAttemptEngineService {
     private readonly channelExecutionService: NotificationChannelExecutionService,
     private readonly retryPolicyService: NotificationRetryPolicyService,
     private readonly domainValidityGuardService: NotificationDomainValidityGuardService,
+    private readonly notificationRealtimePublisher: NotificationRealtimePublisher,
   ) {}
 
   async executeClaimedNotification(input: {
@@ -100,6 +102,16 @@ export class NotificationDeliveryAttemptEngineService {
         return this.buildResult(notification.id, 'SKIPPED', false, {
           attemptId: attempt.id,
           reason: 'NOTIFICATION_ALREADY_PROCESSED',
+        });
+      }
+
+      if (notification.channel === 'IN_APP') {
+        this.notificationRealtimePublisher.publish(notification.userId, {
+          notificationId: notification.id,
+          typeSlug: notification.notificationType.slug,
+          relatedEntityType: notification.relatedEntityType ?? 'SYSTEM',
+          relatedEntityId: notification.relatedEntityId ?? notification.id,
+          createdAt: now.toISOString(),
         });
       }
 

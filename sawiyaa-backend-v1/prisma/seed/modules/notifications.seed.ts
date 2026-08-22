@@ -259,7 +259,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Practitioner notification when a patient creates an instant booking request',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -270,7 +270,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Patient notification when an instant booking request is accepted',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -281,7 +281,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Patient notification when an instant booking request is rejected',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -292,7 +292,7 @@ export const notificationsSeedModule: SeedModule = {
         description:
           'Patient notification when an instant booking request expires',
         category: NotificationCategory.SESSION,
-        supportsEmail: false,
+        supportsEmail: true,
         supportsSms: false,
         supportsPush: true,
         supportsInApp: true,
@@ -361,6 +361,42 @@ export const notificationsSeedModule: SeedModule = {
     }
 
     const templateSeed = [
+      {
+        typeSlug: 'instant-booking.request-created',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-created.email.v1',
+        translations: {
+          en: { subjectTemplate: 'New instant booking request', titleTemplate: 'New instant booking request', bodyTemplate: 'A patient sent you a new instant booking request. Open Sawiyaa to respond.', ctaLabel: 'Open request', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          ar: { subjectTemplate: 'طلب حجز فوري جديد', titleTemplate: 'طلب حجز فوري جديد', bodyTemplate: 'أرسل أحد المرضى طلب حجز فوري جديدًا. افتح سويّا للرد.', ctaLabel: 'افتح الطلب', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-accepted',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-accepted.email.v1',
+        translations: {
+          en: { subjectTemplate: 'Your instant booking was accepted', titleTemplate: 'Instant booking accepted', bodyTemplate: 'Your instant booking request was accepted. Continue to payment in Sawiyaa.', ctaLabel: 'Continue to payment', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          ar: { subjectTemplate: 'تم قبول الحجز الفوري', titleTemplate: 'تم قبول الحجز الفوري', bodyTemplate: 'تم قبول طلب الحجز الفوري. تابع إلى الدفع من سويّا.', ctaLabel: 'تابع إلى الدفع', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-rejected',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-rejected.email.v1',
+        translations: {
+          en: { subjectTemplate: 'Your instant booking was declined', titleTemplate: 'Instant booking declined', bodyTemplate: 'Your instant booking request was declined. Open Sawiyaa for the next step.', ctaLabel: 'Open request', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          ar: { subjectTemplate: 'تم رفض الحجز الفوري', titleTemplate: 'تم رفض الحجز الفوري', bodyTemplate: 'تم رفض طلب الحجز الفوري. افتح سويّا لمعرفة الخطوة التالية.', ctaLabel: 'افتح الطلب', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+        },
+      },
+      {
+        typeSlug: 'instant-booking.request-expired',
+        channel: NotificationChannel.EMAIL,
+        slug: 'instant-booking.request-expired.email.v1',
+        translations: {
+          en: { subjectTemplate: 'Your instant booking request expired', titleTemplate: 'Instant booking expired', bodyTemplate: 'Your instant booking request expired before a response. Open Sawiyaa to try again.', ctaLabel: 'Open instant booking', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+          ar: { subjectTemplate: 'انتهت صلاحية طلب الحجز الفوري', titleTemplate: 'انتهت صلاحية الحجز الفوري', bodyTemplate: 'انتهت صلاحية طلب الحجز الفوري قبل وصول رد. افتح سويّا للمحاولة مرة أخرى.', ctaLabel: 'افتح الحجز الفوري', ctaUrlTemplate: '{{appUrl}}{{routePath}}' },
+        },
+      },
       {
         typeSlug: 'auth.practitioner-login-otp',
         channel: NotificationChannel.EMAIL,

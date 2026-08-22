@@ -2,7 +2,6 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import {
   CalendarDays,
   Clock,
@@ -316,7 +315,7 @@ export default function PatientPackagePurchaseDetailPanel({
                 </h3>
                 {purchase.practitioner.professionalTitle && (
                   <p className="truncate text-xs text-text-muted mt-0.5">
-                    {getProfessionalTitleLabel(purchase.practitioner.professionalTitle, locale)}
+                    {purchase.practitioner.professionalTitle.trim()}
                   </p>
                 )}
               </div>

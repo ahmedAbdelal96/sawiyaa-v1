@@ -15,31 +15,33 @@ import {
 import { getPractitionerInstantBookingErrorKey } from "../lib/instant-booking-errors";
 import InstantBookingRequestCard from "./InstantBookingRequestCard";
 
-function formatNearestExpiry(expiresAt: string, locale: string, nowMs: number) {
+function formatNearestExpiry(
+  expiresAt: string,
+  nowMs: number,
+  format: (key: string, values?: Record<string, number>) => string,
+) {
   const diffMs = new Date(expiresAt).getTime() - nowMs;
   if (diffMs <= 0) {
-    return locale === "ar" ? "انتهت صلاحية الطلب" : "Request expired";
+    return format("queue.summary.nearestExpiryExpired");
   }
 
   const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  const numberFormat = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US");
 
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    if (locale === "ar") {
-      return `أقرب انتهاء خلال ${numberFormat.format(hours)} س ${numberFormat.format(remainingMinutes)} د`;
-    }
-    return `Nearest expiry in ${numberFormat.format(hours)}h ${numberFormat.format(remainingMinutes)}m`;
+    return format("queue.summary.nearestExpiryInHours", {
+      hours,
+      minutes: remainingMinutes,
+    });
   }
 
-  if (locale === "ar") {
-    return `أقرب انتهاء خلال ${numberFormat.format(minutes)} د ${numberFormat.format(seconds)} ث`;
-  }
-
-  return `Nearest expiry in ${numberFormat.format(minutes)}m ${numberFormat.format(seconds)}s`;
+  return format("queue.summary.nearestExpiryInMinutes", {
+    minutes,
+    seconds,
+  });
 }
 
 export default function PractitionerPendingRequestsPanel() {
@@ -169,7 +171,7 @@ export default function PractitionerPendingRequestsPanel() {
           </span>
           {nearestRequest ? (
             <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-text-secondary ring-1 ring-border-light dark:bg-white/10 dark:text-white/80 dark:ring-white/10">
-              {formatNearestExpiry(nearestRequest.expiresAt, locale, nowMs)}
+              {formatNearestExpiry(nearestRequest.expiresAt, nowMs, t)}
             </span>
           ) : null}
         </div>

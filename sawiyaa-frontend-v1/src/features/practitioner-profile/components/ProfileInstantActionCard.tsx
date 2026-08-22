@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowRight, Clock, Zap } from "lucide-react";
 import InstantBookingModal from "@/features/instant-booking/components/InstantBookingModal";
 import { getPublicPractitionerInstantBookingAvailability } from "@/features/instant-booking/api/instant-booking.api";
@@ -22,6 +22,7 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentAvailability, setCurrentAvailability] = useState(instantBookingAvailability);
   const locale = useLocale();
+  const t = useTranslations("practitioner-profile");
   const isArabic = locale === "ar";
 
   useEffect(() => {
@@ -56,12 +57,10 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:text-amber-300">
               <Zap size={14} className="fill-amber-500 text-amber-500 animate-pulse" />
-              <span>{isArabic ? "متاح الآن لجلسة فورية" : "Available now for instant session"}</span>
+              <span>{t("booking.instant.availableNow")}</span>
             </div>
             <p className="text-xs font-medium text-text-secondary">
-              {isArabic
-                ? "ابدأ جلسة فيديو خلال دقائق بعد موافقة المختص."
-                : "Start a video session in minutes after practitioner approval."}
+              {t("booking.instant.note")}
             </p>
           </div>
 
@@ -71,7 +70,7 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
             className="sawiyaa-btn-press inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white transition-all hover:bg-primary-hover shadow-sm hover:shadow cursor-pointer"
           >
             <Clock size={14} />
-            <span>{isArabic ? "طلب جلسة فورية" : "Request Instant Session"}</span>
+            <span>{t("booking.instant.cta")}</span>
             <ArrowRight size={14} className="rtl:rotate-180" />
           </button>
         </div>

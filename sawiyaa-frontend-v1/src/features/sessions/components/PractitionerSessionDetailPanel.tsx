@@ -73,10 +73,6 @@ function getRoomCloseErrorMessage(code: string | undefined, t: any) {
   }
 }
 
-function getSafeTranslation(t: any, key: string, fallback: string) {
-  return t.has?.(key) ? t(key) : fallback;
-}
-
 export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
   const t = useTranslations("sessions.practitioner");
   const locale = useLocale();
@@ -201,33 +197,15 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
       typeof t
     >[0],
   );
-  const roomCloseSupportHeading = getSafeTranslation(
-    t,
-    "detail.roomClose.support.heading",
-    locale.startsWith("ar")
-      ? "هل تحتاج إلى مساعدة في هذه الجلسة؟"
-      : "Need help with this session?",
-  );
-  const roomCloseSupportNote = getSafeTranslation(
-    t,
-    "detail.roomClose.support.note",
-    locale.startsWith("ar")
-      ? "هل تحتاج إلى مساعدة في هذه الجلسة؟"
-      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
-  );
-  const roomCloseActionLabel = getSafeTranslation(
-    t,
-    "detail.roomClose.action",
-    locale.startsWith("ar") ? "إغلاق الجلسة" : "Close room",
-  );
+  const roomCloseSupportHeading = t("detail.roomClose.support.heading");
+  const roomCloseSupportNote = t("detail.roomClose.support.note");
+  const roomCloseActionLabel = t("detail.roomClose.action");
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
-  const openInMessagesLabel = locale.startsWith("ar")
-    ? "فتح داخل الرسائل"
-    : "Open in messages";
+  const openInMessagesLabel = t("detail.ui.openMessages");
 
   const liveFlowKey = !hasRuntimeAccess
     ? "unavailable"
@@ -331,10 +309,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               />
             </span>
             <h2 className="text-text-primary mt-2 text-xl font-bold dark:text-white/95">
-              {locale === "ar" ? "جلسة مع " : "Session with "}
-              <span className="text-primary">
-                {session.patient?.displayName ?? "—"}
-              </span>
+              {t("detail.ui.sessionWith", { name: session.patient?.displayName ?? "—" })}
             </h2>
             <div className="text-text-secondary mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
               <span className="inline-flex items-center gap-1.5">
@@ -348,21 +323,15 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={15} className="text-text-muted" />
-                {session.durationMinutes} {locale === "ar" ? "دقيقة" : "mins"}
+                {t("detail.ui.minutes", { count: session.durationMinutes })}
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Video size={15} className="text-text-muted" />
                 {session.sessionMode === "VIDEO"
-                  ? locale === "ar"
-                    ? "فيديو"
-                    : "Video"
+                  ? t("detail.ui.video")
                   : session.sessionMode === "AUDIO"
-                    ? locale === "ar"
-                      ? "صوتي"
-                      : "Audio"
-                    : locale === "ar"
-                      ? "صوتي"
-                      : "Chat"}
+                    ? t("detail.ui.audio")
+                    : t("detail.ui.chatMode")}
               </span>
             </div>
           </div>
@@ -395,12 +364,12 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {/* Session Summary Card */}
           <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
             <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-              {locale === "ar" ? "ملخص الجلسة" : "Session Summary"}
+              {t("detail.currentStateHeading")}
             </h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "تاريخ الحجز" : "Booked At"}
+                  {t("detail.bookedAt")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {formatPractitionerOrViewerDateTime(
@@ -411,21 +380,17 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "نوع التدفق" : "Flow Type"}
+                  {t("detail.ui.flowType")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
-                  {session.flowType === "INSTANT"
-                    ? locale === "ar"
-                      ? "صوتي"
-                      : "Instant Session"
-                    : locale === "ar"
-                      ? "صوتي"
-                      : "Scheduled Session"}
+                    {session.flowType === "INSTANT"
+                      ? t("detail.ui.instantSession")
+                      : t("detail.ui.scheduledSession")}
                 </span>
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "المنطقة الزمنية" : "Timezone"}
+                  {t("detail.summary.timezoneLabel")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {practitionerTimeZoneLabel ?? session.timezone ?? "�"}
@@ -433,7 +398,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               </div>
               <div className="bg-surface-tertiary flex flex-col gap-1 rounded-xl p-3 dark:bg-white/5">
                 <span className="text-text-muted text-xs">
-                  {locale === "ar" ? "تاريخ الانتهاء المتوقع" : "Scheduled End"}
+                  {t("detail.ui.expectedEnd")}
                 </span>
                 <span className="text-text-primary text-sm font-medium dark:text-white/95">
                   {session.scheduledEndAt
@@ -457,7 +422,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
               <div className="border-border-light mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-3 dark:border-white/10">
                 <div>
                   <p className="text-text-muted text-xs">
-                    {locale === "ar" ? "حالة الغرفة" : "Room Status"}
+                    {t("detail.ui.roomStatus")}
                   </p>
                   <p className="text-text-primary mt-0.5 text-sm font-semibold dark:text-white/90">
                     {t(
@@ -628,9 +593,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {session.notesInternal && (
             <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
               <h3 className="text-text-primary mb-3 text-base font-semibold dark:text-white/90">
-                {locale === "ar"
-                  ? "ملاحظات إدارية داخلية"
-                  : "Internal Admin Notes"}
+                {t("detail.ui.internalNotes")}
               </h3>
               <p className="text-text-secondary bg-surface-tertiary rounded-xl p-4 text-sm leading-relaxed whitespace-pre-wrap dark:bg-white/5">
                 {session.notesInternal}
@@ -642,9 +605,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
           {session.timeline && session.timeline.length > 0 && (
             <div className="border-border-light bg-surface-primary rounded-2xl border p-5 shadow-sm dark:bg-white/5">
               <h3 className="text-text-primary mb-4 text-base font-semibold dark:text-white/90">
-                {locale === "ar"
-                  ? "ملاحظات إدارية داخلية"
-                  : "Event Timeline & History"}
+                {t("detail.ui.timeline")}
               </h3>
               <div className="border-border-light relative ml-2 space-y-5 border-l pl-4 rtl:mr-2 rtl:border-r rtl:border-l-0 rtl:pr-4 rtl:pl-0 dark:border-white/10">
                 {session.timeline.map((event, idx) => (
@@ -659,13 +620,11 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                         )}
                       </span>
                       <p className="text-text-primary mt-0.5 text-sm font-semibold dark:text-white/90">
-                        {locale === "ar"
-                          ? formatEventTypeAr(event.eventType)
-                          : formatEventTypeEn(event.eventType)}
+                        {formatEventType(event.eventType, t)}
                       </p>
                       {formatCleanReason(event.reason) && (
                         <p className="text-text-secondary bg-surface-tertiary mt-1 inline-block rounded px-2 py-1 text-xs dark:bg-white/5">
-                          {locale === "ar" ? "السبب: " : "Reason: "}
+                          {t("detail.ui.reason")} {" "}
                           {formatCleanReason(event.reason)}
                         </p>
                       )}
@@ -683,7 +642,7 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
             {/* 1. Patient Profile */}
             <div>
               <h3 className="text-text-primary mb-3 text-sm font-bold dark:text-white/90">
-                {locale === "ar" ? "بيانات المريض" : "Patient Profile"}
+                {t("detail.ui.patientProfile")}
               </h3>
               <div className="flex items-center gap-3">
                 <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-bold">
@@ -703,13 +662,13 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 {session.patientDetails?.gender && (
                   <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
                     <span className="text-text-muted block text-[10px]">
-                      {locale === "ar" ? "الجنس" : "Gender"}
+                      {t("detail.ui.gender")}
                     </span>
                     <span className="text-text-primary font-semibold dark:text-white/90">
                       {session.patientDetails.gender === "MALE"
-                        ? locale === "ar" ? "ذكر" : "Male"
+                        ? t("detail.ui.male")
                         : session.patientDetails.gender === "FEMALE"
-                          ? locale === "ar" ? "أنثى" : "Female"
+                          ? t("detail.ui.female")
                           : session.patientDetails.gender}
                     </span>
                   </div>
@@ -717,28 +676,28 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
                 {session.patientDetails?.dateOfBirth && (
                   <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
                     <span className="text-text-muted block text-[10px]">
-                      {locale === "ar" ? "العمر" : "Age"}
+                      {t("detail.ui.age")}
                     </span>
                     <span className="text-text-primary font-semibold dark:text-white/90">
                       {calculateAge(session.patientDetails.dateOfBirth)}{" "}
-                      {locale === "ar" ? "سنة" : "years"}
+                      {t("detail.ui.years")}
                     </span>
                   </div>
                 )}
                 {session.patientDetails?.preferredLanguage && (
                   <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
                     <span className="text-text-muted block text-[10px]">
-                      {locale === "ar" ? "اللغة المفضلة" : "Language"}
+                      {t("detail.ui.preferredLanguage")}
                     </span>
                     <span className="text-text-primary font-semibold dark:text-white/90">
-                      {session.patientDetails.preferredLanguage === "ar" ? "العربية" : "English"}
+                      {session.patientDetails.preferredLanguage === "ar" ? t("detail.ui.arabic") : t("detail.ui.english")}
                     </span>
                   </div>
                 )}
                 {session.patientDetails?.country && (
                   <div className="bg-surface-tertiary rounded-lg p-2 dark:bg-white/5">
                     <span className="text-text-muted block text-[10px]">
-                      {locale === "ar" ? "الدولة" : "Country"}
+                      {t("detail.ui.country")}
                     </span>
                     <span className="text-text-primary font-semibold dark:text-white/90 truncate block">
                       {locale === "ar" && session.patientDetails.country.nativeName
@@ -753,32 +712,32 @@ export default function PractitionerSessionDetailPanel({ sessionId }: Props) {
             {/* 2. Booking & Payment */}
             <div className="pt-3">
               <h3 className="text-text-primary mb-2 text-sm font-bold dark:text-white/90">
-                {locale === "ar" ? "الحجز والمالية" : "Booking & Payment"}
+                {t("detail.ui.bookingPayment")}
               </h3>
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-text-muted">{locale === "ar" ? "نوع التغطية" : "Coverage"}</span>
+                  <span className="text-text-muted">{t("detail.ui.coverage")}</span>
                   <span className="text-text-primary font-medium dark:text-white/90">
                     {session.paymentCoverageType === "PACKAGE"
-                      ? locale === "ar" ? "باقة علاجية" : "Package"
+                      ? t("detail.ui.package")
                       : session.paymentCoverageType === "CORPORATE_SPONSORSHIP"
-                        ? locale === "ar" ? "رعاية شركات" : "Corporate"
-                        : locale === "ar" ? "دفع مباشر" : "Direct Payment"}
+                        ? t("detail.ui.corporate")
+                        : t("detail.ui.directPayment")}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-text-muted">{locale === "ar" ? "حالة الدفع" : "Status"}</span>
+                  <span className="text-text-muted">{t("detail.ui.paymentStatus")}</span>
                   <span className="text-text-primary font-semibold dark:text-white/90">
                     {session.paymentDetails
-                      ? locale === "ar" ? formatPaymentStatusAr(session.paymentDetails.status) : session.paymentDetails.status
+                      ? formatPaymentStatus(session.paymentDetails.status, t)
                       : session.paymentCoverageType === "PACKAGE"
-                        ? locale === "ar" ? "مغطى بالباقة" : "Package Covered"
-                        : locale === "ar" ? "لم يتم الدفع" : "Unpaid"}
+                        ? t("detail.ui.packageCovered")
+                        : t("detail.ui.unpaid")}
                   </span>
                 </div>
                 {session.paymentDetails && (
                   <div className="flex items-center justify-between border-t border-border-light/40 pt-2 dark:border-white/5">
-                    <span className="text-text-muted">{locale === "ar" ? "المبلغ الإجمالي" : "Total"}</span>
+                    <span className="text-text-muted">{t("detail.ui.total")}</span>
                     <span className="text-primary font-bold text-sm">
                       {formatMoney(locale, session.paymentDetails.amountTotal, session.paymentDetails.currencyCode)}
                     </span>
@@ -1003,109 +962,35 @@ function formatCleanReason(reason: string | null | undefined): string | null {
   return reason;
 }
 
-function formatEventTypeAr(eventType: string) {
-  switch (eventType) {
-    case "SESSION_CREATED":
-      return "تم إنشاء الجلسة";
-    case "PAYMENT_PENDING":
-      return "تم إنشاء الجلسة";
-    case "PAYMENT_CONFIRMED":
-      return "تم إنشاء الجلسة";
-    case "PRACTITIONER_ACCEPTED":
-      return "تم إنشاء الجلسة";
-    case "PRACTITIONER_REJECTED":
-      return "تم إنشاء الجلسة";
-    case "SESSION_CONFIRMED":
-      return "تم إنشاء الجلسة";
-    case "SESSION_READY_TO_JOIN":
-      return "تم إنشاء الجلسة";
-    case "PATIENT_JOINED":
-      return "تم إنشاء الجلسة";
-    case "PRACTITIONER_JOINED":
-      return "تم إنشاء الجلسة";
-    case "SESSION_STARTED":
-      return "تم إنشاء الجلسة";
-    case "SESSION_AWAITING_COMPLETION_CONFIRMATION":
-      return "تم إنشاء الجلسة";
-    case "SESSION_COMPLETED":
-      return "تم إنشاء الجلسة";
-    case "CANCELLED_BY_PATIENT":
-      return "تم إنشاء الجلسة";
-    case "CANCELLED_BY_PRACTITIONER":
-      return "تم إنشاء الجلسة";
-    case "EXPIRED_UNPAID":
-      return "تم إنشاء الجلسة";
-    case "NO_SHOW_PATIENT":
-      return "تم إنشاء الجلسة";
-    case "NO_SHOW_PRACTITIONER":
-      return "تم إنشاء الجلسة";
-    case "PROVIDER_ROOM_CREATED":
-      return "تم إنشاء الجلسة";
-    case "PROVIDER_ROOM_ENDED":
-      return "تم إنشاء الجلسة";
-    default:
-      return eventType;
-  }
+const EVENT_TYPE_KEYS = new Set([
+  "SESSION_CREATED",
+  "PAYMENT_PENDING",
+  "PAYMENT_CONFIRMED",
+  "PRACTITIONER_ACCEPTED",
+  "PRACTITIONER_REJECTED",
+  "SESSION_CONFIRMED",
+  "SESSION_READY_TO_JOIN",
+  "PATIENT_JOINED",
+  "PRACTITIONER_JOINED",
+  "SESSION_STARTED",
+  "SESSION_AWAITING_COMPLETION_CONFIRMATION",
+  "SESSION_COMPLETED",
+  "CANCELLED_BY_PATIENT",
+  "CANCELLED_BY_PRACTITIONER",
+  "EXPIRED_UNPAID",
+  "NO_SHOW_PATIENT",
+  "NO_SHOW_PRACTITIONER",
+  "PROVIDER_ROOM_CREATED",
+  "PROVIDER_ROOM_ENDED",
+]);
+
+function formatEventType(eventType: string, t: any) {
+  return EVENT_TYPE_KEYS.has(eventType)
+    ? t(`detail.eventTypes.${eventType}`)
+    : eventType;
 }
 
-function formatEventTypeEn(eventType: string) {
-  switch (eventType) {
-    case "SESSION_CREATED":
-      return "Session Created";
-    case "PAYMENT_PENDING":
-      return "Payment Pending";
-    case "PAYMENT_CONFIRMED":
-      return "Payment Confirmed";
-    case "PRACTITIONER_ACCEPTED":
-      return "Session Accepted by Practitioner";
-    case "PRACTITIONER_REJECTED":
-      return "Session Rejected by Practitioner";
-    case "SESSION_CONFIRMED":
-      return "Session Confirmed";
-    case "SESSION_READY_TO_JOIN":
-      return "Session Ready to Join";
-    case "PATIENT_JOINED":
-      return "Patient Joined Room";
-    case "PRACTITIONER_JOINED":
-      return "Practitioner Joined Room";
-    case "SESSION_STARTED":
-      return "Session Started";
-    case "SESSION_AWAITING_COMPLETION_CONFIRMATION":
-      return "Awaiting Completion Confirmation";
-    case "SESSION_COMPLETED":
-      return "Session Completed";
-    case "CANCELLED_BY_PATIENT":
-      return "Cancelled by Patient";
-    case "CANCELLED_BY_PRACTITIONER":
-      return "Cancelled by Practitioner";
-    case "EXPIRED_UNPAID":
-      return "Expired Unpaid";
-    case "NO_SHOW_PATIENT":
-      return "Patient No-Show";
-    case "NO_SHOW_PRACTITIONER":
-      return "Practitioner No-Show";
-    case "PROVIDER_ROOM_CREATED":
-      return "Live Room Created";
-    case "PROVIDER_ROOM_ENDED":
-      return "Live Room Closed";
-    default:
-      return eventType;
-  }
-}
-
-function formatPaymentStatusAr(status: string) {
-  switch (status) {
-    case "CREATED":
-      return "تم إنشاء الجلسة";
-    case "CAPTURED":
-      return "تم إنشاء الجلسة";
-    case "FAILED":
-      return "تم إنشاء الجلسة";
-    case "CANCELLED":
-      return "تم إنشاء الجلسة";
-    case "REFUNDED":
-      return "تم إنشاء الجلسة";
-    default:
-      return status;
-  }
+function formatPaymentStatus(status: string, t: any) {
+  const knownStatuses = new Set(["CREATED", "CAPTURED", "FAILED", "CANCELLED", "REFUNDED"]);
+  return knownStatuses.has(status) ? t(`detail.paymentStatuses.${status}`) : status;
 }

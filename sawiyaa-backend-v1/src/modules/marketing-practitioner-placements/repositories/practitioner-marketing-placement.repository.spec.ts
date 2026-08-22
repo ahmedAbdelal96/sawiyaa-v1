@@ -1,4 +1,5 @@
 import { PractitionerMarketingPlacementRepository } from './practitioner-marketing-placement.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 describe('PractitionerMarketingPlacementRepository', () => {
   const prisma = {
@@ -7,7 +8,10 @@ describe('PractitionerMarketingPlacementRepository', () => {
     },
   };
 
-  const repository = new PractitionerMarketingPlacementRepository(prisma as never);
+  const repository = new PractitionerMarketingPlacementRepository(
+    prisma as never,
+    new PractitionerProfessionalContentResolver(),
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -78,6 +82,8 @@ describe('PractitionerMarketingPlacementRepository', () => {
       limit: 5,
     });
     expect(resultEn[0]?.badgeLabel).toBe('Featured');
+    expect(resultAr[0]?.primarySpecialty).toBe('التخصص');
+    expect(resultEn[0]?.primarySpecialty).toBe('Specialty');
   });
 
   it('returns empty when there are no eligible placements', async () => {
@@ -91,12 +97,46 @@ describe('PractitionerMarketingPlacementRepository', () => {
 
     expect(result).toEqual([]);
   });
+
+  it('resolves featured professional titles without changing placement ordering', async () => {
+    prisma.practitionerMarketingPlacement.findMany.mockResolvedValue([
+      buildPlacement({
+        slug: 'localized-slug',
+        badgeLabelAr: null,
+        badgeLabelEn: null,
+        professionalContentTranslations: [
+          { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: null },
+          { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: null },
+        ],
+      }),
+    ]);
+
+    const arabic = await repository.listActiveHomeFeaturedPractitioners({
+      locale: 'ar',
+      now: new Date('2026-05-28T10:00:00.000Z'),
+      limit: 5,
+    });
+    const english = await repository.listActiveHomeFeaturedPractitioners({
+      locale: 'en',
+      now: new Date('2026-05-28T10:00:00.000Z'),
+      limit: 5,
+    });
+
+    expect(arabic[0]?.slug).toBe('localized-slug');
+    expect(arabic[0]?.professionalTitle).toBe('أخصائي نفسي');
+    expect(english[0]?.professionalTitle).toBe('Clinical Psychologist');
+  });
 });
 
 function buildPlacement(input: {
   slug: string;
   badgeLabelAr: string | null;
   badgeLabelEn: string | null;
+  professionalContentTranslations?: Array<{
+    locale: 'ar' | 'en';
+    professionalTitle: string | null;
+    bio: string | null;
+  }>;
 }) {
   return {
     badgeLabelAr: input.badgeLabelAr,
@@ -105,6 +145,8 @@ function buildPlacement(input: {
       id: `practitioner-${input.slug}`,
       publicSlug: input.slug,
       professionalTitle: 'Title',
+      primaryContentLocale: null,
+      professionalContentTranslations: input.professionalContentTranslations ?? [],
       avatarUrl: null,
       user: {
         displayName: `Name ${input.slug}`,
@@ -120,7 +162,12 @@ function buildPlacement(input: {
       specialties: [
         {
           specialty: {
-            translations: [{ title: 'Specialty' }],
+            nameAr: 'التخصص',
+            nameEn: 'Specialty',
+            translations: [
+              { locale: 'ar', title: 'التخصص' },
+              { locale: 'en', title: 'Specialty' },
+            ],
           },
         },
       ],

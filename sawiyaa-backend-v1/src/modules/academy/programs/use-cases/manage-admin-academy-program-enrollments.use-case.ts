@@ -212,19 +212,6 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
     >,
   ) {
     const now = new Date();
-    const totalSessions = (enrollment.academyProgram as { _count?: { sessions?: number } })._count?.sessions ?? 0;
-      const attendanceSummarySnapshot =
-      enrollment.attendanceSummarySnapshot ??
-      (action === 'MARK_COMPLETED' || action === 'MARK_CERTIFIED'
-        ? {
-            totalSessions,
-            attendedSessions: totalSessions,
-            absentSessions: 0,
-            unmarkedSessions: 0,
-            attendancePercentage: totalSessions > 0 ? 100 : 0,
-          }
-        : null);
-
     if (action === 'CANCEL_ENROLLMENT') {
       return {
         status: AcademyProgramEnrollmentStatus.CANCELLED,
@@ -237,16 +224,21 @@ export class ManageAdminAcademyProgramEnrollmentsUseCase {
         status: AcademyProgramEnrollmentStatus.CONFIRMED,
         confirmedAt: enrollment.confirmedAt ?? now,
         completedAt: enrollment.completedAt ?? now,
-        ...(attendanceSummarySnapshot ? { attendanceSummarySnapshot } : {}),
       };
+    }
+
+    if (!enrollment.certificateFileStoragePath) {
+      throw new BadRequestException({
+        messageKey: 'academyProgram.errors.certificateFileRequired',
+        error: 'ACADEMY_PROGRAM_CERTIFICATE_FILE_REQUIRED',
+      });
     }
 
     return {
       status: AcademyProgramEnrollmentStatus.CONFIRMED,
       confirmedAt: enrollment.confirmedAt ?? now,
       completedAt: enrollment.completedAt ?? now,
-      certificateIssuedAt: enrollment.certificateIssuedAt ?? now,
-      ...(attendanceSummarySnapshot ? { attendanceSummarySnapshot } : {}),
+      certificateIssuedAt: enrollment.certificateIssuedAt,
     };
   }
 }

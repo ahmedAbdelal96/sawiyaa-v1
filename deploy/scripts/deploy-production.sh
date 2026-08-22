@@ -315,18 +315,34 @@ fi
 MIGRATION_STATUS="$(printf '%s\n' "$scanner_output" | sed -n 's/^MIGRATIONS: //p' | head -n 1)"
 
 echo "Creating and verifying database backup before migrations..."
+BACKUP_TIMESTAMP="$(date -u +%Y%m%d-%H%M%S)"
 SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
 SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
 SAWIYAA_COMPOSE_ENV_FILE="$FRONTEND_ENV_FILE" \
 SAWIYAA_TARGET_SHA="$TARGET_SHA" \
+SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
   bash "$PROJECT_DIR/deploy/scripts/backup-db.sh"
+
+SHORT_TARGET_SHA="${TARGET_SHA:0:12}"
+DB_BACKUP_DIR="${SAWIYAA_BACKUP_DIR:-/opt/sawiyaa-backups/db}"
+DB_BACKUP_FILE="$DB_BACKUP_DIR/sawiyaa-${BACKUP_TIMESTAMP}-${SHORT_TARGET_SHA}.dump"
+echo "Creating and verifying unified file-volume backup matched to the database backup..."
+SAWIYAA_PROJECT_DIR="$PROJECT_DIR" \
+SAWIYAA_COMPOSE_FILE="$PROJECT_DIR/$COMPOSE_FILE" \
+SAWIYAA_COMPOSE_ENV_FILE="$FRONTEND_ENV_FILE" \
+SAWIYAA_TARGET_SHA="$TARGET_SHA" \
+SAWIYAA_BACKUP_TIMESTAMP="$BACKUP_TIMESTAMP" \
+SAWIYAA_DB_BACKUP_FILE="$DB_BACKUP_FILE" \
+SAWIYAA_BACKUP_DIR="${SAWIYAA_FILE_BACKUP_DIR:-/opt/sawiyaa-backups}" \
+  bash "$PROJECT_DIR/deploy/scripts/backup-files.sh"
 
 echo "Running Prisma migrations..."
 docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm backend npm run prisma:migrate:deploy
 echo "MIGRATE_DEPLOY: SUCCESS"
 
-echo "Bootstrapping production config..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm -e ALLOW_CONFIG_BOOTSTRAP=true backend npm run db:bootstrap:config
+echo "Bootstrapping production baseline (config, financial rules, and required catalogs)..."
+docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
+  -e ALLOW_PRODUCTION_BASELINE_SEED=true backend npm run db:seed:production
 if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
   echo "Running explicitly authorized first-time Paymob provider-control bootstrap..."
   docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps \

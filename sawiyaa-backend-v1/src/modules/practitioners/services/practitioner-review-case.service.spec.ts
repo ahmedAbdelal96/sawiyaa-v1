@@ -101,4 +101,33 @@ describe('PractitionerReviewCaseService', () => {
       data: { status: ReviewSectionStatus.PENDING },
     }));
   });
+
+  it('marks an application-owned credential requirement submitted without touching practitioner ownership', async () => {
+    const requirementUpdate = jest.fn().mockResolvedValue({});
+    const sectionUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+    const db = {
+      practitionerReviewCase: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'onboarding-case-1' }),
+      },
+      practitionerReviewRequirement: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'requirement-1' }),
+        update: requirementUpdate,
+      },
+      practitionerReviewSection: { updateMany: sectionUpdateMany },
+    };
+    const service = new PractitionerReviewCaseService(db as never);
+
+    await service.markApplicationRequirementSubmitted({
+      applicationId: 'application-1',
+      section: 'PROFESSIONAL_CREDENTIALS',
+      credentialType: 'LICENSE',
+    });
+
+    expect(db.practitionerReviewCase.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ applicationId: 'application-1' }),
+    }));
+    expect(requirementUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: ReviewRequirementStatus.SUBMITTED }),
+    }));
+  });
 });

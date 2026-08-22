@@ -9,6 +9,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { GeneralChatConversationSuccessResponseDto } from '../dto/create-general-chat-conversation.dto';
@@ -44,10 +46,12 @@ export class GeneralChatSessionController {
   conversation(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Param('sessionId') sessionId: string,
+    @CurrentLocale() locale: SupportedLocale,
   ) {
     return this.getSessionGeneralChatConversationUseCase.execute({
       authenticatedUser,
       sessionId,
+      locale,
     });
   }
 
@@ -68,10 +72,12 @@ export class GeneralChatSessionController {
   open(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Param('sessionId') sessionId: string,
+    @CurrentLocale() locale: SupportedLocale,
   ) {
     return this.openSessionGeneralChatUseCase.execute({
       authenticatedUser,
       sessionId,
+      locale,
     });
   }
 }

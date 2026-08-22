@@ -43,6 +43,7 @@ function mapBackendDetailsToUi(
   const base = mapBackendListItemToUi(item);
   return {
     ...base,
+    bio: item.fullBio ?? null,
     bioAr: item.fullBio ?? "",
     bioEn: item.fullBio ?? "",
     approachAr: "",

@@ -308,7 +308,7 @@ export const TransactionRow = ({
   ...props
 }: TransactionRowProps) => {
   const { theme } = useTheme();
-  const { isRtl: isRTL } = useAppDirection();
+  const { isRtl: isRTL, chevronForward } = useAppDirection();
   const Container: React.ElementType = onPress ? Pressable : View;
   const containerProps = onPress ? { onPress } : {};
 
@@ -350,7 +350,7 @@ export const TransactionRow = ({
       </View>
       {showChevron ? (
         <Ionicons
-          name={isRTL ? 'chevron-back' : 'chevron-forward'}
+          name={chevronForward}
           size={18}
           color={theme.colors.textMuted}
           style={styles.rowChevron}

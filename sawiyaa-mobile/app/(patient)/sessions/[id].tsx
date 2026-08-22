@@ -21,7 +21,7 @@ import {
   StatusChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { getAppDirection } from "../../../src/i18n/direction";
+import { getAppDirection, getDirectionalIcon } from "../../../src/i18n/direction";
 import {
   usePatientSession,
   useResolvePatientSessionJoinContract,
@@ -32,11 +32,11 @@ import {
   formatLocalizedDate,
   formatLocalizedTime,
 } from "../../../src/features/patient/sessions/slot-utils";
-import { extractApiErrorMessage } from "../../../src/lib/api";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { getSessionGeneralChatConversation } from "../../../src/features/messages/api";
 import { operationalCanCancel, operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
+import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone-options";
 
 export default function SessionDetailScreen() {
   const router = useRouter();
@@ -106,6 +106,7 @@ export default function SessionDetailScreen() {
     t,
     presentationStatus as SessionStatus,
     canAttemptJoin,
+    needsPayment,
     joinAvailableAtText,
     joinBlockedReasonText,
   );
@@ -170,8 +171,8 @@ export default function SessionDetailScreen() {
         provider: contract.provider,
         source: "session_detail",
       });
-    } catch (error) {
-      setJoinError(extractApiErrorMessage(error));
+    } catch {
+      setJoinError(t("patientSessionsFlow.detail.joinError"));
     }
   };
 
@@ -188,20 +189,15 @@ export default function SessionDetailScreen() {
       if (payload.item?.conversationId) {
         router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
       } else {
-        setMessagesError(
-          isRtl
-            ? "لا توجد رسائل سابقة لهذه الجلسة."
-            : "No previous messages for this session.",
-        );
+        setMessagesError(t("patientSessionsFlow.detail.noMessages"));
       }
-    } catch (error) {
-      setMessagesError(extractApiErrorMessage(error));
+    } catch {
+      setMessagesError(t("patientSessionsFlow.detail.openMessagesError"));
     } finally {
       setIsOpeningMessages(false);
     }
   };
 
-  const showPaymentSection = needsPayment || cancellationEligible;
   const rowDirection = isRtl ? "row-reverse" : "row";
   const alignSelfStart = isRtl ? "flex-end" : "flex-start";
   const practitionerName =
@@ -269,11 +265,6 @@ export default function SessionDetailScreen() {
                 minutes: session.durationMinutes,
               })}
             </Text>
-            <Text color="#8F9E98" style={styles.codeText}>
-              {t("patientSessionsFlow.detail.sessionCodeLabel", {
-                sessionCode: session.sessionCode,
-              })}
-            </Text>
           </View>
         </Card>
 
@@ -297,6 +288,12 @@ export default function SessionDetailScreen() {
               }
               onPress={handleJoin}
               loading={joinMutation.isPending}
+              style={styles.primaryAction}
+            />
+          ) : needsPayment ? (
+            <Button
+              title={t("patientSessionsFlow.list.actions.completePayment")}
+              onPress={() => router.push(`/(patient)/sessions/${session.id}/pay`)}
               style={styles.primaryAction}
             />
           ) : null}
@@ -381,38 +378,17 @@ export default function SessionDetailScreen() {
               {messagesError}
             </Text>
           ) : null}
+          {cancellationEligible ? (
+            <Button
+              title={t("patientSessionsFlow.detail.viewCancellation")}
+              onPress={() =>
+                router.push(`/(patient)/sessions/${session.id}/cancel-preview`)
+              }
+              variant="secondary"
+              style={styles.secondaryButton}
+            />
+          ) : null}
         </Card>
-
-        {showPaymentSection ? (
-          <Card variant="flat" padding="md" style={styles.sectionCard}>
-            <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
-              <Text weight="600" style={styles.sectionTitle}>
-                {t("patientSessionsFlow.detail.paymentSectionTitle")}
-              </Text>
-            </View>
-
-            {needsPayment ? (
-              <Button
-                title={t("patientSessionsFlow.detail.payNow")}
-                onPress={() => {
-                  router.push(`/(patient)/sessions/${session.id}/pay`);
-                }}
-                style={styles.primaryAction}
-              />
-            ) : null}
-
-            {cancellationEligible ? (
-              <Button
-                title={t("patientSessionsFlow.detail.viewCancellation")}
-                onPress={() =>
-                  router.push(`/(patient)/sessions/${session.id}/cancel-preview`)
-                }
-                variant="secondary"
-                style={styles.secondaryButton}
-              />
-            ) : null}
-          </Card>
-        ) : null}
 
         <Card variant="flat" padding="md" style={styles.sectionCard}>
           <View style={[styles.sectionHeader, directionRowStyle(direction)]}>
@@ -470,13 +446,11 @@ export default function SessionDetailScreen() {
             theme={theme}
             icon="globe-outline"
             label={t("patientSessionsFlow.detail.timezone")}
-            value={
-              session.timezone
-                ? t("patientSessionsFlow.detail.timezoneValue", {
-                    city: session.timezone,
-                  })
-                : t("patientSessionsFlow.common.notAvailable")
-            }
+              value={
+                (session.timezone
+                  ? getTimeZoneDisplayLabel(session.timezone, isRtl ? "ar" : "en")
+                  : null) ?? t("patientSessionsFlow.common.notAvailable")
+              }
           />
 
           {session.expiresAt ? (
@@ -516,19 +490,22 @@ function formatPresentationStatusLabel(
   status: SessionStatus,
 ) {
   const map: Partial<Record<SessionStatus, string>> = {
-    UPCOMING: t("patientSessionsFlow.presentationStatus.UPCOMING"),
-    READY_TO_JOIN: t("patientSessionsFlow.presentationStatus.READY_TO_JOIN"),
-    IN_PROGRESS: t("patientSessionsFlow.presentationStatus.IN_PROGRESS"),
-    COMPLETED: t("patientSessionsFlow.presentationStatus.COMPLETED"),
-    CANCELLED: t("patientSessionsFlow.presentationStatus.CANCELLED"),
-    AWAITING_COMPLETION_CONFIRMATION: t("patientSessionsFlow.presentationStatus.AWAITING_COMPLETION_CONFIRMATION"),
-    EXPIRED: t("patientSessionsFlow.presentationStatus.EXPIRED"),
-    PATIENT_NO_SHOW: t("patientSessionsFlow.presentationStatus.PATIENT_NO_SHOW"),
-    PRACTITIONER_NO_SHOW: t("patientSessionsFlow.presentationStatus.PRACTITIONER_NO_SHOW"),
-    BOTH_NO_SHOW: t("patientSessionsFlow.presentationStatus.BOTH_NO_SHOW"),
+    PENDING_PAYMENT: t("patientSessionsFlow.list.status.paymentRequired"),
+    PENDING_PRACTITIONER_CONFIRMATION: t("patientSessionsFlow.list.status.underReview"),
+    UPCOMING: t("patientSessionsFlow.list.status.upcoming"),
+    READY_TO_JOIN: t("patientSessionsFlow.list.status.readyToJoin"),
+    IN_PROGRESS: t("patientSessionsFlow.list.status.inProgress"),
+    AWAITING_ADMIN_RESOLUTION: t("patientSessionsFlow.list.status.underReview"),
+    AWAITING_COMPLETION_CONFIRMATION: t("patientSessionsFlow.list.status.underReview"),
+    COMPLETED: t("patientSessionsFlow.list.status.completed"),
+    CANCELLED: t("patientSessionsFlow.list.status.cancelled"),
+    PATIENT_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    PRACTITIONER_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    BOTH_NO_SHOW: t("patientSessionsFlow.list.status.noShow"),
+    EXPIRED: t("patientSessionsFlow.list.status.unavailable"),
   };
 
-  return map[status] ?? status;
+  return map[status] ?? t("patientSessionsFlow.list.status.unavailable");
 }
 
 function formatModeLabel(
@@ -543,7 +520,7 @@ function formatModeLabel(
     case "CHAT":
       return t("patientSessionsFlow.detail.modeValue.CHAT");
     default:
-      return mode;
+      return t("patientSessionsFlow.detail.modeValue.UNKNOWN");
   }
 }
 
@@ -559,7 +536,7 @@ function formatFlowTypeLabel(
     case "DEFAULT":
       return t("patientSessionsFlow.detail.flowTypeValue.DEFAULT");
     default:
-      return flowType;
+      return t("patientSessionsFlow.detail.flowTypeValue.DEFAULT");
   }
 }
 
@@ -567,9 +544,14 @@ function getActionStateText(
   t: ReturnType<typeof useTranslation>["t"],
   presentationStatus: SessionStatus,
   canAttemptJoin: boolean,
+  needsPayment: boolean,
   joinAvailableAtText: string | null,
   joinBlockedReasonText: string | null,
 ) {
+  if (needsPayment) {
+    return t("patientSessionsFlow.detail.paymentRequiredSummary");
+  }
+
   switch (presentationStatus) {
     case "READY_TO_JOIN":
       return canAttemptJoin
@@ -674,7 +656,7 @@ function SecondaryActionRow({
         </View>
 
         <Ionicons
-          name={isRTL ? "chevron-back" : "chevron-forward"}
+          name={getDirectionalIcon("disclosure", isRTL)}
           size={18}
           color={theme.colors.textMuted}
           style={styles.secondaryActionChevron}
@@ -839,19 +821,19 @@ function SessionProgressStepper({
       <View style={[styles.stepperRow, { flexDirection: rowDir }]}>
         {isCancelled ? (
           <>
-            {renderDot(false, true, "طلب الجلسة")}
+            {renderDot(false, true, t("patientSessionsFlow.detail.steps.request"))}
             <View style={styles.stepperLineActiveError} />
             {renderDot(true, false, t("patientSessionsFlow.statuses.CANCELLED"), true)}
           </>
         ) : (
           <>
-            {renderDot(false, step1Done, "طلب الجلسة")}
+            {renderDot(false, step1Done, t("patientSessionsFlow.detail.steps.request"))}
             <View style={[styles.stepperLine, step2Done ? styles.stepperLineActive : null]} />
-            {renderDot(step2Active, step2Done, "تأكيد الموعد")}
+            {renderDot(step2Active, step2Done, t("patientSessionsFlow.detail.steps.confirmation"))}
             <View style={[styles.stepperLine, step3Done ? styles.stepperLineActive : null]} />
-            {renderDot(step3Active, step3Done, "وقت الجلسة")}
+            {renderDot(step3Active, step3Done, t("patientSessionsFlow.detail.steps.sessionTime"))}
             <View style={[styles.stepperLine, step4Done ? styles.stepperLineActive : null]} />
-            {renderDot(step4Active, step4Done, "اكتمال الجلسة")}
+            {renderDot(step4Active, step4Done, t("patientSessionsFlow.detail.steps.completion"))}
           </>
         )}
       </View>

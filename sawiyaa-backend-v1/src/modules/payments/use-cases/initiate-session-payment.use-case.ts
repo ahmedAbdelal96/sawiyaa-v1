@@ -125,6 +125,13 @@ export class InitiateSessionPaymentUseCase {
       couponCode: input.couponCode ?? null,
     });
 
+    if (!pricing.commissionRuleId) {
+      throw new BadRequestException({
+        messageKey: 'payments.errors.financialConfigurationUnavailable',
+        error: 'PAYMENT_FINANCIAL_CONFIGURATION_UNAVAILABLE',
+      });
+    }
+
     // Check corporate sponsorship eligibility
     const sponsorshipEligibility =
       await this.corporateSponsorshipPaymentService.checkPaymentEligibility({
@@ -183,7 +190,7 @@ export class InitiateSessionPaymentUseCase {
       : new Prisma.Decimal(0);
     const amountFromGateway = totalAmountDecimal.sub(amountFromWallet);
     const platformCommissionAmountDecimal = new Prisma.Decimal(
-      pricing.breakdown.platformCommissionAmount,
+      pricing.breakdown.platformCommissionAmount!,
     );
     const vatRatePercentDecimal = accountingConfig.vatEnabled
       ? new Prisma.Decimal(accountingConfig.vatRatePercent)

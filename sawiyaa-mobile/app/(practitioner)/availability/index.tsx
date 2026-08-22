@@ -1,130 +1,239 @@
-import React from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Switch, View } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Button, Card, ErrorState, Header, LoadingState, Screen, Text } from "../../../src/components/ui";
+import { Button, ErrorState, Header, LoadingState, Screen, Text } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
-import { useMyAvailabilityWeeks, useMyBookingSettings, useUpdateMyBookingSettings } from "../../../src/features/practitioner/availability/hooks";
-import { useMyPresence, useSetInstantBooking } from "../../../src/features/practitioner/presence/hooks";
-import { extractApiErrorCode } from "../../../src/lib/api";
-import { formatWeekRange } from "../../../src/features/practitioner/availability/utils";
+import {
+  useAvailabilityWeekDetails,
+  useMyAvailabilityWeeks,
+} from "../../../src/features/practitioner/availability/hooks";
+import {
+  formatScheduleTimeZoneLabel,
+  getDefaultScheduleDay,
+  getSelectedWeekSlots,
+  getTodayDateInTimeZone,
+  getTodayDayOfWeek,
+  getWeekDays,
+  filterScheduleSlots,
+  type ScheduleDurationFilter,
+  type ScheduleSlotStatus,
+} from "../../../src/features/practitioner/availability/schedule-view-model";
 import type { AvailabilityWeekWindowEntry } from "../../../src/features/practitioner/availability/types";
+import type { DayOfWeek } from "../../../src/features/practitioner/availability/utils";
+import { ScheduleDayStrip } from "../../../src/features/practitioner/availability/components/ScheduleDayStrip";
+import { ScheduleDurationFilter as ScheduleDurationFilterControl } from "../../../src/features/practitioner/availability/components/ScheduleDurationFilter";
+import { ScheduleSlotList } from "../../../src/features/practitioner/availability/components/ScheduleSlotList";
+import { ScheduleWeekNavigator } from "../../../src/features/practitioner/availability/components/ScheduleWeekNavigator";
 
-function statusKey(status: AvailabilityWeekWindowEntry["status"]) {
-  return `practitioner.availability.status.${status}`;
+function sortWeeks(weeks: AvailabilityWeekWindowEntry[]): AvailabilityWeekWindowEntry[] {
+  return [...weeks].sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate));
 }
 
-export default function PractitionerAvailabilityScreen() {
+export default function PractitionerScheduleScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
+  const { repeatSuccess } = useLocalSearchParams<{ repeatSuccess?: string }>();
   const weeksQuery = useMyAvailabilityWeeks();
-  const settingsQuery = useMyBookingSettings();
-  const settingsMutation = useUpdateMyBookingSettings();
-  const presenceQuery = useMyPresence();
-  const instantBookingMutation = useSetInstantBooking();
-  const isRtl = i18n.dir() === "rtl";
-  const setInstantBooking = (value: boolean) => {
-    if (instantBookingMutation.isPending) return;
-    instantBookingMutation.mutate({ isInstantBookingEnabled: value }, {
-      onError: (error) => {
-        if (extractApiErrorCode(error) === "PRESENCE_INSTANT_BOOKING_PRICING_REQUIRED") {
-          Alert.alert(
-            t("practitioner.availability.errors.instantBookingPricingRequiredTitle"),
-            t("practitioner.availability.errors.instantBookingPricingRequired"),
-            [{ text: t("practitioner.availability.openPricingSettings"), onPress: () => router.push("/(mobile-tools)/instant-booking-pricing" as never) }, { text: t("common.cancel"), style: "cancel" }],
-          );
-        } else {
-          Alert.alert(t("common.error"), t("practitioner.availability.actionError"));
-        }
-      },
-    });
+  const [selectedWeekStartDate, setSelectedWeekStartDate] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<DayOfWeek | null>(null);
+  const [durationFilter, setDurationFilter] = useState<ScheduleDurationFilter>("all");
+
+  const weeks = useMemo(() => sortWeeks(weeksQuery.data?.weeks ?? []), [weeksQuery.data?.weeks]);
+  const currentWeek = weeks.find((week) => week.isCurrentWeek) ?? weeks[0];
+
+  useEffect(() => {
+    if (!currentWeek) return;
+    setSelectedWeekStartDate((value) => (
+      value && weeks.some((week) => week.weekStartDate === value)
+        ? value
+        : currentWeek.weekStartDate
+    ));
+  }, [currentWeek, weeks]);
+
+  const selectedWeek = weeks.find((week) => week.weekStartDate === selectedWeekStartDate) ?? currentWeek;
+  const todayDay = getTodayDayOfWeek(weeksQuery.data?.timezone);
+
+  useEffect(() => {
+    if (!selectedWeek) return;
+    setSelectedDay((value) => value ?? getDefaultScheduleDay(selectedWeek.isCurrentWeek, todayDay));
+  }, [selectedWeek, todayDay]);
+
+  const selectedDayValue = selectedDay ?? getDefaultScheduleDay(Boolean(selectedWeek?.isCurrentWeek), todayDay);
+  const selectedWeekDetailsQuery = useAvailabilityWeekDetails(selectedWeek?.weekId ?? undefined);
+  const selectedWeekDetails = selectedWeekDetailsQuery.data?.week;
+  const days = selectedWeek
+    ? getWeekDays(
+      selectedWeek.weekStartDate,
+      i18n.language,
+      getTodayDateInTimeZone(weeksQuery.data?.timezone),
+    )
+    : [];
+  const selectedDayData = days.find((day) => day.dayOfWeek === selectedDayValue);
+  const visibleSlots = useMemo(
+    () => {
+      const slots = getSelectedWeekSlots(selectedWeekDetails, selectedWeek?.weekStartDate);
+      return selectedWeek ? filterScheduleSlots(slots, selectedDayValue, durationFilter) : [];
+    },
+    [durationFilter, selectedDayValue, selectedWeek, selectedWeekDetails],
+  );
+  const timezone = selectedWeekDetails?.timezone ?? weeksQuery.data?.timezone ?? null;
+  const timezoneLabel = timezone && selectedWeek
+    ? formatScheduleTimeZoneLabel(
+      timezone,
+      i18n.language,
+      new Date(`${selectedWeek.weekStartDate}T00:00:00Z`),
+    )
+    : null;
+  const canEditSelectedWeek = selectedWeek
+    ? selectedWeek.weekId ? selectedWeek.canEdit : selectedWeek.canCreate
+    : false;
+
+  const statusLabel = (status: ScheduleSlotStatus) => {
+    switch (status) {
+      case "booked":
+        return t("practitioner.schedule.status.booked");
+      case "notEditable":
+        return t("practitioner.schedule.status.notEditable");
+      default:
+        return t("practitioner.schedule.status.available");
+    }
   };
 
-  if (weeksQuery.isLoading || settingsQuery.isLoading) return <Screen><Header title={t("practitioner.availability.title")} /><LoadingState message={t("practitioner.availability.loading")} /></Screen>;
-  if (weeksQuery.isError || !weeksQuery.data) return <Screen><Header title={t("practitioner.availability.title")} /><ErrorState title={t("practitioner.availability.loadError")} onRetry={() => void weeksQuery.refetch()} /></Screen>;
+  const openAddTimes = () => {
+    if (!selectedWeek) return;
+    if (!timezone) {
+      Alert.alert(
+        t("practitioner.schedule.timezoneRequiredTitle"),
+        t("practitioner.schedule.timezoneRequiredBody"),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("practitioner.schedule.openTimezoneSettings"), onPress: () => router.push("/(practitioner)/account" as never) },
+        ],
+      );
+      return;
+    }
 
-  const data = weeksQuery.data;
-  const openDetails = (week: AvailabilityWeekWindowEntry) => {
-    if (week.weekId) router.push(`/(practitioner)/availability/${week.weekId}` as never);
-    else if (data.timezone) {
-      router.push({ pathname: "/(practitioner)/availability/editor" as never, params: { weekStartDate: week.weekStartDate, timezone: data.timezone } } as never);
-    } else Alert.alert(t("common.error"), t("practitioner.availability.timezoneRequired"));
+    const params = {
+      dayOfWeek: String(selectedDayValue),
+      duration: durationFilter === "all" ? "30" : String(durationFilter),
+      returnToSchedule: "1",
+      timezone,
+      ...(selectedWeek.weekId
+        ? { weekId: selectedWeek.weekId }
+        : { weekStartDate: selectedWeek.weekStartDate }),
+    };
+    router.push({ pathname: "/(practitioner)/availability/editor" as never, params } as never);
   };
 
-  const renderWeek = ({ item }: { item: AvailabilityWeekWindowEntry }) => (
-    <Pressable onPress={() => openDetails(item)} accessibilityRole="button" style={({ pressed }) => [styles.pressable, pressed && { opacity: 0.78 }]}>
-      <Card variant="outlined" padding="md" style={styles.card}>
-        <View style={[styles.row, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-          <View style={styles.flex}>
-            <Text weight="700">{formatWeekRange(item.weekStartDate, item.weekEndDate, i18n.language)}</Text>
-            <Text variant="caption" color={theme.colors.textSecondary} style={styles.meta}>
-              {item.isCurrentWeek ? t("practitioner.availability.currentWeek") : t("practitioner.availability.weekNumber", { count: item.relativeWeekIndex })} · {t("practitioner.availability.slotCount", { count: item.slotCount })}
+  if (weeksQuery.isLoading) {
+    return <Screen><Header title={t("practitioner.schedule.title")} /><LoadingState message={t("practitioner.schedule.loading")} /></Screen>;
+  }
+
+  if (weeksQuery.isError || !weeksQuery.data) {
+    return <Screen><Header title={t("practitioner.schedule.title")} /><ErrorState title={t("practitioner.schedule.loadError")} message={t("practitioner.schedule.loadErrorBody")} retryText={t("common.retry")} onRetry={() => void weeksQuery.refetch()} /></Screen>;
+  }
+
+  if (!selectedWeek) {
+    return <Screen><Header title={t("practitioner.schedule.title")} /><View style={styles.noWeek}><Text variant="title" weight="700" style={styles.center}>{t("practitioner.schedule.noWeekTitle")}</Text><Text color={theme.colors.textSecondary} style={styles.center}>{t("practitioner.schedule.noWeekBody")}</Text></View></Screen>;
+  }
+
+  const durationOptions = [
+    { value: "all" as const, label: t("practitioner.schedule.duration.all") },
+    { value: 30 as const, label: t("practitioner.schedule.duration.minutes", { count: 30 }) },
+    { value: 60 as const, label: t("practitioner.schedule.duration.minutes", { count: 60 }) },
+  ];
+
+  return (
+    <Screen>
+      <Header title={t("practitioner.schedule.title")} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScheduleWeekNavigator
+          weeks={weeks}
+          selectedWeekStartDate={selectedWeek.weekStartDate}
+          locale={i18n.language}
+          previousLabel={t("practitioner.schedule.previousWeek")}
+          nextLabel={t("practitioner.schedule.nextWeek")}
+          onSelectWeek={setSelectedWeekStartDate}
+        />
+
+        <ScheduleDayStrip
+          days={days}
+          selectedDay={selectedDayValue}
+          todayLabel={t("practitioner.schedule.today")}
+          onSelectDay={setSelectedDay}
+        />
+
+        <ScheduleDurationFilterControl value={durationFilter} options={durationOptions} onChange={setDurationFilter} />
+
+        {repeatSuccess === "1" ? (
+          <View style={[styles.successNotice, { borderColor: theme.colors.success, backgroundColor: theme.colors.primarySoft }]}>
+            <Text variant="caption" color={theme.colors.success} weight="700" style={styles.center}>
+              {t("practitioner.schedule.repeatSuccess")}
             </Text>
           </View>
-          <Text variant="caption" color={item.status === "PUBLISHED" ? theme.colors.success : theme.colors.textSecondary} weight="700">{t(statusKey(item.status))}</Text>
-        </View>
-        {item.containsBookings ? <Text variant="caption" color={theme.colors.textMuted} style={styles.protected}>{t("practitioner.availability.protectedSlots")}</Text> : null}
-        <View style={[styles.cardActions, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-          <Text variant="caption" color={theme.colors.primary} weight="700">{item.weekId ? t("practitioner.availability.viewDetails") : t("practitioner.availability.createWeek")}</Text>
-          {item.canCreate && !item.weekId ? (
-            <View
-              style={[
-                styles.smallButton,
-                {
-                  backgroundColor: theme.colors.surfaceRaised,
-                  borderColor: theme.colors.border,
-                  borderWidth: StyleSheet.hairlineWidth,
-                  borderRadius: theme.radius.md,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  paddingHorizontal: 18,
-                },
-              ]}
-            >
-              <Text variant="caption" color={theme.colors.textPrimary} weight="700">
-                {t("practitioner.availability.createWeek")}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </Card>
-    </Pressable>
-  );
+        ) : null}
 
-  const accepts = settingsQuery.data?.acceptsNormalBookings ?? true;
-  return <Screen>
-    <Header title={t("practitioner.availability.title")} />
-    <FlatList
-      data={data.weeks}
-      keyExtractor={(item) => item.weekId ?? item.weekStartDate}
-      renderItem={renderWeek}
-      contentContainerStyle={styles.content}
-      ListHeaderComponent={<>
-        <Text variant="body" color={theme.colors.textSecondary} style={styles.lead}>{t("practitioner.availability.overviewBody")}</Text>
-        <Card variant="outlined" padding="md" style={styles.bookingCard}>
-          <View style={[styles.row, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-            <View style={styles.flex}><Text weight="700">{t("practitioner.availability.normalBookings")}</Text><Text variant="caption" color={theme.colors.textSecondary} style={styles.meta}>{t("practitioner.availability.normalBookingsBody")}</Text></View>
-            <Switch value={accepts} onValueChange={(value) => { if (!value) Alert.alert(t("practitioner.availability.pauseBookingsTitle"), t("practitioner.availability.pauseBookingsBody"), [{ text: t("common.cancel"), style: "cancel" }, { text: t("common.confirm"), onPress: () => settingsMutation.mutate(false) }]); else settingsMutation.mutate(true); }} disabled={settingsMutation.isPending} accessibilityLabel={t("practitioner.availability.normalBookings")} />
-          </View>
-        </Card>
-        <Card variant="outlined" padding="md" style={styles.bookingCard}>
-          <View style={[styles.row, { flexDirection: isRtl ? "row-reverse" : "row" }]}>
-            <View style={styles.flex}>
-              <Text weight="700">{t("practitioner.availability.instantBooking", { defaultValue: "Instant booking" })}</Text>
-              <Text variant="caption" color={theme.colors.textSecondary} style={styles.meta}>
-                {t("practitioner.availability.presenceStatus", { defaultValue: "Presence: {{status}}", status: presenceQuery.data?.presence.status ?? "OFFLINE" })}
-              </Text>
-            </View>
-            <Switch value={Boolean(presenceQuery.data?.presence.isInstantBookingEnabled)} onValueChange={setInstantBooking} disabled={instantBookingMutation.isPending || presenceQuery.isLoading} accessibilityLabel={t("practitioner.availability.instantBooking", { defaultValue: "Instant booking" })} />
-          </View>
-        </Card>
-        {!data.timezone ? <Card variant="outlined" padding="md" style={styles.warning}><Text weight="700">{t("practitioner.availability.timezoneRequired")}</Text><Text variant="caption" color={theme.colors.textSecondary}>{t("practitioner.availability.timezoneRequiredBody")}</Text><Button title={t("practitioner.availability.openTimezoneSettings")} variant="secondary" onPress={() => router.push("/(practitioner)/account" as never)} style={styles.settingsButton} /></Card> : <Text variant="caption" color={theme.colors.textSecondary} style={styles.timezone}>{t("practitioner.availability.timezone", { timezone: data.timezone })}</Text>}
-        <Text weight="700" style={styles.sectionTitle}>{t("practitioner.availability.weeksTitle")}</Text>
-      </>}
-      ListEmptyComponent={<Text color={theme.colors.textSecondary}>{t("practitioner.availability.noWeeks")}</Text>}
-    />
-  </Screen>;
+        {selectedWeekDetailsQuery.isLoading && selectedWeek.weekId ? (
+          <LoadingState message={t("practitioner.schedule.slotsLoading")} />
+        ) : selectedWeekDetailsQuery.isError ? (
+          <ErrorState title={t("practitioner.schedule.slotsLoadError")} message={t("practitioner.schedule.loadErrorBody")} retryText={t("common.retry")} onRetry={() => void selectedWeekDetailsQuery.refetch()} />
+        ) : (
+          <>
+            {visibleSlots.length > 0 ? (
+              <ScheduleSlotList
+                slots={visibleSlots}
+                title={t("practitioner.schedule.sectionTitle", { day: selectedDayData?.weekdayLabel ?? "" })}
+                periodMetaLabel={(count, duration) => t("practitioner.schedule.periodMeta", { count, duration })}
+                statusLabel={statusLabel}
+              />
+            ) : (
+              <View style={[styles.emptyDay, { backgroundColor: theme.colors.surfaceRaised, borderColor: theme.colors.divider }]}>
+                <Text variant="title" weight="700" style={styles.center}>
+                  {t("practitioner.schedule.empty.title", { day: selectedDayData?.weekdayLabel ?? "" })}
+                </Text>
+                <Text color={theme.colors.textSecondary} style={styles.center}>
+                  {t("practitioner.schedule.empty.body")}
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+
+        <View style={styles.addAction}>
+          <Button title={t("practitioner.schedule.addTimes")} onPress={openAddTimes} disabled={!canEditSelectedWeek} />
+          {!canEditSelectedWeek ? <Text variant="caption" color={theme.colors.textMuted} style={styles.center}>{t("practitioner.schedule.editUnavailable")}</Text> : null}
+        </View>
+
+        {selectedWeek.weekId ? (
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={t("practitioner.schedule.repeatWeekly")}
+            onPress={() => router.push({ pathname: "/(practitioner)/availability/repeat-targets" as never, params: { sourceWeekId: selectedWeek.weekId } } as never)}
+            style={styles.repeatAction}
+          >
+            <Text color={theme.colors.primary} weight="700" style={styles.center}>
+              {t("practitioner.schedule.repeatWeekly")}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
+        <Text variant="caption" color={theme.colors.textMuted} style={styles.timezone}>
+          {t("practitioner.schedule.timezone", { timezone: timezoneLabel ?? t("practitioner.schedule.timezoneFallback") })}
+        </Text>
+      </ScrollView>
+    </Screen>
+  );
 }
 
-const styles = StyleSheet.create({ content: { padding: 16, paddingBottom: 32 }, lead: { marginBottom: 16, textAlign: "center" }, bookingCard: { marginBottom: 12 }, warning: { marginBottom: 16, gap: 8 }, settingsButton: { marginTop: 4 }, timezone: { marginBottom: 20, textAlign: "center" }, sectionTitle: { marginBottom: 10 }, pressable: { marginBottom: 10 }, card: { borderRadius: 16 }, row: { alignItems: "center", gap: 12 }, flex: { flex: 1, minWidth: 0 }, meta: { marginTop: 5 }, protected: { marginTop: 12 }, cardActions: { alignItems: "center", justifyContent: "space-between", marginTop: 14, gap: 10 }, smallButton: { width: "auto", minWidth: 120, paddingVertical: 8, minHeight: 40 } });
+const styles = StyleSheet.create({
+  content: { paddingTop: 10, paddingBottom: 24, gap: 12 },
+  emptyDay: { alignItems: "center", gap: 6, paddingVertical: 18, paddingHorizontal: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14 },
+  center: { textAlign: "center" },
+  addAction: { gap: 6, marginTop: -2 },
+  repeatAction: { minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
+  successNotice: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  timezone: { textAlign: "center", marginTop: -2, fontSize: 11 },
+  noWeek: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 24 },
+});

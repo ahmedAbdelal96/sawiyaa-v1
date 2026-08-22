@@ -22,9 +22,16 @@ import { PractitionerApplicationsAdminMapper } from '../mappers/practitioner-app
 import { AdminPractitionerApplicationRepository } from '../repositories/admin-practitioner-application.repository';
 import { AdminSpecialtyRepository } from '../repositories/admin-specialty.repository';
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
-import { SecurityAuditActorType, SecurityAuditSource } from '@common/security-audit/security-audit.types';
+import {
+  SecurityAuditActorType,
+  SecurityAuditSource,
+} from '@common/security-audit/security-audit.types';
 import { assertProfessionalTitle } from '@modules/practitioners/constants/professional-title.constants';
 import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
+import {
+  PractitionerProfessionalContentAuthoringService,
+  ProfessionalContentAuthoringInput,
+} from '@modules/practitioners/services/practitioner-professional-content-authoring.service';
 
 @Injectable()
 export class UpdatePractitionerApplicationDraftUseCase {
@@ -39,6 +46,8 @@ export class UpdatePractitionerApplicationDraftUseCase {
     private readonly practitionerApplicationSnapshotService: PractitionerApplicationSnapshotService,
     private readonly practitionerCurrencyLifecycleService: PractitionerCurrencyLifecycleService,
     @Optional() private readonly securityAuditService?: SecurityAuditService,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
 
   async execute(input: {
@@ -51,6 +60,8 @@ export class UpdatePractitionerApplicationDraftUseCase {
       practitionerGender?: 'MALE' | 'FEMALE' | null;
       professionalTitle?: string | null;
       bio?: string | null;
+      professionalContent?: ProfessionalContentAuthoringInput['professionalContent'];
+      primaryContentLocale?: ProfessionalContentAuthoringInput['primaryContentLocale'];
       yearsOfExperience?: number | null;
       countryCode?: string | null;
       languageCodes?: string[];
@@ -162,9 +173,32 @@ export class UpdatePractitionerApplicationDraftUseCase {
       );
     }
 
-    const now = new Date();
     const updated = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
+        const existingContent = this.professionalContentAuthoringService
+          ? await tx.practitionerProfile.findUnique({
+              where: { id: application.practitionerId },
+              select: {
+                professionalTitle: true,
+                bio: true,
+                primaryContentLocale: true,
+                professionalContentTranslations: {
+                  select: { locale: true, professionalTitle: true, bio: true },
+                },
+              },
+            })
+          : null;
+        const contentPlan = this.professionalContentAuthoringService
+          ? this.professionalContentAuthoringService.plan(
+              existingContent ?? {},
+              {
+                professionalTitle: input.data.professionalTitle,
+                bio: input.data.bio,
+                professionalContent: input.data.professionalContent,
+                primaryContentLocale: input.data.primaryContentLocale,
+              },
+            )
+          : null;
         if (input.data.displayName !== undefined) {
           await tx.user.update({
             where: { id: application.practitioner.userId },
@@ -181,24 +215,32 @@ export class UpdatePractitionerApplicationDraftUseCase {
         if (input.data.practitionerGender !== undefined) {
           profileUpdateData.practitionerGender = input.data.practitionerGender;
         }
-        if (input.data.professionalTitle !== undefined) {
+        if (
+          input.data.professionalTitle !== undefined &&
+          !this.professionalContentAuthoringService
+        ) {
           profileUpdateData.professionalTitle = assertProfessionalTitle(
             input.data.professionalTitle,
           );
         }
-        if (input.data.bio !== undefined) {
+        if (
+          input.data.bio !== undefined &&
+          !this.professionalContentAuthoringService
+        ) {
           profileUpdateData.bio = input.data.bio?.trim() || null;
         }
         if (input.data.yearsOfExperience !== undefined) {
           profileUpdateData.yearsOfExperience = input.data.yearsOfExperience;
         }
         if (resolvedCountryId !== undefined) {
-          await this.practitionerCurrencyLifecycleService.ensureForCountryChange({
-            practitionerId: application.practitionerId,
-            newCountryId: resolvedCountryId,
-            actorUserId: input.adminUserId,
-            tx,
-          });
+          await this.practitionerCurrencyLifecycleService.ensureForCountryChange(
+            {
+              practitionerId: application.practitionerId,
+              newCountryId: resolvedCountryId,
+              actorUserId: input.adminUserId,
+              tx,
+            },
+          );
           profileUpdateData.country =
             resolvedCountryId === null
               ? { disconnect: true }
@@ -215,6 +257,20 @@ export class UpdatePractitionerApplicationDraftUseCase {
             where: { id: application.practitionerId },
             data: profileUpdateData,
           });
+        }
+
+        if (contentPlan && this.professionalContentAuthoringService) {
+          await this.professionalContentAuthoringService.applyDirect(
+            tx,
+            application.practitionerId,
+            existingContent ?? {},
+            {
+              professionalTitle: input.data.professionalTitle,
+              bio: input.data.bio,
+              professionalContent: input.data.professionalContent,
+              primaryContentLocale: input.data.primaryContentLocale,
+            },
+          );
         }
 
         if (hasLanguagePayload) {
@@ -364,6 +420,12 @@ export class UpdatePractitionerApplicationDraftUseCase {
               practitionerGender: profile.practitionerGender ?? null,
               professionalTitle: profile.professionalTitle ?? null,
               bio: profile.bio ?? null,
+              professionalContent: contentPlan
+                ? this.professionalContentAuthoringService!.toSnapshot(
+                    contentPlan,
+                  )
+                : undefined,
+              primaryContentLocale: contentPlan?.state.primaryContentLocale,
               yearsOfExperience: profile.yearsOfExperience ?? null,
               countryCode: profile.country?.isoCode ?? null,
               primarySpecialtyCategoryId:
@@ -394,7 +456,7 @@ export class UpdatePractitionerApplicationDraftUseCase {
               reviewNotes: credential.reviewNotes ?? null,
             })),
             payoutDestination: profile.payoutDestination
-                ? {
+              ? {
                   methodType: profile.payoutDestination.methodType,
                   countryCode: profile.payoutDestination.countryCode ?? null,
                   accountHolderName:

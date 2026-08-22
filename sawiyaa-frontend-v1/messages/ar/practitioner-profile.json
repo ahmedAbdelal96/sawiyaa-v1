@@ -95,8 +95,14 @@
     "viewSessions": "الانتقال إلى جلساتي",
     "bookAnother": "حجز موعد آخر",
     "jumpToAvailability": "عرض الأوقات المتاحة",
+    "instant": {
+      "availableNow": "متاح الآن لجلسة فورية",
+      "note": "ابدأ جلسة فيديو خلال دقائق بعد موافقة المختص.",
+      "cta": "طلب جلسة فورية"
+    },
     "sessionFees": "رسوم الجلسة",
-    "selectedPrice": "السعر المختار: {price}"
+    "selectedPrice": "السعر المختار: {price}",
+    "selectedPriceLabel": "السعر المختار"
   },
   "packages": {
     "eyebrow": "الباقات",

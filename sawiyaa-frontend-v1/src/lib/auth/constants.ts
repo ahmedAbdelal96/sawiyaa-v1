@@ -10,6 +10,7 @@ export const USER_DATA_MAX_AGE = REFRESH_TOKEN_MAX_AGE;
 export const PROTECTED_ROUTES = [
   "/admin",
   "/patient",
+  "/trainee",
   "/practitioner",
 ];
 
@@ -41,6 +42,10 @@ export const ROLE_AUTH_ENDPOINTS = {
   ADMIN: {
     refresh: `${API_BASE_URL}/auth/admin/refresh`,
     logout: `${API_BASE_URL}/auth/admin/logout`,
+  },
+  TRAINEE: {
+    refresh: `${API_BASE_URL}/auth/trainee/refresh`,
+    logout: `${API_BASE_URL}/auth/trainee/logout`,
   },
 } as const;
 

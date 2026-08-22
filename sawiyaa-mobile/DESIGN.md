@@ -1,23 +1,31 @@
 ﻿# Sawiyaa Mobile Design System
 
 ## Purpose
-This document defines the mobile-first design system and UX rules for the Sawiyaa React Native patient app. It is the foundation for the redesign, not a screen-by-screen spec.
+This document defines durable mobile-first design-system and UX rules for the Sawiyaa Mobile App. It governs two first-class product experiences:
 
-Sawiyaa is a warm, trusted healthcare marketplace and care journey app. It helps patients discover providers, book care, pay safely, join sessions, read articles, manage packages, handle messages and notifications, and get support.
+```text
+Sawiyaa Mobile App
+├── Patient Experience
+└── Practitioner Experience
+```
+
+Patient and Practitioner share infrastructure, design tokens, and primitives, but neither experience is a secondary extension of the other. This document is the foundation for product implementation, not a screen-by-screen spec.
+
+Sawiyaa is a warm, trusted healthcare marketplace and care journey app. It helps patients discover specialists, book care, pay safely, join sessions, read articles, manage packages, handle messages and notifications, and get support. It helps practitioners manage their schedule, sessions, messages, earnings, and essential account workflows.
 
 This is not a generic hospital app. It is not a fitness app. It is not a cold admin dashboard. Do not invent features, visuals, or flows that do not exist in the product.
 
 ## Brand Lock
 
-The current brand name is **Sawiyaa** in English and **Ø³ÙˆÙŠÙ‘Ø©** in Arabic.
+The current brand name is **Sawiyaa** in English and **سويّة** in Arabic.
 
 - **English name:** `Sawiyaa`
-- **Arabic name:** `Ø³ÙˆÙŠÙ‘Ø©`
+- **Arabic name:** `سويّة`
 - **Domain:** `sawiyaa.com`
 - **Core tagline EN:** `Care for mind, body, and balance`
-- **Core tagline AR:** `Ø±Ø¹Ø§ÙŠØ© Ù„Ù„Ø¹Ù‚Ù„ ÙˆØ§Ù„Ø¬Ø³Ù… ÙˆØ§Ù„ØªÙˆØ§Ø²Ù†`
+- **Core tagline AR:** `رعاية للعقل والجسم والتوازن`
 
-Do not use the old `Sawiyaa` name in new user-facing UI, brand copy, visual prompts, onboarding screens, app metadata, or marketing surfaces unless the task is explicitly about legacy migration.
+Use the current `Sawiyaa` / `سويّة` brand consistently in new user-facing UI, brand copy, visual prompts, onboarding screens, app metadata, and marketing surfaces.
 
 The product meaning behind Sawiyaa is balance, wellbeing, guided care, and a healthier emotional and physical journey. The visual identity should support mental health, nutrition, and psychological coaching without looking like a generic hospital, fitness tracker, or luxury spa.
 
@@ -57,6 +65,18 @@ Avoid long instructional paragraphs inside normal app screens. Prefer short labe
 
 A patient should understand the screen from structure, labels, state, and CTA, not from repeated paragraphs.
 
+## Approved Product Navigation Foundation
+
+Patient primary navigation is `Home | Discover | Sessions | Messages | More`.
+
+Practitioner primary navigation is `Home | Schedule | Sessions | Messages | More`.
+
+Patient Discover owns search, filters, matching, specialist profiles, and booking entry. Practitioner Schedule owns day-first schedule management. Messages is the unified conversation inbox for session, support, and follow-up conversations. More owns genuinely secondary tools such as finance, notification settings, account/profile, support, content, promo codes, and logout.
+
+Notifications are not a primary bottom tab. Notification Center is a global app-header utility with a bell icon and unread state where supported. Notification Settings belong under More → Settings and are a separate destination.
+
+Do not duplicate Schedule, Sessions, or Messages inside More. Home may use contextual CTAs for urgent work without becoming a second navigation owner.
+
 ## Visual Identity
 
 The mobile visual language remains **Clinical Warmth**, now expressed through the **Sawiyaa** identity.
@@ -76,7 +96,7 @@ Visual direction:
 - Soft Sage used for supportive surfaces, icons, quiet highlights, and gentle wellbeing cues.
 - Warm Gold used as a restrained premium accent only.
 - Muted Sand used for dividers, subtle surfaces, and soft section separation.
-- No loud gradients, neon colors, heavy glassmorphism, or decorative medical clichÃ©s.
+- No loud gradients, neon colors, heavy glassmorphism, or decorative medical clichés.
 - No random ECG, heartbeat, cross, hospital, or fitness-device visual language.
 - Every screen should feel related to the same calm brand system, without becoming repetitive.
 
@@ -125,9 +145,9 @@ Elevation should be light, tonal, and based on the Sawiyaa Deep Teal shadow fami
 
 Equivalent alpha HEX references:
 
-- `rgba(36, 86, 79, 0.06)` â‰ˆ `#24564F0F`
-- `rgba(36, 86, 79, 0.08)` â‰ˆ `#24564F14`
-- `rgba(36, 86, 79, 0.10)` â‰ˆ `#24564F1A`
+- `rgba(36, 86, 79, 0.06)` ≈ `#24564F0F`
+- `rgba(36, 86, 79, 0.08)` ≈ `#24564F14`
+- `rgba(36, 86, 79, 0.10)` ≈ `#24564F1A`
 
 Do not use dark black shadows, stacked shadows, or sharp drop shadows. Depth should support hierarchy, not decoration.
 
@@ -280,6 +300,18 @@ Microcopy principles:
 - Use short helper text only when it removes real friction.
 - If the UI already makes the meaning obvious, do not add a paragraph.
 
+### User-facing error boundary
+
+User-facing errors follow this boundary:
+
+`backend error/code → normalized diagnostic classification → localized product message → optional user action`
+
+The foundational presentation contains only a localized message key, retryability, an optional action, and a diagnostic code. Raw backend messages, provider names, payload details, and implementation terminology remain diagnostic only. A raw backend `message` or `error` must never be the generic user-facing fallback.
+
+### Canonical product vocabulary
+
+Use `Schedule / My schedule` (`الجدول / جدولي`) for practitioner availability, `Discover` (`اكتشف`) for the patient discovery destination, `Specialist` (`مختص`) for the generic practitioner role, `History` (`السجل`) for past sessions, `Transactions` (`المعاملات`) for financial activity, `Earnings` (`الأرباح`) for practitioner earnings, `Transfers` (`التحويلات`) for external payouts, and `Wallet` (`المحفظة`) for wallet balance/activity. Do not expose `Ledger` as a product concept or technical timezone identifiers in normal UI.
+
 ## RTL and LTR Rules
 Arabic RTL and English LTR are both first-class.
 
@@ -296,6 +328,14 @@ Behavior rules:
 - Ensure spacing, alignment, and icon placement remain natural in both directions.
 - Do not rely on left and right as design language. Use leading and trailing semantics.
 - Make sure status and action positions remain predictable across locales.
+
+### Directional icon guardrail
+
+- User-facing navigation icons must express semantic direction: `back`, `forward`, `previous`, `next`, or `disclosure`.
+- Locale-sensitive navigation must use the central directional icon resolver. Direct `ArrowLeft`, `ArrowRight`, `ChevronLeft`, or `ChevronRight` usage is forbidden outside that resolver.
+- Non-directional semantic icons must not be mirrored merely because the locale is RTL. This includes status, trend, calendar, clock, upload/download, payment, lock, check, close, and refresh icons unless their product meaning is explicitly directional.
+- Do not double-mirror an icon through both semantic component selection and a transform/layout mirror.
+- Any new directional navigation component must include focused RTL and LTR coverage for its semantic states.
 
 ## Light and Dark Mode Rules
 Light mode is the primary launch target unless the app already supports mode switching, but dark mode must be planned from the start.
@@ -432,8 +472,9 @@ The following primitives define the mobile design system. Their behavior should 
 ### `SessionCard`
 - Focus on status, schedule, provider, and next action.
 - Must not infer session state locally.
-- Session status comes from backend `presentationStatus`.
-- Join CTA appears only when backend `joinAvailability.canJoin` is true.
+- Lifecycle state and action eligibility come from the current backend `operational` contract.
+- Use `operational.state`, `operational.timelineBucket`, `operational.reasonCode`, and the supplied `operational.join`, `operational.actions`, `operational.room`, and `operational.resolution` capabilities.
+- Join, runtime preparation, payment, cancellation, review, and no-show CTAs must use the relevant backend-provided capability; never derive eligibility from local time or display fields.
 
 ### `PractitionerCard`
 - Focus on trust signals, specialty, rating or proof points if available, and the primary booking action.
@@ -537,13 +578,26 @@ Each major area should use a distinct but related pattern.
 - Slots should read as a list or grid of tappable options, not a desktop table.
 - The flow should be quick and legible.
 
+### Practitioner Schedule foundation
+
+The approved Schedule workflow is:
+
+`My Schedule → current week → selected day → All / 30 min / 60 min → relevant slots → available/booked/protected meaning → compact summary → Add Times`
+
+Select Today by default when entering the current week. Preserve the week, selected day, and active duration filter after contextual add/edit/remove/save actions whenever still valid. Recurrence is secondary. Human timezone presentation is required.
+
+Custom ranges are a mobile convenience that generates the existing discrete 30/60-minute slot payload client-side. Validate end > start, duration boundaries, overlap, booked/protected safety, and backend constraints. Do not invent arbitrary durations or add a new backend range contract.
+
 ## Business Correctness Guardrails
 These rules protect the app from incorrect UI behavior.
 
 - Do not change backend contracts in this design phase.
 - Do not infer session state in UI.
-- Session status must come from backend `presentationStatus` and be translated.
-- Join CTA appears only when backend `joinAvailability.canJoin` is true.
+- Session lifecycle and business eligibility must come from the current backend operational contract and endpoint-specific capability responses.
+- The current client contract exposes `operational.state`, `operational.timelineBucket`, `operational.reasonCode`, `operational.join`, `operational.actions`, `operational.room`, and `operational.resolution`; use those fields as supplied.
+- For joining, use the current join contract/capabilities such as `operational.join.allowed`, `operational.join.canPrepareRuntime`, and the join response's `canJoin`, `blockedReason`, `availableAt`, `expiresAt`, and room/runtime fields.
+- For other actions, use the supplied `operational.actions.canJoin`, `canPrepareRuntime`, `canCancel`, `canPay`, `canReview`, and `canMarkPatientNoShow` capabilities, or the role-specific action contract where provided.
+- Legacy `status`, `presentationStatus`, and other display-only fields must not be promoted back into business authority. `joinAvailability` is not the current client contract.
 - Money and currency must come from backend data.
 - Do not hardcode EGP, USD, SAR, or any other currency.
 - Do not add payment actions unless they already exist in the current product.
@@ -563,35 +617,10 @@ These rules protect the app from incorrect UI behavior.
 - Do not build desktop-like tables on mobile.
 - Do not ignore RTL, LTR, or dark and light mode readiness.
 
-## Implementation Phases
-Do not redesign all screens in one pass. Each phase must be small, reviewable, and validated before moving to the next.
+## Source-of-Truth Boundaries
 
-### Phase 0
-Update `DESIGN.md` only.
-
-### Phase 1
-Theme tokens and primitive components.
-
-### Phase 2
-App shell: `AppScreen`, `AppHeader`, bottom tabs, safe areas, RTL and LTR support.
-
-### Phase 3
-Welcome, Login, Home.
-
-### Phase 4
-Sessions, `SessionCard`, Notifications.
-
-### Phase 5
-More / Profile, Personal Info / Edit Profile, Preferences.
-
-### Phase 6
-Wallet, Messages, Articles, Packages / Training.
-
-### Phase 7
-Practitioner Profile and Select Time / Booking.
-
-### Phase 8
-QA pass for Arabic and English, light and dark readiness, navigation correctness, and session and payment correctness.
+- `DESIGN.md` defines durable design and product principles.
+- `SAWIYAA_MOBILE_PRODUCT_UX_TRACKER.md` owns implementation phases, status, execution order, and completion tracking.
 
 ## QA Checklist
 Every UI phase must pass this checklist before it is considered complete:
@@ -611,9 +640,9 @@ Every UI phase must pass this checklist before it is considered complete:
 - Navigation still works.
 - No backend contract changed.
 
-## Rebrand Maintenance Rule
+## Brand Maintenance Rule
 
-The platform was previously documented as `Sawiyaa`. New design work should use `Sawiyaa` / `Ø³ÙˆÙŠÙ‘Ø©` in brand-facing contexts.
+Use the current `Sawiyaa` / `سويّة` brand in brand-facing contexts.
 
 Do not rename code folders, backend modules, app package identifiers, environment variables, or technical paths unless a separate engineering migration task explicitly requests it. This document controls visual identity and agent guidance, not repository renaming.
 

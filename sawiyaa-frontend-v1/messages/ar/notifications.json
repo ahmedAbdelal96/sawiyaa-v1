@@ -8,7 +8,7 @@
     "errorNote": "تعذّر تحميل الإشعارات.",
     "retry": "حاول مجددًا",
     "emptyHeading": "لا توجد إشعارات بعد",
-    "emptyNote": "ستظهر هنا تحديثات الجلسات والدفع حفاة والحساب."
+    "emptyNote": "ستظهر هنا تحديثات الجلسات والدفع والحساب."
   },
   "actions": {
     "open": "فتح",
@@ -47,7 +47,7 @@
     },
     "sessions-session-join-available": {
       "title": "تذكير بالانضمام للجلسة",
-      "subtitle": "جلسة · إشعار هاتف"
+      "subtitle": "جلسة · تذكير بالانضمام"
     },
     "sessions-session-reminder": {
       "title": "تذكير بالجلسة",
@@ -95,19 +95,19 @@
     },
     "payments-payment-succeeded": {
       "title": "تمت عملية الدفع بنجاح",
-      "subtitle": "مالية · عملية دفع"
+      "subtitle": "الدفع · دفع جلسة"
     },
     "payments-payment-failed": {
       "title": "فشلت عملية الدفع",
-      "subtitle": "مالية · عملية دفع"
+      "subtitle": "الدفع · دفع جلسة"
     },
     "payments-refund-created": {
       "title": "تم إنشاء طلب استرداد مالي",
-      "subtitle": "مالية · استرداد"
+      "subtitle": "الدفع · استرداد"
     },
     "payments-refund-completed": {
       "title": "اكتمل طلب الاسترداد المالي",
-      "subtitle": "مالية · استرداد"
+      "subtitle": "الدفع · استرداد"
     },
     "fallback": {
       "title": "إشعار نظام",
@@ -130,7 +130,7 @@
     "sessions": {
       "session-join-available": {
         "title": "تذكير بالانضمام للجلسة",
-        "subtitle": "جلسة · إشعار هاتف"
+        "subtitle": "جلسة · تذكير بالانضمام"
       },
       "session-reminder": {
         "title": "تذكير بالجلسة",
@@ -162,21 +162,37 @@
     "payments": {
       "payment-succeeded": {
         "title": "تمت عملية الدفع بنجاح",
-        "subtitle": "مالية · عملية دفع"
+        "subtitle": "الدفع · دفع جلسة"
       },
       "payment-failed": {
         "title": "فشلت عملية الدفع",
-        "subtitle": "مالية · عملية دفع"
+        "subtitle": "الدفع · دفع جلسة"
       },
       "refund-created": {
         "title": "تم إنشاء طلب استرداد مالي",
-        "subtitle": "مالية · استرداد"
+        "subtitle": "الدفع · استرداد"
       },
       "refund-completed": {
         "title": "اكتمل طلب الاسترداد المالي",
-        "subtitle": "مالية · استرداد"
+        "subtitle": "الدفع · استرداد"
       }
     }
+  },
+  "visual": {
+    "fallbackTitle": "إشعار نظام",
+    "fallbackSubtitle": "النظام",
+    "fallbackContext": "مستخدم ...{userId} · جلسة ...{sessionId}",
+    "sessionBetween": "جلسة بين {patient} و{specialist}{time}",
+    "messageContext": "من {sender} · جلسة مع {participant}",
+    "supportContext": "تذكرة: {subject}",
+    "supportFallback": "تذكرة ...{id}",
+    "paymentContext": "جلسة مع {specialist} · راجع حالة الدفع",
+    "openConversation": "فتح المحادثة",
+    "openSession": "فتح الجلسة",
+    "openSupport": "فتح تذكرة الدعم",
+    "viewDetails": "عرض التفاصيل",
+    "specialist": "المختص",
+    "patient": "المريض"
   },
   "errors": {
     "PUSH_DEVICE_NOT_REGISTERED": "جهاز المستخدم غير مسجل لاستقبال إشعارات الهاتف",

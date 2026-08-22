@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import AdminRevenueShareRulesScreen from "@/features/settings/components/AdminRevenueShareRulesScreen";
+import { redirect } from "next/navigation";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -18,6 +18,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function AdminRevenueShareRulesPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <AdminRevenueShareRulesScreen />;
+  redirect(`/${locale}/admin/platform-settings`);
 }
 

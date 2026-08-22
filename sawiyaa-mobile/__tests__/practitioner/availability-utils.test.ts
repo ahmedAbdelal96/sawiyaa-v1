@@ -1,4 +1,4 @@
-import { AVAILABILITY_WEEK_MAX_SLOTS, countSelectedAvailabilitySlots, emptySelectedTimes, formatMinuteRange, formatMinuteRangeParts, getAvailabilityRangeFlexDirection, selectedTimesToSlots, slotsToSelectedTimes, timeOptions, type DayOfWeek } from "../../src/features/practitioner/availability/utils";
+import { AVAILABILITY_WEEK_MAX_SLOTS, countSelectedAvailabilitySlots, emptySelectedTimes, formatMinuteRange, formatMinuteRangeParts, getAvailabilityRangeFlexDirection, getDiscreteSlotsInRange, selectedTimesToSlots, slotsToSelectedTimes, timeOptions, type DayOfWeek } from "../../src/features/practitioner/availability/utils";
 
 describe("practitioner availability grid", () => {
   it("accepts the mathematical weekly maximum and counts beyond it", () => {
@@ -26,6 +26,20 @@ describe("practitioner availability grid", () => {
     expect(restored.selected).toEqual(selected);
     expect(restored.invalidLegacy60Starts).toEqual([]);
     expect(slots.every((slot) => !Object.prototype.hasOwnProperty.call(slot, "timezone"))).toBe(true);
+  });
+
+  it("generates aligned discrete custom-range starts", () => {
+    expect(getDiscreteSlotsInRange("09:00", "11:00", 30)).toEqual({ ok: true, slots: [540, 570, 600, 630] });
+    expect(getDiscreteSlotsInRange("09:15", "11:00", 30)).toEqual({ ok: false, reason: "notAligned" });
+    expect(getDiscreteSlotsInRange("11:00", "09:00", 30)).toEqual({ ok: false, reason: "endBeforeStart" });
+  });
+
+  it("generates unique 60-minute starts and rejects invalid boundaries", () => {
+    const result = getDiscreteSlotsInRange("09:00", "13:00", 60);
+    expect(result).toEqual({ ok: true, slots: [540, 600, 660, 720] });
+    if (result.ok) expect(new Set(result.slots).size).toBe(result.slots.length);
+    expect(getDiscreteSlotsInRange("24:00", "25:00", 60)).toEqual({ ok: false, reason: "invalidFormat" });
+    expect(getDiscreteSlotsInRange("09:00", "09:00", 60)).toEqual({ ok: false, reason: "endBeforeStart" });
   });
 
   it("formats compact Arabic availability ranges", () => {

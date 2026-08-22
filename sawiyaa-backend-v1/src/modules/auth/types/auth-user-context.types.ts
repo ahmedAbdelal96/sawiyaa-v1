@@ -15,6 +15,7 @@ export interface AuthenticatedUserContext {
   primaryPhone: string | null;
   isPhoneVerified: boolean;
   practitionerProfileId: string | null;
+  practitionerApplicationId: string | null;
   practitionerStatus: PractitionerStatus | null;
 }
 

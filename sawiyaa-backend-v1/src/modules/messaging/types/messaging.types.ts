@@ -52,8 +52,19 @@ export type MessagingConversationRecord = {
     sentAt: Date;
     deliveredAt: Date | null;
     readAt: Date | null;
+    attachments?: Array<{
+      id: string;
+      fileUrl: string;
+      mimeType: string;
+      fileSize: number | null;
+      originalName: string | null;
+    }>;
   }>;
-  session: { sessionCode: string; status: string; scheduledStartAt: Date | null } | null;
+  session: {
+    sessionCode: string;
+    status: string;
+    scheduledStartAt: Date | null;
+  } | null;
   chatApprovalRequest: { status: string; expiresAt: Date | null } | null;
 };
 
@@ -69,5 +80,10 @@ export type MessagingParticipantIdentity = {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
-  publicRoleLabel: 'Patient' | 'Practitioner' | 'Support team' | 'Admin' | 'System';
+  publicRoleLabel:
+    | 'Patient'
+    | 'Practitioner'
+    | 'Support team'
+    | 'Admin'
+    | 'System';
 };

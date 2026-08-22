@@ -2,6 +2,8 @@ import { I18nManager } from "react-native";
 import { useTranslation } from "react-i18next";
 
 export type AppDirection = "rtl" | "ltr";
+export { getDirectionalIcon } from "./directional-icons";
+export type { DirectionalIconName, DirectionalIconSemantic } from "./directional-icons";
 
 export function isCurrentLanguageRtl(language?: string | null): boolean {
   if (typeof language === "string" && language.length > 0) {

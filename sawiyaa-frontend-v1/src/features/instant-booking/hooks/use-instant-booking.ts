@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import { patientJourneyQueryKeys } from "@/features/patient-journey/constants/query-keys";
 import {
   acceptInstantBookingRequest,
@@ -20,8 +21,8 @@ import type {
 export const instantBookingQueryKeys = {
   all: ["instant-booking"] as const,
   patient: () => [...instantBookingQueryKeys.all, "patient"] as const,
-  patientPractitioners: (params?: PatientInstantBookingPractitionersParams) =>
-    [...instantBookingQueryKeys.patient(), "practitioners", params ?? {}] as const,
+  patientPractitioners: (locale: string, params?: PatientInstantBookingPractitionersParams) =>
+    [...instantBookingQueryKeys.patient(), "practitioners", locale, params ?? {}] as const,
   patientRequests: () => [...instantBookingQueryKeys.patient(), "requests"] as const,
   patientRequest: (requestId: string) =>
     [...instantBookingQueryKeys.patient(), "request", requestId] as const,
@@ -36,8 +37,9 @@ export const instantBookingQueryKeys = {
 export function usePatientInstantBookingPractitioners(
   params?: PatientInstantBookingPractitionersParams,
 ) {
+  const locale = useLocale();
   return useQuery({
-    queryKey: instantBookingQueryKeys.patientPractitioners(params),
+    queryKey: instantBookingQueryKeys.patientPractitioners(locale, params),
     queryFn: () => getPatientInstantBookingPractitioners(params),
     staleTime: 0,
     gcTime: 0,

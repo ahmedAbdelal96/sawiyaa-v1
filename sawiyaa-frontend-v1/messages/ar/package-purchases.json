@@ -4,7 +4,7 @@
     "listDescription": "تابع باقاتك والجلسات المرتبطة بها، واستكمل أي دفعة معلقة.",
     "detailTitle": "تفاصيل شراء الباقة",
     "discoveryTitle": "الباقات",
-    "discoveryDescription": "استعرض الباقات المتاحة من المعالجين المتاحين واختر الباقة المناسبة."
+    "discoveryDescription": "استعرض الباقات المتاحة من المختصين واختر الباقة المناسبة."
   },
   "errors": {
     "authHeading": "سجّل الدخول لعرض مشتريات الباقات",
@@ -27,7 +27,7 @@
     "pageLabel": "الصفحة {page} من {totalPages}",
     "previous": "السابق",
     "next": "التالي",
-    "filterSearch": "البحث باسم الباقة أو المعالج...",
+    "filterSearch": "البحث باسم الباقة أو المختص...",
     "filterAllStatuses": "جميع الحالات",
     "summary": {
       "total": "إجمالي الباقات",
@@ -70,8 +70,8 @@
   "discovery": {
     "eyebrow": "خدمات المنصة",
     "heading": "الباقات المعيارية",
-    "subtitle": "استعرض الباقات المتاحة واقترن بالمعالج المناسب بخصومات مميزة على الجلسات.",
-    "searchPlaceholder": "ابحث باسم المعالج أو التخصص...",
+    "subtitle": "استعرض الباقات المتاحة واختر المختص المناسب بخصومات مميزة على الجلسات.",
+    "searchPlaceholder": "ابحث باسم المختص أو التخصص...",
     "specialtyFilter": "جميع التخصصات",
     "sessionCountFilter": "جميع أحجام الباقات",
     "sessionCountOption": "باقة {count} جلسات",
@@ -99,7 +99,7 @@
       "totalSavings": "توفير {amount}",
       "originalPrice": "بدلاً من {amount}",
       "payableTotal": "الإجمالي المستحق",
-      "viewPractitioner": "عرض المعالج",
+      "viewPractitioner": "عرض المختص",
       "choosePackage": "اختر الباقة"
     }
   },

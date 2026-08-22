@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../../auth/query-auth";
+import { invalidateAvailability, practitionerAvailabilityQueryKeys } from "./cache";
 import {
   confirmAvailabilityWeekRepeat, createAvailabilityWeek, getAvailabilityWeekDetails,
   getMyAvailabilityWeeks, getMyBookingSettings, previewAvailabilityWeekRepeat,
@@ -7,12 +8,7 @@ import {
   type CreateAvailabilityWeekPayload, type UpdateAvailabilityWeekPayload,
 } from "./api";
 
-export const practitionerAvailabilityQueryKeys = {
-  all: ["practitioner", "availability"] as const,
-  weeks: () => [...practitionerAvailabilityQueryKeys.all, "weeks"] as const,
-  details: (weekId: string) => [...practitionerAvailabilityQueryKeys.weeks(), weekId] as const,
-  bookingSettings: () => [...practitionerAvailabilityQueryKeys.all, "booking-settings"] as const,
-};
+export { invalidateAvailability, practitionerAvailabilityQueryKeys } from "./cache";
 
 export function useMyAvailabilityWeeks(enabled = true) {
   const authEnabled = useAuthenticatedQueryEnabled("practitioner");
@@ -22,11 +18,6 @@ export function useMyAvailabilityWeeks(enabled = true) {
 export function useAvailabilityWeekDetails(weekId: string | undefined) {
   const authEnabled = useAuthenticatedQueryEnabled("practitioner");
   return useQuery({ queryKey: practitionerAvailabilityQueryKeys.details(weekId ?? "unknown"), queryFn: () => getAvailabilityWeekDetails(weekId!), enabled: Boolean(weekId) && authEnabled, staleTime: 15_000 });
-}
-
-async function invalidateAvailability(queryClient: ReturnType<typeof useQueryClient>, weekId?: string) {
-  await queryClient.invalidateQueries({ queryKey: practitionerAvailabilityQueryKeys.weeks() });
-  if (weekId) await queryClient.invalidateQueries({ queryKey: practitionerAvailabilityQueryKeys.details(weekId) });
 }
 
 function applyMutationToCache(
@@ -66,7 +57,7 @@ export function useUpdateAvailabilityWeek() {
 }
 export function usePublishAvailabilityWeek() { const q = useQueryClient(); return useMutation({ mutationFn: (weekId: string) => publishAvailabilityWeek(weekId), onSuccess: (_data, weekId) => invalidateAvailability(q, weekId) }); }
 export function usePreviewAvailabilityWeekRepeat() { return useMutation({ mutationFn: ({ sourceWeekId, targetWeekStartDates, idempotencyKey }: { sourceWeekId: string; targetWeekStartDates: string[]; idempotencyKey: string }) => previewAvailabilityWeekRepeat(sourceWeekId, targetWeekStartDates, idempotencyKey) }); }
-export function useConfirmAvailabilityWeekRepeat() { const q = useQueryClient(); return useMutation({ mutationFn: ({ sourceWeekId, operationId, idempotencyKey }: { sourceWeekId: string; operationId: string; idempotencyKey: string }) => confirmAvailabilityWeekRepeat(sourceWeekId, { operationId, idempotencyKey }), onSuccess: () => invalidateAvailability(q) }); }
+export function useConfirmAvailabilityWeekRepeat() { const q = useQueryClient(); return useMutation({ mutationFn: ({ sourceWeekId, operationId, idempotencyKey }: { sourceWeekId: string; operationId: string; idempotencyKey: string }) => confirmAvailabilityWeekRepeat(sourceWeekId, { operationId, idempotencyKey }), onSuccess: (_data, variables) => invalidateAvailability(q, variables.sourceWeekId) }); }
 
 export function useMyBookingSettings(enabled = true) {
   const authEnabled = useAuthenticatedQueryEnabled("practitioner");

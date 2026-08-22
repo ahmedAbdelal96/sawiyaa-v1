@@ -141,6 +141,7 @@ export class PublicPractitionerController {
   ) {
     const avatar = await this.getPublicPractitionerAvatarFileUseCase.execute(slug);
     response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'public, max-age=300');
     return new StreamableFile(createReadStream(avatar.absolutePath));
   }

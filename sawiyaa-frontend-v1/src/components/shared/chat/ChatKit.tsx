@@ -1,5 +1,14 @@
 import React from "react";
-import { Search, Paperclip, Smile, Send, Loader2, Check, CheckCheck, MessageSquare } from "lucide-react";
+import {
+  Search,
+  Paperclip,
+  Smile,
+  Send,
+  Loader2,
+  Check,
+  CheckCheck,
+  MessageSquare,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/ui/avatar/Avatar";
 
@@ -29,11 +38,20 @@ export type ChatMessageViewModel = {
   senderName?: string;
   avatarUrl?: string | null;
   status?: "SENDING" | "SENT" | "DELIVERED" | "READ" | "FAILED";
+  attachments?: Array<{
+    id: string;
+    originalName?: string | null;
+    mimeType: string;
+  }>;
 };
 
-export function ChatWorkspaceShell({ children }: { children: React.ReactNode }) {
+export function ChatWorkspaceShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 h-full min-h-0 items-stretch w-full overflow-hidden">
+    <div className="flex h-full min-h-0 w-full flex-col items-stretch gap-4 overflow-hidden lg:flex-row lg:gap-5">
       {children}
     </div>
   );
@@ -53,23 +71,23 @@ export function ChatThreadList({
   header?: React.ReactNode;
 }) {
   return (
-    <div className="w-full h-full flex flex-col bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-      {header && <div className="px-4 pt-4 shrink-0">{header}</div>}
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-white/10 dark:bg-slate-900">
+      {header && <div className="shrink-0 px-4 pt-4">{header}</div>}
       {onSearchChange && (
-        <div className="p-4 shrink-0 border-b border-slate-100 dark:border-white/5">
+        <div className="shrink-0 border-b border-slate-100 p-4 dark:border-white/5">
           <div className="relative">
             <input
               type="text"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-11 pr-4 h-12 text-xs md:text-sm rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-950/30 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-text-primary dark:text-white transition-all duration-200 shadow-sm font-medium"
+              className="text-text-primary h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/50 pr-4 pl-11 text-xs font-medium shadow-sm transition-all duration-200 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 md:text-sm dark:border-white/10 dark:bg-slate-950/30 dark:text-white"
             />
-            <Search className="absolute left-4 top-4 h-4 w-4 text-text-muted" />
+            <Search className="text-text-muted absolute top-4 left-4 h-4 w-4" />
           </div>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1 bg-white dark:bg-slate-900">
+      <div className="custom-scrollbar flex-1 space-y-1 overflow-y-auto bg-white p-2 dark:bg-slate-900">
         {children}
       </div>
     </div>
@@ -88,12 +106,12 @@ export function ChatThreadListItem({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all duration-200 border border-transparent select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/20 my-1 text-left rtl:text-right",
+        "focus-visible:ring-primary/20 my-1 flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border border-transparent p-3.5 text-left transition-all duration-200 outline-none select-none focus-visible:ring-2 rtl:text-right",
         thread.isActive
-          ? "bg-teal-50/60 border-teal-200/50 dark:bg-teal-950/35 dark:border-teal-900/40 border-s-4 border-s-teal-600 pl-2.5 rtl:pr-2.5 shadow-sm"
+          ? "border-s-4 border-teal-200/50 border-s-teal-600 bg-teal-50/60 pl-2.5 shadow-sm rtl:pr-2.5 dark:border-teal-900/40 dark:bg-teal-950/35"
           : thread.isUnread && !thread.readPending
-          ? "bg-rose-50/20 dark:bg-rose-950/5 border-s-2 border-s-rose-500/70 pl-3 rtl:pr-3"
-          : "hover:bg-slate-50/80 dark:hover:bg-white/[0.02]"
+            ? "border-s-2 border-s-rose-500/70 bg-rose-50/20 pl-3 rtl:pr-3 dark:bg-rose-950/5"
+            : "hover:bg-slate-50/80 dark:hover:bg-white/[0.02]",
       )}
     >
       <div className="relative shrink-0">
@@ -103,46 +121,53 @@ export function ChatThreadListItem({
           size="medium"
         />
         {thread.online && (
-          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+          <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
         )}
       </div>
 
-      <div className="flex-1 min-w-0 text-left rtl:text-right">
+      <div className="min-w-0 flex-1 text-left rtl:text-right">
         <div className="flex items-center justify-between gap-2">
-          <h4 className={cn(
-            "text-sm truncate",
-            thread.isActive
-              ? "font-extrabold text-text-primary dark:text-white"
-              : thread.isUnread && !thread.readPending
-              ? "font-bold text-text-primary dark:text-white"
-              : "font-semibold text-text-secondary dark:text-slate-300"
-          )}>
+          <h4
+            className={cn(
+              "truncate text-sm",
+              thread.isActive
+                ? "text-text-primary font-extrabold dark:text-white"
+                : thread.isUnread && !thread.readPending
+                  ? "text-text-primary font-bold dark:text-white"
+                  : "text-text-secondary font-semibold dark:text-slate-300",
+            )}
+          >
             {thread.title}
           </h4>
           {thread.lastMessageAt && (
-            <span className="text-[11px] text-text-muted shrink-0 font-medium">
+            <span className="text-text-muted shrink-0 text-[11px] font-medium">
               {thread.lastMessageAt}
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-1 gap-2">
-          <p className="text-xs text-text-secondary dark:text-slate-400 truncate font-semibold">
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <p className="text-text-secondary truncate text-xs font-semibold dark:text-slate-400">
             {thread.subtitle}
           </p>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
             {thread.statusLabel && (
-              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 border border-teal-100/30">
+              <span className="rounded-full border border-teal-100/30 bg-teal-50 px-2.5 py-0.5 text-[10px] font-bold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
                 {thread.statusLabel}
               </span>
             )}
             {thread.priorityLabel && (
-              <span className={cn(
-                "rounded-full px-2.5 py-0.5 text-[10px] font-bold shrink-0 border border-transparent",
-                thread.priorityLabel.includes("Urgent") || thread.priorityLabel.includes("عاجلة") || thread.priorityLabel.includes("High") || thread.priorityLabel.includes("عالية")
-                  ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-100/20"
-                  : "bg-slate-100 text-text-secondary dark:bg-white/10 dark:text-white"
-              )}>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full border border-transparent px-2.5 py-0.5 text-[10px] font-bold",
+                  thread.priorityLabel.includes("Urgent") ||
+                    thread.priorityLabel.includes("عاجلة") ||
+                    thread.priorityLabel.includes("High") ||
+                    thread.priorityLabel.includes("عالية")
+                    ? "border-rose-100/20 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                    : "text-text-secondary bg-slate-100 dark:bg-white/10 dark:text-white",
+                )}
+              >
                 {thread.priorityLabel}
               </span>
             )}
@@ -150,21 +175,21 @@ export function ChatThreadListItem({
         </div>
 
         {thread.lastMessage && (
-          <p className="text-xs text-text-muted dark:text-slate-500 mt-1.5 truncate font-medium">
+          <p className="text-text-muted mt-1.5 truncate text-xs font-medium dark:text-slate-500">
             {thread.lastMessage}
           </p>
         )}
       </div>
 
       {!thread.readPending && thread.unreadCount && thread.unreadCount > 0 ? (
-        <div className="shrink-0 flex items-center justify-center">
-          <span className="h-4.5 min-w-[18px] px-1 flex items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm">
+        <div className="flex shrink-0 items-center justify-center">
+          <span className="flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-sm">
             {thread.unreadCount}
           </span>
         </div>
       ) : !thread.readPending && thread.isUnread ? (
-        <div className="shrink-0 flex items-center justify-center px-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500 shadow-sm animate-pulse" />
+        <div className="flex shrink-0 items-center justify-center px-1">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500 shadow-sm" />
         </div>
       ) : null}
     </button>
@@ -189,14 +214,14 @@ export function ChatConversationPanel({
   }, [children]);
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:border-white/10 dark:bg-slate-900">
       {header}
-      
-      <div 
+
+      <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-5 bg-[#f8fafc]/90 dark:bg-slate-950/10"
+        className="custom-scrollbar min-h-0 flex-1 overflow-y-auto bg-[#f8fafc]/90 p-5 dark:bg-slate-950/10"
       >
-        <div className="min-h-full flex flex-col justify-end space-y-4">
+        <div className="flex min-h-full flex-col justify-end space-y-4">
           {children}
         </div>
       </div>
@@ -221,32 +246,30 @@ export function ChatConversationHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="p-4 border-b border-slate-100 dark:border-white/10 flex items-center justify-between gap-3 shrink-0 bg-white dark:bg-slate-900 shadow-sm min-h-[76px]">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+    <div className="flex min-h-[76px] shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-slate-900">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <div className="relative shrink-0">
-          <Avatar
-            src={avatarUrl || null}
-            name={title}
-            size="medium"
-          />
+          <Avatar src={avatarUrl || null} name={title} size="medium" />
           {online && (
-            <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+            <span className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
           )}
         </div>
 
-        <div className="min-w-0 text-left rtl:text-right flex-1">
-          <h3 className="text-base font-bold text-text-primary dark:text-white truncate">
+        <div className="min-w-0 flex-1 text-left rtl:text-right">
+          <h3 className="text-text-primary truncate text-base font-bold dark:text-white">
             {title}
           </h3>
           {subtitle && (
-            <div className="text-xs text-text-muted mt-1 truncate">
+            <div className="text-text-muted mt-1 truncate text-xs">
               {subtitle}
             </div>
           )}
         </div>
       </div>
 
-      {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
+      {actions && (
+        <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
+      )}
     </div>
   );
 }
@@ -259,32 +282,63 @@ export function ChatMessageBubble({
   onReport?: React.ReactNode;
 }) {
   const isMine = message.direction === "outgoing";
-  
+
   return (
-    <div dir="ltr" className={cn("flex w-full mb-1.5", isMine ? "justify-end" : "justify-start")}>
+    <div
+      dir="ltr"
+      className={cn(
+        "mb-1.5 flex w-full",
+        isMine ? "justify-end" : "justify-start",
+      )}
+    >
       <div
         dir="auto"
         className={cn(
-          "max-w-[65%] px-4 py-2.5 text-xs leading-normal select-text border shadow-sm transition-colors",
+          "max-w-[65%] border px-4 py-2.5 text-xs leading-normal shadow-sm transition-colors select-text",
           isMine
-            ? "bg-gradient-to-br from-teal-600 to-teal-700 border-teal-600/10 text-white rounded-2xl rounded-br-md shadow-[0_2px_8px_rgba(13,148,136,0.15)]"
-            : "bg-white dark:bg-slate-800/95 border-slate-200/80 dark:border-slate-700/50 text-text-primary dark:text-white/95 rounded-2xl rounded-bl-md shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+            ? "rounded-2xl rounded-br-md border-teal-600/10 bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-[0_2px_8px_rgba(13,148,136,0.15)]"
+            : "text-text-primary rounded-2xl rounded-bl-md border-slate-200/80 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:border-slate-700/50 dark:bg-slate-800/95 dark:text-white/95",
         )}
       >
         <p className="break-words whitespace-pre-wrap">{message.body}</p>
-        
-        <div className="mt-1.5 flex items-center justify-end gap-1 text-[9px] opacity-75 font-medium select-none">
+        {message.attachments?.length ? (
+          <div className="mt-2 space-y-1.5">
+            {message.attachments.map((attachment) => (
+              <div
+                key={attachment.id}
+                className="flex items-center gap-2 rounded-xl border border-current/15 bg-black/5 px-2.5 py-2 text-[11px]"
+              >
+                <Paperclip className="h-3.5 w-3.5 shrink-0" />
+                <span className="min-w-0 truncate">
+                  {attachment.originalName || attachment.mimeType}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-1.5 flex items-center justify-end gap-1 text-[9px] font-medium opacity-75 select-none">
           <span>{message.sentAt}</span>
           {isMine && message.status && (
             <span className="shrink-0">
-              {message.status === "SENDING" && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
+              {message.status === "SENDING" && (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              )}
               {message.status === "SENT" && <Check className="h-2.5 w-2.5" />}
-              {(message.status === "DELIVERED" || message.status === "READ") && (
-                <CheckCheck className={cn("h-2.5 w-2.5", message.status === "READ" ? "text-teal-200" : "")} />
+              {(message.status === "DELIVERED" ||
+                message.status === "READ") && (
+                <CheckCheck
+                  className={cn(
+                    "h-2.5 w-2.5",
+                    message.status === "READ" ? "text-teal-200" : "",
+                  )}
+                />
               )}
             </span>
           )}
-          {onReport ? <span className="ms-1 inline-flex">{onReport}</span> : null}
+          {onReport ? (
+            <span className="ms-1 inline-flex">{onReport}</span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -316,7 +370,7 @@ export function ChatComposer({
   };
 
   return (
-    <div className="p-4 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0">
+    <div className="shrink-0 border-t border-slate-100 bg-white p-4 dark:border-white/10 dark:bg-slate-900">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -324,16 +378,16 @@ export function ChatComposer({
         }}
         className="flex items-center gap-3"
       >
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-text-muted hover:text-text-primary dark:hover:text-white transition flex items-center justify-center border border-transparent hover:border-slate-100 dark:hover:border-white/10"
+            className="text-text-muted hover:text-text-primary flex items-center justify-center rounded-xl border border-transparent p-2.5 transition hover:border-slate-100 hover:bg-slate-50 dark:hover:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
           >
             <Paperclip className="h-5 w-5" />
           </button>
           <button
             type="button"
-            className="p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-text-muted hover:text-text-primary dark:hover:text-white transition flex items-center justify-center border border-transparent hover:border-slate-100 dark:hover:border-white/10"
+            className="text-text-muted hover:text-text-primary flex items-center justify-center rounded-xl border border-transparent p-2.5 transition hover:border-slate-100 hover:bg-slate-50 dark:hover:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
           >
             <Smile className="h-5 w-5" />
           </button>
@@ -347,7 +401,7 @@ export function ChatComposer({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
-            className="w-full resize-none rounded-2xl border border-slate-200/80 dark:border-white/10 bg-slate-50 dark:bg-slate-950/20 px-4 py-3 h-12 text-[13px] leading-normal outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 text-text-primary dark:text-white placeholder:text-text-muted disabled:cursor-not-allowed max-h-[120px] custom-scrollbar transition-all duration-200 shadow-sm"
+            className="text-text-primary placeholder:text-text-muted custom-scrollbar h-12 max-h-[120px] w-full resize-none rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 text-[13px] leading-normal shadow-sm transition-all duration-200 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 disabled:cursor-not-allowed dark:border-white/10 dark:bg-slate-950/20 dark:text-white"
             style={{ height: "48px" }}
           />
         </div>
@@ -355,7 +409,7 @@ export function ChatComposer({
         <button
           type="submit"
           disabled={disabled || isSubmitting || value.trim().length === 0}
-          className="p-3 rounded-full bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center justify-center h-12 w-12 shadow-[0_4px_12px_rgba(13,148,136,0.25)] hover:shadow-[0_6px_16px_rgba(13,148,136,0.35)]"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 p-3 font-semibold text-white shadow-[0_4px_12px_rgba(13,148,136,0.25)] transition hover:bg-teal-700 hover:shadow-[0_6px_16px_rgba(13,148,136,0.35)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -370,9 +424,9 @@ export function ChatComposer({
 
 export function ChatEmptyState({ message }: { message: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center h-full bg-white dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/5 rounded-3xl p-6 text-center shadow-sm min-h-[350px]">
-      <MessageSquare className="h-12 w-12 text-teal-600/30 mb-3 animate-pulse" />
-      <h3 className="text-sm font-bold text-text-primary dark:text-white/90">
+    <div className="flex h-full min-h-[350px] flex-1 flex-col items-center justify-center rounded-3xl border border-slate-200/70 bg-white p-6 text-center shadow-sm dark:border-white/5 dark:bg-white/[0.03]">
+      <MessageSquare className="mb-3 h-12 w-12 animate-pulse text-teal-600/30" />
+      <h3 className="text-text-primary text-sm font-bold dark:text-white/90">
         {message}
       </h3>
     </div>
@@ -381,8 +435,8 @@ export function ChatEmptyState({ message }: { message: string }) {
 
 export function ChatLoadingState() {
   return (
-    <div className="flex-1 flex items-center justify-center h-full bg-[#f8fafc]/90 dark:bg-slate-950/10 border border-slate-200/70 dark:border-white/5 rounded-3xl p-6 shadow-sm min-h-[400px]">
-      <Loader2 className="h-8 w-8 text-teal-600 animate-spin" />
+    <div className="flex h-full min-h-[400px] flex-1 items-center justify-center rounded-3xl border border-slate-200/70 bg-[#f8fafc]/90 p-6 shadow-sm dark:border-white/5 dark:bg-slate-950/10">
+      <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
     </div>
   );
 }
@@ -399,13 +453,13 @@ export function ChatErrorState({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center h-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 rounded-3xl p-6 text-center shadow-sm min-h-[400px]">
-      <p className="text-sm font-semibold text-rose-500 mb-2">{title}</p>
-      {note && <p className="text-xs text-text-secondary mb-4">{note}</p>}
+    <div className="flex h-full min-h-[400px] flex-1 flex-col items-center justify-center rounded-3xl border border-slate-200/80 bg-white p-6 text-center shadow-sm dark:border-white/10 dark:bg-slate-900">
+      <p className="mb-2 text-sm font-semibold text-rose-500">{title}</p>
+      {note && <p className="text-text-secondary mb-4 text-xs">{note}</p>}
       {onAction && (
         <button
           onClick={onAction}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-xs font-semibold text-white hover:bg-teal-700 transition"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-teal-700"
         >
           {actionLabel}
         </button>

@@ -18,6 +18,9 @@ import {
   patientLogin,
   patientLogout,
   patientRefresh,
+  traineeLogin,
+  traineeRefresh,
+  traineeLogout,
   patientRegister,
   patientForgotPassword,
   patientVerifyPasswordResetOtp,
@@ -42,6 +45,7 @@ import type {
   PractitionerAuthenticatedResponse,
   PractitionerLoginResponse,
   PatientLoginRequest,
+  TraineeLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
   PatientVerifyPasswordResetOtpRequest,
@@ -76,6 +80,7 @@ import {
 import type { PushRegistrationStatus } from "../features/push/types";
 import { configureApiAuthSessionHandlers, setApiAccessToken } from "../lib/api";
 import { disconnectUnifiedMessagesSocket } from "../features/messages/realtime-socket";
+import { disconnectNotificationSocket } from "../features/notifications/realtime-socket";
 import { getSignInRouteForRole } from "../features/auth/routes";
 
 interface AuthContextValue {
@@ -91,6 +96,7 @@ interface AuthContextValue {
   signInPatient: (
     payload: Omit<PatientLoginRequest, "deviceId">,
   ) => Promise<void>;
+  signInTrainee: (payload: Omit<TraineeLoginRequest, "deviceId">) => Promise<void>;
   signInPatientWithGoogle: (idToken: string) => Promise<void>;
   signUpPatient: (
     payload: Omit<PatientRegisterRequest, "deviceId">,
@@ -163,7 +169,7 @@ function mapPushPermissionStatusToRegistrationStatus(
 function isSupportedMobileRole(
   role: string | null | undefined,
 ): role is MobileSupportedRole {
-  return role === "patient" || role === "practitioner";
+  return role === "patient" || role === "trainee" || role === "practitioner";
 }
 
 function isAuthSuccessResponse(
@@ -227,6 +233,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const clearAuthenticatedState = useCallback(async () => {
     await persistSession(null);
     disconnectUnifiedMessagesSocket();
+    disconnectNotificationSocket();
     queryClient.clear();
     setPushRegistrationStatus("checking");
   }, [persistSession, queryClient]);
@@ -330,7 +337,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 refreshToken: stored.tokens.refreshToken,
                 deviceId,
               })
-            : null;
+            : await traineeRefresh({
+                refreshToken: stored.tokens.refreshToken,
+                deviceId,
+              })
 
       if (!refreshed) {
         await clearAuthenticatedState();
@@ -513,10 +523,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 refreshToken: currentSession.tokens.refreshToken,
                 deviceId,
               })
-            : await practitionerRefresh({
+            : currentSession.role === "practitioner"
+            ? await practitionerRefresh({
                 refreshToken: currentSession.tokens.refreshToken,
                 deviceId,
-              });
+              })
+            : await traineeRefresh({ refreshToken: currentSession.tokens.refreshToken, deviceId });
 
         if (!refreshed) {
           return null;
@@ -552,6 +564,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const inPublicGroup = group === "(public)";
     const inPatientGroup = group === "(patient)";
     const inPractitionerGroup = group === "(practitioner)";
+    const inTraineeGroup = group === "(trainee)";
 
     if (!session) {
       if (!inAuthGroup && !inOnboardingGroup && !inPublicGroup) {
@@ -568,14 +581,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (session.role === "patient" && (inAuthGroup || inPractitionerGroup)) {
+    if (session.role === "patient" && (inAuthGroup || inPractitionerGroup || inTraineeGroup)) {
       const redirect = pendingRedirectRef.current;
       pendingRedirectRef.current = null;
       router.replace((redirect ?? "/(patient)") as any);
       return;
     }
 
-    if (session.role === "practitioner" && (inAuthGroup || inPatientGroup)) {
+    if (session.role === "trainee" && (inAuthGroup || inPatientGroup || inPractitionerGroup)) {
+      const redirect = pendingRedirectRef.current;
+      pendingRedirectRef.current = null;
+      router.replace((redirect ?? "/(trainee)") as any);
+      return;
+    }
+
+    if (session.role === "practitioner" && (inAuthGroup || inPatientGroup || inTraineeGroup)) {
       const redirect = pendingRedirectRef.current;
       pendingRedirectRef.current = null;
       router.replace((redirect ?? "/(practitioner)") as any);
@@ -604,6 +624,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientLogin({ ...payload, deviceId });
       await consumeAuthSuccess(response, "patient");
+    },
+    [consumeAuthSuccess],
+  );
+
+  const signInTrainee = useCallback(
+    async (payload: Omit<TraineeLoginRequest, "deviceId">) => {
+      const deviceId = await getOrCreateDeviceId();
+      const response = await traineeLogin({ ...payload, deviceId });
+      await consumeAuthSuccess(response, "trainee");
     },
     [consumeAuthSuccess],
   );
@@ -681,6 +710,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await patientLogout(current.tokens.refreshToken);
       } else if (current?.role === "practitioner") {
         await practitionerLogout(current.tokens.refreshToken);
+      } else if (current?.role === "trainee") {
+        await traineeLogout(current.tokens.refreshToken);
       }
     } catch {
       // Auth revocation is best effort; local state must still be cleared.
@@ -706,6 +737,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       enablePushNotifications,
       refreshPushRegistrationState,
       signInPatient,
+      signInTrainee,
       signInPatientWithGoogle,
       signUpPatient,
       startPractitionerLogin,
@@ -734,6 +766,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshPushRegistrationState,
       session,
       signInPatient,
+      signInTrainee,
       signInPatientWithGoogle,
       signOut,
       signUpPatient,

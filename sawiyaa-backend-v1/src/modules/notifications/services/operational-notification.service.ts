@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   NotificationCategory,
@@ -18,6 +18,7 @@ import {
 } from '../repositories/session-reminder-queue.repository';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
+import { NotificationRealtimePublisher } from './notification-realtime.publisher';
 
 type Recipient = {
   userId: string;
@@ -78,6 +79,7 @@ export class OperationalNotificationService {
     private readonly sessionReminderQueueRepository: SessionReminderQueueRepository,
     private readonly i18nService: I18nService,
     private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
+    @Optional() private readonly notificationRealtimePublisher?: NotificationRealtimePublisher,
   ) {}
 
   async notifyPaymentSucceeded(input: {
@@ -1456,6 +1458,7 @@ export class OperationalNotificationService {
 
       if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {
         await this.queueInApp({
+          typeSlug: input.slug,
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
           templateId:
@@ -1621,6 +1624,7 @@ export class OperationalNotificationService {
   }
 
   private async queueInApp(input: {
+    typeSlug: string;
     userId: string;
     notificationTypeId: string;
     templateId: string | null;
@@ -1657,7 +1661,7 @@ export class OperationalNotificationService {
       return;
     }
 
-    await this.repository.createNotification({
+    const notification = await this.repository.createNotification({
       userId: input.userId,
       notificationTypeId: input.notificationTypeId,
       templateId: input.templateId,
@@ -1671,6 +1675,14 @@ export class OperationalNotificationService {
       relatedEntityType: input.relatedEntityType,
       relatedEntityId: input.relatedEntityId,
       idempotencyKey: input.idempotencyKey ?? null,
+    });
+
+    this.notificationRealtimePublisher?.publish(input.userId, {
+      notificationId: notification.id,
+      typeSlug: input.typeSlug,
+      relatedEntityType: input.relatedEntityType,
+      relatedEntityId: input.relatedEntityId,
+      createdAt: notification.createdAt.toISOString(),
     });
   }
 

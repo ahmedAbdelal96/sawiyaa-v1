@@ -4,7 +4,7 @@
  * Admin-class roles (ADMIN, SUPER_ADMIN, FINANCE_STAFF, etc.) are intentionally
  * excluded from this union: the mobile app must never accept or process them.
  */
-export type AppRole = "PATIENT" | "PRACTITIONER";
+export type AppRole = "PATIENT" | "TRAINEE" | "PRACTITIONER";
 
 export type UserStatus =
   | "ACTIVE"
@@ -26,7 +26,7 @@ export type PractitionerStatus =
  * The only roles the mobile app supports at runtime.
  * Admin-class roles are explicitly excluded; this type must never include "admin".
  */
-export type MobileSupportedRole = "patient" | "practitioner";
+export type MobileSupportedRole = "patient" | "trainee" | "practitioner";
 
 /**
  * @deprecated Use MobileSupportedRole. Kept as alias so existing usages compile
@@ -143,6 +143,12 @@ export interface PatientLoginRequest {
   deviceId?: string;
 }
 
+export interface TraineeLoginRequest {
+  email: string;
+  password: string;
+  deviceId?: string;
+}
+
 export interface PatientForgotPasswordRequest {
   email: string;
 }
@@ -188,8 +194,6 @@ export interface PractitionerRegisterRequest {
   bio?: string;
   yearsOfExperience?: number;
   countryCode?: string;
-  primarySpecialtyCategoryId: string;
-  specialtyIds: string[];
   initialCredential?: {
     credentialType:
       | "LICENSE"

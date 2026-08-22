@@ -5,6 +5,7 @@ import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitio
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { GetPublicPractitionerDetailsUseCase } from './get-public-practitioner-details.use-case';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 describe('GetPublicPractitionerDetailsUseCase', () => {
   const publicReadRepository = {
@@ -26,6 +27,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     publicReadRepository,
     pricingContextService,
     sessionReviewRatingAggregationService,
+    new PractitionerProfessionalContentResolver(),
   );
 
   beforeEach(() => {
@@ -47,6 +49,11 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       isPublicProfilePublished: true,
       professionalTitle: 'Therapist',
       bio: 'Bio',
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: 'نبذة عربية' },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
       practitionerType: 'OTHER',
       practitionerGender: null,
       country: { isoCode: 'EG', currencyCode: 'EGP' },
@@ -117,6 +124,8 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       writtenReviewsCount: 5,
       totalReviews: 8,
     });
+    expect(result.item.professionalTitle).toBe('Clinical Psychologist');
+    expect(result.item.fullBio).toBe('English bio');
   });
 
   it('uses shared pricing context so guest Egypt traffic can resolve EGP when request country is provided', async () => {
@@ -128,6 +137,11 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       isPublicProfilePublished: true,
       professionalTitle: 'Therapist',
       bio: 'Bio',
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: 'نبذة عربية' },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
       practitionerType: 'OTHER',
       practitionerGender: null,
       country: { isoCode: 'EG', currencyCode: 'EGP' },

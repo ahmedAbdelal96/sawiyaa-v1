@@ -48,6 +48,7 @@
     }
   },
   "dataTable": {
+    "pagination": "التنقل بين الصفحات",
     "rows": "عدد الصفوف",
     "rowsPerPage": "عدد الصفوف في الصفحة",
     "sortBy": "ترتيب حسب",
@@ -62,7 +63,14 @@
     "showing": "عرض {start} إلى {end} من {total}",
     "filters": "الفلاتر",
     "refineList": "استخدم الفلاتر لتضييق النتائج دون مغادرة الصفحة.",
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "exportSuccess": "تم تصدير البيانات بنجاح",
+    "exportError": "تعذر تصدير البيانات",
+    "exportToExcel": "تصدير إلى Excel",
+    "exporting": "جارٍ التصدير...",
+    "exportExcel": "تصدير Excel",
+    "errorOccurred": "حدث خطأ ما",
+    "retry": "إعادة المحاولة"
   },
   "money": {
     "currency": { "usd": { "full": "دولار" }, "egp": { "full": "جنيه" } },

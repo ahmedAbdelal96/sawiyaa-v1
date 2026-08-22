@@ -25,6 +25,10 @@ type AdminPractitionerDirectoryRow = {
   practitionerType: string;
   professionalTitle: string | null;
   bio: string | null;
+  sessionPrice30Egp: unknown;
+  sessionPrice30Usd: unknown;
+  sessionPrice60Egp: unknown;
+  sessionPrice60Usd: unknown;
   user: {
     displayName: string | null;
     status: string;
@@ -106,6 +110,10 @@ export class ListAdminPractitionersDirectoryUseCase {
           hasProfessionalTitle: Boolean(row.professionalTitle?.trim()),
           hasBio: Boolean(row.bio?.trim()),
           hasAtLeastOneActiveSpecialty: row.specialties.length > 0,
+          sessionPrice30Egp: row.sessionPrice30Egp,
+          sessionPrice30Usd: row.sessionPrice30Usd,
+          sessionPrice60Egp: row.sessionPrice60Egp,
+          sessionPrice60Usd: row.sessionPrice60Usd,
         }),
         countryCode: row.country?.isoCode ?? null,
         isOnlineNow: isPresenceEffectivelyOnline(row.presence),

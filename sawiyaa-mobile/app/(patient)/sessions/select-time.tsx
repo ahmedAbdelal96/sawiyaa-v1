@@ -50,9 +50,11 @@ import {
   getDatePartsInTimeZone,
   getEffectiveViewerTimeZone,
 } from "../../../src/lib/time-formatting";
+import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone-options";
 import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { usePatientProfile } from "../../../src/features/patient/profile/hooks";
 import { resolvePatientDisplayTimeZone } from "../../../src/lib/time-formatting";
+import { findNearestAvailableDayKey, normalizeBookingDuration } from "../../../src/features/patient/booking/view-model";
 
 const VISIBLE_DATE_COLUMNS = 5;
 type ScheduleSlot = {
@@ -183,20 +185,25 @@ export default function SelectSessionTimeScreen() {
 
   const params = useLocalSearchParams<{
     slug: string;
+    durationMinutes?: string;
+    bookingType?: string;
     practitionerName?: string;
     practitionerTitle?: string;
     practitionerAvatarUrl?: string;
   }>();
 
-  const [bookingType, setBookingType] =
-    useState<BookingTypeValue>("appointment");
+  const hasExplicitDuration = params.durationMinutes === "30" || params.durationMinutes === "60";
+  const [bookingType, setBookingType] = useState<BookingTypeValue>(
+    params.bookingType === "package" ? "package" : "appointment",
+  );
   const [appointmentDuration, setAppointmentDuration] =
-    useState<DurationValue>(30);
-  const [packageDuration, setPackageDuration] = useState<DurationValue>(30);
+    useState<DurationValue>(() => normalizeBookingDuration(params.durationMinutes));
+  const [packageDuration, setPackageDuration] = useState<DurationValue>(() => normalizeBookingDuration(params.durationMinutes));
   const [dateWindowOffsetDays, setDateWindowOffsetDays] = useState(0);
   const [avatarFailed, setAvatarFailed] = useState(false);
-  const [showBooked, setShowBooked] = useState(false);
   const [footerHeight, setFooterHeight] = useState(96);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const hasInitializedDayRef = useRef(false);
 
   const [selectedAppointmentSlot, setSelectedAppointmentSlot] = useState<
     string | null
@@ -209,7 +216,6 @@ export default function SelectSessionTimeScreen() {
   );
 
   const continueLockRef = useRef(false);
-  const canShowBookedSlots = true;
 
   const practitionerQuery = useGetPublicPractitionerDetails(
     params.slug ?? null,
@@ -286,19 +292,37 @@ export default function SelectSessionTimeScreen() {
     params.slug ?? null,
     dateWindow.fromIso,
     dateWindow.toIso,
-    showBooked,
   );
-  const windows = windowsQuery.data?.windows ?? [];
-  const bookedSlots = showBooked ? (windowsQuery.data?.bookedSlots ?? []) : [];
+  const windows = useMemo(
+    () => windowsQuery.data?.windows ?? [],
+    [windowsQuery.data?.windows],
+  );
   const durationSlots = useMemo(
     () =>
-      buildSlotsFromDurationWindows(windows, bookedSlots, effectiveDuration),
-    [bookedSlots, effectiveDuration, windows],
+      buildSlotsFromDurationWindows(windows, [], effectiveDuration),
+    [effectiveDuration, windows],
   );
   const dateColumns = useMemo(
     () => toDateColumns(dateWindow.from, locale, durationSlots),
     [dateWindow.from, durationSlots, locale],
   );
+
+  useEffect(() => {
+    if (hasInitializedDayRef.current) return;
+    if (!dateColumns.some((day) => day.slots.length > 0)) return;
+    setSelectedDayKey(findNearestAvailableDayKey(dateColumns));
+    hasInitializedDayRef.current = true;
+  }, [dateColumns, selectedDayKey]);
+
+  useEffect(() => {
+    hasInitializedDayRef.current = false;
+    setSelectedDayKey(null);
+  }, [dateWindowOffsetDays, effectiveDuration]);
+
+  const bookingTimezone = windowsQuery.data?.timezone ?? timezone;
+  const timezoneLabel =
+    getTimeZoneDisplayLabel(bookingTimezone, isArabicUi ? "ar" : "en") ??
+    t("patientSessionsFlow.selectTime.timezoneUnavailable");
 
   const packagePlansQuery = usePublicPractitionerPackagePlans(
     params.slug ?? null,
@@ -308,7 +332,10 @@ export default function SelectSessionTimeScreen() {
     },
     { enabled: bookingType === "package" && supportsPackages },
   );
-  const packagePlans = packagePlansQuery.data?.items ?? [];
+  const packagePlans = useMemo(
+    () => packagePlansQuery.data?.items ?? [],
+    [packagePlansQuery.data?.items],
+  );
 
   useEffect(() => {
     if (!packagePlans.length) {
@@ -503,26 +530,30 @@ export default function SelectSessionTimeScreen() {
           setAvatarFailed={setAvatarFailed}
         />
 
-        <BookingTypeTabs
-          theme={theme}
-          isRtl={isRtl}
-          value={bookingType}
-          onChange={setBookingType}
-          showPackageTab={supportsPackages}
-          isPackageSupportChecking={isPackageSupportChecking}
-        />
+        {!hasExplicitDuration ? (
+          <BookingTypeTabs
+            theme={theme}
+            isRtl={isRtl}
+            value={bookingType}
+            onChange={setBookingType}
+            showPackageTab={supportsPackages}
+            isPackageSupportChecking={isPackageSupportChecking}
+          />
+        ) : null}
 
         {bookingType === "appointment" ? (
           <>
-            <Card variant="elevated" padding="sm" style={styles.compactCard}>
-              <DurationSegment
-                theme={theme}
-                isRtl={isRtl}
-                title={t("patientSessionsFlow.selectTime.durationTitle")}
-                value={appointmentDuration}
-                onChange={setAppointmentDuration}
-              />
-            </Card>
+            {!hasExplicitDuration ? (
+              <Card variant="elevated" padding="sm" style={styles.compactCard}>
+                <DurationSegment
+                  theme={theme}
+                  isRtl={isRtl}
+                  title={t("patientSessionsFlow.selectTime.durationTitle")}
+                  value={appointmentDuration}
+                  onChange={setAppointmentDuration}
+                />
+              </Card>
+            ) : null}
 
             <RollingDateScheduleTable
               theme={theme}
@@ -540,15 +571,14 @@ export default function SelectSessionTimeScreen() {
               selectedSlots={
                 selectedAppointmentSlot ? [selectedAppointmentSlot] : []
               }
+              selectedDayKey={selectedDayKey}
+              onSelectDay={setSelectedDayKey}
               onToggleSlot={onToggleAppointmentSlot}
               maxSelectedCount={1}
               isLoading={windowsQuery.isLoading}
               isError={windowsQuery.isError}
               onRetry={() => windowsQuery.refetch()}
-              showBooked={showBooked}
-              onToggleShowBooked={setShowBooked}
-              canShowBookedSlots={canShowBookedSlots}
-              timezone={timezone}
+              timezone={timezoneLabel}
             />
           </>
         ) : (
@@ -561,13 +591,15 @@ export default function SelectSessionTimeScreen() {
                 {t("patientSessionsFlow.selectTime.packageIntro")}
               </Text>
 
-              <DurationSegment
-                theme={theme}
-                isRtl={isRtl}
-                title={t("patientSessionsFlow.selectTime.durationTitle")}
-                value={packageDuration}
-                onChange={setPackageDuration}
-              />
+              {!hasExplicitDuration ? (
+                <DurationSegment
+                  theme={theme}
+                  isRtl={isRtl}
+                  title={t("patientSessionsFlow.selectTime.durationTitle")}
+                  value={packageDuration}
+                  onChange={setPackageDuration}
+                />
+              ) : null}
 
               <Text
                 weight="600"
@@ -672,15 +704,14 @@ export default function SelectSessionTimeScreen() {
                 setDateWindowOffsetDays((prev) => prev + VISIBLE_DATE_COLUMNS)
               }
               selectedSlots={selectedPackageSlots}
+              selectedDayKey={selectedDayKey}
+              onSelectDay={setSelectedDayKey}
               onToggleSlot={onTogglePackageSlot}
               maxSelectedCount={requiredPackageSlots || 0}
               isLoading={windowsQuery.isLoading}
               isError={windowsQuery.isError}
               onRetry={() => windowsQuery.refetch()}
-              showBooked={showBooked}
-              onToggleShowBooked={setShowBooked}
-              canShowBookedSlots={canShowBookedSlots}
-              timezone={timezone}
+              timezone={timezoneLabel}
             />
           </>
         )}

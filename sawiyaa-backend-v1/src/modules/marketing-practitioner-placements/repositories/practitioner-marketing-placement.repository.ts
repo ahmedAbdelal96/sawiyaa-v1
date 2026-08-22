@@ -6,10 +6,13 @@ import {
 } from '@prisma/client';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 import {
   SessionReviewRatingAggregationService,
   type SessionReviewRatingSummary,
 } from '@modules/reviews/services/session-review-rating-aggregation.service';
+import { localizeSpecialtyTitle } from '@modules/specialties/utils/localize-specialty-title.util';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 export type FeaturedPractitionerHomeCard = {
   practitionerId: string;
@@ -31,6 +34,7 @@ export type FeaturedPractitionerHomeCard = {
 export class PractitionerMarketingPlacementRepository {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
     @Optional()
     private readonly sessionReviewRatingAggregationService?: SessionReviewRatingAggregationService,
   ) {}
@@ -66,6 +70,15 @@ export class PractitionerMarketingPlacementRepository {
               id: true,
               publicSlug: true,
               professionalTitle: true,
+              primaryContentLocale: true,
+              professionalContentTranslations: {
+                orderBy: { locale: 'asc' as const },
+                select: {
+                  locale: true,
+                  professionalTitle: true,
+                  bio: true,
+                },
+              },
               avatarUrl: true,
               user: {
                 select: {
@@ -85,9 +98,11 @@ export class PractitionerMarketingPlacementRepository {
                 orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
                 take: 1,
                 select: {
-                  specialty: {
-                    select: {
-                      translations: {
+                    specialty: {
+                      select: {
+                        nameAr: true,
+                        nameEn: true,
+                        translations: {
                         where: {
                           locale: {
                             in: [input.locale, 'en'],
@@ -95,6 +110,7 @@ export class PractitionerMarketingPlacementRepository {
                         },
                         orderBy: { locale: 'asc' },
                         select: {
+                          locale: true,
                           title: true,
                         },
                       },
@@ -145,6 +161,12 @@ export class PractitionerMarketingPlacementRepository {
       id: string;
       publicSlug: string;
       professionalTitle: string | null;
+      primaryContentLocale: 'ar' | 'en' | null;
+      professionalContentTranslations: Array<{
+        locale: 'ar' | 'en';
+        professionalTitle: string | null;
+        bio: string | null;
+      }>;
       avatarUrl: string | null;
       user: { displayName: string | null };
       sessionPrice30Egp: unknown;
@@ -153,7 +175,9 @@ export class PractitionerMarketingPlacementRepository {
       sessionPrice60Usd: unknown;
       specialties: Array<{
         specialty: {
-          translations: Array<{ title: string }>;
+          nameAr: string | null;
+          nameEn: string | null;
+          translations: Array<{ locale: string; title: string }>;
         };
       }>;
     };
@@ -164,16 +188,27 @@ export class PractitionerMarketingPlacementRepository {
       input.locale === 'ar'
         ? input.badgeLabelAr?.trim() || 'مميز'
         : input.badgeLabelEn?.trim() || 'Featured';
+    const professionalContent = this.professionalContentResolver.resolve({
+      requestedLocale: input.locale,
+      primaryContentLocale: input.practitioner.primaryContentLocale,
+      translations: input.practitioner.professionalContentTranslations ?? [],
+      legacyProfessionalTitle: input.practitioner.professionalTitle,
+    });
 
     return {
       practitionerId: input.practitioner.id,
       slug: input.practitioner.publicSlug,
       displayName: input.practitioner.user.displayName ?? null,
-      professionalTitle: input.practitioner.professionalTitle ?? null,
+      professionalTitle: professionalContent.professionalTitle,
       avatarUrl: input.practitioner.avatarUrl ?? null,
-      primarySpecialty:
-        input.practitioner.specialties[0]?.specialty.translations[0]?.title ??
-        null,
+      primarySpecialty: input.practitioner.specialties[0]
+        ? localizeSpecialtyTitle({
+            locale: input.locale,
+            translations: input.practitioner.specialties[0].specialty.translations,
+            nameAr: input.practitioner.specialties[0].specialty.nameAr,
+            nameEn: input.practitioner.specialties[0].specialty.nameEn,
+          })
+        : null,
       averageRating:
         input.ratingSummary?.averageRating === null ||
         input.ratingSummary?.averageRating === undefined
@@ -200,6 +235,7 @@ export class PractitionerMarketingPlacementRepository {
 
   private publicPractitionerWhere() {
     return {
+      ...publicPractitionerPricingWhere(),
       status: PractitionerStatus.APPROVED,
       isPublicProfilePublished: true,
       user: {

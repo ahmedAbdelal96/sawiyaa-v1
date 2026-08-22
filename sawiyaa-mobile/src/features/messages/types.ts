@@ -181,13 +181,13 @@ export interface ListGeneralChatMessagesParams {
 
 export interface SendGeneralChatMessageInput {
   message: string;
-  attachments?: Array<{
+  attachments?: {
     fileId: string;
     fileUrl: string;
     mimeType: string;
     fileSize?: number;
     originalName?: string;
-  }>;
+  }[];
 }
 
 export interface SendGeneralChatMessageResponse {
@@ -244,6 +244,16 @@ export interface CanonicalMessage {
   clientMessageId?: string;
   deliveryState?: MessageDeliveryState;
   deliveryErrorCode?: string;
+}
+
+export interface ChatAttachmentPolicy {
+  enabled: boolean;
+  imageTypes: string[];
+  documentTypes: string[];
+  maxImageBytes: number;
+  maxDocumentBytes: number;
+  maxFilesPerMessage: number;
+  maxCombinedBytesPerMessage: number;
 }
 
 export interface CanonicalConversation {

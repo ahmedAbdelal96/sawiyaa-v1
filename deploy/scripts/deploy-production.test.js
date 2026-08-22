@@ -102,14 +102,14 @@ test('deployment gates the build on database-backed provider state', () => {
   assert.match(script, /Database-backed environment validation failed after bootstrap/);
 });
 
-test('deployment uses the target validator and only the safe config bootstrap', () => {
+test('deployment uses the target validator and the additive production baseline bootstrap', () => {
   assert.match(
     script,
     /bash "\$VALIDATION_WORKTREE\/deploy\/scripts\/validate-production-preflight\.sh"/,
   );
   assert.match(script, /backup-before-deploy-/);
-  assert.match(script, /ALLOW_CONFIG_BOOTSTRAP=true/);
-  assert.match(script, /db:bootstrap:config/);
+  assert.match(script, /ALLOW_PRODUCTION_BASELINE_SEED=true/);
+  assert.match(script, /db:seed:production/);
   assert.doesNotMatch(script, /db:bootstrap:payment-routes/);
 });
 

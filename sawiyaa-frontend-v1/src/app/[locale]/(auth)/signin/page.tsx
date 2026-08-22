@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SignInPage({ params, searchParams }: Props) {
   const { locale } = await params;
   const { mode, callbackUrl } = await searchParams;
-  const role = mode === "practitioner" ? "PRACTITIONER" : mode === "admin" ? "ADMIN" : "PATIENT";
+  const role = mode === "practitioner" ? "PRACTITIONER" : mode === "admin" ? "ADMIN" : mode === "trainee" ? "TRAINEE" : "PATIENT";
   const query = callbackUrl
     ? `?${new URLSearchParams({ callbackUrl }).toString()}`
     : "";

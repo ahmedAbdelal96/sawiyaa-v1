@@ -10,6 +10,7 @@ import { GeneralChatRepository } from '../repositories/general-chat.repository';
 import { GeneralChatAvailabilityService } from '../services/general-chat-availability.service';
 import { GetMyGeneralChatConversationDetailUseCase } from './get-my-general-chat-conversation-detail.use-case';
 import { GENERAL_CHAT_ERROR_CODES } from '../types/general-chat.types';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 
 @Injectable()
 export class GetSessionGeneralChatConversationUseCase {
@@ -23,6 +24,7 @@ export class GetSessionGeneralChatConversationUseCase {
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
     sessionId: string;
+    locale?: SupportedLocale;
   }) {
     const session = await this.prisma.session.findUnique({
       where: { id: input.sessionId },
@@ -73,6 +75,7 @@ export class GetSessionGeneralChatConversationUseCase {
       const detail = await this.getConversationDetail.execute({
         authenticatedUser: input.authenticatedUser,
         conversationId: conversations[0].id,
+        locale: input.locale ?? 'ar',
       });
 
       return {

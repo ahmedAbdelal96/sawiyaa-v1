@@ -87,6 +87,7 @@
     "duration60": "60 min",
     "sessionFees": "Session fees",
     "selectedPrice": "Selected price: {price}",
+    "selectedPriceLabel": "Selected price",
     "signInNote": "Sign in to your patient account to book this slot.",
     "signInToCta": "Sign in to book",
     "nonPatientNote": "Booking is available for patient accounts only.",
@@ -100,7 +101,12 @@
     "payNow": "Complete payment",
     "viewSessions": "Go to my sessions",
     "bookAnother": "Book another slot",
-    "jumpToAvailability": "View available times"
+    "jumpToAvailability": "View available times",
+    "instant": {
+      "availableNow": "Available now for an instant session",
+      "note": "Start a video session in minutes after specialist approval.",
+      "cta": "Request an instant session"
+    }
   },
   "packages": {
     "eyebrow": "Packages",

@@ -68,150 +68,61 @@ function sortSessions(items: SessionListItem[], sortOrder: "newest" | "oldest") 
   });
 }
 
-function getCopy(locale: string) {
-  if (locale === "ar") {
-    return {
-      eyebrow: "جدول الجلسات",
-      title: "جلساتي",
-      note: "الترتيب الافتراضي يظهر الجلسات الأحدث أولاً، ويمكنك تغيير الترتيب من القائمة.",
-      paymentExpiredNote: "الجلسات التي انتهت مهلة دفعها تظهر كحالة مستقلة، وليست جلسات منتهية.",
-      summaryLabel: "إجمالي الجلسات",
-      sortLabel: "ترتيب الجلسات",
-      sortNewest: "الأحدث أولاً",
-      sortOldest: "الأقدم أولاً",
-      pageLabel: (page: number, totalPages: number) => `الصفحة ${page} من ${totalPages}`,
-      loading: "جارٍ تحميل الجلسات...",
-      emptyTitle: "لا توجد جلسات بعد",
-      emptyNote: "ابدأ بالمطابقة الموجهة أو احجز جلسة مع أحد المختصين، وستظهر هنا.",
-      emptyAction: "تواصل للمختص المناسب",
-      emptyTabTitle: "لا توجد جلسات في هذا القسم",
-      emptyTabNote: "لا توجد جلسات تطابق هذا التصنيف حالياً.",
-      errorTitle: "تعذّر تحميل الجلسات",
-      errorNote: "يرجى تحديث الصفحة والمحاولة مجددًا.",
-      retry: "إعادة المحاولة",
-      rowsPerPage: "الجلسات في الصفحة",
-      expiredPaymentBadge: "انتهت مهلة الدفع",
-      table: {
-        reference: "المرجع",
-        practitioner: "المعالج",
-        scheduledAt: "الموعد",
-        duration: "المدة",
-        status: "الحالة",
-        actions: "الإجراء",
-        open: "عرض التفاصيل",
-        noSchedule: "لم يُحدد الموعد بعد",
-      },
-      tabs: {
-        all: "الكل",
-        needsRating: "تحتاج تقييم",
-        upcoming: "النشطة والقادمة",
-        completed: "المكتملة",
-        cancelled: "الملغاة",
-      },
-      reviewStatus: {
-        label: "حالة التقييم",
-        rated: "تم التقييم",
-        needsRating: "تحتاج تقييم",
-        notAvailable: "غير متاح",
-        rateSession: "قيّم الجلسة",
-        yourRating: "تقييمك: {rating} من 5",
-      },
-      needsRatingEmptyHeading: "لا توجد جلسات تحتاج تقييم الآن",
-      needsRatingEmptyNote: "ستظهر هنا الجلسات المكتملة التي ما زالت تنتظر تقييمك.",
-      summary: {
-        total: {
-          label: "الإجمالي",
-          hint: "كل الجلسات المرتبطة بحسابك.",
-        },
-        action: {
-          label: "بحاجة إجراء",
-          hint: "انتظار دفع أو تأكيد أو فتح الجلسة.",
-        },
-        active: {
-          label: "نشطة",
-          hint: "جلسات مؤكدة أو قريبة أو جارية.",
-        },
-        expired: {
-          label: "مهلة الدفع انتهت",
-          hint: "حجز لم يكتمل في الوقت المحدد.",
-        },
-        history: {
-          label: "الأرشيف",
-          hint: "الجلسات المنتهية وغير النشطة.",
-        },
-      },
-    };
-  }
-
+function getCopy(t: ReturnType<typeof useTranslations>) {
   return {
-    eyebrow: "Session dashboard",
-    title: "My Sessions",
-    note: "A clear layout that defaults to newest sessions first, while letting you change the order from the toolbar.",
-    paymentExpiredNote: "Sessions with expired payment windows appear as their own state, not as finished sessions.",
-    summaryLabel: "Total sessions",
-    sortLabel: "Sort sessions",
-    sortNewest: "Newest first",
-    sortOldest: "Oldest first",
-    pageLabel: (page: number, totalPages: number) => `Page ${page} of ${totalPages}`,
-    loading: "Loading sessions...",
-    emptyTitle: "No sessions yet",
-    emptyNote: "Start with guided matching or book a session with a practitioner, and it will appear here.",
-    emptyAction: "Start guided matching",
-    emptyTabTitle: "No sessions in this section",
-    emptyTabNote: "There are no sessions matching this category right now.",
-    errorTitle: "Could not load sessions",
-    errorNote: "Please try refreshing the page.",
-    retry: "Try again",
-    rowsPerPage: "Sessions per page",
-    expiredPaymentBadge: "Payment time expired",
+    eyebrow: t("list.eyebrow"),
+    title: t("list.title"),
+    note: t("list.note"),
+    paymentExpiredNote: t("list.paymentExpiredNote"),
+    summaryLabel: t("list.summaryLabel"),
+    sortLabel: t("list.sortLabel"),
+    sortNewest: t("list.sortNewest"),
+    sortOldest: t("list.sortOldest"),
+    pageLabel: (page: number, totalPages: number) => t("list.pageLabel", { page, totalPages }),
+    loading: t("list.loading"),
+    emptyTitle: t("list.emptyHeading"),
+    emptyNote: t("list.emptyNote"),
+    emptyAction: t("list.emptyAction"),
+    emptyTabTitle: t("list.emptyTabTitle"),
+    emptyTabNote: t("list.emptyTabNote"),
+    errorTitle: t("list.errorHeading"),
+    errorNote: t("list.errorNote"),
+    retry: t("list.retry"),
+    rowsPerPage: t("list.rowsPerPage"),
+    expiredPaymentBadge: t("list.expiredPaymentBadge"),
     table: {
-      reference: "Reference",
-      practitioner: "Practitioner",
-      scheduledAt: "Scheduled",
-      duration: "Duration",
-      status: "Status",
-      actions: "Actions",
-      open: "View details",
-      noSchedule: "Not scheduled yet",
+      reference: t("list.table.reference"),
+      practitioner: t("list.table.practitioner"),
+      scheduledAt: t("list.table.scheduledAt"),
+      duration: t("list.table.duration"),
+      status: t("list.table.status"),
+      actions: t("list.table.actions"),
+      open: t("list.table.open"),
+      noSchedule: t("list.table.noSchedule"),
     },
     tabs: {
-      all: "All",
-      needsRating: "Needs rating",
-      upcoming: "Active & Upcoming",
-      completed: "Completed",
-      cancelled: "Cancelled",
+      all: t("list.tabs.all"),
+      needsRating: t("list.tabs.needsRating"),
+      upcoming: t("list.tabs.upcoming"),
+      completed: t("list.tabs.completed"),
+      cancelled: t("list.tabs.cancelled"),
     },
     reviewStatus: {
-      label: "Review status",
-      rated: "Rated",
-      needsRating: "Not rated yet",
-      notAvailable: "Not available",
-      rateSession: "Rate session",
-      yourRating: "Your rating: {rating}/5",
+      label: t("list.reviewStatus.label"),
+      rated: t("list.reviewStatus.rated"),
+      needsRating: t("list.reviewStatus.needsRating"),
+      notAvailable: t("list.reviewStatus.notAvailable"),
+      rateSession: t("list.reviewStatus.rateSession"),
+      yourRating: (rating: string) => t("list.reviewStatus.yourRating", { rating }),
     },
-    needsRatingEmptyHeading: "No sessions need a rating right now",
-    needsRatingEmptyNote: "Completed sessions that are still waiting for your feedback will appear here.",
+    needsRatingEmptyHeading: t("list.needsRatingEmptyHeading"),
+    needsRatingEmptyNote: t("list.needsRatingEmptyNote"),
     summary: {
-      total: {
-        label: "Total",
-        hint: "All sessions linked to your account.",
-      },
-      action: {
-        label: "Needs action",
-        hint: "Waiting for payment, confirmation, or entry.",
-      },
-      active: {
-        label: "Active",
-        hint: "Confirmed, upcoming, or live sessions.",
-      },
-      expired: {
-        label: "Payment expired",
-        hint: "The booking did not complete in time.",
-      },
-      history: {
-        label: "Archive",
-        hint: "Finished and inactive sessions.",
-      },
+      total: { label: t("list.summaryCards.total.label"), hint: t("list.summaryCards.total.hint") },
+      action: { label: t("list.summaryCards.action.label"), hint: t("list.summaryCards.action.hint") },
+      active: { label: t("list.summaryCards.active.label"), hint: t("list.summaryCards.active.hint") },
+      expired: { label: t("list.summaryCards.expired.label"), hint: t("list.summaryCards.expired.hint") },
+      history: { label: t("list.summaryCards.history.label"), hint: t("list.summaryCards.history.hint") },
     },
   };
 }
@@ -293,6 +204,7 @@ function SessionsTimelineSkeleton() {
 }
 
 function SessionsLoadingState({ locale }: { locale: string }) {
+  const t = useTranslations("sessions");
   const isRtl = locale.startsWith("ar");
   return (
     <div className="space-y-5">
@@ -333,7 +245,7 @@ function SessionsLoadingState({ locale }: { locale: string }) {
       <SessionsTimelineSkeleton />
 
       <p className={`text-sm text-text-secondary ${isRtl ? "text-right" : ""}`}>
-        {isRtl ? "جارٍ تجهيز جلساتك..." : "Preparing your sessions..."}
+        {t("list.loading")}
       </p>
     </div>
   );
@@ -345,7 +257,7 @@ export default function PatientSessionsPanel() {
   const t = useTranslations("sessions");
   const reviewT = useTranslations("reviews");
   const locale = useLocale();
-  const copy = useMemo(() => getCopy(locale), [locale]);
+  const copy = useMemo(() => getCopy(t), [t]);
   const { user, isInitialized } = useAuthState();
   const reviewQueriesEnabled = isInitialized && Boolean(user);
 
@@ -584,10 +496,7 @@ export default function PatientSessionsPanel() {
                   {copy.reviewStatus.rated}
                 </span>
                 <p className="text-xs text-text-secondary">
-                  {copy.reviewStatus.yourRating.replace(
-                    "{rating}",
-                    String(reviewState.review.overallRating),
-                  )}
+                  {copy.reviewStatus.yourRating(String(reviewState.review.overallRating))}
                 </p>
               </div>
             );
@@ -752,7 +661,7 @@ export default function PatientSessionsPanel() {
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-medium text-text-secondary">
-                    {locale === "ar" ? "الترتيب:" : "Sort:"}
+                    {t("list.toolbar.sort")}
                   </span>
                   <select
                     value={sortOrder}
@@ -770,7 +679,7 @@ export default function PatientSessionsPanel() {
 
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-medium text-text-secondary">
-                    {locale === "ar" ? "عدد الصفوف:" : "Rows:"}
+                    {t("list.toolbar.rows")}
                   </span>
                   <select
                     value={pageSize}
@@ -817,12 +726,10 @@ export default function PatientSessionsPanel() {
             <div className="border-b border-border-light/60 py-6 text-center">
               <HeartHandshake className="mx-auto mb-3 h-10 w-10 text-primary/80" />
               <h3 className="text-lg font-bold text-text-primary dark:text-white/95">
-                {locale === "ar" ? "لا توجد جلسات بعد" : "No sessions yet"}
+                {copy.emptyTitle}
               </h3>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-text-secondary">
-                {locale === "ar"
-                  ? "ابدأ بالحجز أو ابحث عن مختص مناسب، وستظهر جلساتك هنا."
-                  : "Book your first session or find the right practitioner, and your timeline will appear here."}
+                {copy.emptyNote}
               </p>
             </div>
 
@@ -834,21 +741,15 @@ export default function PatientSessionsPanel() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {locale === "ar" ? "كيف تبدأ" : "How to get started"}
+                      {t("list.emptyJourney.title")}
                     </p>
                     <p className="text-sm leading-6 text-text-secondary">
-                      {locale === "ar"
-                        ? "ابحث عن مختص مناسب، راجع التفاصيل، واحجز في خطوة واحدة."
-                        : "Find the right practitioner, review the details, and book in one step."}
+                      {t("list.emptyJourney.note")}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {[
-                    locale === "ar" ? "بحث" : "Search",
-                    locale === "ar" ? "مقارنة" : "Compare",
-                    locale === "ar" ? "حجز" : "Book",
-                  ].map((step, index) => (
+                  {(t.raw("list.emptyJourney.steps") as string[]).map((step, index) => (
                     <div
                       key={step}
                       className="rounded-2xl border border-border-light bg-white px-4 py-3 text-sm font-medium text-text-primary dark:bg-gray-800/40"
@@ -865,12 +766,10 @@ export default function PatientSessionsPanel() {
               <div className="flex flex-col justify-between gap-4 rounded-[22px] border border-border-light bg-primary-light/20 p-5 text-start dark:bg-primary/10">
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                    {locale === "ar" ? "ابدأ من هنا" : "Start here"}
+                    {t("list.emptyJourney.startTitle")}
                   </p>
                   <p className="text-sm leading-6 text-text-secondary">
-                    {locale === "ar"
-                      ? "ستظهر أولى جلساتك هنا، ثم يمكنك متابعة كل حالة في مكان واحد."
-                      : "Your first session will appear here, then you can track every status in one place."}
+                    {t("list.emptyJourney.startNote")}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -879,14 +778,14 @@ export default function PatientSessionsPanel() {
                     className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_14px_28px_-18px_rgba(68,161,148,0.4)] transition hover:-translate-y-0.5 hover:bg-primary-hover"
                   >
                     <Sparkles size={16} />
-                    {locale === "ar" ? "ابدأ الحجز" : "Start booking"}
+                    {t("list.emptyJourney.startBooking")}
                   </Link>
                   <Link
                     href="/patient/sessions"
                     className="sawiyaa-btn-press inline-flex items-center justify-center gap-2 rounded-2xl border border-border-light bg-white px-5 py-3 text-sm font-semibold text-text-primary transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary dark:bg-white/5"
                   >
                     <Search size={16} />
-                    {locale === "ar" ? "استعرض الجلسات" : "Explore sessions"}
+                    {t("list.emptyJourney.explore")}
                   </Link>
                 </div>
               </div>

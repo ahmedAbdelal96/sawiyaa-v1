@@ -43,6 +43,10 @@ import {
 import type { PlatformSetting } from "../types/platform-settings.types";
 import { EditorControl, SessionReminderScheduleEditor, formatMinutesToHuman } from "./editors";
 import { cn } from "@/lib/utils";
+import AdminPlatformCommissionCard from "./AdminPlatformCommissionCard";
+
+const SESSION_SCHEDULE_GROUP = "SESSION_SCHEDULE";
+const FILE_UPLOADS_GROUP = "FILE_UPLOADS";
 
 // Category Icons Mapper
 function getCategoryIcon(category: string) {
@@ -113,8 +117,10 @@ export default function AdminPlatformSettingsScreen() {
     if (activeCategory) {
       if (activeCategory === SESSION_SCHEDULE_GROUP) {
         result = result.filter((s) => s.domain === "sessions");
+      } else if (activeCategory === FILE_UPLOADS_GROUP) {
+        result = result.filter((s) => s.domain === "file-uploads");
       } else {
-        result = result.filter((s) => s.category === activeCategory && s.domain !== "sessions");
+        result = result.filter((s) => s.category === activeCategory && s.domain !== "sessions" && s.domain !== "file-uploads");
       }
     }
 
@@ -142,9 +148,6 @@ export default function AdminPlatformSettingsScreen() {
     return { total, overridden, readonly, catsCount };
   }, [rawSettings, categories]);
 
-  // Virtual group key for session-schedule settings (UI-only, not a real backend category)
-  const SESSION_SCHEDULE_GROUP = "SESSION_SCHEDULE";
-
   // Grouped Settings by Category (from filtered settings)
   // Session-domain settings are extracted into a dedicated SESSION_SCHEDULE group shown first
   const grouped = useMemo(() => {
@@ -153,6 +156,8 @@ export default function AdminPlatformSettingsScreen() {
         const groupKey =
           item.domain === "sessions"
             ? SESSION_SCHEDULE_GROUP
+            : item.domain === "file-uploads"
+              ? FILE_UPLOADS_GROUP
             : item.category;
         (acc[groupKey] ??= []).push(item);
         return acc;
@@ -160,8 +165,12 @@ export default function AdminPlatformSettingsScreen() {
       {},
     );
     // Place SESSION_SCHEDULE group first if it exists
-    const {[SESSION_SCHEDULE_GROUP]: sessionGroup, ...rest} = map;
-    if (sessionGroup) return {[SESSION_SCHEDULE_GROUP]: sessionGroup, ...rest};
+    const {[SESSION_SCHEDULE_GROUP]: sessionGroup, [FILE_UPLOADS_GROUP]: fileGroup, ...rest} = map;
+    if (sessionGroup || fileGroup) return {
+      ...(sessionGroup ? { [SESSION_SCHEDULE_GROUP]: sessionGroup } : {}),
+      ...(fileGroup ? { [FILE_UPLOADS_GROUP]: fileGroup } : {}),
+      ...rest,
+    };
     return rest;
   }, [filteredSettings]);
 
@@ -231,6 +240,9 @@ export default function AdminPlatformSettingsScreen() {
   function getCategoryLabel(catKey: string) {
     if (catKey === SESSION_SCHEDULE_GROUP) {
       return isAr ? "مواعيد وتذكيرات الجلسات" : "Session Schedule & Reminders";
+    }
+    if (catKey === FILE_UPLOADS_GROUP) {
+      return isAr ? "الملفات" : "File uploads";
     }
     try {
       return t(`categories.${catKey}` as any);
@@ -331,6 +343,8 @@ export default function AdminPlatformSettingsScreen() {
       </div>
 
       {/* Filter Toolbar & Category Navigation */}
+      <AdminPlatformCommissionCard />
+
       <div className="space-y-3">
         {/* Category Tabs Scrollable (Compact Pills) */}
         <div className="custom-scrollbar flex items-center gap-1.5 overflow-x-auto scroll-smooth pb-1">
@@ -381,10 +395,39 @@ export default function AdminPlatformSettingsScreen() {
             );
           })()}
 
+          {/* Unified file upload policy virtual category */}
+          {(() => {
+            const fileCount = rawSettings.filter((s) => s.domain === "file-uploads").length;
+            if (fileCount === 0) return null;
+            const isActive = activeCategory === FILE_UPLOADS_GROUP;
+            return (
+              <button
+                key={FILE_UPLOADS_GROUP}
+                type="button"
+                onClick={() => setActiveCategory(isActive ? "" : FILE_UPLOADS_GROUP)}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition-all",
+                  isActive
+                    ? "border-teal-600 bg-teal-600 text-white shadow-teal-600/20"
+                    : "text-text-secondary border-teal-200/60 bg-teal-50/60 hover:bg-teal-50 dark:border-teal-900/30 dark:bg-teal-950/20 dark:text-teal-300 dark:hover:bg-teal-950/30",
+                )}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>{getCategoryLabel(FILE_UPLOADS_GROUP)}</span>
+                <span className={cn(
+                  "py-0.2 ms-0.5 rounded-full px-1.5 text-[10px] font-extrabold",
+                  isActive ? "bg-white/20 text-white" : "text-teal-600 bg-teal-100 dark:bg-teal-900/30 dark:text-teal-300",
+                )}>
+                  {fileCount}
+                </span>
+              </button>
+            );
+          })()}
+
           {categories.map((catKey) => {
             const Icon = getCategoryIcon(catKey);
             const count = rawSettings.filter(
-              (s) => s.category === catKey && s.domain !== "sessions",
+              (s) => s.category === catKey && s.domain !== "sessions" && s.domain !== "file-uploads",
             ).length;
             const isActive = activeCategory === catKey;
             return (

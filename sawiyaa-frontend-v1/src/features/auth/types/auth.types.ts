@@ -13,6 +13,7 @@ export type AppRole =
   | "SUPPORT_AGENT"
   | "CONTENT_REVIEWER"
   | "PATIENT"
+  | "TRAINEE"
   | "PRACTITIONER";
 
 export type UserStatus =
@@ -145,37 +146,18 @@ export interface PatientLoginRequest {
   deviceId?: string;
 }
 
+export interface TraineeLoginRequest {
+  email: string;
+  password: string;
+  deviceId?: string;
+}
+
 export interface PractitionerRegisterRequest {
   email: string;
   phoneCountryCode?: string;
   phone?: string;
   password: string;
   displayName?: string;
-  practitionerType?:
-    | "PSYCHOLOGIST"
-    | "PSYCHIATRIST"
-    | "NUTRITIONIST"
-    | "WEIGHT_LOSS_SPECIALIST"
-    | "COUNSELOR"
-    | "OTHER";
-  professionalTitle?: string;
-  bio?: string;
-  yearsOfExperience?: number;
-  countryCode?: string;
-  primarySpecialtyCategoryId: string;
-  specialtyIds: string[];
-  initialCredential?: {
-    credentialType:
-      | "LICENSE"
-      | "DEGREE"
-      | "CERTIFICATION"
-      | "NATIONAL_ID"
-      | "PASSPORT"
-      | "MEMBERSHIP"
-      | "OTHER";
-    fileUrl: string;
-    expiresAt?: string;
-  };
 }
 
 export interface PractitionerLoginRequest {

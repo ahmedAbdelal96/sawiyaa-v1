@@ -89,11 +89,20 @@ describe('AdminPractitionersController (Authorization and Routing)', () => {
       expect(guards).toContain(PermissionsGuard);
     });
 
-    it('details method should require PRACTITIONER_APPLICATIONS_READ permission', () => {
+  it('details method should require PRACTITIONER_APPLICATIONS_READ permission', () => {
       const permissions = Reflect.getMetadata('auth:permissions', controller.details);
       expect(permissions).toContain(PermissionKey.PRACTITIONER_APPLICATIONS_READ);
     });
   });
+
+    it('publication read/write methods require centralized permissions', () => {
+      expect(Reflect.getMetadata('auth:permissions', controller.getPublication)).toContain(
+        PermissionKey.PRACTITIONER_PUBLICATION_READ,
+      );
+      expect(Reflect.getMetadata('auth:permissions', controller.updatePublication)).toContain(
+        PermissionKey.PRACTITIONER_PUBLICATION_WRITE,
+      );
+    });
 
   describe('details endpoint', () => {
     const pId = '77777777-7777-7777-7777-777777777777';

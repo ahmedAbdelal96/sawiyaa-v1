@@ -64,14 +64,6 @@ function formatSessionAmount(value: string, numLocale: string, currencyCode: str
     : formatPlainAmount(value, numLocale);
 }
 
-function getSafeTranslation(
-  t: any,
-  key: string,
-  fallback: string,
-) {
-  return t.has?.(key) ? t(key) : fallback;
-}
-
 type SummaryFieldProps = {
   icon: ReactNode;
   label: string;
@@ -468,23 +460,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const supportHref = `/patient/messages?lane=support&relatedSessionId=${encodeURIComponent(
     session.id,
   )}`;
-  const roomCloseSupportHeading = getSafeTranslation(
-    t,
-    "detail.roomClose.support.heading",
-    locale.startsWith("ar") ? "هل تحتاج إلى مساعدة في هذه الجلسة؟" : "Need help with this session?",
-  );
-  const roomCloseSupportNote = getSafeTranslation(
-    t,
-    "detail.roomClose.support.note",
-    locale.startsWith("ar")
-      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
-      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
-  );
-  const roomCloseSupportAction = getSafeTranslation(
-    t,
-    "detail.roomClose.support.action",
-    locale.startsWith("ar") ? "اتصل بالدعم" : "Contact support",
-  );
+  const roomCloseSupportHeading = t("detail.roomClose.support.heading");
+  const roomCloseSupportNote = t("detail.roomClose.support.note");
+  const roomCloseSupportAction = t("detail.roomClose.support.action");
   const sessionTypeLabel = sessionModeLabel;
 
   const handleCancel = async () => {
@@ -596,7 +574,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
             <div className="space-y-1 col-span-2 md:col-span-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                {locale === "ar" ? "موعد الانتهاء المتوقع" : "Expected End"}
+                {t("detail.summary.expectedEnd")}
               </span>
               <p className="text-sm sm:text-base font-semibold text-text-secondary dark:text-white/70">
                 {session.scheduledEndAt
@@ -613,12 +591,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         >
           <div className="space-y-1.5">
             <h3 className="text-base font-bold text-text-primary dark:text-white/95">
-              {locale === "ar" ? "التواصل والاتصال بالجلسة" : "Session Communication & Operations"}
+              {t("detail.communication.heading")}
             </h3>
             <p className="text-sm text-text-secondary">
-              {locale === "ar"
-                ? "ابدأ محادثة مع المختص أو انضم إلى غرفة الجلسة عند تفعيلها."
-                : "Message the practitioner or join the session room when available."}
+              {t("detail.communication.note")}
             </p>
           </div>
 

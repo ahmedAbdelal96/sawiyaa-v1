@@ -4,6 +4,7 @@ import { CONFIG_KEYS } from '../../src/modules/config/registry/config-key.consta
 import { STANDARD_PACKAGE_PLANS } from '../../src/modules/package-plans/package-plan.catalog';
 import { permissionDefinitions } from '../seed/modules/auth.permissions';
 import { PRODUCTION_FINANCIAL_RULES } from '../seed/modules/financial-rules.seed';
+import { REQUIRED_DATABASE_CONFIG_DEFAULT_KEYS } from '../../src/modules/config/registry/platform-defaults';
 import { PRODUCTION_BASELINE_SPECIALTIES, productionBaselineOperatorConfigKeys } from '../seed/production-baseline.seed';
 import { assessPaymobControlBootstrap } from '../../src/modules/payment-gateway-control/bootstrap/paymob-provider-control-bootstrap.policy';
 import { PRODUCTION_COUNTRY_CATALOG, REQUIRED_ARAB_COUNTRY_CODES, REQUIRED_MIDDLE_EAST_COUNTRY_CODES } from '../seed/modules/country-catalog';
@@ -14,12 +15,13 @@ const prisma = new PrismaClient();
 async function main(): Promise<void> {
   const blockers: string[] = [];
   const warnings: string[] = [];
-  const [permissions, countries, specialties, plans, rules, catalogs, assessments, notificationTypes, activeConfigValues] = await Promise.all([
+  const [permissions, countries, specialties, plans, rules, allRules, catalogs, assessments, notificationTypes, activeConfigValues, requiredConfigValues] = await Promise.all([
     prisma.permission.count({ where: { key: { in: permissionDefinitions.map((item) => item.key) } } }),
     prisma.country.count({ where: { isoCode: { in: PRODUCTION_COUNTRY_CATALOG.map((item) => item.isoCode) }, isActive: true } }),
     prisma.specialty.findMany({ where: { slug: { in: PRODUCTION_BASELINE_SPECIALTIES.map((item) => item.specialty) }, isActive: true }, select: { slug: true } }),
     prisma.packagePlan.findMany({ where: { code: { in: STANDARD_PACKAGE_PLANS.map((item) => item.code) }, isActive: true }, select: { code: true } }),
     prisma.commissionRule.findMany({ where: { slug: { in: PRODUCTION_FINANCIAL_RULES.map((item) => item.slug) }, isActive: true } }),
+    prisma.commissionRule.findMany({ where: { slug: { in: PRODUCTION_FINANCIAL_RULES.map((item) => item.slug) } } }),
     prisma.configKeyCatalog.findMany({ where: { key: { in: productionBaselineOperatorConfigKeys() } }, select: { key: true } }),
     prisma.assessmentDefinition.count({ where: { isPublished: true } }),
     prisma.notificationType.findMany({
@@ -35,7 +37,22 @@ async function main(): Promise<void> {
       },
       include: { configKey: { select: { key: true, dataType: true } } },
     }),
+    prisma.configValue.findMany({
+      where: {
+        scopeType: 'GLOBAL',
+        scopeRefId: null,
+        isActive: true,
+        configKey: { key: { in: [...REQUIRED_DATABASE_CONFIG_DEFAULT_KEYS] } },
+      },
+      include: { configKey: { select: { key: true } } },
+    }),
   ]);
+
+  const requiredConfigSet = new Set(requiredConfigValues.map((item) => item.configKey.key));
+  for (const key of REQUIRED_DATABASE_CONFIG_DEFAULT_KEYS) {
+    if (!requiredConfigSet.has(key)) blockers.push(`MISSING_REQUIRED_CONFIG:${key}`);
+    else console.log(`OK:CONFIG:${key}`);
+  }
 
   const [arabCountries, middleEastCountries, notificationTemplates] = await Promise.all([
     prisma.country.findMany({ where: { isoCode: { in: [...REQUIRED_ARAB_COUNTRY_CODES] }, isActive: true }, select: { isoCode: true } }),
@@ -105,12 +122,14 @@ async function main(): Promise<void> {
   for (const expected of PRODUCTION_FINANCIAL_RULES) {
     const rule = rules.find((candidate) => candidate.slug === expected.slug);
     if (!rule) {
-      blockers.push('MISSING_COMMISSION_RULE');
+      const existing = allRules.find((candidate) => candidate.slug === expected.slug);
+      blockers.push(existing ? `INACTIVE_WHEN_MANDATORY:${expected.slug}` : `MISSING:${expected.slug}`);
       continue;
     }
-    if (rule.platformRatePercent.toFixed(2) !== expected.platformRatePercent || rule.practitionerRatePercent.toFixed(2) !== expected.practitionerRatePercent) {
-      blockers.push(`CONFLICTING_COMMISSION_RULE:${expected.slug}`);
-    }
+    const total = rule.platformRatePercent.add(rule.practitionerRatePercent);
+    if (!total.equals(100)) {
+      blockers.push(`INVALID:${expected.slug}:SPLIT_SUM`);
+    } else console.log(`OK:${expected.slug}`);
   }
   const catalogKeys = new Set(catalogs.map((item) => item.key));
   if (!catalogKeys.has(CONFIG_KEYS.payment.routing.currencyRoutes)) blockers.push('MISSING_PAYMENT_ROUTING_CATALOG');

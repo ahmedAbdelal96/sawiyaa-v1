@@ -23,6 +23,7 @@ export type AppRole =
   | "SUPPORT_AGENT"
   | "CONTENT_REVIEWER"
   | "PATIENT"
+  | "TRAINEE"
   | "PRACTITIONER"
   | "SUPER_ADMIN";
 
@@ -36,6 +37,7 @@ export type RouteArea =
   | "public"
   | "auth"
   | "patient"
+  | "trainee"
   | "practitioner"
   | "admin"
   | "unknown";
@@ -58,10 +60,12 @@ export const SUPERADMIN_CANONICAL_PREFIX = "/super-admin";
 export const SUPERADMIN_LEGACY_PREFIX = "/superadmin";
 
 export const PATIENT_CANONICAL_PREFIX = "/patient";
+export const TRAINEE_CANONICAL_PREFIX = "/trainee";
 export const PRACTITIONER_CANONICAL_PREFIX = "/practitioner";
 export const ADMIN_CANONICAL_PREFIX = "/admin";
 
 export const PATIENT_ROUTE_PREFIXES = [PATIENT_CANONICAL_PREFIX] as const;
+export const TRAINEE_ROUTE_PREFIXES = [TRAINEE_CANONICAL_PREFIX] as const;
 export const PRACTITIONER_ROUTE_PREFIXES = [PRACTITIONER_CANONICAL_PREFIX] as const;
 export const ADMIN_ROUTE_PREFIXES = [ADMIN_CANONICAL_PREFIX] as const;
 
@@ -90,6 +94,7 @@ export function resolveRole(role: string | undefined | null): AppRole | null {
     normalized === "PRACTITIONER_REVIEWER" ||
     normalized === "PATIENT_OPERATIONS" ||
     normalized === "PATIENT" ||
+    normalized === "TRAINEE" ||
     normalized === "PRACTITIONER" ||
     normalized === "SUPPORT_AGENT" ||
     normalized === "CONTENT_REVIEWER" ||
@@ -127,6 +132,7 @@ export function classifyRouteArea(pathWithoutLocale: string): RouteArea {
   if (matchesAny(pathWithoutLocale, AUTH_ROUTES)) return "auth";
   if (matchesAny(pathWithoutLocale, PUBLIC_ROUTES)) return "public";
   if (matchesAny(pathWithoutLocale, PATIENT_ROUTE_PREFIXES)) return "patient";
+  if (matchesAny(pathWithoutLocale, TRAINEE_ROUTE_PREFIXES)) return "trainee";
   if (matchesAny(pathWithoutLocale, PRACTITIONER_ROUTE_PREFIXES)) return "practitioner";
   if (matchesAny(pathWithoutLocale, ADMIN_ROUTE_PREFIXES)) return "admin";
   return "unknown";
@@ -134,6 +140,7 @@ export function classifyRouteArea(pathWithoutLocale: string): RouteArea {
 
 export function getDefaultRouteByRole(role: AppRole): string {
   if (role === "PATIENT") return PATIENT_CANONICAL_PREFIX;
+  if (role === "TRAINEE") return TRAINEE_CANONICAL_PREFIX;
   if (role === "PRACTITIONER") return `${PRACTITIONER_CANONICAL_PREFIX}/dashboard`;
   return `${ADMIN_CANONICAL_PREFIX}/dashboard`;
 }
@@ -141,14 +148,17 @@ export function getDefaultRouteByRole(role: AppRole): string {
 export function getAccountRole(role?: string | null): AccountRole | null {
   const resolvedRole = resolveRole(role);
   if (resolvedRole === "PATIENT") return "PATIENT";
+  if (resolvedRole === "TRAINEE") return "PATIENT";
   if (resolvedRole === "PRACTITIONER") return "PRACTITIONER";
   if (resolvedRole && ADMIN_CLASS_ROLE_SET.has(resolvedRole)) return "ADMIN";
   return null;
 }
 
 export function getSignInRouteForRole(role?: string | null): string {
+  const resolvedRole = resolveRole(role);
   const accountRole = getAccountRole(role);
   if (accountRole === "PRACTITIONER") return "/signin/practitioner";
+  if (resolvedRole === "TRAINEE") return "/signin/trainee";
   if (accountRole === "ADMIN") return "/signin/admin";
   return "/signin/patient";
 }
@@ -158,6 +168,7 @@ export function isRoleAllowedInArea(
   area: Exclude<RouteArea, "public" | "auth" | "unknown">,
 ): boolean {
   if (area === "patient") return role === "PATIENT";
+  if (area === "trainee") return role === "TRAINEE";
   if (area === "practitioner") return role === "PRACTITIONER";
 
   // Admin area accepts all active admin-class roles on the shared /admin/* surface.

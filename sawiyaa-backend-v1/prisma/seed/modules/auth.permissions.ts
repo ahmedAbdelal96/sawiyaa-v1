@@ -167,6 +167,14 @@ export const permissionDefinitions: Array<{
       'Update patient profile data in back-office (e.g. country change for pricing correction)',
   },
   {
+    key: 'academy.read',
+    description: 'Read Academy programs, participants, attendance, and certificates',
+  },
+  {
+    key: 'academy.manage',
+    description: 'Manage Academy programs, participants, attendance, and certificates',
+  },
+  {
     key: 'academy.enrollments.create.manual',
     description:
       'Create manual academy program enrollments from the back-office',
@@ -196,6 +204,14 @@ export const permissionDefinitions: Array<{
   {
     key: 'practitionerApplications.requestChanges',
     description: 'Send applications back to practitioner for changes',
+  },
+  {
+    key: 'practitionerPublication.read',
+    description: 'Read practitioner publication state and readiness',
+  },
+  {
+    key: 'practitionerPublication.write',
+    description: 'Publish or unpublish practitioner profiles',
   },
   {
     key: 'admin-users.read',
@@ -340,6 +356,8 @@ export const rolePermissionBundles: Array<{
       'practitionerApplications.approve',
       'practitionerApplications.reject',
       'practitionerApplications.requestChanges',
+      'practitionerPublication.read',
+      'practitionerPublication.write',
     ],
   },
   {
@@ -367,6 +385,7 @@ export const rolePermissionBundles: Array<{
   {
     role: UserRoleType.SUPPORT,
     permissions: [
+      'user.credentials.reset',
       'sessions.read.supportSummary',
       'patients.read.admin',
       'careChat.request.read.admin',
@@ -384,6 +403,10 @@ export const rolePermissionBundles: Array<{
   },
   {
     role: UserRoleType.PATIENT,
+    permissions: [],
+  },
+  {
+    role: UserRoleType.TRAINEE,
     permissions: [],
   },
   {

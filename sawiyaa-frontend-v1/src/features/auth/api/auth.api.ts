@@ -15,6 +15,7 @@ import type {
   PatientConfirmPasswordResetRequest,
   PatientGoogleAuthRequest,
   PatientLoginRequest,
+  TraineeLoginRequest,
   PatientRegisterRequest,
   PatientResetPasswordRequest,
   PractitionerForgotPasswordRequest,
@@ -64,6 +65,7 @@ function storeAuthSession(payload: AuthSuccessResponse) {
       firstName: payload.user.displayName || payload.user.primaryEmail || "",
       lastName: "",
       role: (payload.user.roles?.[0] ?? "PATIENT") as never,
+      practitionerStatus: payload.user.practitionerStatus ?? null,
     },
     tenant: null,
   });
@@ -228,6 +230,29 @@ export async function practitionerVerifyOtp(data: PractitionerVerifyOtpRequest) 
 
   storeAuthSession(normalized);
   return normalized;
+}
+
+export async function traineeLogin(data: TraineeLoginRequest) {
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>("/auth/trainee/login", data);
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
+}
+
+export async function traineeRefresh(data: RefreshTokenRequest = {}) {
+  const response = await httpClient.post<ApiPayload<AuthSuccessResponse>>("/auth/trainee/refresh", data, { headers: buildRefreshAuthHeader(data.refreshToken) });
+  const normalized = extractData(response.data);
+  storeAuthSession(normalized);
+  return normalized;
+}
+
+export async function traineeLogout() {
+  try {
+    const response = await httpClient.post<ApiPayload<MessageResponse>>("/auth/trainee/logout", undefined, { headers: buildRefreshAuthHeader() });
+    return extractData(response.data);
+  } finally {
+    clearLocalAuthSession();
+  }
 }
 
 export async function patientChangePassword(data: ChangePasswordRequest) {

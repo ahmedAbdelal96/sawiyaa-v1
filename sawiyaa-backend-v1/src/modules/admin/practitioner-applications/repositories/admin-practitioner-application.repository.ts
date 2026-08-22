@@ -93,22 +93,23 @@ export class AdminPractitionerApplicationRepository {
     search?: string;
     skip: number;
     take: number;
-  }) {
+  }): Promise<any[]> {
     const practitionerWhere = this.buildPractitionerWhere(input);
     const applicationStatusWhere = this.buildApplicationStatusWhere(input);
+    const practitionerScope = input.kind === AdminPractitionerApplicationKind.NEW_APPLICATION
+      ? { OR: [{ practitioner: practitionerWhere }, { practitioner: null }] }
+      : { practitioner: Object.keys(practitionerWhere).length > 0 ? practitionerWhere : undefined };
 
     return this.prisma.practitionerApplication.findMany({
       where: {
         ...applicationStatusWhere,
-        practitioner:
-          Object.keys(practitionerWhere).length > 0
-            ? practitionerWhere
-            : undefined,
+        ...practitionerScope,
       },
       orderBy: [{ submittedAt: 'desc' }, { createdAt: 'desc' }],
       skip: input.skip,
       take: input.take,
       include: {
+        user: { select: { id: true, displayName: true } },
         practitioner: {
           select: {
             status: true,
@@ -165,14 +166,14 @@ export class AdminPractitionerApplicationRepository {
   }) {
     const practitionerWhere = this.buildPractitionerWhere(input);
     const applicationStatusWhere = this.buildApplicationStatusWhere(input);
+    const practitionerScope = input.kind === AdminPractitionerApplicationKind.NEW_APPLICATION
+      ? { OR: [{ practitioner: practitionerWhere }, { practitioner: null }] }
+      : { practitioner: Object.keys(practitionerWhere).length > 0 ? practitionerWhere : undefined };
 
     return this.prisma.practitionerApplication.count({
       where: {
         ...applicationStatusWhere,
-        practitioner:
-          Object.keys(practitionerWhere).length > 0
-            ? practitionerWhere
-            : undefined,
+        ...practitionerScope,
       },
     });
   }
@@ -196,11 +197,10 @@ export class AdminPractitionerApplicationRepository {
       this.prisma.practitionerApplication.count({
         where: {
           status: { in: ACTIVE_APPLICATION_STATUSES },
-          practitioner: {
-            status: {
-              not: PractitionerStatus.APPROVED,
-            },
-          },
+          OR: [
+            { practitioner: { status: { not: PractitionerStatus.APPROVED } } },
+            { practitioner: null },
+          ],
         },
       }),
       this.prisma.practitionerApplication.count({
@@ -264,10 +264,11 @@ export class AdminPractitionerApplicationRepository {
     };
   }
 
-  findById(id: string, tx?: Prisma.TransactionClient) {
+  findById(id: string, tx?: Prisma.TransactionClient): Promise<any> {
     return this.getDb(tx).practitionerApplication.findUnique({
       where: { id },
       include: {
+        user: { select: { id: true, displayName: true } },
         practitioner: {
           select: {
             id: true,
@@ -289,7 +290,7 @@ export class AdminPractitionerApplicationRepository {
       submissionSnapshot?: Prisma.InputJsonValue;
     },
     tx?: Prisma.TransactionClient,
-  ) {
+  ): Promise<any> {
     return this.getDb(tx).practitionerApplication.update({
       where: { id },
       data: {
@@ -301,6 +302,7 @@ export class AdminPractitionerApplicationRepository {
         submissionSnapshot: input.submissionSnapshot,
       },
       include: {
+        user: { select: { id: true, displayName: true } },
         practitioner: {
           select: {
             id: true,
@@ -319,13 +321,14 @@ export class AdminPractitionerApplicationRepository {
     id: string,
     submissionSnapshot: Prisma.InputJsonValue,
     tx?: Prisma.TransactionClient,
-  ) {
+  ): Promise<any> {
     return this.getDb(tx).practitionerApplication.update({
       where: { id },
       data: {
         submissionSnapshot,
       },
       include: {
+        user: { select: { id: true, displayName: true } },
         practitioner: {
           select: {
             id: true,

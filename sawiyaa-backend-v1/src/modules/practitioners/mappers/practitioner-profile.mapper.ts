@@ -14,6 +14,8 @@ export class PractitionerProfileMapper {
       avatarUrl: string | null;
       professionalTitle: string | null;
       bio: string | null;
+      professionalContent?: PractitionerProfileViewModel['professionalContent'];
+      primaryContentLocale?: PractitionerProfileViewModel['primaryContentLocale'];
       yearsOfExperience: number | null;
       sessionPrice30Egp: { toString(): string } | string | null;
       sessionPrice30Usd: { toString(): string } | string | null;
@@ -55,6 +57,8 @@ export class PractitionerProfileMapper {
       avatarUrl: input.profile.avatarUrl ?? null,
       professionalTitle: input.profile.professionalTitle,
       bio: input.profile.bio,
+      professionalContent: input.profile.professionalContent ?? null,
+      primaryContentLocale: input.profile.primaryContentLocale ?? null,
       countryCode: input.profile.country?.isoCode ?? null,
       locale: input.user.defaultLocale,
       timezone: input.user.timezone,

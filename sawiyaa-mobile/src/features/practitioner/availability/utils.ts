@@ -11,7 +11,7 @@ export function countSelectedAvailabilitySlots(value: SelectedTimes) {
 export type SelectedTimesInitialization = {
   selected: SelectedTimes;
   invalidLegacy60Starts: number[];
-  invalidLegacy60Slots: Array<Pick<AvailabilityWeekSlot, "dayOfWeek" | "startMinuteOfDay" | "endMinuteOfDay">>;
+  invalidLegacy60Slots: Pick<AvailabilityWeekSlot, "dayOfWeek" | "startMinuteOfDay" | "endMinuteOfDay">[];
 };
 
 export function emptySelectedTimes(): SelectedTimes {
@@ -65,6 +65,36 @@ function formatMinuteTime(minute: number, rtl: boolean) {
   const suffix = hours >= 12 ? (rtl ? "م" : "PM") : (rtl ? "ص" : "AM");
   const hour = hours % 12 || 12;
   return `${hour}:${String(mins).padStart(2, "0")} ${suffix}`;
+}
+
+export type CustomRangeResult =
+  | { ok: true; slots: number[] }
+  | { ok: false; reason: "invalidFormat" | "endBeforeStart" | "notAligned" };
+
+export function getDiscreteSlotsInRange(
+  startInput: string,
+  endInput: string,
+  duration: DurationMinutes,
+): CustomRangeResult {
+  const parse = (value: string) => {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return null;
+    return hours * 60 + minutes;
+  };
+
+  const start = parse(startInput);
+  const end = parse(endInput);
+  if (start === null || end === null) return { ok: false, reason: "invalidFormat" };
+  if (end <= start) return { ok: false, reason: "endBeforeStart" };
+  if (start % duration !== 0 || end % duration !== 0) return { ok: false, reason: "notAligned" };
+
+  return {
+    ok: true,
+    slots: Array.from({ length: Math.floor((end - start) / duration) }, (_, index) => start + index * duration),
+  };
 }
 
 export function formatMinuteRangeParts(start: number, duration: number, rtl: boolean) {

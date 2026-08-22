@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SessionAccessPolicy } from '../policies/session-access.policy';
 import { GetSessionDetailsUseCase } from './get-session-details.use-case';
 import { SessionMapper } from '../mappers/session.mapper';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import { SessionStatus, SessionMode, SessionFlowType, PaymentStatus, PaymentPurpose } from '@prisma/client';
 
 describe('Practitioner Session Details API Contract & Authorization', () => {
@@ -147,6 +148,9 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
         }),
       ),
     };
+    const professionalContentRepository = {
+      findByPractitionerProfileId: jest.fn().mockResolvedValue(null),
+    };
     const practitionerCommandActions = {
       resolve: jest.fn().mockResolvedValue({}),
     };
@@ -161,6 +165,8 @@ describe('Practitioner Session Details API Contract & Authorization', () => {
       operationalInterpreter as any,
       { resolve: jest.fn().mockResolvedValue({ canMarkPatientNoShow: false, noShowReasonCode: null }) } as any,
       { resolve: jest.fn().mockReturnValue({ available: true }) } as any,
+      professionalContentRepository as any,
+      new PractitionerProfessionalContentResolver(),
     );
 
     return { useCase, sessionRepository, sessionPractitionerRepository };
