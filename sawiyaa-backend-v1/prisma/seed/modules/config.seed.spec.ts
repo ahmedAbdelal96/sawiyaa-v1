@@ -137,6 +137,18 @@ describe('config seed safety', () => {
     expect(fake.values).toEqual(before);
   });
 
+  it('exposes the restricted safe update capability for legacy values', async () => {
+    const fake = buildFakePrisma();
+    await seedConfigData(fake.prisma);
+
+    expect(fake.tx.configValue.updateMany).toHaveBeenCalled();
+    for (const [args] of fake.tx.configValue.updateMany.mock.calls) {
+      expect(args.data).toEqual({ isActive: false });
+      expect(args.where).toMatchObject({ scopeType: ConfigScopeType.GLOBAL });
+      expect(args.where).not.toHaveProperty('id');
+    }
+  });
+
   it('preserves inactive, future, expired, priority, and scoped values', async () => {
     const fake = buildFakePrisma();
     await seedConfigData(fake.prisma);

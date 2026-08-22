@@ -36,6 +36,13 @@ type ConfigSeedDb = Pick<PrismaClient, '$transaction'> & {
     create: (args: {
       data: Prisma.ConfigValueUncheckedCreateInput;
     }) => Promise<Record<string, unknown>>;
+    // This is intentionally the only bulk mutation exposed by the seed
+    // adapter. It deactivates legacy database-config rows; it never deletes
+    // records and does not change active operator-owned configuration.
+    updateMany: (args: {
+      where: Prisma.ConfigValueWhereInput;
+      data: Prisma.ConfigValueUpdateManyMutationInput;
+    }) => Promise<{ count: number }>;
   };
 };
 
