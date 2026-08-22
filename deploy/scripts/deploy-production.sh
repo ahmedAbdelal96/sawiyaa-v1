@@ -13,6 +13,7 @@ LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 TARGET_SHA="${SAWIYAA_TARGET_SHA:-}"
 APPROVE_BLOCKING="${SAWIYAA_APPROVE_BLOCKING_MIGRATIONS:-false}"
 ALLOW_PAYMOB_CONTROL_BOOTSTRAP="${SAWIYAA_ALLOW_PAYMOB_CONTROL_BOOTSTRAP:-${ALLOW_PAYMOB_CONTROL_BOOTSTRAP:-false}}"
+ALLOW_PAYMENT_ROUTE_BOOTSTRAP="${SAWIYAA_ALLOW_PAYMENT_ROUTE_BOOTSTRAP:-${ALLOW_PAYMENT_ROUTE_BOOTSTRAP:-false}}"
 VALIDATION_ROOT="${SAWIYAA_VALIDATION_ROOT:-${TMPDIR:-/tmp}/sawiyaa-release-validation}"
 TARGET_SHA_ARG=""
 VALIDATION_WORKTREE=""
@@ -336,20 +337,17 @@ SAWIYAA_DB_BACKUP_FILE="$DB_BACKUP_FILE" \
 SAWIYAA_BACKUP_DIR="${SAWIYAA_FILE_BACKUP_DIR:-/opt/sawiyaa-backups}" \
   bash "$PROJECT_DIR/deploy/scripts/backup-files.sh"
 
-echo "Running Prisma migrations..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm backend npm run prisma:migrate:deploy
-echo "MIGRATE_DEPLOY: SUCCESS"
-
-echo "Bootstrapping production baseline (config, financial rules, and required catalogs)..."
-docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
-  -e ALLOW_PRODUCTION_BASELINE_SEED=true backend npm run db:seed:production
-if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
-  echo "Running explicitly authorized first-time Paymob provider-control bootstrap..."
-  docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps \
-    -e ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true backend npm run db:bootstrap:paymob-provider-control
-else
-  echo "Skipping Paymob provider-control bootstrap; explicit operator opt-in was not provided."
+echo "Running unified production bootstrap (migrations, baseline seeds, and readiness verification)..."
+bootstrap_env_args=(-e ALLOW_PRODUCTION_BASELINE_SEED=true)
+if [[ "$ALLOW_PAYMENT_ROUTE_BOOTSTRAP" == "true" ]]; then
+  bootstrap_env_args+=(-e ALLOW_PAYMENT_ROUTE_BOOTSTRAP=true)
 fi
+if [[ "$ALLOW_PAYMOB_CONTROL_BOOTSTRAP" == "true" ]]; then
+  bootstrap_env_args+=(-e ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true)
+fi
+docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" run --rm \
+  "${bootstrap_env_args[@]}" backend npm run db:bootstrap:production
+echo "PRODUCTION_BOOTSTRAP: SUCCESS"
 read_provider_state true || exit 1
 if ! bash "$PROJECT_DIR/deploy/scripts/validate-production-preflight.sh" \
   --target-only --skip-lock \

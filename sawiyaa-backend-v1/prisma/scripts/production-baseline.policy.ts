@@ -11,6 +11,7 @@ export function assertProductionDatabaseTarget(input: {
   appEnv: string | undefined;
   databaseUrl: string | undefined;
   allowSeed: string | undefined;
+  allowDisposableBootstrap?: string | undefined;
 }): void {
   const appEnv = (input.appEnv ?? '').toLowerCase();
   if (appEnv !== 'production' && appEnv !== 'staging') {
@@ -22,7 +23,9 @@ export function assertProductionDatabaseTarget(input: {
   if (!input.databaseUrl) {
     throw new Error('Refusing production baseline seed: DATABASE_URL is required.');
   }
-  if (isLocalDatabase(input.databaseUrl)) {
+  const allowDisposableLocalRun =
+    input.allowDisposableBootstrap === 'true' && appEnv === 'staging';
+  if (isLocalDatabase(input.databaseUrl) && !allowDisposableLocalRun) {
     throw new Error('Refusing production baseline seed against a local database.');
   }
 }

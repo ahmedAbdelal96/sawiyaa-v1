@@ -18,7 +18,29 @@ const productionRoute = {
 };
 
 function sameRoute(value: unknown): boolean {
-  return JSON.stringify(value) === JSON.stringify(productionRoute);
+  if (!value || typeof value !== 'object') return false;
+  const route = value as Record<string, unknown>;
+  return (
+    route.currencyCode === productionRoute.currencyCode &&
+    route.paymentMethod === productionRoute.paymentMethod &&
+    route.provider === productionRoute.provider &&
+    route.integrationKey === productionRoute.integrationKey &&
+    route.environment === productionRoute.environment &&
+    route.enabled === productionRoute.enabled &&
+    route.priority === productionRoute.priority
+  );
+}
+
+function readRoutes(record: { valueJson: unknown; valueString: string | null }): unknown[] {
+  const raw = record.valueJson ?? record.valueString;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw !== 'string') return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 async function main(): Promise<void> {
@@ -55,9 +77,7 @@ async function main(): Promise<void> {
   }
 
   if (active.length === 1) {
-    const routes = Array.isArray(active[0].valueJson)
-      ? active[0].valueJson
-      : [];
+    const routes = readRoutes(active[0]);
     if (routes.length === 1 && sameRoute(routes[0])) {
       console.log(
         'Payment route bootstrap already satisfied; no changes made.',

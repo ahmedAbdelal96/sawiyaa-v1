@@ -22,16 +22,16 @@ test('target validation precedes active checkout, build, migration, and restart'
   assert.ok(position('git fetch --no-tags origin') < position('git worktree add --detach'));
   assert.ok(position('--target-only --skip-lock') < position('git checkout -f main'));
   assert.ok(position('git checkout -f main') < position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build'));
-  assert.ok(position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build') < position('prisma:migrate:deploy'));
-  assert.ok(position('config:validate:production') < position('prisma:migrate:deploy'));
-  assert.ok(position('prisma:migrate:deploy') < position('up -d backend frontend nginx'));
+  assert.ok(position('docker compose --env-file "$FRONTEND_ENV_FILE" -f "$COMPOSE_FILE" build') < position('db:bootstrap:production'));
+  assert.ok(position('config:validate:production') < position('db:bootstrap:production'));
+  assert.ok(position('db:bootstrap:production') < position('up -d backend frontend nginx'));
 });
 
 test('built backend runtime schema gates backup and migrations', () => {
   const configValidation = position('npm run config:validate:production');
   assert.ok(configValidation > position('Building backend and frontend images...'));
   assert.ok(configValidation < position('Creating and verifying database backup before migrations...'));
-  assert.ok(configValidation < position('prisma:migrate:deploy'));
+  assert.ok(configValidation < position('db:bootstrap:production'));
   assert.match(script, /Backend runtime environment validation failed; backup and migrations were not run/);
 });
 
@@ -102,23 +102,23 @@ test('deployment gates the build on database-backed provider state', () => {
   assert.match(script, /Database-backed environment validation failed after bootstrap/);
 });
 
-test('deployment uses the target validator and the additive production baseline bootstrap', () => {
+test('deployment uses the target validator and the unified production bootstrap', () => {
   assert.match(
     script,
     /bash "\$VALIDATION_WORKTREE\/deploy\/scripts\/validate-production-preflight\.sh"/,
   );
   assert.match(script, /backup-before-deploy-/);
   assert.match(script, /ALLOW_PRODUCTION_BASELINE_SEED=true/);
-  assert.match(script, /db:seed:production/);
-  assert.doesNotMatch(script, /db:bootstrap:payment-routes/);
+  assert.match(script, /db:bootstrap:production/);
+  assert.match(script, /ALLOW_PAYMENT_ROUTE_BOOTSTRAP/);
 });
 
 test('Paymob control bootstrap is explicit and occurs before startup validation', () => {
   assert.match(script, /ALLOW_PAYMOB_CONTROL_BOOTSTRAP/);
-  assert.match(script, /db:bootstrap:paymob-provider-control/);
-  assert.ok(position('db:bootstrap:paymob-provider-control') < position('read_provider_state true'));
+  assert.match(script, /db:bootstrap:production/);
+  assert.ok(position('ALLOW_PAYMOB_CONTROL_BOOTSTRAP') < position('read_provider_state true'));
   assert.ok(position('read_provider_state true') < position('up -d backend frontend nginx'));
-  assert.match(script, /Skipping Paymob provider-control bootstrap; explicit operator opt-in was not provided/);
+  assert.match(script, /ALLOW_PAYMOB_CONTROL_BOOTSTRAP=true/);
 });
 
 test('Paymob bootstrap runs from compiled production-image artifacts', () => {
@@ -136,6 +136,8 @@ test('Paymob bootstrap runs from compiled production-image artifacts', () => {
     backendPackage.scripts['db:bootstrap:paymob-provider-control'],
     'node scripts/bootstrap-paymob-provider-control.js',
   );
+  assert.equal(backendPackage.scripts['db:bootstrap:production'], 'node scripts/bootstrap-production.js');
+  assert.equal(backendPackage.scripts['db:verify:production-ready'], 'npm run db:verify:production-seed');
   assert.match(dockerfile, /COPY --from=build \/app\/dist \.\/dist/);
   assert.match(dockerfile, /COPY --from=build \/app\/scripts \.\/scripts/);
   assert.match(dockerfile, /COPY --from=build \/app\/src \.\/src/);

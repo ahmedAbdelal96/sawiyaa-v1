@@ -40,6 +40,7 @@ export async function runPaymobProviderControlBootstrap(): Promise<void> {
       appEnv: process.env.APP_ENV ?? process.env.NODE_ENV,
       databaseUrl: process.env.DATABASE_URL,
       allowBootstrap: process.env.ALLOW_PAYMOB_CONTROL_BOOTSTRAP,
+      allowDisposableBootstrap: process.env.ALLOW_DISPOSABLE_PRODUCTION_BOOTSTRAP,
     });
 
     try {

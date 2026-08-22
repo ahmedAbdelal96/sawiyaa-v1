@@ -10,6 +10,7 @@ async function main(): Promise<void> {
     appEnv: process.env.APP_ENV ?? process.env.NODE_ENV,
     databaseUrl: process.env.DATABASE_URL,
     allowSeed: process.env.ALLOW_PRODUCTION_BASELINE_SEED,
+    allowDisposableBootstrap: process.env.ALLOW_DISPOSABLE_PRODUCTION_BOOTSTRAP,
   });
   const summary = await seedProductionBaseline(prisma);
   console.log('PRODUCTION_BASELINE_SEED_COMPLETE');

@@ -108,6 +108,7 @@ export function assertPaymobControlBootstrapAllowed(input: {
   appEnv: string | undefined;
   databaseUrl: string | undefined;
   allowBootstrap: string | undefined;
+  allowDisposableBootstrap?: string | undefined;
 }): 'production' | 'staging' {
   if (input.allowBootstrap !== 'true') {
     throw new Error(
@@ -136,13 +137,15 @@ export function assertPaymobControlBootstrapAllowed(input: {
     );
   }
 
-  if (
+  const allowDisposableLocalRun =
+    input.allowDisposableBootstrap === 'true' && input.appEnv === 'staging';
+  const isLocalDatabase =
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname === '::1' ||
     hostname === '[::1]' ||
-    hostname.startsWith('127.')
-  ) {
+    hostname.startsWith('127.');
+  if (isLocalDatabase && !allowDisposableLocalRun) {
     throw new Error(
       'Refusing Paymob control bootstrap against a local database.',
     );
