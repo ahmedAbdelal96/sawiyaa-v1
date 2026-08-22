@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { ConfigDataType, PrismaClient } from '@prisma/client';
+import { ConfigDataType, PrismaClient, RefundPolicyType } from '@prisma/client';
 import { CONFIG_KEYS } from '../../src/modules/config/registry/config-key.constants';
 import { STANDARD_PACKAGE_PLANS } from '../../src/modules/package-plans/package-plan.catalog';
 import { permissionDefinitions } from '../seed/modules/auth.permissions';
@@ -9,6 +9,7 @@ import { PRODUCTION_BASELINE_SPECIALTIES, productionBaselineOperatorConfigKeys }
 import { assessPaymobControlBootstrap } from '../../src/modules/payment-gateway-control/bootstrap/paymob-provider-control-bootstrap.policy';
 import { PRODUCTION_COUNTRY_CATALOG, REQUIRED_ARAB_COUNTRY_CODES, REQUIRED_MIDDLE_EAST_COUNTRY_CODES } from '../seed/modules/country-catalog';
 import { PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS, PRODUCTION_NOTIFICATION_TYPE_SLUGS, templatePlaceholders } from '../seed/modules/notification-baseline.contract';
+import { REFUND_POLICY_KEYS } from '../../src/modules/refund-policies/refund-policy.catalog';
 
 const prisma = new PrismaClient();
 
@@ -68,6 +69,15 @@ async function main(): Promise<void> {
       },
     }),
   ]);
+  const refundPolicies = await prisma.refundPolicy.findMany({
+    where: { policyType: { in: [RefundPolicyType.SESSION, RefundPolicyType.PACKAGE] } },
+    select: {
+      policyType: true,
+      key: true,
+      isActive: true,
+      clauses: { where: { isActive: true }, select: { id: true } },
+    },
+  });
 
   if (permissions !== permissionDefinitions.length) blockers.push('MISSING_PERMISSION_CATALOG');
   if (countries !== PRODUCTION_COUNTRY_CATALOG.length) blockers.push('MISSING_COUNTRY_CATALOG');
@@ -79,6 +89,17 @@ async function main(): Promise<void> {
   if (plans.length !== STANDARD_PACKAGE_PLANS.length) blockers.push('MISSING_PACKAGE_PLAN_CATALOG');
   if (assessments === 0) blockers.push('MISSING_ASSESSMENT_CATALOG');
   if (notificationTypes.length !== PRODUCTION_NOTIFICATION_TYPE_SLUGS.length) blockers.push('MISSING_NOTIFICATION_TYPE_CATALOG');
+  const refundPolicyMap = new Map(refundPolicies.map((policy) => [policy.policyType, policy]));
+  for (const policyType of [RefundPolicyType.SESSION, RefundPolicyType.PACKAGE]) {
+    const policy = refundPolicyMap.get(policyType);
+    if (!policy) {
+      blockers.push(`MISSING_REFUND_POLICY:${policyType}`);
+    } else if (policy.key !== REFUND_POLICY_KEYS[policyType]) {
+      blockers.push(`INVALID_REFUND_POLICY_KEY:${policyType}`);
+    } else if (!policy.isActive || policy.clauses.length === 0) {
+      blockers.push(`INCOMPLETE_REFUND_POLICY:${policyType}`);
+    }
+  }
   const templateMap = new Map(notificationTemplates.map((template) => [template.slug, template]));
   const activeChannelKeys = new Set<string>();
   for (const slug of PRODUCTION_NOTIFICATION_TEMPLATE_SLUGS) {

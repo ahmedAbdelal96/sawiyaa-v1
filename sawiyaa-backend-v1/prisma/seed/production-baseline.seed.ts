@@ -12,6 +12,7 @@ import {
 import { seedConfigData } from './modules/config.seed';
 import { assessmentsSeedModule } from './modules/assessments.seed';
 import { notificationsSeedModule } from './modules/notifications.seed';
+import { refundPoliciesSeedModule } from './modules/refund-policies.seed';
 import { PRODUCTION_COUNTRY_CATALOG } from './modules/country-catalog';
 
 export const PRODUCTION_BASELINE_SPECIALTIES = [
@@ -237,6 +238,7 @@ export async function seedProductionBaseline(
         await deactivateLegacyProductionFinancialRules(db);
         await assessmentsSeedModule.run(db);
         await notificationsSeedModule.run(db);
+        await refundPoliciesSeedModule.run(db);
         return { access, reference, specialties, packagePlans, financialRules };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
