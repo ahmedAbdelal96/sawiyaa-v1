@@ -138,6 +138,9 @@ test('Paymob bootstrap runs from compiled production-image artifacts', () => {
   );
   assert.match(dockerfile, /COPY --from=build \/app\/dist \.\/dist/);
   assert.match(dockerfile, /COPY --from=build \/app\/scripts \.\/scripts/);
+  assert.match(dockerfile, /COPY --from=build \/app\/src \.\/src/);
+  assert.doesNotMatch(dockerfile, /src\/modules\/package-plans/);
+  assert.doesNotMatch(dockerfile, /payment-gateway-control\/bootstrap/);
   assert.doesNotMatch(
     backendPackage.scripts['db:bootstrap:paymob-provider-control'],
     /ts-node|prisma\/scripts/,
