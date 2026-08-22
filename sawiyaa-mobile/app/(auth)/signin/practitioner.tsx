@@ -233,22 +233,20 @@ export default function PractitionerSignInScreen() {
             ]}
           />
 
-          {/* Sign Up Redirect Link */}
-          <View style={styles.footerRow}>
-            <Text color={publicTheme.secondaryText} style={styles.footerLabel}>
-              {isArabic
-                ? "ليس لديك حساب مختص؟"
-                : t("auth.practitionerSignIn.noAccount", { defaultValue: "Don't have a practitioner account?" })}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(auth)/signup/practitioner")}
+          {/* Practitioner registration is intentionally Web-only. Keep the route
+              available for existing product flows, but do not expose navigation
+              to it from Mobile sign-in. */}
+          <View style={styles.footerNotice}>
+            <Text
+              color={publicTheme.secondaryText}
+              style={styles.footerNoticeText}
             >
-              <Text style={[styles.signupLink, { color: publicTheme.primaryText }]}>
-                {isArabic
-                  ? "قدم طلب انضمام عبر الويب"
-                  : t("auth.practitionerSignIn.createAccount", { defaultValue: "Apply on web" })}
-              </Text>
-            </TouchableOpacity>
+              {t("auth.practitionerSignIn.registrationWebOnly", {
+                defaultValue: isArabic
+                  ? "إنشاء حساب المختص والتقديم متاحان عبر الموقع الإلكتروني فقط."
+                  : "Practitioner account creation and applications are available on the Web only.",
+              })}
+            </Text>
           </View>
 
           {/* Dev Test Accounts Section */}
@@ -474,21 +472,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 14,
   },
-  footerRow: {
-    flexDirection: "row",
+  footerNotice: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
     marginTop: 8,
-    flexWrap: "wrap",
+    paddingHorizontal: 16,
   },
-  footerLabel: {
+  footerNoticeText: {
     fontSize: 13.5,
-  },
-  signupLink: {
-    fontWeight: "800",
-    textDecorationLine: "underline",
-    fontSize: 13.5,
+    lineHeight: 20,
+    textAlign: "center",
   },
   devBox: {
     borderRadius: 16,

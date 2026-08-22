@@ -49,6 +49,9 @@ export class CalculateSessionFinancialBreakdownService {
             input.requestCountryIsoCode ??
             input.session.requestCountryIsoCode ??
             null,
+          patientCountryIsoCode: input.session.patient.country?.isoCode ?? null,
+          practitionerCountryIsoCode:
+            input.session.practitioner.country?.isoCode ?? null,
         });
     const currencyCode = regionalResolution.currencyCode;
     const grossAmount = paymentSnapshot

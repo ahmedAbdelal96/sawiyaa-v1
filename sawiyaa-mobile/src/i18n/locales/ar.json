@@ -855,7 +855,8 @@
       "otpHint": "أرسلنا الرمز عبر {{channel}} إلى {{target}}.",
       "challengeExpires": "تنتهي صلاحية التحدي في {{expiresAt}}.",
       "noAccount": "ليس لديك حساب معالج؟",
-      "createAccount": "سجل الآن"
+      "createAccount": "سجل الآن",
+      "registrationWebOnly": "إنشاء حساب المختص والتقديم متاحان عبر الموقع الإلكتروني فقط."
     },
     "practitionerApprovalStatus": {
       "header": "حالة طلب الانضمام",

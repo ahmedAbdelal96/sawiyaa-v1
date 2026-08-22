@@ -642,7 +642,8 @@
       "otpHint": "We sent a code through {{channel}} to {{target}}.",
       "challengeExpires": "Challenge expires at {{expiresAt}}.",
       "noAccount": "Need a practitioner account?",
-      "createAccount": "Register now"
+      "createAccount": "Register now",
+      "registrationWebOnly": "Practitioner account creation and applications are available on the Web only."
     },
     "practitionerApprovalStatus": {
       "header": "Practitioner application status",

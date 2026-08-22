@@ -373,6 +373,14 @@ describe('CalculateSessionFinancialBreakdownService', () => {
         requestCountryIsoCode,
         session: {
           ...session,
+          practitioner: {
+            ...session.practitioner,
+            country: null,
+          },
+          patient: {
+            ...session.patient,
+            country: null,
+          },
           payments: [],
         },
       });
