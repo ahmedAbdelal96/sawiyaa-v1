@@ -665,13 +665,13 @@ export default function PractitionerProfileForm({
             </div>
 
             <div>
-              <Label htmlFor="practitionerGender">Gender</Label>
+              <Label htmlFor="practitionerGender">{t("profile.fields.practitionerGender.label")}</Label>
               <select
                 id="practitionerGender"
                 className={selectClasses}
                 {...register("practitionerGender")}
               >
-                <option value="">Select gender</option>
+                <option value="">{t("profile.fields.practitionerGender.placeholder")}</option>
                 {PRACTITIONER_GENDERS.map((gender) => (
                   <option key={gender} value={gender}>
                     {gender}
@@ -916,12 +916,12 @@ export default function PractitionerProfileForm({
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <h2 className="mb-5 text-base font-semibold text-gray-800 dark:text-white">
-            Payout destination
+            {t("profile.payoutDestination")}
           </h2>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="payoutMethodType">Payout method</Label>
+              <Label htmlFor="payoutMethodType">{t("profile.fields.payoutMethodType.label")}</Label>
               <select
                 id="payoutMethodType"
                 className={selectClasses}
@@ -945,7 +945,7 @@ export default function PractitionerProfileForm({
                   },
                 })}
               >
-                <option value="">Select method</option>
+                <option value="">{t("profile.fields.payoutMethodType.placeholder")}</option>
                 {PAYOUT_METHOD_TYPES.map((method) => (
                   <option key={method} value={method}>
                     {method}
@@ -956,7 +956,7 @@ export default function PractitionerProfileForm({
 
             {watchedPayoutMethodType && watchedPayoutMethodType !== "OTHER" ? (
               <div className="sm:col-span-2">
-                <Label>Payout country</Label>
+                <Label>{t("profile.fields.payoutCountryCode.label")}</Label>
                 <SearchableCombobox
                   options={payoutCountryOptions}
                   value={watchedPayoutCountryCode || null}
@@ -977,7 +977,7 @@ export default function PractitionerProfileForm({
 
             <div>
               <Label htmlFor="payoutAccountHolderName">
-                Account holder name
+                {t("profile.fields.payoutAccountHolderName.label")}
               </Label>
               <Input
                 id="payoutAccountHolderName"
@@ -1011,7 +1011,7 @@ export default function PractitionerProfileForm({
                 </div>
                 <div>
                   <Label htmlFor="payoutBankAccountNumber">
-                    Bank account number
+                    {t("profile.fields.payoutBankAccountNumber.label")}
                   </Label>
                   <Input
                     id="payoutBankAccountNumber"
@@ -1023,7 +1023,7 @@ export default function PractitionerProfileForm({
             ) : null}
             {watchedPayoutMethodType === "IBAN" ? (
               <div>
-                <Label htmlFor="payoutIban">IBAN</Label>
+                <Label htmlFor="payoutIban">{t("profile.fields.payoutIban.label")}</Label>
                 <Input
                   id="payoutIban"
                   dir="ltr"

@@ -62,7 +62,7 @@
     },
     "timezone": {
       "label": "المنطقة الزمنية",
-      "placeholder": "مثل: Africa/Cairo"
+      "placeholder": "مثل: توقيت القاهرة"
     }
   },
   "avatar": {

@@ -13,6 +13,7 @@ import type { AdminSpecialtyCategorySummaryViewModel } from '../types/practition
 import { PractitionerApplicationCompletionService } from '@modules/practitioners/services/practitioner-application-completion.service';
 import { PractitionerAvatarStorageService } from '@modules/practitioners/services/practitioner-avatar-storage.service';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { AdminPractitionerProfessionalContentReadinessService } from '../services/admin-practitioner-professional-content-readiness.service';
 
 function sanitizeReviewSnapshot(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sanitizeReviewSnapshot);
@@ -43,9 +44,10 @@ export class GetPractitionerApplicationDetailsUseCase {
     private readonly completionService: PractitionerApplicationCompletionService,
     private readonly avatarStorage: PractitionerAvatarStorageService,
     private readonly prisma: PrismaService,
+    private readonly professionalContentReadiness: AdminPractitionerProfessionalContentReadinessService,
   ) {}
 
-  async execute(input: { id: string; locale: SupportedLocale }) {
+  async execute(input: { id: string; locale: SupportedLocale }): Promise<any> {
     const application = await this.applicationRepository.findById(input.id);
 
     if (!application) {
@@ -53,6 +55,43 @@ export class GetPractitionerApplicationDetailsUseCase {
         messageKey: 'admin.practitionerApplications.errors.applicationNotFound',
         error: 'ADMIN_PRACTITIONER_APPLICATION_NOT_FOUND',
       });
+    }
+
+    if (!application.practitioner) {
+      const snapshot = (application.submissionSnapshot ?? {}) as any;
+      const applicant = snapshot.applicant ?? {};
+      const profile = snapshot.profile ?? {};
+      const reviewCase = await this.prisma.practitionerReviewCase.findFirst({ where: { applicationId: application.id }, orderBy: { updatedAt: 'desc' }, include: { sections: true, requirements: { orderBy: { createdAt: 'asc' } } } });
+      const credentials = await this.prisma.practitionerCredential.findMany({ where: { applicationId: application.id }, orderBy: { createdAt: 'desc' } });
+      const user = application.user;
+      return {
+        message: this.i18nService.t('admin.practitionerApplications.success.applicationFetched', input.locale),
+        details: {
+          applicant: { userId: application.userId, practitionerProfileId: null, displayName: applicant.displayName ?? user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: applicant.locale ?? null, timezone: applicant.timezone ?? null, countryCode: profile.countryCode ?? null },
+          liveApplicant: { userId: application.userId, practitionerProfileId: null, displayName: user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: null, timezone: null, countryCode: null },
+          profile: {
+            ...profile,
+            primarySpecialtyCategoryId: snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null,
+            pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
+            languages: Array.isArray(profile.languages) ? profile.languages : [],
+            specialties: Array.isArray(snapshot.specialtySelection?.specialties)
+              ? snapshot.specialtySelection.specialties
+              : [],
+          },
+          liveProfile: null,
+          specialties: snapshot.specialtySelection?.specialties ?? [],
+          liveSpecialties: [],
+          credentials: credentials.map((credential) => ({ credentialId: credential.id, credentialType: credential.credentialType, reviewStatus: credential.reviewStatus, expiresAt: credential.expiresAt, uploadedAt: credential.createdAt, reviewedAt: credential.reviewedAt, reviewedByUserId: credential.reviewedByUserId, reviewNotes: credential.reviewNotes })),
+          payoutDestination: null,
+          livePayoutDestination: null,
+          application: { applicationId: application.id, status: application.status, submittedAt: application.submittedAt, reviewedAt: application.reviewedAt, reviewedByUserId: application.reviewedByUserId, reviewDecisionReason: application.reviewDecisionReason, reviewNotes: application.reviewNotes },
+          readinessSnapshot: { isProfileCompleted: false, hasRequiredSpecialties: Array.isArray(snapshot.specialtySelection?.specialties) && snapshot.specialtySelection.specialties.length > 0, hasRequiredCredentials: credentials.length > 0, hasPayoutDestination: false, canBeReviewed: true, canBeApproved: application.status === 'SUBMITTED' || application.status === 'UNDER_REVIEW' },
+          completion: { overallPercent: 0, canSubmit: false, blockers: [], warnings: [], steps: [] },
+          professionalContentReadiness: null,
+          professionalContentReview: null,
+        },
+        reviewCase: reviewCase ? { id: reviewCase.id, type: reviewCase.caseType, status: reviewCase.status, submittedAt: reviewCase.submittedAt, dueAt: reviewCase.dueAt, proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot), sections: reviewCase.sections, requirements: reviewCase.requirements } : null,
+      };
     }
 
     const reviewCase = await this.prisma.practitionerReviewCase.findFirst({
@@ -136,6 +175,15 @@ export class GetPractitionerApplicationDetailsUseCase {
     const snapshotLanguageCodes = Array.isArray(snapshot?.languageCodes)
       ? snapshot.languageCodes
       : null;
+
+    const proposedProfessionalContent = snapshotProfile
+      ? this.professionalContentReadiness.fromSnapshot(snapshotProfile, profile)
+      : this.professionalContentReadiness.fromLive(profile);
+    const professionalContentReview =
+      this.professionalContentReadiness.buildReview(
+        profile,
+        proposedProfessionalContent,
+      );
 
     const liveSpecialties = specialtyLinks.map((link) => {
       const specialty = specialtyMap.get(link.specialtyId);
@@ -254,7 +302,11 @@ export class GetPractitionerApplicationDetailsUseCase {
     const requestedProfile = {
       ...liveProfile,
       practitionerType:
-        snapshotProfile?.practitionerType ?? liveProfile.practitionerType,
+        snapshotProfile
+          ? snapshotProfile.practitionerTypeExplicit === true
+            ? snapshotProfile.practitionerType ?? null
+            : null
+          : liveProfile.practitionerType,
       practitionerGender:
         snapshotProfile?.practitionerGender ?? liveProfile.practitionerGender,
       professionalTitle:
@@ -373,6 +425,7 @@ export class GetPractitionerApplicationDetailsUseCase {
       hasYearsOfExperience:
         typeof requestedProfile.yearsOfExperience === 'number' &&
         requestedProfile.yearsOfExperience > 0,
+      hasPractitionerType: Boolean(requestedProfile.practitionerType?.trim()),
       hasLanguage: requestedLanguageCodes.length > 0,
       hasRequiredSpecialties: requestedSpecialties.length > 0,
       hasRequiredCredentials:
@@ -432,6 +485,7 @@ export class GetPractitionerApplicationDetailsUseCase {
         displayName: requestedApplicant.displayName,
         countryCode: requestedApplicant.countryCode,
         practitionerType: requestedProfile.practitionerType,
+        practitionerTypeExplicit: Boolean(requestedProfile.practitionerType?.trim()),
         practitionerGender: requestedProfile.practitionerGender,
         professionalTitle: requestedProfile.professionalTitle,
         bio: requestedProfile.bio,
@@ -470,46 +524,50 @@ export class GetPractitionerApplicationDetailsUseCase {
         applicationStatus: application.status,
         pricing: requestedProfile.pricing,
       }),
+      professionalContentReadiness:
+        professionalContentReview.proposed.readiness,
+      professionalContentReview,
     });
 
+    const reviewCaseResponse = reviewCase
+      ? {
+          id: reviewCase.id,
+          type: reviewCase.caseType,
+          status: reviewCase.status,
+          submittedAt: reviewCase.submittedAt,
+          dueAt: reviewCase.dueAt,
+          proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot),
+          sections: reviewCase.sections.map((section) => ({
+            section: section.section,
+            status: section.status,
+            beforeSnapshot: sanitizeReviewSnapshot(section.beforeSnapshot),
+            proposedSnapshot: sanitizeReviewSnapshot(section.proposedSnapshot),
+            decisionReason: section.decisionReason,
+          })),
+          requirements: reviewCase.requirements.map((requirement) => ({
+            id: requirement.id,
+            section: requirement.section,
+            fieldPath: requirement.fieldPath,
+            credentialType: requirement.credentialType,
+            title: requirement.title,
+            reason: requirement.reason,
+            instructions: requirement.instructions,
+            dueAt: requirement.dueAt,
+            severity: requirement.severity,
+            operationalImpact: requirement.operationalImpact,
+            status: requirement.status,
+            createdByUserId: requirement.createdByUserId,
+            resolvedAt: requirement.resolvedAt,
+          })),
+        }
+      : null;
     return {
       message: this.i18nService.t(
         'admin.practitionerApplications.success.applicationFetched',
         input.locale,
       ),
-      details,
-      reviewCase: reviewCase
-        ? {
-            id: reviewCase.id,
-            type: reviewCase.caseType,
-            status: reviewCase.status,
-            submittedAt: reviewCase.submittedAt,
-            dueAt: reviewCase.dueAt,
-            proposedSnapshot: sanitizeReviewSnapshot(reviewCase.proposedSnapshot),
-            sections: reviewCase.sections.map((section) => ({
-              section: section.section,
-              status: section.status,
-              beforeSnapshot: sanitizeReviewSnapshot(section.beforeSnapshot),
-              proposedSnapshot: sanitizeReviewSnapshot(section.proposedSnapshot),
-              decisionReason: section.decisionReason,
-            })),
-            requirements: reviewCase.requirements.map((requirement) => ({
-              id: requirement.id,
-              section: requirement.section,
-              fieldPath: requirement.fieldPath,
-              credentialType: requirement.credentialType,
-              title: requirement.title,
-              reason: requirement.reason,
-              instructions: requirement.instructions,
-              dueAt: requirement.dueAt,
-              severity: requirement.severity,
-              operationalImpact: requirement.operationalImpact,
-              status: requirement.status,
-              createdByUserId: requirement.createdByUserId,
-              resolvedAt: requirement.resolvedAt,
-            })),
-          }
-        : null,
+      details: { ...details, reviewCase: reviewCaseResponse },
+      reviewCase: reviewCaseResponse,
     };
   }
 }

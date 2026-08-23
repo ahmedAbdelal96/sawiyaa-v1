@@ -2,8 +2,10 @@
 
 Customer pricing uses `resolvePaymentRegionalResolution` as its only country-to-currency authority:
 
-- normalized `EG` resolves to EGP;
-- every other value, including unknown, resolves to USD.
+- when both authenticated session participants have country data, `EG` + `EG` resolves to EGP;
+- when either participant is outside Egypt, the session resolves to USD;
+- when participant country data is incomplete, the trusted request country is used as a fallback;
+- an unresolved fallback country resolves to USD.
 
 `TrustedCountryResolutionMiddleware` resolves the request country once. It accepts Cloudflare country metadata only when both of these are explicitly configured:
 
@@ -21,4 +23,4 @@ For a conventional single reverse-proxy hop, use `TRUSTED_PROXY_MODE=single`, an
 startup, does not open files per request, and releases its reference during
 application shutdown; this is the cleanup supported by the library API.
 
-The resolver never logs full client IPs, never reads client country or currency fields, and never chooses product amounts.
+The resolver never logs full client IPs, never reads client country or currency fields, and never chooses product amounts. Participant country snapshots are read from the authenticated session context, not from checkout input.

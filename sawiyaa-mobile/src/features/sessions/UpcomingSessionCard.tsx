@@ -50,7 +50,7 @@ export function UpcomingSessionCard() {
       </View>
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() => router.push((session.joinAvailable ? session.joinRoute : session.detailsRoute) as any)}
+        onPress={() => router.push((session.operational.join.allowed ? session.joinRoute : session.detailsRoute) as any)}
         style={{ marginTop: 14, backgroundColor: theme.colors.primary, borderRadius: 12, paddingVertical: 12, alignItems: "center" }}
       >
         <Text color={theme.colors.onPrimary} weight="700">{session.joinAvailable ? t("home.nextSession.join", isRtl ? "دخول الجلسة" : "Join session") : t("home.nextSession.details", isRtl ? "تفاصيل الجلسة" : "View details")}</Text>

@@ -2,9 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PractitionerGender, PractitionerType } from '@prisma/client';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
-  IsNumber,
   IsOptional,
   IsString,
   Length,
@@ -17,6 +17,7 @@ import {
 import { Type } from 'class-transformer';
 import { PractitionerPayoutDestinationInputDto } from './practitioner-payout-destination.dto';
 import { PractitionerSpecialtySelectionInputDto } from './practitioner-specialty-selection.dto';
+import { PractitionerProfessionalContentDto } from './practitioner-professional-content.dto';
 
 export class SubmitPractitionerApplicationDto {
   @ApiPropertyOptional()
@@ -36,6 +37,20 @@ export class SubmitPractitionerApplicationDto {
   @IsString()
   @MaxLength(4000)
   bio?: string | null;
+
+  @ApiPropertyOptional({
+    type: PractitionerProfessionalContentDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PractitionerProfessionalContentDto)
+  professionalContent?: PractitionerProfessionalContentDto | null;
+
+  @ApiPropertyOptional({ enum: ['ar', 'en'], nullable: true })
+  @IsOptional()
+  @IsEnum(['ar', 'en'])
+  primaryContentLocale?: 'ar' | 'en' | null;
 
   @ApiPropertyOptional({
     description: 'Active country ISO code for practitioner profile linkage',
@@ -61,90 +76,18 @@ export class SubmitPractitionerApplicationDto {
   @IsEnum(PractitionerType)
   practitionerType?: PractitionerType;
 
+  @ApiPropertyOptional({
+    description:
+      'Internal draft semantic marker. True only after the applicant explicitly selects a practitioner type.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  practitionerTypeExplicit?: boolean;
+
   @ApiPropertyOptional({ enum: PractitionerGender })
   @IsOptional()
   @IsEnum(PractitionerGender)
   practitionerGender?: PractitionerGender | null;
-
-  @ApiPropertyOptional({
-    example: 250,
-    description: '30-minute session price in EGP',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  sessionPrice30Egp?: number | null;
-
-  @ApiPropertyOptional({
-    example: 8,
-    description: '30-minute session price in USD',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  sessionPrice30Usd?: number | null;
-
-  @ApiPropertyOptional({
-    example: 450,
-    description: '60-minute session price in EGP',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  sessionPrice60Egp?: number | null;
-
-  @ApiPropertyOptional({
-    example: 15,
-    description: '60-minute session price in USD',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  sessionPrice60Usd?: number | null;
-
-  @ApiPropertyOptional({
-    example: 300,
-    description: '30-minute instant booking price in EGP',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  instantBookingPrice30Egp?: number | null;
-
-  @ApiPropertyOptional({
-    example: 10,
-    description: '30-minute instant booking price in USD',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  instantBookingPrice30Usd?: number | null;
-
-  @ApiPropertyOptional({
-    example: 520,
-    description: '60-minute instant booking price in EGP',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  instantBookingPrice60Egp?: number | null;
-
-  @ApiPropertyOptional({
-    example: 18,
-    description: '60-minute instant booking price in USD',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  instantBookingPrice60Usd?: number | null;
 
   @ApiPropertyOptional({ enum: ['ar', 'en'] })
   @IsOptional()

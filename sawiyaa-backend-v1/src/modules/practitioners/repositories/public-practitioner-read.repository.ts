@@ -19,6 +19,8 @@ import {
   PublicPractitionerSessionDuration,
   PublicPractitionerSortBy,
 } from '../dto/list-public-practitioners.dto';
+import { getProfessionalContentSearchLocales } from '../utils/practitioner-professional-content.util';
+import { publicPractitionerPricingWhere } from '../utils/public-practitioner-pricing-readiness.util';
 
 /**
  * Repository for public practitioner reads only.
@@ -36,6 +38,15 @@ export class PublicPractitionerReadRepository {
       isPublicProfilePublished: true,
       professionalTitle: true,
       bio: true,
+      primaryContentLocale: true,
+      professionalContentTranslations: {
+        orderBy: { locale: 'asc' as const },
+        select: {
+          locale: true,
+          professionalTitle: true,
+          bio: true,
+        },
+      },
       practitionerType: true,
       practitionerGender: true,
       countryId: true,
@@ -86,10 +97,12 @@ export class PublicPractitionerReadRepository {
         select: {
           specialtyId: true,
           isPrimary: true,
-          specialty: {
-            select: {
-              slug: true,
-              translations: {
+            specialty: {
+              select: {
+                slug: true,
+                nameAr: true,
+                nameEn: true,
+                translations: {
                 where: {
                   locale: {
                     in: [locale, 'en'],
@@ -134,6 +147,7 @@ export class PublicPractitionerReadRepository {
   }
 
   private buildPublicWhere(input: {
+    locale?: SupportedLocale;
     search?: string;
     specialtySlug?: string;
     specialtyCategorySlug?: string;
@@ -155,6 +169,10 @@ export class PublicPractitionerReadRepository {
     const now = new Date();
     const onlineFreshnessCutoff = getPresenceFreshnessCutoff(now);
     const search = input.search?.trim();
+    const professionalContentSearchLocales =
+      search && input.locale
+        ? getProfessionalContentSearchLocales(input.locale)
+        : [];
     const specialtySlug = input.specialtySlug?.trim().toLowerCase();
     const specialtyCategorySlug = input.specialtyCategorySlug
       ?.trim()
@@ -283,6 +301,7 @@ export class PublicPractitionerReadRepository {
     };
 
     return {
+      ...publicPractitionerPricingWhere(),
       status: PractitionerStatus.APPROVED,
       isPublicProfilePublished: true,
       user: {
@@ -425,6 +444,27 @@ export class PublicPractitionerReadRepository {
               },
             },
             {
+              professionalContentTranslations: {
+                some: {
+                  locale: { in: professionalContentSearchLocales },
+                  OR: [
+                    {
+                      professionalTitle: {
+                        contains: search,
+                        mode: 'insensitive',
+                      },
+                    },
+                    {
+                      bio: {
+                        contains: search,
+                        mode: 'insensitive',
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            {
               specialties: {
                 some: {
                   specialty: {
@@ -516,11 +556,15 @@ export class PublicPractitionerReadRepository {
             specialty: {
               select: {
                 slug: true,
+                nameAr: true,
+                nameEn: true,
                 category: {
                   select: {
                     id: true,
                     slug: true,
                     name: true,
+                    nameAr: true,
+                    nameEn: true,
                   },
                 },
                 translations: {

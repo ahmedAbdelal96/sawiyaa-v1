@@ -139,11 +139,13 @@ export class SessionEarningReviewService {
   async syncForAdminResolution(input: {
     sessionId: string;
     tx?: Prisma.TransactionClient;
+    allowPendingResolution?: boolean;
   }): Promise<SessionEarningReviewSyncResult> {
     const statuses = [
       SessionStatus.PATIENT_NO_SHOW,
       SessionStatus.PRACTITIONER_NO_SHOW,
       SessionStatus.BOTH_NO_SHOW,
+      ...(input.allowPendingResolution ? [SessionStatus.AWAITING_ADMIN_RESOLUTION] : []),
     ];
     if (input.tx) {
       return this.syncForSessionOutcomeInDb(input.tx, input.sessionId, statuses);

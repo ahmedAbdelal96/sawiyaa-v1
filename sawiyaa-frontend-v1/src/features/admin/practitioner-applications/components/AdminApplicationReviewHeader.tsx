@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import Avatar from "@/components/ui/avatar/Avatar";
 import type { ReactNode } from "react";
+import { Mail, Phone, Globe, CalendarClock } from "lucide-react";
 
 type Props = {
   avatarUrl: string | null;
@@ -31,9 +32,9 @@ export default function AdminApplicationReviewHeader({
 }: Props) {
   const hasAvatar = Boolean(avatarUrl);
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-2xs dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
+    <section className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3.5">
           <button
             type="button"
             disabled={!hasAvatar}
@@ -42,8 +43,8 @@ export default function AdminApplicationReviewHeader({
               window.open(avatarUrl, "_blank", "noopener,noreferrer");
             }}
             className={cn(
-              "flex h-[68px] w-[68px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-surface-secondary",
-              hasAvatar ? "cursor-pointer hover:border-primary/40 hover:ring-2 hover:ring-primary/10" : "cursor-default",
+              "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border-light bg-surface-secondary shadow-2xs transition",
+              hasAvatar ? "cursor-pointer hover:border-primary/40 hover:ring-2 hover:ring-primary/10 active:scale-95" : "cursor-default",
             )}
             aria-label={hasAvatar ? previewPhotoLabel : photoMissingLabel}
             title={hasAvatar ? previewPhotoLabel : photoMissingLabel}
@@ -52,28 +53,55 @@ export default function AdminApplicationReviewHeader({
               src={avatarUrl}
               name={name}
               size="custom"
-              className="h-full w-full"
+              className="h-full w-full rounded-2xl"
             />
           </button>
-          <div className="min-w-0">
-            <h1 className="truncate text-2xl font-semibold text-gray-900 dark:text-white">{name}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <span>{email}</span>
-              <span>{phone}</span>
-              <span>{country}</span>
-              <span>{submittedAt}</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
+
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-base font-extrabold text-text-primary dark:text-white/95">{name}</h1>
               {statusBadge}
-              {summaryChips.slice(0, 4).map((item) => (
-                <span
-                  key={item}
-                  className="inline-flex items-center rounded-full border border-warning-200 bg-warning-50 px-3 py-1 text-xs font-medium text-warning-800 dark:border-warning-900/40 dark:bg-warning-900/10 dark:text-warning-100"
-                >
-                  {item}
-                </span>
-              ))}
             </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-xs text-text-secondary">
+              {email && email !== "-" && (
+                <span className="flex items-center gap-1 text-text-muted">
+                  <Mail className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-medium text-text-secondary">{email}</span>
+                </span>
+              )}
+              {phone && phone !== "-" && (
+                <span className="flex items-center gap-1 text-text-muted">
+                  <Phone className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-mono font-medium text-text-secondary" dir="ltr">{phone}</span>
+                </span>
+              )}
+              {country && country !== "-" && (
+                <span className="flex items-center gap-1 text-text-muted">
+                  <Globe className="h-3.5 w-3.5 text-primary" />
+                  <span className="font-medium text-text-secondary">{country}</span>
+                </span>
+              )}
+              {submittedAt && submittedAt !== "-" && (
+                <span className="flex items-center gap-1 text-text-muted">
+                  <CalendarClock className="h-3.5 w-3.5 text-text-muted" />
+                  <span className="text-text-muted">{submittedAt}</span>
+                </span>
+              )}
+            </div>
+
+            {summaryChips.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {summaryChips.slice(0, 4).map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/40 dark:text-amber-300"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

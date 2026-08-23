@@ -62,7 +62,7 @@
     },
     "timezone": {
       "label": "Timezone",
-      "placeholder": "e.g. Africa/Cairo"
+      "placeholder": "e.g. Cairo time"
     }
   },
   "avatar": {

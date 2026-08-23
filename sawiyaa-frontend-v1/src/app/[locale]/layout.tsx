@@ -61,6 +61,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             lastName: resolvedLastName,
             role: userData.role || (userData as any).roles?.[0] || "",
             avatar: userData.avatar,
+            practitionerStatus: (userData as any).practitionerStatus ?? null,
           } : null}
           tenant={(userData?.tenant || null) as AuthTenant | null}
         />

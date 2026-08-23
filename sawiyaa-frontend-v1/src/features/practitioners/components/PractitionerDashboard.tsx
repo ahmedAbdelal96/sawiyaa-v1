@@ -325,16 +325,6 @@ function safeText(value: string | null | undefined, fallback: string) {
   return trimmed && trimmed.length > 0 ? trimmed : fallback;
 }
 
-const TERMINAL_SESSION_STATUSES = new Set<SessionListItem["status"]>([
-  "COMPLETED",
-  "CANCELLED",
-  "PATIENT_NO_SHOW",
-  "EXPIRED",
-  "PRACTITIONER_NO_SHOW",
-  "BOTH_NO_SHOW",
-  "AWAITING_COMPLETION_CONFIRMATION",
-]);
-
 function formatSessionStatus(status: string, locale: string): string {
   const isAr = locale === "ar";
   const STATUS_MAP: Record<string, { en: string; ar: string }> = {
@@ -423,7 +413,7 @@ export default function PractitionerDashboard() {
   const upcomingSessions = [...sessions]
     .filter((session) => {
       if (!session.scheduledStartAt) return false;
-      return !TERMINAL_SESSION_STATUSES.has(session.status);
+      return session.operational?.timelineBucket !== "TERMINAL";
     })
     .sort((a, b) => {
       const aValue = a.scheduledStartAt ? new Date(a.scheduledStartAt).getTime() : 0;
@@ -593,8 +583,8 @@ export default function PractitionerDashboard() {
               subtitle: <span className="inline-flex flex-wrap items-center gap-2"><SessionCodeReference sessionId={session.id} sessionCode={session.sessionCode} copyable /> <span>{formatDateTime(locale, session.scheduledStartAt, profileTimeZone)} · {session.durationMinutes}m</span></span>,
               href: `/practitioner/sessions/${session.id}`,
               badge: (() => {
-                const statusLabel = formatSessionStatus(session.status, locale);
-                const isReady = session.status === "READY_TO_JOIN" || session.status === "IN_PROGRESS";
+                const statusLabel = formatSessionStatus(session.operational?.state ?? session.status, locale);
+                const isReady = session.operational?.join.allowed === true;
                 return (
                   <span className={cn(
                     "rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide",

@@ -5,17 +5,39 @@ import {
   AlertTriangle,
   Check,
   CheckCheck,
+  Download,
+  FileText,
+  Image as ImageIcon,
   Loader2,
   SendHorizontal,
   Paperclip,
+  Smile,
+  X,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/features/users/hooks/use-users";
 import { usePatientProfile } from "@/features/patients/hooks/use-patients";
 import { usePractitionerProfile } from "@/features/practitioners/hooks/use-practitioners";
 import { useMySettings } from "@/features/settings/hooks/use-settings";
 import { formatEffectiveViewerTime } from "@/lib/time-formatting";
+import httpClient from "@/lib/api/http-client";
 import { useUnifiedMessages } from "@/features/chat/hooks/use-unified-messages";
-import type { CanonicalConversation } from "@/features/messages-shell/types/messages-shell.types";
+import type { MessageSendDescriptor } from "@/features/chat/lib/message-identity";
+import {
+  getChatAttachmentPolicy,
+  uploadCanonicalChatAttachment,
+  type ChatAttachmentUpload,
+} from "@/features/messages-shell/api/messages-shell.api";
+import {
+  chatAttachmentError,
+  formatChatAttachmentSize,
+  isChatImage,
+  validateChatAttachment,
+} from "@/features/chat/lib/attachment-utils";
+import type {
+  CanonicalConversation,
+  MessagingMessage,
+} from "@/features/messages-shell/types/messages-shell.types";
 import { useAuthState } from "@/stores";
 import ChatModerationReportAction from "@/features/moderation/components/ChatModerationReportAction";
 
@@ -58,6 +80,10 @@ export default function UnifiedConversationThread({
     null,
   );
   const [sendError, setSendError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<ChatAttachmentUpload[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [typingActive, setTypingActive] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -85,6 +111,14 @@ export default function UnifiedConversationThread({
           : "Admin",
     isThreadVisible: isVisible,
   });
+
+  const attachmentPolicyQuery = useQuery({
+    queryKey: ["chat-attachment-policy"],
+    queryFn: getChatAttachmentPolicy,
+    enabled: Boolean(conversationId),
+    staleTime: 60_000,
+  });
+  const attachmentPolicy = attachmentPolicyQuery.data?.item ?? null;
 
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -128,7 +162,7 @@ export default function UnifiedConversationThread({
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!conversation?.canSend || isSending || !message.trim()) return;
+    if (!conversation?.canSend || isSending || isUploading || (!message.trim() && attachments.length === 0)) return;
 
     try {
       setIsSending(true);
@@ -139,8 +173,16 @@ export default function UnifiedConversationThread({
       setTypingActive(false);
       sendTypingNotification(false);
 
-      await sendMessage(message.trim());
+      const messageAttachments: MessageSendDescriptor["attachments"] = attachments.map((attachment) => ({
+        fileId: attachment.fileId,
+        fileUrl: attachment.fileUrl,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize,
+        originalName: attachment.originalName ?? undefined,
+      }));
+      await sendMessage(message.trim(), messageAttachments);
       setMessage("");
+      setAttachments([]);
     } catch {
       setSendError(
         locale.startsWith("ar")
@@ -150,6 +192,82 @@ export default function UnifiedConversationThread({
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || !attachmentPolicy || !conversationId) return;
+    const isArabic = locale.startsWith("ar");
+    const selected = Array.from(files);
+    let currentBytes = attachments.reduce((sum, item) => sum + item.fileSize, 0);
+    for (const file of selected) {
+      const validationError = validateChatAttachment(
+        file,
+        attachments.length,
+        currentBytes,
+        attachmentPolicy,
+      );
+      if (validationError) {
+        setSendError(chatAttachmentError(validationError, isArabic));
+        break;
+      }
+      try {
+        setIsUploading(true);
+        setSendError(null);
+        const uploaded = await uploadCanonicalChatAttachment(conversationId, file);
+        setAttachments((current) => [...current, uploaded.item]);
+        currentBytes += uploaded.item.fileSize;
+      } catch {
+        setSendError(isArabic ? "تعذر رفع المرفق." : "The attachment could not be uploaded.");
+        break;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleOpenAttachment = async (attachment: ChatAttachmentUpload | NonNullable<MessagingMessage["attachments"]>[number]) => {
+    try {
+      const objectUrl = URL.createObjectURL(await fetchAttachmentBlob(attachment.fileUrl));
+      const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = attachment.originalName || "attachment";
+        link.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      setSendError(locale.startsWith("ar") ? "تعذر فتح هذا المرفق." : "Could not open this attachment.");
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment: NonNullable<MessagingMessage["attachments"]>[number]) => {
+    try {
+      const objectUrl = URL.createObjectURL(await fetchAttachmentBlob(attachment.fileUrl));
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = attachment.originalName || "attachment";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch {
+      setSendError(locale.startsWith("ar") ? "تعذر تنزيل هذا المرفق." : "Could not download this attachment.");
+    }
+  };
+
+  const appendEmoji = (emoji: string) => {
+    setMessage((current) => `${current}${emoji}`);
+    setIsEmojiOpen(false);
+  };
+
+  const fetchAttachmentBlob = async (fileUrl: string) => {
+    const path = fileUrl.startsWith("/api/v1/")
+      ? fileUrl.slice("/api/v1".length)
+      : fileUrl;
+    const response = await httpClient.get(path, { responseType: "blob" });
+    return response.data as Blob;
   };
 
   const handleRetryMessage = async (clientMessageId: string) => {
@@ -359,6 +477,48 @@ export default function UnifiedConversationThread({
                         >
                           {msg.body}
                         </p>
+                        {msg.attachments?.length ? (
+                          <div className="mt-2 space-y-1.5">
+                            {msg.attachments.map((attachment) => (
+                              <div
+                                key={attachment.id}
+                                className="flex items-center gap-2 rounded-xl border border-current/15 bg-black/5 px-2.5 py-2"
+                              >
+                                {isChatImage(attachment.mimeType) ? (
+                                  <ImageIcon className="h-4 w-4 shrink-0" />
+                                ) : (
+                                  <FileText className="h-4 w-4 shrink-0" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-[11px] font-semibold">
+                                    {attachment.originalName || attachment.mimeType}
+                                  </p>
+                                  <p className="text-[10px] opacity-70">
+                                    {attachment.mimeType} {formatChatAttachmentSize(attachment.fileSize) ? `• ${formatChatAttachmentSize(attachment.fileSize)}` : ""}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleOpenAttachment(attachment)}
+                                  className="rounded-lg p-1.5 hover:bg-black/10"
+                                  aria-label={isChatImage(attachment.mimeType) ? (isArabic ? "معاينة المرفق" : "Preview attachment") : (isArabic ? "فتح المرفق" : "Open attachment")}
+                                  title={isChatImage(attachment.mimeType) ? (isArabic ? "معاينة" : "Preview") : (isArabic ? "فتح" : "Open")}
+                                >
+                                  <span className="text-[10px] font-bold">{isChatImage(attachment.mimeType) ? "◉" : "↗"}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDownloadAttachment(attachment)}
+                                  className="rounded-lg p-1.5 hover:bg-black/10"
+                                  aria-label={isArabic ? "تنزيل المرفق" : "Download attachment"}
+                                  title={isArabic ? "تنزيل" : "Download"}
+                                >
+                                  <Download className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-75 select-none">
                           <span>
                             {formatEffectiveViewerTime(
@@ -437,32 +597,63 @@ export default function UnifiedConversationThread({
       {conversation.canSend ? (
         <form
           onSubmit={handleSend}
-          className="relative mt-2.5 flex items-center gap-2"
+          className="relative mt-2.5 flex flex-col items-stretch gap-2"
         >
           {sendError && (
             <div className="absolute start-0 end-0 mb-2 -translate-y-full rounded-xl bg-rose-500/10 px-3 py-2 text-center text-xs font-semibold text-rose-700 shadow-xs dark:text-rose-300">
               {sendError}
             </div>
           )}
-          <div className="border-border-light/90 relative flex flex-1 items-center gap-1.5 rounded-2xl border bg-white p-1.5 shadow-xs transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 dark:border-white/12 dark:bg-white/5">
-            {/* Attachment paperclip button */}
+          <div className="border-border-light/90 relative flex w-full items-center gap-1.5 rounded-2xl border bg-white p-1.5 shadow-xs transition-all focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 dark:border-white/12 dark:bg-white/5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              accept={attachmentPolicy ? [...attachmentPolicy.imageTypes, ...attachmentPolicy.documentTypes].join(",") : undefined}
+              onChange={(event) => void handleFilesSelected(event.target.files)}
+            />
             <button
               type="button"
-              disabled
-              title={
-                locale.startsWith("ar")
-                  ? "إرسال الملفات والصور سيتوفر قريبًا"
-                  : "File and image sharing will be available soon."
-              }
+              disabled={!attachmentPolicy?.enabled || isUploading || isSending}
+              onClick={() => fileInputRef.current?.click()}
+              title={locale.startsWith("ar") ? "إضافة مرفق" : "Add attachment"}
               aria-label={
                 locale.startsWith("ar")
-                  ? "إرسال المرفقات (ستتوفر قريباً)"
-                  : "Attachments (coming soon)"
+                  ? "إضافة مرفق"
+                  : "Add attachment"
               }
-              className="inline-flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-xl text-slate-400 opacity-50 transition hover:bg-slate-100 focus:outline-none dark:text-slate-500 dark:hover:bg-white/10"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none dark:text-slate-400 dark:hover:bg-white/10"
             >
               <Paperclip className="h-4 w-4" />
             </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsEmojiOpen((open) => !open)}
+                disabled={isSending}
+                aria-label={locale.startsWith("ar") ? "إضافة رمز تعبيري" : "Add emoji"}
+                title={locale.startsWith("ar") ? "رموز تعبيرية" : "Emoji"}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 disabled:opacity-40 dark:text-slate-400 dark:hover:bg-white/10"
+              >
+                <Smile className="h-4 w-4" />
+              </button>
+              {isEmojiOpen ? (
+                <div className="absolute bottom-11 start-0 z-20 grid grid-cols-6 gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-slate-800">
+                  {["😊", "😂", "👍", "❤️", "🙏", "🎉", "😅", "🤍", "👏", "✨", "🙂", "😢"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => appendEmoji(emoji)}
+                      className="rounded-lg p-1.5 text-lg hover:bg-slate-100 dark:hover:bg-white/10"
+                      aria-label={emoji}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <textarea
               value={message}
               onChange={handleInputChange}
@@ -480,7 +671,7 @@ export default function UnifiedConversationThread({
             />
             <button
               type="submit"
-              disabled={isSending || !message.trim() || isOffline}
+              disabled={isSending || isUploading || (!message.trim() && attachments.length === 0) || isOffline}
               aria-label={
                 locale.startsWith("ar") ? "إرسال الرسالة" : "Send message"
               }
@@ -495,6 +686,18 @@ export default function UnifiedConversationThread({
               )}
             </button>
           </div>
+          {attachments.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {attachments.map((attachment) => (
+                <span key={attachment.fileId} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] dark:border-white/10 dark:bg-white/5">
+                  <span className="max-w-44 truncate">{attachment.originalName || attachment.mimeType} · {formatChatAttachmentSize(attachment.fileSize)}</span>
+                  <button type="button" onClick={() => setAttachments((current) => current.filter((item) => item.fileId !== attachment.fileId))} aria-label={isArabic ? "إزالة المرفق" : "Remove attachment"}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </form>
       ) : (
         <div className="mt-2.5 rounded-xl bg-slate-100 p-3 text-center dark:bg-white/5">

@@ -1,7 +1,7 @@
-import { ConflictException, Injectable, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { I18nService } from '@common/i18n/services/i18n.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { OtpPurpose, UserRoleType } from '@prisma/client';
+import { OtpPurpose, UserRoleType, UserStatus } from '@prisma/client';
 import { TwoFactorSettingRepository } from '../repositories/two-factor-setting.repository';
 import { UserEmailRepository } from '../repositories/user-email.repository';
 import { PatientOtpChannelService } from '../services/patient-otp-channel.service';
@@ -29,27 +29,31 @@ export class RequestPatientPasswordResetUseCase {
     @Optional() private readonly securityAuditService?: SecurityAuditService,
   ) {}
 
+  private publicSuccess(locale: SupportedLocale) {
+    return {
+      message: this.i18nService.t(
+        'auth.success.patientPasswordResetRequested',
+        locale,
+      ),
+      nextStep: 'VERIFY_OTP',
+    };
+  }
+
   async execute(input: { email: string; locale: SupportedLocale }) {
     const normalizedEmail = input.email.trim().toLowerCase();
     const userEmail =
       await this.userEmailRepository.findByEmailForAuth(normalizedEmail);
 
-    if (!userEmail) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
-      });
-    }
-
-    const hasPatientRole = userEmail.user.roles.some(
+    const hasPatientRole = userEmail?.user.roles.some(
       (role) => role.role === UserRoleType.PATIENT,
-    );
+    ) ?? false;
 
-    if (!hasPatientRole) {
-      throw new ConflictException({
-        messageKey: 'auth.errors.passwordResetAccountNotFound',
-        error: 'PASSWORD_RESET_ACCOUNT_NOT_FOUND',
-      });
+    // Keep the public response indistinguishable for unknown and wrong-role
+    // accounts. Eligible patients still create and deliver a real challenge.
+    if (!userEmail || !hasPatientRole) return this.publicSuccess(input.locale);
+
+    if (userEmail.user.status !== undefined && userEmail.user.status !== UserStatus.ACTIVE) {
+      return this.publicSuccess(input.locale);
     }
 
     const twoFactorSetting = await this.twoFactorSettingRepository.findByUserId(
@@ -69,14 +73,23 @@ export class RequestPatientPasswordResetUseCase {
     }
 
     try {
-      const resolvedChannel =
-        this.patientOtpChannelService.resolveVerifiedChannel(
+      let resolvedChannel;
+      try {
+        resolvedChannel = this.patientOtpChannelService.resolveVerifiedChannel(
           {
             emails: userEmail.user.emails ?? [],
             phones: userEmail.user.phones ?? [],
           },
           twoFactorSetting,
         );
+      } catch (error) {
+        if (error instanceof ForbiddenException) {
+          resolvedChannel = null;
+        } else {
+          throw error;
+        }
+      }
+      if (!resolvedChannel) return this.publicSuccess(input.locale);
       const challenge = await this.createOtpChallengeUseCase.execute({
         userId: userEmail.user.id,
         purpose: OtpPurpose.PASSWORD_RESET,
@@ -118,12 +131,7 @@ export class RequestPatientPasswordResetUseCase {
       metadata: { channel: 'verified-contact' },
     });
 
-    return {
-      message: this.i18nService.t(
-        'auth.success.patientPasswordResetRequested',
-        input.locale,
-      ),
-      nextStep: 'VERIFY_OTP',
-    };
+    return this.publicSuccess(input.locale);
   }
+
 }

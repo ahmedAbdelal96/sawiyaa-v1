@@ -13,6 +13,7 @@ import {
   parseAcademyProgramDate,
   resolveAcademyProgramSlugSource,
 } from '../utils/academy-program.util';
+import { extractStoredFileIdFromUrl } from '@modules/files/file-reference.utils';
 
 @Injectable()
 export class UpdateAcademyProgramUseCase {
@@ -125,6 +126,10 @@ export class UpdateAcademyProgramUseCase {
         coverImageUrl:
           input.payload.coverImageUrl !== undefined
             ? input.payload.coverImageUrl.trim() || null
+            : undefined,
+        coverStoredFileId:
+          input.payload.coverImageUrl !== undefined
+            ? extractStoredFileIdFromUrl(input.payload.coverImageUrl, 'academy/program-covers')
             : undefined,
         categoryId,
         priceEgp,

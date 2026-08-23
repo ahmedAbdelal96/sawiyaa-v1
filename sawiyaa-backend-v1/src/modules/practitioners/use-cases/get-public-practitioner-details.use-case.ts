@@ -7,12 +7,17 @@ import { PublicPractitionerReadRepository } from '../repositories/public-practit
 import { resolvePublicPractitionerPricing } from '../utils/public-practitioner-pricing.util';
 import { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { PractitionerAvatarStorageService } from '../services/practitioner-avatar-storage.service';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 type PublicPractitionerPricingProfile = {
   sessionPrice30Egp: string | { toString(): string } | null;
   sessionPrice30Usd: string | { toString(): string } | null;
   sessionPrice60Egp: string | { toString(): string } | null;
   sessionPrice60Usd: string | { toString(): string } | null;
+  instantBookingPrice30Egp: string | { toString(): string } | null;
+  instantBookingPrice30Usd: string | { toString(): string } | null;
+  instantBookingPrice60Egp: string | { toString(): string } | null;
+  instantBookingPrice60Usd: string | { toString(): string } | null;
 };
 
 /**
@@ -27,6 +32,7 @@ export class GetPublicPractitionerDetailsUseCase {
     private readonly publicReadRepository: PublicPractitionerReadRepository,
     private readonly pricingContextService: PublicPractitionerPricingContextService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
     private readonly avatarStorage?: PractitionerAvatarStorageService,
   ) {}
 
@@ -62,6 +68,10 @@ export class GetPublicPractitionerDetailsUseCase {
       hasProfessionalTitle: Boolean(profile.professionalTitle?.trim()),
       hasBio: Boolean(profile.bio?.trim()),
       hasAtLeastOneActiveSpecialty: profile.specialties.length > 0,
+      sessionPrice30Egp: profile.sessionPrice30Egp,
+      sessionPrice30Usd: profile.sessionPrice30Usd,
+      sessionPrice60Egp: profile.sessionPrice60Egp,
+      sessionPrice60Usd: profile.sessionPrice60Usd,
     });
 
     if (!visibility.isVisible) {
@@ -89,20 +99,36 @@ export class GetPublicPractitionerDetailsUseCase {
       sessionPrice60Egp: pricingProfile.sessionPrice60Egp,
       sessionPrice60Usd: pricingProfile.sessionPrice60Usd,
     });
+    const professionalContent = this.professionalContentResolver.resolve({
+      requestedLocale: input.locale,
+      primaryContentLocale: profile.primaryContentLocale,
+      translations: (profile.professionalContentTranslations ?? []).map((translation) => ({
+        locale: translation.locale as SupportedLocale,
+        professionalTitle: translation.professionalTitle,
+        bio: translation.bio,
+      })),
+      legacyProfessionalTitle: profile.professionalTitle,
+      legacyBio: profile.bio,
+    });
 
     return {
       item: this.mapper.toDetails({
         id: profile.id,
         slug: profile.publicSlug,
         displayName: profile.user.displayName ?? null,
-        professionalTitle: profile.professionalTitle ?? null,
-        fullBio: profile.bio ?? null,
+        professionalTitle: professionalContent.professionalTitle,
+        fullBio: professionalContent.bio,
         specialties: profile.specialties.map((link) => ({
           specialtyId: link.specialtyId,
           slug: link.specialty.slug,
           title: this.mapper.pickLocalizedTitle(
             link.specialty.translations,
             input.locale,
+            {
+              nameAr: link.specialty.nameAr,
+              nameEn: link.specialty.nameEn,
+              fallback: link.specialty.slug,
+            },
           ),
           isPrimary: link.isPrimary,
         })),
@@ -161,6 +187,26 @@ export class GetPublicPractitionerDetailsUseCase {
           pricingProfile.sessionPrice60Usd === undefined
             ? null
             : Number(pricingProfile.sessionPrice60Usd),
+        instantBookingPrice30Egp:
+          pricingProfile.instantBookingPrice30Egp === null ||
+          pricingProfile.instantBookingPrice30Egp === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice30Egp),
+        instantBookingPrice30Usd:
+          pricingProfile.instantBookingPrice30Usd === null ||
+          pricingProfile.instantBookingPrice30Usd === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice30Usd),
+        instantBookingPrice60Egp:
+          pricingProfile.instantBookingPrice60Egp === null ||
+          pricingProfile.instantBookingPrice60Egp === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice60Egp),
+        instantBookingPrice60Usd:
+          pricingProfile.instantBookingPrice60Usd === null ||
+          pricingProfile.instantBookingPrice60Usd === undefined
+            ? null
+            : Number(pricingProfile.instantBookingPrice60Usd),
         ratingSummary: {
           averageRating: ratingSummary.averageRating,
           ratingsCount: ratingSummary.ratingsCount,

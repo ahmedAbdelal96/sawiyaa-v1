@@ -13,17 +13,14 @@ import {
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import { PractitionerPresenceRepository } from '@modules/presence/repositories/practitioner-presence.repository';
 import { resolveEffectivePresenceStatus } from '@modules/presence/utils/presence-liveness';
-import { AvailabilityExceptionRepository } from '@modules/availability/repositories/availability-exception.repository';
-import { PractitionerAvailabilityWeekRepository } from '@modules/availability/repositories/practitioner-availability-week.repository';
-import { BuildPublishedWeekAvailabilityWindowsService } from '@modules/availability/services/build-published-week-availability-windows.service';
-import { AvailabilityWeekCalendarService } from '@modules/availability/services/availability-week-calendar.service';
 import { ResolvePractitionerTimezoneService } from '@modules/availability/services/resolve-practitioner-timezone.service';
 import { ValidateSessionConflictsService } from '@modules/sessions/services/validate-session-conflicts.service';
 import { ValidateSessionDurationService } from '@modules/sessions/services/validate-session-duration.service';
-import { SessionRepository } from '@modules/sessions/repositories/session.repository';
+import type { Prisma } from '@prisma/client';
 
 /**
- * Instant booking eligibility composes visibility, presence, published-week availability, and conflict checks.
+ * Instant booking eligibility composes visibility, live presence, pricing and conflict checks.
+ * Scheduled weekly availability deliberately does not participate in Instant eligibility.
  * It intentionally does not mutate presence or create sessions by itself.
  */
 @Injectable()
@@ -31,12 +28,7 @@ export class ValidateInstantBookingEligibilityService {
   constructor(
     private readonly publicPractitionerVisibilityPolicy: PublicPractitionerVisibilityPolicy,
     private readonly practitionerPresenceRepository: PractitionerPresenceRepository,
-    private readonly practitionerAvailabilityWeekRepository: PractitionerAvailabilityWeekRepository,
-    private readonly availabilityExceptionRepository: AvailabilityExceptionRepository,
-    private readonly availabilityWeekCalendarService: AvailabilityWeekCalendarService,
     private readonly resolvePractitionerTimezoneService: ResolvePractitionerTimezoneService,
-    private readonly buildPublishedWeekAvailabilityWindowsService: BuildPublishedWeekAvailabilityWindowsService,
-    private readonly sessionRepository: SessionRepository,
     private readonly validateSessionDurationService: ValidateSessionDurationService,
     private readonly validateSessionConflictsService: ValidateSessionConflictsService,
   ) {}
@@ -55,16 +47,20 @@ export class ValidateInstantBookingEligibilityService {
         timezone: string | null;
       };
       specialties: Array<{ specialtyId: string }>;
+      instantBookingPrice30Egp?: Prisma.Decimal | string | number | null;
+      instantBookingPrice30Usd?: Prisma.Decimal | string | number | null;
+      instantBookingPrice60Egp?: Prisma.Decimal | string | number | null;
+      instantBookingPrice60Usd?: Prisma.Decimal | string | number | null;
     };
     durationMinutes: number;
     sessionMode: SessionMode;
     nowUtc: Date;
+    currencyCode?: 'EGP' | 'USD';
   }): Promise<{ startsAtUtc: Date; endsAtUtc: Date; timezone: string }> {
     this.validateSessionDurationService.validate(input.durationMinutes);
 
     if (
-      input.sessionMode !== SessionMode.VIDEO &&
-      input.sessionMode !== SessionMode.AUDIO
+      input.sessionMode !== SessionMode.VIDEO
     ) {
       throw new BadRequestException({
         messageKey: 'instantBooking.errors.invalidSessionMode',
@@ -122,74 +118,29 @@ export class ValidateInstantBookingEligibilityService {
       });
     }
 
+    if (input.currencyCode) {
+      const price =
+        input.currencyCode === 'EGP'
+          ? input.durationMinutes === 30
+            ? input.practitioner.instantBookingPrice30Egp
+            : input.practitioner.instantBookingPrice60Egp
+          : input.durationMinutes === 30
+            ? input.practitioner.instantBookingPrice30Usd
+            : input.practitioner.instantBookingPrice60Usd;
+
+      if (price === null || price === undefined || Number(price) <= 0) {
+        throw new BadRequestException({
+          messageKey: 'instantBooking.errors.instantBookingPriceUnavailable',
+          error: 'INSTANT_BOOKING_PRICE_UNAVAILABLE',
+        });
+      }
+    }
+
     const endsAtUtc = new Date(
       input.nowUtc.getTime() + input.durationMinutes * 60 * 1000,
     );
 
-    const timezone = this.resolvePractitionerTimezoneService.resolve({
-      fallbackTimezone: input.practitioner.user.timezone,
-    });
-    const weekWindow =
-      this.availabilityWeekCalendarService.resolveCurrentAndNextWeekWindow({
-        timezone,
-        now: input.nowUtc,
-      });
-
-    if (
-      input.nowUtc < weekWindow.currentWeek.startDate ||
-      endsAtUtc > weekWindow.nextWeek.endDate
-    ) {
-      throw new BadRequestException({
-        messageKey: 'instantBooking.errors.practitionerNotAvailableNow',
-        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
-      });
-    }
-
-    const [publishedWeeks, exceptions, bookedSessions] = await Promise.all([
-      this.practitionerAvailabilityWeekRepository.findPublishedByPractitionerAndWeekStarts(
-        input.practitioner.id,
-        [weekWindow.currentWeek.startDate, weekWindow.nextWeek.startDate],
-      ),
-      this.availabilityExceptionRepository.listActiveForRange(
-        input.practitioner.id,
-        input.nowUtc,
-        endsAtUtc,
-      ),
-      this.sessionRepository.listBlockingSessionRangesInRangeForPractitioner(
-        input.practitioner.id,
-        endsAtUtc,
-        input.nowUtc,
-        input.nowUtc,
-      ),
-    ]);
-
-    const windows = this.buildPublishedWeekAvailabilityWindowsService.buildForRange(
-      {
-        timezone,
-        weeks: publishedWeeks,
-        exceptions,
-        bookedSessions: bookedSessions.map((session) => ({
-          startsAt: session.scheduledStartAt!,
-          endsAt: session.scheduledEndAt!,
-        })),
-        fromUtc: input.nowUtc,
-        toUtc: endsAtUtc,
-        now: input.nowUtc,
-      },
-    );
-
-    const fitsWindow = windows.some(
-      (window) =>
-        Date.parse(window.startsAt) <= input.nowUtc.getTime() &&
-        Date.parse(window.endsAt) >= endsAtUtc.getTime(),
-    );
-
-    if (!fitsWindow) {
-      throw new BadRequestException({
-        messageKey: 'instantBooking.errors.practitionerNotAvailableNow',
-        error: 'INSTANT_BOOKING_PRACTITIONER_NOT_AVAILABLE_NOW',
-      });
-    }
+    const timezone = this.resolvePractitionerTimezoneService.resolve({ fallbackTimezone: input.practitioner.user.timezone });
 
     await this.validateSessionConflictsService.assertNoPractitionerConflict({
       practitionerId: input.practitioner.id,

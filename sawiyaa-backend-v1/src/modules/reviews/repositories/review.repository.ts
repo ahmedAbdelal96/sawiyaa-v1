@@ -6,6 +6,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 import { buildPublicVisibleReviewWhere } from '../policies/public-review-visibility.policy';
 
 type DbClient = PrismaService | Prisma.TransactionClient;
@@ -132,6 +133,7 @@ export class ReviewRepository {
         publicSlug: slug.trim().toLowerCase(),
         status: PractitionerStatus.APPROVED,
         isPublicProfilePublished: true,
+        ...publicPractitionerPricingWhere(),
         user: {
           status: UserStatus.ACTIVE,
           displayName: {

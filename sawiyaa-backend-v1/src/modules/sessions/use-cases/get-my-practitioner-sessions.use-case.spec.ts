@@ -79,6 +79,7 @@ describe('GetMyPractitionerSessionsUseCase', () => {
       sessionPractitionerRepository,
       sessionRepository,
       sessionMapper,
+      { interpret: jest.fn().mockResolvedValue({ state: SessionStatus.UPCOMING }) } as never,
     );
 
     const result = await useCase.execute({

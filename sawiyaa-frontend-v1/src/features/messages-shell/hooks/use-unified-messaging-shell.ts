@@ -11,14 +11,8 @@ import type {
   CareChatRequestItem,
   CareChatRequestStatus,
 } from "@/features/care-chat/types/care-chat.types";
-import {
-  getPatientSessions,
-  getPractitionerSessions,
-} from "@/features/sessions/api/sessions.api";
-import type {
-  SessionListItem,
-  SessionPresentationStatus,
-} from "@/features/sessions/types/sessions.types";
+import { listCanonicalConversations } from "../api/messages-shell.api";
+import type { CanonicalConversation } from "../types/messages-shell.types";
 import {
   getAdminSupportTickets,
   getPatientSupportTickets,
@@ -37,6 +31,7 @@ import type {
   UnifiedSessionChatStatus,
   UnifiedSessionSignal,
 } from "../types/messages-shell.types";
+import { buildSessionLaneItems } from "../utils/session-lane-items";
 
 type UseUnifiedMessagingShellResult = {
   sessionLane: UnifiedMessagingLaneSnapshot;
@@ -104,19 +99,6 @@ function buildSupportRootHref(role: UnifiedMessagingRole) {
   return `/${role}/messages?lane=support`;
 }
 
-function getSessionPriority(status: SessionPresentationStatus) {
-  if (status === "IN_PROGRESS") return 3;
-  if (status === "READY_TO_JOIN") return 2;
-  if (status === "COMPLETED" || status === "CANCELLED") return 1;
-  return 0;
-}
-
-function mapSessionChatStatus(status: SessionPresentationStatus): UnifiedSessionChatStatus {
-  if (status === "READY_TO_JOIN") return "READY_TO_JOIN";
-  if (status === "IN_PROGRESS") return "IN_PROGRESS";
-  return "COMPLETED";
-}
-
 export function useUnifiedMessagingShell(
   role: UnifiedMessagingRole,
   options?: {
@@ -160,14 +142,9 @@ export function useUnifiedMessagingShell(
   );
 
   const sessionQuery = useQuery({
-    queryKey: ["unified-messages-shell", role, "sessions"],
+    queryKey: ["unified-messages-shell", role, "session-conversations-v2"],
     queryFn: async () => {
-      if (role === "patient") {
-        return getPatientSessions({ page: 1, limit: 8 });
-      }
-      if (role === "practitioner") {
-        return getPractitionerSessions({ page: 1, limit: 8 });
-      }
+      if (role !== "admin") return listCanonicalConversations({ page: 1, limit: 50 });
       return { items: [], pagination: { page: 1, limit: 8, totalItems: 0, totalPages: 0 } };
     },
     enabled: role !== "admin" && shouldFetchLaneData,
@@ -288,33 +265,8 @@ export function useUnifiedMessagingShell(
   ]);
 
   const sessionItems = useMemo(() => {
-    const rows = (sessionQuery.data?.items ?? []) as SessionListItem[];
-    const prepared = rows
-      .filter((item) => item.chatAvailability?.canRead === true)
-      .sort((a, b) => {
-        const statusScore =
-          getSessionPriority(b.presentationStatus) - getSessionPriority(a.presentationStatus);
-        if (statusScore !== 0) return statusScore;
-        const aAt = a.scheduledStartAt ? new Date(a.scheduledStartAt).getTime() : 0;
-        const bAt = b.scheduledStartAt ? new Date(b.scheduledStartAt).getTime() : 0;
-        return bAt - aAt;
-      });
-
-    return prepared.slice(0, 6).map((item) => ({
-      id: item.id,
-      title:
-        role === "patient"
-          ? item.practitioner.displayName ?? "Session chat"
-          : item.patient?.displayName ?? "Session chat",
-      note: `Session #${item.sessionCode}`,
-      href: buildSessionHref(role, item.id),
-      status: item.presentationStatus.replaceAll("_", " "),
-      sessionStatus: mapSessionChatStatus(item.presentationStatus),
-      isSessionPriority:
-        item.status === "READY_TO_JOIN" ||
-        item.presentationStatus === "IN_PROGRESS",
-      at: item.scheduledStartAt,
-    }));
+    const rows = (sessionQuery.data?.items ?? []) as CanonicalConversation[];
+    return role === "admin" ? [] : buildSessionLaneItems(role, rows);
   }, [role, sessionQuery.data?.items]);
 
   const practitionerItems = useMemo(() => {
@@ -357,11 +309,10 @@ export function useUnifiedMessagingShell(
   }, [role, supportQuery.data?.items]);
 
   const sessionAttentionCount = useMemo(() => {
-    const rows = (sessionQuery.data?.items ?? []) as SessionListItem[];
+    const rows = (sessionQuery.data?.items ?? []) as CanonicalConversation[];
     return rows.filter(
       (item) =>
-        item.status === "READY_TO_JOIN" ||
-        item.status === "IN_PROGRESS",
+        item.type === "SESSION" && item.canSend,
     ).length;
   }, [sessionQuery.data?.items]);
 

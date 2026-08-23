@@ -1,6 +1,6 @@
 export type SettingsLocale = "ar" | "en";
 
-export type SettingsNotificationChannel = "IN_APP" | "EMAIL";
+export type SettingsNotificationChannel = "IN_APP" | "EMAIL" | "PUSH";
 
 export interface SettingsPreferences {
   locale: SettingsLocale | null;

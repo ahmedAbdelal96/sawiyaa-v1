@@ -6,6 +6,11 @@ import { SessionPatientRepository } from '../repositories/session-patient.reposi
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
 import { ResolvePatientSessionActionsService } from '../services/resolve-patient-session-actions.service';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { ResolvePractitionerSessionCommandActionsService } from '../services/resolve-practitioner-session-command-actions.service';
+import { ResolveSessionChatAvailabilityService } from '@modules/chat/services/resolve-session-chat-availability.service';
+import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 
 /**
  * Session details stay ownership-aware so patient and practitioner reads remain separated
@@ -20,6 +25,11 @@ export class GetSessionDetailsUseCase {
     private readonly sessionMapper: SessionMapper,
     private readonly sessionAccessPolicy: SessionAccessPolicy,
     private readonly resolvePatientSessionActionsService: ResolvePatientSessionActionsService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
+    private readonly practitionerCommandActions: ResolvePractitionerSessionCommandActionsService,
+    private readonly resolveSessionChatAvailability: ResolveSessionChatAvailabilityService,
+    private readonly professionalContentRepository: PractitionerProfessionalContentRepository,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
@@ -28,9 +38,13 @@ export class GetSessionDetailsUseCase {
     sessionId: string;
     actorType: 'PATIENT' | 'PRACTITIONER';
   }) {
-    const session = input.actorType === 'PRACTITIONER'
-      ? await this.sessionRepository.findByIdWithRichDetails(input.sessionId)
-      : await this.sessionRepository.findById(input.sessionId);
+    // Both participant detail reads already return the established detail
+    // projection. The rich read is required for the existing practitioner
+    // detail field (`practitionerDetails.professionalTitle`) and does not
+    // alter ownership or operational decisions.
+    const session = await this.sessionRepository.findByIdWithRichDetails(
+      input.sessionId,
+    );
 
     if (!session) {
       throw new NotFoundException({
@@ -80,6 +94,9 @@ export class GetSessionDetailsUseCase {
     const latestDecision = await this.sessionRepository.findLatestActiveSessionAdminDecision(
       input.sessionId,
     );
+    const professionalContent = await this.professionalContentRepository.findByPractitionerProfileId(
+      session.practitioner.id,
+    );
     const now = new Date();
     const actions =
       input.actorType === 'PATIENT'
@@ -89,15 +106,47 @@ export class GetSessionDetailsUseCase {
             now,
           })
         : undefined;
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      actor: input.actorType,
+      now,
+      finalManualDecision: latestDecision?.decisionType ?? null,
+      patientActions: actions,
+      practitionerCommandActions: input.actorType === 'PRACTITIONER'
+        ? await this.practitionerCommandActions.resolve({ session, now })
+        : undefined,
+    });
 
-    return {
-      item: this.sessionMapper.toDetails(
+    const details = this.sessionMapper.toDetails(
         session,
         now,
         0,
         latestDecision?.decisionType ?? null,
         actions,
-      ),
+        operational,
+        this.professionalContentResolver.resolve({
+          requestedLocale: input.locale,
+          primaryContentLocale: professionalContent?.primaryContentLocale,
+          translations: professionalContent?.professionalContentTranslations,
+          legacyProfessionalTitle:
+            professionalContent?.professionalTitle ??
+            session.practitioner.professionalTitle,
+        }).professionalTitle,
+      );
+
+    return {
+      item: {
+        ...details,
+        sessionChat: this.resolveSessionChatAvailability.resolve({
+          status: session.status,
+          sessionMode: session.sessionMode,
+          scheduledStartAt: session.scheduledStartAt,
+          scheduledEndAt: session.scheduledEndAt,
+          provider: session.provider,
+          providerRoomId: session.providerRoomId,
+          providerSessionRef: session.providerSessionRef,
+        }),
+      },
     };
   }
 }

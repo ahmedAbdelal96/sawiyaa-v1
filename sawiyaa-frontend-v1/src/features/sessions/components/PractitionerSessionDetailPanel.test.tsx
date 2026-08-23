@@ -22,7 +22,6 @@ vi.mock("@/i18n/navigation", () => ({
 vi.mock("../hooks/use-sessions", () => ({
   usePractitionerSession: vi.fn(),
   useClosePractitionerSessionRuntime: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
-  useMarkPractitionerSessionCompleted: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useMarkPractitionerSessionNoShow: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   usePreparePractitionerSessionRuntime: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   useResolvePractitionerSessionJoinContract: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
@@ -75,6 +74,7 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
       readOnly: false,
       reason: "ALLOWED",
     },
+    sessionChat: { available: true },
     flowType: "SCHEDULED",
     expiresAt: null,
     cancelledAt: null,
@@ -140,12 +140,24 @@ describe("PractitionerSessionDetailPanel Web UI", () => {
     expect(screen.getByText("دفع مباشر")).toBeDefined();
     
     // Currency snapshot remains authoritative
-    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه مصري");
+    expect(formatMoney("ar", 300, "EGP")).toBe("300 جنيه");
 
     // Internal notes display correctly
     expect(screen.getByText("Internal session notes text")).toBeDefined();
 
     // Localized timeline displays correctly
-    expect(screen.getByText("تم إنشاء الجلسة")).toBeDefined();
+    expect(screen.getAllByText("تم إنشاء الجلسة").length).toBeGreaterThan(0);
+  });
+
+  it("hides Chat CTAs when the embedded Chat projection denies access", () => {
+    (usePractitionerSession as any).mockReturnValue({
+      data: { ...mockSessionItem, sessionChat: { available: false } },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<PractitionerSessionDetailPanel sessionId="session-1" />);
+
+    expect(document.querySelector('a[href="/practitioner/sessions/session-1/chat"]')).toBeNull();
   });
 });

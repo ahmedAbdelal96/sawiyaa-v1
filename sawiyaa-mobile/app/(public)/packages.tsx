@@ -24,12 +24,13 @@ import { usePublicPractitionerPackagePlans } from "../../src/features/patient/pa
 import { formatMoney as formatCentralMoney, parseMoney } from "../../src/lib/money";
 import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
 import type { PublicPractitionerListItem } from "../../src/features/patient/discovery/types";
+import { hasPublicPractitionerRating } from "../../src/features/patient/discovery/rating";
 
 const DEFAULT_AVATAR = require("../../assets/user.avif");
 const STAR_GOLD = "#EAB308";
 
 function renderStarRating(rating: number) {
-  const score = rating || 5;
+  const score = Math.max(0, Math.min(5, rating));
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (score >= i) {
@@ -97,6 +98,7 @@ function CompactPractitionerPackageCard({
 
   const averageRating = practitioner.ratingSummary.averageRating;
   const totalReviews = practitioner.ratingSummary.totalReviews;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
   const currency = practitioner.currencyCode || "EGP";
 
   // Build package pricing list
@@ -222,27 +224,24 @@ function CompactPractitionerPackageCard({
                   "أخصائي"}
               </Text>
 
-              <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-                <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
-                  {renderStarRating(averageRating && averageRating > 0 ? averageRating : 4.9)}
-                </View>
-                <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
-                  {(averageRating && averageRating > 0 ? averageRating : 4.9).toFixed(1)}
-                </Text>
-                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
-                  ({totalReviews && totalReviews > 0 ? totalReviews : 12})
-                </Text>
-              </View>
-
-              {averageRating != null && averageRating > 0 ? (
+              {hasRating ? (
                 <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-                  <Text style={styles.dotSeparator} color={theme.colors.textMuted}>•</Text>
-                  <Ionicons name="star" size={11} color={STAR_GOLD} />
+                  <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                    {renderStarRating(averageRating!)}
+                  </View>
                   <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
-                    {averageRating.toFixed(1)}
+                    {averageRating!.toFixed(1)}
+                  </Text>
+                  <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                    ({totalReviews!})
                   </Text>
                 </View>
-              ) : null}
+
+              ) : (
+                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                  {t("discovery.list.noRatings")}
+                </Text>
+              )}
             </View>
           </View>
         </View>

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  I18nManager,
   Image,
   ScrollView,
   StyleSheet,
@@ -31,8 +30,8 @@ import { trackAnalyticsEvent } from "../../../src/lib/analytics";
 import { PriceDisplay } from "../../../src/components/money";
 import { parseMoney, formatMoney as formatCentralMoney } from "../../../src/lib/money";
 import { mapPractitionerDurationPrice } from "../../../src/features/patient/discovery/practitioner-money";
-import { getProfessionalTitleLabel } from "../../../src/features/practitioner/reference-data";
 import { useAppDirection } from "../../../src/i18n/direction";
+import { hasPublicPractitionerRating } from "../../../src/features/patient/discovery/rating";
 
 const DEFAULT_AVATAR = require("../../../assets/user.avif");
 const STAR_GOLD = "#EAB308";
@@ -66,21 +65,6 @@ function resolveLanguageLabel(code: string, isArabicUi: boolean) {
   const normalized = code.trim().toLowerCase();
   const match = LANGUAGE_LABELS[normalized];
   return match ? (isArabicUi ? match.ar : match.en) : code;
-}
-
-function renderStarRating(rating: number) {
-  const score = rating || 5;
-  const stars = [];
-  for (let i = 1; i <= 5; i++) {
-    if (score >= i) {
-      stars.push(<Ionicons key={i} name="star" size={12} color={STAR_GOLD} />);
-    } else if (score >= i - 0.5) {
-      stars.push(<Ionicons key={i} name="star-half" size={12} color={STAR_GOLD} />);
-    } else {
-      stars.push(<Ionicons key={i} name="star-outline" size={12} color="#CBD5E1" />);
-    }
-  }
-  return stars;
 }
 
 function formatPackageMoney(
@@ -136,7 +120,7 @@ export default function TherapistProfileScreen() {
   const { t, i18n } = useTranslation();
   const isArabicUi = i18n.language?.startsWith("ar") ?? true;
   const locale = isArabicUi ? "ar-SA" : "en-US";
-  const { isRtl, rowDirection, arrowBack } = useAppDirection();
+  const { isRtl, rowDirection } = useAppDirection();
 
   const authContext = useAuth();
   const isAuthenticated = Boolean(authContext?.user);
@@ -236,13 +220,13 @@ export default function TherapistProfileScreen() {
       }
 
       router.push({
-        pathname: "/(patient)/sessions/select-time",
+        pathname: "/(patient)/sessions/duration",
         params: {
           slug,
           practitionerName: practitioner.displayName || practitioner.slug,
           practitionerTitle:
-            getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-            t("discovery.profile.professionalFallback", "أخصائي"),
+            practitioner.professionalTitle?.trim() ||
+            t("discovery.profile.professionalFallback"),
           practitionerAvatarUrl: practitioner.avatarUrl || "",
         },
       });
@@ -273,7 +257,7 @@ export default function TherapistProfileScreen() {
 
   if (isLoading) {
     return (
-      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Screen bg="background" testID="patient-practitioner-details-screen" style={styles.screen} edges={["top", "left", "right"]}>
         <Header showBack title={headerTitle} />
         <LoadingState fullScreen />
       </Screen>
@@ -282,7 +266,7 @@ export default function TherapistProfileScreen() {
 
   if (isError || !practitioner) {
     return (
-      <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+      <Screen bg="background" testID="patient-practitioner-details-screen" style={styles.screen} edges={["top", "left", "right"]}>
         <Header showBack title={headerTitle} />
         <ErrorState onRetry={() => void refetch()} />
       </Screen>
@@ -291,15 +275,14 @@ export default function TherapistProfileScreen() {
 
   const displayName = practitioner.displayName || practitioner.slug;
   const displayTitle =
-    getProfessionalTitleLabel(practitioner.professionalTitle, isArabicUi) ||
-    t("discovery.profile.professionalFallback", "أخصائي نفسيات وعلاج متكامل");
+    practitioner.professionalTitle?.trim() ||
+    t("discovery.profile.professionalFallback");
 
   const verified = Boolean(practitioner.isVerified);
   const averageRating = practitioner.ratingSummary?.averageRating;
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
-  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
-  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
 
   const yearsExperience = practitioner.yearsExperience ?? 15;
   const approvedCredentials = practitioner.credentialsSummary?.approvedCredentials ?? 1;
@@ -315,7 +298,7 @@ export default function TherapistProfileScreen() {
   const currency = practitioner.currencyCode || "EGP";
 
   return (
-    <Screen bg="background" style={styles.screen} edges={["top", "left", "right"]}>
+    <Screen bg="background" testID="patient-practitioner-details-screen" style={styles.screen} edges={["top", "left", "right"]}>
       <Header showBack title={headerTitle} />
 
       <ScrollView
@@ -418,15 +401,23 @@ export default function TherapistProfileScreen() {
               <View style={[styles.statDivider, { backgroundColor: theme.colors.borderLight }]} />
 
               <View style={styles.statCell}>
-                <View style={[styles.statTopRow, { flexDirection: rowDirection }]}>
-                  <Ionicons name="star" size={14} color={STAR_GOLD} />
-                  <Text weight="bold" style={styles.statValue} color={theme.colors.textPrimary}>
-                    {displayRating.toFixed(1)}
+                {hasRating ? (
+                  <>
+                    <View style={[styles.statTopRow, { flexDirection: rowDirection }]}>
+                      <Ionicons name="star" size={14} color={STAR_GOLD} />
+                      <Text weight="bold" style={styles.statValue} color={theme.colors.textPrimary}>
+                        {averageRating!.toFixed(1)}
+                      </Text>
+                    </View>
+                    <Text color={theme.colors.textSecondary} style={styles.statLabel}>
+                      {totalReviews} {isArabicUi ? "تقييماً" : "Reviews"}
+                    </Text>
+                  </>
+                ) : (
+                  <Text color={theme.colors.textMuted} style={styles.statLabel}>
+                    {t("discovery.list.noRatings")}
                   </Text>
-                </View>
-                <Text color={theme.colors.textSecondary} style={styles.statLabel}>
-                  {displayReviews} {isArabicUi ? "تقييماً" : "Reviews"}
-                </Text>
+                )}
               </View>
 
               <View style={[styles.statDivider, { backgroundColor: theme.colors.borderLight }]} />

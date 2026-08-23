@@ -5,7 +5,7 @@ import { fetchPublicFeaturedPractitioners } from "@/features/home/api/featured-p
 import type { FeaturedPractitionerHomeCard } from "@/features/home/api/featured-practitioners.api";
 import { fetchPublicPractitioners } from "@/features/practitioners-discovery/api/practitioners-ssr.api";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
+import { hasPublicPractitionerRating } from "@/features/practitioners-discovery/lib/practitioner-rating";
 
 const TRUST_INDICATORS = [
   { key: "isVerified", icon: BadgeCheck, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
@@ -32,7 +32,11 @@ interface PractitionerCardProps {
 
 function FeaturedPractitionerCard({ practitioner, locale, t, eyebrow }: PractitionerCardProps) {
   const initials = getInitials(practitioner.displayName);
-  const displayTitle = getProfessionalTitleLabel(practitioner.professionalTitle, locale);
+  const displayTitle = practitioner.professionalTitle?.trim() || "-";
+  const hasRating = hasPublicPractitionerRating(
+    practitioner.averageRating,
+    practitioner.totalReviews,
+  );
 
   return (
     <div className="app-panel app-lift group overflow-hidden rounded-[28px] hover:-translate-y-1">
@@ -72,11 +76,11 @@ function FeaturedPractitionerCard({ practitioner, locale, t, eyebrow }: Practiti
               <p className="mt-0.5 text-sm text-text-secondary">{displayTitle}</p>
             )}
           </div>
-          {practitioner.averageRating != null && practitioner.averageRating > 0 && (
+          {hasRating && (
             <div className="flex shrink-0 items-center gap-1 rounded-xl bg-amber-50 px-2.5 py-1.5 ring-1 ring-inset ring-amber-200">
               <Star size={13} className="fill-amber-400 text-amber-400" />
               <span className="text-sm font-bold text-amber-600">
-                {practitioner.averageRating.toFixed(1)}
+                {practitioner.averageRating!.toFixed(1)}
               </span>
             </div>
           )}
@@ -189,6 +193,10 @@ export default async function PractitionersSection() {
                     .map((n) => n[0])
                     .join("")
                     .toUpperCase() ?? "?";
+                const hasRating = hasPublicPractitionerRating(
+                  p.rating,
+                  p.reviewCount,
+                );
 
                 return (
                   <div
@@ -228,14 +236,14 @@ export default async function PractitionersSection() {
                             {locale === "ar" ? p.nameAr : p.nameEn}
                           </h4>
                           <p className="mt-0.5 text-sm text-text-secondary">
-                            {locale === "ar" ? p.titleAr : p.titleEn}
+                            {p.professionalTitle?.trim() || "-"}
                           </p>
                         </div>
-                        {p.rating > 0 && (
+                        {hasRating && (
                           <div className="flex shrink-0 items-center gap-1 rounded-xl bg-amber-50 px-2.5 py-1.5 ring-1 ring-inset ring-amber-200">
                             <Star size={13} className="fill-amber-400 text-amber-400" />
                             <span className="text-sm font-bold text-amber-600">
-                              {p.rating.toFixed(1)}
+                              {p.rating!.toFixed(1)}
                             </span>
                           </div>
                         )}

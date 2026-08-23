@@ -171,41 +171,55 @@ export function getConversationHeaderPresentation(
   t: (key: string, options?: any) => string,
 ): ConversationHeaderPresentation {
   const context = conversation.type;
-  const counterpartName = conversation.otherParty?.displayName || conversation.title;
+  const counterpartName =
+    safeDisplayText(conversation.otherParty?.displayName, "") ||
+    t("messages.thread.unknownConversation");
+
+  if (viewerRole === "practitioner") {
+    const title =
+      safeDisplayText(conversation.otherParty?.displayName, "") ||
+      (context === "SUPPORT"
+        ? safeDisplayText(conversation.subject || conversation.title, "")
+        : "") ||
+      t("messages.thread.unknownConversation");
+    const subtitle =
+      context === "SESSION"
+        ? t("messages.inbox.contextSession")
+        : context === "CARE"
+          ? t("messages.inbox.contextFollowup")
+          : t("messages.inbox.contextSupport");
+
+    return { title, subtitle, context };
+  }
 
   if (context === "SESSION") {
-    const isCounterpartPatient = conversation.otherParty?.publicRoleLabel === "Patient";
-    const subtitleKey = isCounterpartPatient
-      ? "messages.common.rolePatient"
-      : "messages.common.rolePractitioner";
-
-    const title = t("messages.thread.sessionWithCounterpart", { name: counterpartName });
-    const subtitle = t(subtitleKey);
+    const title = counterpartName;
+    const subtitle = t("messages.inbox.contextSession");
 
     return { title, subtitle, context };
   }
 
   if (context === "CARE") {
-    const isCounterpartPatient = conversation.otherParty?.publicRoleLabel === "Patient";
-    const subtitleKey = isCounterpartPatient
-      ? "messages.common.rolePatient"
-      : "messages.common.rolePractitioner";
-
-    const title = t("messages.thread.careWithCounterpart", { name: counterpartName });
-    const subtitle = t(subtitleKey);
+    const title = counterpartName;
+    const subtitle = t("messages.inbox.contextFollowup");
 
     return { title, subtitle, context };
   }
 
   if (context === "SUPPORT") {
-    const title = conversation.subject?.trim() || conversation.title?.trim() || t("messages.thread.supportFallback");
-    const subtitle = t("messages.thread.supportRoleLabel");
+    const title =
+      safeDisplayText(conversation.subject, "") ||
+      safeDisplayText(conversation.title, "") ||
+      t("messages.thread.supportFallback");
+    const subtitle = t("messages.inbox.contextSupport");
 
     return { title, subtitle, context };
   }
 
   return {
-    title: conversation.title,
+    title:
+      safeDisplayText(conversation.title, "") ||
+      t("messages.thread.unknownConversation"),
     subtitle: "",
     context: "SESSION",
   };

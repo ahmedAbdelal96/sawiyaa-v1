@@ -33,9 +33,9 @@ export type FinancialBreakdown = {
   discountAmount: string;
   /** Final amount the patient pays */
   netPaidAmount: string;
-  platformCommissionAmount: string;
-  practitionerShareAmount: string;
-  commissionRule: FinancialBreakdownCommission;
+  platformCommissionAmount: string | null;
+  practitionerShareAmount: string | null;
+  commissionRule: FinancialBreakdownCommission | null;
   coupon: FinancialBreakdownCoupon | null;
 };
 

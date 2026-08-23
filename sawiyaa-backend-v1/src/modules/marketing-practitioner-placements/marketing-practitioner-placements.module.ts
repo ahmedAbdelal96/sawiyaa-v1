@@ -5,9 +5,10 @@ import { PractitionerMarketingPlacementManagementService } from './services/prac
 import { PublicFeaturedPractitionersController } from './controllers/public-featured-practitioners.controller';
 import { ListPublicFeaturedPractitionersUseCase } from './use-cases/list-public-featured-practitioners.use-case';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 
 @Module({
-  imports: [ReviewsModule],
+  imports: [ReviewsModule, PractitionersModule],
   controllers: [PublicFeaturedPractitionersController],
   providers: [
     PractitionerMarketingPlacementRepository,

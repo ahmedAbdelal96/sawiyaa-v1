@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   cancelPatientSession,
   closePractitionerSessionRuntime,
@@ -9,7 +10,6 @@ import {
   previewPatientSessionCancellation,
   preparePatientSessionRuntime,
   resolvePatientSessionJoinContract,
-  markPractitionerSessionCompleted,
   markPractitionerSessionNoShow,
   getPractitionerSession,
   getPractitionerSessions,
@@ -31,10 +31,30 @@ export const patientSessionQueryKeys = {
   all: ["patient-sessions"] as const,
   list: (params?: ListSessionsParams) =>
     [...patientSessionQueryKeys.all, "list", params ?? {}] as const,
-  detail: (sessionId: string) => [...patientSessionQueryKeys.all, sessionId] as const,
+  detail: (sessionId: string, locale = "ar") =>
+    [...patientSessionQueryKeys.all, "detail", sessionId, locale] as const,
 };
 
 export const nextSessionQueryKey = ["my-next-session"] as const;
+
+/** Every lifecycle/runtime mutation can affect both participants, next-session and admin projections. */
+async function invalidateOperationalSessionViews(queryClient: ReturnType<typeof useQueryClient>, sessionId?: string) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: practitionerSessionQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: patientSessionSummaryQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: nextSessionQueryKey }),
+    queryClient.invalidateQueries({ queryKey: ["admin-sessions"] }),
+    queryClient.invalidateQueries({ queryKey: ["admin-session-runtime"] }),
+    queryClient.invalidateQueries({ queryKey: ["admin", "session-resolution"] }),
+    queryClient.invalidateQueries({ queryKey: ["patient-journey"] }),
+    queryClient.invalidateQueries({ queryKey: ["package-purchases"] }),
+    ...(sessionId ? [
+      queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.detail(sessionId) }),
+      queryClient.invalidateQueries({ queryKey: practitionerSessionQueryKeys.detail(sessionId) }),
+    ] : []),
+  ]);
+}
 
 export function useMyNextSession() {
   return useQuery<NextSession | null>({
@@ -62,8 +82,10 @@ export function usePatientSession(
   sessionId: string | null,
   extraOptions?: PatientSessionExtraOptions,
 ) {
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
+
   return useQuery<SessionItem>({
-    queryKey: patientSessionQueryKeys.detail(sessionId ?? ""),
+    queryKey: patientSessionQueryKeys.detail(sessionId ?? "", locale),
     queryFn: () => getPatientSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
@@ -101,17 +123,18 @@ export function usePatientSessionSummary() {
  */
 export function useCancelPatientSession() {
   const queryClient = useQueryClient();
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: ({ sessionId, reason }: { sessionId: string; reason?: string }) =>
       cancelPatientSession(sessionId, reason),
-    onSuccess: (updatedSession) => {
+    onSuccess: async (updatedSession) => {
       // Update the detail cache immediately
       queryClient.setQueryData(
-        patientSessionQueryKeys.detail(updatedSession.id),
+        patientSessionQueryKeys.detail(updatedSession.id, locale),
         updatedSession,
       );
       // Invalidate list so it reflects the new status
-      queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.all });
+      await invalidateOperationalSessionViews(queryClient, updatedSession.id);
     },
   });
 }
@@ -126,11 +149,8 @@ export function useResolvePatientSessionJoinContract() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) => resolvePatientSessionJoinContract(sessionId),
-    onSuccess: (joinItem) => {
-      queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: patientSessionQueryKeys.detail(joinItem.sessionId),
-      });
+    onSuccess: async (joinItem) => {
+      await invalidateOperationalSessionViews(queryClient, joinItem.sessionId);
     },
   });
 }
@@ -139,11 +159,8 @@ export function usePreparePatientSessionRuntime() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) => preparePatientSessionRuntime(sessionId),
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: patientSessionQueryKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: patientSessionQueryKeys.detail(sessionId),
-      });
+    onSuccess: async (_, sessionId) => {
+      await invalidateOperationalSessionViews(queryClient, sessionId);
     },
   });
 }
@@ -153,8 +170,8 @@ export const practitionerSessionQueryKeys = {
   all: ["practitioner-sessions"] as const,
   list: (params?: ListSessionsParams) =>
     [...practitionerSessionQueryKeys.all, "list", params ?? {}] as const,
-  detail: (sessionId: string) =>
-    [...practitionerSessionQueryKeys.all, sessionId] as const,
+  detail: (sessionId: string, locale = "ar") =>
+    [...practitionerSessionQueryKeys.all, "detail", sessionId, locale] as const,
 };
 
 /**
@@ -177,38 +194,27 @@ export function usePractitionerSessions(params?: ListSessionsParams) {
  * GET /practitioners/me/sessions/:id
  */
 export function usePractitionerSession(sessionId: string | null) {
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
+
   return useQuery<SessionItem>({
-    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? ""),
+    queryKey: practitionerSessionQueryKeys.detail(sessionId ?? "", locale),
     queryFn: () => getPractitionerSession(sessionId!),
     enabled: Boolean(sessionId),
     staleTime: 30_000,
   });
 }
 
-export function useMarkPractitionerSessionCompleted() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (sessionId: string) => markPractitionerSessionCompleted(sessionId),
-    onSuccess: (updatedSession) => {
-      queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(updatedSession.id),
-        updatedSession,
-      );
-      queryClient.invalidateQueries({ queryKey: practitionerSessionQueryKeys.all });
-    },
-  });
-}
-
 export function useMarkPractitionerSessionNoShow() {
   const queryClient = useQueryClient();
+  const locale = useLocale().startsWith("ar") ? "ar" : "en";
   return useMutation({
     mutationFn: (sessionId: string) => markPractitionerSessionNoShow(sessionId),
-    onSuccess: (updatedSession) => {
+    onSuccess: async (updatedSession) => {
       queryClient.setQueryData(
-        practitionerSessionQueryKeys.detail(updatedSession.id),
+        practitionerSessionQueryKeys.detail(updatedSession.id, locale),
         updatedSession,
       );
-      queryClient.invalidateQueries({ queryKey: practitionerSessionQueryKeys.all });
+      await invalidateOperationalSessionViews(queryClient, updatedSession.id);
     },
   });
 }
@@ -217,11 +223,8 @@ export function useResolvePractitionerSessionJoinContract() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) => resolvePractitionerSessionJoinContract(sessionId),
-    onSuccess: (joinItem) => {
-      queryClient.invalidateQueries({ queryKey: practitionerSessionQueryKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.detail(joinItem.sessionId),
-      });
+    onSuccess: async (joinItem) => {
+      await invalidateOperationalSessionViews(queryClient, joinItem.sessionId);
     },
   });
 }
@@ -230,13 +233,8 @@ export function usePreparePractitionerSessionRuntime() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (sessionId: string) => preparePractitionerSessionRuntime(sessionId),
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.detail(sessionId),
-      });
+    onSuccess: async (_, sessionId) => {
+      await invalidateOperationalSessionViews(queryClient, sessionId);
     },
   });
 }
@@ -253,13 +251,8 @@ export function useClosePractitionerSessionRuntime() {
       reason?: string;
       note?: string;
     }) => closePractitionerSessionRuntime(sessionId, { reason, note }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: practitionerSessionQueryKeys.detail(variables.sessionId),
-      });
+    onSuccess: async (_, variables) => {
+      await invalidateOperationalSessionViews(queryClient, variables.sessionId);
     },
   });
 }
@@ -270,7 +263,9 @@ export function useClosePractitionerSessionRuntime() {
  * Callers must communicate the PENDING_PAYMENT status honestly to the user.
  */
 export function useCreateScheduledSession() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createScheduledSession,
+    onSuccess: async (created) => invalidateOperationalSessionViews(queryClient, created.item.id),
   });
 }

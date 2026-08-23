@@ -3,10 +3,11 @@ import { AppState } from "react-native";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedQueryEnabled } from "../auth/query-auth";
 import { ensureUnifiedMessagesSocketConnected, getUnifiedMessagesSocket } from "./realtime-socket";
-import type { CanonicalMessage } from "./types";
+import type { CanonicalMessage, CanonicalMessageAttachment } from "./types";
 import {
   buildMessageSendPayload,
   createMessageSendDescriptor,
+  normalizeCanonicalMessage,
   reconcileCanonicalMessage,
 } from "./message-identity";
 import {
@@ -24,6 +25,7 @@ import {
   sendCanonicalMessage,
   markCanonicalConversationRead,
   getCanonicalUnreadSummary,
+  getChatAttachmentPolicy,
 } from "./api";
 import { generalChatQueryKeys } from "./query-keys";
 import type {
@@ -298,7 +300,7 @@ export function useSendCanonicalMessageMutation(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { message: string; clientMessageId: string }) =>
+    mutationFn: (payload: { message: string; clientMessageId: string; attachments?: { fileId: string; fileUrl: string; mimeType: string; fileSize?: number; originalName?: string }[] }) =>
       sendCanonicalMessage(conversationId!, payload),
     onSuccess: async () => {
       if (!conversationId) return;
@@ -347,8 +349,20 @@ export function useCanonicalUnreadSummary(
   });
 }
 
-export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocused = true }: UseUnifiedMessagesProps) {
+export function useChatAttachmentPolicy(role: MessagesRole, enabled = true) {
+  const authEnabled = useAuthenticatedQueryEnabled(role);
+  return useQuery({
+    queryKey: generalChatQueryKeys.attachmentPolicy(),
+    queryFn: getChatAttachmentPolicy,
+    enabled: enabled && authEnabled,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useUnifiedMessages({ role, conversationId, currentUserId, isThreadFocused = true }: UseUnifiedMessagesProps) {
   const queryClient = useQueryClient();
+  const authEnabled = useAuthenticatedQueryEnabled(role);
   const [messages, setMessages] = useState<CanonicalMessage[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -371,7 +385,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
   const messagesQuery = useQuery({
     queryKey: generalChatQueryKeys.canonicalMessages(conversationId ?? ""),
     queryFn: () => listCanonicalMessages(conversationId!, { page: 1, limit: 30 }),
-    enabled: Boolean(conversationId),
+    enabled: authEnabled && Boolean(conversationId),
     staleTime: 5000,
   });
 
@@ -440,7 +454,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
 
   // 3. Realtime Socket subscriptions
   useEffect(() => {
-    if (!conversationId) return;
+    if (!authEnabled || !conversationId) return;
 
     const socket = ensureUnifiedMessagesSocketConnected();
     if (!socket) return;
@@ -472,7 +486,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
         const item = data.item.clientMessageId
           ? data.item
           : { ...data.item, clientMessageId: data.clientMessageId };
-        const canonical = { ...item, deliveryState: "sent" as const };
+        const canonical = { ...normalizeCanonicalMessage(item), deliveryState: "sent" as const };
         if (canonical.clientMessageId) {
           delete pendingMessagesRef.current[canonical.clientMessageId];
         }
@@ -543,7 +557,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
       socket.off("messages:typing:start", handleTypingStart);
       socket.off("messages:typing:stop", handleTypingStop);
     };
-  }, [conversationId, currentUserId, queryClient]);
+  }, [authEnabled, conversationId, currentUserId, queryClient]);
 
   // 6. Typing notifications
   const sendTypingNotification = useCallback((active: boolean) => {
@@ -555,7 +569,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
 
   // 3.5 AppState change handling
   useEffect(() => {
-    if (!conversationId) return;
+    if (!authEnabled || !conversationId) return;
 
     const handleAppStateChange = (nextAppState: string) => {
       setIsAppForeground(nextAppState === "active");
@@ -579,7 +593,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
     return () => {
       subscription.remove();
     };
-  }, [conversationId, messagesQuery, queryClient, sendTypingNotification]);
+  }, [authEnabled, conversationId, messagesQuery, queryClient, sendTypingNotification]);
 
   // 4. Mark Read action
   const markRead = useCallback(async (lastReadMessageId: string) => {
@@ -618,7 +632,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
     };
 
     const accept = (item: CanonicalMessage) => {
-      const canonical = { ...item, clientMessageId: item.clientMessageId ?? clientMessageId, deliveryState: "sent" as const };
+      const canonical = { ...normalizeCanonicalMessage(item), clientMessageId: item.clientMessageId ?? clientMessageId, deliveryState: "sent" as const };
       setMessages((prev) => reconcileCanonicalMessage(prev, canonical));
       messagesMap.current[canonical.id] = true;
       messagesMap.current[clientMessageId] = true;
@@ -678,9 +692,9 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
     });
   }, [conversationId, queryClient]);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!conversationId || !text.trim()) return;
-    const descriptor = createMessageSendDescriptor(conversationId, text.trim());
+  const sendMessage = useCallback(async (text: string, attachments: CanonicalMessageAttachment[] = []) => {
+    if (!conversationId || (!text.trim() && attachments.length === 0)) return;
+    const descriptor = createMessageSendDescriptor(conversationId, text.trim(), attachments);
     const optimistic: CanonicalMessage = {
       id: `optimistic:${descriptor.clientMessageId}`,
       conversationId,
@@ -698,7 +712,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
       deliveryState: "sending",
       deliveredAt: null,
       readAt: null,
-      attachments: [],
+      attachments: descriptor.attachments ?? [],
     };
     messagesMap.current[optimistic.id] = true;
     messagesMap.current[descriptor.clientMessageId] = true;
@@ -736,6 +750,7 @@ export function useUnifiedMessages({ conversationId, currentUserId, isThreadFocu
 }
 
 interface UseUnifiedMessagesProps {
+  role: MessagesRole;
   conversationId: string | null;
   currentUserId?: string | null;
   isThreadFocused?: boolean;

@@ -108,6 +108,33 @@ describe('ConfigurationManagementService', () => {
     });
   });
 
+  it('can require an absent value for atomic first-time initialization', async () => {
+    const current = {
+      id: 'value-1',
+      updatedAt: new Date('2026-08-02T11:00:00.000Z'),
+      priority: 100,
+      scopeType: ConfigScopeType.GLOBAL,
+      scopeRefId: null,
+      valueBoolean: true,
+      valueString: null,
+      valueNumber: null,
+      valueJson: null,
+      effectiveFrom: new Date('2026-08-02T10:00:00.000Z'),
+      effectiveTo: null,
+      isActive: true,
+    };
+    const { service, tx } = createService(current);
+
+    await expect(
+      service.updateManyWithTransaction(
+        [command({ expectedUpdatedAt: null })],
+        (_tx, results) => results,
+        { requireAbsent: true },
+      ),
+    ).rejects.toMatchObject({ response: { error: 'CONFIG_WRITE_CONFLICT' } });
+    expect(tx.configValue.create).not.toHaveBeenCalled();
+  });
+
   it('resets an override through the canonical write boundary and preserves history', async () => {
     const current = {
       id: 'value-1',

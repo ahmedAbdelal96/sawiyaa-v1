@@ -17,6 +17,8 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
+import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import {
@@ -82,10 +84,12 @@ export class GeneralChatConversationsController {
   listMyConversations(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Query() query: ListGeneralChatConversationsDto,
+    @CurrentLocale() locale: SupportedLocale,
   ) {
     return this.listMyGeneralChatConversationsUseCase.execute({
       authenticatedUser,
       query,
+      locale,
     });
   }
 
@@ -123,10 +127,12 @@ export class GeneralChatConversationsController {
   detail(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Param('id') conversationId: string,
+    @CurrentLocale() locale: SupportedLocale,
   ) {
     return this.getMyGeneralChatConversationDetailUseCase.execute({
       authenticatedUser,
       conversationId,
+      locale,
     });
   }
 
@@ -168,10 +174,12 @@ export class GeneralChatConversationsController {
   createOrGet(
     @CurrentUser() authenticatedUser: AuthenticatedUser,
     @Body() dto: CreateGeneralChatConversationDto,
+    @CurrentLocale() locale: SupportedLocale,
   ) {
     return this.createOrGetGeneralChatConversationUseCase.execute({
       authenticatedUser,
       dto,
+      locale,
     });
   }
 

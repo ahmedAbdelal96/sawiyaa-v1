@@ -2,20 +2,20 @@
   "page": {
     "brand": "سويّة",
     "title": "اكتشف مختصك",
-    "subtitle": "تصفح نخبة من المعالجين النفسيين المعتمدين",
+    "subtitle": "تصفح نخبة من المختصين المعتمدين في الصحة النفسية",
     "breadcrumb": "المختصون",
-    "resultCount": "{count} مختص متاح",
+    "resultCount": "{count, plural, =0 {لا يوجد مختصون متاحون} =1 {مختص واحد متاح} =2 {مختصان متاحان} few {# مختصين متاحين} many {# مختصًا متاحًا} other {# مختص متاح}}",
     "resultCountSingle": "مختص واحد متاح",
     "showingOf": "عرض {count} من أصل {total}"
   },
   "search": {
-    "placeholder": "ابحث باسم المعالج أو التخصص...",
+    "placeholder": "ابحث باسم المختص أو التخصص...",
     "button": "بحث",
     "clear": "مسح البحث"
   },
   "filter": {
     "title": "التصفية",
-    "availability": "التواجد",
+    "availability": "الأوقات المتاحة",
     "onlineNow": "متصل الآن",
     "availableToday": "متاح اليوم",
     "availableThisWeek": "متاح هذا الأسبوع",
@@ -23,8 +23,10 @@
     "specialty": "التخصص",
     "language": "اللغة",
     "country": "البلد",
+    "countrySearchPlaceholder": "ابحث عن دولة...",
+    "countryEmpty": "لا توجد دول مطابقة",
     "practitionerType": "نوع المختص",
-    "practitionerTypeDoctor": "طبيب نفسي",
+    "practitionerTypeDoctor": "مختص",
     "practitionerTypeTherapist": "معالج نفسي",
     "gender": "الجنس",
     "genderMale": "ذكر",
@@ -104,10 +106,12 @@
     "yearsExp": "سنة خبرة",
     "sessions": "جلسات",
     "reviews": "تقييمًا",
+    "noRatings": "لا توجد تقييمات بعد",
     "viewProfile": "عرض الملف",
     "languages": "اللغات",
     "rating": "التقييم",
     "onlineNow": "متصل الآن",
+    "instantAvailable": "متاح لجلسة فورية",
     "offline": "غير متصل",
     "matchesFilter": "مطابق للفلتر",
     "sessionFees": "رسوم الجلسة",
@@ -123,12 +127,12 @@
     "title": "تعذّر تحميل الصفحة",
     "subtitle": "حدث خطأ أثناء جلب البيانات. يُرجى المحاولة مجددًا.",
     "retry": "إعادة المحاولة",
-    "back": "العودة للمختصين"
+    "back": "العودة إلى المختصين"
   },
   "patientArea": {
     "meta": {
-      "title": "سويّة | اختر المعالج المناسب لك",
-      "description": "استعرض الممارسين المناسبين لك داخل مساحة العميل وابدأ رحلتك العلاجية بسهولة."
+      "title": "سويّة | اختر المختص المناسب لك",
+      "description": "استعرض المختصين المناسبين لك داخل مساحة المريض وابدأ رحلتك بسهولة."
     }
   }
 }

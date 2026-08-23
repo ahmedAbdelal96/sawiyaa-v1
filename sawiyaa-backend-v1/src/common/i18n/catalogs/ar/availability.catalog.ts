@@ -32,6 +32,8 @@ export const arAvailabilityCatalog = {
       'مدة خانة الإتاحة الأسبوعية يجب أن تكون 30 أو 60 دقيقة',
     invalidGranularity:
       'يجب أن تستخدم الإتاحة الأسبوعية فواصل قدرها 30 دقيقة',
+    weekSlotsLimit:
+      'يمكن أن يحتوي جدول الأسبوع على 504 وقت بدء جلسة كحد أقصى',
     overlappingWeeklySlots:
       'جدول الإتاحة الأسبوعي يحتوي على تداخل في نفس اليوم',
     invalidExceptionRange: 'نطاق استثناء الإتاحة غير صالح',
@@ -42,6 +44,8 @@ export const arAvailabilityCatalog = {
     publicAvailabilityNotFound:
       'تعذر العثور على إتاحة المعالج العامة',
     weekNotFound: 'تعذر العثور على الجدول الأسبوعي',
+    weekAlreadyExists:
+      'يوجد جدول بالفعل لهذا الأسبوع. يمكنك تعديل الجدول الحالي.',
     weekNotDraft: 'هذا الجدول منشور بالفعل ولا يمكن نشره مرة أخرى',
     weekNotEditable: 'لا يمكن تعديل هذا الجدول.',
     slotInPast: 'لا يمكن تعديل وقت انتهى بالفعل.',

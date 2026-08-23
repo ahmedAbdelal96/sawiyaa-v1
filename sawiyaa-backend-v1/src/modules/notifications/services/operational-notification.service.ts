@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   ConversationParticipantRole,
   NotificationCategory,
@@ -18,6 +18,7 @@ import {
 } from '../repositories/session-reminder-queue.repository';
 import { OperationalNotificationRepository } from '../repositories/operational-notification.repository';
 import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
+import { NotificationRealtimePublisher } from './notification-realtime.publisher';
 
 type Recipient = {
   userId: string;
@@ -55,6 +56,7 @@ type SessionReminderNotificationInput = {
 type InstantBookingRequestNotificationInput = {
   patientProfileId: string;
   requestId: string;
+  createdSessionId?: string | null;
 };
 
 type CareChatDecisionNotificationInput = {
@@ -77,6 +79,7 @@ export class OperationalNotificationService {
     private readonly sessionReminderQueueRepository: SessionReminderQueueRepository,
     private readonly i18nService: I18nService,
     private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
+    @Optional() private readonly notificationRealtimePublisher?: NotificationRealtimePublisher,
   ) {}
 
   async notifyPaymentSucceeded(input: {
@@ -351,6 +354,18 @@ export class OperationalNotificationService {
     input: InstantBookingRequestNotificationInput,
   ): Promise<void> {
     const recipient = await this.resolvePatientRecipient(input.patientProfileId);
+    const paymentPath = input.createdSessionId
+      ? this.buildPatientInstantBookingPaymentRoutePath(
+          recipient?.locale ?? null,
+          input.createdSessionId,
+        )
+      : null;
+    const routePath =
+      paymentPath ??
+      this.buildInstantBookingRoutePath(
+        recipient?.locale ?? null,
+        input.requestId,
+      );
 
     await this.sendBySlug({
       recipient,
@@ -360,16 +375,49 @@ export class OperationalNotificationService {
       relatedEntityType: 'INSTANT_BOOKING_REQUEST',
       relatedEntityId: input.requestId,
       category: NotificationCategory.SESSION,
-      routePath: this.buildInstantBookingRoutePath(
-        recipient?.locale ?? null,
-        input.requestId,
-      ),
+      routePath,
       idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
         'instant-booking.request-accepted',
         input.requestId,
         recipient?.userId ?? null,
       ),
       targetRole: 'PATIENT',
+      payload: {
+        requestId: input.requestId,
+        ...(input.createdSessionId
+          ? { createdSessionId: input.createdSessionId }
+          : {}),
+      },
+    });
+  }
+
+  async notifyInstantBookingCreated(input: {
+    practitionerProfileId: string;
+    requestId: string;
+  }): Promise<void> {
+    const recipient = await this.resolvePractitionerRecipient(
+      input.practitionerProfileId,
+    );
+    const routePath = this.buildPractitionerInstantBookingRoutePath(
+      recipient?.locale ?? null,
+    );
+
+    await this.sendBySlug({
+      recipient,
+      slug: 'instant-booking.request-created',
+      titleKey: 'instantBooking.notifications.requestCreatedTitle',
+      bodyKey: 'instantBooking.notifications.requestCreatedBody',
+      relatedEntityType: 'INSTANT_BOOKING_REQUEST',
+      relatedEntityId: input.requestId,
+      category: NotificationCategory.SESSION,
+      routePath,
+      idempotencyKey: this.buildInstantBookingNotificationIdempotencyKey(
+        'instant-booking.request-created',
+        input.requestId,
+        recipient?.userId ?? null,
+      ),
+      targetRole: 'PRACTITIONER',
+      payload: { requestId: input.requestId },
     });
   }
 
@@ -1240,6 +1288,23 @@ export class OperationalNotificationService {
     }
   }
 
+  private buildPatientInstantBookingPaymentRoutePath(
+    locale: SupportedLocale | null,
+    sessionId: string,
+  ): string | null {
+    if (!locale) {
+      return null;
+    }
+
+    return `/${locale}/patient/sessions/${encodeURIComponent(sessionId)}/pay`;
+  }
+
+  private buildPractitionerInstantBookingRoutePath(
+    locale: SupportedLocale | null,
+  ): string | null {
+    return locale ? `/${locale}/practitioner/instant-booking` : null;
+  }
+
   private resolveSessionReminderCtaKey(
     type: SessionReminderType,
   ): string {
@@ -1393,6 +1458,7 @@ export class OperationalNotificationService {
 
       if (notificationType.supportsInApp && (input.channels?.inApp ?? true)) {
         await this.queueInApp({
+          typeSlug: input.slug,
           userId: input.recipient.userId,
           notificationTypeId: notificationType.id,
           templateId:
@@ -1558,6 +1624,7 @@ export class OperationalNotificationService {
   }
 
   private async queueInApp(input: {
+    typeSlug: string;
     userId: string;
     notificationTypeId: string;
     templateId: string | null;
@@ -1594,7 +1661,7 @@ export class OperationalNotificationService {
       return;
     }
 
-    await this.repository.createNotification({
+    const notification = await this.repository.createNotification({
       userId: input.userId,
       notificationTypeId: input.notificationTypeId,
       templateId: input.templateId,
@@ -1608,6 +1675,14 @@ export class OperationalNotificationService {
       relatedEntityType: input.relatedEntityType,
       relatedEntityId: input.relatedEntityId,
       idempotencyKey: input.idempotencyKey ?? null,
+    });
+
+    this.notificationRealtimePublisher?.publish(input.userId, {
+      notificationId: notification.id,
+      typeSlug: input.typeSlug,
+      relatedEntityType: input.relatedEntityType,
+      relatedEntityId: input.relatedEntityId,
+      createdAt: notification.createdAt.toISOString(),
     });
   }
 

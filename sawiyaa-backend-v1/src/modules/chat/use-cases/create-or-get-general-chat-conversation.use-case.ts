@@ -17,6 +17,7 @@ import { CreateGeneralChatConversationDto } from '../dto/create-general-chat-con
 import {
   buildGeneralChatParticipantDirectoryMap,
   buildGeneralChatParticipantSummary,
+  resolveGeneralChatProfessionalTitles,
 } from '../helpers/general-chat-identity.mapper';
 import { GeneralChatActorRepository } from '../repositories/general-chat-actor.repository';
 import { GeneralChatRepository } from '../repositories/general-chat.repository';
@@ -27,6 +28,8 @@ import {
   GeneralChatParticipantRole,
 } from '../types/general-chat.types';
 import { ValidateGeneralChatParticipantPolicyService } from '../services/validate-general-chat-participant-policy.service';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
 
 @Injectable()
 export class CreateOrGetGeneralChatConversationUseCase {
@@ -35,11 +38,13 @@ export class CreateOrGetGeneralChatConversationUseCase {
     private readonly generalChatActorRepository: GeneralChatActorRepository,
     private readonly generalChatAvailabilityService: GeneralChatAvailabilityService,
     private readonly validateGeneralChatParticipantPolicyService: ValidateGeneralChatParticipantPolicyService,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
   ) {}
 
   async execute(input: {
     authenticatedUser: AuthenticatedUser;
     dto: CreateGeneralChatConversationDto;
+    locale?: SupportedLocale;
   }) {
     const actorRole =
       this.validateGeneralChatParticipantPolicyService.resolveActorRole({
@@ -118,7 +123,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
           input.authenticatedUser.id,
         );
         return {
-          item: await this.toReadItem(existing, false),
+          item: await this.toReadItem(existing, false, input.locale ?? 'ar'),
         };
       }
     }
@@ -138,7 +143,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
         input.authenticatedUser.id,
       );
       return {
-        item: await this.toReadItem(existing, false),
+        item: await this.toReadItem(existing, false, input.locale ?? 'ar'),
       };
     }
 
@@ -153,7 +158,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
       });
 
       return {
-        item: await this.toReadItem(created, true),
+        item: await this.toReadItem(created, true, input.locale ?? 'ar'),
       };
     } catch (error) {
       if (
@@ -189,7 +194,11 @@ export class CreateOrGetGeneralChatConversationUseCase {
               input.authenticatedUser.id,
             );
             return {
-              item: await this.toReadItem(converged, false),
+              item: await this.toReadItem(
+                converged,
+                false,
+                input.locale ?? 'ar',
+              ),
             };
           }
         }
@@ -205,7 +214,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
             input.authenticatedUser.id,
           );
           return {
-            item: await this.toReadItem(converged, false),
+            item: await this.toReadItem(converged, false, input.locale ?? 'ar'),
           };
         }
       }
@@ -278,17 +287,15 @@ export class CreateOrGetGeneralChatConversationUseCase {
       practitionerSendingEnabledByUserId: string | null;
       supportTicket: { id: string } | null;
       chatApprovalRequest: { id: string } | null;
-      session:
-        | {
-            status: string;
-            sessionMode: string;
-            scheduledStartAt: Date | null;
-            scheduledEndAt: Date | null;
-            provider: string;
-            providerRoomId: string | null;
-            providerSessionRef: string | null;
-          }
-        | null;
+      session: {
+        status: string;
+        sessionMode: string;
+        scheduledStartAt: Date | null;
+        scheduledEndAt: Date | null;
+        provider: string;
+        providerRoomId: string | null;
+        providerSessionRef: string | null;
+      } | null;
       participants: Array<{ userId: string }>;
     },
     actorUserId: string,
@@ -346,18 +353,16 @@ export class CreateOrGetGeneralChatConversationUseCase {
       practitionerSendingEnabledByUserId: string | null;
       supportTicket: { id: string } | null;
       chatApprovalRequest: { id: string } | null;
-      session:
-        | {
-            id: string;
-            status: SessionStatus;
-            sessionMode: SessionMode;
-            scheduledStartAt: Date | null;
-            scheduledEndAt: Date | null;
-            provider: SessionProvider;
-            providerRoomId: string | null;
-            providerSessionRef: string | null;
-          }
-        | null;
+      session: {
+        id: string;
+        status: SessionStatus;
+        sessionMode: SessionMode;
+        scheduledStartAt: Date | null;
+        scheduledEndAt: Date | null;
+        provider: SessionProvider;
+        providerRoomId: string | null;
+        providerSessionRef: string | null;
+      } | null;
       createdAt: Date;
       updatedAt: Date;
       participants: Array<{
@@ -366,6 +371,7 @@ export class CreateOrGetGeneralChatConversationUseCase {
       }>;
     },
     wasCreated: boolean,
+    locale: 'ar' | 'en',
   ) {
     const participantDirectoryRecords =
       (await this.generalChatRepository.loadParticipantIdentityRecords?.(
@@ -373,6 +379,11 @@ export class CreateOrGetGeneralChatConversationUseCase {
       )) ?? [];
     const participantDirectory = buildGeneralChatParticipantDirectoryMap(
       participantDirectoryRecords,
+    );
+    const resolvedProfessionalTitles = resolveGeneralChatProfessionalTitles(
+      participantDirectoryRecords,
+      locale,
+      this.professionalContentResolver,
     );
     const chatAvailability =
       this.generalChatAvailabilityService.resolveAvailability({
@@ -414,7 +425,11 @@ export class CreateOrGetGeneralChatConversationUseCase {
       status: conversation.status,
       linkedSessionId: conversation.sessionId,
       participants: conversation.participants.map((participant) =>
-        buildGeneralChatParticipantSummary(participant, participantDirectory),
+        buildGeneralChatParticipantSummary(
+          participant,
+          participantDirectory,
+          resolvedProfessionalTitles,
+        ),
       ),
       wasCreated,
       chatAvailability,

@@ -21,7 +21,7 @@ describe('AdminPractitionerProfileRepository', () => {
       where: { id: 'profile-1' },
       data: {
         status: PractitionerStatus.APPROVED,
-        isPublicProfilePublished: true,
+        isPublicProfilePublished: false,
       },
       select: {
         id: true,

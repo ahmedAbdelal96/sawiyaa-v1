@@ -31,6 +31,7 @@ export class MatchingPresenter {
         }>;
       };
     }>;
+    resolvedProfessionalTitles?: ReadonlyMap<string, string | null>;
     assessmentRecommendations?: CareRecommendationItem[];
   }) {
     const answerMap = input.answers.reduce<Record<string, unknown>>(
@@ -46,7 +47,10 @@ export class MatchingPresenter {
         id: recommendation.practitionerProfile.id,
         slug: recommendation.practitionerProfile.publicSlug,
         displayName: recommendation.practitionerProfile.user.displayName,
-        professionalTitle: recommendation.practitionerProfile.professionalTitle,
+        professionalTitle:
+          input.resolvedProfessionalTitles?.get(
+            recommendation.practitionerProfile.id,
+          ) ?? recommendation.practitionerProfile.professionalTitle,
         languages: recommendation.practitionerProfile.languages.map(
           (language) => language.language.code,
         ),

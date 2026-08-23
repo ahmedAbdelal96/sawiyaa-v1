@@ -6,6 +6,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SessionRepository } from '@modules/sessions/repositories/session.repository';
+import { InstantBookingPolicyService } from './instant-booking-policy.service';
 import { CreateSessionFromInstantBookingService } from './create-session-from-instant-booking.service';
 
 describe('CreateSessionFromInstantBookingService', () => {
@@ -20,9 +21,13 @@ describe('CreateSessionFromInstantBookingService', () => {
         async (callback: (tx: unknown) => Promise<unknown>) => callback({}),
       ),
     } as unknown as PrismaService;
+    const instantBookingPolicyService = {
+      paymentWindowMinutes: jest.fn().mockResolvedValue(0),
+    } as unknown as InstantBookingPolicyService;
     const service = new CreateSessionFromInstantBookingService(
       prisma,
       sessionRepository,
+      instantBookingPolicyService,
     );
 
     await service.createFromAcceptedRequest({
@@ -39,17 +44,20 @@ describe('CreateSessionFromInstantBookingService', () => {
       timezone: 'Africa/Cairo',
     });
 
-    expect(createSession).toHaveBeenCalledWith(
+    const sessionInput = createSession.mock.calls[0][0];
+    expect(sessionInput).toEqual(
       expect.objectContaining({
         flowType: SessionFlowType.INSTANT,
         status: SessionStatus.PENDING_PAYMENT,
-        requestedStartAt: new Date('2026-08-10T07:00:00.000Z'),
-        scheduledStartAt: new Date('2026-08-10T07:00:00.000Z'),
-        scheduledEndAt: new Date('2026-08-10T07:30:00.000Z'),
         timezoneSnapshot: 'Africa/Cairo',
       }),
-      expect.anything(),
-      'instant_booking',
     );
+    expect(sessionInput.requestedStartAt).toBeInstanceOf(Date);
+    expect(sessionInput.scheduledStartAt).toBeInstanceOf(Date);
+    expect(sessionInput.scheduledEndAt).toEqual(
+      new Date(sessionInput.scheduledStartAt.getTime() + 30 * 60_000),
+    );
+    expect(sessionInput.scheduledStartAt).toEqual(sessionInput.expiresAt);
+    expect(createSession.mock.calls[0][2]).toBe('instant_booking');
   });
 });

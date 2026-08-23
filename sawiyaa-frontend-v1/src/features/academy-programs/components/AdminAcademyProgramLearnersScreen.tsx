@@ -29,6 +29,12 @@ import { getAcademyProgramErrorKey } from "../lib/academy-program-errors";
 import {
   useCreateAdminAcademyProgramEnrollment,
   useAdminAcademyProgramEnrollments,
+  useAdminAcademyProgramEnrollment,
+  useAdminAcademyEnrollmentAccountStatus,
+  useLookupAdminAcademyEnrollmentAccount,
+  useCreateAdminAcademyEnrollmentAccount,
+  useLinkAdminAcademyEnrollmentAccount,
+  useResetAdminAcademyTraineePassword,
   useCancelAdminAcademyProgramEnrollment,
   useBulkAdminAcademyProgramEnrollments,
   useExportAdminAcademyProgramEnrollments,
@@ -39,6 +45,8 @@ import {
 } from "../hooks/use-academy-programs";
 import type {
   AcademyProgramEnrollmentItem,
+  AcademyAdminEnrollmentAccountStatus,
+  AcademyAdminEnrollmentAccountResponse,
   AcademyProgramEnrollmentPaymentStatus,
   AcademyProgramEnrollmentStatus,
   ListAdminAcademyProgramEnrollmentsParams,
@@ -61,7 +69,7 @@ const SORTABLE_COLUMNS: EnrollmentSortColumn[] = ["registeredAt", "fullName"];
 const ENROLLMENT_STATUS_OPTIONS: Array<AcademyProgramEnrollmentStatus | "ALL"> = [
   "ALL",
   "PENDING_PAYMENT",
-  "UPCOMING",
+  "CONFIRMED",
   "CANCELLED",
   "EXPIRED",
 ];
@@ -141,7 +149,7 @@ function resolveEnrollmentSourceLabel(sourceLabel: string | null | undefined, t:
 }
 
 function badgeTone(status: string) {
-  if (status === "UPCOMING" || status === "CAPTURED" || status === "ISSUED") {
+  if (status === "CONFIRMED" || status === "CAPTURED" || status === "ISSUED" || status === "UPLOADED") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
   if (status === "CANCELLED" || status === "FAILED" || status === "EXPIRED") {
@@ -395,6 +403,12 @@ function LearnerDetailDrawer({
   canManageCertificate,
   certificateUploading,
   onUploadCertificate,
+  accountStatus,
+  accountLoading,
+  onLookupAccount,
+  onCreateAccount,
+  onLinkAccount,
+  onResetAccount,
   busy,
 }: {
   isOpen: boolean;
@@ -409,6 +423,12 @@ function LearnerDetailDrawer({
   canManageCertificate: boolean;
   certificateUploading: boolean;
   onUploadCertificate: (file: File) => Promise<boolean>;
+  accountStatus: AcademyAdminEnrollmentAccountStatus | null;
+  accountLoading: boolean;
+  onLookupAccount: (email: string) => Promise<AcademyAdminEnrollmentAccountResponse | null>;
+  onCreateAccount: (email: string) => Promise<{ email: string; password: string } | null>;
+  onLinkAccount: (email: string) => Promise<void>;
+  onResetAccount: (password: string) => Promise<void>;
   busy: boolean;
 }) {
   const t = useTranslations("academy");
@@ -417,6 +437,11 @@ function LearnerDetailDrawer({
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountMessage, setAccountMessage] = useState<string | null>(null);
+  const [temporaryCredentials, setTemporaryCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [existingAccount, setExistingAccount] = useState<AcademyAdminEnrollmentAccountResponse | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
@@ -427,6 +452,11 @@ function LearnerDetailDrawer({
 
     setCertificateFile(null);
     setCertificateMessage(null);
+    setAccountEmail(item?.learner.email ?? "");
+    setAccountMessage(null);
+    setTemporaryCredentials(null);
+    setExistingAccount(null);
+    setNewPassword("");
   }, [isOpen, item?.id]);
 
   const certificateDownloadUrl =
@@ -436,6 +466,8 @@ function LearnerDetailDrawer({
           surface: "admin",
         })
       : null;
+  const certificateProgramEnded =
+    !item?.program.endAt || new Date(item.program.endAt).getTime() <= Date.now();
 
   const handleUpload = async () => {
     if (!certificateFile) {
@@ -530,6 +562,131 @@ function LearnerDetailDrawer({
               </div>
             </LearnerSection>
 
+            <LearnerSection title={t("programs.learners.sections.account")}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LearnerDetailField
+                  label={t("programs.learners.account.type")}
+                  value={accountLoading ? t("programs.learners.account.loading") : accountStatus?.account.type ?? "NONE"}
+                />
+                <LearnerDetailField
+                  label={t("programs.learners.account.email")}
+                  value={accountStatus?.account.email ?? item.learner.email ?? "-"}
+                />
+              </div>
+              {accountStatus?.canCreate || accountStatus?.canLink ? (
+                <div className="space-y-3 rounded-2xl border border-border-light bg-white p-4">
+                  <p className="text-xs text-text-secondary">{t("programs.learners.account.note")}</p>
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    onChange={(event) => setAccountEmail(event.target.value)}
+                    placeholder={t("programs.learners.account.emailPlaceholder")}
+                    className="h-11 w-full rounded-xl border border-border-light bg-white px-3 text-sm text-text-primary outline-none focus:border-primary"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {accountStatus.canCreate ? (
+                      <Button
+                        variant="outline"
+                        disabled={!accountEmail.trim() || accountLoading}
+                        onClick={async () => {
+                          try {
+                            const result = await onCreateAccount(accountEmail.trim());
+                            if (result) {
+                              setTemporaryCredentials(result);
+                              setAccountMessage(t("programs.learners.account.created"));
+                            }
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.create")}
+                      </Button>
+                    ) : null}
+                    {accountStatus.canLink ? (
+                      <Button
+                        variant="outline"
+                        disabled={!accountEmail.trim() || accountLoading}
+                        onClick={async () => {
+                          try {
+                            const result = await onLookupAccount(accountEmail.trim());
+                            setExistingAccount(result);
+                            setAccountMessage(result ? t("programs.learners.account.confirmLink") : t("programs.learners.account.failure"));
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.link")}
+                      </Button>
+                    ) : null}
+                  </div>
+                  {existingAccount ? (
+                    <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-text-primary">
+                      <p className="font-semibold">{existingAccount.account.name ?? "-"}</p>
+                      <p className="text-xs text-text-secondary">{existingAccount.account.email ?? accountEmail}</p>
+                      <p className="text-xs text-text-secondary">{existingAccount.account.type}</p>
+                      <Button
+                        variant="outline"
+                        disabled={accountLoading}
+                        onClick={async () => {
+                          try {
+                            await onLinkAccount(accountEmail.trim());
+                            setAccountMessage(t("programs.learners.account.linked"));
+                            setExistingAccount(null);
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.confirm")}
+                      </Button>
+                    </div>
+                  ) : null}
+                  {temporaryCredentials ? (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                      <p className="font-semibold">{t("programs.learners.account.credentialsOnce")}</p>
+                      <p className="mt-1">{temporaryCredentials.email}</p>
+                      <p className="font-mono">{temporaryCredentials.password}</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(temporaryCredentials.email)}>{t("programs.learners.account.copyEmail")}</button>
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(temporaryCredentials.password)}>{t("programs.learners.account.copyPassword")}</button>
+                        <button type="button" className="underline" onClick={() => void navigator.clipboard?.writeText(`${temporaryCredentials.email}\n${temporaryCredentials.password}`)}>{t("programs.learners.account.copyBoth")}</button>
+                      </div>
+                    </div>
+                  ) : null}
+                  {accountStatus.account.type === "TRAINEE" ? (
+                    <div className="space-y-2 border-t border-border-light pt-3">
+                      <p className="text-xs font-semibold text-text-primary">{t("programs.learners.account.resetTitle")}</p>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                        placeholder={t("programs.learners.account.resetPlaceholder")}
+                        className="h-11 w-full rounded-xl border border-border-light px-3 text-sm outline-none focus:border-primary"
+                      />
+                      <Button
+                        variant="outline"
+                        disabled={newPassword.length < 8 || accountLoading}
+                        onClick={async () => {
+                          try {
+                            await onResetAccount(newPassword);
+                            setNewPassword("");
+                            setAccountMessage(t("programs.learners.account.resetSuccess"));
+                          } catch {
+                            setAccountMessage(t("programs.learners.account.failure"));
+                          }
+                        }}
+                      >
+                        {t("programs.learners.account.reset")}
+                      </Button>
+                    </div>
+                  ) : null}
+                  {accountMessage ? <p className="text-xs text-text-secondary">{accountMessage}</p> : null}
+                </div>
+              ) : null}
+            </LearnerSection>
+
             <LearnerSection title={t("programs.learners.sections.certificate")}>
               <div className="grid gap-3 sm:grid-cols-2">
                 <LearnerMetric
@@ -557,7 +714,7 @@ function LearnerDetailDrawer({
                 </div>
               )}
 
-              {canManageCertificate && item.status === "UPCOMING" ? (
+              {canManageCertificate && item.status === "CONFIRMED" && certificateProgramEnded ? (
                 <div className="space-y-3 rounded-2xl border border-border-light bg-surface-secondary p-4">
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
@@ -610,6 +767,10 @@ function LearnerDetailDrawer({
                         : t("programs.learners.certificate.uploadPdf")}
                   </Button>
                 </div>
+              ) : !certificateProgramEnded ? (
+                <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  {t("programs.learners.certificate.programNotEnded")}
+                </div>
               ) : !canManageCertificate ? (
                 <div className="rounded-2xl border border-dashed border-border-light bg-white px-4 py-3 text-sm text-text-muted">
                   {t("programs.learners.certificate.noAccess")}
@@ -631,9 +792,6 @@ function LearnerDetailDrawer({
             </Button>
             <Button variant="secondary" onClick={onComplete} startIcon={<CheckCircle2 className="h-4 w-4" />} disabled={busy}>
               {t("programs.learners.actions.complete")}
-            </Button>
-            <Button variant="secondary" onClick={onCertify} startIcon={<BadgeCheck className="h-4 w-4" />} disabled={busy}>
-              {t("programs.learners.actions.certify")}
             </Button>
             <Button variant="danger" onClick={onCancel} startIcon={<CircleOff className="h-4 w-4" />} disabled={busy}>
               {t("programs.learners.actions.cancel")}
@@ -736,10 +894,13 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const programQuery = useAdminAcademyProgramEnrollments(programId, params);
   const programData = programQuery.data;
   const items = programData?.items ?? [];
-  const selectedItem = useMemo(
+  const selectedListItem = useMemo(
     () => items.find((item) => item.id === selectedEnrollmentId) ?? null,
     [items, selectedEnrollmentId],
   );
+  const selectedDetailQuery = useAdminAcademyProgramEnrollment(selectedEnrollmentId, isDetailOpen);
+  const selectedItem = selectedDetailQuery.data?.item ?? selectedListItem;
+  const accountStatusQuery = useAdminAcademyEnrollmentAccountStatus(selectedEnrollmentId);
 
   useEffect(() => {
     if (isDetailOpen && selectedEnrollmentId && !items.some((item) => item.id === selectedEnrollmentId)) {
@@ -755,6 +916,10 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
   const certifyMutation = useMarkCertifiedAdminAcademyProgramEnrollment();
   const uploadCertificateMutation = useUploadAdminAcademyProgramEnrollmentCertificate();
   const bulkMutation = useBulkAdminAcademyProgramEnrollments();
+  const createAccountMutation = useCreateAdminAcademyEnrollmentAccount();
+  const lookupAccountMutation = useLookupAdminAcademyEnrollmentAccount();
+  const linkAccountMutation = useLinkAdminAcademyEnrollmentAccount();
+  const resetAccountMutation = useResetAdminAcademyTraineePassword();
 
   const sortConfig: SortConfig = {
     column: initialSortBy,
@@ -1049,14 +1214,6 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         {t("programs.learners.bulk.complete")}
       </Button>
       <Button
-        variant="secondary"
-        disabled={selectedCount === 0}
-        onClick={() => handleBulkAction("MARK_CERTIFIED")}
-        startIcon={<BadgeCheck className="h-4 w-4" />}
-      >
-        {t("programs.learners.bulk.certify")}
-      </Button>
-      <Button
         variant="danger"
         disabled={selectedCount === 0}
         onClick={() => setBulkCancelOpen(true)}
@@ -1266,7 +1423,26 @@ export default function AdminAcademyProgramLearnersScreen({ programId }: Props) 
         canManageCertificate={canManageCertificate}
         certificateUploading={uploadCertificateMutation.isPending}
         onUploadCertificate={handleCertificateUpload}
-        busy={cancelMutation.isPending || completeMutation.isPending || certifyMutation.isPending || bulkMutation.isPending}
+        accountStatus={accountStatusQuery.data ?? null}
+        accountLoading={accountStatusQuery.isFetching || lookupAccountMutation.isPending || createAccountMutation.isPending || linkAccountMutation.isPending || resetAccountMutation.isPending}
+        onLookupAccount={async (email) => {
+          if (!selectedItem) return null;
+          return lookupAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+        }}
+        onCreateAccount={async (email) => {
+          if (!selectedItem) return null;
+          const result = await createAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+          return result.temporaryCredentials;
+        }}
+        onLinkAccount={async (email) => {
+          if (!selectedItem) return;
+          await linkAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, email });
+        }}
+        onResetAccount={async (password) => {
+          if (!selectedItem) return;
+          await resetAccountMutation.mutateAsync({ enrollmentId: selectedItem.id, newPassword: password });
+        }}
+        busy={cancelMutation.isPending || completeMutation.isPending || certifyMutation.isPending || bulkMutation.isPending || createAccountMutation.isPending || linkAccountMutation.isPending || resetAccountMutation.isPending}
       />
 
       <LearnerFormDrawer

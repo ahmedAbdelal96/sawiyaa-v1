@@ -24,6 +24,7 @@ export class InstantBookingRequestRepository {
       preferredMode: SessionMode;
       expiresAt: Date;
       metadataJson?: Prisma.InputJsonValue;
+      idempotencyKey?: string | null;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -36,6 +37,13 @@ export class InstantBookingRequestRepository {
   findById(requestId: string, tx?: Prisma.TransactionClient) {
     return this.getDb(tx).instantBookingRequest.findUnique({
       where: { id: requestId },
+      include: this.requestInclude,
+    });
+  }
+
+  findByPatientIdempotencyKey(patientId: string, idempotencyKey: string) {
+    return this.prisma.instantBookingRequest.findUnique({
+      where: { patientId_idempotencyKey: { patientId, idempotencyKey } },
       include: this.requestInclude,
     });
   }

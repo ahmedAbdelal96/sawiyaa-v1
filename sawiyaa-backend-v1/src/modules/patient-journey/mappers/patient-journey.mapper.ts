@@ -8,6 +8,7 @@ import {
   SupportTicketStatus,
   SupportTicketType,
 } from '@prisma/client';
+import { SessionOperationalInterpretation } from '@modules/sessions/types/session-operational-interpretation.types';
 import {
   PatientJourneyNextStepViewModel,
   PatientJourneyViewModel,
@@ -19,6 +20,7 @@ export class PatientJourneyMapper {
     upcomingSession: {
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: Date | null;
       scheduledEndAt: Date | null;
       practitioner: {
@@ -54,6 +56,7 @@ export class PatientJourneyMapper {
     recentPastSessions: Array<{
       id: string;
       status: SessionStatus;
+      operational: SessionOperationalInterpretation;
       scheduledStartAt: Date | null;
       scheduledEndAt: Date | null;
       practitioner: {
@@ -121,6 +124,7 @@ export class PatientJourneyMapper {
           ? {
               id: input.upcomingSession.id,
               status: input.upcomingSession.status,
+              operational: input.upcomingSession.operational,
               scheduledStartAt:
                 input.upcomingSession.scheduledStartAt?.toISOString() ?? null,
               scheduledEndAt:
@@ -168,6 +172,7 @@ export class PatientJourneyMapper {
         sessions: input.recentPastSessions.map((session) => ({
           id: session.id,
           status: session.status,
+          operational: session.operational,
           scheduledStartAt: session.scheduledStartAt?.toISOString() ?? null,
           scheduledEndAt: session.scheduledEndAt?.toISOString() ?? null,
           practitioner: {

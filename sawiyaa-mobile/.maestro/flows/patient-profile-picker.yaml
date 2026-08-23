@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Profile|الملف الشخصي"
+- tapOn:
+    text: "Edit profile|تعديل الملف الشخصي"
+- assertVisible:
+    id: "patient-profile-edit-screen"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

@@ -152,7 +152,7 @@ export default function EditPatientProfileScreen() {
   };
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="patient-profile-edit-screen">
       <Header title={t("profileScreen.edit.screenTitle")} showBack />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

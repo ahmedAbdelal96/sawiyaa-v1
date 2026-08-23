@@ -68,6 +68,7 @@ export class ResolveSessionPaymentPricingService {
       session: input.session,
       requestCountryIsoCode: input.requestCountryIsoCode,
       couponCode: input.couponCode ?? null,
+      requireCommissionRule: true,
     });
   }
 }

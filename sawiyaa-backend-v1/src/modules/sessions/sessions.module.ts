@@ -9,8 +9,10 @@ import { CustomerWalletsModule } from '@modules/customer-wallets/customer-wallet
 import { FinancialOperationsModule } from '@modules/financial-operations/financial-operations.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { ConfigModule } from '@modules/config/config.module';
+import { ChatModule } from '@modules/chat/chat.module';
 import { PaymentsModule } from '@modules/payments/payments.module';
 import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
+import { PractitionersModule } from '@modules/practitioners/practitioners.module';
 import { AdminSessionsOperationsController } from './controllers/admin-sessions-operations.controller';
 import { PatientSessionsController } from './controllers/patient-sessions.controller';
 import { PractitionerSessionsController } from './controllers/practitioner-sessions.controller';
@@ -52,7 +54,6 @@ import { GetSessionDetailsUseCase } from './use-cases/get-session-details.use-ca
 import { PreviewSessionCancellationUseCase } from './use-cases/preview-session-cancellation.use-case';
 import { InspectAdminSessionRuntimeUseCase } from './use-cases/inspect-admin-session-runtime.use-case';
 import { HandleDailyAttendanceWebhookUseCase } from './use-cases/handle-daily-attendance-webhook.use-case';
-import { MarkSessionCompletedByPractitionerUseCase } from './use-cases/mark-session-completed-by-practitioner.use-case';
 import { MarkSessionNoShowByPractitionerUseCase } from './use-cases/mark-session-no-show-by-practitioner.use-case';
 import { PrepareSessionRuntimeUseCase } from './use-cases/prepare-session-runtime.use-case';
 import { ResolveSessionJoinContractUseCase } from './use-cases/resolve-session-join-contract.use-case';
@@ -75,13 +76,15 @@ import { SESSION_ATTENDANCE_RECONCILIATION_PROVIDER } from './providers/session-
 import { ReconcileSessionAttendanceUseCase } from './use-cases/reconcile-session-attendance.use-case';
 import { SessionAttendanceReconciliationSweeperService } from './services/session-attendance-reconciliation-sweeper.service';
 import { CompleteSessionTransactionService } from './services/complete-session-transaction.service';
-import { FinalizeSessionAutomaticallyAsCompletedUseCase } from './use-cases/finalize-session-automatically-as-completed.use-case';
-import { SessionAutomaticCompletionSweeperService } from './services/session-automatic-completion-sweeper.service';
 import { AdminSessionResolutionService } from './services/admin-session-resolution.service';
+import { AdminSessionResolutionPolicyService } from './services/admin-session-resolution-policy.service';
 import { MySessionController } from './controllers/my-session.controller';
 import { GetMyNextSessionUseCase } from './use-cases/get-my-next-session.use-case';
 import { SessionJoinBootstrapController } from './controllers/session-join-bootstrap.controller';
 import { RescheduleSessionService } from './services/reschedule-session.service';
+import { ParticipantSessionOutcomeBoundaryService } from './services/participant-session-outcome-boundary.service';
+import { SessionOperationalInterpreterService } from './services/session-operational-interpreter.service';
+import { ResolvePractitionerSessionCommandActionsService } from './services/resolve-practitioner-session-command-actions.service';
 
 /**
  * Sessions Module is the operational source of truth for scheduled consultations.
@@ -96,6 +99,8 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     FinancialOperationsModule,
     forwardRef(() => PaymentsModule),
     ConfigModule,
+    ChatModule,
+    PractitionersModule,
   ],
   controllers: [
     PatientSessionsController,
@@ -122,10 +127,13 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     ValidateSessionBookingRequestService,
     ValidateSessionStatusTransitionService,
     SessionLifecycleService,
+    ParticipantSessionOutcomeBoundaryService,
     SessionCompletionConfirmationSweeperService,
     ValidateSessionCancellationPolicyRulesService,
     EvaluateSessionCancellationPolicyService,
     ResolvePatientSessionActionsService,
+    SessionOperationalInterpreterService,
+    ResolvePractitionerSessionCommandActionsService,
     ApplySessionCancellationFinancialEffectsService,
     ApplyManualNoShowFinancialEffectsService,
     ExpireUnpaidSessionSweeperService,
@@ -148,7 +156,6 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     PreviewSessionCancellationUseCase,
     InspectAdminSessionRuntimeUseCase,
     HandleDailyAttendanceWebhookUseCase,
-    MarkSessionCompletedByPractitionerUseCase,
     MarkSessionNoShowByPractitionerUseCase,
     PrepareSessionRuntimeUseCase,
     ResolveSessionJoinContractUseCase,
@@ -175,9 +182,8 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     RescheduleSessionService,
     SessionAttendanceReconciliationSweeperService,
     CompleteSessionTransactionService,
-    FinalizeSessionAutomaticallyAsCompletedUseCase,
-    SessionAutomaticCompletionSweeperService,
     AdminSessionResolutionService,
+    AdminSessionResolutionPolicyService,
     GetMyNextSessionUseCase,
     RescheduleSessionService,
   ],
@@ -189,6 +195,7 @@ import { RescheduleSessionService } from './services/reschedule-session.service'
     ValidateSessionConflictsService,
     ValidateSessionStatusTransitionService,
     SessionLifecycleService,
+    SessionOperationalInterpreterService,
     ExpireUnpaidSessionUseCase,
     ReconcileSessionAttendanceUseCase,
   ],

@@ -6,7 +6,9 @@ export type ReviewableProfileField =
   | 'yearsOfExperience'
   | 'practitionerType'
   | 'practitionerGender'
-  | 'countryCode';
+  | 'countryCode'
+  | 'professionalContent'
+  | 'primaryContentLocale';
 
 /** Central source of truth for profile fields that must remain staged until review. */
 @Injectable()
@@ -18,6 +20,8 @@ export class PractitionerChangeReviewPolicy {
     'practitionerType',
     'practitionerGender',
     'countryCode',
+    'professionalContent',
+    'primaryContentLocale',
   ];
 
   getChangedProfileFields(input: Record<string, unknown>) {

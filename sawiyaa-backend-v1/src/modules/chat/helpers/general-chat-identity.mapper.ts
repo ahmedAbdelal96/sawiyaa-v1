@@ -3,6 +3,8 @@ import {
   PractitionerStatus,
   UserStatus,
 } from '@prisma/client';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import { GeneralChatParticipantIdentityDto } from '../dto/general-chat-response.dto';
 
 export type GeneralChatParticipantDirectoryRecord = {
@@ -15,6 +17,12 @@ export type GeneralChatParticipantDirectoryRecord = {
   practitionerProfile: {
     avatarUrl: string | null;
     professionalTitle: string | null;
+    primaryContentLocale: SupportedLocale | null;
+    professionalContentTranslations: Array<{
+      locale: SupportedLocale;
+      professionalTitle: string | null;
+      bio: string | null;
+    }>;
     status: PractitionerStatus;
     isPublicProfilePublished: boolean;
     primarySpecialtyCategory: {
@@ -55,9 +63,11 @@ function resolveDisplayName(
 function resolveSubtitle(
   record: GeneralChatParticipantDirectoryRecord,
   role: ConversationParticipantRole,
+  resolvedProfessionalTitles?: ReadonlyMap<string, string | null>,
 ) {
   if (role === ConversationParticipantRole.PRACTITIONER) {
     return (
+      resolvedProfessionalTitles?.get(record.id) ??
       normalizeText(record.practitionerProfile?.professionalTitle) ??
       normalizeText(
         record.practitionerProfile?.primarySpecialtyCategory?.name,
@@ -96,6 +106,7 @@ function resolveVerificationStatus(
 export function buildGeneralChatParticipantIdentity(
   participant: GeneralChatParticipantRow,
   directory: Map<string, GeneralChatParticipantDirectoryRecord>,
+  resolvedProfessionalTitles?: ReadonlyMap<string, string | null>,
 ): GeneralChatParticipantIdentityDto | null {
   const record = directory.get(participant.userId);
   if (!record) {
@@ -111,7 +122,11 @@ export function buildGeneralChatParticipantIdentity(
         ? (record.practitionerProfile?.avatarUrl ?? null)
         : null,
     role: participant.participantRole,
-    subtitle: resolveSubtitle(record, participant.participantRole),
+    subtitle: resolveSubtitle(
+      record,
+      participant.participantRole,
+      resolvedProfessionalTitles,
+    ),
     status: resolveStatus(record, participant.participantRole),
     verificationStatus: resolveVerificationStatus(
       record,
@@ -123,12 +138,41 @@ export function buildGeneralChatParticipantIdentity(
 export function buildGeneralChatParticipantSummary(
   participant: GeneralChatParticipantRow,
   directory: Map<string, GeneralChatParticipantDirectoryRecord>,
+  resolvedProfessionalTitles?: ReadonlyMap<string, string | null>,
 ) {
   return {
     userId: participant.userId,
     role: participant.participantRole,
-    identity: buildGeneralChatParticipantIdentity(participant, directory),
+    identity: buildGeneralChatParticipantIdentity(
+      participant,
+      directory,
+      resolvedProfessionalTitles,
+    ),
   };
+}
+
+export function resolveGeneralChatProfessionalTitles(
+  records: GeneralChatParticipantDirectoryRecord[],
+  requestedLocale: SupportedLocale,
+  professionalContentResolver: PractitionerProfessionalContentResolver,
+) {
+  return new Map(
+    records.map((record) => {
+      const profile = record.practitionerProfile;
+      if (!profile) {
+        return [record.id, null] as const;
+      }
+
+      const resolved = professionalContentResolver.resolve({
+        requestedLocale,
+        primaryContentLocale: profile.primaryContentLocale,
+        translations: profile.professionalContentTranslations,
+        legacyProfessionalTitle: profile.professionalTitle,
+      });
+
+      return [record.id, resolved.professionalTitle] as const;
+    }),
+  );
 }
 
 export function buildGeneralChatParticipantDirectoryMap(

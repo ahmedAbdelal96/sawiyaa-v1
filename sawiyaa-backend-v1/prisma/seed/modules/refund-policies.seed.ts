@@ -220,7 +220,6 @@ async function seedRefundPolicy(
     await prisma.refundPolicyClause.createMany({
       data: seed.clauses.map((clause) => ({
         policyId: created.id,
-        titleAr: clause.titleAr,
         titleEn: clause.titleEn,
         bodyAr: clause.bodyAr,
         bodyEn: clause.bodyEn,
@@ -253,7 +252,6 @@ async function seedRefundPolicy(
   await prisma.refundPolicyClause.createMany({
     data: seed.clauses.map((clause) => ({
       policyId: existing.id,
-      titleAr: clause.titleAr,
       titleEn: clause.titleEn,
       bodyAr: clause.bodyAr,
       bodyEn: clause.bodyEn,

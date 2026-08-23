@@ -5,6 +5,7 @@ export type SessionStatus =
   | "UPCOMING"
   | "READY_TO_JOIN"
   | "IN_PROGRESS"
+  | "AWAITING_ADMIN_RESOLUTION"
   | "AWAITING_COMPLETION_CONFIRMATION"
   | "COMPLETED"
   | "CANCELLED"
@@ -12,8 +13,6 @@ export type SessionStatus =
   | "PRACTITIONER_NO_SHOW"
   | "BOTH_NO_SHOW"
   | "EXPIRED";
-
-export type SessionPresentationStatus = SessionStatus;
 
 export type SessionPresentationFilter =
   | "all"
@@ -61,19 +60,22 @@ export type SessionChatAvailabilityReason =
   | "MODERATION_LOCKED"
   | "NOT_PARTICIPANT";
 
-export interface SessionJoinAvailability {
-  canJoin: boolean;
-  blockedReason: SessionJoinBlockedReason | null;
-  availableAt: string | null;
-  expiresAt: string | null;
-}
-
 export interface PatientSessionActions {
   canCancel: boolean;
   canPrepareRoom: boolean;
   canJoin: boolean;
   canPay: boolean;
   canReview: boolean;
+}
+
+export interface SessionOperationalInterpretation {
+  state: SessionStatus;
+  timelineBucket: "PENDING" | "ACTIONABLE" | "COMPLETED" | "TERMINAL" | "OTHER";
+  reasonCode: "LIFECYCLE_STATUS" | "ROOM_CLOSED_OUTCOME_UNRESOLVED" | "ADMIN_RESOLUTION_REQUIRED" | "REPLACED_BY_SUCCESSOR";
+  join: { allowed: boolean; reasonCode: SessionJoinBlockedReason | null; canPrepareRuntime: boolean; opensAt: string | null; closesAt: string | null };
+  actions: { canJoin: boolean; canPrepareRuntime: boolean; canCancel: boolean; canPay: boolean; canReview: boolean; canMarkPatientNoShow: boolean; noShowReasonCode: string | null };
+  room: { state: "NOT_APPLICABLE" | "OPEN" | "CLOSED" | "NOT_PREPARED"; closedAt: string | null };
+  resolution: { required: boolean; finalDecision: string | null };
 }
 
 export interface SessionChatAvailability {
@@ -123,16 +125,15 @@ export interface SessionListItem {
   id: string;
   sessionCode: string;
   status: SessionStatus;
-  presentationStatus: SessionPresentationStatus;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;
   sessionMode: SessionMode;
   practitioner: SessionPractitionerSummary;
   patient: SessionPatientSummary | null;
-  joinAvailability: SessionJoinAvailability;
   actions: PatientSessionActions;
   chatAvailability: SessionChatAvailability;
+  operational: SessionOperationalInterpretation;
 }
 
 export interface SessionDetails extends SessionListItem {

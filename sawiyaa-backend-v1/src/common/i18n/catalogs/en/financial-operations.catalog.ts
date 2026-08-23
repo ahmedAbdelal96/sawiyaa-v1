@@ -3,7 +3,7 @@ export const enFinancialOperationsCatalog = {
     paymentNotFound: 'Payment was not found.',
     paymentNotCaptured: 'Only captured payments can be posted to ledger.',
     paymentSnapshotsIncomplete:
-      'Payment financial snapshots are incomplete for ledger posting.',
+      'This wallet refund cannot be executed because the payment data saved for this Session is incomplete. Review the payment details before confirming the decision.',
     practitionerNotFound: 'Practitioner profile was not found.',
     settlementItemNotFound: 'Practitioner settlement was not found.',
     settlementPayoutNotFound: 'Practitioner payout was not found.',

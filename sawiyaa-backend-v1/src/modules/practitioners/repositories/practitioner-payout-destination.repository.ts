@@ -43,6 +43,8 @@ export class PractitionerPayoutDestinationRepository {
         iban: data.iban ?? null,
         walletProvider: data.walletProvider ?? null,
         walletIdentifier: data.walletIdentifier ?? null,
+        instapayIdentifier: data.instapayIdentifier ?? null,
+        paypalEmail: data.paypalEmail ?? null,
         otherDetails: data.otherDetails ?? null,
       },
       update: {
@@ -54,6 +56,8 @@ export class PractitionerPayoutDestinationRepository {
         iban: data.iban ?? null,
         walletProvider: data.walletProvider ?? null,
         walletIdentifier: data.walletIdentifier ?? null,
+        instapayIdentifier: data.instapayIdentifier ?? null,
+        paypalEmail: data.paypalEmail ?? null,
         otherDetails: data.otherDetails ?? null,
       },
     });

@@ -30,9 +30,12 @@ export class PractitionerApplicationMapper {
       submissionSnapshot: input.submissionSnapshot,
       completion: input.completion,
       reviewCase: input.reviewCase
-        ? {
+          ? {
             id: input.reviewCase.id,
+            caseType: input.reviewCase.caseType,
             status: input.reviewCase.status,
+            submittedAt: input.reviewCase.submittedAt,
+            dueAt: input.reviewCase.dueAt,
             proposedSnapshot:
               input.reviewCase.proposedSnapshot &&
               typeof input.reviewCase.proposedSnapshot === 'object' &&

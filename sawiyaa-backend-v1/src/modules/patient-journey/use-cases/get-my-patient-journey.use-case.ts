@@ -6,6 +6,7 @@ import { PatientJourneyPatientRepository } from '../repositories/patient-journey
 import { PatientJourneyReadRepository } from '../repositories/patient-journey-read.repository';
 import { BuildPatientJourneyLinkedContentService } from '../services/build-patient-journey-linked-content.service';
 import { BuildPatientJourneyNextStepsService } from '../services/build-patient-journey-next-steps.service';
+import { SessionOperationalInterpreterService } from '@modules/sessions/services/session-operational-interpreter.service';
 
 @Injectable()
 export class GetMyPatientJourneyUseCase {
@@ -17,6 +18,7 @@ export class GetMyPatientJourneyUseCase {
     private readonly buildPatientJourneyNextStepsService: BuildPatientJourneyNextStepsService,
     private readonly buildPatientJourneyLinkedContentService: BuildPatientJourneyLinkedContentService,
     private readonly patientJourneyMapper: PatientJourneyMapper,
+    private readonly sessionOperationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: { userId: string }) {
@@ -72,6 +74,28 @@ export class GetMyPatientJourneyUseCase {
         upcomingSession?.id,
       );
 
+    // Journey is a consumer, not a Session-policy owner.  These rows already
+    // contain every persisted fact required by the interpreter; ADMIN avoids
+    // participant-action lookups while preserving one request-level clock.
+    const [upcomingSessionWithOperational, recentPastSessionsWithOperational] =
+      await Promise.all([
+        upcomingSession
+          ? this.sessionOperationalInterpreter
+              .interpret({ session: upcomingSession, actor: 'ADMIN', now: nowUtc })
+              .then((operational) => ({ ...upcomingSession, operational }))
+          : Promise.resolve(null),
+        Promise.all(
+          recentPastSessions.map(async (session) => ({
+            ...session,
+            operational: await this.sessionOperationalInterpreter.interpret({
+              session,
+              actor: 'ADMIN',
+              now: nowUtc,
+            }),
+          })),
+        ),
+      ]);
+
     const normalizedSignalContext =
       await this.buildNormalizedCareSignalContextService.buildFromRepository({
         patientProfileId: patient.id,
@@ -108,10 +132,10 @@ export class GetMyPatientJourneyUseCase {
 
     return {
       item: this.patientJourneyMapper.toViewModel({
-        upcomingSession,
+        upcomingSession: upcomingSessionWithOperational,
         pendingPayment,
         pendingInstantBookingRequest,
-        recentPastSessions,
+        recentPastSessions: recentPastSessionsWithOperational,
         recentAssessments,
         recentMatching,
         recentPayments,

@@ -46,8 +46,8 @@ export function formatLocalizedMoney(input: LocalizedMoneyInput): string | null 
 
   if (isArabic) {
     return currencyCode === "USD"
-      ? `${formattedAmount} دولار أمريكي`
-      : `${formattedAmount} جنيه مصري`;
+      ? `${formattedAmount} دولار`
+      : `${formattedAmount} جنيه`;
   }
 
   return currencyCode === "USD"

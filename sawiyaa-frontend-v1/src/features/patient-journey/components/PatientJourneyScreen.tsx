@@ -471,7 +471,7 @@ export default function PatientJourneyScreen() {
                     {t("upcoming.session.heading")}
                   </p>
                   <span className="inline-flex items-center rounded-full bg-primary-light px-2.5 py-0.5 text-xs font-medium text-primary">
-                    {tSessions(`status.${upcomingSession.status}` as any)}
+                    {tSessions(`status.${upcomingSession.operational.state}` as any)}
                   </span>
                 </div>
                 <p className="text-lg font-bold text-text-primary leading-tight">
@@ -824,7 +824,7 @@ export default function PatientJourneyScreen() {
                         )}
                       </div>
                       <span className="shrink-0 inline-flex rounded-full bg-primary-light px-2.5 py-1 text-[10px] font-semibold text-primary border border-primary/10">
-                        {tSessions(`status.${session.status}` as any)}
+                        {tSessions(`status.${session.operational.state}` as any)}
                       </span>
                     </Link>
                   ))}

@@ -67,6 +67,8 @@ export class PrepareSessionRuntimeUseCase {
       sessionMode: session.sessionMode,
       scheduledStartAt: session.scheduledStartAt,
       scheduledEndAt: session.scheduledEndAt,
+      joinOpenAt: session.joinOpenAt,
+      joinCloseAt: session.joinCloseAt,
       provider: session.provider,
       providerRoomId: session.providerRoomId,
       providerSessionRef: session.providerSessionRef,
@@ -112,22 +114,68 @@ export class PrepareSessionRuntimeUseCase {
       });
     }
 
-    const resolvedProvider =
-      this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
-        session,
-      );
-    const adapter =
-      this.sessionVideoProviderRegistryService.get(resolvedProvider);
-    const room = await adapter.createRoom({
-      sessionId: session.id,
-      startsAt: session.scheduledStartAt,
-      endsAt: session.scheduledEndAt,
-    });
-    const roomId = room.roomId || room.roomName;
-
     const updated = await this.prisma.$transaction(async (tx) => {
+      await this.sessionRepository.lockRuntimePreparation(session.id, tx);
+      const current = await this.sessionRepository.findById(session.id, tx);
+      if (!current) {
+        throw new NotFoundException({
+          messageKey: 'sessions.errors.sessionNotFound',
+          error: 'SESSION_NOT_FOUND',
+        });
+      }
+      const currentDecision =
+        await this.sessionRepository.findLatestActiveSessionAdminDecision(
+          current.id,
+          tx,
+        );
+      const currentReadiness = this.resolveSessionJoinReadinessService.resolve({
+        status: current.status,
+        sessionMode: current.sessionMode,
+        scheduledStartAt: current.scheduledStartAt,
+        scheduledEndAt: current.scheduledEndAt,
+        joinOpenAt: current.joinOpenAt,
+        joinCloseAt: current.joinCloseAt,
+        provider: current.provider,
+        providerRoomId: current.providerRoomId,
+        providerSessionRef: current.providerSessionRef,
+        videoRoomClosedAt: current.videoRoomClosedAt,
+        finalManualDecision: currentDecision?.decisionType ?? null,
+        now: new Date(),
+      });
+      if (!currentReadiness.canPrepareRuntime) {
+        throw new ConflictException({
+          messageKey: 'sessions.errors.runtimePreparationNotAllowed',
+          error: 'SESSION_RUNTIME_PREPARATION_NOT_ALLOWED',
+          messageParams: { reason: currentReadiness.blockedReason },
+        });
+      }
+      if (
+        current.provider !== SessionProvider.NONE &&
+        current.providerRoomId &&
+        current.providerSessionRef
+      ) {
+        return current;
+      }
+      if (!current.scheduledStartAt || !current.scheduledEndAt) {
+        throw new BadRequestException({
+          messageKey: 'sessions.errors.sessionScheduleMissing',
+          error: 'SESSION_SCHEDULE_MISSING',
+        });
+      }
+
+      const resolvedProvider =
+        this.sessionVideoProviderResolverService.resolvePreparedProviderForSession(
+          current,
+        );
+      const adapter = this.sessionVideoProviderRegistryService.get(resolvedProvider);
+      const room = await adapter.createRoom({
+        sessionId: current.id,
+        startsAt: current.scheduledStartAt,
+        endsAt: current.scheduledEndAt,
+      });
+      const roomId = room.roomId || room.roomName;
       const updateResult = await this.sessionRepository.updateRuntimeIfMissing(
-        session.id,
+        current.id,
         {
           provider: resolvedProvider,
           providerRoomId: roomId,
@@ -136,7 +184,7 @@ export class PrepareSessionRuntimeUseCase {
         tx,
       );
 
-      const persisted = await this.sessionRepository.findById(session.id, tx);
+      const persisted = await this.sessionRepository.findById(current.id, tx);
       if (!persisted) {
         throw new NotFoundException({
           messageKey: 'sessions.errors.sessionNotFound',
@@ -147,7 +195,7 @@ export class PrepareSessionRuntimeUseCase {
       if (updateResult.count > 0) {
         await this.sessionRepository.createEvent(
           {
-            sessionId: session.id,
+            sessionId: current.id,
             eventType: SessionEventType.PROVIDER_ROOM_CREATED,
             actorType: input.userId
               ? SecurityAuditActorType.USER

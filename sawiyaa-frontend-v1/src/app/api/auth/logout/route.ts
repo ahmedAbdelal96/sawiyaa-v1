@@ -17,16 +17,18 @@ export async function POST(request: NextRequest) {
     const logoutEndpoint = await getLogoutEndpointForCurrentRole();
 
     if (refreshToken && logoutEndpoint) {
-      fetch(logoutEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`,
-        },
-        body: JSON.stringify({ refreshToken }),
-      }).catch(() => {
-        // Ignore backend logout failures and continue clearing cookies locally.
-      });
+      try {
+        await fetch(logoutEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${refreshToken}`,
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+      } catch {
+        // Local logout remains fail-safe when the backend is unavailable.
+      }
     }
 
     await clearAuthCookies();

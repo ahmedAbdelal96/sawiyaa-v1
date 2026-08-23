@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import Button from "@/components/ui/button/Button";
 import {
@@ -138,7 +138,6 @@ export default function PatientAssessmentDefinitionScreen({
     );
   }
 
-  const locale = useLocale();
 
   if (!started) {
     return (
@@ -160,19 +159,19 @@ export default function PatientAssessmentDefinitionScreen({
           {/* Metadata Parameters Grid (Non-Card Text Grid) */}
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-6 border-t border-b border-border-light/60 py-6 text-start">
             <div>
-              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "المدة المقدرة" : "Estimated Duration"}</p>
+              <p className="text-xs font-semibold text-text-muted">{t("detail.meta.estimatedDuration")}</p>
               <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white">
                 {item.estimatedDurationMinutes !== null ? t("detail.meta.duration", { value: item.estimatedDurationMinutes }) : t("detail.optional")}
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "عدد الأسئلة" : "Questions Count"}</p>
+              <p className="text-xs font-semibold text-text-muted">{t("detail.meta.questionCountLabel")}</p>
               <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white">
                 {t("detail.meta.questionCount", { value: questions.length })}
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-text-muted">{locale === "ar" ? "الخصوصية" : "Privacy"}</p>
+              <p className="text-xs font-semibold text-text-muted">{t("detail.meta.privacy")}</p>
               <p className="mt-1.5 text-sm sm:text-base font-bold text-text-primary dark:text-white flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <span>{t("detail.trustTitle")}</span>

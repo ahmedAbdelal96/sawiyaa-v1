@@ -10,6 +10,11 @@ export class CustomerWalletPatientRepository {
       where: { userId },
       select: {
         id: true,
+        country: {
+          select: {
+            currencyCode: true,
+          },
+        },
       },
     });
   }
@@ -19,6 +24,11 @@ export class CustomerWalletPatientRepository {
       where: { id: patientId },
       select: {
         id: true,
+        country: {
+          select: {
+            currencyCode: true,
+          },
+        },
       },
     });
   }

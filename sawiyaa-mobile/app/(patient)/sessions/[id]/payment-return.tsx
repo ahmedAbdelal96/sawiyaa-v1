@@ -17,20 +17,8 @@ import { useReconcileSessionPaymentReturn } from "../../../../src/features/patie
 import { normalizePaymentRedirectStatus } from "../../../../src/features/patient/payments/return-utils";
 import { trackAnalyticsEvent } from "../../../../src/lib/analytics";
 
-const CONFIRMED_SESSION_STATUSES = new Set([
-  "UPCOMING",
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-  "COMPLETED",
-]);
-
 const POLL_INTERVAL_MS = 3_000;
 const MAX_POLL_DURATION_MS = 45_000; // Extended from 15s to allow for delayed webhook processing
-
-function isConfirmedStatus(status: string | null | undefined) {
-  return Boolean(status && CONFIRMED_SESSION_STATUSES.has(status));
-}
 
 export default function SessionPaymentReturnScreen() {
   const router = useRouter();
@@ -86,14 +74,14 @@ export default function SessionPaymentReturnScreen() {
   useEffect(() => {
     if (!pollingActive || !sessionId) return;
 
-    if (isConfirmedStatus(sessionQuery.data?.status)) {
+    if (sessionQuery.data?.operational?.timelineBucket !== "PENDING") {
       setPollingActive(false);
       return;
     }
 
     if (
-      sessionQuery.data?.status === "EXPIRED" ||
-      sessionQuery.data?.status === "CANCELLED"
+      sessionQuery.data?.operational?.state === "EXPIRED" ||
+      sessionQuery.data?.operational?.state === "CANCELLED"
     ) {
       setPollingActive(false);
       return;
@@ -105,7 +93,7 @@ export default function SessionPaymentReturnScreen() {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
-  }, [pollingActive, sessionId, sessionQuery, sessionQuery.data?.status]);
+  }, [pollingActive, sessionId, sessionQuery, sessionQuery.data?.operational]);
 
   useEffect(() => {
     if (!sessionId || !shouldAttemptSuccessRecovery) return;
@@ -140,20 +128,33 @@ export default function SessionPaymentReturnScreen() {
 
   useEffect(() => {
     if (!sessionQuery.data) return;
-    if (!isConfirmedStatus(sessionQuery.data.status)) return;
+    const paymentStatus = reconcileMutation.data?.item?.status;
+    if (!(paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED")) return;
+    if (sessionQuery.data.operational?.timelineBucket === "PENDING") return;
 
-    router.replace(`/(patient)/sessions/${sessionId}`);
-  }, [router, sessionId, sessionQuery.data]);
+    router.replace({
+      pathname: "/(patient)/sessions/success",
+      params: {
+        sessionId,
+        status: "CONFIRMED",
+        practitionerName: sessionQuery.data.practitioner.displayName ?? undefined,
+        sessionStartAt: sessionQuery.data.scheduledStartAt ?? undefined,
+        durationMinutes: String(sessionQuery.data.durationMinutes),
+      },
+    });
+  }, [reconcileMutation.data?.item?.status, router, sessionId, sessionQuery.data]);
 
   useEffect(() => {
     if (!sessionQuery.data) {
       return;
     }
 
-    const currentStatus = sessionQuery.data.status;
-    const currentIsPendingPayment = currentStatus === "PENDING_PAYMENT";
+    const currentStatus = sessionQuery.data.operational?.state ?? null;
+    const currentIsPayable = sessionQuery.data.operational?.actions.canPay === true;
+    const paymentStatus = reconcileMutation.data?.item?.status;
 
-    if (isConfirmedStatus(currentStatus)) {
+    if ((paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED") &&
+      sessionQuery.data.operational?.timelineBucket !== "PENDING") {
       if (trackedOutcomeRef.current !== "succeeded") {
         trackedOutcomeRef.current = "succeeded";
         trackAnalyticsEvent("payment_succeeded", {
@@ -167,10 +168,10 @@ export default function SessionPaymentReturnScreen() {
     }
 
     const shouldMarkFailed =
-      (currentIsPendingPayment &&
+      (currentIsPayable &&
         (normalizedRedirectStatus === "failed" ||
           normalizedRedirectStatus === "canceled")) ||
-      (currentIsPendingPayment &&
+      (currentIsPayable &&
         !pollingActive &&
         trackedOutcomeRef.current !== "failed");
 
@@ -188,14 +189,17 @@ export default function SessionPaymentReturnScreen() {
     pollingActive,
     recoveryMode,
     sessionId,
+    reconcileMutation.data?.item?.status,
     sessionQuery.data,
   ]);
 
-  const status = sessionQuery.data?.status;
-  const isConfirmed = isConfirmedStatus(status);
-  const isPendingPayment = status === "PENDING_PAYMENT";
-  const isExpired = status === "EXPIRED";
-  const isCancelled = status === "CANCELLED";
+  const operational = sessionQuery.data?.operational;
+  const paymentStatus = reconcileMutation.data?.item?.status;
+  const isConfirmed = (paymentStatus === "CAPTURED" || paymentStatus === "AUTHORIZED") &&
+    operational?.timelineBucket !== "PENDING";
+  const isPendingPayment = operational?.actions.canPay === true;
+  const isExpired = operational?.state === "EXPIRED";
+  const isCancelled = operational?.state === "CANCELLED";
   const reconcileErrorMessage = reconcileMutation.isError
     ? t("patientPaymentsFlow.return.reconcileErrorNote")
     : null;
@@ -319,7 +323,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (!sessionId) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header
           showBack
           onBack={() => router.replace("/(patient)/sessions")}
@@ -341,7 +345,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (sessionQuery.isLoading && !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <LoadingState fullScreen />
       </Screen>
@@ -350,7 +354,7 @@ export default function SessionPaymentReturnScreen() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="payment-return-screen">
         <Header showBack title={t("patientPaymentsFlow.return.title")} />
         <View style={styles.centerState}>
           <Text weight="600" style={styles.centerTitle}>
@@ -368,7 +372,7 @@ export default function SessionPaymentReturnScreen() {
   }
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="payment-return-screen">
       <Header showBack title={t("patientPaymentsFlow.return.title")} />
 
       <ScrollView contentContainerStyle={styles.content}>

@@ -37,6 +37,15 @@ export class AdminPractitionerProfileRepository {
         avatarUrl: true,
         professionalTitle: true,
         bio: true,
+        primaryContentLocale: true,
+        professionalContentTranslations: {
+          orderBy: { locale: 'asc' },
+          select: {
+            locale: true,
+            professionalTitle: true,
+            bio: true,
+          },
+        },
         yearsOfExperience: true,
         sessionPrice30Egp: true,
         sessionPrice30Usd: true,
@@ -90,7 +99,9 @@ export class AdminPractitionerProfileRepository {
       where: { id: practitionerId },
       data: {
         status,
-        isPublicProfilePublished: true,
+        // Approval creates operational access only. Publication is an
+        // explicit post-approval admin action after canonical readiness.
+        isPublicProfilePublished: false,
       },
       select: {
         id: true,

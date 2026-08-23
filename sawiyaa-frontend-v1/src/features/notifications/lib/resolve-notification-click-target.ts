@@ -99,6 +99,28 @@ export function resolveNotificationClickTarget(
     if (reminderHref) return { kind: "href", href: reminderHref };
   }
 
+  if (input.item.typeSlug.startsWith("instant-booking.")) {
+    const routePath = normalizeNotificationHref(
+      typeof input.item.payload["routePath"] === "string"
+        ? (input.item.payload["routePath"] as string)
+        : null,
+    ) ?? normalizeNotificationHref(input.item.action?.href);
+
+    const createdSessionId = getStringField(input.item.payload, "createdSessionId") ?? getStringField(input.item.payload, "sessionId");
+
+    if (input.item.typeSlug === "instant-booking.request-accepted" && createdSessionId && input.role === "patient") {
+      return { kind: "href", href: `/patient/sessions/${createdSessionId}/pay` };
+    }
+
+    if (input.item.typeSlug === "instant-booking.request-created" && input.role === "practitioner") {
+      return { kind: "href", href: "/practitioner/instant-booking" };
+    }
+
+    if (routePath) {
+      return { kind: "href", href: routePath };
+    }
+  }
+
   const primaryAction = input.item.primaryAction;
 
   if (primaryAction) {

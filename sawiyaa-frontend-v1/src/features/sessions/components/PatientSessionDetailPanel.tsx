@@ -34,16 +34,12 @@ import {
 import {
   buildProviderLaunchUrl,
   canLaunchProviderRuntime,
-  canPrepareSessionRuntime,
   formatProviderDisplayName,
   getRuntimeBlockedReasonKey,
   getRuntimePreparedState,
   getRuntimeProvider,
   getRuntimeRoomName,
-  hasSessionRuntimeAccess,
-  isJoinWindowOpen,
 } from "../lib/session-runtime";
-import { canOpenSessionChatFromPresentationStatus } from "../lib/session-presentation";
 import SessionStatusBadge from "./SessionStatusBadge";
 import { usePatientPayments } from "@/features/payments/hooks/use-payments";
 import { canContinuePayment, isPaymentExpired } from "@/features/payments/lib/payment-status";
@@ -66,14 +62,6 @@ function formatSessionAmount(value: string, numLocale: string, currencyCode: str
   return currencyCode
     ? formatFinanceMoney(numLocale, value, currencyCode, { fallbackText: "—" })
     : formatPlainAmount(value, numLocale);
-}
-
-function getSafeTranslation(
-  t: any,
-  key: string,
-  fallback: string,
-) {
-  return t.has?.(key) ? t(key) : fallback;
 }
 
 type SummaryFieldProps = {
@@ -316,27 +304,19 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
     );
   }
 
-  // Old client caches may not contain the new backend-owned action contract.
-  // Deny every action until a fresh response arrives rather than inferring from status.
-  const actions = session.actions ?? {
-    canCancel: false,
-    canPrepareRoom: false,
-    canJoin: false,
-    canPay: false,
-    canReview: false,
-  };
+  const operational = session.operational;
+  const operationalState = operational?.state ?? null;
   const reviewCompletedAt =
-    session.completedAt ?? (actions.canReview ? session.scheduledEndAt : null);
-  const isCancellable = actions.canCancel;
+    session.completedAt ?? (operational?.actions.canReview ? session.scheduledEndAt : null);
+  const isCancellable = operational?.actions.canCancel === true;
   const hasRuntimeAccess =
-    hasSessionRuntimeAccess(session.status) &&
-    (actions.canPrepareRoom || actions.canJoin);
+    operational?.actions.canPrepareRuntime === true || operational?.actions.canJoin === true;
   const paymentStateKey =
-    session.status === "PENDING_PAYMENT"
+    operationalState === "PENDING_PAYMENT"
       ? "PENDING_PAYMENT"
-      : session.status === "EXPIRED"
+      : operationalState === "EXPIRED"
         ? "EXPIRED"
-        : ["UPCOMING", "READY_TO_JOIN", "IN_PROGRESS", "COMPLETED"].includes(session.status)
+        : operational?.timelineBucket === "ACTIONABLE" || operational?.timelineBucket === "COMPLETED"
             ? "SECURED"
           : null;
   const sessionPayment = paymentsData?.items.find((payment) => payment.sessionId === session.id);
@@ -349,7 +329,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const isPaymentWindowExpired = isReservationExpired;
 
   const paymentDisplayStateKey =
-    isReservationExpired && session.status === "PENDING_PAYMENT"
+    isReservationExpired && operationalState === "PENDING_PAYMENT"
       ? "EXPIRED"
       : paymentStateKey;
 
@@ -362,39 +342,37 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
       ["CREATED", "PENDING", "REQUIRES_ACTION"].includes(sessionPayment.status) &&
       !isPaymentAttemptExpired
   );
-  const canJoinNow = joinResult?.canJoin ?? actions.canJoin;
+  const canJoinNow = joinResult?.canJoin ?? operational?.join.allowed ?? false;
   const blockedJoinReason =
-    joinResult?.blockedReason ?? session.joinAvailability?.blockedReason ?? null;
-  const isRoomClosed = blockedJoinReason === "SESSION_ROOM_CLOSED";
-  const canOpenSessionChat = canOpenSessionChatFromPresentationStatus(
-    session.presentationStatus,
-  );
+    joinResult?.blockedReason ?? operational?.join.reasonCode ?? null;
+  const isRoomClosed = operational?.room.state === "CLOSED";
+  const canOpenSessionChat = session.sessionChat?.available === true;
   const joinUrl = buildProviderLaunchUrl(joinResult);
   const runtimePrepared = getRuntimePreparedState({ prepareResult, joinResult });
   const runtimeProvider = getRuntimeProvider({ prepareResult, joinResult });
   const runtimeRoomName = getRuntimeRoomName({ prepareResult, joinResult });
   const runtimeProviderLabel = formatProviderDisplayName(runtimeProvider);
   const prepareAllowed =
-    actions.canPrepareRoom &&
+    operational?.actions.canPrepareRuntime === true &&
     hasRuntimeAccess &&
     !isRoomClosed &&
     !runtimePrepared &&
-    canPrepareSessionRuntime(session, joinResult);
-  const joinWindowOpen = isJoinWindowOpen(session, joinResult);
+    operational?.join.canPrepareRuntime === true;
+  const joinWindowOpen = operational?.join.allowed === true;
   const shouldShowJoinCheck =
     hasRuntimeAccess &&
     !isRoomClosed &&
     !(joinResult?.canJoin && canLaunchProviderRuntime(joinResult)) &&
     canJoinNow;
   const cancellationPreview = previewCancellationMutation.data;
-  const runtimeStatusNote = t(`detail.presentation.${session.presentationStatus}.note` as Parameters<
+  const runtimeStatusNote = t(`detail.presentation.${operationalState}.note` as Parameters<
     typeof t
   >[0]);
-  const runtimeStatusTitle = t(`detail.presentation.${session.presentationStatus}.title` as Parameters<
+  const runtimeStatusTitle = t(`detail.presentation.${operationalState}.title` as Parameters<
     typeof t
   >[0]);
   const runtimeStatusCloseout = t(
-    `detail.presentation.${session.presentationStatus}.closeout` as Parameters<typeof t>[0],
+    `detail.presentation.${operationalState}.closeout` as Parameters<typeof t>[0],
   );
   const sessionModeLabel = t(`detail.mode.${session.sessionMode}` as Parameters<
     typeof t
@@ -482,23 +460,9 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
   const supportHref = `/patient/messages?lane=support&relatedSessionId=${encodeURIComponent(
     session.id,
   )}`;
-  const roomCloseSupportHeading = getSafeTranslation(
-    t,
-    "detail.roomClose.support.heading",
-    locale.startsWith("ar") ? "هل تحتاج إلى مساعدة في هذه الجلسة؟" : "Need help with this session?",
-  );
-  const roomCloseSupportNote = getSafeTranslation(
-    t,
-    "detail.roomClose.support.note",
-    locale.startsWith("ar")
-      ? "إذا أُغلقت الغرفة بشكل غير متوقع أو احتجت إلى مراجعة ما حدث، يمكن للدعم مساعدتك."
-      : "If the room closed unexpectedly or you need help reviewing what happened, support can help.",
-  );
-  const roomCloseSupportAction = getSafeTranslation(
-    t,
-    "detail.roomClose.support.action",
-    locale.startsWith("ar") ? "اتصل بالدعم" : "Contact support",
-  );
+  const roomCloseSupportHeading = t("detail.roomClose.support.heading");
+  const roomCloseSupportNote = t("detail.roomClose.support.note");
+  const roomCloseSupportAction = t("detail.roomClose.support.action");
   const sessionTypeLabel = sessionModeLabel;
 
   const handleCancel = async () => {
@@ -583,7 +547,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
             <div className="sm:self-center">
               <SessionStatusBadge
                 status={isReservationExpired ? "EXPIRED" : session.status}
-                presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
+                operational={session.operational}
               />
             </div>
           </div>
@@ -610,7 +574,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
             <div className="space-y-1 col-span-2 md:col-span-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
-                {locale === "ar" ? "موعد الانتهاء المتوقع" : "Expected End"}
+                {t("detail.summary.expectedEnd")}
               </span>
               <p className="text-sm sm:text-base font-semibold text-text-secondary dark:text-white/70">
                 {session.scheduledEndAt
@@ -627,12 +591,10 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
         >
           <div className="space-y-1.5">
             <h3 className="text-base font-bold text-text-primary dark:text-white/95">
-              {locale === "ar" ? "التواصل والاتصال بالجلسة" : "Session Communication & Operations"}
+              {t("detail.communication.heading")}
             </h3>
             <p className="text-sm text-text-secondary">
-              {locale === "ar"
-                ? "ابدأ محادثة مع المختص أو انضم إلى غرفة الجلسة عند تفعيلها."
-                : "Message the practitioner or join the session room when available."}
+              {t("detail.communication.note")}
             </p>
           </div>
 
@@ -773,7 +735,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
           </div>
         </PatientSectionCard>
 
-        {actions.canReview ? (
+        {operational?.actions.canReview === true ? (
           <PatientSectionCard className="border-border-soft bg-white p-5 shadow-[0_8px_24px_rgba(36,86,79,0.08)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1.5">
@@ -844,7 +806,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
 
             {/* Actions list */}
             <div className="pt-2 flex flex-col gap-2">
-              {actions.canPay && !isPaymentWindowExpired && (
+              {operational?.actions.canPay === true && !isPaymentWindowExpired && (
                 <Link
                   href={`/patient/sessions/${session.id}/pay` as never}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary-hover transition"
@@ -991,7 +953,7 @@ export default function PatientSessionDetailPanel({ sessionId }: Props) {
                   value={
                     <SessionStatusBadge
                       status={isReservationExpired ? "EXPIRED" : session.status}
-                      presentationStatus={isReservationExpired ? undefined : session.presentationStatus}
+                      operational={session.operational}
                     />
                   }
                 />

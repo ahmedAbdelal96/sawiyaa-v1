@@ -12,6 +12,7 @@ import { mapPractitionerDurationMoney } from "../lib/practitioner-price";
 import type { ActiveFeeFilterContext, PublicPractitioner } from "../types/practitioner";
 import PractitionerAvatar from "@/components/shared/PractitionerAvatar";
 import { getLocalizedLanguageLabel } from "@/constants/reference-data";
+import { hasPublicPractitionerRating } from "../lib/practitioner-rating";
 
 type Props = {
   practitioner: PublicPractitioner;
@@ -38,29 +39,27 @@ export default function PractitionerCard({
   const locale = useLocale();
 
   const isArabic = locale === "ar";
-  const sessionFeesLabel = isArabic ? "رسوم الجلسة" : t("sessionFees");
-  const duration30Label = isArabic ? "30 دقيقة" : t("duration30");
-  const duration60Label = isArabic ? "60 دقيقة" : t("duration60");
+  const sessionFeesLabel = t("sessionFees");
+  const duration30Label = t("duration30");
+  const duration60Label = t("duration60");
   const name = (isArabic ? practitioner.nameAr : practitioner.nameEn) || practitioner.slug;
-  const title = (isArabic ? practitioner.titleAr : practitioner.titleEn) || "-";
-  const rating = typeof practitioner.rating === "number" ? practitioner.rating : 0;
+  const title = practitioner.professionalTitle?.trim() || "-";
+  const rating = practitioner.rating;
   const reviewCount =
     typeof practitioner.reviewCount === "number" ? practitioner.reviewCount : 0;
   const sessionCount =
     typeof practitioner.sessionCount === "number" ? practitioner.sessionCount : reviewCount;
   const yearsExperience =
     typeof practitioner.yearsExperience === "number" ? practitioner.yearsExperience : 0;
-  const filledStars = Math.max(0, Math.min(5, Math.round(rating)));
+  const hasRating = hasPublicPractitionerRating(rating, reviewCount);
+  const filledStars = hasRating ? Math.max(0, Math.min(5, Math.round(rating))) : 0;
 
-  const visibleSpecialties = practitioner.specialties.slice(0, 2);
+  const visibleSpecialties = practitioner.specialties.slice(0, 3);
   const sessionPrices = getPublicSessionPrices(practitioner);
 
-  const visibleLanguages = practitioner.languages.slice(0, 2);
-  const languagesList = visibleLanguages
+  const languagesList = practitioner.languages
     .map((code) => languageLabels[code] ?? getLocalizedLanguageLabel(code, locale))
-    .join(", ");
-  const hiddenLanguageCount = Math.max(0, practitioner.languages.length - visibleLanguages.length);
-  const languageSummary = hiddenLanguageCount > 0 ? `${languagesList} +${hiddenLanguageCount}` : languagesList;
+    .join(isArabic ? "، " : ", ");
 
   const profileHref = `${basePath}/${practitioner.slug}`;
 
@@ -71,26 +70,35 @@ export default function PractitionerCard({
           <p className="text-[15px] sm:text-base font-bold text-text-primary dark:text-white/95 leading-snug">{name}</p>
           <p className="mt-0.5 text-xs sm:text-sm font-medium text-text-brand">{title}</p>
           
-          <div
-            className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
-              practitioner.isOnlineNow
-                ? "bg-emerald-500/5 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-                : "bg-surface-secondary text-text-secondary border-border-light/60 dark:bg-white/5"
-            }`}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                practitioner.isOnlineNow ? "bg-emerald-500 animate-pulse" : "bg-text-muted/70"
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold border ${
+                practitioner.isOnlineNow
+                  ? "bg-emerald-500/5 text-emerald-700 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+                  : "bg-surface-secondary text-text-secondary border-border-light/60 dark:bg-white/5"
               }`}
-              aria-hidden="true"
-            />
-            <span>{practitioner.isOnlineNow ? t("onlineNow") : t("offline")}</span>
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  practitioner.isOnlineNow ? "bg-emerald-500 animate-pulse" : "bg-text-muted/70"
+                }`}
+                aria-hidden="true"
+              />
+              <span>{practitioner.isOnlineNow ? t("onlineNow") : t("offline")}</span>
+            </div>
+
+            {(practitioner.availableNow || practitioner.isInstantBookingAvailable) ? (
+              <div className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                <span>{t("instantAvailable")}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-2 flex items-center gap-2">
             <div
               className="inline-flex items-center gap-0.5"
-              aria-label={`${t("rating")} ${rating.toFixed(1)}`}
+              aria-label={hasRating ? `${t("rating")} ${rating.toFixed(1)}` : t("noRatings")}
             >
               {Array.from({ length: 5 }).map((_, index) => (
                 <Star
@@ -105,7 +113,9 @@ export default function PractitionerCard({
               ))}
             </div>
             <p className="text-[11px] text-text-muted font-medium pt-0.5">
-              {rating.toFixed(1)} · {reviewCount} {t("reviews")}
+              {hasRating
+                ? `${rating.toFixed(1)} · ${reviewCount} ${t("reviews")}`
+                : t("noRatings")}
             </p>
           </div>
         </div>
@@ -150,10 +160,10 @@ export default function PractitionerCard({
             <p className="text-[10px] text-text-muted font-medium mb-0.5">{t("sessions")}</p>
             <p className="font-bold text-text-primary dark:text-white/90">{sessionCount}+</p>
           </div>
-          <div className="border-s border-border-light/50 dark:border-white/10">
+          <div className="border-s border-border-light/50 dark:border-white/10 px-1 flex flex-col justify-center">
             <p className="text-[10px] text-text-muted font-medium mb-0.5">{t("languages")}</p>
-            <p className="font-bold text-text-primary dark:text-white/90 truncate px-0.5" title={languageSummary}>
-              {languageSummary || "-"}
+            <p className="text-[10px] sm:text-[11px] font-bold text-text-primary dark:text-white/90 leading-tight">
+              {languagesList || "-"}
             </p>
           </div>
           <div className="border-s border-border-light/50 dark:border-white/10">

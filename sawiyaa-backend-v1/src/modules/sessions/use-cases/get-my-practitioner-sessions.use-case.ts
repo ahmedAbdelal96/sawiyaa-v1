@@ -5,6 +5,7 @@ import { ListSessionsDto } from '../dto/list-sessions.dto';
 import { SessionMapper } from '../mappers/session.mapper';
 import { SessionPractitionerRepository } from '../repositories/session-practitioner.repository';
 import { SessionRepository } from '../repositories/session.repository';
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
 
 /**
  * Practitioner session listing is read-only and operational.
@@ -16,6 +17,7 @@ export class GetMyPractitionerSessionsUseCase {
     private readonly sessionPractitionerRepository: SessionPractitionerRepository,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionMapper: SessionMapper,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: {
@@ -60,14 +62,21 @@ export class GetMyPractitionerSessionsUseCase {
     );
 
     return {
-      items: sessions.map((session) =>
+      items: await Promise.all(sessions.map(async (session) =>
         this.sessionMapper.toListItem(
           session,
           now,
           unreadMap.get(session.id) ?? 0,
           decisionMap.get(session.id) ?? null,
+          undefined,
+          await this.operationalInterpreter.interpret({
+            session,
+            actor: 'PRACTITIONER',
+            now,
+            finalManualDecision: decisionMap.get(session.id) ?? null,
+          }),
         ),
-      ),
+      )),
       pagination: {
         page,
         limit,

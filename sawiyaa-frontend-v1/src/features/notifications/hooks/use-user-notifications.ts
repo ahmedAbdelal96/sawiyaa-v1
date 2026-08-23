@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   getMyUnreadNotificationCount,
   listMyNotifications,
@@ -12,8 +13,10 @@ export function useUserNotifications(
   params: ListMyNotificationsParams,
   options?: { enabled?: boolean },
 ) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: userNotificationsQueryKeys.list(params),
+    queryKey: userNotificationsQueryKeys.list(params, locale),
     queryFn: () => listMyNotifications(params),
     enabled: options?.enabled ?? true,
     staleTime: 20_000,

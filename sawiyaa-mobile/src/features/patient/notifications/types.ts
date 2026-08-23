@@ -6,6 +6,23 @@ export type UserNotificationAction = {
   label: string | null;
 };
 
+export type UserNotificationContext = {
+  patientName?: string;
+  practitionerName?: string;
+  senderName?: string;
+  sessionStartAt?: string;
+  sessionCode?: string;
+  supportTicketSubject?: string;
+  relatedEntityId?: string;
+};
+
+export type UserNotificationPrimaryAction = {
+  kind: "messages" | "session" | "support" | "details";
+  lane?: "session" | "support" | "care";
+  id?: string;
+  href?: string;
+};
+
 export type UserNotificationItem = {
   id: string;
   typeSlug: string;
@@ -16,6 +33,8 @@ export type UserNotificationItem = {
   readAt: string | null;
   action: UserNotificationAction | null;
   payload: Record<string, unknown>;
+  context?: UserNotificationContext;
+  primaryAction?: UserNotificationPrimaryAction;
 };
 
 export type UserNotificationPagination = {

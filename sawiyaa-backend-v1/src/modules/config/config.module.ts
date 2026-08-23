@@ -15,10 +15,12 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { PermissionsGuard } from '@common/guards/authorization/permissions.guard';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { PrismaModule } from '@common/prisma/prisma.module';
 import { ResolveConfigValueUseCase } from './use-cases/resolve-config-value.use-case';
 import { SessionSchedulePolicyService } from './services/session-schedule-policy.service';
 
 @Module({
+  imports: [PrismaModule],
   controllers: [ConfigController, AdminPlatformSettingsController],
   providers: [
     ResolvedConfigMapper,
@@ -35,7 +37,6 @@ import { SessionSchedulePolicyService } from './services/session-schedule-policy
     JwtAccessAuthGuard,
     RolesGuard,
     PermissionsGuard,
-    PrismaService,
     SessionSchedulePolicyService,
   ],
   exports: [

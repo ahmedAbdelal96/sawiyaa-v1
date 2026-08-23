@@ -7,9 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   LifeBuoy,
-  MessageCircle,
   MessageSquare,
-  PlayCircle,
   Sparkles,
   Stethoscope,
   Video,
@@ -26,7 +24,6 @@ import {
   listenOpenMessagesShell,
   listenToggleMessagesShell,
 } from "../lib/messages-shell-events";
-import type { ToggleMessagesShellEventPayload } from "../lib/messages-shell-events";
 import type {
   UnifiedMessagingLane,
   UnifiedMessagingLaneItem,
@@ -87,36 +84,36 @@ function LaneItem({
       onClick={onSelect}
       className={`group relative w-full rounded-2xl border p-3 text-start transition-all duration-200 ${
         active
-          ? "border-primary/65 bg-gradient-to-br from-primary-light via-primary-light-hover to-white shadow-[0_22px_30px_-22px_rgba(68,161,148,0.6)] ring-1 ring-primary/25 dark:border-primary/45 dark:from-primary/30 dark:via-primary/16 dark:to-white/5 dark:ring-primary/30"
-          : "border-border-light/85 bg-white hover:-translate-y-[1px] hover:border-primary/50 hover:shadow-[0_16px_24px_-20px_rgba(68,161,148,0.42)] dark:border-white/12 dark:bg-white/5 dark:hover:border-white/30"
+          ? "border-teal-500/50 bg-teal-50/60 shadow-[0_4px_16px_-4px_rgba(20,150,132,0.15)] ring-1 ring-teal-500/20 dark:border-teal-500/40 dark:bg-teal-950/30 dark:ring-teal-500/30"
+          : "border-slate-200/80 bg-white hover:-translate-y-[1px] hover:border-teal-500/40 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20"
       }`}
     >
       {inSessionLane && item.isSessionPriority ? (
-        <span className="absolute top-2.5 start-2.5 inline-flex rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-semibold text-primary dark:bg-primary/24 dark:text-primary-light">
+        <span className="absolute top-2.5 start-2.5 inline-flex rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800 dark:bg-teal-500/20 dark:text-teal-300">
           {priorityBadge}
         </span>
       ) : null}
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2.5">
-          <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/24 to-primary/6 text-[12px] font-bold text-primary ring-1 ring-primary/25 dark:from-primary/35 dark:to-primary/15 dark:ring-primary/30">
+          <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/10 text-[12px] font-bold text-teal-700 ring-1 ring-teal-500/20 dark:from-teal-500/30 dark:to-teal-500/10 dark:text-teal-300 dark:ring-teal-500/30">
             {item.hasUnread ? (
-              <span className="absolute -top-0.5 -start-0.5 h-3 w-3 rounded-full bg-teal-600 ring-2 ring-white dark:ring-surface-secondary" />
+              <span className="absolute -top-0.5 -start-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
             ) : null}
             {initials(item.title)}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white/95">
               {item.title}
             </p>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-secondary dark:text-white/72">
+            <p className="mt-0.5 line-clamp-1 text-xs text-slate-500 dark:text-white/60">
               {item.hasUnread
                 ? (locale.startsWith("ar") ? "رسالة جديدة" : "New message")
                 : (locale.startsWith("ar") ? "محادثة نشطة" : "Active conversation")}
             </p>
 
             {item.status ? (
-              <p className="mt-1 inline-flex rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-semibold text-primary dark:bg-primary/24 dark:text-primary-light">
+              <p className="mt-1 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-white/10 dark:text-white/70">
                 {item.status}
               </p>
             ) : null}
@@ -125,14 +122,14 @@ function LaneItem({
 
         <div className="flex shrink-0 flex-col items-end gap-1">
           {inSessionLane && item.isSessionPriority ? (
-            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.16)]" />
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-100 dark:ring-emerald-950" />
           ) : null}
           {item.unreadCount && item.unreadCount > 0 ? (
-            <span className="inline-flex items-center rounded-full bg-teal-600/10 px-2 py-0.5 text-[11px] font-semibold text-teal-700 dark:bg-teal-600/15 dark:text-teal-200">
+            <span className="inline-flex items-center rounded-full bg-teal-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-xs">
               {item.unreadCount > 99 ? "99+" : item.unreadCount}
             </span>
           ) : null}
-          <span className="text-[10px] font-medium tracking-wide text-text-muted dark:text-white/58">
+          <span className="text-[10px] font-medium text-slate-400 dark:text-white/50">
             {formatRelativeAt(item.at, locale)}
           </span>
         </div>
@@ -232,26 +229,23 @@ export default function UnifiedMessagesLauncher({
   const [isMinimized, setIsMinimized] = useState(false);
   const [continuityReady, setContinuityReady] = useState(false);
   const [activeLane, setActiveLane] = useState<UnifiedMessagingLane>(
-    role === "admin" ? "support" : "session"
+    role === "admin" ? "support" : "practitioner"
   );
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedSupportTicketId, setSelectedSupportTicketId] = useState<string | null>(null);
   const [isSupportComposeOpen, setIsSupportComposeOpen] = useState(false);
   const [selectedPractitionerRequestId, setSelectedPractitionerRequestId] = useState<string | null>(null);
   const [localSessionReads, setLocalSessionReads] = useState<SessionReadState>({});
-  const [dismissedPrioritySessionId, setDismissedPrioritySessionId] = useState<string | null>(
-    null,
-  );
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const historyButtonRef = useRef<HTMLButtonElement | null>(null);
-  const historyPopupRef = useRef<HTMLDivElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
   const [headerAnchorRect, setHeaderAnchorRect] = useState<{
     top: number;
     left: number;
     right: number;
     bottom: number;
   } | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const historyButtonRef = useRef<HTMLButtonElement | null>(null);
+  const historyPopupRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   const {
     sessionLane,
@@ -261,7 +255,6 @@ export default function UnifiedMessagesLauncher({
     sessionRootHref,
     practitionerRootHref,
     supportRootHref,
-    sessionSignal,
   } = useUnifiedMessagingShell(role, {
     laneDataEnabled: isOpen && !isMinimized,
     activeLane,
@@ -398,255 +391,219 @@ export default function UnifiedMessagesLauncher({
   }, [activeLane, continuityReady, practitionerLane.items, selectedPractitionerRequestId]);
 
   useEffect(() => {
-    if (role === "admin") return;
-    if (!sessionSignal.hasInProgress) return;
-    const priorityId = sessionSignal.highestPrioritySessionId;
-    if (!priorityId || dismissedPrioritySessionId === priorityId) return;
-
-    const promote = window.setTimeout(() => {
-      setActiveLane("session");
-      setSelectedSessionId(priorityId);
-      setIsOpen(true);
-      setIsMinimized(false);
-    }, 0);
-    return () => window.clearTimeout(promote);
-  }, [
-    dismissedPrioritySessionId,
-    role,
-    sessionSignal.hasInProgress,
-    sessionSignal.highestPrioritySessionId,
-  ]);
-
-  useEffect(() => {
-    return listenOpenSessionChatInShell(({ sessionId }) => {
-      setActiveLane("session");
-      setSelectedSessionId(sessionId);
-      setIsOpen(true);
-      setIsMinimized(false);
+    return listenToggleMessagesShell((payload) => {
+      if (payload?.anchorRect) {
+        setHeaderAnchorRect(payload.anchorRect);
+      }
+      setIsOpen((previous) => {
+        const next = !previous;
+        if (next) {
+          setIsMinimized(false);
+        }
+        return next;
+      });
     });
   }, []);
 
   useEffect(() => {
     return listenOpenMessagesShell((payload) => {
-      if (payload?.lane) {
-        setActiveLane(payload.lane);
-      }
-      if (payload?.lane === "session" && payload.threadId) {
-        setSelectedSessionId(payload.threadId);
-      }
-      if (payload?.lane === "support" && payload.threadId) {
-        setSelectedSupportTicketId(payload.threadId);
-      }
-      if (payload?.lane === "practitioner" && payload.threadId) {
-        setSelectedPractitionerRequestId(payload.threadId);
-      }
-      if (!showFloatingTrigger && payload?.anchorRect) {
-        setHeaderAnchorRect({
-          top: payload.anchorRect.top,
-          left: payload.anchorRect.left,
-          right: payload.anchorRect.right,
-          bottom: payload.anchorRect.bottom,
-        });
-      }
       setIsOpen(true);
       setIsMinimized(false);
-    });
-  }, [showFloatingTrigger]);
-
-  useEffect(() => {
-    return listenToggleMessagesShell((payload?: ToggleMessagesShellEventPayload) => {
-      if (!showFloatingTrigger && payload?.anchorRect) {
-        setHeaderAnchorRect({
-          top: payload.anchorRect.top,
-          left: payload.anchorRect.left,
-          right: payload.anchorRect.right,
-          bottom: payload.anchorRect.bottom,
-        });
+      let targetLane = payload?.lane ?? activeLane;
+      if (role === "admin" && targetLane === "session") {
+        targetLane = "support";
       }
-      handleLauncherClick();
+      setActiveLane(targetLane);
+      if (payload?.threadId) {
+        if (targetLane === "session") setSelectedSessionId(payload.threadId);
+        if (targetLane === "support") {
+          setIsSupportComposeOpen(false);
+          setSelectedSupportTicketId(payload.threadId);
+        }
+        if (targetLane === "practitioner") setSelectedPractitionerRequestId(payload.threadId);
+      }
     });
-  }, [handleLauncherClick, showFloatingTrigger]);
+  }, [activeLane, role]);
 
   useEffect(() => {
-    if (showFloatingTrigger || !isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (panelRef.current?.contains(target)) return;
-      if (target.closest(".messages-header-toggle")) return;
-      setIsOpen(false);
-      setIsHistoryOpen(false);
-    };
-
-    document.addEventListener("mousedown", handlePointerDown, true);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown, true);
-    };
-  }, [isOpen, showFloatingTrigger]);
+    return listenOpenSessionChatInShell((payload) => {
+      if (role === "admin") return;
+      setIsOpen(true);
+      setIsMinimized(false);
+      setActiveLane("session");
+      if (payload?.sessionId) {
+        setSelectedSessionId(payload.sessionId);
+      }
+    });
+  }, [role]);
 
   useEffect(() => {
     if (!isHistoryOpen) return;
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const clickedInsidePopup = historyPopupRef.current?.contains(target);
-      const clickedButton = historyButtonRef.current?.contains(target);
-      if (!clickedInsidePopup && !clickedButton) {
-        setIsHistoryOpen(false);
-      }
-    };
 
-    document.addEventListener("mousedown", handlePointerDown, true);
+    function handleOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target as Node;
+      if (
+        historyButtonRef.current?.contains(target) ||
+        historyPopupRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setIsHistoryOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown, true);
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
     };
   }, [isHistoryOpen]);
 
-  const selectedSessionItem = useMemo(
-    () => sessionLane.items.find((item) => item.id === selectedSessionId) ?? null,
-    [selectedSessionId, sessionLane.items],
-  );
-  const selectedSupportItem = useMemo(
-    () => supportLane.items.find((item) => item.id === selectedSupportTicketId) ?? null,
-    [selectedSupportTicketId, supportLane.items],
-  );
-  const selectedPractitionerItem = useMemo(
-    () => practitionerLane.items.find((item) => item.id === selectedPractitionerRequestId) ?? null,
-    [practitionerLane.items, selectedPractitionerRequestId],
-  );
-  const activePrioritySessionItem = useMemo(() => {
-    if (!sessionSignal.highestPrioritySessionId) return null;
+  const activeLaneItems = useMemo(() => {
+    if (activeLane === "session") return sessionLane.items;
+    if (activeLane === "support") return supportLane.items;
+    return practitionerLane.items;
+  }, [activeLane, practitionerLane.items, sessionLane.items, supportLane.items]);
+
+  const selectedSessionItem = useMemo(() => {
+    if (!selectedSessionId) return sessionLane.items[0] ?? null;
+    return sessionLane.items.find((item) => item.id === selectedSessionId) ?? sessionLane.items[0] ?? null;
+  }, [selectedSessionId, sessionLane.items]);
+
+  const selectedSupportItem = useMemo(() => {
+    if (!selectedSupportTicketId) return supportLane.items[0] ?? null;
+    return supportLane.items.find((item) => item.id === selectedSupportTicketId) ?? supportLane.items[0] ?? null;
+  }, [selectedSupportTicketId, supportLane.items]);
+
+  const selectedPractitionerItem = useMemo(() => {
+    if (!selectedPractitionerRequestId) return practitionerLane.items[0] ?? null;
     return (
-      sessionLane.items.find((item) => item.id === sessionSignal.highestPrioritySessionId) ?? null
+      practitionerLane.items.find((item) => item.id === selectedPractitionerRequestId) ??
+      practitionerLane.items[0] ??
+      null
     );
-  }, [sessionLane.items, sessionSignal.highestPrioritySessionId]);
-
-  const sessionDisplayAttentionCount = useMemo(() => {
-    return role === "admin" ? 0 : sessionLane.attentionCount;
-  }, [role, sessionLane.attentionCount]);
-
-  const adjustedUnreadLikeCount = unreadLikeCount;
+  }, [practitionerLane.items, selectedPractitionerRequestId]);
 
   const markSessionAsLocallyRead = useCallback(
-    (sessionId: string, sessionStatus: UnifiedSessionChatStatus | undefined) => {
-      if (!sessionStatus) return;
-      setLocalSessionReads((current) => ({
-        ...current,
+    (sessionId: string, sessionStatus: UnifiedSessionChatStatus | null) => {
+      setLocalSessionReads((previous) => ({
+        ...previous,
         [sessionId]: {
           readAt: new Date().toISOString(),
-          sessionStatus,
+          sessionStatus: sessionStatus ?? null,
         },
       }));
     },
     [],
   );
 
-  const handleClosePanel = () => {
-    if (sessionSignal.highestPrioritySessionId && sessionSignal.hasInProgress) {
-      setDismissedPrioritySessionId(sessionSignal.highestPrioritySessionId);
-    }
-    setIsHistoryOpen(false);
-    setIsOpen(false);
-  };
+  const sessionDisplayAttentionCount = useMemo(() => {
+    let unreadCount = 0;
+    for (const item of sessionLane.items) {
+      const localRead = localSessionReads[item.id];
+      const hasFreshUnread = localRead
+        ? Boolean(item.unreadCount && item.unreadCount > 0)
+        : Boolean(item.hasUnread);
 
-  const edgePlacement = isRtl ? "left-4 sm:left-6" : "right-4 sm:right-6";
-  const isPanelVisible = showFloatingTrigger ? isOpen && !isMinimized : isOpen;
-  const headerContainerStyle = !showFloatingTrigger
-    ? {
-        top:
-          (headerAnchorRect?.bottom ?? (typeof window !== "undefined" ? 76 : 76)) + 8,
-        left: isRtl ? (headerAnchorRect?.left ?? 12) : undefined,
-        right:
-          !isRtl && typeof window !== "undefined" && headerAnchorRect
-            ? Math.max(window.innerWidth - headerAnchorRect.right, 12)
-            : !isRtl
-              ? 12
-              : undefined,
+      if (hasFreshUnread) {
+        unreadCount += 1;
       }
-    : undefined;
-  const sessionLanePriority = sessionSignal.hasInProgress || sessionSignal.hasReadyToJoin;
-  const sessionBannerText = sessionSignal.hasInProgress
-    ? copy.sessionLiveBanner
-    : sessionSignal.hasReadyToJoin
-      ? copy.sessionReadyBanner
-      : null;
-  const badgeValue = adjustedUnreadLikeCount > 99 ? "99+" : String(adjustedUnreadLikeCount);
-  const activeLaneItems = laneMeta[activeLane].lane.items;
+    }
+    return unreadCount;
+  }, [localSessionReads, sessionLane.items]);
+
+  const handleClosePanel = useCallback(() => {
+    setIsOpen(false);
+    setIsMinimized(false);
+  }, []);
 
   const handleNewSupportMessage = useCallback(() => {
-    if (role === "admin") return;
-
     setActiveLane("support");
     setIsSupportComposeOpen(true);
-    setSelectedSupportTicketId(null);
     setIsHistoryOpen(false);
-  }, [role]);
+  }, []);
+
+  const isPanelVisible = isOpen && !isMinimized;
 
   const footerHref = useMemo(() => {
-    const laneParam = activeLane === "practitioner" ? "care" : activeLane;
-    return getMessagesPath(null, role, {
-      lane: laneParam,
-    });
-  }, [role, activeLane]);
+    if (activeLane === "session") return sessionRootHref;
+    if (activeLane === "support") return supportRootHref;
+    return practitionerRootHref;
+  }, [activeLane, practitionerRootHref, sessionRootHref, supportRootHref]);
+
+  if (!isOpen && !showFloatingTrigger) {
+    return null;
+  }
 
   return (
     <div
       ref={panelRef}
-      style={headerContainerStyle}
-      className={`fixed z-[75] ${
-        showFloatingTrigger
-          ? `${edgePlacement} bottom-4`
-          : "top-0"
-      }`}
+      className={showFloatingTrigger ? "relative z-50" : "fixed inset-0 pointer-events-none z-[100]"}
     >
-      {showFloatingTrigger && (!isOpen || isMinimized) ? (
+      {showFloatingTrigger ? (
         <button
           type="button"
           onClick={handleLauncherClick}
-          className="group relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-active text-white shadow-[0_24px_42px_-14px_rgba(68,161,148,0.78)] transition hover:brightness-110"
+          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white shadow-[0_16px_32px_-10px_rgba(68,161,148,0.55)] transition-all duration-200 hover:scale-105 hover:bg-primary-hover active:scale-95 dark:shadow-[0_16px_32px_-10px_rgba(68,161,148,0.35)]"
           aria-label={copy.title}
           title={copy.title}
         >
-          <MessageCircle className="h-5 w-5" />
-          {adjustedUnreadLikeCount > 0 ? (
-            <span className="absolute -top-1 -right-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-teal-600 px-1 text-[11px] font-bold text-white ring-2 ring-white dark:ring-slate-900">
-              {badgeValue}
+          {unreadLikeCount > 0 ? (
+            <span className="absolute -top-1 -start-1 inline-flex min-h-[20px] min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1 text-[11px] font-bold text-white shadow-sm">
+              {unreadLikeCount > 99 ? "99+" : unreadLikeCount}
             </span>
           ) : null}
-          {sessionSignal.hasInProgress ? (
-            <span className="absolute -bottom-1 -left-1 inline-flex h-4 w-4 animate-pulse rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
-          ) : null}
+          <MessageSquare className="h-5 w-5" />
         </button>
       ) : null}
 
       <div
-        className={`absolute w-[min(96vw,480px)] transition-all duration-200 ${
+        style={
+          !showFloatingTrigger && headerAnchorRect
+            ? {
+                top: `${headerAnchorRect.bottom + 8}px`,
+                [isRtl ? "left" : "right"]: `${Math.max(16, isRtl ? headerAnchorRect.left : window.innerWidth - headerAnchorRect.right)}px`,
+              }
+            : undefined
+        }
+        className={`w-[min(96vw,480px)] transition-all duration-200 ${
           isPanelVisible
             ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-2 opacity-0"
+            : "pointer-events-none -translate-y-2 opacity-0"
         } ${
           showFloatingTrigger
-            ? `bottom-[72px] ${isRtl ? "left-0 origin-bottom-left" : "right-0 origin-bottom-right"}`
-            : `top-0 ${isRtl ? "left-0 origin-top-left" : "right-0 origin-top-right"}`
+            ? `absolute bottom-[72px] ${isRtl ? "left-0 origin-bottom-left" : "right-0 origin-bottom-right"}`
+            : `${
+                headerAnchorRect
+                  ? "fixed origin-top"
+                  : `fixed top-16 ${isRtl ? "left-4 origin-top-left md:left-8" : "right-4 origin-top-right md:right-8"}`
+              }`
         }`}
       >
-        <section className="flex h-[min(84vh,800px)] max-h-[calc(100vh-88px)] flex-col overflow-hidden rounded-[24px] border border-border-strong/60 bg-surface-primary shadow-[0_48px_100px_-44px_rgba(34,52,56,0.38),0_0_0_1px_rgba(68,161,148,0.06)] dark:border-white/10 dark:bg-surface-secondary">
+        <section className="flex h-[min(84vh,800px)] max-h-[calc(100vh-88px)] flex-col overflow-hidden rounded-[26px] border border-slate-200/90 bg-white/95 backdrop-blur-2xl shadow-[0_32px_90px_-24px_rgba(15,23,42,0.25)] dark:border-white/10 dark:bg-slate-900/95">
           {/* ── Header ── */}
-          <header className="shrink-0 border-b border-border-light/60 bg-gradient-to-b from-primary-light/80 via-primary-light/40 to-white/0 px-4 pb-3 pt-3.5 dark:border-white/8 dark:from-primary/30 dark:via-primary/10 dark:to-transparent">
+          <header className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-teal-500/10 via-emerald-500/5 to-transparent px-4 py-3.5 dark:border-white/8">
             <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-[15px] font-bold tracking-tight text-text-primary dark:text-white/95">
-                  {copy.title}
-                </h2>
-                <p className="mt-0.5 truncate text-[11px] leading-tight text-text-secondary/80 dark:text-white/50">
-                  {copy.subtitle}
-                </p>
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
+                    {copy.title}
+                  </h2>
+                  <p className="truncate text-[11px] text-slate-500 dark:text-white/50">
+                    {copy.subtitle}
+                  </p>
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {showFloatingTrigger ? (
                   <button
                     type="button"
                     onClick={() => setIsMinimized(true)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light/80 text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                     aria-label={copy.minimize}
                     title={copy.minimize}
                   >
@@ -656,7 +613,7 @@ export default function UnifiedMessagesLauncher({
                 <button
                   type="button"
                   onClick={handleClosePanel}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border-light/80 text-text-secondary transition hover:bg-white hover:text-text-primary dark:border-white/10 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/80 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10 dark:hover:text-white"
                   aria-label={copy.close}
                   title={copy.close}
                 >
@@ -664,45 +621,11 @@ export default function UnifiedMessagesLauncher({
                 </button>
               </div>
             </div>
-
-            {role !== "admin" && activePrioritySessionItem ? (
-              <div className="mt-2.5 rounded-xl border border-primary/30 bg-gradient-to-r from-primary-light-hover to-primary-light px-3 py-2 shadow-[0_8px_24px_-20px_rgba(68,161,148,0.38)] dark:border-primary/30 dark:from-primary/22 dark:to-primary/8">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted dark:text-white/50">
-                    {copy.activeSessionStripLabel}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveLane("session");
-                      setSelectedSessionId(activePrioritySessionItem.id);
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline dark:text-primary-light"
-                  >
-                    <PlayCircle className="h-3.5 w-3.5" />
-                    {copy.activeSessionStripAction}
-                  </button>
-                </div>
-                <p className="truncate text-sm font-semibold text-text-primary dark:text-white/95">
-                  {activePrioritySessionItem.title}
-                </p>
-                <p className="mt-0.5 truncate text-xs text-text-secondary dark:text-white/65">
-                  {activePrioritySessionItem.status ?? activePrioritySessionItem.note}
-                </p>
-              </div>
-            ) : null}
-
-            {activeLane === "session" && sessionLanePriority ? (
-              <div className="mt-2.5 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/18 to-primary/8 px-3 py-2 text-xs text-primary dark:border-primary/35 dark:from-primary/20 dark:to-primary/8 dark:text-primary-light">
-                <p className="font-semibold">{copy.sessionProminentBanner}</p>
-                {sessionBannerText ? <p className="mt-0.5 opacity-80">{sessionBannerText}</p> : null}
-              </div>
-            ) : null}
           </header>
 
-          {/* ── Tab bar ── */}
-          <div className="shrink-0 border-b border-border-light/60 bg-gray-50/60 px-2.5 pb-2 pt-2 dark:border-white/8 dark:bg-white/3">
-            <div className={`grid ${role === "admin" ? "grid-cols-2" : "grid-cols-3"} gap-1 rounded-[14px] bg-gray-100/90 p-1 ring-1 ring-border-light/50 dark:bg-white/5 dark:ring-white/8`}>
+          {/* ── Segmented Tab bar ── */}
+          <div className="shrink-0 border-b border-slate-100 bg-slate-50/60 p-2 dark:border-white/8 dark:bg-white/3">
+            <div className={`grid ${role === "admin" ? "grid-cols-2" : "grid-cols-3"} gap-1.5 rounded-2xl bg-slate-200/60 p-1.5 dark:bg-white/5`}>
               {(Object.keys(laneMeta) as UnifiedMessagingLane[])
                 .filter((lane) => !(role === "admin" && lane === "session"))
                 .map((lane) => {
@@ -720,18 +643,18 @@ export default function UnifiedMessagesLauncher({
                         if (lane !== "support") setIsSupportComposeOpen(false);
                         setIsHistoryOpen(false);
                       }}
-                      className={`relative inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2 py-2.5 text-xs font-semibold transition-all duration-150 ${
+                      className={`relative inline-flex items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-200 ${
                         isActive
-                          ? "bg-white text-primary shadow-sm ring-1 ring-primary/15 dark:bg-white/12 dark:text-primary-light dark:ring-primary/25"
-                          : "text-text-secondary hover:bg-white/70 hover:text-text-primary dark:text-white/55 dark:hover:bg-white/7 dark:hover:text-white/85"
+                          ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-900/5 dark:bg-slate-800 dark:text-teal-300 dark:ring-white/10"
+                          : "text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-white/60 dark:hover:bg-white/5 dark:hover:text-white/90"
                       }`}
                     >
-                      <span className={`shrink-0 ${isActive ? "text-primary dark:text-primary-light" : "text-text-muted/70 dark:text-white/40"}`}>
+                      <span className={`shrink-0 ${isActive ? "text-teal-600 dark:text-teal-400" : "text-slate-400 dark:text-white/40"}`}>
                         {laneMeta[lane].icon}
                       </span>
                       <span className="truncate leading-tight">{copy.lanes[lane]}</span>
                       {laneCount > 0 ? (
-                        <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                        <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-teal-600 px-1.5 text-[10px] font-bold leading-none text-white shadow-xs animate-pulse">
                           {laneCount > 9 ? "9+" : laneCount}
                         </span>
                       ) : null}
@@ -751,50 +674,50 @@ export default function UnifiedMessagesLauncher({
           ) : null}
 
           {/* ── Conversation switcher strip ── */}
-          <div className="relative shrink-0 border-b border-border-light/60 bg-white/50 px-3 py-2 dark:border-white/8 dark:bg-transparent">
+          <div className="relative shrink-0 border-b border-slate-100 bg-white px-3 py-2 dark:border-white/8 dark:bg-transparent">
             <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate text-[11px] text-text-secondary/75 dark:text-white/45">
+              <p className="min-w-0 truncate text-[11px] font-medium text-slate-500 dark:text-white/50">
                 {copy.laneNotes[activeLane]}
               </p>
               <button
                 ref={historyButtonRef}
                 type="button"
                 onClick={() => setIsHistoryOpen((previous) => !previous)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[11px] font-semibold transition-all ${
                   isHistoryOpen
-                    ? "border-primary/35 bg-primary/8 text-primary dark:border-primary/30 dark:bg-primary/14 dark:text-primary-light"
-                    : "border-border-light bg-white text-text-primary shadow-sm hover:border-primary/30 hover:text-primary dark:border-white/12 dark:bg-white/5 dark:text-white/80 dark:hover:border-primary/25 dark:hover:text-primary-light"
+                    ? "border-teal-500/40 bg-teal-50 text-teal-700 dark:border-teal-500/40 dark:bg-teal-950/40 dark:text-teal-300"
+                    : "border-slate-200 bg-slate-50/80 text-slate-700 shadow-xs hover:border-teal-500/40 hover:bg-white hover:text-teal-700 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:border-teal-500/30 dark:hover:text-teal-300"
                 }`}
                 aria-expanded={isHistoryOpen}
                 aria-label={copy.viewConversations}
                 title={copy.viewConversations}
               >
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-teal-600 dark:text-teal-400" />
                 <span>
                   {activeLaneItems.length === 1
                     ? copy.conversationsSwitcherSingle
                     : copy.conversationsSwitcherCount(activeLaneItems.length)}
                 </span>
-                <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-150 ${isHistoryOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isHistoryOpen ? "rotate-180" : ""}`} />
               </button>
             </div>
 
             {isHistoryOpen ? (
               <div
                 ref={historyPopupRef}
-                className={`absolute top-[calc(100%+6px)] z-30 max-h-[40vh] w-[min(94vw,430px)] overflow-hidden rounded-2xl border border-border-strong/60 bg-surface-primary shadow-[0_24px_60px_-28px_rgba(34,52,56,0.36)] dark:border-white/10 dark:bg-surface-secondary ${
+                className={`absolute top-[calc(100%+6px)] z-30 max-h-[40vh] w-[min(94vw,430px)] overflow-hidden rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-2xl shadow-[0_24px_60px_-28px_rgba(15,23,42,0.3)] dark:border-white/10 dark:bg-slate-900/95 ${
                   isRtl ? "left-2" : "right-2"
                 }`}
               >
                 <div className="custom-scrollbar max-h-[40vh] overflow-y-auto p-3 pe-2">
                   <div className="space-y-2">
                     {role === "admin" && activeLane === "session" ? (
-                      <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-4 text-sm text-text-secondary dark:border-white/10 dark:bg-white/5 dark:text-white/75">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/75">
                         <p>{copy.notAvailable}</p>
                         <p className="mt-1">{copy.adminSessionHint}</p>
                       </div>
                     ) : laneMeta[activeLane].lane.loading ? (
-                      <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-4 text-sm text-text-secondary dark:border-white/10 dark:bg-white/5 dark:text-white/75">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/75">
                         {copy.loading}
                       </div>
                     ) : laneMeta[activeLane].lane.error ? (
@@ -809,7 +732,7 @@ export default function UnifiedMessagesLauncher({
                         </button>
                       </div>
                     ) : activeLaneItems.length === 0 ? (
-                      <div className="rounded-2xl border border-border-light bg-surface-secondary px-4 py-4 text-sm text-text-secondary dark:border-white/10 dark:bg-white/5 dark:text-white/75">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/75">
                         {copy.empty}
                       </div>
                     ) : (
@@ -847,10 +770,10 @@ export default function UnifiedMessagesLauncher({
           </div>
 
           {/* ── Thread area ── */}
-          <main className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-white via-primary-light/55 to-primary-light/30 p-2.5 dark:from-transparent dark:to-transparent">
+          <main className="min-h-0 flex-1 overflow-hidden bg-slate-50/40 p-2.5 dark:bg-slate-950/20">
             {activeLane === "session" && role !== "admin" && selectedSessionItem ? (
               <SessionLaneThread
-                sessionId={selectedSessionItem.id}
+                conversationId={selectedSessionItem.id}
                 sessionTitle={selectedSessionItem.title}
                 sessionStatusLabel={selectedSessionItem.status}
                 role={role}
@@ -872,8 +795,8 @@ export default function UnifiedMessagesLauncher({
                 isVisible={isPanelVisible}
                 onThreadActive={() =>
                   markSessionAsLocallyRead(
-                    selectedSessionItem.id,
-                    selectedSessionItem.sessionStatus,
+                    selectedSessionItem?.id ?? "",
+                    selectedSessionItem?.sessionStatus ?? null,
                   )
                 }
               />
@@ -937,17 +860,17 @@ export default function UnifiedMessagesLauncher({
           </main>
 
           {/* ── Footer: View all messages ── */}
-          <div className="shrink-0 border-t border-border-light/60 bg-gray-50/60 px-4 py-2.5 dark:border-white/8 dark:bg-transparent">
+          <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-2.5 dark:border-white/8 dark:bg-transparent">
             <Link
               href={footerHref as never}
               onClick={() => setIsOpen(false)}
-              className="group inline-flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-text-secondary transition hover:text-primary dark:text-white/55 dark:hover:text-primary-light"
+              className="group inline-flex w-full items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-slate-600 transition hover:text-teal-700 dark:text-white/60 dark:hover:text-teal-300"
             >
               <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/60 group-hover:text-primary dark:text-primary/50 dark:group-hover:text-primary-light" />
+                <Sparkles className="h-3.5 w-3.5 shrink-0 text-teal-600 group-hover:text-teal-700 dark:text-teal-400 dark:group-hover:text-teal-300" />
                 <span>{copy.openAll}</span>
               </span>
-              <ChevronUp className={`h-3.5 w-3.5 shrink-0 text-primary/50 transition-transform group-hover:-translate-y-0.5 group-hover:text-primary dark:text-primary/40 dark:group-hover:text-primary-light rtl:rotate-180`} />
+              <ChevronUp className="h-3.5 w-3.5 shrink-0 text-teal-600 transition-transform group-hover:-translate-y-0.5 group-hover:text-teal-700 dark:text-teal-400 dark:group-hover:text-teal-300 rtl:rotate-180" />
             </Link>
           </div>
         </section>
@@ -957,13 +880,13 @@ export default function UnifiedMessagesLauncher({
         <button
           type="button"
           onClick={handleLauncherClick}
-          className={`absolute bottom-[72px] inline-flex items-center gap-2 rounded-full border border-border-light bg-surface-primary px-3 py-2 text-xs font-semibold text-text-primary shadow-lg transition hover:border-primary/35 hover:text-primary dark:border-white/15 dark:bg-surface-secondary dark:text-white/90 ${
+          className={`absolute bottom-[72px] inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow-xl transition hover:border-teal-500/40 hover:text-teal-700 dark:border-white/15 dark:bg-slate-900/95 dark:text-white ${
             isRtl ? "left-0" : "right-0"
           }`}
           aria-label={copy.restore}
           title={copy.restore}
         >
-          <MessageSquare className="h-3.5 w-3.5" />
+          <MessageSquare className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
           {copy.title}
           <ChevronUp className="h-3.5 w-3.5" />
         </button>

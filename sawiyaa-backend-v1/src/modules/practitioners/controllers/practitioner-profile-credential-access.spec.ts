@@ -6,6 +6,8 @@ jest.mock('fs', () => ({
 import { PractitionerProfileController } from './practitioner-profile.controller';
 import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-auth.guard';
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
+import { ACCOUNT_STATE_REQUIREMENTS_KEY } from '@common/constants/auth-metadata.constants';
+import { AccountStateRequirement } from '@common/enums/account-state-requirement.enum';
 
 describe('Practitioner credential view controller', () => {
   it('uses the protected file use case and private no-store headers', async () => {
@@ -34,5 +36,18 @@ describe('Practitioner credential view controller', () => {
     const guards = Reflect.getMetadata('__guards__', PractitionerProfileController);
     expect(guards).toContain(JwtAccessAuthGuard);
     expect(guards).toContain(RolesGuard);
+  });
+
+  it('requires approval for operational profile writes while leaving applicant submission available', () => {
+    const prototype = PractitionerProfileController.prototype;
+    expect(
+      Reflect.getMetadata(ACCOUNT_STATE_REQUIREMENTS_KEY, prototype.update),
+    ).toContain(AccountStateRequirement.PRACTITIONER_APPROVED);
+    expect(
+      Reflect.getMetadata(ACCOUNT_STATE_REQUIREMENTS_KEY, prototype.setSpecialties),
+    ).toContain(AccountStateRequirement.PRACTITIONER_APPROVED);
+    expect(
+      Reflect.getMetadata(ACCOUNT_STATE_REQUIREMENTS_KEY, prototype.submitApplication) ?? [],
+    ).not.toContain(AccountStateRequirement.PRACTITIONER_APPROVED);
   });
 });

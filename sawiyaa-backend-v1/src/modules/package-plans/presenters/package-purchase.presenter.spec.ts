@@ -4,10 +4,21 @@ describe('PackagePurchasePresenter', () => {
   let presenter: PackagePurchasePresenter;
 
   beforeEach(() => {
-    presenter = new PackagePurchasePresenter();
+    presenter = new PackagePurchasePresenter({
+      interpret: jest.fn(async ({ session }) => ({
+        state: session.status,
+        timelineBucket: session.status === 'COMPLETED' ? 'COMPLETED' : 'ACTIONABLE',
+        join: { allowed: false, reasonCode: null, canPrepareRuntime: false },
+        actions: { canJoin: false, canPrepareRuntime: false, canCancel: false, canPay: false, canReview: false, canMarkPatientNoShow: false, noShowReasonCode: null },
+        attendance: { patientTrustedAttendance: false, practitionerTrustedAttendance: false, reconciliationStatus: 'NOT_AVAILABLE', outcomeRecommendation: null },
+        room: { state: 'NOT_PREPARED', closedAt: null },
+        resolution: { required: false, finalDecision: null },
+        replacement: { replacesSessionId: null },
+      })),
+    } as any);
   });
 
-  it('calculates canonical progress and remaining sessions correctly', () => {
+  it('calculates canonical progress and remaining sessions correctly', async () => {
     const mockPurchase: any = {
       id: 'purchase-1',
       status: 'ACTIVE',
@@ -77,7 +88,7 @@ describe('PackagePurchasePresenter', () => {
       ],
     };
 
-    const vm = presenter.toViewModel({ purchase: mockPurchase });
+    const vm = await presenter.toViewModel({ purchase: mockPurchase });
 
     expect(vm.title).toBe('6 Sessions Package');
     expect(vm.practitioner?.displayName).toBe('Dr. Ahmed');
@@ -88,7 +99,7 @@ describe('PackagePurchasePresenter', () => {
     expect(vm.progress.progressPercent).toBe(33);
   });
 
-  it('clamps remaining sessions to 0 when completed count reaches or exceeds total', () => {
+  it('clamps remaining sessions to 0 when completed count reaches or exceeds total', async () => {
     const mockPurchase: any = {
       id: 'purchase-2',
       status: 'COMPLETED',
@@ -122,7 +133,7 @@ describe('PackagePurchasePresenter', () => {
       })),
     };
 
-    const vm = presenter.toViewModel({ purchase: mockPurchase });
+    const vm = await presenter.toViewModel({ purchase: mockPurchase });
 
     expect(vm.progress.totalSessions).toBe(4);
     expect(vm.progress.completedSessions).toBe(4);

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { getProfessionalTitleLabel } from "@/constants/reference-data";
 import { CalendarDays, Clock, Package, Sparkles, Search } from "lucide-react";
 import Badge from "@/components/ui/badge/Badge";
 import Avatar from "@/components/ui/avatar/Avatar";
@@ -127,7 +126,7 @@ export default function PatientPackagePurchasesPanel() {
             </p>
             {row.practitioner?.professionalTitle && (
               <p className="truncate text-xs text-text-muted">
-                {getProfessionalTitleLabel(row.practitioner.professionalTitle, locale)}
+                {row.practitioner.professionalTitle.trim()}
               </p>
             )}
           </div>

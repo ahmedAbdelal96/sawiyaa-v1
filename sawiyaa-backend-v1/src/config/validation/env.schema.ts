@@ -1,4 +1,24 @@
 import { z } from 'zod';
+import {
+  DEFAULT_LOG_MAX_FILE_SIZE,
+  LOG_MAX_FILE_SIZE_PATTERN,
+} from '../log-file-size';
+
+function optionalNumber(options: {
+  integer?: boolean;
+  min?: number;
+  max?: number;
+}) {
+  let schema = z.coerce.number();
+  if (options.integer) schema = schema.int();
+  if (options.min !== undefined) schema = schema.min(options.min);
+  if (options.max !== undefined) schema = schema.max(options.max);
+  return z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    schema.optional(),
+  );
+}
 
 const baseEnvSchema = z.object({
   // App
@@ -9,6 +29,12 @@ const baseEnvSchema = z.object({
   PORT: z.coerce.number().default(3000),
   APP_NAME: z.string().default('sawiyaa-backend-v1'),
   SERVICE_NAME: z.string().optional(),
+  APP_VERSION: z.string().optional(),
+  DEPLOYMENT_ID: z.string().optional(),
+  SAWIYAA_RELEASE_SHA: z.string().optional(),
+  GIT_SHA: z.string().optional(),
+  COMMIT_SHA: z.string().optional(),
+  SOURCE_VERSION: z.string().optional(),
   APP_URL: z.string().url(),
   APP_BASE_URL: z.string().url().optional(),
   // Public Web application origin used only for safe, stable links in
@@ -33,26 +59,12 @@ const baseEnvSchema = z.object({
   LOG_RETENTION_DAYS: z.coerce.number().int().nonnegative().default(30),
   LOG_MAX_FILE_SIZE: z
     .string()
-    .regex(/^\d+(?:\.\d+)?\s*(?:b|kb|mb|gb)?$/i)
-    .default('20m'),
+    .regex(LOG_MAX_FILE_SIZE_PATTERN)
+    .default(DEFAULT_LOG_MAX_FILE_SIZE),
 
-  // Phase 3A: completion-only rollout control. Unset/false keeps manual
-  // completion available while automatic completion remains disabled.
-  SESSION_AUTOMATIC_COMPLETION_ENABLED: z
+  SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED: z
     .enum(['true', 'false'])
-    .default('false'),
-  SESSION_AUTOMATIC_COMPLETION_BATCH_SIZE: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .default(25),
-  SESSION_AUTOMATIC_PATIENT_NO_SHOW_ENABLED: z
-    .literal('false')
-    .default('false'),
-  SESSION_AUTOMATIC_PRACTITIONER_NO_SHOW_ENABLED: z
-    .literal('false')
-    .default('false'),
+    .default('true'),
 
   // Practitioner weekly session schedule
   AVAILABILITY_FUTURE_WEEKS_ALLOWED: z.coerce
@@ -99,30 +111,26 @@ const baseEnvSchema = z.object({
     .min(1)
     .max(1440)
     .default(15),
-  AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(20)
-    .optional(),
-  AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(1440)
-    .optional(),
-  AUTH_OTP_LOCKOUT_MAX_ATTEMPTS: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(20)
-    .optional(),
-  AUTH_OTP_LOCKOUT_DURATION_MINUTES: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(1440)
-    .optional(),
+  AUTH_PASSWORD_LOCKOUT_MAX_ATTEMPTS: optionalNumber({
+    integer: true,
+    min: 1,
+    max: 20,
+  }),
+  AUTH_PASSWORD_LOCKOUT_DURATION_MINUTES: optionalNumber({
+    integer: true,
+    min: 1,
+    max: 1440,
+  }),
+  AUTH_OTP_LOCKOUT_MAX_ATTEMPTS: optionalNumber({
+    integer: true,
+    min: 1,
+    max: 20,
+  }),
+  AUTH_OTP_LOCKOUT_DURATION_MINUTES: optionalNumber({
+    integer: true,
+    min: 1,
+    max: 1440,
+  }),
   AUTH_OTP_CODE_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
   AUTH_LOGIN_OTP_TTL_MINUTES: z.coerce
     .number()
@@ -165,7 +173,7 @@ const baseEnvSchema = z.object({
   MAIL_PROVIDER: z.enum(['smtp', 'brevo']).default('smtp'),
   MAIL_FROM: z.string().email().optional(),
   MAIL_HOST: z.string().optional(),
-  MAIL_PORT: z.coerce.number().optional(),
+  MAIL_PORT: optionalNumber({}),
   MAIL_USER: z.string().optional(),
   MAIL_PASS: z.string().optional(),
   MAIL_SECURE: z.enum(['true', 'false']).optional(),

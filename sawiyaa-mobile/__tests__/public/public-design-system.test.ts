@@ -86,14 +86,14 @@ describe("Public Mobile Design System Validation", () => {
     expect(content).not.toContain("Join as Practitioner");
   });
 
-  // 6. Tab bar configurations
-  it("hides unfinished tabs from the public menu", () => {
+  // 6. Guest navigation shell
+  it("owns the guest bottom navigation in the public layout", () => {
     const content = fs.readFileSync(publicLayoutPath, "utf8");
 
-    expect(content).toContain('name="practitioners"');
-    expect(content).toContain('name="specialties"');
-    expect(content).toContain('name="packages"');
-    expect(content).toContain('href: null');
+    expect(content).toContain('import { Slot } from "expo-router"');
+    expect(content).toContain("<Slot />");
+    expect(content).toContain("<PublicBottomNav />");
+    expect(content).not.toContain('display: "none"');
   });
 
   // 7. Public Semantic theme tokens validity
@@ -179,18 +179,24 @@ describe("Public Mobile Design System Validation", () => {
 
     expect(authProviderContent).toContain("signOut");
     expect(authProviderContent).toContain('router.replace("/(public)")');
+    const logoutBlock = authProviderContent.slice(authProviderContent.indexOf("const signOut"));
+    expect(logoutBlock.indexOf("await patientLogout")).toBeGreaterThan(-1);
+    expect(logoutBlock.indexOf("await practitionerLogout")).toBeGreaterThan(-1);
+    expect(logoutBlock.indexOf("await clearAuthenticatedState()"))
+      .toBeGreaterThan(logoutBlock.indexOf("await patientLogout"));
+    expect(logoutBlock.indexOf("await clearAuthenticatedState()"))
+      .toBeGreaterThan(logoutBlock.indexOf("await practitionerLogout"));
 
     expect(heroContent).toContain('router.push("/(auth');
   });
 
   // 12. Public Design, RTL direction helper, and i18n copy rules
-  it("enforces i18n copy, direction helper usage, and hidden bottom tab bar", () => {
+  it("enforces i18n copy and direction helper usage", () => {
     const contentAr = fs.readFileSync(arLocalePath, "utf8");
     const contentEn = fs.readFileSync(enLocalePath, "utf8");
     const contentHome = fs.readFileSync(publicHomePath, "utf8");
     const contentHero = fs.readFileSync(publicHeroPath, "utf8");
     const contentHeader = fs.readFileSync(publicHeaderPath, "utf8");
-    const contentLayout = fs.readFileSync(publicLayoutPath, "utf8");
 
     // No mixed-language labels inside locale spaces
     expect(contentAr).not.toContain("Explore specialists across different areas");
@@ -213,9 +219,6 @@ describe("Public Mobile Design System Validation", () => {
     // Uses centralized direction helper useAppDirection
     expect(contentHeader).toContain("useAppDirection");
     expect(contentHero).toContain("useAppDirection");
-
-    // Hides the bottom tab bar completely
-    expect(contentLayout).toContain('display: "none"');
 
     // No hardcoded English fallbacks in t() calls inside index.tsx
     const tWithSecondArgRegex = /t\(\s*["'`][^"'`]+["'`]\s*,\s*["'`]/g;

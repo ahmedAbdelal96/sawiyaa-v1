@@ -60,9 +60,15 @@ export type PaymobGatewayControlValidationResult = {
   activeMethods: PaymobGatewayControlMethodEntry[];
 };
 
+export type PaymobGatewayControlState =
+  | 'DATABASE_ENABLED'
+  | 'DATABASE_DISABLED'
+  | 'UNINITIALIZED';
+
 export type PaymobGatewayControlRuntimeSnapshot = PaymobGatewayControlDraft &
   PaymentGatewayControlRuntimeBaseSnapshot & {
     provider: 'PAYMOB';
+    controlState?: PaymobGatewayControlState;
     sources: PaymentGatewayControlRuntimeBaseSnapshot['sources'] & {
       checkoutFlow: PaymentGatewayControlSource;
       defaultMethod: PaymentGatewayControlSource;

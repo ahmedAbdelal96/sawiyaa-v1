@@ -26,6 +26,8 @@ import type {
   UpdateAcademyProgramSessionInput,
   CreateAcademyProgramEnrollmentInput,
   CreateAdminAcademyProgramEnrollmentInput,
+  AcademyAdminEnrollmentAccountStatus,
+  AcademyAdminEnrollmentAccountResponse,
 } from "../types/academy-programs.types";
 
 export async function getPublicAcademyPrograms(
@@ -214,6 +216,44 @@ export async function getAdminAcademyProgramEnrollments(
     `/admin/academy/programs/${programId}/enrollments`,
     { params },
   );
+  return extractData(response.data);
+}
+
+export async function getAdminAcademyProgramEnrollment(
+  enrollmentId: string,
+): Promise<AcademyProgramEnrollmentDetailResponse> {
+  const response = await httpClient.get<ApiPayload<AcademyProgramEnrollmentDetailResponse>>(
+    `/admin/academy/program-enrollments/${enrollmentId}`,
+  );
+  return extractData(response.data);
+}
+
+export async function getAdminAcademyEnrollmentAccountStatus(
+  enrollmentId: string,
+): Promise<AcademyAdminEnrollmentAccountStatus> {
+  const response = await httpClient.get<ApiPayload<AcademyAdminEnrollmentAccountStatus>>(
+    `/admin/academy/program-enrollments/${enrollmentId}/account/status`,
+  );
+  return extractData(response.data);
+}
+
+export async function lookupAdminAcademyEnrollmentAccount(enrollmentId: string, email: string): Promise<AcademyAdminEnrollmentAccountResponse> {
+  const response = await httpClient.post<ApiPayload<AcademyAdminEnrollmentAccountResponse>>(`/admin/academy/program-enrollments/${enrollmentId}/account/lookup`, { email, confirm: false });
+  return extractData(response.data);
+}
+
+export async function createAdminAcademyEnrollmentAccount(enrollmentId: string, email: string) {
+  const response = await httpClient.post<ApiPayload<{ account: AcademyAdminEnrollmentAccountResponse["account"]; temporaryCredentials: { email: string; password: string } }>>(`/admin/academy/program-enrollments/${enrollmentId}/account`, { email });
+  return extractData(response.data);
+}
+
+export async function linkAdminAcademyEnrollmentAccount(enrollmentId: string, email: string) {
+  const response = await httpClient.post<ApiPayload<AcademyAdminEnrollmentAccountResponse>>(`/admin/academy/program-enrollments/${enrollmentId}/account/link`, { email, confirm: true });
+  return extractData(response.data);
+}
+
+export async function resetAdminAcademyTraineePassword(enrollmentId: string, newPassword: string) {
+  const response = await httpClient.post<ApiPayload<{ account: { type: string; email: string | null }; reset: boolean }>>(`/admin/academy/program-enrollments/${enrollmentId}/account/reset-password`, { newPassword });
   return extractData(response.data);
 }
 

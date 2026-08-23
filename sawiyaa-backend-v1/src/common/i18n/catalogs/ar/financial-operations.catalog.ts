@@ -3,7 +3,7 @@ export const arFinancialOperationsCatalog = {
     paymentNotFound: 'لم يتم العثور على عملية الدفع.',
     paymentNotCaptured: 'لا يمكن ترحيل القيود إلا لعمليات الدفع المكتملة.',
     paymentSnapshotsIncomplete:
-      'بيانات الدفع المالية غير مكتملة لترحيل القيود.',
+      'لا يمكن تنفيذ رد المبلغ إلى المحفظة لأن بيانات الدفع المحفوظة لهذه الجلسة غير مكتملة. راجع بيانات الدفع قبل تأكيد القرار.',
     practitionerNotFound: 'لم يتم العثور على ملف المعالج.',
     settlementItemNotFound: 'لم يتم العثور على بند التسوية.',
     settlementPayoutNotFound: 'لم يتم العثور على سجل الصرف.',

@@ -37,7 +37,7 @@ describe('HandlePaymobWebhookUseCase', () => {
     };
 
     const paymentRepository = {
-      findEventByProviderEventRef: jest
+      findWebhookReceipt: jest
         .fn()
         .mockResolvedValue(input?.duplicate ?? null),
       findByProviderReference: jest
@@ -48,6 +48,7 @@ describe('HandlePaymobWebhookUseCase', () => {
             : null,
         ),
       createEvent: jest.fn().mockResolvedValue({}),
+      createWebhookReceipt: jest.fn().mockResolvedValue({}),
     };
 
     const markSucceeded = {
@@ -61,6 +62,7 @@ describe('HandlePaymobWebhookUseCase', () => {
     };
     const logger = {
       warn: jest.fn(),
+      debug: jest.fn(),
     };
 
     const useCase = new HandlePaymobWebhookUseCase(
@@ -232,5 +234,82 @@ describe('HandlePaymobWebhookUseCase', () => {
     });
     expect(result).toEqual({ received: true, handled: false, paymentId: null });
     expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
+  });
+
+  it('treats a concurrent receipt unique conflict as a successful no-op', async () => {
+    const setup = buildUseCase({
+      payment: { id: 'payment_1', status: PaymentStatus.PENDING },
+    });
+    setup.markSucceeded.execute.mockRejectedValueOnce({
+      code: 'P2002',
+      meta: { target: ['provider', 'providerEventRef'] },
+    });
+    setup.paymentRepository.findWebhookReceipt
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ paymentId: 'payment_1' });
+
+    await expect(
+      setup.useCase.execute({
+        rawBody: Buffer.from('{}'),
+        headers: {},
+        query: {},
+      }),
+    ).resolves.toEqual({
+      received: true,
+      handled: true,
+      paymentId: 'payment_1',
+    });
+    expect(setup.markSucceeded.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows only one of two concurrent webhook deliveries to continue', async () => {
+    const setup = buildUseCase({
+      payment: { id: 'payment_1', status: PaymentStatus.PENDING },
+    });
+    setup.markSucceeded.execute
+      .mockRejectedValueOnce({
+        code: 'P2002',
+        meta: { target: ['provider', 'providerEventRef'] },
+      })
+      .mockResolvedValueOnce({});
+    setup.paymentRepository.findWebhookReceipt
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ paymentId: 'payment_1' });
+
+    const results = await Promise.all([
+      setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} }),
+      setup.useCase.execute({ rawBody: Buffer.from('{}'), headers: {}, query: {} }),
+    ]);
+
+    expect(results).toEqual([
+      { received: true, handled: true, paymentId: 'payment_1' },
+      { received: true, handled: true, paymentId: 'payment_1' },
+    ]);
+    expect(setup.markSucceeded.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not capture a late success webhook for an expired payment', async () => {
+    const setup = buildUseCase({
+      payment: { id: 'payment_1', status: PaymentStatus.EXPIRED },
+    });
+
+    await expect(
+      setup.useCase.execute({
+        rawBody: Buffer.from('{}'),
+        headers: {},
+        query: {},
+      }),
+    ).resolves.toEqual({
+      received: true,
+      handled: false,
+      paymentId: 'payment_1',
+    });
+    expect(setup.markSucceeded.execute).not.toHaveBeenCalled();
+    expect(setup.paymentRepository.createEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reason: 'PAYMENT_SUCCESS_RECEIVED_AFTER_EXPIRY',
+      }),
+    );
   });
 });

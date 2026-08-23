@@ -18,6 +18,15 @@ export interface AdminPractitionerListItem {
     averageRating: number | null;
     totalReviews: number;
   };
+  application: {
+    id: string;
+    status: string;
+    submittedAt: string | null;
+    updatedAt: string;
+  } | null;
+  applicationStatus: string;
+  lifecycleStatus: string;
+  readinessStatus: "READY" | "BLOCKED";
 }
 
 export interface AdminPractitionersPagination {
@@ -39,6 +48,9 @@ export interface ListAdminPractitionersParams {
   country?: string;
   onlineNow?: boolean;
   minRating?: number;
+  applicationStatus?: string;
+  publicationStatus?: "PUBLISHED" | "UNPUBLISHED";
+  readinessStatus?: "READY" | "BLOCKED";
   page?: number;
   limit?: number;
   sort?: "recommended" | "experience" | "rating" | "newest" | "oldest";

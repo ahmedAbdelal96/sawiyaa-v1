@@ -98,6 +98,10 @@ export const authSeedModule: SeedModule = {
         password: seedCredentials.patientB.password,
       },
       {
+        userId: seedIds.users.traineeA,
+        password: seedCredentials.traineeA.password,
+      },
+      {
         userId: seedIds.users.practitionerA,
         password: seedCredentials.practitionerA.password,
       },

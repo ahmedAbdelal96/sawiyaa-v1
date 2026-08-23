@@ -1,0 +1,11 @@
+appId: com.sawiyaa.mobile
+---
+- runFlow: patient-login.yaml
+- tapOn:
+    text: "Find a practitioner|البحث عن ممارس"
+- tapOn:
+    text: "View details|عرض التفاصيل"
+- tapOn:
+    text: "Book|احجز"
+- assertNotVisible:
+    text: "FATAL EXCEPTION"

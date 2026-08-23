@@ -5,6 +5,7 @@ import { PublicPractitionerVisibilityPolicy } from '../policies/public-practitio
 import type { PublicPractitionerReadRepository } from '../repositories/public-practitioner-read.repository';
 import type { PublicPractitionerPricingContextService } from '../services/public-practitioner-pricing-context.service';
 import { GetPublicPractitionerDetailsUseCase } from './get-public-practitioner-details.use-case';
+import { PractitionerProfessionalContentResolver } from '../services/practitioner-professional-content-resolver.service';
 
 describe('GetPublicPractitionerDetailsUseCase', () => {
   const publicReadRepository = {
@@ -26,6 +27,7 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     publicReadRepository,
     pricingContextService,
     sessionReviewRatingAggregationService,
+    new PractitionerProfessionalContentResolver(),
   );
 
   beforeEach(() => {
@@ -47,6 +49,11 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       isPublicProfilePublished: true,
       professionalTitle: 'Therapist',
       bio: 'Bio',
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: 'نبذة عربية' },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
       practitionerType: 'OTHER',
       practitionerGender: null,
       country: { isoCode: 'EG', currencyCode: 'EGP' },
@@ -65,6 +72,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       sessionPrice30Usd: new Prisma.Decimal('8.00'),
       sessionPrice60Egp: new Prisma.Decimal('450.00'),
       sessionPrice60Usd: new Prisma.Decimal('15.00'),
+      instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+      instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+      instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+      instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
       avatarUrl: null,
       yearsOfExperience: 7,
       acceptsPackages: true,
@@ -102,6 +113,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
     expect(result.item.sessionPrice30).toBe(8);
     expect(result.item.sessionPrice60).toBe(15);
     expect(result.item.sessionPrice60Usd).toBe(15);
+    expect(result.item.instantBookingPrice30Egp).toBe(520);
+    expect(result.item.instantBookingPrice30Usd).toBe(31);
+    expect(result.item.instantBookingPrice60Egp).toBe(940);
+    expect(result.item.instantBookingPrice60Usd).toBe(56);
     expect(result.item.ratingSummary).toEqual({
       averageRating: 4.5,
       ratingsCount: 8,
@@ -109,6 +124,8 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       writtenReviewsCount: 5,
       totalReviews: 8,
     });
+    expect(result.item.professionalTitle).toBe('Clinical Psychologist');
+    expect(result.item.fullBio).toBe('English bio');
   });
 
   it('uses shared pricing context so guest Egypt traffic can resolve EGP when request country is provided', async () => {
@@ -120,6 +137,11 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       isPublicProfilePublished: true,
       professionalTitle: 'Therapist',
       bio: 'Bio',
+      primaryContentLocale: 'en',
+      professionalContentTranslations: [
+        { locale: 'ar', professionalTitle: 'أخصائي نفسي', bio: 'نبذة عربية' },
+        { locale: 'en', professionalTitle: 'Clinical Psychologist', bio: 'English bio' },
+      ],
       practitionerType: 'OTHER',
       practitionerGender: null,
       country: { isoCode: 'EG', currencyCode: 'EGP' },
@@ -138,6 +160,10 @@ describe('GetPublicPractitionerDetailsUseCase', () => {
       sessionPrice30Usd: new Prisma.Decimal('8.00'),
       sessionPrice60Egp: new Prisma.Decimal('450.00'),
       sessionPrice60Usd: new Prisma.Decimal('15.00'),
+      instantBookingPrice30Egp: new Prisma.Decimal('520.00'),
+      instantBookingPrice30Usd: new Prisma.Decimal('31.00'),
+      instantBookingPrice60Egp: new Prisma.Decimal('940.00'),
+      instantBookingPrice60Usd: new Prisma.Decimal('56.00'),
       avatarUrl: null,
       yearsOfExperience: 7,
       acceptsPackages: true,

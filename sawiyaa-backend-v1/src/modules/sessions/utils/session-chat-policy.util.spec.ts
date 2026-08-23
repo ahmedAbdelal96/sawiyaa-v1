@@ -70,7 +70,7 @@ describe('session-chat-policy util', () => {
     });
   });
 
-  it('blocks unreadable sessions before start', () => {
+  it('keeps future sessions readable while blocking sending before start', () => {
     const result = resolveSessionChatAvailability({
       ...baseInput,
       status: SessionStatus.UPCOMING,
@@ -78,7 +78,7 @@ describe('session-chat-policy util', () => {
     });
 
     expect(result).toEqual({
-      canRead: false,
+      canRead: true,
       canSend: false,
       readOnly: true,
       reason: 'SESSION_NOT_STARTED',

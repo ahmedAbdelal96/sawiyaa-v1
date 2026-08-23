@@ -14,6 +14,9 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
         provider: SessionProvider.DAILY,
         providerRoomId: 'room_1',
         providerSessionRef: 'https://room.daily.co',
+        payments: [],
+        fundingSource: null,
+        earningEntitlementId: null,
         patientId: 'user_patient_1',
         practitionerId: 'user_pract_1',
         patient: {
@@ -60,13 +63,19 @@ describe('InspectAdminSessionRuntimeUseCase', () => {
         blockedReason: null,
       }),
     };
+    const operationalInterpreter = {
+      interpret: jest.fn(async () => ({
+        state: 'UPCOMING',
+      })),
+    };
 
     const useCase = new InspectAdminSessionRuntimeUseCase(
       sessionRepository as never,
       resolveSessionJoinReadinessService as never,
+      operationalInterpreter as never,
     );
 
-    return { useCase, resolveSessionJoinReadinessService };
+    return { useCase, resolveSessionJoinReadinessService, operationalInterpreter };
   }
 
   it('returns runtime inspection details with readiness state', async () => {

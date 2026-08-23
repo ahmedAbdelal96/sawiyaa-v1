@@ -7,6 +7,101 @@ import { AcademyProgramEnrollmentStatus, PaymentStatus } from '@prisma/client';
 export class AcademyProgramEnrollmentPresenter {
   constructor(private readonly academyProgramPresenter: AcademyProgramPresenter) {}
 
+  /** Lean projection for the paginated Admin participants table. */
+  presentAdminEnrollmentListItem(input: any, locale: SupportedLocale) {
+    const item = this.presentEnrollmentItem(input, locale);
+    return {
+      id: item.id,
+      status: item.status,
+      paymentStatus: item.paymentStatus,
+      registeredAt: item.registeredAt,
+      confirmedAt: item.confirmedAt,
+      completedAt: item.completedAt,
+      contactCountry: item.contactCountry,
+      submittedCountry: item.submittedCountry,
+      selectedAmountSnapshot: item.selectedAmountSnapshot,
+      selectedCurrencyCode: item.selectedCurrencyCode,
+      program: item.program,
+      learner: {
+        id: item.learner.id,
+        fullName: item.learner.fullName,
+        phoneNumber: item.learner.phoneNumber,
+        whatsappNumber: item.learner.whatsappNumber,
+        email: item.learner.email,
+        countryCode: item.learner.countryCode,
+        countryCodeDeclared: item.learner.countryCodeDeclared,
+        sourceLabel: item.learner.sourceLabel,
+        city: null,
+        jobTitle: null,
+        employer: null,
+        education: null,
+        notes: null,
+      },
+      payment: item.payment ? { status: item.payment.status } : null,
+      participant: {
+        name: item.learner.fullName,
+        email: item.learner.email ?? item.contactEmail,
+        phone: item.learner.phoneNumber ?? item.contactPhone,
+      },
+      attendanceSummary: item.attendanceSummary,
+      certificate: {
+        status: item.certificate.downloadAvailable ? 'UPLOADED' : 'NOT_UPLOADED',
+        downloadAvailable: item.certificate.downloadAvailable,
+      },
+      account: { status: item.user ? 'EXISTING' : 'NONE' },
+    };
+  }
+
+  /** Dedicated Admin detail projection; never exposes public tokens or payment-provider secrets. */
+  presentAdminEnrollmentDetail(input: any, locale: SupportedLocale) {
+    const item = this.presentEnrollmentItem(input, locale);
+    return {
+      id: item.id,
+      status: item.status,
+      paymentStatus: item.paymentStatus,
+      registeredAt: item.registeredAt,
+      confirmedAt: item.confirmedAt,
+      completedAt: item.completedAt,
+      contactCountry: item.contactCountry,
+      submittedCountry: item.submittedCountry,
+      selectedAmountSnapshot: item.selectedAmountSnapshot,
+      selectedCurrencyCode: item.selectedCurrencyCode,
+      participant: {
+        name: item.learner.fullName,
+        email: item.learner.email ?? item.contactEmail,
+        phone: item.learner.phoneNumber ?? item.contactPhone,
+        whatsapp: item.learner.whatsappNumber ?? item.contactWhatsapp,
+      },
+      learner: {
+        id: item.learner.id,
+        fullName: item.learner.fullName,
+        phoneNumber: item.learner.phoneNumber,
+        whatsappNumber: item.learner.whatsappNumber,
+        email: item.learner.email,
+        countryCode: item.learner.countryCode,
+        countryCodeDeclared: item.learner.countryCodeDeclared,
+        sourceLabel: item.learner.sourceLabel,
+        city: null,
+        jobTitle: null,
+        employer: null,
+        education: null,
+        notes: null,
+      },
+      payment: item.payment ? { status: item.payment.status } : null,
+      program: item.program,
+      attendanceSummary: item.attendanceSummary,
+      certificate: {
+        status: item.certificate.downloadAvailable ? 'UPLOADED' : 'NOT_UPLOADED',
+        fileName: item.certificate.fileName,
+        uploadedAt: item.certificate.uploadedAt,
+        downloadAvailable: item.certificate.downloadAvailable,
+      },
+      account: item.user
+        ? { status: 'EXISTING', name: item.user.displayName, email: null }
+        : { status: 'NONE', name: null, email: null },
+    };
+  }
+
   presentEnrollmentItem(
     input: {
       id: string;

@@ -129,6 +129,89 @@ describe('CalculateSessionFinancialBreakdownService', () => {
     expect(result.amountTotal).toBe('555.00');
   });
 
+  it('does not require an internal commission rule to quote an instant session', async () => {
+    (resolveCommissionRuleService.resolveForSession as jest.Mock).mockRejectedValue(
+      new BadRequestException({ error: 'FINANCIAL_RULE_COMMISSION_RULE_NOT_FOUND' }),
+    );
+
+    const result = await service.calculate({
+      requestCountryIsoCode: 'EG',
+      session: {
+        id: 'session-instant-no-rule',
+        flowType: SessionFlowType.INSTANT,
+        sessionMode: SessionMode.VIDEO,
+        durationMinutes: 30,
+        practitioner: {
+          id: 'practitioner-1',
+          publicSlug: 'dr-youssef',
+          instantBookingPrice30Egp: '555.00',
+          instantBookingPrice30Usd: '35.00',
+          instantBookingPrice60Egp: '777.00',
+          instantBookingPrice60Usd: '49.00',
+          countryId: 'country-egy',
+          country: { isoCode: 'EGY', currencyCode: 'EGP' },
+          specialties: [],
+        },
+        patient: {
+          id: 'patient-1',
+          countryId: 'country-egy',
+          country: { isoCode: 'EGY' },
+        },
+        instantBookingRequest: {
+          metadataJson: {
+            pricingSnapshot: {
+              EGP: { 30: '555.00' },
+              USD: { 30: '35.00' },
+            },
+          },
+        },
+      },
+    });
+
+    expect(resolveCommissionRuleService.resolveForSession).not.toHaveBeenCalled();
+    expect(result.amountTotal).toBe('555.00');
+    expect(result.commissionRuleId).toBeNull();
+    expect(result.breakdown.platformCommissionAmount).toBeNull();
+    expect(result.breakdown.practitionerShareAmount).toBeNull();
+    expect(result.breakdown.commissionRule).toBeNull();
+
+    await expect(
+      service.calculate({
+        requestCountryIsoCode: 'EG',
+        requireCommissionRule: true,
+        session: {
+          id: 'session-instant-payment-readiness',
+          flowType: SessionFlowType.INSTANT,
+          sessionMode: SessionMode.VIDEO,
+          durationMinutes: 30,
+          practitioner: {
+            id: 'practitioner-1',
+            publicSlug: 'dr-youssef',
+            instantBookingPrice30Egp: '555.00',
+            instantBookingPrice30Usd: '35.00',
+            instantBookingPrice60Egp: '777.00',
+            instantBookingPrice60Usd: '49.00',
+            countryId: 'country-egy',
+            country: { isoCode: 'EGY', currencyCode: 'EGP' },
+            specialties: [],
+          },
+          patient: {
+            id: 'patient-1',
+            countryId: 'country-egy',
+            country: { isoCode: 'EGY' },
+          },
+          instantBookingRequest: {
+            metadataJson: {
+              pricingSnapshot: { EGP: { 30: '555.00' } },
+            },
+          },
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: { error: 'FINANCIAL_RULE_COMMISSION_RULE_NOT_FOUND' },
+    });
+  });
+
   it('falls back to instant practitioner pricing when no snapshot exists', async () => {
     const result = await service.calculate({
       requestCountryIsoCode: 'EG',
@@ -290,6 +373,14 @@ describe('CalculateSessionFinancialBreakdownService', () => {
         requestCountryIsoCode,
         session: {
           ...session,
+          practitioner: {
+            ...session.practitioner,
+            country: null,
+          },
+          patient: {
+            ...session.patient,
+            country: null,
+          },
           payments: [],
         },
       });

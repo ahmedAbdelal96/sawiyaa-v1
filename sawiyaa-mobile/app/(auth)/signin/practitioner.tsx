@@ -22,15 +22,16 @@ function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
 }
 
-const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> = __DEV__
-  ? [
-      {
-        label: "د. ممارس تجريبي",
-        email: "dr.mohamed@hesba.local",
-        password: "Practitioner2@12345",
-      },
-    ]
-  : [];
+const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> =
+  __DEV__
+    ? [
+        {
+          label: "د. ممارس تجريبي",
+          email: "dr.mohamed@hesba.local",
+          password: "Practitioner2@12345",
+        },
+      ]
+    : [];
 
 export default function PractitionerSignInScreen() {
   const router = useRouter();
@@ -52,13 +53,20 @@ export default function PractitionerSignInScreen() {
   const isArabic = i18n.language?.startsWith("ar");
   const practitionerEyebrow = isArabic
     ? "🩺 بوابة المختصين والخبراء"
-    : t("auth.practitionerSignIn.eyebrow", { defaultValue: "Practitioner Portal" });
+    : t("auth.practitionerSignIn.eyebrow", {
+        defaultValue: "Practitioner Portal",
+      });
   const practitionerTitle = isArabic
     ? "دخول مساحة عمل المختص"
-    : t("auth.practitionerSignIn.title", { defaultValue: "Sign In as Practitioner" });
+    : t("auth.practitionerSignIn.title", {
+        defaultValue: "Sign In as Practitioner",
+      });
   const practitionerSubtitle = isArabic
     ? "أهلاً بك دكتور، سجل دخولك لمتابعة استشاراتك ورعاية مرضاك"
-    : t("auth.practitionerSignIn.subtitle", { defaultValue: "Access your dashboard, schedule, and patient care requests" });
+    : t("auth.practitionerSignIn.subtitle", {
+        defaultValue:
+          "Access your dashboard, schedule, and patient care requests",
+      });
 
   const emailError = useMemo(() => {
     if (!email) {
@@ -125,24 +133,67 @@ export default function PractitionerSignInScreen() {
       eyebrow={practitionerEyebrow}
       title={practitionerTitle}
       subtitle={practitionerSubtitle}
-      footer={
-        <TouchableOpacity onPress={() => router.replace("/(auth)")}>
-          <Text color={theme.colors.textMuted} style={styles.backText}>
-            {t("auth.common.backToEntry", { defaultValue: isArabic ? "الرجوع لاختيار مسار الدخول" : "Back to sign in options" })}
-          </Text>
-        </TouchableOpacity>
-      }
     >
       {!challenge ? (
         <>
+          <View
+            style={[
+              styles.securityHint,
+              {
+                backgroundColor: publicTheme.accentMint,
+                borderColor: publicTheme.subtleBorder,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.securityIcon,
+                { backgroundColor: publicTheme.raisedSurface },
+              ]}
+            >
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={18}
+                color={publicTheme.primaryText}
+              />
+            </View>
+            <View style={styles.securityCopy}>
+              <Text
+                color={publicTheme.primaryText}
+                weight="700"
+                style={styles.securityTitle}
+              >
+                {t("auth.practitionerSignIn.secureHintTitle", {
+                  defaultValue: isArabic
+                    ? "دخول آمن لمساحة عملك"
+                    : "Secure access to your workspace",
+                })}
+              </Text>
+              <Text
+                color={publicTheme.secondaryText}
+                style={styles.securityDescription}
+              >
+                {t("auth.practitionerSignIn.secureHintDescription", {
+                  defaultValue: isArabic
+                    ? "سيتم طلب رمز تحقق إضافي لحماية حسابك."
+                    : "An additional verification code will protect your account.",
+                })}
+              </Text>
+            </View>
+          </View>
+
           {/* Email Input */}
           <Input
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
-            label={t("auth.fields.email", { defaultValue: isArabic ? "البريد الإلكتروني" : "Email address" })}
+            label={t("auth.fields.email", {
+              defaultValue: isArabic ? "البريد الإلكتروني" : "Email address",
+            })}
             onChangeText={setEmail}
-            placeholder={t("auth.placeholders.email", { defaultValue: "practitioner@domain.com" })}
+            placeholder={t("auth.placeholders.email", {
+              defaultValue: "practitioner@domain.com",
+            })}
             value={email}
             error={emailError ?? undefined}
             leftElement={
@@ -158,9 +209,13 @@ export default function PractitionerSignInScreen() {
           <Input
             autoCapitalize="none"
             autoComplete="password"
-            label={t("auth.fields.password", { defaultValue: isArabic ? "كلمة المرور" : "Password" })}
+            label={t("auth.fields.password", {
+              defaultValue: isArabic ? "كلمة المرور" : "Password",
+            })}
             onChangeText={setPassword}
-            placeholder={t("auth.placeholders.password", { defaultValue: "••••••••••••" })}
+            placeholder={t("auth.placeholders.password", {
+              defaultValue: "••••••••••••",
+            })}
             secureTextEntry={!showPassword}
             value={password}
             leftElement={
@@ -175,7 +230,9 @@ export default function PractitionerSignInScreen() {
                 onPress={() => setShowPassword((v) => !v)}
                 style={styles.eyeButton}
                 accessibilityRole="button"
-                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                accessibilityLabel={
+                  showPassword ? "Hide password" : "Show password"
+                }
               >
                 <Ionicons
                   name={showPassword ? "eye-off-outline" : "eye-outline"}
@@ -200,7 +257,11 @@ export default function PractitionerSignInScreen() {
               weight="700"
               style={styles.forgotText}
             >
-              {t("auth.practitionerSignIn.forgotPassword", { defaultValue: isArabic ? "نسيت كلمة المرور؟" : "Forgot password?" })}
+              {t("auth.practitionerSignIn.forgotPassword", {
+                defaultValue: isArabic
+                  ? "نسيت كلمة المرور؟"
+                  : "Forgot password?",
+              })}
             </Text>
           </TouchableOpacity>
 
@@ -218,10 +279,16 @@ export default function PractitionerSignInScreen() {
           <Button
             title={
               isSubmitting
-                ? t("auth.common.pleaseWait", { defaultValue: isArabic ? "جارٍ تسجيل الدخول..." : "Please wait..." })
+                ? t("auth.common.pleaseWait", {
+                    defaultValue: isArabic
+                      ? "جارٍ تسجيل الدخول..."
+                      : "Please wait...",
+                  })
                 : isArabic
                   ? "دخول مساحة العمل"
-                  : t("auth.practitionerSignIn.submit", { defaultValue: "Sign In as Practitioner" })
+                  : t("auth.practitionerSignIn.submit", {
+                      defaultValue: "Sign In as Practitioner",
+                    })
             }
             onPress={() => void submitCredentials()}
             disabled={
@@ -233,22 +300,20 @@ export default function PractitionerSignInScreen() {
             ]}
           />
 
-          {/* Sign Up Redirect Link */}
-          <View style={styles.footerRow}>
-            <Text color={publicTheme.secondaryText} style={styles.footerLabel}>
-              {isArabic
-                ? "ليس لديك حساب مختص؟"
-                : t("auth.practitionerSignIn.noAccount", { defaultValue: "Don't have a practitioner account?" })}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(auth)/signup/practitioner")}
+          {/* Practitioner registration is intentionally Web-only. Keep the route
+              available for existing product flows, but do not expose navigation
+              to it from Mobile sign-in. */}
+          <View style={styles.footerNotice}>
+            <Text
+              color={publicTheme.secondaryText}
+              style={styles.footerNoticeText}
             >
-              <Text style={[styles.signupLink, { color: publicTheme.primaryText }]}>
-                {isArabic
-                  ? "قدم طلب انضمام عبر الويب"
-                  : t("auth.practitionerSignIn.createAccount", { defaultValue: "Apply on web" })}
-              </Text>
-            </TouchableOpacity>
+              {t("auth.practitionerSignIn.registrationWebOnly", {
+                defaultValue: isArabic
+                  ? "إنشاء حساب المختص والتقديم متاحان عبر الموقع الإلكتروني فقط."
+                  : "Practitioner account creation and applications are available on the Web only.",
+              })}
+            </Text>
           </View>
 
           {/* Dev Test Accounts Section */}
@@ -263,7 +328,11 @@ export default function PractitionerSignInScreen() {
               ]}
             >
               <View style={styles.devHeader}>
-                <Ionicons name="flash-outline" size={14} color={publicTheme.primaryText} />
+                <Ionicons
+                  name="flash-outline"
+                  size={14}
+                  color={publicTheme.primaryText}
+                />
                 <Text
                   variant="caption"
                   weight="700"
@@ -292,7 +361,10 @@ export default function PractitionerSignInScreen() {
                     activeOpacity={0.8}
                   >
                     <Text
-                      style={[styles.devChipTitle, { color: publicTheme.primaryText }]}
+                      style={[
+                        styles.devChipTitle,
+                        { color: publicTheme.primaryText },
+                      ]}
                       weight="700"
                     >
                       {a.label}
@@ -323,13 +395,21 @@ export default function PractitionerSignInScreen() {
             ]}
           >
             <View style={styles.challengeIconRow}>
-              <Ionicons name="shield-checkmark-outline" size={24} color={publicTheme.primaryText} />
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={24}
+                color={publicTheme.primaryText}
+              />
               <Text
                 weight="bold"
                 color={publicTheme.primaryText}
                 style={styles.challengeTitle}
               >
-                {t("auth.practitionerSignIn.otpTitle", { defaultValue: isArabic ? "التحقق المزدوج المطلوب" : "OTP Verification" })}
+                {t("auth.practitionerSignIn.otpTitle", {
+                  defaultValue: isArabic
+                    ? "التحقق المزدوج المطلوب"
+                    : "OTP Verification",
+                })}
               </Text>
             </View>
             <Text
@@ -342,7 +422,10 @@ export default function PractitionerSignInScreen() {
                 defaultValue: `أدخل كود التحقق المرسل عبر ${challenge.channel} إلى ${challenge.maskedTarget}`,
               })}
             </Text>
-            <Text color={publicTheme.secondaryText} style={styles.challengeMeta}>
+            <Text
+              color={publicTheme.secondaryText}
+              style={styles.challengeMeta}
+            >
               {t("auth.practitionerSignIn.challengeExpires", {
                 expiresAt: challenge.expiresAt
                   ? formatViewerDateTime(challenge.expiresAt, {
@@ -359,7 +442,9 @@ export default function PractitionerSignInScreen() {
             onChangeText={setOtpCode}
             length={6}
             disabled={isSubmitting}
-            label={t("auth.fields.otpCode", { defaultValue: isArabic ? "رمز التحقق (OTP)" : "Verification Code" })}
+            label={t("auth.fields.otpCode", {
+              defaultValue: isArabic ? "رمز التحقق (OTP)" : "Verification Code",
+            })}
           />
 
           {infoText ? (
@@ -379,8 +464,12 @@ export default function PractitionerSignInScreen() {
           <Button
             title={
               isSubmitting
-                ? t("auth.common.pleaseWait", { defaultValue: "Please wait..." })
-                : t("auth.practitionerSignIn.verifyOtp", { defaultValue: isArabic ? "تأكيد والوصول" : "Verify Code" })
+                ? t("auth.common.pleaseWait", {
+                    defaultValue: "Please wait...",
+                  })
+                : t("auth.practitionerSignIn.verifyOtp", {
+                    defaultValue: isArabic ? "تأكيد والوصول" : "Verify Code",
+                  })
             }
             onPress={() => void submitOtp()}
             disabled={isSubmitting || otpCode.trim().length < 6}
@@ -390,7 +479,11 @@ export default function PractitionerSignInScreen() {
             ]}
           />
           <Button
-            title={t("auth.practitionerSignIn.changeCredentials", { defaultValue: isArabic ? "تغيير بيانات الدخول" : "Change Login Info" })}
+            title={t("auth.practitionerSignIn.changeCredentials", {
+              defaultValue: isArabic
+                ? "تغيير بيانات الدخول"
+                : "Change Login Info",
+            })}
             variant="secondary"
             onPress={() => {
               setChallenge(null);
@@ -404,7 +497,10 @@ export default function PractitionerSignInScreen() {
       )}
 
       {isSubmitting ? (
-        <ActivityIndicator style={styles.loader} color={publicTheme.primaryText} />
+        <ActivityIndicator
+          style={styles.loader}
+          color={publicTheme.primaryText}
+        />
       ) : null}
     </AuthScaffold>
   );
@@ -474,21 +570,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 14,
   },
-  footerRow: {
-    flexDirection: "row",
+  footerNotice: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
     marginTop: 8,
-    flexWrap: "wrap",
+    paddingHorizontal: 16,
   },
-  footerLabel: {
+  footerNoticeText: {
     fontSize: 13.5,
-  },
-  signupLink: {
-    fontWeight: "800",
-    textDecorationLine: "underline",
-    fontSize: 13.5,
+    lineHeight: 20,
+    textAlign: "center",
   },
   devBox: {
     borderRadius: 16,
@@ -544,10 +635,33 @@ const styles = StyleSheet.create({
   challengeMeta: {
     fontSize: 11.5,
   },
-  backText: {
-    fontSize: 13,
-    textAlign: "center",
-    textDecorationLine: "underline",
+  securityHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 18,
+    gap: 10,
+  },
+  securityIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  securityCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  securityTitle: {
+    fontSize: 12.5,
+  },
+  securityDescription: {
+    fontSize: 11.5,
+    lineHeight: 17,
   },
   loader: {
     marginTop: 8,

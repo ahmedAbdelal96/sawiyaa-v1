@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -22,7 +23,7 @@ import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
-import { SessionMode } from '@prisma/client';
+import { resolveCountryFromRequest } from '@modules/auth/utils/request-country-context.util';
 import { CancelInstantBookingRequestDto } from '../dto/cancel-instant-booking-request.dto';
 import { CreateInstantBookingRequestDto } from '../dto/create-instant-booking-request.dto';
 import {
@@ -76,13 +77,16 @@ export class PatientInstantBookingController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,
     @Body() body: CreateInstantBookingRequestDto,
+    @Req() request: Request,
+    @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.createInstantBookingRequestUseCase.execute({
       userId: currentUser.id,
       locale,
       practitionerSlug: body.practitionerSlug,
       durationMinutes: body.durationMinutes,
-      sessionMode: body.sessionMode ?? SessionMode.VIDEO,
+      countryIsoCode: resolveCountryFromRequest(request).countryCode,
+      idempotencyKey,
     });
   }
 

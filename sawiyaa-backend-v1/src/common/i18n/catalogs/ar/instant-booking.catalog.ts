@@ -20,6 +20,8 @@ export const arInstantBookingCatalog = {
     requestAlreadyFinalized: 'تمت معالجة طلب الحجز الفوري بالفعل',
   },
   notifications: {
+    requestCreatedTitle: 'طلب حجز فوري جديد',
+    requestCreatedBody: 'لديك طلب جديد لحجز جلسة فورية. افتح الطلب لاتخاذ القرار.',
     requestAcceptedTitle: 'تم قبول طلب الحجز الفوري',
     requestAcceptedBody:
       'تم قبول طلب الحجز الفوري الخاص بك. افتح الطلب للمتابعة إلى الدفع.',

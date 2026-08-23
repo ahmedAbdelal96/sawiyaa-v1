@@ -11,6 +11,7 @@ import {
   type GeneralChatAvailabilityViewModel,
 } from '../types/general-chat.types';
 import { GeneralChatModerationStateService } from './general-chat-moderation-state.service';
+import { resolveSessionChatAvailability } from '@modules/sessions/utils/session-chat-policy.util';
 
 type ModerationSnapshot = {
   status: ConversationStatus;
@@ -81,46 +82,15 @@ export class GeneralChatAvailabilityService {
     }
 
     if (input.linkedSession) {
-      const status = input.linkedSession.status;
-
-      if (
-        status === SessionStatus.READY_TO_JOIN ||
-        status === SessionStatus.IN_PROGRESS
-      ) {
-        return {
-          canRead: true,
-          canSend: true,
-          readOnly: false,
-          reason: GENERAL_CHAT_AVAILABILITY_REASONS.allowed,
-        };
-      }
-
-      if (
-        status === SessionStatus.COMPLETED ||
-        status === SessionStatus.AWAITING_COMPLETION_CONFIRMATION
-      ) {
-        return {
-          canRead: true,
-          canSend: false,
-          readOnly: true,
-          reason: GENERAL_CHAT_AVAILABILITY_REASONS.sessionEnded,
-        };
-      }
-
-      if (status === SessionStatus.CANCELLED) {
-        return {
-          canRead: true,
-          canSend: false,
-          readOnly: true,
-          reason: GENERAL_CHAT_AVAILABILITY_REASONS.sessionCancelled,
-        };
-      }
-
+      const sessionAvailability = resolveSessionChatAvailability({
+        ...input.linkedSession,
+        now,
+      });
       return {
-        canRead: false,
-        canSend: false,
-        readOnly: true,
-        reason: GENERAL_CHAT_AVAILABILITY_REASONS.sessionNotStarted,
+        canRead: true,
+        canSend: sessionAvailability.canSend,
+        readOnly: !sessionAvailability.canSend,
+        reason: sessionAvailability.reason,
       };
     }
 

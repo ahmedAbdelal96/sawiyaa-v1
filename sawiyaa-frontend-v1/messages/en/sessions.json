@@ -54,7 +54,51 @@
       "yourRating": "Your rating: {rating}/5"
     },
     "needsRatingEmptyHeading": "No sessions need a rating right now",
-    "needsRatingEmptyNote": "Completed sessions that are still waiting for your feedback will appear here."
+  "needsRatingEmptyNote": "Completed sessions that are still waiting for your feedback will appear here.",
+  "eyebrow": "Session dashboard",
+  "title": "My sessions",
+  "note": "A clear layout that defaults to newest sessions first, while letting you change the order from the toolbar.",
+  "paymentExpiredNote": "Sessions with expired payment windows appear as their own state, not as finished sessions.",
+  "summaryLabel": "Total sessions",
+  "sortLabel": "Sort sessions",
+  "sortNewest": "Newest first",
+  "sortOldest": "Oldest first",
+  "pageLabel": "Page {page} of {totalPages}",
+  "loading": "Loading sessions...",
+  "emptyTabTitle": "No sessions in this section",
+  "emptyTabNote": "There are no sessions matching this category right now.",
+  "rowsPerPage": "Sessions per page",
+  "expiredPaymentBadge": "Payment time expired",
+  "table": {
+    "reference": "Reference",
+    "practitioner": "Specialist",
+    "scheduledAt": "Scheduled",
+    "duration": "Duration",
+    "status": "Status",
+    "actions": "Actions",
+    "open": "View details",
+    "noSchedule": "Not scheduled yet"
+  },
+  "summaryCards": {
+    "total": { "label": "Total", "hint": "All sessions linked to your account." },
+    "action": { "label": "Needs action", "hint": "Waiting for payment, confirmation, or entry." },
+    "active": { "label": "Active", "hint": "Confirmed, upcoming, or live sessions." },
+    "expired": { "label": "Payment expired", "hint": "The booking did not complete in time." },
+    "history": { "label": "Archive", "hint": "Finished and inactive sessions." }
+  },
+  "toolbar": {
+    "sort": "Sort:",
+    "rows": "Rows:"
+  },
+  "emptyJourney": {
+    "title": "How to get started",
+    "note": "Find the right specialist, review the details, and book in one step.",
+    "steps": ["Search", "Compare", "Book"],
+    "startTitle": "Start here",
+    "startNote": "Your first session will appear here, then you can track every status in one place.",
+    "startBooking": "Start booking",
+    "explore": "Explore sessions"
+  }
   },
   "card": {
     "with": "with",
@@ -73,6 +117,7 @@
     "JOINABLE": "Ready to join",
     "IN_PROGRESS": "In progress",
     "AWAITING_COMPLETION_CONFIRMATION": "Waiting for session confirmation",
+    "AWAITING_ADMIN_RESOLUTION": "Awaiting admin resolution",
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled",
     "NO_SHOW": "No show",
@@ -111,11 +156,16 @@
       "note": "Everything you need to know at a glance.",
       "practitioner": "Practitioner",
       "sessionCode": "Session code",
-      "scheduledAt": "Scheduled for",
+    "scheduledAt": "Scheduled for",
+    "expectedEnd": "Expected end",
       "duration": "Duration",
       "mode": "Session type",
-      "status": "Status"
-    },
+    "status": "Status"
+  },
+  "communication": {
+    "heading": "Session communication and access",
+    "note": "Message the specialist or join the session room when available."
+  },
     "presentation": {
       "UPCOMING": {
         "title": "Coming up soon",
@@ -189,6 +239,10 @@
         "closing": "Closing..."
       },
       "states": {
+        "accessDenied": {
+          "heading": "You do not have access to this session's conversation.",
+          "note": ""
+        },
         "notAvailable": {
           "heading": "Chat is not available yet",
           "note": "This chat opens when the session is ready to join or live.",
@@ -225,7 +279,11 @@
           "note": "Start the conversation when you are ready."
         },
         "sendError": "Could not send this message right now.",
-        "uploadError": "Could not upload this file right now."
+    "uploadError": "Could not upload this file right now.",
+    "scheduledLabel": "Scheduled:",
+    "loading": "Loading...",
+    "noMessages": "No previous messages for this session.",
+    "noMessagesNote": "Historical messages will appear here when available."
       }
     },
     "currentStateHeading": "Current session state",
@@ -563,9 +621,72 @@
     "detail": {
       "backToSessions": "Back to sessions",
       "heading": "Session Details",
-      "summary": {
-        "timezoneLabel": "Timezone"
-      },
+    "summary": {
+      "timezoneLabel": "Timezone"
+    },
+    "ui": {
+      "sessionWith": "Session with {name}",
+      "minutes": "{count} min",
+      "video": "Video",
+      "audio": "Audio",
+      "chatMode": "Chat",
+      "instantSession": "Instant session",
+      "scheduledSession": "Scheduled session",
+      "flowType": "Flow type",
+      "roomStatus": "Room status",
+      "expectedEnd": "Scheduled end",
+      "internalNotes": "Internal notes",
+      "timeline": "Event timeline and history",
+      "reason": "Reason:",
+      "patientProfile": "Patient profile",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "age": "Age",
+      "years": "years",
+      "preferredLanguage": "Preferred language",
+      "arabic": "Arabic",
+      "english": "English",
+      "country": "Country",
+      "bookingPayment": "Booking and payment",
+      "coverage": "Coverage",
+      "package": "Package",
+      "corporate": "Corporate",
+      "directPayment": "Direct payment",
+      "paymentStatus": "Payment status",
+      "packageCovered": "Package covered",
+      "unpaid": "Unpaid",
+      "total": "Total",
+      "openMessages": "Open in messages"
+    },
+    "eventTypes": {
+      "SESSION_CREATED": "Session created",
+      "PAYMENT_PENDING": "Payment pending",
+      "PAYMENT_CONFIRMED": "Payment confirmed",
+      "PRACTITIONER_ACCEPTED": "Session accepted by specialist",
+      "PRACTITIONER_REJECTED": "Session rejected by specialist",
+      "SESSION_CONFIRMED": "Session confirmed",
+      "SESSION_READY_TO_JOIN": "Session ready to join",
+      "PATIENT_JOINED": "Patient joined the room",
+      "PRACTITIONER_JOINED": "Specialist joined the room",
+      "SESSION_STARTED": "Session started",
+      "SESSION_AWAITING_COMPLETION_CONFIRMATION": "Awaiting completion confirmation",
+      "SESSION_COMPLETED": "Session completed",
+      "CANCELLED_BY_PATIENT": "Cancelled by patient",
+      "CANCELLED_BY_PRACTITIONER": "Cancelled by specialist",
+      "EXPIRED_UNPAID": "Expired without payment",
+      "NO_SHOW_PATIENT": "Patient no-show",
+      "NO_SHOW_PRACTITIONER": "Specialist no-show",
+      "PROVIDER_ROOM_CREATED": "Live room created",
+      "PROVIDER_ROOM_ENDED": "Live room closed"
+    },
+    "paymentStatuses": {
+      "CREATED": "Payment created",
+      "CAPTURED": "Payment captured",
+      "FAILED": "Payment failed",
+      "CANCELLED": "Payment cancelled",
+      "REFUNDED": "Payment refunded"
+    },
       "chatCard": {
         "heading": "Chat",
         "note": "Open a chat with your patient for this session.",
@@ -1030,12 +1151,31 @@
         "dashboardLink": "Open requests",
         "summary": {
           "pendingCount": "pending requests",
-          "nearestExpiry": "Nearest expiry",
+      "nearestExpiry": "Nearest expiry",
+      "nearestExpiryExpired": "Request expired",
+      "nearestExpiryInHours": "Nearest expiry in {hours}h {minutes}m",
+      "nearestExpiryInMinutes": "Nearest expiry in {minutes}m {seconds}s",
           "liveHintTitle": "Live readiness",
           "liveHint": "Pending requests refresh automatically every few seconds so they stay visible.",
           "noPending": "No pending requests right now.",
-          "timezoneNote": "Times shown in {timezone}"
-        },
+        "timezoneNote": "Times shown in {timezone}"
+      },
+      "unknownPatient": "Unknown patient",
+      "ui": {
+        "refreshTitle": "Refresh data",
+        "refresh": "Refresh",
+        "noPending": "No pending requests",
+        "rejected": "Rejected requests",
+        "rejectedHint": "Requests that were declined",
+        "accepted": "Accepted requests",
+        "acceptedHint": "Converted to sessions",
+        "total": "Total requests",
+        "searchPlaceholder": "Search by patient name...",
+        "tableTitle": "Instant booking request list",
+        "tableSubtitle": "Requests are shown newest first with filters for quick action",
+        "filterEmptyTitle": "No requests found for this filter",
+        "filterEmptyNote": "Try selecting another filter."
+      },
         "dashboardTitle": "{count} requests need your attention now",
         "pendingHeading": "Pending requests",
         "pendingNote": "These requests need a fast response before the timer runs out.",
@@ -1045,7 +1185,20 @@
           "title": "No instant booking requests right now",
           "note": "When a new request arrives, it will appear here with a countdown and the right actions."
         },
-        "patientLabel": "Patient",
+      "patientLabel": "Patient",
+      "sessionDetailsLabel": "Session details",
+      "requestTimeLabel": "Request time",
+      "expiryLabel": "Expiry / countdown",
+      "statusLabel": "Status",
+      "actionsLabel": "Actions",
+      "filters": {
+        "all": "All",
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Declined",
+        "expired": "Expired",
+        "cancelled": "Cancelled"
+      },
         "statuses": {
           "PENDING": "Pending",
           "ACCEPTED": "Accepted",

@@ -42,14 +42,21 @@ export function resolveSessionChatAvailability(
 ): GeneralChatAvailabilityViewModel {
   const canSend =
     input.status === SessionStatus.READY_TO_JOIN || input.status === SessionStatus.IN_PROGRESS;
-  const canRead =
-    ([
-      SessionStatus.READY_TO_JOIN,
-      SessionStatus.IN_PROGRESS,
-      SessionStatus.COMPLETED,
-      SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
-      SessionStatus.CANCELLED,
-    ] as SessionStatus[]).includes(input.status);
+  // Reading is broader than sending, but it still requires a confirmed session
+  // lifecycle. The caller separately enforces that the viewer is a participant.
+  const canRead = ([
+    SessionStatus.UPCOMING,
+    SessionStatus.READY_TO_JOIN,
+    SessionStatus.IN_PROGRESS,
+    SessionStatus.AWAITING_COMPLETION_CONFIRMATION,
+    SessionStatus.AWAITING_ADMIN_RESOLUTION,
+    SessionStatus.COMPLETED,
+    SessionStatus.CANCELLED,
+    SessionStatus.PATIENT_NO_SHOW,
+    SessionStatus.PRACTITIONER_NO_SHOW,
+    SessionStatus.BOTH_NO_SHOW,
+    SessionStatus.EXPIRED,
+  ] as SessionStatus[]).includes(input.status);
 
   return {
     canRead,

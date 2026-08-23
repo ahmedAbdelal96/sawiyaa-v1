@@ -34,6 +34,12 @@ export class PractitionerPublicationResponseDto {
   @ApiProperty({ enum: UserStatus }) accountStatus!: UserStatus;
   @ApiProperty() isPublished!: boolean;
   @ApiProperty() isReadyForPublication!: boolean;
+  @ApiProperty() isApproved!: boolean;
+  @ApiProperty() isProfileComplete!: boolean;
+  @ApiProperty() hasRequiredSpecialty!: boolean;
+  @ApiProperty() hasRequiredNormalPricing!: boolean;
+  @ApiProperty() canPublish!: boolean;
+  @ApiProperty({ type: [String] }) missingRequirements!: string[];
   @ApiProperty({
     type: PractitionerPublicationBlockerResponseDto,
     isArray: true,

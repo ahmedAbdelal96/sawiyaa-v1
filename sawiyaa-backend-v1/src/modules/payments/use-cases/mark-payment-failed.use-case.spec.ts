@@ -17,6 +17,7 @@ describe('MarkPaymentFailedUseCase', () => {
         amountFromWallet: { gt: () => false, toString: () => '0.00' },
       }),
       createEvent: jest.fn().mockResolvedValue({}),
+      createWebhookReceipt: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'payment_1',
         paymentPurpose: input?.paymentPurpose ?? 'SESSION_BOOKING',

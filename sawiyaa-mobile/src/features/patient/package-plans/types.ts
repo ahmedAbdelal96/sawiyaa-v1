@@ -1,8 +1,4 @@
-import type {
-  SessionJoinAvailability,
-  SessionMode,
-  SessionPresentationStatus,
-} from "../sessions/types";
+import type { SessionMode, SessionOperationalInterpretation } from "../sessions/types";
 
 export type PackagePlanSessionQuote = {
   planCode: string;
@@ -98,8 +94,7 @@ export type PatientPackagePurchaseSessionSummary = {
     | "BOTH_NO_SHOW"
     | "AWAITING_COMPLETION_CONFIRMATION"
     | "EXPIRED";
-  presentationStatus: SessionPresentationStatus;
-  joinAvailability: SessionJoinAvailability;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;

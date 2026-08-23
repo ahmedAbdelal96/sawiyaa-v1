@@ -1,34 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { GeneralChatAvailabilityDto } from '@modules/chat/dto/general-chat-response.dto';
-import {
-  SessionJoinBlockedReason,
-  SessionPresentationStatus,
-} from '../types/session-video.types';
-
-export class SessionJoinAvailabilityDto {
-  @ApiProperty()
-  canJoin!: boolean;
-
-  @ApiProperty({
-    nullable: true,
-    enum: [
-      'SESSION_NOT_JOINABLE_STATUS',
-      'SESSION_NOT_VIDEO_MODE',
-      'SESSION_TIME_WINDOW_NOT_OPEN',
-      'SESSION_RUNTIME_NOT_PREPARED',
-      'SESSION_JOIN_WINDOW_CLOSED',
-      'SESSION_ROOM_CLOSED',
-    ],
-  })
-  blockedReason!: SessionJoinBlockedReason | null;
-
-  @ApiProperty({ nullable: true })
-  availableAt!: string | null;
-
-  @ApiProperty({ nullable: true })
-  expiresAt!: string | null;
-}
 
 export class PatientSessionActionsDto {
   @ApiProperty()
@@ -79,10 +51,6 @@ export class SessionItemResponseDto {
   @ApiProperty({ enum: SessionStatus })
   status!: SessionStatus;
 
-  /** @deprecated Direct alias of status during the coordinated client migration. */
-  @ApiProperty({ enum: SessionStatus, deprecated: true })
-  presentationStatus!: SessionPresentationStatus;
-
   @ApiProperty()
   createdAt!: string;
 
@@ -104,9 +72,6 @@ export class SessionItemResponseDto {
   @ApiProperty({ type: SessionPatientSummaryDto, nullable: true })
   patient!: SessionPatientSummaryDto | null;
 
-  @ApiProperty({ type: SessionJoinAvailabilityDto })
-  joinAvailability!: SessionJoinAvailabilityDto;
-
   @ApiProperty({ type: PatientSessionActionsDto })
   actions!: PatientSessionActionsDto;
 
@@ -114,7 +79,14 @@ export class SessionItemResponseDto {
   chatAvailability!: GeneralChatAvailabilityDto;
 }
 
+export class SessionChatAvailabilityProjectionDto {
+  @ApiProperty()
+  available!: boolean;
+}
+
 export class SessionDetailsResponseDto extends SessionItemResponseDto {
+  @ApiProperty({ type: SessionChatAvailabilityProjectionDto })
+  sessionChat!: SessionChatAvailabilityProjectionDto;
   @ApiProperty()
   flowType!: string;
 

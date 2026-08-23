@@ -232,6 +232,8 @@ import { CalculatePractitionerPayoutConversionService } from './services/calcula
     SessionEarningReviewService,
     WalletRepository,
     PractitionerCurrencyLifecycleService,
+    CalculatePackageSessionAllocationService,
+    ExtractPaymentLedgerBreakdownService,
   ],
 })
 export class FinancialOperationsModule {}

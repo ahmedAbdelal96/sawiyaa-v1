@@ -1,0 +1,17 @@
+appId: com.sawiyaa.mobile
+---
+- launchApp
+- tapOn:
+    text: "Settings|الإعدادات"
+- assertVisible:
+    text: "Language|اللغة"
+- tapOn:
+    text: "العربية|Arabic"
+- assertVisible:
+    text: "المظهر|Appearance"
+- tapOn:
+    text: "English|الإنجليزية"
+- tapOn:
+    text: "Dark|داكن"
+- tapOn:
+    text: "System default|حسب إعداد الجهاز"

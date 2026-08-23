@@ -5,7 +5,7 @@
     "home": "Journey",
     "matching": "Matching",
     "assessments": "Assessments",
-    "practitioners": "Practitioners",
+    "practitioners": "Specialists",
     "sessions": "Sessions",
     "support": "Support",
     "payments": "Payments",
@@ -14,21 +14,21 @@
   "home": {
     "eyebrow": "Patient care space",
     "title": "Start from what matters most to you right now.",
-    "description": "Find a practitioner, review your sessions, or continue your care journey without the heavy dashboard feeling.",
-    "primaryCta": "Find a practitioner",
+    "description": "Find a specialist, review your sessions, or continue your care journey without the heavy dashboard feeling.",
+    "primaryCta": "Find a specialist",
     "secondaryCta": "View my sessions",
     "panel": {
       "title": "A simpler patient flow",
-      "description": "This area is designed around the real patient journey: discover the right practitioner first, then manage sessions and follow-up in one place.",
+      "description": "This area is designed around the real patient journey: discover the right specialist first, then manage sessions and follow-up in one place.",
       "discoveryLabel": "Discovery first",
-      "discoveryValue": "Browse practitioners and specialties before dealing with account details or workspace tools.",
+      "discoveryValue": "Browse specialists and specialties before dealing with account details or workspace tools.",
       "followupLabel": "Follow-up second",
       "followupValue": "Sessions, messages, and payments stay nearby when you need them, without turning the experience into an admin dashboard."
     },
     "cards": {
       "practitioners": {
-        "title": "Browse practitioners",
-        "description": "Explore available practitioners and start from the public discovery experience."
+        "title": "Browse specialists",
+        "description": "Explore available specialists and start from the public discovery experience."
       },
       "sessions": {
         "title": "My sessions",
@@ -50,7 +50,7 @@
     },
     "meta": {
       "title": "Sawiyaa | Patient Care Space",
-      "description": "A simple care-first entry point for patients to discover practitioners and follow their sessions."
+      "description": "A simple care-first entry point for patients to discover specialists and follow their sessions."
     }
   },
   "hub": {
@@ -79,13 +79,13 @@
     },
     "empty": {
       "heading": "Start your care journey",
-      "note": "Find the right practitioner and book your first session.",
-      "cta": "Browse practitioners"
+      "note": "Find the right specialist and book your first session.",
+      "cta": "Browse specialists"
     },
     "links": {
       "sessions": "Sessions",
       "payments": "Payments",
-      "practitioners": "Find a practitioner",
+      "practitioners": "Find a specialist",
       "profile": "Profile"
     }
   },
@@ -98,7 +98,7 @@
       "eyebrow": "My sessions",
       "title": "Keep all your sessions and next steps easy to follow.",
       "description": "This page is where upcoming appointments, past sessions, and care follow-up will become easiest to review.",
-      "primaryAction": "Find a practitioner",
+      "primaryAction": "Find a specialist",
       "secondaryAction": "Open messages",
       "steps": {
         "first": {
@@ -115,15 +115,15 @@
         }
       },
       "tips": {
-        "first": "If you are just getting started, begin by finding the practitioner who feels right for you.",
+        "first": "If you are just getting started, begin by finding the specialist who feels right for you.",
         "second": "Come back here whenever you want a clear view of what is upcoming and what already happened.",
         "third": "You should never need to guess the next step after booking."
       }
     },
     "practitioners": {
-      "eyebrow": "Find the right practitioner",
-      "title": "Browse practitioners from a patient-first starting point.",
-      "description": "Use the same trusted discovery flow, but within your care area so choosing the right practitioner feels like part of your journey, not a separate tool.",
+      "eyebrow": "Find the right specialist",
+      "title": "Browse specialists from a patient-first starting point.",
+      "description": "Use the same trusted discovery flow, but within your care area so choosing the right specialist feels like part of your journey, not a separate tool.",
       "secondaryAction": "Back to my care space",
       "steps": {
         "first": {
@@ -132,7 +132,7 @@
         },
         "second": {
           "title": "Compare with less effort",
-          "description": "Each practitioner card should help you understand enough to decide whether you want to learn more."
+          "description": "Each specialist card should help you understand enough to decide whether you want to learn more."
         },
         "third": {
           "title": "Move forward when you feel ready",
@@ -140,7 +140,7 @@
         }
       },
       "tips": {
-        "first": "You do not need to know the exact practitioner name to begin. Start with specialty or language if that is easier.",
+        "first": "You do not need to know the exact specialist name to begin. Start with specialty or language if that is easier.",
         "second": "If the list feels broad, use one or two filters first instead of trying to decide from everything at once.",
         "third": "This page should help you choose with confidence, not pressure you into fast decisions."
       }
@@ -150,7 +150,7 @@
       "title": "Make payment details easy to read and easy to trust.",
       "description": "This page will show session-related charges, payment status, and any billing details in a clearer patient-friendly way.",
       "primaryAction": "Go to my sessions",
-      "secondaryAction": "Browse practitioners",
+      "secondaryAction": "Browse specialists",
       "steps": {
         "first": {
           "title": "See what each payment is for",
@@ -162,7 +162,7 @@
         },
         "third": {
           "title": "Return to care quickly",
-          "description": "After checking a payment, it should stay easy to go back to your session or practitioner without getting lost."
+          "description": "After checking a payment, it should stay easy to go back to your session or specialist without getting lost."
         }
       },
       "tips": {
@@ -188,7 +188,7 @@
         },
         "third": {
           "title": "Move easily between message and session",
-          "description": "Patients should be able to understand which session or practitioner the conversation belongs to."
+          "description": "Patients should be able to understand which session or specialist the conversation belongs to."
         }
       },
       "tips": {
@@ -227,7 +227,7 @@
       "eyebrow": "Articles",
       "title": "Turn educational content into something supportive and easy to discover.",
       "description": "This area should help patients find practical, reassuring content that supports their care journey without distracting them from booking or sessions.",
-      "primaryAction": "Browse practitioners",
+      "primaryAction": "Browse specialists",
       "secondaryAction": "Go to my sessions",
       "steps": {
         "first": {
@@ -240,7 +240,7 @@
         },
         "third": {
           "title": "Make returning easy",
-          "description": "Patients should move smoothly from content back to finding a practitioner or reviewing their sessions."
+          "description": "Patients should move smoothly from content back to finding a specialist or reviewing their sessions."
         }
       },
       "tips": {
@@ -254,7 +254,7 @@
       "title": "Make feedback feel simple, useful, and connected to real care moments.",
       "description": "Patients should understand when they can leave feedback and why it matters, without needing to think about systems or moderation flows.",
       "primaryAction": "Go to my sessions",
-      "secondaryAction": "Browse practitioners",
+      "secondaryAction": "Browse specialists",
       "steps": {
         "first": {
           "title": "Connect feedback to completed care",

@@ -50,6 +50,15 @@ export class ExpirePaymentUseCase {
     );
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      await this.paymentRepository.createWebhookReceipt(
+        {
+          provider: payment.provider,
+          providerEventRef: input.providerEventRef,
+          paymentId: payment.id,
+        },
+        tx,
+      );
+
       await this.paymentRepository.createEvent(
         {
           paymentId: payment.id,

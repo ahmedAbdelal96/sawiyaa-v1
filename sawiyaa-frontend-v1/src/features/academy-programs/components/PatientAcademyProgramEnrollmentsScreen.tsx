@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { useAuthState } from "@/stores/auth-store";
 import {
   AlertCircle,
   BookOpen,
@@ -77,7 +78,7 @@ function resolveProgramDescription(enrollment: AcademyProgramEnrollmentItem, loc
 
 function resolveEnrollmentTone(status: AcademyProgramEnrollmentItem["status"]) {
   switch (status) {
-    case "UPCOMING":
+    case "CONFIRMED":
       return "success";
     case "PENDING_PAYMENT":
       return "warning";
@@ -93,10 +94,12 @@ function EnrollmentCard({
   enrollment,
   locale,
   t,
+  academyBase,
 }: {
   enrollment: AcademyProgramEnrollmentItem;
   locale: string;
   t: ReturnType<typeof useTranslations>;
+  academyBase: string;
 }) {
   const title = resolveProgramTitle(enrollment, locale);
   const description = resolveProgramDescription(enrollment, locale);
@@ -119,8 +122,8 @@ function EnrollmentCard({
 
   const actionHref =
     enrollment.status === "PENDING_PAYMENT" && enrollment.payment
-      ? `/patient/academy/program-enrollments/${enrollment.id}/pay`
-      : `/patient/academy/program-enrollments/${enrollment.id}`;
+      ? `${academyBase}/program-enrollments/${enrollment.id}/pay`
+      : `${academyBase}/program-enrollments/${enrollment.id}`;
   const actionLabel =
     enrollment.status === "PENDING_PAYMENT" && enrollment.payment
       ? t("patient.home.card.pay")
@@ -201,6 +204,8 @@ function EnrollmentCard({
 export default function PatientAcademyProgramEnrollmentsScreen() {
   const t = useTranslations("academy");
   const locale = useLocale();
+  const { user } = useAuthState();
+  const academyBase = user?.role === "TRAINEE" ? "/trainee/academy" : "/patient/academy";
   const { data, isLoading, isError, refetch } = usePatientAcademyProgramEnrollments({
     page: 1,
     limit: 24,
@@ -211,7 +216,7 @@ export default function PatientAcademyProgramEnrollmentsScreen() {
     () => ({
       total: data?.pagination.totalItems ?? 0,
       pending: enrollments.filter((item) => item.status === "PENDING_PAYMENT").length,
-      active: enrollments.filter((item) => item.status === "UPCOMING").length,
+      active: enrollments.filter((item) => item.status === "CONFIRMED").length,
       finished: enrollments.filter(
         (item) => item.status === "CANCELLED" || item.status === "EXPIRED",
       ).length,
@@ -327,6 +332,7 @@ export default function PatientAcademyProgramEnrollmentsScreen() {
                 enrollment={enrollment}
                 locale={locale}
                 t={t}
+                academyBase={academyBase}
               />
             ))}
           </div>
@@ -341,7 +347,7 @@ export default function PatientAcademyProgramEnrollmentsScreen() {
             label: t("patient.home.empty.action"),
             href: (
               <Link
-                href="/academy"
+                href={academyBase}
                 className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover"
               >
                 {t("patient.home.empty.action")}

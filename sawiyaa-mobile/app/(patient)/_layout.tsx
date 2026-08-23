@@ -3,6 +3,7 @@ import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native";
 import { useTheme } from "../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../src/i18n/direction";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -15,6 +16,7 @@ export default function PatientLayout() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { direction } = useAppDirection();
 
   return (
     <>
@@ -27,6 +29,7 @@ export default function PatientLayout() {
           tabBarActiveBackgroundColor: theme.colors.primarySoft,
           tabBarInactiveBackgroundColor: theme.colors.surfaceRaised,
           tabBarStyle: {
+            direction,
             backgroundColor: theme.colors.surfaceRaised,
             borderTopColor: theme.colors.divider,
             borderTopWidth: StyleSheet.hairlineWidth,
@@ -66,6 +69,19 @@ export default function PatientLayout() {
           }}
         />
         <Tabs.Screen
+          name="discovery/index"
+          options={{
+            title: t("home.discoverTab"),
+            tabBarIcon: ({ color }) => (
+              <Ionicons
+                name="search-outline"
+                size={MOBILE_TAB_ICON_SIZE}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="sessions"
           options={{
             title: t("home.sessionsTab"),
@@ -79,17 +95,21 @@ export default function PatientLayout() {
           }}
         />
         <Tabs.Screen
-          name="notifications"
+          name="messages/index"
           options={{
-            title: t("home.notificationsTab"),
+            title: t("home.messagesTab"),
             tabBarIcon: ({ color }) => (
               <Ionicons
-                name="notifications-outline"
+                name="chatbubbles-outline"
                 size={MOBILE_TAB_ICON_SIZE}
                 color={color}
               />
             ),
           }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{ href: null }}
         />
         <Tabs.Screen
           name="profile"
@@ -105,7 +125,6 @@ export default function PatientLayout() {
           }}
         />
         {/* Hidden stack routes */}
-        <Tabs.Screen name="discovery/index" options={{ href: null }} />
         <Tabs.Screen name="discovery/filters" options={{ href: null }} />
         <Tabs.Screen name="discovery/[slug]" options={{ href: null }} />
         <Tabs.Screen name="assessments/index" options={{ href: null }} />
@@ -127,6 +146,7 @@ export default function PatientLayout() {
         <Tabs.Screen name="package-purchases/create" options={{ href: null }} />
         <Tabs.Screen name="package-purchases/[id]/pay" options={{ href: null }} />
         <Tabs.Screen name="sessions/select-time" options={{ href: null }} />
+        <Tabs.Screen name="sessions/duration" options={{ href: null }} />
         <Tabs.Screen name="sessions/confirm" options={{ href: null }} />
         <Tabs.Screen name="sessions/success" options={{ href: null }} />
         <Tabs.Screen name="sessions/[id]" options={{ href: null }} />
@@ -141,19 +161,15 @@ export default function PatientLayout() {
         <Tabs.Screen name="support/index" options={{ href: null }} />
         <Tabs.Screen
           name="support/new"
-          options={{ href: null, tabBarStyle: { display: "none" } }}
+          options={{ href: null }}
         />
         <Tabs.Screen
           name="support/[id]"
-          options={{ href: null, tabBarStyle: { display: "none" } }}
-        />
-        <Tabs.Screen
-          name="messages/index"
           options={{ href: null }}
         />
         <Tabs.Screen
           name="messages/[id]"
-          options={{ href: null, tabBarStyle: { display: "none" } }}
+          options={{ href: null }}
         />
         <Tabs.Screen name="profile-details" options={{ href: null }} />
         <Tabs.Screen name="profile-details/edit" options={{ href: null }} />
@@ -166,7 +182,7 @@ export default function PatientLayout() {
         />
         <Tabs.Screen
           name="care-chat/[id]"
-          options={{ href: null, tabBarStyle: { display: "none" } }}
+          options={{ href: null }}
         />
         <Tabs.Screen
           name="care-chat/request/[id]"

@@ -11,6 +11,7 @@ import {
   SessionReviewRatingAggregationService,
   type SessionReviewRatingSummary,
 } from '@modules/reviews/services/session-review-rating-aggregation.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 @Injectable()
 export class MatchingCandidateRepository {
@@ -26,6 +27,7 @@ export class MatchingCandidateRepository {
   }) {
     const specialtySlug = input.preferredSpecialtySlug?.trim().toLowerCase();
     const where: Prisma.PractitionerProfileWhereInput = {
+      ...publicPractitionerPricingWhere(),
       status: PractitionerStatus.APPROVED,
       isPublicProfilePublished: true,
       user: {

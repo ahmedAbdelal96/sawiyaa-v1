@@ -1,12 +1,12 @@
 {
   "meta": {
-    "startTitle": "Sawiyaa | Reach the Right Practitioner",
-    "startDescription": "A guided journey to help you find the practitioner that fits your needs.",
+    "startTitle": "Sawiyaa | Find the Right Specialist",
+    "startDescription": "A guided journey to help you find the specialist that fits your needs.",
     "resultTitle": "Sawiyaa | Matching Results",
     "resultDescription": "Review your matching recommendations and choose the best next step."
   },
   "journey": {
-    "title": "Reach the right practitioner",
+    "title": "Find the right specialist",
     "stepCounter": "Step {current} of {total}",
     "footer": "Answer in simple steps and we will rank better-fit options for you."
   },
@@ -23,11 +23,11 @@
       "selectCategoryFirst": "Go back one step and choose a main area first."
     },
     "providerType": {
-      "title": "Which provider type do you prefer?",
+      "title": "Which type of specialist do you prefer?",
       "subtitle": "You can choose one, or keep it open."
     },
     "gender": {
-      "title": "Do you prefer practitioner gender?",
+      "title": "Do you prefer a specialist of a specific gender?",
       "subtitle": "This helps with ranking."
     },
     "language": {
@@ -53,8 +53,8 @@
       "notePlaceholder": "Add any detail that can help us understand your needs better.",
       "firstTimeYes": "This is my first therapy experience",
       "firstTimeNo": "I tried therapy before",
-      "instantBooking": "Prefer practitioners who support instant booking",
-      "instantBookingHint": "We will increase ranking for practitioners with faster booking readiness."
+      "instantBooking": "Prefer specialists who support instant booking",
+      "instantBookingHint": "We will prioritize specialists who are ready to book sooner."
     }
   },
   "choices": {
@@ -93,7 +93,7 @@
       },
       "EARLIEST_AVAILABLE": {
         "title": "As soon as possible",
-        "note": "Prioritize practitioners with earlier availability."
+        "note": "Prioritize specialists with earlier availability."
       },
       "AVAILABLE_NOW": {
         "title": "Prefer immediate support",
@@ -112,8 +112,8 @@
     "reviewAssessmentsNote": "If you need more clarity, start with a short check-in.",
     "openSupport": "Open support",
     "openSupportNote": "Use support for booking, payment, account, or technical issues.",
-    "browseAll": "Browse all practitioners",
-    "browseAllNote": "You can always compare practitioners manually."
+    "browseAll": "Browse all specialists",
+    "browseAllNote": "You can always compare specialists manually."
   },
   "states": {
     "submitError": "We could not create your matching session right now. Please try again.",
@@ -133,7 +133,7 @@
     "budgetOrder": "Maximum budget should be equal to or greater than minimum.",
     "specialtyCategoryRequired": "Choose the main area first.",
     "specialtyRequired": "Choose a sub-specialty.",
-    "providerTypeRequired": "Choose a provider type or no preference.",
+    "providerTypeRequired": "Choose a specialist type or no preference.",
     "genderRequired": "Choose a gender preference.",
     "languageRequired": "Choose your preferred language.",
     "sessionModeRequired": "Choose a session mode.",
@@ -141,11 +141,11 @@
   },
   "result": {
     "eyebrow": "Your result",
-    "title": "These practitioners are closest to your current needs",
+    "title": "These specialists are closest to your current needs",
     "note": "Results are based on your answers. Review each profile before booking.",
     "stats": {
       "matchesLabel": "Matches",
-      "matchesHint": "Practitioners ranked for this session",
+      "matchesHint": "Specialists ranked for this session",
       "topScoreLabel": "Best score",
       "topScoreHint": "Top recommendation percentage",
       "averageScoreLabel": "Average score",
@@ -184,14 +184,14 @@
       "language": "Matches your preferred language",
       "budget": "Within your budget",
       "urgency": "Compatible with your urgency",
-      "providerType": "Matches your preferred provider type",
+      "providerType": "Matches your preferred specialist type",
       "instantBooking": "Supports your instant-booking preference",
       "genderPartial": "Gender preference is partially supported in this version"
     },
     "empty": {
       "title": "No clear recommendation yet",
       "heading": "No recommendation snapshot is available right now",
-      "note": "Try again with broader preferences or browse practitioners directly."
+      "note": "Try again with broader preferences or browse specialists directly."
     }
   }
 }

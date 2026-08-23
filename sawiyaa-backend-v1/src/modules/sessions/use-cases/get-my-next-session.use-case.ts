@@ -1,23 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { SessionMode, SessionProvider, SessionStatus } from '@prisma/client';
 import { AppRole } from '@common/enums/app-role.enum';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { PrismaService } from '@common/prisma/prisma.service';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
-import { buildSessionJoinAvailabilityViewModel } from '../utils/session-join-policy.util';
-import { SessionSchedulePolicyService } from '@modules/config/services/session-schedule-policy.service';
-
-const ACTIONABLE_STATUSES: SessionStatus[] = [
-  SessionStatus.UPCOMING,
-  SessionStatus.READY_TO_JOIN,
-  SessionStatus.IN_PROGRESS,
-];
+import { SessionOperationalInterpreterService } from '../services/session-operational-interpreter.service';
+import { buildOperationalNextSessionCandidateWhere } from '../utils/session-operational-candidate-predicates.util';
 
 @Injectable()
 export class GetMyNextSessionUseCase {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly sessionSchedulePolicyService: SessionSchedulePolicyService,
+    private readonly operationalInterpreter: SessionOperationalInterpreterService,
   ) {}
 
   async execute(input: {
@@ -40,29 +33,7 @@ export class GetMyNextSessionUseCase {
         ...(role === AppRole.PATIENT
           ? { patient: { userId: input.currentUser.id } }
           : { practitioner: { userId: input.currentUser.id } }),
-        status: { in: ACTIONABLE_STATUSES },
-        sessionMode: SessionMode.VIDEO,
-        scheduledStartAt: { not: null },
-        cancelledAt: null,
-        AND: [
-          {
-            OR: [
-              { joinCloseAt: { gte: now } },
-              { joinCloseAt: null, scheduledEndAt: { gte: now } },
-            ],
-          },
-          {
-            OR: [
-              { originalSessionId: null },
-              { originalSession: { is: null } },
-            ],
-          },
-        ],
-        replacementSessions: {
-          none: {
-            status: { in: ACTIONABLE_STATUSES },
-          },
-        },
+        ...buildOperationalNextSessionCandidateWhere(now),
       },
       orderBy: [{ scheduledStartAt: 'asc' }, { id: 'asc' }],
       select: {
@@ -70,11 +41,14 @@ export class GetMyNextSessionUseCase {
         patientId: true,
         practitionerId: true,
         status: true,
+        flowType: true,
         sessionMode: true,
         durationMinutes: true,
         scheduledStartAt: true,
         scheduledEndAt: true,
         joinCloseAt: true,
+        joinOpenAt: true,
+        expiresAt: true,
         scheduleRevision: true,
         schedulePolicySnapshotJson: true,
         timezoneSnapshot: true,
@@ -97,26 +71,9 @@ export class GetMyNextSessionUseCase {
       return null;
     }
 
-    const schedulePolicy =
-      this.sessionSchedulePolicyService.parseSnapshot(
-        session.schedulePolicySnapshotJson,
-      ) ??
-      this.sessionSchedulePolicyService.withScheduleRevision(
-        await this.sessionSchedulePolicyService.resolve(),
-        session.scheduleRevision,
-      );
-
-    const joinAvailability = buildSessionJoinAvailabilityViewModel({
-      status: session.status,
-      sessionMode: session.sessionMode,
-      scheduledStartAt: session.scheduledStartAt,
-      scheduledEndAt: session.scheduledEndAt,
-      provider: session.provider,
-      providerRoomId: session.providerRoomId,
-      providerSessionRef: session.providerSessionRef,
-      videoRoomClosedAt: session.videoRoomClosedAt,
-      joinEarlyMinutes: schedulePolicy.join.joinEarlyMinutes,
-      joinAfterEndGraceMinutes: schedulePolicy.join.joinAfterEndGraceMinutes,
+    const operational = await this.operationalInterpreter.interpret({
+      session,
+      actor: role === AppRole.PATIENT ? 'PATIENT' : 'PRACTITIONER',
       now,
     });
     const counterpart =
@@ -140,14 +97,11 @@ export class GetMyNextSessionUseCase {
       durationMinutes: session.durationMinutes,
       displayTimezone: session.timezoneSnapshot ?? 'UTC',
       status: session.status,
-      joinAvailable: joinAvailability.canJoin,
-      joinAvailableAt: joinAvailability.availableAt,
-      joinExpiresAt: joinAvailability.expiresAt,
+      operational,
       countdownReferenceTime: now.toISOString(),
       detailsRoute: `/${input.locale}/${rolePath}/sessions/${session.id}`,
       joinRoute: `/${input.locale}/${rolePath}/sessions/${session.id}/join`,
       isReplacement: Boolean(session.originalSessionId),
-      statusReasonCode: joinAvailability.blockedReason,
     };
   }
 }

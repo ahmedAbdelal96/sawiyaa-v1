@@ -3,11 +3,12 @@ import { useLocalSearchParams } from "expo-router";
 import { ErrorState, Screen } from "../../../src/components/ui";
 import { MessageThreadScreen } from "../../../src/features/messages/components/MessageThreadScreen";
 import { PractitionerCareChatThreadScreen } from "../../../src/features/practitioner/care-chat/components/PractitionerCareChatThreadScreen";
+import { getFirstRouteParam } from "../../../src/lib/route-params";
 
 export default function PractitionerMessageThreadScreen() {
   const params = useLocalSearchParams<{ id?: string | string[]; source?: string | string[] }>();
-  const conversationId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const source = Array.isArray(params.source) ? params.source[0] : params.source;
+  const conversationId = getFirstRouteParam(params.id);
+  const source = getFirstRouteParam(params.source);
 
   if (!conversationId) {
     return (

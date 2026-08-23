@@ -41,8 +41,10 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   const [isOpen, setIsOpen] = useState(false);
   const { user, tenant, isLoading } = useAuthState();
   const patientProfileQuery = usePatientProfile(user?.role === "PATIENT" && Boolean(user));
+  const isApprovedPractitioner =
+    user?.role === "PRACTITIONER" && user?.practitionerStatus === "APPROVED";
   const practitionerProfileQuery = usePractitionerProfile(
-    user?.role === "PRACTITIONER" && Boolean(user),
+    isApprovedPractitioner,
   );
   const { logout } = useAuthActions();
   const locale = useLocale();
@@ -57,7 +59,11 @@ export default function UserDropdown({ compact = false, quickLinks = [] }: UserD
   }, [t, user]);
 
   const userEmail = user?.email || "";
-  const profileHref = getProfileHref(user?.role);
+  const profileHref = isApprovedPractitioner
+    ? getProfileHref(user?.role)
+    : user?.role === "PRACTITIONER"
+      ? null
+      : getProfileHref(user?.role);
   const dropdownAlignment = locale === "ar" ? "left-0 origin-top-left" : "right-0 origin-top-right";
   const patientAvatar = patientProfileQuery.data?.profile.avatarDataUrl ?? null;
   const practitionerAvatar = practitionerProfileQuery.data?.profile.avatarUrl ?? null;

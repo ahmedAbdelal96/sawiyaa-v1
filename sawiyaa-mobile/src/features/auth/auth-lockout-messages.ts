@@ -7,6 +7,7 @@ type TranslateFn = (
 
 export type AuthLockoutFlow =
   | "patient"
+  | "trainee"
   | "admin"
   | "practitioner-password"
   | "practitioner-otp";

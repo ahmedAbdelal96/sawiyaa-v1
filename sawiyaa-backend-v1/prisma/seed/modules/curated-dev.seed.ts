@@ -1,5 +1,6 @@
 import {
   AvailabilityWeekday,
+  ChatApprovalStatus,
   ConversationParticipantRole,
   ConversationStatus,
   ConversationType,
@@ -597,6 +598,33 @@ export const curatedDevSeedModule: SeedModule = {
           acceptsPackages: profile.acceptsPackages,
         },
       });
+    }
+
+    for (const profile of practitionerRows) {
+      const currencyCode = profile.countryId === seedIds.countries.egypt ? 'EGP' : 'USD';
+      const existingWallet = await prisma.practitionerWallet.findFirst({
+        where: { practitionerId: profile.profileId },
+        select: { id: true },
+      });
+
+      if (existingWallet) {
+        await prisma.practitionerWallet.update({
+          where: { id: existingWallet.id },
+          data: {
+            currencyCode,
+            status: 'ACTIVE',
+            closedAt: null,
+          },
+        });
+      } else {
+        await prisma.practitionerWallet.create({
+          data: {
+            practitionerId: profile.profileId,
+            currencyCode,
+            status: 'ACTIVE',
+          },
+        });
+      }
     }
 
     await ensureSeedAvatarFiles(practitionerRows);
@@ -1435,6 +1463,8 @@ export const curatedDevSeedModule: SeedModule = {
     const ticketConversationId = uuid('curated-conversation-support');
     const careConversationId = uuid('curated-conversation-care');
     const intlConversationId = uuid('curated-conversation-intl');
+    const file2CareConversationId = uuid('file2-care-qa-conversation');
+    const file2CareApprovalRequestId = uuid('file2-care-qa-approval-request');
 
     const conversations = [
       {
@@ -1479,6 +1509,20 @@ export const curatedDevSeedModule: SeedModule = {
         closedAt: null,
         expiresAt: null,
       },
+      {
+        id: file2CareConversationId,
+        conversationType: ConversationType.CARE_APPROVED,
+        status: ConversationStatus.OPEN,
+        patientId: seedIds.patientProfiles.patientA,
+        practitionerId: seedIds.practitionerProfiles.practitionerF,
+        supportTicketId: null,
+        sessionId: null,
+        chatApprovalRequestId: null,
+        conversationRef: 'FILE-2-QA-CARE-001',
+        startedAt: daysAgo(1),
+        closedAt: null,
+        expiresAt: null,
+      },
     ] as const;
 
     for (const conversation of conversations) {
@@ -1500,6 +1544,54 @@ export const curatedDevSeedModule: SeedModule = {
         },
       });
     }
+
+    // Development-only QA fixture: preserve the real approved-care-chat
+    // lifecycle contract so Patient/Practitioner attachment QA can use the
+    // normal participant-authorized send path.
+    await prisma.chatApprovalRequest.upsert({
+      where: { id: file2CareApprovalRequestId },
+      create: {
+        id: file2CareApprovalRequestId,
+        patientId: seedIds.patientProfiles.patientA,
+        practitionerId: seedIds.practitionerProfiles.practitionerF,
+        requestedByUserId: patientAUserId,
+        relatedSessionId: null,
+        reviewedByUserId: adminUserId,
+        linkedConversationId: file2CareConversationId,
+        status: ChatApprovalStatus.APPROVED,
+        requestReason: 'Development QA care-chat fixture.',
+        internalReviewNote: 'Deterministic development fixture for authenticated chat QA.',
+        approvalRef: 'CARE-QA-APPROVED-001',
+        requestedAt: daysAgo(2),
+        reviewedAt: daysAgo(2),
+        approvedAt: daysAgo(2),
+        expiresAt: daysFromNow(30),
+      },
+      update: {
+        patientId: seedIds.patientProfiles.patientA,
+        practitionerId: seedIds.practitionerProfiles.practitionerF,
+        requestedByUserId: patientAUserId,
+        relatedSessionId: null,
+        reviewedByUserId: adminUserId,
+        linkedConversationId: file2CareConversationId,
+        status: ChatApprovalStatus.APPROVED,
+        requestReason: 'Development QA care-chat fixture.',
+        internalReviewNote: 'Deterministic development fixture for authenticated chat QA.',
+        approvalRef: 'CARE-QA-APPROVED-001',
+        requestedAt: daysAgo(2),
+        reviewedAt: daysAgo(2),
+        approvedAt: daysAgo(2),
+        rejectedAt: null,
+        revokedAt: null,
+        cancelledAt: null,
+        expiresAt: daysFromNow(30),
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: file2CareConversationId },
+      data: { chatApprovalRequestId: file2CareApprovalRequestId },
+    });
 
     const supportTicketId = uuid('curated-ticket-payment');
     await prisma.supportTicket.upsert({
@@ -1603,6 +1695,28 @@ export const curatedDevSeedModule: SeedModule = {
         id: uuid('curated-conversation-participant-intl-practitioner'),
         conversationId: intlConversationId,
         userId: seedIds.users.practitionerE,
+        participantRole: ConversationParticipantRole.PRACTITIONER,
+        joinedAt: daysAgo(1),
+        lastReadMessageId: null,
+        lastReadAt: null,
+        isMuted: false,
+        isActive: true,
+      },
+      {
+        id: uuid('file2-care-qa-participant-patient'),
+        conversationId: file2CareConversationId,
+        userId: patientAUserId,
+        participantRole: ConversationParticipantRole.PATIENT,
+        joinedAt: daysAgo(1),
+        lastReadMessageId: null,
+        lastReadAt: null,
+        isMuted: false,
+        isActive: true,
+      },
+      {
+        id: uuid('file2-care-qa-participant-practitioner'),
+        conversationId: file2CareConversationId,
+        userId: seedIds.users.practitionerF,
         participantRole: ConversationParticipantRole.PRACTITIONER,
         joinedAt: daysAgo(1),
         lastReadMessageId: null,

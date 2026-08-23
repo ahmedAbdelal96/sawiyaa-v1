@@ -39,6 +39,7 @@ import type { ColumnDef } from "@/components/ui/data-table";
 import { cleanPersonName, formatPersonDisplayName, formatSessionTimeRange, shortId } from "@/lib/person-name-cleaner";
 import { formatSettlementDateTime, formatSettlementMoney } from "@/features/admin/finance/lib/finance-formatters";
 import AdminSessionReference from "@/components/shared/admin/AdminSessionReference";
+import AdminPractitionerPublicationCard from "@/features/admin/practitioners/components/AdminPractitionerPublicationCard";
 
 type PageProps = {
   params: Promise<{ locale: string; id: string }>;
@@ -91,6 +92,17 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         overview: "نظرة عامة",
         basic: "البيانات الأساسية",
         professional: "الملف المهني",
+        contentReadiness: "جاهزية المحتوى المهني",
+        primaryLanguage: "لغة المحتوى الأساسية",
+        notSpecified: "غير محددة / غير محسومة",
+        arabic: "العربية",
+        english: "الإنجليزية",
+        complete: "مكتمل",
+        incomplete: "غير مكتمل",
+        bilingualComplete: "المحتوى باللغتين مكتمل",
+        bilingualIncomplete: "المحتوى باللغتين غير مكتمل",
+        fallbackActive: "يتطلب استخدام محتوى بديل حاليًا",
+        sourceLocaleUnresolved: "لغة المصدر غير مؤكدة",
         application: "طلب الانضمام",
         documents: "المستندات",
         sessions: "الجلسات",
@@ -143,6 +155,17 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
         overview: "Overview",
         basic: "Basic Information",
         professional: "Professional Profile",
+        contentReadiness: "Professional content readiness",
+        primaryLanguage: "Primary content language",
+        notSpecified: "Not specified / unresolved",
+        arabic: "Arabic",
+        english: "English",
+        complete: "Complete",
+        incomplete: "Incomplete",
+        bilingualComplete: "Bilingual content complete",
+        bilingualIncomplete: "Bilingual content incomplete",
+        fallbackActive: "Fallback currently required",
+        sourceLocaleUnresolved: "Source language not confirmed",
         application: "Application",
         documents: "Documents",
         sessions: "Sessions",
@@ -694,6 +717,53 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
                 {details.bio || "-"}
               </p>
             </div>
+
+            {details.professionalContentReadiness ? (
+              <div className="space-y-4 border-t border-border-light pt-5 dark:border-white/10">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary dark:text-white">{t("contentReadiness")}</h3>
+                    <p className="mt-1 text-xs text-text-muted">
+                      {t("primaryLanguage")}: {details.professionalContentReadiness.primaryContentLocale === "ar"
+                        ? t("arabic")
+                        : details.professionalContentReadiness.primaryContentLocale === "en"
+                          ? t("english")
+                          : t("notSpecified")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge variant="solid" color={details.professionalContentReadiness.bilingualComplete ? "success" : "light"}>
+                      {details.professionalContentReadiness.bilingualComplete ? t("bilingualComplete") : t("bilingualIncomplete")}
+                    </Badge>
+                    {details.professionalContentReadiness.fallbackActive ? (
+                      <Badge variant="solid" color="warning">{t("fallbackActive")}</Badge>
+                    ) : null}
+                    {details.professionalContentReadiness.sourceLocaleUnresolved ? (
+                      <Badge variant="solid" color="light">{t("sourceLocaleUnresolved")}</Badge>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(["ar", "en"] as const).map((contentLocale) => {
+                    const content = details.professionalContentReadiness.locales[contentLocale];
+                    return (
+                      <div key={contentLocale} className="rounded-xl border border-border-light bg-surface-secondary/40 p-3 dark:border-white/10 dark:bg-white/[0.02]" dir={contentLocale}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-text-primary dark:text-white">{contentLocale === "ar" ? t("arabic") : t("english")}</p>
+                          <Badge variant="solid" color={content.complete ? "success" : "warning"}>
+                            {content.complete ? t("complete") : t("incomplete")}
+                          </Badge>
+                        </div>
+                        <p className="mt-3 text-xs text-text-muted">{t("title")}</p>
+                        <p className="mt-1 text-sm font-semibold text-text-primary dark:text-white">{content.professionalTitle || "-"}</p>
+                        <p className="mt-3 text-xs text-text-muted">{t("bio")}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-text-secondary dark:text-white/80">{content.bio || "-"}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </SurfaceCard>
         )}
 
@@ -918,23 +988,7 @@ export default function AdminPractitionerDetailPage({ params }: PageProps) {
 
         {/* PUBLICATION TAB */}
         {activeTab === "publication" && (
-          <SurfaceCard variant="section" className="space-y-4">
-            <SurfaceHeader eyebrow={t("publication")} title={t("publication")} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <p className="text-xs text-text-muted">{isRtl ? "الحالة المنشورة" : "Publication State"}</p>
-                <Badge variant="solid" color={details.profileStatus === "APPROVED" ? "success" : "light"}>
-                  {details.profileStatus === "APPROVED" ? (isRtl ? "منشور للعامة" : "Published to Public") : (isRtl ? "غير منشور" : "Unpublished")}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs text-text-muted">{isRtl ? "رابط التعريف العام" : "Public Slug Route"}</p>
-                <p className="text-sm font-semibold mt-1 text-text-primary dark:text-white">
-                  /practitioners/{details.publicSlug || details.id}
-                </p>
-              </div>
-            </div>
-          </SurfaceCard>
+          <AdminPractitionerPublicationCard practitionerId={details.id} />
         )}
 
         {/* AUDIT LOG TAB */}

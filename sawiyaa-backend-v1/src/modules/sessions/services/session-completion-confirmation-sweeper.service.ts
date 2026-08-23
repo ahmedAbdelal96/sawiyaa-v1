@@ -42,9 +42,7 @@ export class SessionCompletionConfirmationSweeperService
   ) {}
 
   onApplicationBootstrap(): void {
-    if (
-      process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED !== 'true'
-    ) {
+    if (process.env.SESSION_COMPLETION_CONFIRMATION_SWEEPER_ENABLED === 'false') {
       return;
     }
     void this.sweepOnce();

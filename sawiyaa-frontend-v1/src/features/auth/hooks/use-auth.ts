@@ -7,8 +7,12 @@ import {
   patientForgotPassword,
   patientVerifyPasswordResetOtp,
   patientConfirmPasswordReset,
+  patientChangePassword,
   patientGoogleAuth,
   patientLogin,
+  traineeLogin,
+  traineeRefresh,
+  traineeLogout,
   patientLogout,
   patientRefresh,
   patientRegister,
@@ -16,9 +20,11 @@ import {
   practitionerForgotPassword,
   practitionerVerifyPasswordResetOtp,
   practitionerConfirmPasswordReset,
+  practitionerChangePassword,
   practitionerLogin,
   practitionerLogout,
   practitionerRefresh,
+  practitionerResendLoginOtp,
   practitionerRegister,
   practitionerVerifyRegistrationOtp,
   practitionerResendRegistrationOtp,
@@ -183,6 +189,30 @@ export function usePractitionerVerifyOtp() {
   });
 }
 
+export function useTraineeLogin() {
+  const { onAuthSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: traineeLogin, onSuccess: onAuthSuccess, retry: false });
+}
+
+export function useTraineeRefresh() {
+  const { onAuthSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: (data?: RefreshTokenRequest) => traineeRefresh(data), onSuccess: onAuthSuccess, retry: false });
+}
+
+export function useTraineeLogout() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: traineeLogout, onSuccess: onLogoutSuccess, retry: false });
+}
+
+export function usePatientChangePassword() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: patientChangePassword, onSuccess: onLogoutSuccess, retry: false });
+}
+
+export function usePractitionerResendLoginOtp() {
+  return useMutation({ mutationFn: practitionerResendLoginOtp, retry: false });
+}
+
 export function usePractitionerRefresh() {
   const { onAuthSuccess } = useAuthMutationInvalidation();
   return useMutation({
@@ -199,6 +229,11 @@ export function usePractitionerLogout() {
     onSuccess: onLogoutSuccess,
     retry: false,
   });
+}
+
+export function usePractitionerChangePassword() {
+  const { onLogoutSuccess } = useAuthMutationInvalidation();
+  return useMutation({ mutationFn: practitionerChangePassword, onSuccess: onLogoutSuccess, retry: false });
 }
 
 export function usePractitionerForgotPassword() {

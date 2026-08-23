@@ -56,13 +56,6 @@ export async function closePractitionerSessionRuntime(
   return extractApiData<PractitionerSessionRoomCloseResponse>(response);
 }
 
-export async function markPractitionerSessionCompleted(sessionId: string) {
-  const response = await apiClient.post(
-    `/practitioners/me/sessions/${sessionId}/mark-completed`,
-  );
-  return extractApiData<{ item: PractitionerSessionDetails }>(response);
-}
-
 export async function markPractitionerSessionNoShow(sessionId: string) {
   const response = await apiClient.post(
     `/practitioners/me/sessions/${sessionId}/mark-no-show`,

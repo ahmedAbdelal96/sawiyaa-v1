@@ -22,22 +22,50 @@ describe('resolvePaymentRegionalResolution', () => {
     },
   );
 
-  it('uses current request country even when the account country differs', () => {
+  it('uses both participant countries before trusted request country', () => {
     expect(
       resolvePaymentRegionalResolution({
         requestCountryIsoCode: 'US',
         patientCountryIsoCode: 'EG',
-        accountCountryIsoCode: 'EG',
-        currencyCode: 'EGP',
+        practitionerCountryIsoCode: 'EG',
       }).currencyCode,
-    ).toBe('USD');
+    ).toBe('EGP');
 
     expect(
       resolvePaymentRegionalResolution({
         requestCountryIsoCode: 'EG',
         patientCountryIsoCode: 'US',
+        practitionerCountryIsoCode: 'EG',
       }).currencyCode,
-    ).toBe('EGP');
+    ).toBe('USD');
+  });
+
+  it('resolves participant-country pricing as local only when both participants are in Egypt', () => {
+    expect(
+      resolvePaymentRegionalResolution({
+        patientCountryIsoCode: 'EGY',
+        practitionerCountryIsoCode: 'EG',
+      }),
+    ).toMatchObject({
+      currencyCode: 'EGP',
+      regionalPricingMode: 'EGYPT_LOCAL',
+      resolvedCountryIsoCode: 'EG',
+      resolutionSource: 'PARTICIPANT_COUNTRIES',
+      fallbackReasonCode: null,
+    });
+
+    expect(
+      resolvePaymentRegionalResolution({
+        patientCountryIsoCode: 'EG',
+        practitionerCountryIsoCode: 'SA',
+      }),
+    ).toMatchObject({
+      currencyCode: 'USD',
+      regionalPricingMode: 'INTERNATIONAL',
+      resolvedCountryIsoCode: null,
+      resolutionSource: 'PARTICIPANT_COUNTRIES',
+      fallbackReasonCode: null,
+    });
   });
 
   it('defaults missing request country to USD without guessing a country', () => {

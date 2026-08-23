@@ -14,6 +14,7 @@ import {
   FilterChip,
 } from "../../../src/components/ui";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../../src/i18n/direction";
 import { usePatientSupportTickets } from "../../../src/features/patient/support/hooks";
 import type {
   SupportTicketItemDto,
@@ -57,6 +58,7 @@ export default function SupportListScreen() {
   const router = useRouter();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { theme } = useTheme();
+  const { chevronForward } = useAppDirection();
   const { t, i18n } = useTranslation();
   const [tab, setTab] = useState<TabFilter>("active");
   const returnToRoute =
@@ -117,7 +119,7 @@ export default function SupportListScreen() {
                 />
               )}
               <Ionicons
-                name="chevron-forward"
+                name={chevronForward}
                 size={16}
                 color={theme.colors.textMuted}
               />

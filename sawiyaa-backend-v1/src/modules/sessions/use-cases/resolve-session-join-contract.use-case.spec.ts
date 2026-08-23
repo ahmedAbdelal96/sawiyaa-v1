@@ -85,6 +85,9 @@ describe('ResolveSessionJoinContractUseCase', () => {
         canPrepareRuntime: true,
         canJoin: overrides?.canJoin ?? true,
         blockedReason: overrides?.blockedReason ?? null,
+        prepareOpensAt: new Date('2026-04-01T10:30:00.000Z'),
+        joinOpensAt: new Date(expectedAvailableAt),
+        joinClosesAt: new Date(expectedExpiresAt),
       }),
     };
     const sessionVideoProviderRegistryService = {
@@ -109,6 +112,15 @@ describe('ResolveSessionJoinContractUseCase', () => {
     const prepareSessionRuntimeUseCase = {
       execute: jest.fn().mockResolvedValue({}),
     };
+    const sessionSchedulePolicyService = {
+      parseSnapshot: jest.fn().mockReturnValue({
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      resolve: jest.fn().mockResolvedValue({
+        join: { joinEarlyMinutes: 15, joinAfterEndGraceMinutes: 10 },
+      }),
+      withScheduleRevision: jest.fn((policy) => policy),
+    };
 
     const useCase = new ResolveSessionJoinContractUseCase(
       prisma as never,
@@ -120,6 +132,7 @@ describe('ResolveSessionJoinContractUseCase', () => {
       sessionVideoProviderResolverService as never,
       validateSessionStatusTransitionService as never,
       prepareSessionRuntimeUseCase as never,
+      sessionSchedulePolicyService as never,
     );
 
     return {

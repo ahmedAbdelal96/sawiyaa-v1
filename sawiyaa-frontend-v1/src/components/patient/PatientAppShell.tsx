@@ -155,7 +155,7 @@ export default function PatientAppShell({ children }: PatientAppShellProps) {
     if (key === "home") return tArea("shell.home");
     if (key === "matching") return tJourney("nextSteps.types.START_GUIDED_MATCHING.cta");
     if (key === "assessments") return tJourney("nextSteps.types.TAKE_ASSESSMENT.cta");
-    if (key === "practitioners") return tNav("main.practitioners");
+    if (key === "practitioners") return tNav("patientNavigation.practitioners");
     if (key === "academy") return tNav("main.academy");
     if (key === "sessions") return tNav("main.sessions");
     if (key === "messages") return locale === "ar" ? "الرسائل" : "Messages";

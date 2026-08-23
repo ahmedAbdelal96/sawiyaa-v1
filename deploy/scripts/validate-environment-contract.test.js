@@ -19,6 +19,8 @@ const {
   isAllowedOperationalPath,
   isGeoIpReady,
   diskSpaceIsSufficient,
+  sourceEnvironmentNames,
+  validateSourceExampleParity,
 } = require("./validate-environment-contract.js");
 
 function fixtureDirectory() {
@@ -44,7 +46,7 @@ function completeFixture(directory, overrides = {}) {
     APP_URL: "https://sawiyaa.test",
     WEB_APP_URL: "https://sawiyaa.test",
     LOG_LEVEL: "info",
-    DATABASE_URL: "postgresql://dbuser:valid-pass@localhost:5432/sawiyaa",
+    DATABASE_URL: "postgresql://sawiyaa:valid-pass@localhost:5432/sawiyaa",
     JWT_ACCESS_SECRET: "a".repeat(32),
     JWT_REFRESH_SECRET: "b".repeat(32),
     GEOIP_ENABLED: "false",
@@ -84,7 +86,11 @@ function completeFixture(directory, overrides = {}) {
 function validate(overrides = {}) {
   const directory = fixtureDirectory();
   const files = completeFixture(directory, overrides);
-  const result = validateEnvironment({ ...files, environment: "production" });
+  const result = validateEnvironment({
+    ...files,
+    environment: "production",
+    providerStates: overrides.providerStates || new Map(),
+  });
   return { directory, files, result };
 }
 
@@ -104,37 +110,205 @@ test("required variable missing is blocking", () => {
 test("optional variable missing is not blocking", () => {
   const { result } = validate();
   assert.equal(result.blocking, false);
-  assert.match(formatReport(result), /NOT_REQUIRED/);
+  assert.match(formatReport(result), /ENVIRONMENT_CONTRACT_SUMMARY blockers=0/);
 });
 
 test("conditional GeoIP requirement is enforced", () => {
   const { result } = validate({ backend: { GEOIP_ENABLED: "true" } });
-  assert.match(formatReport(result), /MISSING GEOIP_DATABASE_PATH/);
+  assert.match(formatReport(result), /BLOCKING_ENV GEOIP_DATABASE_PATH/);
   assert.equal(result.blocking, true);
 });
 
 test("production WEB_APP_URL is required before rollout", () => {
   const { result } = validate({ backend: { WEB_APP_URL: "" } });
-  assert.match(formatReport(result), /MISSING WEB_APP_URL|EMPTY WEB_APP_URL/);
+  assert.match(formatReport(result), /BLOCKING_ENV WEB_APP_URL/);
   assert.equal(result.blocking, true);
 });
 
 test("production rejects invalid LOG_LEVEL before rollout", () => {
   const { result } = validate({ backend: { LOG_LEVEL: "http" } });
-  assert.match(formatReport(result), /INVALID LOG_LEVEL/);
+  assert.match(formatReport(result), /BLOCKING_ENV LOG_LEVEL/);
   assert.equal(result.blocking, true);
 });
 
 test("production requires Daily webhook signing secret", () => {
   const { result } = validate({ backend: { DAILY_WEBHOOK_SECRET: "" } });
-  assert.match(formatReport(result), /EMPTY DAILY_WEBHOOK_SECRET/);
+  assert.match(formatReport(result), /BLOCKING_ENV DAILY_WEBHOOK_SECRET/);
   assert.equal(result.blocking, true);
+});
+
+test("Daily selected with empty optional Zoom credentials is ready", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "DAILY",
+      ZOOM_ACCOUNT_ID: "",
+      ZOOM_CLIENT_ID: "",
+      ZOOM_CLIENT_SECRET: "",
+    },
+  });
+  assert.equal(result.blocking, false);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV ZOOM_/);
+});
+
+test("Daily selected with missing Daily credentials is blocking", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "DAILY",
+      DAILY_API_KEY: "",
+      DAILY_API_BASE_URL: "",
+      DAILY_WEBHOOK_SECRET: "",
+    },
+  });
+  const report = formatReport(result);
+  assert.match(report, /BLOCKING_ENV DAILY_API_KEY/);
+  assert.match(report, /BLOCKING_ENV DAILY_API_BASE_URL/);
+  assert.match(report, /BLOCKING_ENV DAILY_WEBHOOK_SECRET/);
+  assert.equal(result.blocking, true);
+});
+
+test("Zoom selected with missing Zoom credentials is blocking", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "ZOOM",
+      ZOOM_ACCOUNT_ID: "",
+      ZOOM_CLIENT_ID: "",
+      ZOOM_CLIENT_SECRET: "",
+    },
+  });
+  const report = formatReport(result);
+  assert.match(report, /BLOCKING_ENV ZOOM_ACCOUNT_ID/);
+  assert.match(report, /BLOCKING_ENV ZOOM_CLIENT_ID/);
+  assert.match(report, /BLOCKING_ENV ZOOM_CLIENT_SECRET/);
+  assert.equal(result.blocking, true);
+});
+
+test("Zoom selected with complete Zoom credentials is ready", () => {
+  const { result } = validate({
+    backend: {
+      VIDEO_PROVIDER_DEFAULT: "ZOOM",
+      ZOOM_ACCOUNT_ID: "zoom-account",
+      ZOOM_CLIENT_ID: "zoom-client",
+      ZOOM_CLIENT_SECRET: "zoom-secret",
+      DAILY_API_KEY: "",
+      DAILY_API_BASE_URL: "",
+      DAILY_WEBHOOK_SECRET: "",
+    },
+  });
+  assert.equal(result.blocking, false);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV (DAILY|ZOOM)_/);
+});
+
+test("Stripe disabled allows placeholder frontend and empty backend credentials", () => {
+  const { result } = validate({
+    backend: {
+      PAYMENT_STRIPE_ENABLED: "false",
+      STRIPE_PUBLISHABLE_KEY: "",
+      STRIPE_SECRET_KEY: "",
+      STRIPE_WEBHOOK_SECRET: "",
+    },
+    frontend: { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_your_stripe_publishable_key" },
+    providerStates: new Map([["stripe", false]]),
+  });
+  assert.equal(result.blocking, false);
+});
+
+test("Stripe enabled rejects placeholder frontend key and missing secret", () => {
+  const { result } = validate({
+    backend: { PAYMENT_STRIPE_ENABLED: "true", STRIPE_PUBLISHABLE_KEY: "pk_test_sanitized" },
+    frontend: { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_your_stripe_publishable_key" },
+    providerStates: new Map([["stripe", true]]),
+  });
+  const report = formatReport(result);
+  assert.match(report, /BLOCKING_ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY/);
+  assert.match(report, /BLOCKING_ENV STRIPE_SECRET_KEY/);
+  assert.equal(result.blocking, true);
+});
+
+test("Stripe enabled accepts valid sanitized test credentials", () => {
+  const { result } = validate({
+    backend: {
+      PAYMENT_STRIPE_ENABLED: "true",
+      STRIPE_MODE: "test",
+      STRIPE_PUBLISHABLE_KEY: "pk_test_sanitized",
+      STRIPE_SECRET_KEY: "sk_test_sanitized",
+      STRIPE_WEBHOOK_SECRET: "whsec_sanitized",
+    },
+    frontend: { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_sanitized" },
+    providerStates: new Map([["stripe", true]]),
+  });
+  assert.equal(result.blocking, false);
+  assert.match(formatReport(result), /ENVIRONMENT_CONTRACT_SUMMARY blockers=0/);
+});
+
+test("Paymob disabled allows empty optional credentials", () => {
+  const { result } = validate({
+    backend: {
+      PAYMENT_PAYMOB_ENABLED: "false",
+      PAYMOB_API_KEY: "",
+      PAYMOB_HMAC_SECRET: "",
+      PAYMOB_EGP_CARD_INTEGRATION_ID: "",
+    },
+    providerStates: new Map([["paymob", false]]),
+  });
+  assert.equal(result.blocking, false);
+});
+
+test("Paymob enabled requires only the active checkout credentials", () => {
+  const { result } = validate({
+    backend: {
+      PAYMENT_PAYMOB_ENABLED: "true",
+      PAYMOB_API_KEY: "paymob-api",
+      PAYMOB_HMAC_SECRET: "",
+      PAYMOB_BASE_URL: "https://accept.paymob.com/api",
+    },
+    providerStates: new Map([["paymob", true]]),
+  });
+  assert.match(formatReport(result), /BLOCKING_ENV PAYMOB_HMAC_SECRET/);
+  assert.doesNotMatch(formatReport(result), /BLOCKING_ENV PAYMOB_USD_CARD_INTEGRATION_ID/);
+  assert.equal(result.blocking, true);
+});
+
+test("Redis URL is required only when Redis throttling is selected", () => {
+  assert.equal(
+    validate({ backend: { THROTTLE_STORE: "memory", REDIS_URL: "" } }).result.blocking,
+    false,
+  );
+  const { result } = validate({ backend: { THROTTLE_STORE: "redis", REDIS_URL: "" } });
+  assert.match(formatReport(result), /BLOCKING_ENV REDIS_URL/);
+  assert.equal(result.blocking, true);
+});
+
+test("mail validation requires only the selected provider credentials", () => {
+  const brevo = validate({
+    backend: {
+      MAIL_PROVIDER: "brevo",
+      BREVO_API_KEY: "brevo-sanitized",
+      MAIL_FROM: "noreply@sawiyaa.test",
+      MAIL_HOST: "",
+      MAIL_USER: "",
+      MAIL_PASS: "",
+    },
+  }).result;
+  assert.equal(brevo.blocking, false);
+  const smtp = validate({
+    backend: { MAIL_PROVIDER: "smtp", MAIL_HOST: "", MAIL_USER: "", MAIL_PASS: "" },
+  }).result;
+  assert.match(formatReport(smtp), /BLOCKING_ENV MAIL_HOST/);
+  assert.equal(smtp.blocking, true);
+});
+
+test("blocking diagnostics never print secret values", () => {
+  const secret = "super-secret-sanitized-value";
+  const { result } = validate({ backend: { JWT_ACCESS_SECRET: secret, STRIPE_SECRET_KEY: "" } });
+  const report = formatReport(result);
+  assert.doesNotMatch(report, /super-secret-sanitized-value/);
+  assert.match(report, /ENVIRONMENT_CONTRACT_SUMMARY blockers=/);
 });
 
 test("empty required secret is blocking and redacted", () => {
   const { result } = validate({ backend: { JWT_ACCESS_SECRET: "" } });
   const report = formatReport(result);
-  assert.match(report, /EMPTY JWT_ACCESS_SECRET/);
+  assert.match(report, /BLOCKING_ENV JWT_ACCESS_SECRET/);
   assert.doesNotMatch(report, /a{10,}|valid-pass/);
 });
 
@@ -143,7 +317,7 @@ test("placeholder values are detected without printing values", () => {
     backend: { JWT_ACCESS_SECRET: "<change-me>" },
   });
   const report = formatReport(result);
-  assert.match(report, /PLACEHOLDER JWT_ACCESS_SECRET/);
+  assert.match(report, /BLOCKING_ENV JWT_ACCESS_SECRET/);
   assert.doesNotMatch(report, /change-me/);
 });
 
@@ -157,8 +331,8 @@ test("unknown and duplicate variables are detected", () => {
   const report = formatReport(
     validateEnvironment({ ...files, environment: "production" }),
   );
-  assert.match(report, /UNKNOWN UNKNOWN_PRODUCTION_FLAG/);
-  assert.match(report, /CONFLICT APP_ENV/);
+  assert.match(report, /WARNING_ENV UNKNOWN_PRODUCTION_FLAG/);
+  assert.match(report, /BLOCKING_ENV APP_ENV/);
 });
 
 test("canonical and legacy Paymob conflict is blocking", () => {
@@ -172,7 +346,7 @@ test("canonical and legacy Paymob conflict is blocking", () => {
       PAYMOB_INTEGRATION_ID_CARD: "legacy",
     },
   });
-  assert.match(formatReport(result), /CONFLICT PAYMOB_EGP_CARD_INTEGRATION_ID/);
+  assert.match(formatReport(result), /BLOCKING_ENV PAYMOB_EGP_CARD_INTEGRATION_ID/);
 });
 
 test("optional USD integration may remain empty", () => {
@@ -189,13 +363,34 @@ test("database-authoritative route JSON is forbidden", () => {
   const { result } = validate({
     backend: { PAYMENT_PROVIDER_ROUTES_JSON: "{}" },
   });
-  assert.match(formatReport(result), /CONFLICT PAYMENT_PROVIDER_ROUTES_JSON/);
+  assert.match(formatReport(result), /BLOCKING_ENV PAYMENT_PROVIDER_ROUTES_JSON/);
 });
 
 test("frontend variables are classified as build-time and missing is blocking", () => {
   const { result } = validate({ frontend: { NEXT_PUBLIC_API_URL: "" } });
-  assert.match(formatReport(result), /EMPTY NEXT_PUBLIC_API_URL/);
+  assert.match(formatReport(result), /BLOCKING_ENV NEXT_PUBLIC_API_URL/);
   assert.equal(result.blocking, true);
+});
+
+test("source-referenced variables missing from the example are blocking", () => {
+  const directory = fixtureDirectory();
+  const source = path.join(directory, "source.ts");
+  const example = path.join(directory, ".env.example");
+  fs.writeFileSync(source, "const value = process.env.NEW_FEATURE_SETTING;\n");
+  fs.writeFileSync(example, "EXISTING_SETTING=value\n");
+  const issues = [];
+  validateSourceExampleParity({
+    service: "backend",
+    examplePath: example,
+    sourceFiles: [source],
+    issues,
+  });
+  assert.deepEqual([...sourceEnvironmentNames([source])], ["NEW_FEATURE_SETTING"]);
+  assert.deepEqual(issues, [{
+    status: STATUS.UNKNOWN,
+    name: "backend/source/NEW_FEATURE_SETTING",
+    blocking: true,
+  }]);
 });
 
 test("new target-release required frontend variable is blocking", () => {
@@ -215,7 +410,7 @@ test("new target-release required frontend variable is blocking", () => {
     knownNames: new Set(["NEXT_PUBLIC_NEW_REQUIRED_FLAG"]),
     environment: "production",
   });
-  assert.match(formatReport(result), /MISSING NEXT_PUBLIC_NEW_REQUIRED_FLAG/);
+  assert.match(formatReport(result), /BLOCKING_ENV NEXT_PUBLIC_NEW_REQUIRED_FLAG/);
   assert.equal(result.blocking, true);
 });
 
@@ -226,8 +421,8 @@ test("removed target-release variable is blocking when no deprecation policy exi
     environment: "production",
     knownNames: new Set(),
   });
-  assert.match(formatReport(result), /UNKNOWN REMOVED_BY_TARGET/);
-  assert.equal(result.blocking, true);
+  assert.match(formatReport(result), /WARNING_ENV REMOVED_BY_TARGET/);
+  assert.equal(result.blocking, false);
 });
 
 test("removed variable retained in the contract is blocking unless explicitly deprecated", () => {
@@ -242,8 +437,8 @@ test("removed variable retained in the contract is blocking unless explicitly de
       ],
     },
   });
-  assert.match(formatReport(result), /UNKNOWN REMOVED_BY_TARGET/);
-  assert.equal(result.blocking, true);
+  assert.match(formatReport(result), /WARNING_ENV REMOVED_BY_TARGET/);
+  assert.equal(result.blocking, false);
 });
 
 test("configured renamed alias is reported as deprecated without printing its value", () => {
@@ -252,7 +447,7 @@ test("configured renamed alias is reported as deprecated without printing its va
   });
   const result = validateEnvironment({ ...files, environment: "production" });
   const report = formatReport(result);
-  assert.match(report, /DEPRECATED PAYMOB_INTEGRATION_ID_CARD/);
+  assert.match(report, /WARNING_ENV PAYMOB_INTEGRATION_ID_CARD/);
   assert.doesNotMatch(report, /legacy-secret/);
 });
 

@@ -26,7 +26,7 @@ This phase does not install a production reconciliation scheduler. The
 bounded by the provider adapter timeout, and writes only sanitized evidence.
 Deployment must provide a multi-instance worker with bounded retries,
 backoff, metrics, provider failure classification, and an explicit readiness
-signal when disabled before Phase 3 enables automatic finalization.
+signal when the Admin-only completion authority is unavailable.
 
 Required checks before Phase 3:
 

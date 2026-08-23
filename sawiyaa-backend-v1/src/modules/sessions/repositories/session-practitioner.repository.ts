@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
+import { publicPractitionerPricingWhere } from '@modules/practitioners/utils/public-practitioner-pricing-readiness.util';
 
 @Injectable()
 export class SessionPractitionerRepository {
@@ -9,6 +10,7 @@ export class SessionPractitionerRepository {
     return this.prisma.practitionerProfile.findFirst({
       where: {
         publicSlug: slug.trim().toLowerCase(),
+        ...publicPractitionerPricingWhere(),
       },
       include: {
         user: {

@@ -7,20 +7,35 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
-import { ErrorState, Header, Screen, Text } from "../../../components/ui";
+import {
+  ErrorState,
+  Header,
+  LoadingState,
+  Screen,
+  Text,
+} from "../../../components/ui";
 import { useAuth } from "../../../providers/AuthProvider";
+import { getApiAccessToken } from "../../../lib/api";
+import { MOBILE_API_URL } from "../../../config/mobile-environment";
 import { useAppDirection } from "../../../i18n/direction";
 import {
   formatMessageTime,
@@ -35,8 +50,21 @@ import type {
   MessagesRole,
   CanonicalMessage,
   GeneralChatConversationDetailItemDto,
+  CanonicalConversation,
 } from "../types";
-import { useCanonicalConversation, useUnifiedMessages } from "../hooks";
+import {
+  useCanonicalConversation,
+  useChatAttachmentPolicy,
+  useUnifiedMessages,
+} from "../hooks";
+import { uploadCanonicalChatAttachment } from "../api";
+import {
+  attachmentErrorCode,
+  attachmentErrorKey,
+  isAttachmentImage,
+  PendingChatAttachment,
+  validatePendingAttachment,
+} from "../attachment-utils";
 import {
   ConversationBubble,
   ConversationComposer,
@@ -52,6 +80,14 @@ type MessageThreadScreenProps = {
   role: MessagesRole;
   conversationId: string;
 };
+
+function absoluteAttachmentUrl(fileUrl: string) {
+  if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
+  const path = fileUrl.startsWith("/api/v1/")
+    ? fileUrl.slice("/api/v1".length)
+    : fileUrl;
+  return `${MOBILE_API_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 type ThreadMessageRow = {
   message: GeneralChatMessageItemDto;
@@ -116,17 +152,23 @@ export function MessageThreadScreen({
 
   const conversationQuery = useCanonicalConversation(role, conversationId);
   const conversation = conversationQuery.data?.item ?? null;
+  const attachmentPolicyQuery = useChatAttachmentPolicy(
+    role,
+    Boolean(conversation),
+  );
+  const attachmentPolicy = attachmentPolicyQuery.data?.item ?? null;
 
   const {
     messages,
     isError,
+    isLoading: isMessagesLoading,
     loadMore,
     hasMore,
     isLoadingMore,
     sendMessage,
     retryMessage,
     markRead,
-  } = useUnifiedMessages({ conversationId, currentUserId, isThreadFocused });
+  } = useUnifiedMessages({ role, conversationId, currentUserId, isThreadFocused });
 
   const listRef = useRef<FlatList<ThreadMessageRow> | null>(null);
   const didInitialScrollRef = useRef(false);
@@ -136,11 +178,51 @@ export function MessageThreadScreen({
   const [draft, setDraft] = useState("");
   const [composerError, setComposerError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingChatAttachment[]
+  >([]);
+  const [previewAttachment, setPreviewAttachment] = useState<
+    GeneralChatMessageItemDto["attachments"][number] | null
+  >(null);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !previewAttachment) {
+      setPreviewUri(null);
+      return;
+    }
+
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    const token = getApiAccessToken();
+
+    void fetch(absoluteAttachmentUrl(previewAttachment.fileUrl), {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("ATTACHMENT_PREVIEW_FAILED");
+        return response.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPreviewUri(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewUri(null);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [previewAttachment]);
 
   useEffect(() => {
     didInitialScrollRef.current = false;
     setDraft("");
     setComposerError(null);
+    setPendingAttachments([]);
   }, [conversationId]);
 
   const legacyMessages = useMemo<GeneralChatMessageItemDto[]>(() => {
@@ -169,13 +251,19 @@ export function MessageThreadScreen({
         status: null,
         verificationStatus: null,
       },
-      messageType: m.body ? "TEXT" : "SYSTEM",
+      messageType: m.body || m.attachments?.length ? "TEXT" : "SYSTEM",
       status: m.status,
       contentText: m.body,
       sentAt: m.sentAt,
       deliveredAt: m.deliveredAt,
       readAt: m.readAt,
-      attachments: [],
+      attachments: (m.attachments ?? []).map((attachment) => ({
+        fileId: attachment.id,
+        fileUrl: attachment.fileUrl,
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize ?? null,
+        originalName: attachment.originalName ?? null,
+      })),
       conversationLatestActivityAt: m.sentAt,
       clientMessageId: m.clientMessageId,
       deliveryState: m.deliveryState,
@@ -191,20 +279,23 @@ export function MessageThreadScreen({
         conversationRef: conversation.conversationId,
         status: conversation.status,
         linkedSessionId: conversation.contextId,
-        participants: conversation.participants.map((p) => ({
-          userId: p.userId,
-          role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
-          identity: {
-            participantId: p.userId,
+        participants: conversation.participants.map(
+          (p: CanonicalConversation["participants"][number]) => ({
             userId: p.userId,
-            displayName: p.displayName,
-            avatarUrl: p.avatarUrl,
             role: p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
-            subtitle: p.publicRoleLabel,
-            status: null,
-            verificationStatus: null,
-          },
-        })),
+            identity: {
+              participantId: p.userId,
+              userId: p.userId,
+              displayName: p.displayName,
+              avatarUrl: p.avatarUrl,
+              role:
+                p.publicRoleLabel === "Patient" ? "PATIENT" : "PRACTITIONER",
+              subtitle: p.publicRoleLabel,
+              status: null,
+              verificationStatus: null,
+            },
+          }),
+        ),
         createdAt: conversation.createdAt,
         latestActivityAt: conversation.lastActivityAt,
         latestMessage: null,
@@ -280,7 +371,7 @@ export function MessageThreadScreen({
 
   const isInitialError =
     (conversationQuery.isError && !conversationQuery.data) ||
-    (isError && legacyMessages.length === 0);
+    (isError && legacyMessages.length === 0 && !isMessagesLoading);
   const isRefreshing = conversationQuery.isRefetching && !isLoadingMore;
 
   const maybeAutoFillOlderMessages = useCallback(async () => {
@@ -323,12 +414,12 @@ export function MessageThreadScreen({
       return;
     }
 
-    const timer = window.setTimeout(() => {
+    const timer = setTimeout(() => {
       listRef.current?.scrollToEnd({ animated: false });
       didInitialScrollRef.current = true;
     }, 0);
 
-    return () => window.clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [legacyMessages.length]);
 
   useEffect(() => {
@@ -347,9 +438,218 @@ export function MessageThreadScreen({
     void conversationQuery.refetch();
   };
 
+  const uploadPendingAttachment = async (item: PendingChatAttachment) => {
+    setPendingAttachments((current) =>
+      current.map((entry) =>
+        entry.localId === item.localId
+          ? { ...entry, state: "uploading", errorCode: null }
+          : entry,
+      ),
+    );
+    try {
+      const response = await uploadCanonicalChatAttachment(conversationId, {
+        uri: item.uri,
+        name: item.name,
+        type: item.mimeType,
+      });
+      const remote = {
+        id: response.item.fileId,
+        fileUrl: response.item.fileUrl,
+        mimeType: response.item.mimeType,
+        fileSize: response.item.fileSize,
+        originalName: response.item.originalName ?? item.name,
+      };
+      setPendingAttachments((current) =>
+        current.map((entry) =>
+          entry.localId === item.localId
+            ? { ...entry, state: "ready", remote, errorCode: null }
+            : entry,
+        ),
+      );
+    } catch (error) {
+      setPendingAttachments((current) =>
+        current.map((entry) =>
+          entry.localId === item.localId
+            ? {
+                ...entry,
+                state: "failed",
+                errorCode: attachmentErrorCode(error),
+              }
+            : entry,
+        ),
+      );
+    }
+  };
+
+  const addPendingAttachment = (input: {
+    uri: string;
+    name: string;
+    mimeType: string;
+    size: number | null;
+  }) => {
+    if (!attachmentPolicy) return;
+    const errorCode = validatePendingAttachment(
+      input,
+      pendingAttachments,
+      attachmentPolicy,
+    );
+    if (errorCode) {
+      setComposerError(t(attachmentErrorKey(errorCode)));
+      return;
+    }
+    const item: PendingChatAttachment = {
+      ...input,
+      localId: `${Date.now()}-${Math.random()}`,
+      state: "selected",
+    };
+    setComposerError(null);
+    setPendingAttachments((current) => [...current, item]);
+    void uploadPendingAttachment(item);
+  };
+
+  const handleChooseAttachment = () => {
+    if (!attachmentPolicy?.enabled) return;
+
+    if (Platform.OS === "web") {
+      void DocumentPicker.getDocumentAsync({
+        type: ["image/*", ...attachmentPolicy.documentTypes],
+        copyToCacheDirectory: true,
+        multiple: false,
+      }).then((result) => {
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          addPendingAttachment({
+            uri: asset.uri,
+            name: asset.name,
+            mimeType: asset.mimeType ?? "application/octet-stream",
+            size: asset.size ?? null,
+          });
+        }
+      });
+      return;
+    }
+
+    Alert.alert(t("messages.thread.chooseAttachment"), undefined, [
+      {
+        text: t("messages.thread.choosePhoto"),
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 1,
+            allowsEditing: false,
+          });
+          const asset = result.canceled ? null : result.assets?.[0];
+          if (asset)
+            addPendingAttachment({
+              uri: asset.uri,
+              name: asset.fileName ?? `image-${Date.now()}.jpg`,
+              mimeType: asset.mimeType ?? "image/jpeg",
+              size: asset.fileSize ?? null,
+            });
+        },
+      },
+      {
+        text: t("messages.thread.chooseFile"),
+        onPress: async () => {
+          const result = await DocumentPicker.getDocumentAsync({
+            type: [...attachmentPolicy.documentTypes],
+            copyToCacheDirectory: true,
+            multiple: false,
+          });
+          if (!result.canceled && result.assets?.[0]) {
+            const asset = result.assets[0];
+            addPendingAttachment({
+              uri: asset.uri,
+              name: asset.name,
+              mimeType: asset.mimeType ?? "application/octet-stream",
+              size: asset.size ?? null,
+            });
+          }
+        },
+      },
+      { text: t("common.cancel"), style: "cancel" },
+    ]);
+  };
+
+  const removePendingAttachment = (localId: string) =>
+    setPendingAttachments((current) =>
+      current.filter((item) => item.localId !== localId),
+    );
+  const retryPendingAttachment = (localId: string) => {
+    const item = pendingAttachments.find((entry) => entry.localId === localId);
+    if (item) void uploadPendingAttachment(item);
+  };
+
+  const openAttachment = async (
+    attachment: GeneralChatMessageItemDto["attachments"][number],
+  ) => {
+    if (isAttachmentImage(attachment.mimeType)) {
+      setPreviewAttachment(attachment);
+      return;
+    }
+    try {
+      const token = getApiAccessToken();
+      if (Platform.OS === "web") {
+        const response = await fetch(
+          absoluteAttachmentUrl(attachment.fileUrl),
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          },
+        );
+        if (!response.ok) throw new Error("ATTACHMENT_OPEN_FAILED");
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const webWindow = (globalThis as any).window;
+        const webDocument = (globalThis as any).document;
+        const opened = webWindow?.open(
+          objectUrl,
+          "_blank",
+          "noopener,noreferrer",
+        );
+        if (!opened && webDocument) {
+          const link = webDocument.createElement("a");
+          link.href = objectUrl;
+          link.download = attachment.originalName || "attachment";
+          webDocument.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+        return;
+      }
+      const target = `${FileSystem.cacheDirectory ?? ""}sawiyaa-${attachment.fileId}`;
+      const result = await FileSystem.downloadAsync(
+        absoluteAttachmentUrl(attachment.fileUrl),
+        target,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+      );
+      const info = await FileSystem.getInfoAsync(result.uri);
+      if (!info.exists || ("size" in info && !info.size))
+        throw new Error("EMPTY_ATTACHMENT");
+      if (await Sharing.isAvailableAsync())
+        await Sharing.shareAsync(result.uri, {
+          mimeType: attachment.mimeType,
+          dialogTitle: t("messages.thread.openAttachment"),
+        });
+      else setComposerError(t("messages.thread.attachmentOpenError"));
+    } catch {
+      setComposerError(t("messages.thread.attachmentOpenError"));
+    }
+  };
+
   const handleSend = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || !conversationId || isSending) {
+    const readyAttachments = pendingAttachments
+      .filter((item) => item.state === "ready" && item.remote)
+      .map((item) => item.remote!);
+    if (
+      (!trimmed && readyAttachments.length === 0) ||
+      !conversationId ||
+      isSending ||
+      pendingAttachments.some(
+        (item) => item.state === "uploading" || item.state === "failed",
+      )
+    ) {
       return;
     }
 
@@ -357,8 +657,9 @@ export function MessageThreadScreen({
     setIsSending(true);
 
     try {
-      await sendMessage(trimmed);
+      await sendMessage(trimmed, readyAttachments);
       setDraft("");
+      setPendingAttachments([]);
       requestAnimationFrame(() => {
         listRef.current?.scrollToEnd({ animated: true });
       });
@@ -388,10 +689,27 @@ export function MessageThreadScreen({
     [retryMessage, t],
   );
 
+  if (!conversation && conversationQuery.isLoading) {
+    return (
+      <Screen bg="background" testID={`${role}-message-thread-screen`}>
+        <Header
+          showBack
+          hideMessages={role === "practitioner"}
+          title={t("messages.thread.title", "Conversation")}
+        />
+        <LoadingState fullScreen message={t("messages.common.loading")} />
+      </Screen>
+    );
+  }
+
   if (isInitialError || !conversation) {
     return (
-      <Screen bg="background">
-        <Header showBack title={headerTitle} />
+      <Screen bg="background" testID={`${role}-message-thread-screen`}>
+        <Header
+          showBack
+          hideMessages={role === "practitioner"}
+          title={headerTitle}
+        />
         <ErrorState
           fullScreen
           title={t("messages.common.errorTitle", "Could not load conversation")}
@@ -407,8 +725,13 @@ export function MessageThreadScreen({
   }
 
   return (
-    <Screen bg="background">
-      <Header showBack title={headerTitle} subtitle={headerSubtitle} />
+    <Screen bg="background" testID={`${role}-message-thread-screen`}>
+      <Header
+        showBack
+        hideMessages={role === "practitioner"}
+        title={headerTitle}
+        subtitle={headerSubtitle}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -476,9 +799,16 @@ export function MessageThreadScreen({
             </View>
           }
           ListEmptyComponent={
-            <ConversationEmptyState
-              title={t("messages.thread.emptyTitle", "No messages yet")}
-            />
+            isMessagesLoading ? (
+              <LoadingState
+                fullScreen={false}
+                message={t("messages.common.loading")}
+              />
+            ) : (
+              <ConversationEmptyState
+                title={t("messages.thread.emptyTitle", "No messages yet")}
+              />
+            )
           }
           renderItem={({ item }) => (
             <View>
@@ -513,6 +843,7 @@ export function MessageThreadScreen({
                     : undefined
                 }
                 retryLabel={t("messages.common.retryNext", "Try again")}
+                onAttachmentOpen={openAttachment}
               />
             </View>
           )}
@@ -624,16 +955,67 @@ export function MessageThreadScreen({
               value={draft}
               onChangeText={setDraft}
               onSend={() => void handleSend()}
-              disabled={!draft.trim() || isSending}
+              disabled={
+                (!draft.trim() &&
+                  pendingAttachments.every((item) => item.state !== "ready")) ||
+                isSending ||
+                pendingAttachments.some(
+                  (item) =>
+                    item.state === "uploading" || item.state === "failed",
+                )
+              }
               placeholder={t(
                 "messages.thread.composerPlaceholder",
                 "Write your message",
               )}
               error={composerError}
+              attachments={pendingAttachments}
+              onRemoveAttachment={removePendingAttachment}
+              onRetryAttachment={retryPendingAttachment}
+              onChooseAttachment={handleChooseAttachment}
+              attachmentEnabled={Boolean(attachmentPolicy?.enabled)}
             />
           ) : null}
         </View>
       </KeyboardAvoidingView>
+      <Modal
+        visible={Boolean(previewAttachment)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewAttachment(null)}
+      >
+        <View style={styles.previewOverlay}>
+          <TouchableOpacity
+            onPress={() => setPreviewAttachment(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t("messages.thread.closePreview")}
+            style={styles.previewClose}
+          >
+            <Text color="#FFFFFF" style={styles.previewCloseText}>
+              ×
+            </Text>
+          </TouchableOpacity>
+          {previewAttachment ? (
+            <Image
+              source={{
+                uri:
+                  previewUri ??
+                  absoluteAttachmentUrl(previewAttachment.fileUrl),
+                headers:
+                  Platform.OS === "web"
+                    ? undefined
+                    : getApiAccessToken()
+                      ? { Authorization: `Bearer ${getApiAccessToken()}` }
+                      : undefined,
+              }}
+              style={styles.previewImage}
+              resizeMode="contain"
+              accessible
+              accessibilityLabel={t("messages.thread.previewAttachment")}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -647,6 +1029,7 @@ function MessageBubble({
   senderRoleLabel,
   onRetry,
   retryLabel,
+  onAttachmentOpen,
 }: {
   message: GeneralChatMessageItemDto;
   locale: string;
@@ -656,6 +1039,9 @@ function MessageBubble({
   senderRoleLabel: string;
   onRetry?: () => void;
   retryLabel: string;
+  onAttachmentOpen: (
+    attachment: GeneralChatMessageItemDto["attachments"][number],
+  ) => void;
 }) {
   const contentText = resolveMessageText(message, locale);
   const timeValue = formatMessageTime(message.sentAt, locale);
@@ -707,13 +1093,29 @@ function MessageBubble({
       attachments={message.attachments.map((attachment) => ({
         key: attachment.fileId,
         label: attachment.originalName || attachment.mimeType || "Attachment",
+        fileUrl: absoluteAttachmentUrl(attachment.fileUrl),
+        mimeType: attachment.mimeType,
+        fileSize: attachment.fileSize,
+        imageHeaders: getApiAccessToken()
+          ? { Authorization: `Bearer ${getApiAccessToken()}` }
+          : undefined,
       }))}
+      onAttachmentOpen={(attachment) =>
+        onAttachmentOpen({
+          fileId: attachment.key,
+          fileUrl: attachment.fileUrl,
+          mimeType: attachment.mimeType,
+          fileSize: attachment.fileSize ?? null,
+          originalName: attachment.label,
+        })
+      }
       onRetry={onRetry}
       retryLabel={retryLabel}
     />
   );
 }
 
+/*
 function resolveMessageText(
   message: GeneralChatMessageItemDto,
   locale?: string,
@@ -725,6 +1127,15 @@ function resolveMessageText(
   }
 
   if (message.attachments.length > 0) {
+    const genericAttachmentText = isArabic ? "مرفق" : "Attachment";
+    if (genericAttachmentText) return genericAttachmentText;
+    return "مرفق";
+  }
+
+  // Legacy attachment summary branch retained below for source compatibility.
+  if (message.attachments.length > 0 && !message.attachments.length) {
+    return isArabic ? "مرفق" : "Attachment";
+    // eslint-disable-next-line no-unreachable
     if (message.attachments.length === 1) {
       return (
         message.attachments[0]?.originalName ||
@@ -741,7 +1152,46 @@ function resolveMessageText(
   return isArabic ? "رسالة" : "Message";
 }
 
+  */
+function resolveMessageText(
+  message: GeneralChatMessageItemDto,
+  locale?: string,
+) {
+  const text = message.contentText?.trim();
+  if (text) return text;
+  if (message.attachments.length > 0)
+    return locale?.startsWith("ar") ? "مرفق" : "Attachment";
+  return locale?.startsWith("ar") ? "رسالة" : "Message";
+}
+
 const styles = StyleSheet.create({
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(20, 30, 28, 0.94)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  previewClose: {
+    position: "absolute",
+    top: 54,
+    end: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.35)",
+  },
+  previewCloseText: {
+    fontSize: 30,
+    lineHeight: 32,
+  },
+  previewImage: {
+    width: "100%",
+    height: "75%",
+  },
   flex: {
     flex: 1,
   },

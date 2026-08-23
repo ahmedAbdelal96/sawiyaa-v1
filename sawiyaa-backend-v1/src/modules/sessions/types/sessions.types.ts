@@ -1,10 +1,8 @@
 import { SessionMode, SessionStatus } from '@prisma/client';
 import { GeneralChatAvailabilityViewModel } from '@modules/chat/types/general-chat.types';
-import {
-  SessionJoinBlockedReason,
-  SessionPresentationStatus,
-} from './session-video.types';
+import { SessionJoinBlockedReason } from './session-video.types';
 import type { PatientSessionActionsViewModel } from '../services/resolve-patient-session-actions.service';
+import type { SessionOperationalInterpretation } from './session-operational-interpretation.types';
 
 /**
  * Session view-model types keep API contracts stable while the persistence model remains richer for later integrations.
@@ -13,7 +11,6 @@ export interface SessionListItemViewModel {
   id: string;
   sessionCode: string;
   status: SessionStatus;
-  presentationStatus: SessionPresentationStatus;
   createdAt: string;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
@@ -28,14 +25,18 @@ export interface SessionListItemViewModel {
     id: string;
     displayName: string | null;
   } | null;
-  joinAvailability: SessionJoinAvailabilityViewModel;
   actions: PatientSessionActionsViewModel;
   chatAvailability: GeneralChatAvailabilityViewModel;
   unreadCount?: number;
   hasUnread?: boolean;
+  /** Additive Phase 2B canonical operational contract. */
+  operational?: SessionOperationalInterpretation;
 }
 
 export interface SessionDetailsViewModel extends SessionListItemViewModel {
+  sessionChat?: {
+    available: boolean;
+  };
   flowType: string;
   expiresAt: string | null;
   cancelledAt: string | null;

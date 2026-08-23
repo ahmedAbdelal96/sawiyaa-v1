@@ -423,6 +423,7 @@ describe('OperationalNotificationService', () => {
     await setup.service.notifyInstantBookingAccepted({
       patientProfileId: 'patient_1',
       requestId: 'request_1',
+      createdSessionId: 'session_1',
     });
 
     expect(setup.createNotification).toHaveBeenCalledWith(
@@ -433,7 +434,8 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'instant-booking.request-accepted:request_1:user_1:in-app',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/instant-booking?requestId=request_1',
+          routePath: '/en/patient/sessions/session_1/pay',
+          createdSessionId: 'session_1',
           targetRole: 'PATIENT',
         }),
       }),
@@ -446,7 +448,8 @@ describe('OperationalNotificationService', () => {
         idempotencyKey:
           'instant-booking.request-accepted:request_1:user_1:push',
         payloadJson: expect.objectContaining({
-          routePath: '/en/patient/instant-booking?requestId=request_1',
+          routePath: '/en/patient/sessions/session_1/pay',
+          createdSessionId: 'session_1',
           targetRole: 'PATIENT',
         }),
       }),

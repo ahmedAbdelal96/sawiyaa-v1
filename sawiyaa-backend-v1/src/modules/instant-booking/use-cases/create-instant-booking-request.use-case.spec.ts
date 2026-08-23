@@ -24,6 +24,12 @@ describe('CreateInstantBookingRequestUseCase', () => {
   const eligibilityService = {
     assertPractitionerCanReceiveInstantBooking: jest.fn(),
   } as unknown as ValidateInstantBookingEligibilityService;
+  const policyService = {
+    requestTtlMinutes: jest.fn(),
+  };
+  const notificationService = {
+    notifyInstantBookingCreated: jest.fn(),
+  };
 
   const mapper = {
     toViewModel: jest.fn((request) => ({
@@ -40,10 +46,13 @@ describe('CreateInstantBookingRequestUseCase', () => {
     requestRepository,
     eligibilityService,
     mapper,
+    policyService as never,
+    notificationService as never,
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
+    policyService.requestTtlMinutes.mockResolvedValue(10);
     (patientRepository.findByUserId as jest.Mock).mockResolvedValue({
       id: 'patient-1',
     });
@@ -97,6 +106,10 @@ describe('CreateInstantBookingRequestUseCase', () => {
     );
 
     expect(result.item.id).toBe('request-1');
+    expect(notificationService.notifyInstantBookingCreated).toHaveBeenCalledWith({
+      practitionerProfileId: 'practitioner-1',
+      requestId: 'request-1',
+    });
     expect(result.item.metadataJson).toMatchObject({
       pricingSnapshot: {
         EGP: {

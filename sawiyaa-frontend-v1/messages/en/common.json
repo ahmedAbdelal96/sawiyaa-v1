@@ -48,6 +48,7 @@
     }
   },
   "dataTable": {
+    "pagination": "Pagination",
     "rows": "Rows",
     "rowsPerPage": "Rows per page",
     "sortBy": "Sort by",
@@ -62,7 +63,14 @@
     "showing": "Showing {start} to {end} of {total}",
     "filters": "Filters",
     "refineList": "Refine the current list without leaving the page.",
-    "actions": "Actions"
+    "actions": "Actions",
+    "exportSuccess": "Data exported successfully",
+    "exportError": "Could not export data",
+    "exportToExcel": "Export to Excel",
+    "exporting": "Exporting...",
+    "exportExcel": "Export Excel",
+    "errorOccurred": "Something went wrong",
+    "retry": "Try again"
   },
   "money": {
     "currency": { "usd": { "full": "US Dollar" }, "egp": { "full": "Egyptian Pound" } },

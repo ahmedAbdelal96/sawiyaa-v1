@@ -1,6 +1,7 @@
 import { ConfigScopeType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
+  Allow,
   IsDateString,
   IsEnum,
   IsInt,
@@ -25,6 +26,7 @@ export class ListAdminPlatformSettingsDto {
 }
 
 export class UpdateAdminPlatformSettingDto {
+  @Allow()
   value!: unknown;
 
   @IsString()

@@ -10,11 +10,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Download } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ColumnDef, ExportConfig } from './types';
 import { exportToExcel } from './export-utils';
-import { isRTL } from './utils';
 
 interface DataTableExportProps<T = any> {
   /** Data to export */
@@ -41,7 +41,7 @@ export function DataTableExport<T = any>({
   size = 'md',
 }: DataTableExportProps<T>) {
   const [exporting, setExporting] = useState(false);
-  const rtl = isRTL();
+  const t = useTranslations("common");
   
   // Don't render if export is disabled
   if (!config.enabled) return null;
@@ -69,12 +69,12 @@ export function DataTableExport<T = any>({
       
       // Success toast
       toast.success(
-        rtl ? 'تم تصدير البيانات بنجاح' : 'Data exported successfully'
+        t("dataTable.exportSuccess")
       );
     } catch (error) {
       console.error('Export failed:', error);
       toast.error(
-        rtl ? 'فشل تصدير البيانات' : 'Failed to export data'
+        t("dataTable.exportError")
       );
     } finally {
       setExporting(false);
@@ -106,17 +106,13 @@ export function DataTableExport<T = any>({
         ${variantClasses[variant]}
         ${sizeClasses[size]}
       `}
-      aria-label={rtl ? 'تصدير إلى Excel' : 'Export to Excel'}
+      aria-label={t("dataTable.exportToExcel")}
     >
       <Download className={size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />
       <span>
         {exporting
-          ? rtl
-            ? 'جاري التصدير...'
-            : 'Exporting...'
-          : rtl
-            ? 'تصدير Excel'
-            : 'Export Excel'}
+          ? t("dataTable.exporting")
+          : t("dataTable.exportExcel")}
       </span>
     </button>
   );

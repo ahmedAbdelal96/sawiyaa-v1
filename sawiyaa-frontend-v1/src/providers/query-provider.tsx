@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { SENSITIVE_CACHE_CLEAR_EVENT } from "@/lib/security/sensitive-cache";
 import { disconnectGeneralChatSocket } from "@/features/chat/realtime/general-chat-socket.client";
 import { disconnectUnifiedMessagesSocket } from "@/features/chat/realtime/unified-messages-socket.client";
+import { NotificationRealtimeBridge } from "@/features/notifications/realtime/NotificationRealtimeBridge";
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -76,6 +77,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <NotificationRealtimeBridge />
       {process.env.NODE_ENV === "development" && (
         <ReactQueryDevtools initialIsOpen={false} position="bottom" />
       )}

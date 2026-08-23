@@ -46,6 +46,7 @@ describe('GetMyPatientSessionSummaryUseCase', () => {
     const useCase = new GetMyPatientSessionSummaryUseCase(
       sessionPatientRepository,
       sessionRepository,
+      { interpret: jest.fn(async ({ session }) => ({ state: session.status })) } as never,
     );
 
     const result = await useCase.execute({ userId: 'user_1' });

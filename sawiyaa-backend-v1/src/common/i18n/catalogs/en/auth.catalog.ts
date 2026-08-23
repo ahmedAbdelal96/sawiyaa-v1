@@ -25,6 +25,7 @@ export const enAuthCatalog = {
     adminLoggedOut: 'Admin session logged out successfully',
     practitionerAuthLockoutCleared:
       'Practitioner auth lockout cleared successfully',
+    passwordChanged: 'Password changed successfully. Please sign in again.',
   },
   notifications: {
     practitionerLoginOtpTitle: 'Practitioner login OTP',
@@ -59,6 +60,9 @@ export const enAuthCatalog = {
     passwordResetPatientOnly:
       'This email is registered as a practitioner account. Use practitioner password recovery.',
     passwordResetAccountNotFound: 'No account was found for this email.',
+    emailNotRegistered: 'We could not send the verification code. Check your email address and try again.',
+    accountEmailUnavailable: 'No valid email address is available for this account.',
+    accountNotEligible: 'This account is currently not eligible to sign in.',
     passwordResetTokenInvalid: 'Password reset token is invalid or expired',
     invalidRegistrationCountryCode:
       'Country code is invalid for practitioner registration',
@@ -87,5 +91,10 @@ export const enAuthCatalog = {
       'A CSRF token is required for this cookie-authenticated request',
     loginTemporarilyLocked:
       'Login is temporarily locked. Please try again later.',
+    currentPasswordInvalid: 'Current password is incorrect',
+    newPasswordMustDiffer:
+      'New password must be different from the current password',
+    passwordChangeUnavailable:
+      'Password change is not available for this account',
   },
 };

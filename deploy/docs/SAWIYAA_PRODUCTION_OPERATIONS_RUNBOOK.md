@@ -312,12 +312,12 @@ Write release marker
 
 # 10. Environment Management
 
-Required files:
+Canonical required files:
 
 ```
-.env.production.backend
-.env.production.frontend
-.env.production.db
+sawiyaa-backend-v1/.env
+sawiyaa-backend-v1/.env.postgres
+sawiyaa-frontend-v1/.env
 ```
 
 Rules:
@@ -333,6 +333,10 @@ Next.js `NEXT_PUBLIC_*` values are build-time variables.
 Therefore:
 
 Docker build arguments must match the validated frontend environment.
+
+The older `.env.production.backend`, `.env.production.frontend`, and
+`.env.production.db` files are legacy migration inputs only. Git updates code;
+deployment does not replace the canonical `.env` files.
 
 ---
 
@@ -389,6 +393,18 @@ Docker mount:
 ```
 /opt/sawiyaa/logs/backend:/app/logs
 ```
+
+The deployment validates this bind mount as the actual backend runtime UID
+before startup. If that check fails, correct ownership with:
+
+```bash
+bash /opt/sawiyaa/deploy/scripts/prepare-runtime-directories.sh \
+  --project-dir /opt/sawiyaa
+```
+
+Do not create the directory manually as `deploy` or `root` and continue, and
+do not use `chmod 777`. Rollback must not delete the logs directory or named
+volumes; they contain persistent operational data.
 
 Expected:
 
@@ -654,3 +670,56 @@ Simple.
 Predictable.
 Safe.
 Maintainable.
+
+---
+
+# 18. Unified File Storage Backup and Restore
+
+All new application file bytes live under the persistent `backend_storage`
+volume at `/app/storage/files`. Database dumps and file bundles are separate
+artifacts but must be kept together by the same UTC timestamp and release SHA.
+
+Create the verified database backup first, then create the matching file bundle:
+
+```bash
+SAWIYAA_TARGET_SHA="$(git rev-parse HEAD)" \
+  bash /opt/sawiyaa/deploy/scripts/backup-db.sh
+
+SAWIYAA_TARGET_SHA="$(git rev-parse HEAD)" \
+SAWIYAA_BACKUP_TIMESTAMP=YYYYMMDD-HHMMSS \
+SAWIYAA_DB_BACKUP_FILE=/opt/sawiyaa-backups/db/sawiyaa-YYYYMMDD-HHMMSS-<sha>.dump \
+  bash /opt/sawiyaa/deploy/scripts/backup-files.sh
+```
+
+The file bundle contains only `storage/files`, has a SHA-256 sidecar, and is
+not considered verified until the archive command, non-empty check, and
+checksum verification pass. Copy both artifacts and their sidecars to the
+approved off-host backup location.
+
+## Restore order
+
+1. Stop application writes and identify the matching database dump and file
+   bundle by UTC timestamp, release SHA, and metadata checksums.
+2. Restore the database into an isolated database first, or restore the
+   approved production database during the incident window using the existing
+   PostgreSQL restore procedure.
+3. Verify that `StoredFile.storageKey` rows with `ACTIVE` status map to files
+   in the bundle under `/app/storage/files`; report missing or untracked files
+   before enabling traffic.
+4. Verify the backend container runs as UID/GID `10001:10001` and that the
+   volume permissions remain `0750` for `/app/storage`.
+5. Restore the bundle only with the explicit confirmation guard:
+
+```bash
+SAWIYAA_CONFIRM_FILE_RESTORE=YES \
+  bash /opt/sawiyaa/deploy/scripts/restore-files.sh \
+  /opt/sawiyaa-backups/sawiyaa-YYYYMMDD-HHMMSS-<sha>.files.tar.gz
+```
+
+6. Start the backend, run the file reconciliation check, verify private
+   attachment authorization and public cover/avatar routes, then re-enable
+   writes.
+
+The restore script refuses unknown bundle names, missing checksums, failed
+checksums, and runs without explicit confirmation. It does not delete the
+volume; any cleanup or database cutover remains an approved operator action.

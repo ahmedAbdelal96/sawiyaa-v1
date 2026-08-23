@@ -9,7 +9,6 @@ import {
   Header,
   LoadingState,
   Screen,
-  StatusBadge,
   Text,
 } from "../../../src/components/ui";
 import {
@@ -23,51 +22,33 @@ import {
   formatSignedMoney,
   ledgerBucketLabel,
   ledgerEntryTypeLabel,
-  monthYearLabel,
   safeFinanceText,
-  settlementStatusLabel,
-  settlementStatusTone,
 } from "../../../src/features/practitioner/finance/utils";
-import type {
-  PractitionerLedgerEntry,
-  PractitionerSettlementItem,
-} from "../../../src/features/practitioner/finance/types";
-import {
-  CompactActionLink,
-  CompactEmptyState,
-  CompactSectionHeader,
-  resolvePractitionerTone,
-} from "../../../src/features/practitioner/ui/compact";
+import type { PractitionerLedgerEntry } from "../../../src/features/practitioner/finance/types";
+import { resolvePractitionerTone } from "../../../src/features/practitioner/ui/compact";
 import { useTheme } from "../../../src/providers/ThemeProvider";
+import { useAppDirection } from "../../../src/i18n/direction";
 
-const PREVIEW_LIMIT = 3;
+const PREVIEW_LIMIT = 5;
 type TranslateFn = ReturnType<typeof useTranslation>["t"];
 
 export default function PractitionerFinanceOverviewScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { theme } = useTheme();
-
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const walletQuery = usePractitionerWalletSummary();
-  const ledgerQuery = usePractitionerLedgerEntries({
-    page: 1,
-    limit: PREVIEW_LIMIT,
-  });
-  const settlementsQuery = usePractitionerSettlementItems({
-    page: 1,
-    limit: PREVIEW_LIMIT,
-  });
 
+  const walletQuery = usePractitionerWalletSummary();
+  const ledgerQuery = usePractitionerLedgerEntries({ page: 1, limit: PREVIEW_LIMIT });
+  const settlementsQuery = usePractitionerSettlementItems({ page: 1, limit: 1 });
   const wallet = walletQuery.data?.item ?? null;
-  const recentLedgerItems = ledgerQuery.data?.items.slice(0, 3) ?? [];
-  const recentSettlements = settlementsQuery.data?.items.slice(0, 2) ?? [];
+  const recentLedgerItems = ledgerQuery.data?.items.slice(0, PREVIEW_LIMIT) ?? [];
   const financeTone = resolvePractitionerTone(theme, "finance");
 
   const refetchAll = () => {
-    walletQuery.refetch();
-    ledgerQuery.refetch();
-    settlementsQuery.refetch();
+    void walletQuery.refetch();
+    void ledgerQuery.refetch();
+    void settlementsQuery.refetch();
   };
 
   const isInitialLoading =
@@ -76,14 +57,7 @@ export default function PractitionerFinanceOverviewScreen() {
   if (isInitialLoading) {
     return (
       <Screen bg="background">
-        <Header
-          title={t("practitioner.finance.title")}
-          rightElement={
-            <TouchableOpacity onPress={refetchAll} style={styles.headerAction}>
-              <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
-            </TouchableOpacity>
-          }
-        />
+        <Header title={t("practitioner.finance.product.title")} />
         <LoadingState fullScreen message={t("practitioner.finance.common.loading")} />
       </Screen>
     );
@@ -92,14 +66,7 @@ export default function PractitionerFinanceOverviewScreen() {
   if (walletQuery.isError) {
     return (
       <Screen bg="background">
-        <Header
-          title={t("practitioner.finance.title")}
-          rightElement={
-            <TouchableOpacity onPress={refetchAll} style={styles.headerAction}>
-              <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
-            </TouchableOpacity>
-          }
-        />
+        <Header title={t("practitioner.finance.product.title")} />
         <ErrorState
           fullScreen
           title={t("practitioner.finance.wallet.errorTitle")}
@@ -113,148 +80,89 @@ export default function PractitionerFinanceOverviewScreen() {
   return (
     <Screen bg="background">
       <Header
-        title={t("practitioner.finance.title")}
+        title={t("practitioner.finance.product.title")}
         rightElement={
-          <TouchableOpacity onPress={refetchAll} style={styles.headerAction}>
+          <TouchableOpacity
+            accessibilityLabel={t("practitioner.finance.common.refresh")}
+            onPress={refetchAll}
+            style={styles.headerAction}
+          >
             <Ionicons name="refresh-outline" size={22} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
       />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="outlined" padding="sm" style={styles.snapshotCard}>
-          <View style={styles.snapshotHeader}>
-            <View style={styles.snapshotHeaderText}>
-              <Text weight="600" style={styles.snapshotTitle}>
-                {t("practitioner.finance.summary.title")}
-              </Text>
-              <Text color={theme.colors.textSecondary} style={styles.snapshotSubtitle}>
-                {t("practitioner.finance.summary.subtitle")}
-              </Text>
-            </View>
-            <CompactActionLink
-              label={t("practitioner.finance.common.viewAll")}
-              onPress={() => router.push("/(practitioner)/finance/wallet")}
-            />
-          </View>
+        <Card variant="outlined" padding="sm" style={styles.balanceCard}>
+          <Text color={theme.colors.textMuted} style={styles.eyebrow}>
+            {t("practitioner.finance.product.available")}
+          </Text>
+          <Text weight="700" style={[styles.balanceValue, { color: financeTone.accent }]}>
+            {formatMoneyOrUnavailable(
+              wallet?.availableBalance,
+              wallet?.currency,
+              locale,
+              t,
+            )}
+          </Text>
+          <Text color={theme.colors.textSecondary} style={styles.balanceNote}>
+            {t("practitioner.finance.product.availableHint")}
+          </Text>
 
-          <View
-            style={[
-              styles.balanceShell,
-              { backgroundColor: financeTone.surface, borderColor: financeTone.border },
-            ]}
-          >
-            <Text color={theme.colors.textMuted} style={styles.balanceLabel}>
-              {t("practitioner.finance.wallet.available")}
-            </Text>
-            <Text weight="700" style={[styles.balanceValue, { color: financeTone.accent }]}>
-              {formatMoney(
-                wallet?.availableBalance ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-            </Text>
-            <Text color={theme.colors.textSecondary} style={styles.balanceHint}>
-              {t("practitioner.finance.summary.balanceHint")}
-            </Text>
-          </View>
-
-          <View style={styles.metricGrid}>
-            <MetricTile
-              label={t("practitioner.finance.wallet.pending")}
-              value={formatMoney(
-                wallet?.pendingBalance ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-              tone="warning"
-            />
-            <MetricTile
-              label={t("practitioner.finance.wallet.reserved")}
-              value={formatMoney(
-                wallet?.reservedBalance ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-              tone="neutral"
-            />
-            <MetricTile
-              label={t("practitioner.finance.wallet.totalEarned")}
-              value={formatMoney(
-                wallet?.totalEarned ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-              tone="success"
-            />
-            <MetricTile
-              label={t("practitioner.finance.wallet.lifetimePaidOut")}
-              value={formatMoney(
-                wallet?.lifetimePaidOut ?? "0",
-                wallet?.currency ?? null,
-                locale,
-                t("practitioner.finance.common.currencyUnavailable"),
-              )}
-              tone="info"
-            />
-          </View>
-
-          <View style={styles.detailRows}>
-            <InlineRow
-              label={t("practitioner.finance.wallet.lastLedgerEntryAt")}
-              value={formatDateShort(wallet?.lastLedgerEntryAt ?? null, locale)}
-            />
-            <InlineRow
-              label={t("practitioner.finance.wallet.updatedAt")}
-              value={formatDateShort(wallet?.updatedAt ?? null, locale)}
-            />
+          <View style={[styles.summaryList, { borderColor: theme.colors.borderLight }]}>
+            {[
+              [t("practitioner.finance.product.underReview"), wallet?.pendingBalance],
+              [t("practitioner.finance.product.earnings"), wallet?.totalEarned],
+              [t("practitioner.finance.product.transferred"), wallet?.lifetimePaidOut],
+            ]
+              .filter(([, amount]) => hasMeaningfulAmount(amount))
+              .map(([label, amount]) => (
+                <SummaryLine
+                  key={label}
+                  label={label}
+                  value={formatMoneyOrUnavailable(amount, wallet?.currency, locale, t)}
+                />
+              ))}
           </View>
         </Card>
 
-        <Card variant="outlined" padding="sm">
-          <CompactSectionHeader title={t("practitioner.finance.quickActions")} />
-          <View style={styles.actionGrid}>
-            <ActionTile
-              icon="wallet-outline"
-              label={t("practitioner.finance.actions.wallet")}
-              tone="finance"
-              onPress={() => router.push("/(practitioner)/finance/wallet")}
-            />
-            <ActionTile
-              icon="receipt-outline"
-              label={t("practitioner.finance.actions.ledger")}
-              tone="info"
-              onPress={() => router.push("/(practitioner)/finance/ledger")}
-            />
-            <ActionTile
-              icon="layers-outline"
-              label={t("practitioner.finance.actions.settlements")}
-              tone="warning"
-              onPress={() => router.push("/(practitioner)/finance/settlements")}
-            />
-            <ActionTile
-              icon="pricetag-outline"
-              label={t("practitioner.finance.actions.promoCodes")}
-              tone="success"
-              onPress={() => router.push("/(practitioner)/promo-codes")}
-            />
-          </View>
-        </Card>
-
-        <Card variant="outlined" padding="sm">
-          <CompactSectionHeader
-            title={t("practitioner.finance.ledger.recentTitle")}
-            action={
-              <CompactActionLink
-                label={t("practitioner.finance.common.viewAll")}
-                onPress={() => router.push("/(practitioner)/finance/ledger")}
-              />
-            }
+        <View style={styles.section}>
+          <FinanceDestination
+            icon="trending-up-outline"
+            label={t("practitioner.finance.product.earnings")}
+            hint={t("practitioner.finance.product.earningsHint")}
+            onPress={() => router.push("/(practitioner)/finance/wallet")}
           />
+          <FinanceDestination
+            icon="arrow-up-circle-outline"
+            label={t("practitioner.finance.product.transfers")}
+            hint={t("practitioner.finance.product.transfersHint")}
+            onPress={() => router.push("/(practitioner)/finance/settlements")}
+          />
+          <FinanceDestination
+            icon="list-outline"
+            label={t("practitioner.finance.product.transactions")}
+            hint={t("practitioner.finance.product.transactionsHint")}
+            onPress={() => router.push("/(practitioner)/finance/ledger")}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text weight="600" style={styles.sectionTitle}>
+              {t("practitioner.finance.product.recentActivity")}
+            </Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t("practitioner.finance.product.viewAllTransactions")}
+              onPress={() => router.push("/(practitioner)/finance/ledger")}
+            >
+              <Text weight="600" style={[styles.actionLink, { color: theme.colors.primary }]}>
+                {t("practitioner.finance.common.viewAll")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {ledgerQuery.isLoading ? (
             <LoadingState message={t("practitioner.finance.common.loading")} />
           ) : ledgerQuery.isError ? (
@@ -264,259 +172,141 @@ export default function PractitionerFinanceOverviewScreen() {
               onRetry={ledgerQuery.refetch}
             />
           ) : recentLedgerItems.length ? (
-            <View style={styles.previewList}>
+            <View style={[styles.activityList, { borderTopColor: theme.colors.borderLight }]}>
               {recentLedgerItems.map((item) => (
-                <LedgerPreviewRow
+                <ActivityRow
                   key={item.id}
                   item={item}
                   locale={locale}
+                  t={t}
+                  currencyFallback={t("practitioner.finance.common.currencyUnavailable")}
                   onPress={() => router.push("/(practitioner)/finance/ledger")}
                 />
               ))}
             </View>
           ) : (
-            <CompactEmptyState
-              title={t("practitioner.finance.ledger.emptyTitle")}
-              description={t("practitioner.finance.ledger.emptyBody")}
-              icon={<Ionicons name="receipt-outline" size={28} color={theme.colors.textMuted} />}
-            />
+            <Text color={theme.colors.textSecondary} style={styles.emptyText}>
+              {t("practitioner.finance.product.noTransactions")}
+            </Text>
           )}
-        </Card>
-
-        <Card variant="outlined" padding="sm">
-          <CompactSectionHeader
-            title={t("practitioner.finance.settlements.recentTitle")}
-            action={
-              <CompactActionLink
-                label={t("practitioner.finance.common.viewAll")}
-                onPress={() => router.push("/(practitioner)/finance/settlements")}
-              />
-            }
-          />
-          {settlementsQuery.isLoading ? (
-            <LoadingState message={t("practitioner.finance.common.loading")} />
-          ) : settlementsQuery.isError ? (
-            <ErrorState
-              title={t("practitioner.finance.settlements.errorTitle")}
-              message={t("practitioner.finance.settlements.errorBody")}
-              onRetry={settlementsQuery.refetch}
-            />
-          ) : recentSettlements.length ? (
-            <View style={styles.previewList}>
-              {recentSettlements.map((item) => (
-                <SettlementPreviewRow
-                  key={item.id}
-                  item={item}
-                  locale={locale}
-                  t={t}
-                  onPress={() => router.push("/(practitioner)/finance/settlements")}
-                />
-              ))}
-            </View>
-          ) : (
-            <CompactEmptyState
-              title={t("practitioner.finance.settlements.emptyTitle")}
-              description={t("practitioner.finance.settlements.emptyBody")}
-              icon={<Ionicons name="layers-outline" size={28} color={theme.colors.textMuted} />}
-            />
-          )}
-        </Card>
+        </View>
       </ScrollView>
     </Screen>
   );
 }
 
-function MetricTile({
-  label,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  tone?: "neutral" | "success" | "warning" | "info";
-}) {
-  const { theme } = useTheme();
-  const palette = resolvePractitionerTone(theme, tone);
+function formatMoneyOrUnavailable(
+  amount: string | number | null | undefined,
+  currency: string | null | undefined,
+  locale: string,
+  t: TranslateFn,
+) {
+  return formatMoneyValue(
+    amount,
+    currency,
+    locale,
+    t("practitioner.finance.common.currencyUnavailable"),
+  );
+}
 
+function formatMoneyValue(
+  amount: string | number | null | undefined,
+  currency: string | null | undefined,
+  locale: string,
+  fallback: string,
+) {
+  if (amount == null) return fallback;
+  return formatMoney(amount, currency, locale, fallback);
+}
+
+function hasMeaningfulAmount(amount: string | null | undefined) {
+  return amount != null && Number(amount) !== 0;
+}
+
+function SummaryLine({ label, value }: { label: string; value: string }) {
+  const { theme } = useTheme();
   return (
-    <View
-      style={[
-        styles.metricTile,
-        {
-          backgroundColor: palette.surface,
-          borderColor: palette.border,
-        },
-      ]}
-    >
-      <Text color={theme.colors.textMuted} style={styles.metricLabel}>
+    <View style={[styles.summaryLine, { borderBottomColor: theme.colors.borderLight }]}>
+      <Text color={theme.colors.textSecondary} style={styles.summaryLabel}>
         {label}
       </Text>
-      <Text weight="600" style={[styles.metricValue, { color: palette.accent }]}>
+      <Text weight="600" style={styles.summaryValue} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
 
-function InlineRow({ label, value }: { label: string; value: string }) {
-  const { theme } = useTheme();
-
-  return (
-    <View style={[styles.inlineRow, { borderColor: theme.colors.borderLight }]}>
-      <Text color={theme.colors.textMuted} style={styles.inlineLabel}>
-        {label}
-      </Text>
-      <Text weight="600" style={styles.inlineValue} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function ActionTile({
+function FinanceDestination({
   icon,
   label,
-  tone = "neutral",
+  hint,
   onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  tone?: "finance" | "info" | "warning" | "neutral" | "success";
+  hint: string;
   onPress: () => void;
 }) {
   const { theme } = useTheme();
-  const palette = resolvePractitionerTone(theme, tone);
-
+  const { chevronForward } = useAppDirection();
   return (
     <TouchableOpacity
-      style={[
-        styles.actionTile,
-        {
-          borderColor: palette.border,
-          backgroundColor: palette.surface,
-        },
-      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. ${hint}`}
       onPress={onPress}
-      activeOpacity={0.85}
+      style={[styles.destinationRow, { borderBottomColor: theme.colors.borderLight }]}
     >
-      <View style={[styles.actionIcon, { backgroundColor: palette.iconBackground }]}>
-        <Ionicons name={icon} size={18} color={palette.iconColor} />
+      <View style={[styles.destinationIcon, { backgroundColor: theme.colors.primaryLight }]}>
+        <Ionicons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <Text weight="600" style={styles.actionLabel} numberOfLines={2}>
-        {label}
-      </Text>
+      <View style={styles.destinationCopy}>
+        <Text weight="600" style={styles.destinationLabel}>
+          {label}
+        </Text>
+        <Text color={theme.colors.textMuted} style={styles.destinationHint}>
+          {hint}
+        </Text>
+      </View>
+      <Ionicons name={chevronForward} size={18} color={theme.colors.textMuted} />
     </TouchableOpacity>
   );
 }
 
-function LedgerPreviewRow({
+function ActivityRow({
   item,
   locale,
+  t,
+  currencyFallback,
   onPress,
 }: {
   item: PractitionerLedgerEntry;
   locale: string;
-  onPress: () => void;
-}) {
-  const { theme } = useTheme();
-  const tone =
-    item.direction === "DEBIT"
-      ? "danger"
-      : item.entryType.includes("SETTLEMENT")
-        ? "info"
-        : "success";
-  const palette = resolvePractitionerTone(theme, tone);
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.85}
-      style={[
-        styles.previewRow,
-        {
-          backgroundColor: palette.surface,
-          borderColor: palette.border,
-        },
-      ]}
-    >
-      <View style={styles.previewTop}>
-        <View style={styles.previewText}>
-          <Text weight="600" style={styles.previewTitle} numberOfLines={1}>
-            {safeFinanceText(
-              item.description,
-              ledgerEntryTypeLabel(item.entryType, locale),
-            )}
-          </Text>
-          <Text color={theme.colors.textMuted} style={styles.previewMeta} numberOfLines={1}>
-            {formatDateShort(item.effectiveAt, locale)} · {ledgerBucketLabel(item.balanceBucket, locale)}
-          </Text>
-        </View>
-        <Text weight="600" style={[styles.previewAmount, { color: palette.accent }]}>
-          {formatSignedMoney(item.amount, item.currency, locale)}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function SettlementPreviewRow({
-  item,
-  locale,
-  t,
-  onPress,
-}: {
-  item: PractitionerSettlementItem;
-  locale: string;
   t: TranslateFn;
+  currencyFallback: string;
   onPress: () => void;
 }) {
   const { theme } = useTheme();
-  const rowTone =
-    item.status === "PAID"
-      ? "success"
-      : item.status === "FAILED" || item.status === "CANCELLED"
-        ? "danger"
-        : item.status === "READY" || item.status === "PROCESSING"
-          ? "warning"
-          : "info";
-  const palette = resolvePractitionerTone(theme, rowTone);
-
+  const title = safeFinanceText(item.description, ledgerEntryTypeLabel(item.entryType, t));
+  const amount = formatSignedMoney(item.amount, item.currency, locale, currencyFallback);
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${amount}. ${formatDateShort(item.effectiveAt, locale)}. ${ledgerBucketLabel(item.balanceBucket, t)}`}
       onPress={onPress}
-      activeOpacity={0.85}
-      style={[
-        styles.previewRow,
-        {
-          backgroundColor: palette.surface,
-          borderColor: palette.border,
-        },
-      ]}
+      style={[styles.activityRow, { borderBottomColor: theme.colors.borderLight }]}
     >
-      <View style={styles.previewTop}>
-        <View style={styles.previewText}>
-          <Text weight="600" style={styles.previewTitle} numberOfLines={1}>
-            {monthYearLabel(item.batchPeriodYear, item.batchPeriodMonth, locale)}
-          </Text>
-          <Text color={theme.colors.textMuted} style={styles.previewMeta} numberOfLines={1}>
-            {formatDateShort(item.paidAt ?? item.failedAt ?? item.createdAt, locale)}
-          </Text>
-        </View>
-        <Text weight="600" style={[styles.previewAmount, { color: palette.accent }]}>
-          {formatMoney(
-            item.amountNet,
-            item.currency ?? null,
-            locale,
-            t("practitioner.finance.common.currencyUnavailable"),
-          )}
+      <View style={styles.activityCopy}>
+        <Text weight="600" style={styles.activityTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text color={theme.colors.textMuted} style={styles.activityMeta} numberOfLines={1}>
+          {formatDateShort(item.effectiveAt, locale)} · {ledgerBucketLabel(item.balanceBucket, t)}
         </Text>
       </View>
-      <View style={styles.previewBadges}>
-        <StatusBadge
-          label={settlementStatusLabel(item.status, locale)}
-          status={settlementStatusTone(item.status)}
-        />
-      </View>
+      <Text weight="600" style={styles.activityAmount} numberOfLines={1}>
+        {amount}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -524,154 +314,118 @@ function SettlementPreviewRow({
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 24,
-    gap: 9,
+    paddingTop: 12,
+    paddingBottom: 28,
+    gap: 18,
   },
   headerAction: {
     padding: 8,
   },
-  snapshotCard: {
-    gap: 8,
+  balanceCard: {
+    gap: 7,
   },
-  snapshotHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 8,
+  eyebrow: {
+    fontSize: 11,
   },
-  snapshotHeaderText: {
-    flex: 1,
-    gap: 1,
+  balanceValue: {
+    fontSize: 25,
+    lineHeight: 32,
   },
-  snapshotTitle: {
-    fontSize: 14,
-    lineHeight: 19,
-  },
-  snapshotSubtitle: {
+  balanceNote: {
     fontSize: 10,
     lineHeight: 14,
   },
-  balanceShell: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 10,
-    gap: 4,
+  summaryList: {
+    borderTopWidth: 1,
+    marginTop: 5,
   },
-  balanceLabel: {
-    fontSize: 10,
-  },
-  balanceValue: {
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  balanceHint: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  metricGrid: {
+  summaryLine: {
+    minHeight: 34,
+    borderBottomWidth: 1,
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 5,
-  },
-  metricTile: {
-    width: "48%",
-    borderRadius: 12,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-    borderWidth: 1,
-    gap: 2,
-  },
-  metricLabel: {
-    fontSize: 10,
-  },
-  metricValue: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  detailRows: {
-    gap: 5,
-  },
-  inlineRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
+    justifyContent: "space-between",
+    gap: 8,
   },
-  inlineLabel: {
+  summaryLabel: {
     fontSize: 10,
     flex: 1,
   },
-  inlineValue: {
+  summaryValue: {
     fontSize: 11,
-    flexShrink: 0,
     maxWidth: "58%",
     textAlign: "left",
   },
-  actionGrid: {
+  section: {
+    gap: 0,
+  },
+  sectionHeader: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 7,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 5,
   },
-  actionTile: {
-    width: "48%",
-    minHeight: 68,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 9,
-    gap: 7,
+  sectionTitle: {
+    fontSize: 15,
   },
-  actionIcon: {
-    width: 32,
-    height: 32,
+  actionLink: {
+    fontSize: 11,
+  },
+  destinationRow: {
+    minHeight: 60,
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  destinationIcon: {
+    width: 34,
+    height: 34,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
-  actionLabel: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  previewList: {
-    gap: 5,
-  },
-  previewRow: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 6,
-    gap: 4,
-  },
-  previewTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  previewText: {
+  destinationCopy: {
     flex: 1,
     gap: 1,
   },
-  previewTitle: {
-    fontSize: 11,
-    lineHeight: 15,
+  destinationLabel: {
+    fontSize: 12,
   },
-  previewMeta: {
-    fontSize: 8,
-    lineHeight: 12,
+  destinationHint: {
+    fontSize: 10,
+    lineHeight: 14,
   },
-  previewAmount: {
-    fontSize: 11,
-    lineHeight: 15,
+  activityList: {
+    borderTopWidth: 1,
   },
-  previewBadges: {
+  activityRow: {
+    minHeight: 58,
+    borderBottomWidth: 1,
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 3,
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
-  previewFooter: {
-    fontSize: 8,
-    lineHeight: 12,
+  activityCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  activityTitle: {
+    fontSize: 11,
+  },
+  activityMeta: {
+    fontSize: 9,
+    lineHeight: 13,
+  },
+  activityAmount: {
+    fontSize: 11,
+    maxWidth: "40%",
+    textAlign: "left",
+  },
+  emptyText: {
+    fontSize: 12,
+    paddingVertical: 14,
   },
 });

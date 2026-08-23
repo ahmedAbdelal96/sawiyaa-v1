@@ -28,6 +28,7 @@ describe('GetMyPatientJourneyUseCase', () => {
         build: jest.fn().mockResolvedValue([]),
       } as unknown as BuildPatientJourneyLinkedContentService,
       new PatientJourneyMapper(),
+      { interpret: jest.fn() } as any,
     );
 
     await expect(
@@ -115,6 +116,18 @@ describe('GetMyPatientJourneyUseCase', () => {
       ),
       linkedContentBuilder,
       new PatientJourneyMapper(),
+      {
+        interpret: jest.fn(async ({ session }) => ({
+          state: session.status,
+          timelineBucket: 'ACTIONABLE',
+          join: { allowed: false, reasonCode: null, canPrepareRuntime: false },
+          actions: { canJoin: false, canPrepareRuntime: false, canCancel: false, canPay: false, canReview: false, canMarkPatientNoShow: false, noShowReasonCode: null },
+          attendance: { patientTrustedAttendance: false, practitionerTrustedAttendance: false, reconciliationStatus: 'NOT_AVAILABLE', outcomeRecommendation: null },
+          room: { state: 'NOT_PREPARED', closedAt: null },
+          resolution: { required: false, finalDecision: null },
+          replacement: { replacesSessionId: null },
+        })),
+      } as any,
     );
 
     const result = await useCase.execute({ userId: 'user-1' });

@@ -74,7 +74,7 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
     }
 
     if (!response.ok) {
-      if (response.status === 409) {
+      if (response.status === 409 || await this.isDuplicateRoomResponse(response)) {
         return this.readExistingRoom(roomName);
       }
 
@@ -270,6 +270,19 @@ export class DailySessionVideoProviderAdapter implements SessionVideoProviderAda
       providerCode,
       providerMessageLength,
     }));
+  }
+
+  private async isDuplicateRoomResponse(response: Response): Promise<boolean> {
+    if (response.status !== 400) return false;
+
+    try {
+      const payload = (await response.clone().json()) as Record<string, unknown>;
+      const error = typeof payload.error === 'string' ? payload.error : '';
+      const info = typeof payload.info === 'string' ? payload.info : '';
+      return error === 'already-exists' || /already exists/i.test(info);
+    } catch {
+      return false;
+    }
   }
 
   private logTransportFailure(endpoint: string, error: unknown): void {

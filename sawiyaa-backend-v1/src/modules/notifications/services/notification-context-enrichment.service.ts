@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@common/prisma/prisma.service';
-import { NotificationContext, NotificationPrimaryAction } from '../types/user-notifications.types';
+import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { PractitionerProfessionalContentRepository } from '@modules/practitioners/repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
+import {
+  NotificationContext,
+  NotificationPrimaryAction,
+} from '../types/user-notifications.types';
 
 // ---------------------------------------------------------------------------
 // Safe payload helpers — prevent Map.get(unknown) type errors
 // ---------------------------------------------------------------------------
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value != null &&
-    typeof value === 'object' &&
-    !Array.isArray(value)
+  return value != null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
@@ -25,12 +29,20 @@ function asString(value: unknown): string | undefined {
 // PractitionerProfile has NO displayName — use professionalTitle or user.displayName.
 // ---------------------------------------------------------------------------
 
-function buildPractitionerName(practitioner: {
-  professionalTitle: string | null;
-  user: { displayName: string | null };
-} | null | undefined): string | undefined {
+function buildPractitionerName(
+  practitioner:
+    | {
+        id: string;
+        professionalTitle: string | null;
+        user: { displayName: string | null };
+      }
+    | null
+    | undefined,
+  resolvedProfessionalTitle?: string | null,
+): string | undefined {
   if (!practitioner) return undefined;
   return (
+    resolvedProfessionalTitle?.trim() ||
     practitioner.professionalTitle?.trim() ||
     practitioner.user.displayName?.trim() ||
     undefined
@@ -54,17 +66,38 @@ type InputNotification = {
 
 @Injectable()
 export class NotificationContextEnrichmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly professionalContentRepository: PractitionerProfessionalContentRepository,
+    private readonly professionalContentResolver: PractitionerProfessionalContentResolver,
+  ) {}
 
-  async enrichOne(row: InputNotification): Promise<{ context: NotificationContext; primaryAction: NotificationPrimaryAction }> {
-    const map = await this.enrichMany([row]);
-    return map.get(row.id) ?? { context: {}, primaryAction: { kind: 'details' } };
+  async enrichOne(
+    row: InputNotification,
+    requestedLocale?: SupportedLocale,
+  ): Promise<{
+    context: NotificationContext;
+    primaryAction: NotificationPrimaryAction;
+  }> {
+    const map = await this.enrichMany([row], requestedLocale);
+    return (
+      map.get(row.id) ?? { context: {}, primaryAction: { kind: 'details' } }
+    );
   }
 
   async enrichMany(
     rows: InputNotification[],
-  ): Promise<Map<string, { context: NotificationContext; primaryAction: NotificationPrimaryAction }>> {
-    const enrichmentMap = new Map<string, { context: NotificationContext; primaryAction: NotificationPrimaryAction }>();
+    requestedLocale?: SupportedLocale,
+  ): Promise<
+    Map<
+      string,
+      { context: NotificationContext; primaryAction: NotificationPrimaryAction }
+    >
+  > {
+    const enrichmentMap = new Map<
+      string,
+      { context: NotificationContext; primaryAction: NotificationPrimaryAction }
+    >();
     if (!rows || rows.length === 0) {
       return enrichmentMap;
     }
@@ -93,7 +126,10 @@ export class NotificationContextEnrichmentService {
       if (entityId) {
         if (entityType === 'SESSION') {
           sessionIds.add(entityId);
-        } else if (entityType === 'SUPPORT_TICKET' || entityType === 'SUPPORT') {
+        } else if (
+          entityType === 'SUPPORT_TICKET' ||
+          entityType === 'SUPPORT'
+        ) {
           supportTicketIds.add(entityId);
         } else if (
           entityType === 'GENERAL_CHAT_MESSAGE' ||
@@ -180,6 +216,7 @@ export class NotificationContextEnrichmentService {
                 },
                 practitioner: {
                   select: {
+                    id: true,
                     professionalTitle: true,
                     user: { select: { displayName: true } },
                   },
@@ -233,6 +270,7 @@ export class NotificationContextEnrichmentService {
                 },
                 practitioner: {
                   select: {
+                    id: true,
                     professionalTitle: true,
                     user: { select: { displayName: true } },
                   },
@@ -263,6 +301,7 @@ export class NotificationContextEnrichmentService {
                 },
                 practitioner: {
                   select: {
+                    id: true,
                     professionalTitle: true,
                     user: { select: { displayName: true } },
                   },
@@ -271,6 +310,61 @@ export class NotificationContextEnrichmentService {
             })
           : [];
       const ticketsMap = new Map(tickets.map((t) => [t.id, t]));
+
+      const practitionerProfileIds = new Set<string>();
+      for (const conversation of conversations) {
+        if (conversation.practitioner?.id) {
+          practitionerProfileIds.add(conversation.practitioner.id);
+        }
+      }
+      for (const session of sessions) {
+        if (session.practitioner?.id) {
+          practitionerProfileIds.add(session.practitioner.id);
+        }
+      }
+      for (const ticket of tickets) {
+        if (ticket.practitioner?.id) {
+          practitionerProfileIds.add(ticket.practitioner.id);
+        }
+      }
+
+      const professionalContentRecords =
+        requestedLocale && practitionerProfileIds.size > 0
+          ? await this.professionalContentRepository.findByPractitionerProfileIds(
+              Array.from(practitionerProfileIds),
+            )
+          : [];
+      const professionalContentById = new Map(
+        professionalContentRecords.map((record) => [record.id, record]),
+      );
+
+      const getPractitionerName = (
+        practitioner:
+          | {
+              id: string;
+              professionalTitle: string | null;
+              user: { displayName: string | null };
+            }
+          | null
+          | undefined,
+      ) => {
+        const content = practitioner?.id
+          ? professionalContentById.get(practitioner.id)
+          : undefined;
+        const resolvedProfessionalTitle =
+          requestedLocale && practitioner
+            ? this.professionalContentResolver.resolve({
+                requestedLocale,
+                primaryContentLocale: content?.primaryContentLocale,
+                translations: content?.professionalContentTranslations,
+                legacyProfessionalTitle:
+                  content?.professionalTitle ?? practitioner.professionalTitle,
+                legacyBio: content?.bio ?? null,
+              }).professionalTitle
+            : null;
+
+        return buildPractitionerName(practitioner, resolvedProfessionalTitle);
+      };
 
       // ---------------------------------------------------------------------
       // Pass 2: resolve context + primaryAction per notification
@@ -294,7 +388,8 @@ export class NotificationContextEnrichmentService {
         }
 
         // Message / Chat context
-        const isMessageSlug = slug.startsWith('messages.') || slug === 'GENERAL_CHAT_MESSAGE';
+        const isMessageSlug =
+          slug.startsWith('messages.') || slug === 'GENERAL_CHAT_MESSAGE';
         const isMessageEntity =
           entityType === 'GENERAL_CHAT_MESSAGE' ||
           entityType === 'SUPPORT_MESSAGE' ||
@@ -307,7 +402,9 @@ export class NotificationContextEnrichmentService {
             asString(payload.conversationId) ??
             asString(payload.threadId) ??
             asString(payload.careRequestId);
-          const conversation = rawConvId ? conversationsMap.get(rawConvId) : undefined;
+          const conversation = rawConvId
+            ? conversationsMap.get(rawConvId)
+            : undefined;
 
           const senderId = msg?.senderUserId ?? asString(payload.senderUserId);
           if (senderId) {
@@ -319,13 +416,18 @@ export class NotificationContextEnrichmentService {
             context.patientName =
               asString(conversation.patient?.displayName) ??
               asString(conversation.patient?.user?.displayName);
-            context.practitionerName = buildPractitionerName(conversation.practitioner);
+            context.practitionerName = getPractitionerName(
+              conversation.practitioner,
+            );
 
             if (conversation.supportTicket) {
-              context.supportTicketSubject = asString(conversation.supportTicket.subject);
+              context.supportTicketSubject = asString(
+                conversation.supportTicket.subject,
+              );
             }
 
-            const sessId = conversation.sessionId ?? asString(payload.sessionId);
+            const sessId =
+              conversation.sessionId ?? asString(payload.sessionId);
             const session = sessId ? sessionsMap.get(sessId) : undefined;
             if (session) {
               context.patientName =
@@ -333,7 +435,8 @@ export class NotificationContextEnrichmentService {
                 asString(session.patient?.user?.displayName) ??
                 context.patientName;
               context.practitionerName =
-                buildPractitionerName(session.practitioner) ?? context.practitionerName;
+                getPractitionerName(session.practitioner) ??
+                context.practitionerName;
               context.sessionStartAt = session.scheduledStartAt?.toISOString();
               context.sessionCode = session.sessionCode;
               context.sessionStatus = session.status;
@@ -347,7 +450,8 @@ export class NotificationContextEnrichmentService {
               conversation.supportTicketId
             ) {
               primaryAction.lane = 'support';
-              primaryAction.id = conversation.supportTicketId ?? conversation.id;
+              primaryAction.id =
+                conversation.supportTicketId ?? conversation.id;
             } else if (
               slug === 'messages.follow-up-message-received' ||
               conversation.conversationType === 'CARE_APPROVED'
@@ -368,7 +472,9 @@ export class NotificationContextEnrichmentService {
             context.patientName =
               asString(session.patient?.displayName) ??
               asString(session.patient?.user?.displayName);
-            context.practitionerName = buildPractitionerName(session.practitioner);
+            context.practitionerName = getPractitionerName(
+              session.practitioner,
+            );
             context.sessionStartAt = session.scheduledStartAt?.toISOString();
             context.sessionCode = session.sessionCode;
             context.sessionStatus = session.status;
@@ -378,7 +484,11 @@ export class NotificationContextEnrichmentService {
           }
         }
         // Support ticket context
-        else if (slug.startsWith('support.') || entityType === 'SUPPORT_TICKET' || entityType === 'SUPPORT') {
+        else if (
+          slug.startsWith('support.') ||
+          entityType === 'SUPPORT_TICKET' ||
+          entityType === 'SUPPORT'
+        ) {
           const ticketId =
             entityId ??
             asString(payload.supportTicketId) ??
@@ -389,14 +499,18 @@ export class NotificationContextEnrichmentService {
             context.patientName =
               asString(ticket.patient?.displayName) ??
               asString(ticket.patient?.user?.displayName);
-            context.practitionerName = buildPractitionerName(ticket.practitioner);
+            context.practitionerName = getPractitionerName(ticket.practitioner);
 
             primaryAction.kind = 'support';
             primaryAction.id = ticket.id;
           }
         }
         // Payment context
-        else if (slug.startsWith('payments.') || entityType === 'PAYMENT' || entityType === 'REFUND') {
+        else if (
+          slug.startsWith('payments.') ||
+          entityType === 'PAYMENT' ||
+          entityType === 'REFUND'
+        ) {
           const pay = entityId ? paymentsMap.get(entityId) : undefined;
           const sessionId = pay?.sessionId ?? asString(payload.sessionId);
           const session = sessionId ? sessionsMap.get(sessionId) : undefined;
@@ -404,7 +518,9 @@ export class NotificationContextEnrichmentService {
             context.patientName =
               asString(session.patient?.displayName) ??
               asString(session.patient?.user?.displayName);
-            context.practitionerName = buildPractitionerName(session.practitioner);
+            context.practitionerName = getPractitionerName(
+              session.practitioner,
+            );
             context.sessionStartAt = session.scheduledStartAt?.toISOString();
             context.sessionCode = session.sessionCode;
             context.sessionStatus = session.status;
@@ -420,7 +536,10 @@ export class NotificationContextEnrichmentService {
       // Graceful fallback — never fail the request due to enrichment errors
       for (const row of rows) {
         if (!enrichmentMap.has(row.id)) {
-          enrichmentMap.set(row.id, { context: {}, primaryAction: { kind: 'details' } });
+          enrichmentMap.set(row.id, {
+            context: {},
+            primaryAction: { kind: 'details' },
+          });
         }
       }
     }

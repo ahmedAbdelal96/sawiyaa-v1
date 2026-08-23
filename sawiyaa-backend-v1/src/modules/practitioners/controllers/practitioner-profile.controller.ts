@@ -53,11 +53,15 @@ import {
 import { PractitionerProfileReadinessSuccessResponseDto } from '../dto/practitioner-profile-readiness-response.dto';
 import { SetPractitionerSpecialtiesDto } from '../dto/set-practitioner-specialties.dto';
 import { SubmitPractitionerApplicationDto } from '../dto/submit-practitioner-application.dto';
+import { UpdatePractitionerApplicationDraftDto } from '../dto/update-practitioner-application-draft.dto';
+import { PractitionerRequirementsSuccessResponseDto } from '../dto/practitioner-requirements-response.dto';
 import { UpdatePractitionerProfileDto } from '../dto/update-practitioner-profile.dto';
 import { UploadPractitionerCredentialMetadataDto } from '../dto/upload-practitioner-credential-metadata.dto';
 import { GetPractitionerApplicationStatusUseCase } from '../use-cases/get-practitioner-application-status.use-case';
 import { GetPractitionerProfileUseCase } from '../use-cases/get-practitioner-profile.use-case';
 import { GetPractitionerProfileReadinessUseCase } from '../use-cases/get-practitioner-profile-readiness.use-case';
+import { UpdatePractitionerApplicationDraftUseCase } from '../use-cases/update-practitioner-application-draft.use-case';
+import { GetPractitionerRequirementsUseCase } from '../use-cases/get-practitioner-requirements.use-case';
 import { ListPractitionerCredentialsUseCase } from '../use-cases/list-practitioner-credentials.use-case';
 import { ListPractitionerSpecialtiesUseCase } from '../use-cases/list-practitioner-specialties.use-case';
 import { SetPractitionerSpecialtiesUseCase } from '../use-cases/set-practitioner-specialties.use-case';
@@ -112,6 +116,8 @@ export class PractitionerProfileController {
     private readonly submitPractitionerApplicationUseCase: SubmitPractitionerApplicationUseCase,
     private readonly getPractitionerApplicationStatusUseCase: GetPractitionerApplicationStatusUseCase,
     private readonly getPractitionerProfileReadinessUseCase: GetPractitionerProfileReadinessUseCase,
+    private readonly updatePractitionerApplicationDraftUseCase: UpdatePractitionerApplicationDraftUseCase,
+    private readonly getPractitionerRequirementsUseCase: GetPractitionerRequirementsUseCase,
     private readonly practitionerAvatarStorageService: PractitionerAvatarStorageService,
     private readonly practitionerProfileRepository: PractitionerProfileRepository,
     private readonly securityAuditService: SecurityAuditService,
@@ -122,6 +128,7 @@ export class PractitionerProfileController {
 
   /** Returns practitioner product-facing summary for the currently authenticated practitioner. */
   @Get('me')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'Get current practitioner profile summary',
     description:
@@ -180,16 +187,24 @@ export class PractitionerProfileController {
   }
 
   @Get('me/booking-settings')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({ summary: 'Get current practitioner booking settings' })
-  @ApiResponse({ status: 200, type: PractitionerBookingSettingsSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerBookingSettingsSuccessResponseDto,
+  })
   bookingSettings(@CurrentUser() currentUser: AuthenticatedUser) {
     return this.getMyBookingSettingsUseCase.execute({ userId: currentUser.id });
   }
 
   @Patch('me/booking-settings')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({ summary: 'Update normal booking intake settings' })
   @ApiBody({ type: UpdatePractitionerBookingSettingsDto })
-  @ApiResponse({ status: 200, type: PractitionerBookingSettingsSuccessResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: PractitionerBookingSettingsSuccessResponseDto,
+  })
   updateBookingSettings(
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: UpdatePractitionerBookingSettingsDto,
@@ -203,6 +218,7 @@ export class PractitionerProfileController {
 
   /** Updates current practitioner avatar URL. */
   @Patch('me/avatar')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
   )
@@ -254,6 +270,7 @@ export class PractitionerProfileController {
 
   /** Streams the current practitioner avatar binary. */
   @Get('me/avatar')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'Get practitioner avatar binary',
     description: 'Returns the current practitioner avatar binary stream.',
@@ -269,7 +286,9 @@ export class PractitionerProfileController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const profile = await this.practitionerProfileRepository.findByUserId(currentUser.id);
+    const profile = await this.practitionerProfileRepository.findByUserId(
+      currentUser.id,
+    );
     const avatar = profile
       ? await this.practitionerAvatarStorageService.getAvatarFile(profile.id)
       : null;
@@ -282,12 +301,14 @@ export class PractitionerProfileController {
     }
 
     response.setHeader('Content-Type', avatar.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'private, max-age=300');
     return new StreamableFile(createReadStream(avatar.absolutePath));
   }
 
   /** Removes current practitioner avatar URL. */
   @Delete('me/avatar')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'Remove practitioner avatar',
     description:
@@ -314,6 +335,7 @@ export class PractitionerProfileController {
 
   /** Updates baseline practitioner profile fields and linked language codes. */
   @Patch('me')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'Update current practitioner profile',
     description:
@@ -342,6 +364,8 @@ export class PractitionerProfileController {
         displayName: body.displayName,
         professionalTitle: body.professionalTitle,
         bio: body.bio,
+        professionalContent: body.professionalContent,
+        primaryContentLocale: body.primaryContentLocale,
         countryCode: body.countryCode,
         yearsOfExperience: body.yearsOfExperience,
         practitionerType: body.practitionerType,
@@ -350,6 +374,10 @@ export class PractitionerProfileController {
         sessionPrice30Usd: body.sessionPrice30Usd,
         sessionPrice60Egp: body.sessionPrice60Egp,
         sessionPrice60Usd: body.sessionPrice60Usd,
+        instantBookingPrice30Egp: body.instantBookingPrice30Egp,
+        instantBookingPrice30Usd: body.instantBookingPrice30Usd,
+        instantBookingPrice60Egp: body.instantBookingPrice60Egp,
+        instantBookingPrice60Usd: body.instantBookingPrice60Usd,
         acceptsPackage: body.acceptsPackage,
         locale: body.locale,
         timezone: body.timezone,
@@ -359,8 +387,33 @@ export class PractitionerProfileController {
     });
   }
 
+  @Patch('me/application')
+  @ApiOperation({ summary: 'Save applicant-owned practitioner application draft' })
+  saveApplicationDraft(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @CurrentLocale() locale: SupportedLocale,
+    @Body() body: UpdatePractitionerApplicationDraftDto,
+  ) {
+    return this.updatePractitionerApplicationDraftUseCase.execute({
+      userId: currentUser.id,
+      locale,
+      data: body,
+    });
+  }
+
+  @Get('me/requirements')
+  @ApiOperation({ summary: 'Get current actionable practitioner requirements' })
+  @ApiResponse({ status: 200, type: PractitionerRequirementsSuccessResponseDto })
+  requirements(@CurrentUser() currentUser: AuthenticatedUser) {
+    return this.getPractitionerRequirementsUseCase.execute({
+      userId: currentUser.id,
+      currentUser,
+    }).then((requirements) => ({ message: 'Practitioner requirements fetched successfully', requirements }));
+  }
+
   /** Replaces practitioner specialty links in one deterministic operation. */
   @Put('me/specialties')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'Set current practitioner specialties',
     description:
@@ -408,6 +461,7 @@ export class PractitionerProfileController {
 
   /** Lists currently linked specialties for the current practitioner profile. */
   @Get('me/specialties')
+  @RequireAccountStates(AccountStateRequirement.PRACTITIONER_APPROVED)
   @ApiOperation({
     summary: 'List current practitioner specialties',
     description:
@@ -576,15 +630,22 @@ export class PractitionerProfileController {
       credentialId,
     });
     response.setHeader('Content-Type', stored.mimeType);
+    response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Cache-Control', 'private, no-store');
     return new StreamableFile(createReadStream(stored.absolutePath));
   }
 
   @Delete('me/credentials/:credentialId')
-  @ApiOperation({ summary: 'Delete a practitioner credential from a draft application' })
+  @ApiOperation({
+    summary: 'Delete a practitioner credential from a draft application',
+  })
   @ApiResponse({ status: 200, description: 'Credential deleted' })
-  @ApiConflictResponse({ description: 'Credentials are locked after submission' })
-  @ApiNotFoundResponse({ description: 'Credential or practitioner profile not found' })
+  @ApiConflictResponse({
+    description: 'Credentials are locked after submission',
+  })
+  @ApiNotFoundResponse({
+    description: 'Credential or practitioner profile not found',
+  })
   deleteCredential(
     @CurrentUser() currentUser: AuthenticatedUser,
     @CurrentLocale() locale: SupportedLocale,

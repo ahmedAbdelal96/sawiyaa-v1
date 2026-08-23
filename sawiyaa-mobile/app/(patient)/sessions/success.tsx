@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Card, Screen, Text, Button } from "../../../src/components/ui";
-import { SessionCodeReference } from "../../../src/components/shared";
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { formatLocalizedDateTime } from "../../../src/features/patient/sessions/slot-utils";
 
@@ -25,10 +24,10 @@ export default function BookingSuccessScreen() {
   }>();
 
   return (
-    <Screen bg="background" style={styles.screen}>
+    <Screen bg="background" testID="patient-booking-screen" style={styles.screen}>
       <View style={styles.contentWrap}>
         <View style={styles.iconWrap}>
-          <Card variant="elevated" padding="lg" style={styles.iconCard}>
+          <Card variant="elevated" padding="md" style={styles.iconCard}>
             <Ionicons
               name="checkmark-circle"
               size={44}
@@ -62,7 +61,6 @@ export default function BookingSuccessScreen() {
               : { borderRightColor: theme.colors.primary },
           ]}
         >
-          <SessionCodeReference sessionCode={params.sessionCode} copyable testID="booking-success-session-code" />
           <View
             style={[
               styles.statusBadge,
@@ -130,8 +128,8 @@ export default function BookingSuccessScreen() {
 
       <View style={styles.actionsWrap}>
         <Button
-          title={t("patientSessionsFlow.success.goToSessions")}
-          onPress={() => router.replace("/(patient)/sessions")}
+          title={t("patientSessionsFlow.success.viewSession")}
+          onPress={() => params.sessionId ? router.replace(`/(patient)/sessions/${params.sessionId}`) : router.replace("/(patient)/sessions")}
           style={styles.primaryAction}
         />
         <Button
@@ -167,8 +165,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   heading: {
-    fontSize: 44,
-    lineHeight: 50,
+    fontSize: 28,
+    lineHeight: 36,
     textAlign: "center",
     marginBottom: 8,
   },

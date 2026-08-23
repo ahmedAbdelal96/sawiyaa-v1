@@ -7,21 +7,19 @@ import { getLanguageHydrationPromise } from "../src/i18n";
 import { isOnboardingCompleted } from "../src/features/onboarding/services/onboarding-preferences";
 import { resolveInitialRoute } from "../src/app-startup/resolve-initial-destination";
 import type { OnboardingPreferenceResult } from "../src/app-startup/resolve-initial-destination";
-import PublicHomeScreen from "./(public)/index";
 
 /**
  * Root Application Index Coordinator
  *
  * Serves as the sole canonical handler for the root URL `/`.
- * Coordinates initial bootstrap, hides splash screen, and renders PublicHomeScreen directly
- * for unauthenticated guests, avoiding duplicate route collisions across Expo Router route groups.
+ * Coordinates initial bootstrap and routes every user through the owning
+ * Expo Router group so its navigation shell remains mounted.
  */
 export default function AppEntry() {
   const router = useRouter();
   const { user, role, isLoading: isAuthLoading } = useAuth();
   const [onboardingState, setOnboardingState] = useState<OnboardingPreferenceResult | null>(null);
   const [isI18nReady, setIsI18nReady] = useState(false);
-  const [showPublicHome, setShowPublicHome] = useState(false);
   const navigationTriggered = useRef(false);
 
   // 1. Wait for i18n language hydration
@@ -75,11 +73,7 @@ export default function AppEntry() {
 
     async function handleDestination() {
       try {
-        if (targetRoute === "/(public)") {
-          setShowPublicHome(true);
-        } else {
-          router.replace(targetRoute as any);
-        }
+        router.replace(targetRoute as any);
       } finally {
         await SplashScreen.hideAsync().catch(() => {});
       }
@@ -87,10 +81,6 @@ export default function AppEntry() {
 
     void handleDestination();
   }, [initialRouteResult, router]);
-
-  if (showPublicHome) {
-    return <PublicHomeScreen />;
-  }
 
   // Blank splash background view while resolving initial state
   return <View style={{ flex: 1, backgroundColor: "#F7F4EE" }} />;

@@ -1,4 +1,4 @@
-import type { SessionMode, SessionStatus } from "@/features/sessions/types/sessions.types";
+import type { SessionMode, SessionOperationalInterpretation, SessionStatus } from "@/features/sessions/types/sessions.types";
 import type { PaymentItemResponseData } from "@/features/payments/types/payments.types";
 
 export type PackagePurchaseSessionSlot = {
@@ -24,6 +24,7 @@ export type PatientPackagePurchaseSessionSummary = {
   id: string;
   sessionCode: string;
   status: SessionStatus;
+  operational: SessionOperationalInterpretation;
   scheduledStartAt: string | null;
   scheduledEndAt: string | null;
   durationMinutes: number;

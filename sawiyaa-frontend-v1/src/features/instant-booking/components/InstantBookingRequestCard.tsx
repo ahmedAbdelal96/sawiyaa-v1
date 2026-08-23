@@ -21,31 +21,32 @@ type Props = {
   timeZone: string | null;
 };
 
-function formatTimeLeft(expiresAt: string, nowMs: number, locale: string): string {
+function formatTimeLeft(
+  expiresAt: string,
+  nowMs: number,
+  format: (key: string, values?: Record<string, number>) => string,
+): string {
   const diffMs = new Date(expiresAt).getTime() - nowMs;
   if (diffMs <= 0) {
-    return locale === "ar" ? "انتهت صلاحية الطلب" : "Request expired";
+    return format("queue.summary.nearestExpiryExpired");
   }
 
   const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  const formatNumber = new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US");
-
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    if (locale === "ar") {
-      return `ينتهي خلال ${formatNumber.format(hours)} س ${formatNumber.format(remainingMinutes)} د`;
-    }
-    return `Expires in ${formatNumber.format(hours)}h ${formatNumber.format(remainingMinutes)}m`;
+    return format("queue.summary.nearestExpiryInHours", {
+      hours,
+      minutes: remainingMinutes,
+    });
   }
 
-  if (locale === "ar") {
-    return `ينتهي خلال ${formatNumber.format(minutes)} د ${formatNumber.format(seconds)} ث`;
-  }
-
-  return `Expires in ${formatNumber.format(minutes)}m ${formatNumber.format(seconds)}s`;
+  return format("queue.summary.nearestExpiryInMinutes", {
+    minutes,
+    seconds,
+  });
 }
 
 function getInitials(name: string | null | undefined) {
@@ -107,7 +108,7 @@ export default function InstantBookingRequestCard({
     locale: locale === "ar" ? "ar-SA" : "en-US",
     fallbackText: "-",
   });
-  const timeLeftLabel = formatTimeLeft(request.expiresAt, nowMs, locale);
+  const timeLeftLabel = formatTimeLeft(request.expiresAt, nowMs, t);
   const requestStatusLabel = t(`queue.statuses.${request.status}` as Parameters<typeof t>[0]);
   const responseReason = request.responseReason?.trim() ?? "";
   const shouldShowResponseReason = request.status === "REJECTED" && responseReason.length > 0;

@@ -1,23 +1,10 @@
 import type {
-  SessionItem,
   SessionJoinBlockedReason,
   SessionJoinItem,
   SessionProviderRuntime,
   SessionRuntimeItem,
   SessionProvider,
-  SessionStatus,
 } from "../types/sessions.types";
-
-export const SESSION_RUNTIME_STATUSES: SessionStatus[] = [
-  "UPCOMING",
-  "READY_TO_JOIN",
-  "IN_PROGRESS",
-];
-
-// Session timing and authorization are owned by the backend policy snapshot.
-export function hasSessionRuntimeAccess(status: SessionStatus): boolean {
-  return SESSION_RUNTIME_STATUSES.includes(status);
-}
 
 export function buildTokenizedSessionRoomUrl(
   roomUrl: string,
@@ -43,24 +30,6 @@ export function getRuntimeBlockedReasonKey(
   blockedReason: SessionJoinBlockedReason | null,
 ): SessionJoinBlockedReason {
   return blockedReason ?? "SESSION_NOT_JOINABLE_STATUS";
-}
-
-/**
- * Returns the authoritative join window from the backend join contract,
- * or null if the contract has not been fetched yet.
- *
- * The backend join contract (SessionJoinItem) carries `availableAt` and
- * `expiresAt`, which reflect the persisted policy snapshot for this session
- * schedule revision.
- */
-function getBackendWindowTimes(joinResult: SessionJoinItem | null) {
-  if (!joinResult?.availableAt || !joinResult?.expiresAt) {
-    return null;
-  }
-  return {
-    joinOpensAt: new Date(joinResult.availableAt),
-    joinClosesAt: new Date(joinResult.expiresAt),
-  };
 }
 
 type RuntimeSource =
@@ -130,6 +99,14 @@ export function buildProviderLaunchUrl(source: RuntimeSource): string | null {
     return null;
   }
 
+  // Daily private rooms require the provider meeting token. The backend may
+  // describe the launch as a redirect, but that must not discard the token.
+  if (runtime.name === "DAILY") {
+    return runtime.token
+      ? buildTokenizedSessionRoomUrl(runtime.roomUrl, runtime.token)
+      : null;
+  }
+
   if (
     runtime.joinMode === "redirect_url" ||
     runtime.joinMode === "embedded" ||
@@ -138,57 +115,11 @@ export function buildProviderLaunchUrl(source: RuntimeSource): string | null {
     return runtime.roomUrl;
   }
 
-  if (runtime.name === "DAILY" && runtime.token) {
-    return buildTokenizedSessionRoomUrl(runtime.roomUrl, runtime.token);
-  }
-
   return runtime.roomUrl;
 }
 
 export function canLaunchProviderRuntime(source: RuntimeSource): boolean {
   return Boolean(buildProviderLaunchUrl(source));
-}
-
-/**
- * Determines whether the session runtime preparation UI should be shown.
- *
- * Uses the authoritative backend join contract window (availableAt/expiresAt)
- * when `joinResult` is provided. Before that contract is fetched, the backend
- * action flag controls whether the preparation UI may be shown.
- */
-export function canPrepareSessionRuntime(
-  session: SessionItem,
-  joinResult: SessionJoinItem | null = null,
-  now: Date = new Date(),
-): boolean {
-  if (!hasSessionRuntimeAccess(session.status)) {
-    return false;
-  }
-
-  if (!joinResult) return Boolean(session.actions?.canPrepareRoom);
-  const windows = getBackendWindowTimes(joinResult);
-  if (!windows) return false;
-
-  return Boolean(session.actions?.canPrepareRoom) && now <= windows.joinClosesAt;
-}
-
-/**
- * Determines whether the join window is currently open.
- *
- * Uses the authoritative backend join contract window (availableAt/expiresAt)
- * when `joinResult` is provided. Before that contract is fetched, the backend
- * action flag controls whether the join UI may be shown.
- */
-export function isJoinWindowOpen(
-  session: SessionItem,
-  joinResult: SessionJoinItem | null = null,
-  now: Date = new Date(),
-): boolean {
-  if (!joinResult) return Boolean(session.actions?.canJoin);
-  const windows = getBackendWindowTimes(joinResult);
-  if (!windows || !hasSessionRuntimeAccess(session.status)) return false;
-
-  return now >= windows.joinOpensAt && now <= windows.joinClosesAt;
 }
 
 export function getRuntimePreparedState(params: {

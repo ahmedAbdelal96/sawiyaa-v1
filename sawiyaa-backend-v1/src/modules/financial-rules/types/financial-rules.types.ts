@@ -121,14 +121,14 @@ export type SessionFinancialBreakdownViewModel = {
   grossAmount: string;
   discountAmount: string;
   netPaidAmount: string;
-  platformCommissionAmount: string;
-  practitionerShareAmount: string;
+  platformCommissionAmount: string | null;
+  practitionerShareAmount: string | null;
   commissionRule: {
     id: string;
     slug: string;
     platformRatePercent: string;
     practitionerRatePercent: string;
-  };
+  } | null;
   coupon: {
     id: string;
     code: string;

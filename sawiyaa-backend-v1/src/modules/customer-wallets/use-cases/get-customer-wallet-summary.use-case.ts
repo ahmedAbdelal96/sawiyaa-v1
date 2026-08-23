@@ -14,43 +14,50 @@ export class GetCustomerWalletSummaryUseCase {
     patientId?: string;
     currencyCode?: string;
   }) {
-    let patientId = input.patientId;
+    const patient = input.userId
+      ? await this.customerWalletPatientRepository.findByUserId(input.userId)
+      : input.patientId
+        ? await this.customerWalletPatientRepository.findById(input.patientId)
+        : null;
 
-    if (!patientId && input.userId) {
-      const patient = await this.customerWalletPatientRepository.findByUserId(
-        input.userId,
-      );
-      if (!patient) {
-        return { item: null };
-      }
-      patientId = patient.id;
-    }
-
-    if (!patientId) {
+    if (!patient) {
       return { item: null };
     }
+
+    const patientId = patient.id;
 
     const wallet = await this.customerWalletAccountingService.getWalletSummary({
       patientId,
       currencyCode: input.currencyCode,
     });
 
-    if (!wallet) {
-      return { item: null };
-    }
+    const ensuredWallet =
+      wallet ??
+      (await this.customerWalletAccountingService.ensureWallet({
+        patientId,
+        currencyCode:
+          this.normalizeCurrencyCode(input.currencyCode) ??
+          this.normalizeCurrencyCode(patient.country?.currencyCode) ??
+          'EGP',
+      }));
 
     return {
       item: {
-        id: wallet.id,
-        currencyCode: wallet.currencyCode,
-        availableBalance: wallet.availableBalance.toString(),
-        reservedBalance: wallet.reservedBalance.toString(),
-        lifetimeCredited: wallet.lifetimeCredited.toString(),
-        lifetimeDebited: wallet.lifetimeDebited.toString(),
-        lastEntryAt: wallet.lastEntryAt?.toISOString() ?? null,
-        createdAt: wallet.createdAt.toISOString(),
-        updatedAt: wallet.updatedAt.toISOString(),
+        id: ensuredWallet.id,
+        currencyCode: ensuredWallet.currencyCode,
+        availableBalance: ensuredWallet.availableBalance.toString(),
+        reservedBalance: ensuredWallet.reservedBalance.toString(),
+        lifetimeCredited: ensuredWallet.lifetimeCredited.toString(),
+        lifetimeDebited: ensuredWallet.lifetimeDebited.toString(),
+        lastEntryAt: ensuredWallet.lastEntryAt?.toISOString() ?? null,
+        createdAt: ensuredWallet.createdAt.toISOString(),
+        updatedAt: ensuredWallet.updatedAt.toISOString(),
       },
     };
+  }
+
+  private normalizeCurrencyCode(value?: string | null) {
+    const normalized = value?.trim().toUpperCase();
+    return normalized === 'EGP' || normalized === 'USD' ? normalized : null;
   }
 }

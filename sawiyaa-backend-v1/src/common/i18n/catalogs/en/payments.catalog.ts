@@ -27,6 +27,8 @@ export const enPaymentsCatalog = {
     activePaymentAlreadyExists:
       'An active payment attempt already exists for this session',
     pricingUnavailable: 'Session pricing is unavailable',
+    financialConfigurationUnavailable:
+      'Payment is temporarily unavailable while financial configuration is being verified.',
     currencyUnavailable: 'Payment currency is unavailable',
     invalidStatusTransition:
       'Payment status transition from {{from}} to {{to}} is invalid',

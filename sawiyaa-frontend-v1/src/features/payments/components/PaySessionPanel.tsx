@@ -260,7 +260,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    if (!session || session.status !== "PENDING_PAYMENT") {
+    if (!session || session.operational?.actions.canPay !== true) {
       return;
     }
     const deadline = session.expiresAt;
@@ -287,7 +287,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
   const isReservationExpired = isSessionExpired(session?.expiresAt ?? null, now);
 
   const isPayableSession =
-    session?.status === "PENDING_PAYMENT" && !isReservationExpired;
+    session?.operational?.actions.canPay === true && !isReservationExpired;
 
   const {
     data: refundPolicyData,
@@ -604,7 +604,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
     <PatientSectionCard
       className="shadow-[0_8px_24px_rgba(36,86,79,0.08)] border-border-soft bg-white p-4.5"
     >
-      {session.status === "PENDING_PAYMENT" && session.expiresAt && (
+      {session.operational?.actions.canPay === true && session.expiresAt && (
         <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-warning-200/80 bg-warning-50/40 px-3.5 py-2 text-xs text-warning-800 dark:border-warning-400/30 dark:bg-warning-500/10 dark:text-warning-200">
           <Clock3 size={14} className="shrink-0 animate-pulse text-warning-700" />
           <div className="flex flex-wrap gap-x-1.5 items-center">
@@ -643,7 +643,7 @@ export default function PaySessionPanel({ sessionId }: Props) {
               </span>
               <span className="text-[11px] text-text-muted">•</span>
               <span className="inline-flex items-center rounded-md bg-[#F9F7F2] border border-[#C8A979]/20 px-1.5 py-0.5 text-[10px] font-medium text-[#C8A979]">
-                {t(`sessionState.${session.status}.label` as Parameters<typeof t>[0])}
+                {t(`sessionState.${session.operational?.state ?? session.status}.label` as Parameters<typeof t>[0])}
               </span>
             </div>
           </div>
@@ -955,12 +955,9 @@ export default function PaySessionPanel({ sessionId }: Props) {
     </div>
   ) : null;
 
-  if (isSessionExpired(session.expiresAt, now) || session.status !== "PENDING_PAYMENT") {
-    const isAlreadyPaid =
-      session.status === "UPCOMING" ||
-      session.status === "READY_TO_JOIN" ||
-      session.status === "IN_PROGRESS" ||
-      session.status === "COMPLETED";
+  if (isSessionExpired(session.expiresAt, now) || session.operational?.actions.canPay !== true) {
+    const isAlreadyPaid = session.operational?.timelineBucket === "ACTIONABLE" ||
+      session.operational?.timelineBucket === "COMPLETED";
 
     if (isAlreadyPaid) {
       return (

@@ -34,7 +34,7 @@ export class PractitionerCredentialComplianceSweeperService
 
   async sweepOnce(now = new Date()) {
     const expired = await this.prisma.practitionerCredential.findMany({
-      where: { expiresAt: { lte: now }, reviewStatus: { not: CredentialReviewStatus.EXPIRED } },
+      where: { expiresAt: { lte: now }, reviewStatus: { not: CredentialReviewStatus.EXPIRED }, practitionerId: { not: null } },
       select: {
         id: true,
         practitionerId: true,
@@ -50,12 +50,12 @@ export class PractitionerCredentialComplianceSweeperService
           data: { reviewStatus: CredentialReviewStatus.EXPIRED, lifecycleState: CredentialLifecycleState.EXPIRED },
         });
         await tx.practitionerProfile.update({
-          where: { id: credential.practitionerId },
+          where: { id: credential.practitionerId! },
           data: { complianceState: 'DOCUMENT_EXPIRED' },
         });
         let reviewCase = await tx.practitionerReviewCase.findFirst({
           where: {
-            practitionerId: credential.practitionerId,
+            practitionerId: credential.practitionerId!,
             caseType: ReviewCaseType.CREDENTIAL_RENEWAL,
             status: { in: [ReviewCaseStatus.DRAFT, ReviewCaseStatus.PENDING_REVIEW, ReviewCaseStatus.CHANGES_REQUESTED] },
           },
@@ -63,7 +63,7 @@ export class PractitionerCredentialComplianceSweeperService
         if (!reviewCase) {
           reviewCase = await tx.practitionerReviewCase.create({
             data: {
-              practitionerId: credential.practitionerId,
+              practitionerId: credential.practitionerId!,
               caseType: ReviewCaseType.CREDENTIAL_RENEWAL,
               status: ReviewCaseStatus.CHANGES_REQUESTED,
             },
@@ -90,7 +90,7 @@ export class PractitionerCredentialComplianceSweeperService
               title: `Renew ${credential.credentialType}`,
               reason: 'This credential has expired and must be replaced.',
               severity: ReviewRequirementSeverity.BLOCKING,
-              createdByUserId: credential.practitioner.userId,
+              createdByUserId: credential.practitioner!.userId,
             },
           });
         }

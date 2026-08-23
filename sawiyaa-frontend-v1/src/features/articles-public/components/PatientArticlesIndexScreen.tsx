@@ -45,20 +45,17 @@ export default async function PatientArticlesIndexScreen({
   filters,
 }: Props) {
   const t = await getTranslations("public-articles.patient");
-  const isArabic = locale.startsWith("ar");
   const normalizedRootFilter = filters.categoryRoot.trim().toLowerCase();
   const formAction = `/${locale}/patient/articles`;
 
-  const rootLabel = isArabic ? "التخصص الرئيسي" : "Main specialty";
-  const subLabel = isArabic ? "التخصص الفرعي" : "Sub-specialty";
-  const searchLabel = isArabic ? "ابحث بعنوان المقال" : "Search by article title";
-  const searchPlaceholder = isArabic
-    ? "مثال: القلق، النوم، الاكتئاب..."
-    : "e.g. anxiety, sleep, depression...";
-  const applyLabel = isArabic ? "تطبيق" : "Apply";
-  const resetLabel = isArabic ? "إعادة ضبط" : "Reset";
-  const allMainLabel = isArabic ? "كل التخصصات الرئيسية" : "All main specialties";
-  const allSubLabel = isArabic ? "كل التخصصات الفرعية" : "All sub-specialties";
+  const rootLabel = t("filters.mainSpecialty");
+  const subLabel = t("filters.subSpecialty");
+  const searchLabel = t("filters.searchLabel");
+  const searchPlaceholder = t("filters.searchPlaceholder");
+  const applyLabel = t("filters.apply");
+  const resetLabel = t("filters.reset");
+  const allMainLabel = t("filters.allMain");
+  const allSubLabel = t("filters.allSub");
 
   const rootOptions = specialtyCategories
     .map((item) => ({

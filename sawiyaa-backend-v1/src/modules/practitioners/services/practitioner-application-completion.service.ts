@@ -81,6 +81,7 @@ export class PractitionerApplicationCompletionService {
     displayName: string | null;
     countryCode: string | null;
     practitionerType: string | null;
+    practitionerTypeExplicit?: boolean;
     practitionerGender: string | null;
     professionalTitle: string | null;
     bio: string | null;
@@ -260,76 +261,19 @@ export class PractitionerApplicationCompletionService {
         }),
       );
     }
-    if (!input.practitionerType?.trim()) {
+    if (!input.practitionerType?.trim() || input.practitionerTypeExplicit === false) {
       professionalDetailsIssues.push(
         this.issue({
-          code: 'PROFESSIONAL_DETAILS_TYPE_OPTIONAL',
+          code: 'PROFESSIONAL_DETAILS_TYPE_MISSING',
           field: 'practitionerType',
           stepKey: 'professionalDetails',
-          severity: 'INFO',
-          requirementScope: 'OPTIONAL',
+          severity: 'BLOCKER',
+          requirementScope: 'SUBMISSION',
           messageKey:
-            'practitioners.application.completion.professionalDetails.typeOptional',
+            'practitioners.application.completion.professionalDetails.typeRequired',
         }),
       );
     }
-
-    const pricingIssues: PractitionerApplicationCompletionIssue[] = [];
-    const pricingFields: Array<{
-      stepKey: PractitionerApplicationCompletionStepKey;
-      field: string;
-      code: string;
-      value: number | null;
-      messageKey: string;
-    }> = [
-      {
-        stepKey: 'pricing',
-        field: 'pricing.session30.egp',
-        code: 'PRICING_SESSION30_EGP_MISSING',
-        value: input.pricing.session30.egp,
-        messageKey:
-          'practitioners.application.completion.pricing.session30EgpRecommended',
-      },
-      {
-        stepKey: 'pricing',
-        field: 'pricing.session30.usd',
-        code: 'PRICING_SESSION30_USD_MISSING',
-        value: input.pricing.session30.usd,
-        messageKey:
-          'practitioners.application.completion.pricing.session30UsdRecommended',
-      },
-      {
-        stepKey: 'pricing',
-        field: 'pricing.session60.egp',
-        code: 'PRICING_SESSION60_EGP_MISSING',
-        value: input.pricing.session60.egp,
-        messageKey:
-          'practitioners.application.completion.pricing.session60EgpRecommended',
-      },
-      {
-        stepKey: 'pricing',
-        field: 'pricing.session60.usd',
-        code: 'PRICING_SESSION60_USD_MISSING',
-        value: input.pricing.session60.usd,
-        messageKey:
-          'practitioners.application.completion.pricing.session60UsdRecommended',
-      },
-    ];
-
-    pricingFields.forEach((item) => {
-      if (item.value === null || item.value === undefined) {
-        pricingIssues.push(
-          this.issue({
-            code: item.code,
-            field: item.field,
-            stepKey: item.stepKey,
-            severity: 'WARNING',
-            requirementScope: 'OPTIONAL',
-            messageKey: item.messageKey,
-          }),
-        );
-      }
-    });
 
     const qualificationIssues: PractitionerApplicationCompletionIssue[] = [];
     const documentGroups = this.requiredDocuments.evaluate(
@@ -339,6 +283,7 @@ export class PractitionerApplicationCompletionService {
           reviewStatus: 'PENDING',
           fileUrl: 'legacy-metadata-present',
         })),
+      { countryCode: input.countryCode },
     );
     if (documentGroups.groups.academic.count <= 0) {
       qualificationIssues.push(
@@ -554,6 +499,13 @@ export class PractitionerApplicationCompletionService {
         break;
     }
 
+    // Payout setup is a post-approval capability. It must be visible to the
+    // applicant, but it cannot block initial submission or approval.
+    for (const issue of payoutIssues) {
+      issue.severity = 'WARNING';
+      issue.requirementScope = 'OPTIONAL';
+    }
+
     const reviewSubmitIssues: PractitionerApplicationCompletionIssue[] = [];
     if (!input.isAccountActive) {
       reviewSubmitIssues.push(
@@ -627,31 +579,6 @@ export class PractitionerApplicationCompletionService {
       issues: professionalDetailsIssues,
     });
 
-    const pricingStep = buildStep({
-      key: 'pricing',
-      titleKey: 'practitionerApplication.steps.pricing',
-      requiredCount: 4,
-      completedRequiredCount: [
-        input.pricing.session30.egp !== null &&
-        input.pricing.session30.egp !== undefined
-          ? 1
-          : 0,
-        input.pricing.session30.usd !== null &&
-        input.pricing.session30.usd !== undefined
-          ? 1
-          : 0,
-        input.pricing.session60.egp !== null &&
-        input.pricing.session60.egp !== undefined
-          ? 1
-          : 0,
-        input.pricing.session60.usd !== null &&
-        input.pricing.session60.usd !== undefined
-          ? 1
-          : 0,
-      ].reduce((sum, value) => sum + value, 0),
-      issues: pricingIssues,
-    });
-
     const qualificationsStep = buildStep({
       key: 'qualifications',
       titleKey: 'practitionerApplication.steps.qualifications',
@@ -698,7 +625,6 @@ export class PractitionerApplicationCompletionService {
     const steps = [
       basicProfileStep,
       professionalDetailsStep,
-      pricingStep,
       qualificationsStep,
       documentsStep,
       payoutDetailsStep,
@@ -708,7 +634,6 @@ export class PractitionerApplicationCompletionService {
     const allIssues = [
       ...basicProfileIssues,
       ...professionalDetailsIssues,
-      ...pricingIssues,
       ...qualificationIssues,
       ...documentIssues,
       ...payoutIssues,

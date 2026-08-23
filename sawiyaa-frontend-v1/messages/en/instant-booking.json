@@ -1,27 +1,37 @@
 {
   "hero": {
     "eyebrow": "Instant booking",
-    "title": "Book a session today with an available practitioner",
-    "secondaryAction": "Browse practitioners",
+    "title": "Book a session today with an available specialist",
+    "note": "Choose an available specialist, select a duration, and send your request. Payment starts only after acceptance.",
+    "secondaryAction": "Browse specialists",
     "chips": {
       "onlineNow": "Available now",
-      "durationOptions": "30 or 60 minute options"
+      "durationOptions": "30 or 60 minute options",
+      "backendPricing": "Price shown before sending"
     }
   },
   "entry": {
     "eyebrow": "Start here",
     "title": "Open instant booking",
+    "note": "A simple path to a video session with a specialist who is available now.",
     "cta": "Start instant booking",
     "chips": {
-      "availableNow": "Practitioners available now",
+      "availableNow": "Specialists available now",
       "duration": "Session length",
       "durationNote": "Choose 30 or 60 minutes when supported",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "pricingNote": "You will see the price before sending"
+    },
+    "steps": {
+      "choose": { "title": "Choose a specialist", "note": "Browse the specialists who are available now." },
+      "request": { "title": "Send your request", "note": "Choose 30 or 60 minutes and send the request." },
+      "confirm": { "title": "Confirm the session", "note": "Pay only after the specialist accepts." }
     }
   },
   "list": {
     "eyebrow": "Available now",
-    "title": "Practitioners available for instant booking"
+      "title": "Specialists available for instant booking",
+      "note": "Prices and durations come from each specialist's current settings."
   },
   "card": {
     "availableNow": "Available now",
@@ -41,7 +51,7 @@
       "AUDIO": "Audio"
     },
     "fields": {
-      "practitioner": "Practitioner",
+      "practitioner": "Specialist",
       "duration": "Duration",
       "sessionMode": "Session mode",
       "expiresAt": "Request expires"
@@ -54,16 +64,16 @@
       "CANCELLED": "Your request was cancelled"
     },
     "notes": {
-      "PENDING": "Waiting for the practitioner to respond.",
+      "PENDING": "Waiting for the specialist to respond.",
       "ACCEPTED": "The request was accepted, and you can continue to payment to complete the session.",
-      "REJECTED": "The request was rejected. You can start again and choose another practitioner.",
+      "REJECTED": "The request was rejected. You can start again and choose another specialist.",
       "EXPIRED": "The response window expired. You can create a new request now.",
       "CANCELLED": "The request was cancelled. You can try again whenever you want."
     },
     "pendingNote": "The request stays fresh until the practitioner responds or the window expires.",
     "acceptedNote": "The request is accepted. Pay now to confirm the session and continue.",
-    "rejectedNote": "You can try another practitioner or create a new request.",
-    "expiredNote": "You can create a new request with a different duration or practitioner.",
+    "rejectedNote": "You can try another specialist or create a new request.",
+    "expiredNote": "You can create a new request with a different duration or specialist.",
     "cancelledNote": "You can try again any time.",
     "cancelAction": "Cancel request",
     "payAction": "Pay now to confirm the session",
@@ -83,9 +93,9 @@
     "retry": "Try again"
   },
   "empty": {
-    "heading": "No practitioners are available right now",
-    "note": "When a practitioner becomes available for instant booking, they will appear here with the live price and supported duration.",
-    "action": "Browse practitioners"
+    "heading": "No specialists are available right now",
+    "note": "When a specialist becomes available for instant booking, they will appear here with the live price and supported duration.",
+    "action": "Browse specialists"
   },
   "statuses": {
     "PENDING": "Pending",
@@ -93,5 +103,65 @@
     "REJECTED": "Rejected",
     "EXPIRED": "Expired",
     "CANCELLED": "Cancelled"
+  },
+  "modal": {
+    "title": "Request an instant session",
+    "form": {
+      "heading": "Request a video session now",
+      "note": "A request will be sent to the specialist with 2 minutes to respond. Payment occurs only after acceptance.",
+      "duration": "Session duration",
+      "durationAria": "Choose session duration",
+      "duration30": "30 minutes",
+      "duration60": "60 minutes"
+    },
+    "summary": {
+      "practitioner": "Specialist",
+      "sessionType": "Session type",
+      "videoSession": "Video session",
+      "instantPrice": "Instant price",
+      "responseWindow": "Response window",
+      "twoMinutes": "2 minutes"
+    },
+    "pending": {
+      "heading": "Request sent",
+      "waiting": "Waiting for {name} to respond...",
+      "note": "We will notify you as soon as the specialist responds."
+    },
+    "accepted": {
+      "heading": "The specialist accepted your request!",
+      "note": "The session is temporarily reserved pending payment."
+    },
+    "rejected": {
+      "heading": "Request could not be accepted",
+      "note": "The specialist could not accept this instant request. You can schedule a later appointment or select another specialist."
+    },
+    "expired": {
+      "heading": "Request expired",
+      "note": "The request was not accepted within the allocated time."
+    },
+    "errors": {
+      "practitionerOffline": "The specialist is currently offline.",
+      "instantBookingDisabled": "The specialist is not accepting instant booking requests.",
+      "pendingRequestAlreadyExists": "You already have a pending instant booking request with this specialist.",
+      "practitionerBusy": "The specialist is currently busy or has a session conflict.",
+      "createFailed": "We could not send the request. Please try again."
+    },
+    "actions": {
+      "close": "Close",
+      "sending": "Sending...",
+      "sendRequest": "Send session request",
+      "cancelRequest": "Cancel request",
+      "completePayment": "Complete payment now",
+      "scheduleAppointment": "Schedule an appointment",
+      "viewSpecialists": "View specialists",
+      "newRequest": "Send a new request"
+    },
+    "cancel": {
+      "heading": "Cancel request",
+      "note": "Are you sure you want to cancel your instant session request?",
+      "cancelling": "Cancelling...",
+      "confirm": "Yes, cancel request",
+      "back": "Go back"
+    }
   }
 }

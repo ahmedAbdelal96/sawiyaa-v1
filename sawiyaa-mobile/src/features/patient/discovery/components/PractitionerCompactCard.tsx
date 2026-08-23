@@ -8,14 +8,12 @@ import { mapPractitionerDurationPrice } from "../practitioner-money";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { getProfessionalTitleLabel } from "../../../practitioner/reference-data";
 import { useAppDirection } from "../../../../i18n/direction";
+import { hasPublicPractitionerRating } from "../rating";
 
 const DEFAULT_AVATAR = require("../../../../../assets/user.avif");
 
 const STAR_GOLD = "#EAB308";
-const ONLINE_GREEN = "#22C55E";
-const OFFLINE_GRAY = "#94A3B8";
 
 export interface PractitionerCompactCardProps {
   practitioner: PublicPractitionerListItem;
@@ -25,7 +23,7 @@ export interface PractitionerCompactCardProps {
 }
 
 function renderStarRating(rating: number) {
-  const score = rating || 5;
+  const score = Math.max(0, Math.min(5, rating));
   const stars = [];
   for (let i = 1; i <= 5; i++) {
     if (score >= i) {
@@ -66,9 +64,7 @@ export const PractitionerCompactCard = ({
   const averageRating = practitioner.ratingSummary?.averageRating;
   const totalReviews = practitioner.ratingSummary?.totalReviews;
 
-  // Prominent rating fallback for mock data
-  const displayRating = averageRating && averageRating > 0 ? averageRating : 4.9;
-  const displayReviews = totalReviews && totalReviews > 0 ? totalReviews : 12;
+  const hasRating = hasPublicPractitionerRating(averageRating, totalReviews);
 
   const handlePress = () => {
     if (onPress) {
@@ -77,8 +73,6 @@ export const PractitionerCompactCard = ({
       router.push(`${routeBase}/${practitioner.slug}` as any);
     }
   };
-
-  const isOnline = practitioner.isOnlineNow;
 
   const rawAvatarUrl = practitioner.avatarUrl;
   const isInvalidOrFakeUrl =
@@ -119,13 +113,6 @@ export const PractitionerCompactCard = ({
               />
             </View>
 
-            {/* Online Green Badge */}
-            <View
-              style={[
-                styles.onlineBadge,
-                { backgroundColor: isOnline ? ONLINE_GREEN : OFFLINE_GRAY },
-              ]}
-            />
           </View>
 
           {/* Name & Sub-info */}
@@ -140,23 +127,29 @@ export const PractitionerCompactCard = ({
             </View>
 
             <Text color={theme.colors.textSecondary} style={styles.professionalTitle} numberOfLines={1}>
-              {getProfessionalTitleLabel(practitioner.professionalTitle, isArabic) ||
+              {practitioner.professionalTitle?.trim() ||
                 primarySpecialty?.title ||
-                t("discovery.list.professionalFallback", "أخصائي")}
+                t("discovery.list.professionalFallback")}
             </Text>
 
             {/* Prominent Stars & Rating Row */}
-            <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
-              <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
-                {renderStarRating(displayRating)}
+            {hasRating ? (
+              <View style={[styles.ratingInline, { flexDirection: rowDirection }]}>
+                <View style={[styles.starsRow, { flexDirection: rowDirection }]}>
+                  {renderStarRating(averageRating!)}
+                </View>
+                <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
+                  {averageRating!.toFixed(1)}
+                </Text>
+                <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
+                  ({totalReviews!})
+                </Text>
               </View>
-              <Text weight="bold" style={styles.ratingText} color={theme.colors.textPrimary}>
-                {displayRating.toFixed(1)}
-              </Text>
+            ) : (
               <Text color={theme.colors.textMuted} style={styles.reviewsCount}>
-                ({displayReviews})
+                {t("discovery.list.noRatings")}
               </Text>
-            </View>
+            )}
 
             {/* Specialties Chips */}
             {practitioner.specialties.length > 0 ? (
@@ -289,16 +282,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-  },
-  onlineBadge: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
   },
   mainInfoWrap: {
     flex: 1,

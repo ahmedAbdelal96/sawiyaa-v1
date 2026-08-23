@@ -20,6 +20,7 @@ import { JwtAccessAuthGuard } from '@common/guards/authentication/jwt-access-aut
 import { RolesGuard } from '@common/guards/authorization/roles.guard';
 import { CurrentLocale } from '@common/i18n/decorators/current-locale.decorator';
 import { SupportedLocale } from '@common/i18n/types/locale.types';
+import { setStoredFileResponseHeaders } from '@modules/files/file-response.utils';
 import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interface';
 import { ListPatientAcademyProgramEnrollmentsDto } from '../dto/list-patient-academy-program-enrollments.dto';
 import { PatientAcademyProgramEnrollmentPaymentRedirectQueryDto } from '../dto/patient-academy-program-enrollment-payment-redirect.dto';
@@ -32,7 +33,7 @@ import { ListPatientAcademyProgramEnrollmentsUseCase } from '../use-cases/list-p
 @ApiBearerAuth()
 @UseGuards(JwtAccessAuthGuard, RolesGuard)
 @RequireAccountStates(AccountStateRequirement.ACTIVE_ACCOUNT)
-@Roles(AppRole.PATIENT)
+@Roles(AppRole.PATIENT, AppRole.TRAINEE)
 @Controller('patients/me/academy')
 export class PatientAcademyProgramsController {
   constructor(
@@ -85,12 +86,7 @@ export class PatientAcademyProgramsController {
         userId: currentUser.id,
       });
 
-    response.setHeader('Content-Type', file.mimeType);
-    response.setHeader('Cache-Control', 'private, max-age=300');
-    response.setHeader(
-      'Content-Disposition',
-      `inline; filename="${file.originalFileName?.replace(/"/g, "'") ?? 'certificate.pdf'}"`,
-    );
+    setStoredFileResponseHeaders(response, { mimeType: file.mimeType, originalFileName: file.originalFileName ?? 'certificate.pdf', isPrivate: true });
 
     return new StreamableFile(createReadStream(file.absolutePath));
   }

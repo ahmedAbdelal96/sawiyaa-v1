@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import PatientGuidedPage from "@/components/patient/PatientGuidedPage";
+import ChangePasswordForm from "@/components/auth/ChangePasswordForm";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -21,6 +22,7 @@ export default async function PatientSettingsPage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "patient-area" });
 
   return (
+    <div className="space-y-6">
     <PatientGuidedPage
       eyebrow={t("guided.settings.eyebrow")}
       title={t("guided.settings.title")}
@@ -40,5 +42,7 @@ export default async function PatientSettingsPage({ params }: Props) {
         t("guided.settings.tips.third"),
       ]}
     />
+    <div className="mx-auto w-full max-w-5xl px-4"><ChangePasswordForm role="patient" /></div>
+    </div>
   );
 }

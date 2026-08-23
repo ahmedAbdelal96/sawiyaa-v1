@@ -30,6 +30,8 @@ import { PractitionerChangeReviewPolicy } from '../policies/practitioner-change-
 import { PractitionerChangeReviewService } from '../services/practitioner-change-review.service';
 import { PractitionerCurrencyLifecycleService } from '@modules/financial-operations/services/practitioner-currency-lifecycle.service';
 import { PractitionerTimezoneChangeGuardService } from '../services/practitioner-timezone-change-guard.service';
+import { PractitionerProfessionalContentRepository } from '../repositories/practitioner-professional-content.repository';
+import { PractitionerProfessionalContentAuthoringService } from '../services/practitioner-professional-content-authoring.service';
 
 /**
  * Profile update orchestrates practitioner profile + user preference writes in one transaction.
@@ -58,6 +60,10 @@ export class UpdatePractitionerProfileUseCase {
     private readonly changeReviewPolicy?: PractitionerChangeReviewPolicy,
     @Optional()
     private readonly changeReviewService?: PractitionerChangeReviewService,
+    @Optional()
+    private readonly professionalContentRepository?: PractitionerProfessionalContentRepository,
+    @Optional()
+    private readonly professionalContentAuthoringService?: PractitionerProfessionalContentAuthoringService,
   ) {}
 
   private resolvePackageAvailabilityMissingRequirements(input: {
@@ -181,6 +187,19 @@ export class UpdatePractitionerProfileUseCase {
         input.userId,
         tx,
       );
+      const existingContent = this.professionalContentRepository
+        ? await this.professionalContentRepository.findByPractitionerProfileId(
+            profile.id,
+            tx,
+          )
+        : null;
+      const contentPlan =
+        this.professionalContentAuthoringService && existingContent
+          ? this.professionalContentAuthoringService.plan(
+              existingContent,
+              normalizedInput,
+            )
+          : null;
 
       const wantsPackageAvailability =
         normalizedInput.acceptsPackage === true &&
@@ -227,8 +246,12 @@ export class UpdatePractitionerProfileUseCase {
 
       const profileUpdate = (() => {
         const profileUpdate: Prisma.PractitionerProfileUncheckedUpdateInput = {
-          professionalTitle: normalizedInput.professionalTitle,
-          bio: normalizedInput.bio,
+          ...(this.professionalContentAuthoringService
+            ? {}
+            : {
+                professionalTitle: normalizedInput.professionalTitle,
+                bio: normalizedInput.bio,
+              }),
           yearsOfExperience: normalizedInput.yearsOfExperience,
           practitionerType: normalizedInput.practitionerType,
           practitionerGender: normalizedInput.practitionerGender,
@@ -276,6 +299,19 @@ export class UpdatePractitionerProfileUseCase {
         tx,
       );
 
+      if (
+        profile.status !== PractitionerStatus.APPROVED &&
+        contentPlan &&
+        this.professionalContentAuthoringService
+      ) {
+        await this.professionalContentAuthoringService.applyDirect(
+          tx,
+          profile.id,
+          existingContent ?? {},
+          normalizedInput,
+        );
+      }
+
       await this.practitionerTimezoneChangeGuardService.assertCanChange({
         userId: input.userId,
         requestedTimezone: normalizedInput.timezone,
@@ -299,6 +335,8 @@ export class UpdatePractitionerProfileUseCase {
               ['practitionerGender', normalizedInput.practitionerGender],
               ['professionalTitle', normalizedInput.professionalTitle],
               ['bio', normalizedInput.bio],
+              ['professionalContent', normalizedInput.professionalContent],
+              ['primaryContentLocale', normalizedInput.primaryContentLocale],
               ['yearsOfExperience', normalizedInput.yearsOfExperience],
               ['countryCode', normalizedInput.countryCode],
             ].filter(([, value]) => value !== undefined),
@@ -341,6 +379,8 @@ export class UpdatePractitionerProfileUseCase {
           'displayName',
           'professionalTitle',
           'bio',
+          'professionalContent',
+          'primaryContentLocale',
           'yearsOfExperience',
           'practitionerType',
           'practitionerGender',

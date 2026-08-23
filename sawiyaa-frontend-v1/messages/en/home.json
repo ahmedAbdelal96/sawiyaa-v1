@@ -3,7 +3,7 @@
     "home": "Home",
     "packages": "Packages",
     "specialties": "Specialties",
-    "practitioners": "Practitioners",
+    "practitioners": "Specialists",
     "academy": "Training",
     "articles": "Articles",
     "policies": "Policies",
@@ -83,18 +83,18 @@
     "accountRequired": "Account required",
     "matching": {
       "title": "Start with guided matching",
-      "desc": "Use guided matching after creating your patient account if you want help narrowing down the right type of practitioner before browsing profiles.",
+      "desc": "Use guided matching after creating your patient account if you want help narrowing down the right type of specialist before browsing profiles.",
       "cta": "Create a patient account"
     },
     "assessment": {
       "title": "Understand your needs first",
-      "desc": "Start with a short initial check-in after creating your patient account if you want more clarity before choosing a practitioner or next care step.",
+      "desc": "Start with a short initial check-in after creating your patient account if you want more clarity before choosing a specialist or next care step.",
       "cta": "Create a patient account"
     },
     "practitioners": {
-      "title": "Browse practitioners directly",
-      "desc": "Go straight to practitioner discovery if you already know you want to compare profiles, experience, and specialties.",
-      "cta": "Explore practitioners"
+      "title": "Browse specialists directly",
+      "desc": "Go straight to specialist discovery if you already know you want to compare profiles, experience, and specialties.",
+      "cta": "Explore specialists"
     },
     "support": {
       "title": "Get help choosing",
@@ -135,7 +135,7 @@
     "experience": "{years} years experience",
     "verified": "Verified",
     "checkAvailability": "Check availability",
-    "fallbackTitle": "Recommended practitioners",
+    "fallbackTitle": "Recommended specialists",
     "emptyTitle": "Specialists will be shown soon",
     "emptyNote": "We are preparing specialist profiles to show you clear information to help you choose."
   },
@@ -246,7 +246,7 @@
     "sectionAccount": "Account",
     "linkHome": "Home",
     "linkSpecialties": "Specialties",
-    "linkPractitioners": "Practitioners",
+    "linkPractitioners": "Specialists",
     "linkArticles": "Articles",
     "linkAcademy": "Training",
     "linkAbout": "About Sawiyaa",
@@ -278,5 +278,19 @@
       "secureJourney": "A clear path from exploration to booking and secure session flow."
     }
   },
-  "linkAcademy": "Training"
+  "linkAcademy": "Training",
+  "upcomingSession": {
+    "eyebrow": "Upcoming session",
+    "title": "Your upcoming session",
+    "details": "View session details",
+    "join": "Join session",
+    "starts": "Starts",
+    "timezone": "Timezone",
+    "duration": "Duration",
+    "status": "Join is available now",
+    "timeUnavailable": "Session time unavailable",
+    "inMinutes": "in {minutes} min",
+    "inHours": "in {hours}h{remainder, select, 0 {} other { {remainder}m}}",
+    "counterpart": "Your specialist"
+  }
 }

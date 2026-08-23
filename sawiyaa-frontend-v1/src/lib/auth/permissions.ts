@@ -36,6 +36,9 @@ export const PermissionKey = {
   PRACTITIONER_PAYOUTS_WRITE: "practitioner-payouts.write",
   PRACTITIONER_STATEMENTS_READ: "practitioner-statements.read",
   ACADEMY_ENROLLMENTS_CREATE_MANUAL: "academy.enrollments.create.manual",
+  ACADEMY_READ: "academy.read",
+  ACADEMY_MANAGE: "academy.manage",
+  USER_CREDENTIALS_RESET: "user.credentials.reset",
   NOTIFICATION_OPS_READ: "notification-ops.read",
   AUDIT_LOG_READ: "audit-log.read",
   REFUNDS_APPROVE: "refunds.approve",
@@ -59,6 +62,8 @@ export const PermissionKey = {
   PRACTITIONER_APPLICATIONS_REJECT: "practitionerApplications.reject",
   PRACTITIONER_APPLICATIONS_REQUEST_CHANGES:
     "practitionerApplications.requestChanges",
+  PRACTITIONER_PUBLICATION_READ: "practitionerPublication.read",
+  PRACTITIONER_PUBLICATION_WRITE: "practitionerPublication.write",
   FEATURED_PRACTITIONERS_READ: "featured-practitioners.read",
   FEATURED_PRACTITIONERS_MANAGE: "featured-practitioners.manage",
   ADMIN_USERS_READ: "admin-users.read",

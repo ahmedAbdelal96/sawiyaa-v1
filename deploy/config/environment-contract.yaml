@@ -240,7 +240,7 @@ variables:
     description: Active video provider.
   - name: DAILY_API_KEY
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: true
     phase: runtime
     environments: [production]
@@ -251,7 +251,7 @@ variables:
     description: Daily API key.
   - name: DAILY_API_BASE_URL
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: false
     phase: runtime
     environments: [production]
@@ -262,7 +262,7 @@ variables:
     description: Daily API base URL.
   - name: DAILY_WEBHOOK_SECRET
     service: backend
-    required: true
+    required: "VIDEO_PROVIDER_DEFAULT == DAILY"
     secret: true
     phase: runtime
     environments: [production]
@@ -271,6 +271,39 @@ variables:
     rebuildRequired: false
     validationOwner: backend Zod production policy + Daily webhook signature verification
     description: Secret shared with Daily webhook configuration.
+  - name: ZOOM_ACCOUNT_ID
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom account ID when Zoom is the active video provider.
+  - name: ZOOM_CLIENT_ID
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: false
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom client ID when Zoom is the active video provider.
+  - name: ZOOM_CLIENT_SECRET
+    service: backend
+    required: "VIDEO_PROVIDER_DEFAULT == ZOOM"
+    secret: true
+    phase: runtime
+    environments: [production]
+    safeDefault: null
+    restartRequired: true
+    rebuildRequired: false
+    validationOwner: backend video provider conditional policy
+    description: Zoom client secret when Zoom is the active video provider.
   - name: CORPORATE_CODE_PEPPER
     service: backend
     required: true

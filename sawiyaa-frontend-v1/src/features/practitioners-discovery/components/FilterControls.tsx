@@ -499,8 +499,8 @@ export default function FilterControls({
               onChange={(value) => updateParam("country", value)}
               options={countryOptions}
               placeholder={t("filter.country")}
-              searchPlaceholder={locale === "ar" ? "ابحث عن دولة..." : "Search countries..."}
-              emptyMessage={locale === "ar" ? "لا توجد دول مطابقة" : "No countries found"}
+              searchPlaceholder={t("filter.countrySearchPlaceholder")}
+              emptyMessage={t("filter.countryEmpty")}
               clearable
             />
           </div>

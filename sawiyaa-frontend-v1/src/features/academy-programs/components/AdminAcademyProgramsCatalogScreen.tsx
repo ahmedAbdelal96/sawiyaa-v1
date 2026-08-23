@@ -476,7 +476,7 @@ export default function AdminAcademyProgramsCatalogScreen() {
           data={items}
           columns={columns}
           getRowId={(row) => row.id}
-          tableClassName="w-max table-auto"
+          tableClassName="w-full table-auto"
           className="w-full max-w-full overflow-hidden always-visible-scrollbar"
           size="sm"
           loading={programsQuery.isLoading}

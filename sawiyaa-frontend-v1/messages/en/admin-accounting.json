@@ -211,7 +211,9 @@
     "runId": "Run ID",
     "runIdPlaceholder": "Filter by run UUID",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "phase1Title": "Phase 1 payment checks",
+    "clearPhase1Filter": "Clear filter"
   },
   "runs": {
     "eyebrow": "Operational runs",
@@ -312,6 +314,8 @@
     "eyebrow": "Issue details",
     "title": "Reconciliation issue",
     "metadataTitle": "Safe metadata",
+    "evidenceTitle": "Structured evidence",
+    "evidenceUnavailable": "Structured evidence is not available for this issue.",
     "reviewNoteLabel": "Review note",
     "reviewNotePlaceholder": "Add a short note for this review decision.",
     "fields": {
@@ -326,6 +330,14 @@
       "message": "Message",
       "expected": "Expected",
       "actual": "Actual",
+      "expectedState": "Expected state",
+      "actualState": "Actual state",
+      "detectedAt": "Detected at",
+      "paymentId": "Payment ID",
+      "sessionId": "Session ID",
+      "walletReservationId": "Wallet reservation ID",
+      "receiptId": "Receipt ID",
+      "safeMetadata": "Safe metadata",
       "runId": "Run ID",
       "reviewNote": "Review note"
     },

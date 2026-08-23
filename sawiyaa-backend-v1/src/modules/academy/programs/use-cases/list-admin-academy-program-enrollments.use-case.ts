@@ -32,7 +32,7 @@ export class ListAdminAcademyProgramEnrollmentsUseCase {
 
     return {
       items: items.map((enrollment) =>
-        this.academyProgramEnrollmentPresenter.presentEnrollmentItem(
+        this.academyProgramEnrollmentPresenter.presentAdminEnrollmentListItem(
           enrollment,
           input.locale,
         ),

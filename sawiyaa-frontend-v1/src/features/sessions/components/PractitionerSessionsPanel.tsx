@@ -166,7 +166,7 @@ export default function PractitionerSessionsPanel() {
         cell: (row) => (
           <SessionStatusBadge
             status={row.status}
-            presentationStatus={row.presentationStatus}
+            operational={row.operational}
           />
         ),
       },

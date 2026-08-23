@@ -7,10 +7,11 @@ import { useAuth } from "../../src/providers/AuthProvider";
 import { Card, ErrorState, Header, LoadingState, Screen, Text } from "../../src/components/ui";
 import { useTheme } from "../../src/providers/ThemeProvider";
 import { usePatientHome } from "../../src/features/patient/journey/hooks";
-import { HomeActionCard } from "../../src/features/patient/journey/components/HomeActionCard";
 import { SpecialistHorizontalRail } from "../../src/features/patient/journey/components/SpecialistHorizontalRail";
 import { useAppDirection } from "../../src/i18n/direction";
-import { UpcomingSessionCard } from "../../src/features/sessions/UpcomingSessionCard";
+import { formatPatientDateTime } from "../../src/lib/time-formatting";
+import { useMyNextSession, type MobileNextSession } from "../../src/features/sessions/next-session";
+import { resolvePatientHomePrimaryState } from "../../src/features/patient/journey/home-view-model";
 
 const HORIZONTAL_MARGIN = 20;
 
@@ -19,18 +20,20 @@ export default function PatientHomeScreen() {
   const { theme } = useTheme();
   const { user, patientRegistrationNotice, clearPatientRegistrationNotice } = useAuth();
   const router = useRouter();
-  const { isRtl, rowDirection, arrowForward } = useAppDirection();
+  const { isRtl, rowDirection } = useAppDirection();
 
   const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
-  const homeQuery = usePatientHome();
+  const nextSessionQuery = useMyNextSession();
+  const homeQuery = usePatientHome({
+    enabled: !nextSessionQuery.isPending && !nextSessionQuery.data,
+  });
+  const nextSession = nextSessionQuery.data ?? null;
   const data = homeQuery.data;
 
   const recentlyVisited = data?.recentlyVisitedPractitioners?.items ?? [];
   const featured = data?.featuredPractitioners;
   const mostBooked = data?.mostBookedTodayPractitioners;
   const topRated = data?.topRatedPractitioners;
-  const matchingCard = data?.matchingCard;
-  const supportCard = data?.supportCard;
 
   const showFeatured = featured?.status !== "NOT_IMPLEMENTED" && (featured?.items?.length ?? 0) > 0;
   const showMostBooked = mostBooked?.status !== "NOT_IMPLEMENTED" && (mostBooked?.items?.length ?? 0) > 0;
@@ -38,12 +41,14 @@ export default function PatientHomeScreen() {
   const showRecentlyVisited = recentlyVisited.length > 0;
 
   const displayName = user?.displayName?.trim() || t("profileScreen.fallbackName");
-  const heroTitle = matchingCard?.title || t("home.matching.title");
-  const heroBody = matchingCard?.description || t("home.matching.body");
+  const homeError = !nextSession && homeQuery.isError;
+  const homeLoading =
+    !nextSession &&
+    (nextSessionQuery.isPending || (homeQuery.isLoading && !data));
 
   return (
-    <Screen bg="background" style={styles.root} edges={["top", "left", "right"]}>
-      <Header variant="home" />
+    <Screen bg="background" testID="patient-home-screen" style={styles.root} edges={["top", "left", "right"]}>
+      <Header variant="home" hideMessages />
 
       {patientRegistrationNotice === "phone-not-saved" ? (
         <TouchableOpacity
@@ -56,15 +61,18 @@ export default function PatientHomeScreen() {
         </TouchableOpacity>
       ) : null}
 
-      {homeQuery.isError ? (
+      {homeError ? (
         <ErrorState
           fullScreen
-          title={t("home.support.title")}
-          message={t("home.support.body")}
-          onRetry={() => void homeQuery.refetch()}
+          title={t("home.error.title")}
+          message={t("home.error.body")}
+          onRetry={() => {
+            void nextSessionQuery.refetch();
+            void homeQuery.refetch();
+          }}
           retryText={t("retry")}
         />
-      ) : homeQuery.isLoading && !data ? (
+      ) : homeLoading ? (
         <LoadingState fullScreen />
       ) : (
         <ScrollView
@@ -84,121 +92,15 @@ export default function PatientHomeScreen() {
             </View>
           </View>
 
-          <UpcomingSessionCard />
-
-          <Card
-            variant="elevated"
-            padding="lg"
-            style={[
-              styles.heroCard,
-              {
-                backgroundColor: theme.colors.primary,
-                borderLeftWidth: isRtl ? 0 : 4,
-                borderRightWidth: isRtl ? 4 : 0,
-                borderColor: "#C8A979", // Warm Gold accent line
-                ...theme.shadows.md,
-              },
-            ]}
-          >
-            <View style={[styles.heroIconRow, { flexDirection: rowDirection }]}>
-              <View style={[styles.heroIcon, { backgroundColor: "rgba(255, 255, 255, 0.12)" }]}>
-                <Ionicons name="person-add-outline" size={20} color="#FFFFFF" />
-              </View>
-              <View style={[styles.heroAccentDot, { backgroundColor: "#C8A979" }]} />
-            </View>
-
-            <Text
-              variant="h2"
-              weight="700"
-              color="#FFFFFF"
-              style={[styles.heroTitle, { textAlign: isRtl ? "right" : "left" }]}
-            >
-              {heroTitle}
-            </Text>
-
-            <Text
-              variant="body"
-              color="#EEF4EF" // Soft Sage light color
-              style={[styles.heroBody, { textAlign: isRtl ? "right" : "left" }]}
-            >
-              {heroBody}
-            </Text>
-
-            <TouchableOpacity
-              activeOpacity={0.88}
-              onPress={() => {
-                router.push("/(patient)/matching/intro" as any);
-              }}
-              style={[
-                styles.heroButton,
-                {
-                  backgroundColor: "#FFFFFF",
-                  flexDirection: rowDirection,
-                  // Premium subtle shadow to feel tappable
-                  shadowColor: "#000000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 2,
-                },
-              ]}
-            >
-              <Text
-                variant="button"
-                weight="700"
-                color="#24564F"
-                style={styles.heroButtonText}
-              >
-                {t("home.matching.cta")}
-              </Text>
-              <Ionicons
-                name={arrowForward as any}
-                size={16}
-                color="#24564F"
-              />
-            </TouchableOpacity>
-          </Card>
-
-          <View style={styles.quickActionsHeader}>
-            <Text variant="title" weight="700" style={{ textAlign: isRtl ? "right" : "left" }}>
-              {t("home.quickActions.title")}
-            </Text>
-          </View>
-
-          <View style={[styles.quickActions, { flexDirection: rowDirection }]}>
-            <QuickAction
-              icon="search-outline"
-              label={t("home.quickActions.findDoctor")}
-              tint="mint"
-              onPress={() => router.push("/(patient)/discovery" as any)}
+          {nextSession ? (
+            <PatientHomeSessionSurface session={nextSession} />
+          ) : (
+            <PatientHomeDiscoverySurface
+              onPress={() => router.push("/(patient)/matching/intro" as any)}
             />
-            <QuickAction
-              icon="calendar-outline"
-              label={t("home.quickActions.mySessions")}
-              tint="cream"
-              onPress={() => router.push("/(patient)/sessions" as any)}
-            />
-            <QuickAction
-              icon="wallet-outline"
-              label={t("home.quickActions.payments")}
-              tint="blue"
-              onPress={() => router.push("/(patient)/payments" as any)}
-            />
-          </View>
+          )}
 
-          <View style={styles.supportWrap}>
-            <HomeActionCard
-              title={supportCard?.title || t("home.support.title")}
-              subtitle={supportCard?.description || t("home.support.body")}
-              ctaLabel={t("home.support.cta")}
-              icon="headset-outline"
-              onPress={() => {
-                router.push("/(patient)/support" as any);
-              }}
-            />
-          </View>
-
-          {showFeatured ? (
+          {!nextSession && showFeatured ? (
             <SpecialistHorizontalRail
               title={featured?.label || t("home.featured.title")}
               items={(featured?.items || []).slice(0, 5)}
@@ -208,7 +110,7 @@ export default function PatientHomeScreen() {
             />
           ) : null}
 
-          {showMostBooked ? (
+          {!nextSession && showMostBooked ? (
             <SpecialistHorizontalRail
               title={mostBooked?.label || t("home.mostBookedToday.title")}
               items={mostBooked?.items || []}
@@ -218,7 +120,7 @@ export default function PatientHomeScreen() {
             />
           ) : null}
 
-          {showTopRated ? (
+          {!nextSession && showTopRated ? (
             <SpecialistHorizontalRail
               title={topRated?.label || t("home.topRated.title")}
               items={(topRated?.items || []).slice(0, 5)}
@@ -228,7 +130,7 @@ export default function PatientHomeScreen() {
             />
           ) : null}
 
-          {showRecentlyVisited ? (
+          {!nextSession && showRecentlyVisited ? (
             <SpecialistHorizontalRail
               title={data?.recentlyVisitedPractitioners?.label || t("home.recentlyVisited.title")}
               items={recentlyVisited}
@@ -245,55 +147,101 @@ export default function PatientHomeScreen() {
   );
 }
 
-function QuickAction({
-  icon,
-  label,
-  tint,
-  onPress,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  tint: "mint" | "cream" | "blue";
-  onPress: () => void;
-}) {
+function PatientHomeSessionSurface({ session }: { session: MobileNextSession }) {
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const { isRtl, rowDirection, arrowForward } = useAppDirection();
+  const router = useRouter();
 
-  const tintStyles = {
-    mint: {
-      bubble: "#EEF4EF", // Green Surface
-      icon: "#24564F", // Deep Teal
+  const primaryState = resolvePatientHomePrimaryState(session);
+  const kind = primaryState === "PAYMENT_REQUIRED" ? "payment" : primaryState === "JOINABLE" ? "join" : "upcoming";
+  const locale = i18n.language?.startsWith("ar") ? "ar-SA" : "en-US";
+  const displayTime = formatPatientDateTime(session.startsAt, session.displayTimezone, {
+    locale,
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+  const copy = {
+    payment: {
+      title: t("home.session.paymentTitle"),
+      status: t("home.session.paymentStatus"),
+      cta: t("home.session.pay"),
+      route: `/(patient)/sessions/${session.sessionId}/pay`,
     },
-    cream: {
-      bubble: "#FCFAF6", // Warm Card
-      icon: "#24564F", // Deep Teal (updated for high contrast)
+    join: {
+      title: t("home.session.joinTitle"),
+      status: t("home.session.joinStatus"),
+      cta: t("home.session.join"),
+      route: session.joinRoute,
     },
-    blue: {
-      bubble: "#EEF4EF", // Green Surface
-      icon: "#24564F", // Deep Teal
+    upcoming: {
+      title: t("home.session.upcomingTitle"),
+      status: t("home.session.upcomingStatus"),
+      cta: t("home.session.view"),
+      route: session.detailsRoute,
     },
-  }[tint];
+  }[kind];
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      style={[
-        styles.quickActionCard,
-        {
-          backgroundColor: "#FFFFFF",
-          borderColor: "#E8DED0", // Soft border
-          borderWidth: 1,
-          ...theme.shadows.sm,
-        },
-      ]}
-      onPress={onPress}
-    >
-      <View style={[styles.quickActionIcon, { backgroundColor: tintStyles.bubble }]}>
-        <Ionicons name={icon} size={18} color={tintStyles.icon} />
+    <Card variant="outlined" padding="lg" style={[styles.primarySurface, { borderColor: theme.colors.primary }]}>
+      <View style={[styles.primaryHeader, { flexDirection: rowDirection }]}>
+        <View style={styles.primaryHeaderCopy}>
+          <Text color={theme.colors.primary} weight="700" style={{ textAlign: isRtl ? "right" : "left" }}>
+            {copy.title}
+          </Text>
+          <Text variant="h2" weight="700" style={[styles.primaryName, { textAlign: isRtl ? "right" : "left" }]} numberOfLines={1}>
+            {session.counterpart.displayName || t("home.session.specialistFallback")}
+          </Text>
+        </View>
+        <Ionicons name={kind === "payment" ? "card-outline" : kind === "join" ? "videocam-outline" : "calendar-outline"} size={24} color={theme.colors.primary} />
       </View>
-      <Text variant="caption" weight="600" style={[styles.quickActionLabel, { color: "#1F332F" }]} numberOfLines={2}>
-        {label}
+      <Text color={theme.colors.textSecondary} style={[styles.primaryDetails, { textAlign: isRtl ? "right" : "left" }]}>
+        {displayTime} {"\u2022"} {t("home.session.duration", { count: session.durationMinutes })}
       </Text>
-    </TouchableOpacity>
+      <Text color={theme.colors.primary} weight="700" style={[styles.primaryStatus, { textAlign: isRtl ? "right" : "left" }]}>
+        {copy.status}
+      </Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={copy.cta}
+        activeOpacity={0.88}
+        onPress={() => router.push(copy.route as any)}
+        style={[styles.primaryButton, { flexDirection: rowDirection, backgroundColor: theme.colors.primary }]}
+      >
+        <Text color={theme.colors.onPrimary} weight="700">{copy.cta}</Text>
+        <Ionicons name={arrowForward as any} size={16} color={theme.colors.onPrimary} />
+      </TouchableOpacity>
+    </Card>
+  );
+}
+
+function PatientHomeDiscoverySurface({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const { isRtl, rowDirection, arrowForward } = useAppDirection();
+
+  return (
+    <Card variant="outlined" padding="lg" style={[styles.discoverySurface, { borderColor: theme.colors.borderLight }]}>
+      <View style={[styles.discoveryIcon, { backgroundColor: theme.colors.primarySoft }]}>
+        <Ionicons name="search-outline" size={22} color={theme.colors.primary} />
+      </View>
+      <Text variant="h2" weight="700" style={[styles.discoveryTitle, { textAlign: isRtl ? "right" : "left" }]}>
+        {t("home.discovery.title")}
+      </Text>
+      <Text color={theme.colors.textSecondary} style={[styles.discoveryBody, { textAlign: isRtl ? "right" : "left" }]}>
+        {t("home.discovery.body")}
+      </Text>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={t("home.discovery.cta")}
+        activeOpacity={0.88}
+        onPress={onPress}
+        style={[styles.primaryButton, { flexDirection: rowDirection, backgroundColor: theme.colors.primary }]}
+      >
+        <Text color={theme.colors.onPrimary} weight="700">{t("home.discovery.cta")}</Text>
+        <Ionicons name={arrowForward as any} size={16} color={theme.colors.onPrimary} />
+      </TouchableOpacity>
+    </Card>
   );
 }
 
@@ -328,87 +276,66 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
   },
-  heroCard: {
+  primarySurface: {
     marginBottom: 16,
-    borderRadius: 20,
-    overflow: "hidden",
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
   },
-  heroIconRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  primaryHeader: {
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 14,
+    gap: 12,
   },
-  heroIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroAccentDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    opacity: 0.82,
-  },
-  heroTitle: {
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  heroBody: {
-    fontSize: 12.5,
-    lineHeight: 18,
-    marginBottom: 14,
-    maxWidth: 310,
-  },
-  heroButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-  },
-  heroButtonText: {
-    fontSize: 12.5,
-    textAlign: "center",
-  },
-  quickActionsHeader: {
-    marginBottom: 8,
-  },
-  quickActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  quickActionCard: {
+  primaryHeaderCopy: {
     flex: 1,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    minWidth: 0,
+    gap: 4,
+  },
+  primaryName: {
+    fontSize: 19,
+    lineHeight: 25,
+  },
+  primaryDetails: {
+    marginTop: 14,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  primaryStatus: {
+    marginTop: 7,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  primaryButton: {
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 74,
+    alignSelf: "stretch",
+    gap: 8,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
-  quickActionIcon: {
+  discoverySurface: {
+    marginBottom: 18,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+  },
+  discoveryIcon: {
     width: 32,
     height: 32,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
   },
-  quickActionLabel: {
-    fontSize: 11,
-    lineHeight: 15,
-    textAlign: "center",
-    width: "100%",
+  discoveryTitle: {
+    fontSize: 17,
+    lineHeight: 23,
+    marginTop: 14,
   },
-  supportWrap: {
-    marginBottom: 18,
+  discoveryBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 7,
   },
   bottomSpacer: {
     height: 8,

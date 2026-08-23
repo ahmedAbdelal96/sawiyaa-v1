@@ -331,6 +331,48 @@ describe('InitiateSessionPaymentUseCase', () => {
     expect(result.item.sessionId).toBe('session-1');
   });
 
+  it('blocks payment initiation when financial allocation is unavailable', async () => {
+    (resolveSessionPaymentPricingService.resolve as jest.Mock).mockResolvedValueOnce({
+      amountSubtotal: '120.00',
+      amountDiscount: '0.00',
+      amountTotal: '120.00',
+      currencyCode: 'EGP',
+      marketType: MarketType.LOCAL,
+      paymentPurpose: PaymentPurpose.SESSION_INSTANT_BOOKING,
+      commissionRuleId: null,
+      commissionPlatformRatePercent: null,
+      commissionPractitionerRatePercent: null,
+      couponId: null,
+      couponCodeSnapshot: null,
+      couponDiscountSnapshot: null,
+      couponPlatformSharePercent: null,
+      couponPractitionerSharePercent: null,
+      breakdown: {
+        grossAmount: '120.00',
+        discountAmount: '0.00',
+        netPaidAmount: '120.00',
+        platformCommissionAmount: null,
+        practitionerShareAmount: null,
+      },
+    });
+
+    await expect(
+      useCase.execute({
+        userId: 'user-1',
+        locale: 'en',
+        sessionId: 'session-1',
+        acceptedRefundPolicyId: 'refund-policy-version-1',
+        displayLocale: 'en',
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'PAYMENT_FINANCIAL_CONFIGURATION_UNAVAILABLE',
+      }),
+    });
+    expect(paymentRepository.createPayment).not.toHaveBeenCalled();
+    expect(providerAdapter.initiateSessionPayment).not.toHaveBeenCalled();
+  });
+
   it.each([
     'http://localhost:8081/patient/sessions/session-1/payment-return',
     'http://localhost:3000/en/patient/sessions/session-1/payment-return',

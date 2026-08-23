@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocale } from "next-intl";
 import {
   createPatientPackagePurchase,
   getMyPackagePurchase,
@@ -13,22 +14,27 @@ import type {
 
 export const packagePurchaseQueryKeys = {
   all: ["package-purchases"] as const,
-  list: (params?: ListMyPackagePurchasesParams) =>
-    [...packagePurchaseQueryKeys.all, "list", params ?? {}] as const,
-  detail: (purchaseId: string) => [...packagePurchaseQueryKeys.all, purchaseId] as const,
+  list: (params?: ListMyPackagePurchasesParams, locale?: string) =>
+    [...packagePurchaseQueryKeys.all, "list", locale ?? "en", params ?? {}] as const,
+  detail: (purchaseId: string, locale?: string) =>
+    [...packagePurchaseQueryKeys.all, purchaseId, locale ?? "en"] as const,
 };
 
 export function useMyPackagePurchases(params?: ListMyPackagePurchasesParams) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: packagePurchaseQueryKeys.list(params),
+    queryKey: packagePurchaseQueryKeys.list(params, locale),
     queryFn: () => listMyPackagePurchasesWithParams(params),
     staleTime: 30_000,
   });
 }
 
 export function useMyPackagePurchase(purchaseId: string | null) {
+  const locale = useLocale();
+
   return useQuery({
-    queryKey: packagePurchaseQueryKeys.detail(purchaseId ?? ""),
+    queryKey: packagePurchaseQueryKeys.detail(purchaseId ?? "", locale),
     queryFn: () => getMyPackagePurchase(purchaseId!),
     enabled: Boolean(purchaseId),
     staleTime: 30_000,
@@ -47,6 +53,7 @@ export function useCreatePackagePurchase() {
 
 export function useInitiatePackagePurchasePayment() {
   const queryClient = useQueryClient();
+  const locale = useLocale();
   return useMutation({
     mutationFn: ({
       purchaseId,
@@ -57,7 +64,7 @@ export function useInitiatePackagePurchasePayment() {
     }) => initiatePatientPackagePurchasePayment(purchaseId, input),
     onSuccess: (_, variables) => {
       const { purchaseId } = variables;
-      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.detail(purchaseId) });
+      queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.detail(purchaseId, locale) });
       queryClient.invalidateQueries({ queryKey: packagePurchaseQueryKeys.all });
     },
   });

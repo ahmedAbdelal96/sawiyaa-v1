@@ -101,4 +101,59 @@ describe('ResolveCommissionRuleService', () => {
 
     expect(result.paymentPurpose).toBe(PaymentPurpose.SESSION_BOOKING);
   });
+
+  it('selects the shared cross-border rule for instant sessions', async () => {
+    (commissionRuleRepository.listActiveRules as jest.Mock).mockResolvedValue([
+      {
+        id: 'local-rule',
+        slug: 'revenue-share-default-local',
+        priority: 100,
+        isDefault: true,
+        marketType: 'LOCAL',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '30.00',
+        practitionerRatePercent: '70.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+      {
+        id: 'cross-border-rule',
+        slug: 'revenue-share-default-cross-border',
+        priority: 100,
+        isDefault: true,
+        marketType: 'CROSS_BORDER',
+        practitionerCountryId: null,
+        patientCountryId: null,
+        sessionFlowType: null,
+        sessionMode: null,
+        specialtyId: null,
+        platformRatePercent: '50.00',
+        practitionerRatePercent: '50.00',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      },
+    ]);
+
+    const result = await service.resolveForSession({
+      id: 'session-cross-border-instant',
+      flowType: SessionFlowType.INSTANT,
+      sessionMode: SessionMode.VIDEO,
+      durationMinutes: 30,
+      practitioner: {
+        countryId: 'country-egy',
+        country: { isoCode: 'EGY', currencyCode: 'EGP' },
+        specialties: [],
+      },
+      patient: {
+        countryId: 'country-us',
+        country: { isoCode: 'USA', currencyCode: 'USD' },
+      },
+    } as never);
+
+    expect(result.rule.id).toBe('cross-border-rule');
+    expect(result.platformRatePercent).toBe('50.00');
+    expect(result.practitionerRatePercent).toBe('50.00');
+  });
 });

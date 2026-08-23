@@ -5,10 +5,15 @@ import { AuthProvider } from "../src/providers/AuthProvider";
 import { AuthGatewayProvider } from "../src/providers/AuthGatewayProvider";
 import { NavigationHistoryProvider } from "../src/providers/NavigationHistoryProvider";
 import { ViewerTimeZoneProvider } from "../src/providers/ViewerTimeZoneProvider";
+import { RuntimeErrorBoundary } from "../src/components/RuntimeErrorBoundary";
+import { useRouter } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import "../src/i18n";
+import { NotificationRealtimeBridge } from "../src/features/notifications/NotificationRealtimeBridge";
+import LanguageHydrationGate from "../src/i18n/LanguageHydrationGate";
+import QueryFocusBridge from "../src/providers/QueryFocusBridge";
 
 // Inject global web styles to remove Chrome/Safari autofill blue tint and outline
 if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -40,15 +45,30 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+  const router = useRouter();
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
+        <QueryFocusBridge />
         <ThemeProvider>
           <AuthProvider>
+            <NotificationRealtimeBridge />
             <ViewerTimeZoneProvider>
               <AuthGatewayProvider>
                 <NavigationHistoryProvider>
-                  <Slot />
+                  <RuntimeErrorBoundary
+                    onBack={() => {
+                      if (typeof router.canGoBack === "function" && router.canGoBack()) {
+                        router.back();
+                      } else {
+                        router.replace("/");
+                      }
+                    }}
+                  >
+                    <LanguageHydrationGate>
+                      <Slot />
+                    </LanguageHydrationGate>
+                  </RuntimeErrorBoundary>
                 </NavigationHistoryProvider>
               </AuthGatewayProvider>
             </ViewerTimeZoneProvider>

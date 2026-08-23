@@ -34,6 +34,7 @@ import {
 } from "../../src/features/practitioner/profile/utils";
 import { useGeneralChatUnreadSummary } from "../../src/features/messages/hooks";
 import { getProfessionalTitleLabel } from "../../src/features/practitioner/reference-data";
+import { getTimeZoneDisplayLabel } from "../../src/features/timezone/timezone-options";
 
 export default function PractitionerAccountScreen() {
   const router = useRouter();
@@ -73,7 +74,7 @@ export default function PractitionerAccountScreen() {
 
   if (isBusy) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
@@ -89,7 +90,7 @@ export default function PractitionerAccountScreen() {
 
   if (profileQuery.isError || !profile) {
     return (
-      <Screen bg="background">
+      <Screen bg="background" testID="practitioner-profile-edit-screen">
         <Header
           title={t("practitioner.account.title")}
           rightElement={
@@ -123,9 +124,12 @@ export default function PractitionerAccountScreen() {
   const hasNotes = missingRequirementLabels.length > 0;
   const rowDirection = isArabic ? "row-reverse" : "row";
   const alignSelfStart = isArabic ? "flex-end" : "flex-start";
+  const displayTimeZone =
+    getTimeZoneDisplayLabel(profile.timezone, isArabic ? "ar" : "en") ??
+    t("practitioner.account.unknown");
 
   return (
-    <Screen bg="background">
+    <Screen bg="background" testID="practitioner-profile-edit-screen">
       <Header
         title={t("practitioner.account.title")}
         rightElement={
@@ -208,7 +212,7 @@ export default function PractitionerAccountScreen() {
             <CompactField label={t("practitioner.account.fields.specialty")} value={primarySpecialty?.title ?? t("practitioner.account.specialtyFallback")} icon="medical-outline" isRtl={isArabic} />
             <CompactField label={t("practitioner.account.fields.yearsOfExperience")} value={profile.yearsOfExperience !== null && profile.yearsOfExperience !== undefined ? String(profile.yearsOfExperience) : t("practitioner.account.unknown")} icon="calendar-outline" isRtl={isArabic} />
             <CompactField label={t("practitioner.account.fields.languages")} value={profile.languages.length ? profile.languages.map((item) => languageCodeLabel(item, t)).join(", ") : t("practitioner.account.unknown")} icon="language-outline" isRtl={isArabic} />
-            <CompactField label={t("practitioner.account.fields.timezone")} value={profile.timezone?.trim() || t("practitioner.account.unknown")} icon="earth-outline" isRtl={isArabic} />
+            <CompactField label={t("practitioner.account.fields.timezone")} value={displayTimeZone} icon="earth-outline" isRtl={isArabic} />
             <CompactField label={t("practitioner.account.fields.countryCode")} value={profile.countryCode?.trim() || t("practitioner.account.unknown")} icon="flag-outline" isRtl={isArabic} />
           </View>
         </Card>

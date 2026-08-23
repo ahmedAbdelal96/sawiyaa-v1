@@ -1,0 +1,9 @@
+appId: com.sawiyaa.mobile
+---
+- launchApp:
+    clearState: true
+- assertNotVisible: "FATAL EXCEPTION"
+- pressKey: Home
+- launchApp
+- assertVisible:
+    text: "(Welcome|Sign in|تسجيل الدخول|مرحباً)"

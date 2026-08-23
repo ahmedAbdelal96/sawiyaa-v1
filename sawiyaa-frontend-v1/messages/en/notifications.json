@@ -47,7 +47,7 @@
     },
     "sessions-session-join-available": {
       "title": "Session join reminder",
-      "subtitle": "Session · Push notification"
+      "subtitle": "Session · Join reminder"
     },
     "sessions-session-reminder": {
       "title": "Session reminder",
@@ -65,6 +65,26 @@
       "title": "Session rescheduled",
       "subtitle": "Session · Schedule"
     },
+    "sessions-session-reminder-60": {
+      "title": "Your session is coming up",
+      "subtitle": "Session · starts in about 1 hour"
+    },
+    "sessions-session-reminder-15": {
+      "title": "Your session starts soon",
+      "subtitle": "Session · starts in 15 minutes"
+    },
+    "sessions-session-starting-now": {
+      "title": "Your session starts now",
+      "subtitle": "Session · it is time to join"
+    },
+    "sessions-session-late-join": {
+      "title": "Your session has started",
+      "subtitle": "Session · join now"
+    },
+    "instant-booking-request-created": {
+      "title": "New instant booking request",
+      "subtitle": "You have a new instant booking request"
+    },
     "support-ticket-created": {
       "title": "New support ticket",
       "subtitle": "Support · Operations"
@@ -75,19 +95,19 @@
     },
     "payments-payment-succeeded": {
       "title": "Payment succeeded",
-      "subtitle": "Finance · Payment"
+      "subtitle": "Payment · Session payment"
     },
     "payments-payment-failed": {
       "title": "Payment failed",
-      "subtitle": "Finance · Payment"
+      "subtitle": "Payment · Session payment"
     },
     "payments-refund-created": {
       "title": "Refund request created",
-      "subtitle": "Finance · Refund"
+      "subtitle": "Payment · Refund"
     },
     "payments-refund-completed": {
       "title": "Refund request completed",
-      "subtitle": "Finance · Refund"
+      "subtitle": "Payment · Refund"
     },
     "fallback": {
       "title": "System notification",
@@ -110,7 +130,7 @@
     "sessions": {
       "session-join-available": {
         "title": "Session join reminder",
-        "subtitle": "Session · Push notification"
+        "subtitle": "Session · Join reminder"
       },
       "session-reminder": {
         "title": "Session reminder",
@@ -142,21 +162,37 @@
     "payments": {
       "payment-succeeded": {
         "title": "Payment succeeded",
-        "subtitle": "Finance · Payment"
+        "subtitle": "Payment · Session payment"
       },
       "payment-failed": {
         "title": "Payment failed",
-        "subtitle": "Finance · Payment"
+        "subtitle": "Payment · Session payment"
       },
       "refund-created": {
         "title": "Refund request created",
-        "subtitle": "Finance · Refund"
+        "subtitle": "Payment · Refund"
       },
       "refund-completed": {
         "title": "Refund request completed",
-        "subtitle": "Finance · Refund"
+        "subtitle": "Payment · Refund"
       }
     }
+  },
+  "visual": {
+    "fallbackTitle": "System notification",
+    "fallbackSubtitle": "System",
+    "fallbackContext": "User ...{userId} · Session ...{sessionId}",
+    "sessionBetween": "Session between {patient} and {specialist}{time}",
+    "messageContext": "From {sender} · Session with {participant}",
+    "supportContext": "Ticket: {subject}",
+    "supportFallback": "Ticket ...{id}",
+    "paymentContext": "Session with {specialist} · Review payment status",
+    "openConversation": "Open conversation",
+    "openSession": "Open session",
+    "openSupport": "Open support ticket",
+    "viewDetails": "View details",
+    "specialist": "Specialist",
+    "patient": "Patient"
   },
   "errors": {
     "PUSH_DEVICE_NOT_REGISTERED": "User device is not registered for push notifications",

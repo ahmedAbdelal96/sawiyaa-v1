@@ -18,6 +18,9 @@ import {
   patientLogin,
   patientLogout,
   patientRefresh,
+  traineeLogin,
+  traineeRefresh,
+  traineeLogout,
   patientRegister,
   patientForgotPassword,
   patientVerifyPasswordResetOtp,
@@ -42,6 +45,7 @@ import type {
   PractitionerAuthenticatedResponse,
   PractitionerLoginResponse,
   PatientLoginRequest,
+  TraineeLoginRequest,
   PatientRegisterRequest,
   PatientForgotPasswordRequest,
   PatientVerifyPasswordResetOtpRequest,
@@ -76,6 +80,7 @@ import {
 import type { PushRegistrationStatus } from "../features/push/types";
 import { configureApiAuthSessionHandlers, setApiAccessToken } from "../lib/api";
 import { disconnectUnifiedMessagesSocket } from "../features/messages/realtime-socket";
+import { disconnectNotificationSocket } from "../features/notifications/realtime-socket";
 import { getSignInRouteForRole } from "../features/auth/routes";
 
 interface AuthContextValue {
@@ -91,6 +96,7 @@ interface AuthContextValue {
   signInPatient: (
     payload: Omit<PatientLoginRequest, "deviceId">,
   ) => Promise<void>;
+  signInTrainee: (payload: Omit<TraineeLoginRequest, "deviceId">) => Promise<void>;
   signInPatientWithGoogle: (idToken: string) => Promise<void>;
   signUpPatient: (
     payload: Omit<PatientRegisterRequest, "deviceId">,
@@ -163,7 +169,7 @@ function mapPushPermissionStatusToRegistrationStatus(
 function isSupportedMobileRole(
   role: string | null | undefined,
 ): role is MobileSupportedRole {
-  return role === "patient" || role === "practitioner";
+  return role === "patient" || role === "trainee" || role === "practitioner";
 }
 
 function isAuthSuccessResponse(
@@ -203,6 +209,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const sessionRef = useRef<PersistedAuthSession | null>(null);
   const pendingRedirectRef = useRef<string | null>(null);
   const lastHandledNotificationIdentifierRef = useRef<string | null>(null);
+  const startupRouteHandledRef = useRef(false);
 
   useEffect(() => {
     configureForegroundNotifications();
@@ -227,6 +234,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const clearAuthenticatedState = useCallback(async () => {
     await persistSession(null);
     disconnectUnifiedMessagesSocket();
+    disconnectNotificationSocket();
     queryClient.clear();
     setPushRegistrationStatus("checking");
   }, [persistSession, queryClient]);
@@ -330,7 +338,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 refreshToken: stored.tokens.refreshToken,
                 deviceId,
               })
-            : null;
+            : await traineeRefresh({
+                refreshToken: stored.tokens.refreshToken,
+                deviceId,
+              })
 
       if (!refreshed) {
         await clearAuthenticatedState();
@@ -513,10 +524,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 refreshToken: currentSession.tokens.refreshToken,
                 deviceId,
               })
-            : await practitionerRefresh({
+            : currentSession.role === "practitioner"
+            ? await practitionerRefresh({
                 refreshToken: currentSession.tokens.refreshToken,
                 deviceId,
-              });
+              })
+            : await traineeRefresh({ refreshToken: currentSession.tokens.refreshToken, deviceId });
 
         if (!refreshed) {
           return null;
@@ -547,11 +560,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return; // Still at the root route (index.tsx), let index.tsx handle bootstrap routing!
     }
 
+    // Expo Router may restore the last native route instead of mounting
+    // index.tsx. Normalize that cold-start state once, after auth is known,
+    // without affecting normal in-app navigation afterward.
+    if (!startupRouteHandledRef.current) {
+      startupRouteHandledRef.current = true;
+
+      if (!session) {
+        if (group !== "(onboarding)" && group !== "(public)") {
+          router.replace("/(public)");
+        }
+        return;
+      }
+
+      const homeRoute =
+        session.role === "patient"
+          ? "/(patient)"
+          : session.role === "practitioner"
+            ? "/(practitioner)"
+            : "/(trainee)";
+      router.replace(homeRoute as any);
+      return;
+    }
+
     const inAuthGroup = group === "(auth)";
     const inOnboardingGroup = group === "(onboarding)";
     const inPublicGroup = group === "(public)";
     const inPatientGroup = group === "(patient)";
     const inPractitionerGroup = group === "(practitioner)";
+    const inTraineeGroup = group === "(trainee)";
 
     if (!session) {
       if (!inAuthGroup && !inOnboardingGroup && !inPublicGroup) {
@@ -568,14 +605,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (session.role === "patient" && (inAuthGroup || inPractitionerGroup)) {
+    if (session.role === "patient" && (inAuthGroup || inPractitionerGroup || inTraineeGroup)) {
       const redirect = pendingRedirectRef.current;
       pendingRedirectRef.current = null;
       router.replace((redirect ?? "/(patient)") as any);
       return;
     }
 
-    if (session.role === "practitioner" && (inAuthGroup || inPatientGroup)) {
+    if (session.role === "trainee" && (inAuthGroup || inPatientGroup || inPractitionerGroup)) {
+      const redirect = pendingRedirectRef.current;
+      pendingRedirectRef.current = null;
+      router.replace((redirect ?? "/(trainee)") as any);
+      return;
+    }
+
+    if (session.role === "practitioner" && (inAuthGroup || inPatientGroup || inTraineeGroup)) {
       const redirect = pendingRedirectRef.current;
       pendingRedirectRef.current = null;
       router.replace((redirect ?? "/(practitioner)") as any);
@@ -604,6 +648,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const deviceId = await getOrCreateDeviceId();
       const response = await patientLogin({ ...payload, deviceId });
       await consumeAuthSuccess(response, "patient");
+    },
+    [consumeAuthSuccess],
+  );
+
+  const signInTrainee = useCallback(
+    async (payload: Omit<TraineeLoginRequest, "deviceId">) => {
+      const deviceId = await getOrCreateDeviceId();
+      const response = await traineeLogin({ ...payload, deviceId });
+      await consumeAuthSuccess(response, "trainee");
     },
     [consumeAuthSuccess],
   );
@@ -672,14 +725,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     try {
       await revokeCurrentPushRegistration();
+    } catch {
+      // Push deregistration is best effort and must not skip auth revocation.
+    }
 
+    try {
       if (current?.role === "patient") {
         await patientLogout(current.tokens.refreshToken);
       } else if (current?.role === "practitioner") {
         await practitionerLogout(current.tokens.refreshToken);
+      } else if (current?.role === "trainee") {
+        await traineeLogout(current.tokens.refreshToken);
       }
     } catch {
-      // Ignore logout transport errors and always clear local session.
+      // Auth revocation is best effort; local state must still be cleared.
     } finally {
       await clearAuthenticatedState();
       router.replace("/(public)");
@@ -702,6 +761,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       enablePushNotifications,
       refreshPushRegistrationState,
       signInPatient,
+      signInTrainee,
       signInPatientWithGoogle,
       signUpPatient,
       startPractitionerLogin,
@@ -730,6 +790,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshPushRegistrationState,
       session,
       signInPatient,
+      signInTrainee,
       signInPatientWithGoogle,
       signOut,
       signUpPatient,

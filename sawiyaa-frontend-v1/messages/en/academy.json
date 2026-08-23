@@ -34,7 +34,8 @@
     "certificateInvalidType": "Only PDF certificate files are allowed",
     "certificateFileTooLarge": "The certificate file is too large. Maximum size is 10 MB.",
     "certificateEnrollmentNotEligible": "Certificates can only be uploaded for confirmed enrollments",
-    "certificateNotFound": "The certificate file was not found"
+    "certificateNotFound": "The certificate file was not found",
+    "duplicateEnrollmentConflict": "This account already has an enrollment in the selected training course."
   },
   "statuses": {
     "course": {
@@ -658,7 +659,9 @@
       "certificateStatuses": {
         "NOT_ISSUED": "Not issued",
         "ISSUED": "Issued",
-        "REISSUED": "Reissued"
+        "REISSUED": "Reissued",
+        "NOT_UPLOADED": "Not uploaded",
+        "UPLOADED": "Uploaded"
       },
       "metrics": {
         "registrationDate": "Registration date",
@@ -679,7 +682,8 @@
         "pdfOnly": "PDF only. Maximum size is 10 MB.",
         "uploadSuccess": "Certificate PDF uploaded successfully",
         "uploading": "Uploading...",
-        "noAccess": "You do not have permission to upload certificates."
+        "noAccess": "You do not have permission to upload certificates.",
+        "programNotEnded": "Certificate upload is locked until the training course and its lectures have ended."
       },
       "sourceLabels": {
         "publicProgram": "Public Training enrollment",
@@ -693,7 +697,30 @@
         "enrollment": "Enrollment details",
         "payment": "Payment details",
         "attendance": "Attendance summary",
+        "account": "Account access",
         "certificate": "Certificate"
+      },
+      "account": {
+        "type": "Account type",
+        "email": "Account email",
+        "loading": "Loading...",
+        "note": "Create a new trainee account or link an exact existing Patient/Trainee email. Linking requires explicit confirmation.",
+        "emailPlaceholder": "Email address",
+        "create": "Create trainee account",
+        "link": "Link existing account",
+        "confirmLink": "Review the account details, then confirm the link.",
+        "confirm": "Confirm link",
+        "created": "Account created. Share these temporary credentials once.",
+        "linked": "Existing account linked.",
+        "copyEmail": "Copy email",
+        "copyPassword": "Copy password",
+        "copyBoth": "Copy both",
+        "credentialsOnce": "Temporary credentials — copy them now; they are not stored in the browser.",
+        "resetTitle": "Reset trainee password",
+        "resetPlaceholder": "New temporary password",
+        "reset": "Reset password",
+        "resetSuccess": "Password reset and active sessions invalidated.",
+        "failure": "The account action could not be completed."
       },
       "fields": {
         "fullName": "Full name",
@@ -942,6 +969,7 @@
         "sessionLabel": "Lecture",
         "sessionPlaceholder": "Select a lecture",
         "sessionNote": "Choose a lecture to record trainee attendance.",
+        "sessionNotEnded": "Attendance is locked until this lecture has ended.",
         "sessionStates": {
           "published": "Published",
           "draft": "Draft"
@@ -979,7 +1007,8 @@
         },
         "actions": {
           "save": "Save attendance",
-          "saving": "Saving..."
+          "saving": "Saving...",
+          "markAllPresent": "Mark all present"
         },
         "feedback": {
           "saved": "Attendance saved successfully.",
@@ -1220,7 +1249,9 @@
         },
         "certificateStatuses": {
           "NOT_ISSUED": "Not issued",
-          "ISSUED": "Issued"
+          "ISSUED": "Issued",
+          "NOT_UPLOADED": "Not uploaded",
+          "UPLOADED": "Uploaded"
         },
         "metrics": {
           "registrationDate": "Registration date",
@@ -1421,6 +1452,14 @@
         "absent": "Absent",
         "unmarked": "Unmarked",
         "rate": "Attendance rate",
+        "statuses": {
+          "present": "Present",
+          "absent": "Absent",
+          "unmarked": "Not marked"
+        },
+        "row": {
+          "markedAt": "Marked on {date}"
+        },
         "empty": "Attendance data is not available for this enrollment yet.",
         "sessionRecordsUnavailable": "Lecture-level attendance is not available yet."
       },

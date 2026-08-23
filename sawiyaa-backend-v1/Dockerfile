@@ -25,10 +25,12 @@ COPY package*.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/src/generated ./src/generated
 COPY --from=build /app/prisma/scripts ./prisma/scripts
 COPY --from=build /app/prisma/seed ./prisma/seed
-COPY --from=build /app/src/modules/config ./src/modules/config
+# The production database seed/verifier scripts run with ts-node and import
+# canonical source policies/catalogs. Keep the complete source dependency tree
+# available in the runtime image; this does not change application runtime code.
+COPY --from=build /app/src ./src
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/prisma.config.js ./prisma.config.js
 COPY --from=build /app/prisma.config.js.map ./prisma.config.js.map

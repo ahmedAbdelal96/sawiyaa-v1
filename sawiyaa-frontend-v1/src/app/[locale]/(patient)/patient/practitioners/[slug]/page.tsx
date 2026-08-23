@@ -4,18 +4,21 @@ import { notFound } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import {
   fetchPublicPractitionerBySlug,
-  fetchPublicPractitionerPresence,
+  fetchPublicPractitionerInstantBookingAvailability,
 } from "@/features/practitioner-profile/api/practitioner-profile-ssr.api";
 import ProfileAbout from "@/features/practitioner-profile/components/ProfileAbout";
 import ProfileBookingPanel from "@/features/practitioner-profile/components/ProfileBookingPanel";
 import ProfileCredentials from "@/features/practitioner-profile/components/ProfileCredentials";
 import ProfileHeader from "@/features/practitioner-profile/components/ProfileHeader";
+import ProfileSpecialties from "@/features/practitioner-profile/components/ProfileSpecialties";
 import {
 } from "@/features/practitioners-discovery/types/practitioner";
 import { fetchPublicSpecialties } from "@/features/specialties-public/api/specialties-ssr.api";
 import { Link } from "@/i18n/navigation";
 import { getLocalizedSpecialtyName } from "@/features/specialties/utils/localized-specialty";
 import { getLocalizedLanguageLabel, SUPPORTED_LANGUAGE_CODES } from "@/constants/reference-data";
+import { getUserData } from "@/lib/auth/server";
+import PatientPractitionerViewTracker from "@/features/practitioner-profile/components/PatientPractitionerViewTracker";
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>;
@@ -39,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { item: profile } = data;
     const description =
-      (locale === "ar" ? profile.bioAr : profile.bioEn).slice(0, 160) ||
+      profile.bio?.slice(0, 160) ||
       fallback("description");
 
     return {
@@ -57,6 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PatientPractitionerProfilePage({ params }: Props) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
+  const user = await getUserData();
 
   const tUnavailable = await getTranslations({
     locale,
@@ -132,16 +136,17 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
     tProfile(`countries.${profile.country}` as Parameters<typeof tProfile>[0]) ??
     profile.country;
 
-  let presence = null;
+  let instantBookingAvailability = null;
   try {
-    presence = await fetchPublicPractitionerPresence(slug, locale);
+    instantBookingAvailability = await fetchPublicPractitionerInstantBookingAvailability(slug, locale);
   } catch {
-    // Non-critical: booking panel handles missing presence data.
+    // Non-critical: booking panel fails closed when availability is unavailable.
   }
 
   return (
     <div className="px-4 py-4 sm:py-6">
-      <div className="app-max-content mx-auto space-y-5 sm:space-y-6">
+      <PatientPractitionerViewTracker slug={slug} enabled={user?.role === "PATIENT"} />
+      <div className="mx-auto max-w-6xl space-y-4">
         <ProfileHeader
           profile={profile}
           countryLabel={countryLabel}
@@ -152,15 +157,27 @@ export default async function PatientPractitionerProfilePage({ params }: Props) 
           messageHref={`/patient/care-chat?practitionerSlug=${slug}`}
         />
 
-        <ProfileBookingPanel profile={profile} presence={presence} />
-
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-          <div className="space-y-6">
-            <ProfileAbout profile={profile} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[340px_minmax(0,1fr)] items-start">
+          {/* Left Column: Compact Practitioner Details Sidebar */}
+          <div className="space-y-4 lg:sticky lg:top-24">
+            <div className="app-panel rounded-2xl p-4 sm:p-5 space-y-4">
+              <ProfileAbout profile={profile} compact />
+              <ProfileSpecialties
+                profile={profile}
+                specialtyLabels={specialtyLabels}
+                languageLabels={languageLabels}
+                compact
+              />
+              <ProfileCredentials profile={profile} compact />
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <ProfileCredentials profile={profile} />
+          {/* Right Column: Schedule & Booking Area */}
+          <div className="space-y-4 min-w-0">
+            <ProfileBookingPanel
+              profile={profile}
+              instantBookingAvailability={instantBookingAvailability}
+            />
           </div>
         </div>
       </div>

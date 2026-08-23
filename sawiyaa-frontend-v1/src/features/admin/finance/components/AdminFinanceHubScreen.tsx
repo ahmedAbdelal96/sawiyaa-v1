@@ -191,7 +191,7 @@ export default async function AdminFinanceHubScreen({ locale }: Props) {
     {
       title: t("hub.advanced.revenueShareRules.title"),
       description: t("hub.advanced.revenueShareRules.description"),
-      href: "/admin/settings/revenue-share",
+      href: "/admin/platform-settings",
       icon: <TrendingUp className="h-5 w-5" />,
     },
     {

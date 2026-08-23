@@ -116,6 +116,22 @@ export class PractitionerPayoutDestinationValidationService {
         ]);
         return;
       }
+      case PractitionerPayoutMethodType.INSTAPAY:
+        if (!payoutDestination.instapayIdentifier?.trim()) {
+          throw new BadRequestException({ messageKey: 'practitioners.errors.invalidPayoutDestination', error: 'PRACTITIONER_INVALID_INSTAPAY_PAYOUT_DESTINATION' });
+        }
+        rejectIrrelevant([
+          ['bankName', payoutDestination.bankName], ['bankAccountNumber', payoutDestination.bankAccountNumber], ['iban', payoutDestination.iban], ['walletProvider', payoutDestination.walletProvider], ['walletIdentifier', payoutDestination.walletIdentifier], ['paypalEmail', payoutDestination.paypalEmail], ['otherDetails', payoutDestination.otherDetails],
+        ]);
+        return;
+      case PractitionerPayoutMethodType.PAYPAL:
+        if (!payoutDestination.paypalEmail?.trim() || !/^\S+@\S+\.\S+$/.test(payoutDestination.paypalEmail.trim())) {
+          throw new BadRequestException({ messageKey: 'practitioners.errors.invalidPayoutDestination', error: 'PRACTITIONER_INVALID_PAYPAL_PAYOUT_DESTINATION' });
+        }
+        rejectIrrelevant([
+          ['bankName', payoutDestination.bankName], ['bankAccountNumber', payoutDestination.bankAccountNumber], ['iban', payoutDestination.iban], ['walletProvider', payoutDestination.walletProvider], ['walletIdentifier', payoutDestination.walletIdentifier], ['instapayIdentifier', payoutDestination.instapayIdentifier], ['otherDetails', payoutDestination.otherDetails],
+        ]);
+        return;
       case PractitionerPayoutMethodType.OTHER:
         if (!payoutDestination.otherDetails) {
           throw new BadRequestException({

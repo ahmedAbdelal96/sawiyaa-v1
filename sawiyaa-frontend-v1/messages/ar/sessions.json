@@ -54,7 +54,51 @@
       "yourRating": "تقييمك: {rating} من 5"
     },
     "needsRatingEmptyHeading": "لا توجد جلسات تحتاج تقييم الآن",
-    "needsRatingEmptyNote": "ستظهر هنا الجلسات المكتملة التي ما زالت تنتظر تقييمك."
+  "needsRatingEmptyNote": "ستظهر هنا الجلسات المكتملة التي ما زالت تنتظر تقييمك.",
+  "eyebrow": "لوحة الجلسات",
+  "title": "جلساتي",
+  "note": "تُعرض الجلسات الأحدث أولًا افتراضيًا، ويمكنك تغيير الترتيب من شريط الأدوات.",
+  "paymentExpiredNote": "تظهر الجلسات التي انتهت مهلة دفعها كحالة مستقلة، وليست جلسات منتهية.",
+  "summaryLabel": "إجمالي الجلسات",
+  "sortLabel": "ترتيب الجلسات",
+  "sortNewest": "الأحدث أولًا",
+  "sortOldest": "الأقدم أولًا",
+  "pageLabel": "الصفحة {page} من {totalPages}",
+  "loading": "جارٍ تحميل الجلسات...",
+  "emptyTabTitle": "لا توجد جلسات في هذا القسم",
+  "emptyTabNote": "لا توجد جلسات تطابق هذا التصنيف حاليًا.",
+  "rowsPerPage": "الجلسات في الصفحة",
+  "expiredPaymentBadge": "انتهت مهلة الدفع",
+  "table": {
+    "reference": "المرجع",
+    "practitioner": "المختص",
+    "scheduledAt": "الموعد",
+    "duration": "المدة",
+    "status": "الحالة",
+    "actions": "الإجراء",
+    "open": "عرض التفاصيل",
+    "noSchedule": "لم يُحدد الموعد بعد"
+  },
+  "summaryCards": {
+    "total": { "label": "الإجمالي", "hint": "كل الجلسات المرتبطة بحسابك." },
+    "action": { "label": "بحاجة إلى إجراء", "hint": "في انتظار دفع أو تأكيد أو فتح الجلسة." },
+    "active": { "label": "نشطة", "hint": "جلسات مؤكدة أو قريبة أو جارية." },
+    "expired": { "label": "انتهت مهلة الدفع", "hint": "لم يكتمل الحجز في الوقت المحدد." },
+    "history": { "label": "السجل", "hint": "الجلسات المنتهية وغير النشطة." }
+  },
+  "toolbar": {
+    "sort": "الترتيب:",
+    "rows": "عدد الصفوف:"
+  },
+  "emptyJourney": {
+    "title": "كيف تبدأ",
+    "note": "ابحث عن المختص المناسب، وراجع التفاصيل، ثم احجز في خطوة واحدة.",
+    "steps": ["بحث", "مقارنة", "حجز"],
+    "startTitle": "ابدأ من هنا",
+    "startNote": "ستظهر أولى جلساتك هنا، ثم يمكنك متابعة كل حالة في مكان واحد.",
+    "startBooking": "ابدأ الحجز",
+    "explore": "استعرض الجلسات"
+  }
   },
   "card": {
     "with": "مع",
@@ -65,6 +109,7 @@
   "status": {
     "PENDING_PRACTITIONER_CONFIRMATION": "\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u0645\u062e\u062a\u0635",
     "AWAITING_COMPLETION_CONFIRMATION": "\u0628\u0627\u0646\u062a\u0638\u0627\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062c\u0644\u0633\u0629",
+    "AWAITING_ADMIN_RESOLUTION": "بانتظار قرار الإدارة",
     "PATIENT_NO_SHOW": "\u0644\u0645 \u062a\u062d\u0636\u0631 \u0627\u0644\u062c\u0644\u0633\u0629",
     "PRACTITIONER_NO_SHOW": "\u0644\u0645 \u064a\u062d\u0636\u0631 \u0627\u0644\u0645\u062e\u062a\u0635",
     "BOTH_NO_SHOW": "\u0644\u0645 \u064a\u062d\u0636\u0631 \u0623\u064a \u0645\u0646 \u0627\u0644\u0637\u0631\u0641\u064a\u0646",
@@ -109,13 +154,18 @@
       "eyebrow": "نظرة سريعة",
       "heading": "ملخص الجلسة",
       "note": "كل المعلومات المهمة في مكان واحد.",
-      "practitioner": "المعالج",
+    "practitioner": "المختص",
       "sessionCode": "كود الجلسة",
-      "scheduledAt": "الموعد",
+    "scheduledAt": "الموعد",
+    "expectedEnd": "موعد الانتهاء المتوقع",
       "duration": "المدة",
       "mode": "نوع الجلسة",
-      "status": "الحالة"
-    },
+    "status": "الحالة"
+  },
+  "communication": {
+    "heading": "التواصل والدخول إلى الجلسة",
+    "note": "راسل المختص أو انضم إلى غرفة الجلسة عند توفرها."
+  },
     "presentation": {
       "UPCOMING": {
         "title": "الجلسة قريبة",
@@ -189,6 +239,10 @@
         "closing": "جارٍ الإغلاق..."
       },
       "states": {
+        "accessDenied": {
+          "heading": "لا يمكنك الوصول إلى محادثة هذه الجلسة.",
+          "note": ""
+        },
         "notAvailable": {
           "heading": "المحادثة غير متاحة بعد",
           "note": "تُفتح المحادثة عند جاهزية الجلسة للانضمام أو أثناءها.",
@@ -225,7 +279,11 @@
           "note": "ابدأ المحادثة عندما تكون جاهزًا."
         },
         "sendError": "تعذّر إرسال الرسالة الآن.",
-        "uploadError": "تعذّر رفع الملف الآن."
+    "uploadError": "تعذّر رفع الملف الآن.",
+    "scheduledLabel": "الموعد:",
+    "loading": "جاري التحميل...",
+    "noMessages": "لا توجد رسائل سابقة لهذه الجلسة.",
+    "noMessagesNote": "ستظهر الرسائل السابقة هنا عند توفرها."
       }
     },
     "currentStateHeading": "حالة الجلسة الحالية",
@@ -558,8 +616,8 @@
         "actions": "الإجراءات",
         "openDetails": "عرض التفاصيل"
       },
-      "timezoneNote": "الأوقات معروضة بوقتك المحلي"
-    },
+        "timezoneNote": "الأوقات معروضة بوقتك المحلي"
+      },
     "detail": {
       "backToSessions": "العودة إلى الجلسات",
       "heading": "تفاصيل الجلسة",
@@ -993,9 +1051,72 @@
         }
       },
       "bookedAt": "وقت الحجز",
-      "summary": {
-        "timezoneLabel": "المنطقة الزمنية"
-      }
+    "summary": {
+      "timezoneLabel": "المنطقة الزمنية"
+    },
+    "ui": {
+      "sessionWith": "جلسة مع {name}",
+      "minutes": "{count} دقيقة",
+      "video": "فيديو",
+      "audio": "صوتي",
+      "chatMode": "محادثة",
+      "instantSession": "جلسة فورية",
+      "scheduledSession": "جلسة مجدولة",
+      "flowType": "نوع التدفق",
+      "roomStatus": "حالة الغرفة",
+      "expectedEnd": "موعد الانتهاء المحدد",
+      "internalNotes": "ملاحظات داخلية",
+      "timeline": "السجل الزمني للأحداث",
+      "reason": "السبب:",
+      "patientProfile": "ملف المريض",
+      "gender": "الجنس",
+      "male": "ذكر",
+      "female": "أنثى",
+      "age": "العمر",
+      "years": "سنة",
+      "preferredLanguage": "اللغة المفضلة",
+      "arabic": "العربية",
+      "english": "الإنجليزية",
+      "country": "الدولة",
+      "bookingPayment": "الحجز والدفع",
+      "coverage": "نوع التغطية",
+      "package": "باقة",
+      "corporate": "رعاية شركات",
+      "directPayment": "دفع مباشر",
+      "paymentStatus": "حالة الدفع",
+      "packageCovered": "مغطاة بالباقة",
+      "unpaid": "لم يتم الدفع",
+      "total": "الإجمالي",
+      "openMessages": "فتح داخل الرسائل"
+    },
+    "eventTypes": {
+      "SESSION_CREATED": "أُنشئت الجلسة",
+      "PAYMENT_PENDING": "الدفع قيد الانتظار",
+      "PAYMENT_CONFIRMED": "تم تأكيد الدفع",
+      "PRACTITIONER_ACCEPTED": "وافق المختص على الجلسة",
+      "PRACTITIONER_REJECTED": "رفض المختص الجلسة",
+      "SESSION_CONFIRMED": "تم تأكيد الجلسة",
+      "SESSION_READY_TO_JOIN": "الجلسة جاهزة للانضمام",
+      "PATIENT_JOINED": "انضم المريض إلى الغرفة",
+      "PRACTITIONER_JOINED": "انضم المختص إلى الغرفة",
+      "SESSION_STARTED": "بدأت الجلسة",
+      "SESSION_AWAITING_COMPLETION_CONFIRMATION": "في انتظار تأكيد الإكمال",
+      "SESSION_COMPLETED": "اكتملت الجلسة",
+      "CANCELLED_BY_PATIENT": "ألغى المريض الجلسة",
+      "CANCELLED_BY_PRACTITIONER": "ألغى المختص الجلسة",
+      "EXPIRED_UNPAID": "انتهت دون إتمام الدفع",
+      "NO_SHOW_PATIENT": "تغيب المريض",
+      "NO_SHOW_PRACTITIONER": "تغيب المختص",
+      "PROVIDER_ROOM_CREATED": "أُنشئت الغرفة المباشرة",
+      "PROVIDER_ROOM_ENDED": "أُغلقت الغرفة المباشرة"
+    },
+    "paymentStatuses": {
+      "CREATED": "تم إنشاء الدفع",
+      "CAPTURED": "تم تحصيل الدفع",
+      "FAILED": "فشل الدفع",
+      "CANCELLED": "أُلغي الدفع",
+      "REFUNDED": "تم ردّ الدفع"
+    }
     },
     "instantBooking": {
       "sectionHeading": "الطلبات الفورية",
@@ -1030,12 +1151,31 @@
         "dashboardLink": "فتح صفحة الطلبات",
         "summary": {
           "pendingCount": "طلبات معلقة",
-          "nearestExpiry": "أقرب انتهاء",
+      "nearestExpiry": "أقرب انتهاء",
+      "nearestExpiryExpired": "انتهت صلاحية الطلب",
+      "nearestExpiryInHours": "أقرب انتهاء خلال {hours} س و{minutes} د",
+      "nearestExpiryInMinutes": "أقرب انتهاء خلال {minutes} د و{seconds} ث",
           "liveHintTitle": "جاهزية لحظية",
           "liveHint": "الطلبات المعلقة تُحدَّث تلقائيًا كل بضع ثوانٍ حتى تبقى أمامك بوضوح.",
           "noPending": "لا توجد طلبات معلقة الآن.",
           "timezoneNote": "الأوقات معروضة بوقتك المحلي"
         },
+        "ui": {
+          "refreshTitle": "تحديث البيانات",
+          "refresh": "تحديث",
+          "noPending": "لا توجد طلبات معلقة",
+          "rejected": "طلبات مرفوضة",
+          "rejectedHint": "طلبات تم رفضها",
+          "accepted": "طلبات مقبولة",
+          "acceptedHint": "تم تحويلها إلى جلسات",
+          "total": "إجمالي الطلبات",
+          "searchPlaceholder": "بحث باسم المريض...",
+          "tableTitle": "قائمة طلبات الحجز الفوري",
+          "tableSubtitle": "تُعرض الطلبات من الأحدث إلى الأقدم مع فلاتر لاتخاذ إجراء سريع",
+          "filterEmptyTitle": "لا توجد نتائج بهذه التصفية",
+          "filterEmptyNote": "جرّب اختيار فلتر آخر."
+        },
+        "unknownPatient": "مريض غير معروف",
         "dashboardTitle": "{count} طلبات تحتاج مراجعتك الآن",
         "pendingHeading": "الطلبات المعلقة",
         "pendingNote": "هذه الطلبات تحتاج ردًا سريعًا قبل انتهاء المهلة.",
@@ -1045,7 +1185,20 @@
           "title": "لا توجد طلبات فورية حالياً",
           "note": "عند وصول طلب جديد سيظهر هنا ومعه العدّ التنازلي والخيارات المناسبة."
         },
-        "patientLabel": "المريض",
+      "patientLabel": "المريض",
+      "sessionDetailsLabel": "تفاصيل الجلسة",
+      "requestTimeLabel": "تاريخ الطلب",
+      "expiryLabel": "الصلاحية / العد التنازلي",
+      "statusLabel": "الحالة",
+      "actionsLabel": "الإجراءات",
+      "filters": {
+        "all": "الكل",
+        "pending": "معلقة",
+        "accepted": "مقبولة",
+        "rejected": "مرفوضة",
+        "expired": "منتهية",
+        "cancelled": "ملغاة"
+      },
         "statuses": {
           "PENDING": "قيد الانتظار",
           "ACCEPTED": "مقبول",

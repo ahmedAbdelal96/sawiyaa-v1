@@ -11,111 +11,93 @@ function safeText(value: string | null | undefined) {
   return value?.trim() || "";
 }
 
-function readNumberPayload(
-  payload: Record<string, unknown>,
-  key: string,
-): number | null {
-  const value = payload[key];
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return null;
+function contextName(item: UserNotificationItem) {
+  return safeText(item.context?.senderName) || safeText(item.context?.patientName);
 }
 
-function buildPackageContextText(
-  payload: Record<string, unknown>,
-  t: Translate,
-) {
-  const packageSessionIndex = readNumberPayload(
-    payload,
-    "packageSessionIndex",
-  );
-  const packageSessionCount = readNumberPayload(
-    payload,
-    "packageSessionCount",
-  );
+function feedTitle(t: Translate, key: string) {
+  return t("practitionerNotifications.feedTypes." + key + "Title");
+}
 
-  if (
-    packageSessionIndex === null ||
-    packageSessionCount === null ||
-    packageSessionCount <= 0
-  ) {
-    return "";
-  }
-
-  return t("practitionerNotifications.feedTypes.packageSessionContext", {
-    packageSessionIndex,
-    packageSessionCount,
+function feedBody(t: Translate, key: string, item: UserNotificationItem) {
+  return t("practitionerNotifications.feedTypes." + key + "Body", {
+    person:
+      contextName(item) ||
+      t("practitionerNotifications.feedTypes.personFallback"),
   });
 }
 
-function resolveNotificationBody(
-  item: UserNotificationItem,
-  locale: string,
-  t: Translate,
-) {
-  if (!isArabicLocale(locale)) {
-    return safeText(item.body);
-  }
-
-  const payload = item.payload ?? {};
-  const packageContext = buildPackageContextText(payload, t);
-  const suffix = packageContext ? ` ${packageContext}` : "";
-
+function resolveNotificationBody(item: UserNotificationItem, t: Translate) {
   switch (item.typeSlug) {
     case "sessions.session-confirmed-practitioner":
-      return t(
-        "practitionerNotifications.feedTypes.sessionConfirmedPractitionerBody",
-        { packageContext: suffix },
-      );
-    case "sessions.session-confirmed":
-      return t("practitionerNotifications.feedTypes.sessionConfirmedBody", {
-        packageContext: suffix,
-      });
+      return feedBody(t, "sessionConfirmedPractitioner", item);
     case "sessions.session-join-available":
-      return t("practitionerNotifications.feedTypes.sessionJoinAvailableBody", {
-        packageContext: suffix,
-      });
+      return feedBody(t, "sessionJoinAvailable", item);
     case "sessions.session-cancelled-practitioner":
-      return t(
-        "practitionerNotifications.feedTypes.sessionCancelledPractitionerBody",
-        { packageContext: suffix },
-      );
+      return feedBody(t, "sessionCancelledPractitioner", item);
+    case "sessions.session-reminder-60":
+      return feedBody(t, "sessionReminder60", item);
+    case "sessions.session-reminder-15":
+      return feedBody(t, "sessionReminder15", item);
+    case "sessions.session-starting-now":
+      return feedBody(t, "sessionStartingNow", item);
+    case "sessions.session-late-join":
+      return feedBody(t, "sessionLateJoin", item);
+    case "sessions.session-reminder-before-start":
+      return feedBody(t, "sessionReminderBeforeStart", item);
+    case "messages.session-message-received":
+      return feedBody(t, "sessionMessage", item);
+    case "messages.support-message-received":
+      return feedBody(t, "supportMessage", item);
+    case "messages.follow-up-message-received":
+      return feedBody(t, "followUpMessage", item);
+    case "care-chat.request-approved":
+      return feedBody(t, "followUpApproved", item);
+    case "care-chat.request-revoked":
+      return feedBody(t, "followUpRevoked", item);
+    case "instant-booking.request-created":
+      return t("practitionerNotifications.feedTypes.instantBookingRequestBody");
+    case "availability.week-ending-reminder":
+      return t("practitionerNotifications.feedTypes.scheduleReminderBody");
     default:
-      return safeText(item.body);
+      return t("practitionerNotifications.feedTypes.fallbackBody");
   }
 }
 
-function resolveNotificationTitle(
-  item: UserNotificationItem,
-  locale: string,
-  t: Translate,
-) {
-  if (!isArabicLocale(locale)) {
-    return safeText(item.title) || safeText(item.typeSlug);
-  }
-
+function resolveNotificationTitle(item: UserNotificationItem, t: Translate) {
   switch (item.typeSlug) {
     case "sessions.session-confirmed-practitioner":
-      return t(
-        "practitionerNotifications.feedTypes.sessionConfirmedPractitionerTitle",
-      );
-    case "sessions.session-confirmed":
-      return t("practitionerNotifications.feedTypes.sessionConfirmedTitle");
+      return feedTitle(t, "sessionConfirmedPractitioner");
     case "sessions.session-join-available":
-      return t("practitionerNotifications.feedTypes.sessionJoinAvailableTitle");
+      return feedTitle(t, "sessionJoinAvailable");
     case "sessions.session-cancelled-practitioner":
-      return t(
-        "practitionerNotifications.feedTypes.sessionCancelledPractitionerTitle",
-      );
+      return feedTitle(t, "sessionCancelledPractitioner");
+    case "sessions.session-reminder-60":
+      return feedTitle(t, "sessionReminder60");
+    case "sessions.session-reminder-15":
+      return feedTitle(t, "sessionReminder15");
+    case "sessions.session-starting-now":
+      return feedTitle(t, "sessionStartingNow");
+    case "sessions.session-late-join":
+      return feedTitle(t, "sessionLateJoin");
+    case "sessions.session-reminder-before-start":
+      return feedTitle(t, "sessionReminderBeforeStart");
+    case "messages.session-message-received":
+      return feedTitle(t, "sessionMessage");
+    case "messages.support-message-received":
+      return feedTitle(t, "supportMessage");
+    case "messages.follow-up-message-received":
+      return feedTitle(t, "followUpMessage");
+    case "care-chat.request-approved":
+      return feedTitle(t, "followUpApproved");
+    case "care-chat.request-revoked":
+      return feedTitle(t, "followUpRevoked");
+    case "instant-booking.request-created":
+      return feedTitle(t, "instantBookingRequest");
+    case "availability.week-ending-reminder":
+      return feedTitle(t, "scheduleReminder");
     default:
-      return safeText(item.title) || safeText(item.typeSlug);
+      return t("practitionerNotifications.feedTypes.fallbackTitle");
   }
 }
 
@@ -148,15 +130,21 @@ function resolvePractitionerMessagesLaneRoute(typeSlug: string | null | undefine
 export function resolvePractitionerNotificationRoute(
   href: string,
   typeSlug?: string | null,
+  payload: Record<string, unknown> = {},
+  primaryAction?: UserNotificationItem["primaryAction"],
 ) {
-  const messageLaneRoute = resolvePractitionerMessagesLaneRoute(typeSlug);
-  if (messageLaneRoute) {
-    return messageLaneRoute;
-  }
+  const actionRoute = primaryAction?.href?.trim() || "";
+  const payloadRoute =
+    typeof payload.routePath === "string" ? payload.routePath : "";
+  const trimmed = (
+    href.trim() !== "/" ? href : actionRoute || payloadRoute
+  ).trim();
 
-  const trimmed = href.trim();
   if (!trimmed) {
-    return null;
+    return resolvePractitionerMessagesLaneRoute(typeSlug);
+  }
+  if (trimmed === "/") {
+    return resolvePractitionerMessagesLaneRoute(typeSlug);
   }
 
   if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
@@ -180,38 +168,40 @@ export function resolvePractitionerNotificationRoute(
     return null;
   }
 
-  const [head, second, third] = target;
+  const [rawHead, second, third] = target;
+  const [head] = rawHead.split("?");
 
   if (head === "sessions") {
-    if (second) {
-      return `/(practitioner)/sessions/${second}`;
-    }
-    return "/(practitioner)/sessions";
+    return second
+      ? "/(practitioner)/sessions/" + second
+      : "/(practitioner)/sessions";
+  }
+
+  if (head === "instant-booking") {
+    return "/(practitioner)/instant-booking";
   }
 
   if (head === "messages") {
-    if (second) {
-      return `/(practitioner)/messages/${second}`;
-    }
-    return "/(practitioner)/messages";
+    return second
+      ? "/(practitioner)/messages/" + second
+      : "/(practitioner)/messages";
   }
 
   if (head === "support") {
-    if (second) {
-      return `/(practitioner)/support/${second}`;
-    }
-    return "/(practitioner)/support";
+    return second
+      ? "/(practitioner)/support/" + second
+      : "/(practitioner)/support";
   }
 
   if (head === "care-chat") {
     if (second === "conversations" && third) {
-      return `/(practitioner)/care-chat/${third}`;
+      return "/(practitioner)/care-chat/" + third;
     }
     if (second === "requests" && third) {
-      return `/(practitioner)/care-chat/request/${third}`;
+      return "/(practitioner)/care-chat/request/" + third;
     }
     if (second) {
-      return `/(practitioner)/care-chat/${second}`;
+      return "/(practitioner)/care-chat/" + second;
     }
     return "/(practitioner)/care-chat";
   }
@@ -249,16 +239,16 @@ export function resolvePractitionerNotificationRoute(
     return "/(practitioner)/more";
   }
 
-  return null;
+  return resolvePractitionerMessagesLaneRoute(typeSlug);
 }
 
 export function resolvePractitionerNotificationPresentation(
   item: UserNotificationItem,
-  locale: string,
+  _locale: string,
   t: Translate,
 ) {
   return {
-    title: resolveNotificationTitle(item, locale, t),
-    body: resolveNotificationBody(item, locale, t),
+    title: resolveNotificationTitle(item, t),
+    body: resolveNotificationBody(item, t),
   };
 }
