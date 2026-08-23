@@ -57,6 +57,7 @@ import PlatformRevenueShareDomain from "./domains/PlatformRevenueShareDomain";
 import PlatformPaymentsDomain from "./domains/PlatformPaymentsDomain";
 import PlatformNotificationsDomain from "./domains/PlatformNotificationsDomain";
 import PlatformStorageDomain from "./domains/PlatformStorageDomain";
+import PlatformGeneralDomain from "./domains/PlatformGeneralDomain";
 
 export type BusinessDomainId =
   | "all"
@@ -879,12 +880,21 @@ export default function AdminPlatformSettingsScreen() {
             />
           )}
 
+          {/* General & Platform Domain Dedicated View */}
+          {activeDomain === "general" && !search.trim() && !stateFilter && (
+            <PlatformGeneralDomain
+              settings={filteredSettings}
+              onOpenHistory={setHistoryKey}
+            />
+          )}
+
           {/* Grouped Settings by Domain (For non-dedicated domains or when searching/filtering) */}
           {activeDomain !== "sessions" &&
             activeDomain !== "revenue_share" &&
             activeDomain !== "payments" &&
             activeDomain !== "notifications" &&
             activeDomain !== "storage" &&
+            activeDomain !== "general" &&
             Array.from(settingsByDomain.entries()).map(([domainId, domainSettings]) => {
               const def = DOMAIN_DEFINITIONS.find((d) => d.id === domainId);
               const Icon = def?.icon ?? Sliders;

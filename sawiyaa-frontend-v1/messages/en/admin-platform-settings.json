@@ -328,6 +328,66 @@
       "cancelBtn": "Cancel"
     }
   },
+  "generalDomain": {
+    "header": {
+      "eyebrow": "Governance & Platform Policies",
+      "title": "General & Platform Governance",
+      "description": "Manage platform branding identity, default localization, practitioner application review policies, and administrative security durations."
+    },
+    "sections": {
+      "identity": {
+        "title": "Platform Identity & Core Metadata",
+        "description": "Official healthcare platform naming, positioning, and enterprise branding metadata."
+      },
+      "localization": {
+        "title": "Regional & Localization Preferences",
+        "description": "Select platform default fallback locale and operational timezone for scheduled sessions."
+      },
+      "practitioners": {
+        "title": "Practitioner Governance & Review Policies",
+        "description": "Configure administrative review requirements for new practitioner applications."
+      },
+      "security": {
+        "title": "Security & Administrative Session Policies",
+        "description": "Session expiration parameters and one-time password (OTP) validity windows."
+      }
+    },
+    "labels": {
+      "platformName": "Platform Name",
+      "platformNameVal": "Sawiyaa",
+      "platformTagline": "Official Tagline & Positioning",
+      "platformTaglineVal": "Integrated Telehealth Platform & Specialized Medical Consultation Network",
+      "defaultLocale": "Platform Default Locale",
+      "defaultLocaleDesc": "Initial interface language applied when no explicit user preference is detected.",
+      "arabicLocale": "العربية (Arabic)",
+      "englishLocale": "English (الإنجليزية)",
+      "timezone": "Default Operational Timezone",
+      "timezoneVal": "Cairo (GMT+2) — Africa/Cairo",
+      "adminReview": "Practitioner Admin Review Requirement",
+      "adminReviewDesc": "Enforce mandatory administrative verification before activating practitioner public profiles and schedules.",
+      "adminReviewActive": "Administrative Approval Required",
+      "adminReviewBypass": "Instant Automatic Activation",
+      "jwtTtl": "Access Token Expiration (JWT TTL)",
+      "jwtTtlDesc": "Validity lifetime in minutes before an authenticated session requires refresh.",
+      "loginOtpTtl": "Login OTP Validity Window",
+      "loginOtpTtlDesc": "Minutes allowed for entering one-time passwords during login.",
+      "resetOtpTtl": "Password Reset OTP Validity",
+      "resetOtpTtlDesc": "Minutes allowed for entering password reset verification codes.",
+      "minutesUnit": "min"
+    },
+    "confirmModal": {
+      "title": "Confirm General Platform Setting Modification",
+      "warning": "Operational Alert: Updating platform defaults or practitioner governance rules directly impacts new registrations and user sessions.",
+      "previousValue": "Previous Setting:",
+      "newValue": "Proposed Setting:",
+      "impactScope": "Impact Scope:",
+      "impactText": "Applies immediately to new user sessions and incoming registrations.",
+      "reasonLabel": "Operational Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Explain the operational justification for updating general platform policies...",
+      "saveBtn": "Confirm & Save Setting",
+      "cancelBtn": "Cancel"
+    }
+  },
   "categories": {
     "all": "All Categories",
     "LOCALE": "Locales & Regional Options",
