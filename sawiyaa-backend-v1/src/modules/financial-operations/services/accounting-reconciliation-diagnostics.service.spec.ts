@@ -133,6 +133,7 @@ describe('AccountingReconciliationDiagnosticsService', () => {
           platformCommissionAmount: '27.00',
         },
       },
+      events: [{ eventType: 'PAYMENT_CAPTURED' }],
       coupon: {
         id: 'coupon_1',
         code: 'QA10',
@@ -473,6 +474,145 @@ describe('AccountingReconciliationDiagnosticsService', () => {
 
     expect(result.ok).toBe(true);
     expect(result.issues).toHaveLength(0);
+  });
+
+  function basePayment(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'payment_phase1',
+      provider: 'STRIPE',
+      status: PaymentStatus.PENDING,
+      paymentPurpose: PaymentPurpose.SESSION_PACKAGE_PURCHASE,
+      sessionId: null,
+      practitionerId: null,
+      patientId: 'patient_1',
+      currencyCode: 'EGP',
+      amountSubtotal: new Prisma.Decimal('100.00'),
+      amountDiscount: new Prisma.Decimal('0.00'),
+      amountTotal: new Prisma.Decimal('100.00'),
+      amountFromWallet: new Prisma.Decimal('0.00'),
+      amountFromGateway: new Prisma.Decimal('100.00'),
+      couponId: null,
+      couponCodeSnapshot: null,
+      couponDiscountSnapshot: null,
+      couponPlatformShareSnapshot: null,
+      couponPractitionerShareSnapshot: null,
+      vatAmountSnapshot: new Prisma.Decimal('0.00'),
+      gatewayFeeAmountSnapshot: new Prisma.Decimal('0.00'),
+      commissionRuleId: null,
+      commissionPlatformRatePercent: null,
+      commissionPractitionerRatePercent: null,
+      metadataJson: null,
+      initiatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      events: [],
+      webhookReceipts: [],
+      session: null,
+      walletReservation: null,
+      walletEntries: [],
+      coupon: null,
+      ...overrides,
+    };
+  }
+
+  it('detects all Phase 1 payment diagnostics from read-only state', async () => {
+    const setup = buildService();
+    setup.ledgerRepository.findByPaymentId.mockResolvedValue([]);
+    setup.prisma.journalEntry.findUnique.mockResolvedValue(null);
+    process.env.PAYMENT_WEBHOOK_RECEIPT_ROLLOUT_AT = '2025-01-01T00:00:00.000Z';
+    setup.prisma.payment.findUnique.mockResolvedValue(
+      basePayment({
+        provider: 'PAYMOB',
+        status: PaymentStatus.CAPTURED,
+        sessionId: 'session_1',
+        initiatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        session: { id: 'session_1', status: 'PENDING_PAYMENT' },
+      }),
+    );
+    const result = await setup.service.reconcilePayment('payment_phase1');
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'PAYMENT_CAPTURED_EVENT_MISSING',
+      'PAYMENT_WEBHOOK_RECEIPT_MISSING',
+      'PAYMENT_SESSION_STATUS_MISMATCH',
+    ]);
+    delete process.env.PAYMENT_WEBHOOK_RECEIPT_ROLLOUT_AT;
+  });
+
+  it('detects pending age without treating an active wallet reservation as captured', async () => {
+    const setup = buildService();
+    setup.ledgerRepository.findByPaymentId.mockResolvedValue([]);
+    setup.prisma.journalEntry.findUnique.mockResolvedValue(null);
+    setup.prisma.payment.findUnique.mockResolvedValue(
+      basePayment({
+        amountFromWallet: new Prisma.Decimal('0.00'),
+      }),
+    );
+    const result = await setup.service.reconcilePayment('payment_phase1');
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'PAYMENT_PENDING_TOO_LONG',
+    ]);
+    expect(result.issues[0].metadata).toEqual(expect.objectContaining({
+      expectedState: expect.any(String),
+      actualState: expect.any(String),
+      entityIds: {
+        paymentId: 'payment_phase1',
+        sessionId: null,
+        walletReservationId: null,
+        receiptId: null,
+      },
+      detectedAt: expect.any(String),
+      safeMetadata: expect.any(Object),
+    }));
+  });
+
+  it('detects a captured payment missing its wallet capture entry', async () => {
+    const setup = buildService();
+    setup.ledgerRepository.findByPaymentId.mockResolvedValue([]);
+    setup.prisma.journalEntry.findUnique.mockResolvedValue(null);
+    setup.prisma.payment.findUnique.mockResolvedValue(
+      basePayment({
+        status: PaymentStatus.CAPTURED,
+        amountFromWallet: new Prisma.Decimal('20.00'),
+        amountFromGateway: new Prisma.Decimal('80.00'),
+        events: [{ eventType: 'PAYMENT_CAPTURED' }],
+      }),
+    );
+    const result = await setup.service.reconcilePayment('payment_phase1');
+    expect(result.issues.map((issue) => issue.code)).toEqual([
+      'PAYMENT_WALLET_CAPTURE_MISSING',
+    ]);
+  });
+
+  it('detects a wallet capture amount mismatch', async () => {
+    const setup = buildService();
+    setup.ledgerRepository.findByPaymentId.mockResolvedValue([]);
+    setup.prisma.journalEntry.findUnique.mockResolvedValue(null);
+    setup.prisma.payment.findUnique.mockResolvedValue(
+      basePayment({
+        status: PaymentStatus.CAPTURED,
+        amountFromWallet: new Prisma.Decimal('20.00'),
+        amountFromGateway: new Prisma.Decimal('80.00'),
+        events: [{ eventType: 'PAYMENT_CAPTURED' }],
+        walletEntries: [{
+          id: 'wallet-capture-1',
+          amount: new Prisma.Decimal('15.00'),
+          entryType: CustomerWalletEntryType.SESSION_PAYMENT_CAPTURE,
+          occurredAt: new Date('2026-01-01T00:01:00.000Z'),
+        }],
+      }),
+    );
+    const result = await setup.service.reconcilePayment('payment_phase1');
+    const issue = result.issues.find(
+      (item) => item.code === 'PAYMENT_WALLET_CAPTURE_MISSING',
+    );
+    expect(issue?.expected).toBe('20.00');
+    expect(issue?.actual).toBe('15.00');
+    expect(issue?.metadata).toEqual(expect.objectContaining({
+      safeMetadata: expect.objectContaining({
+        expectedWalletAmount: '20.00',
+        actualWalletCaptureAmount: '15.00',
+      }),
+    }));
   });
 
   it('reconciles a refund that is partly reversed in ledger and partly recovered separately', async () => {

@@ -119,7 +119,7 @@ export const CONFIG_DEFINITIONS = deepFreeze(
       failureMode: 'FAIL_CLOSED',
       description: 'How long a practitioner has to respond to a new Instant Booking request.',
       catalog: { slug: 'instant-booking-request-ttl-minutes', displayName: 'Instant request response window', displayNameAr: 'مدة انتظار رد المختص على طلب الجلسة الفورية', description: 'Minutes a practitioner has to accept or reject a new Instant Booking request.', descriptionAr: 'عدد الدقائق المتاحة للمختص لقبول أو رفض طلب جلسة فورية جديد.', configKind: ConfigKind.POLICY },
-      seed: { createInitialValue: true, value: 2, priority: 100 },
+      seed: { createInitialValue: true, value: 5, priority: 100 },
       uiMetadata: { control: 'integer', impactTextKey: 'impacts.immediate' },
     },
     {
@@ -140,7 +140,7 @@ export const CONFIG_DEFINITIONS = deepFreeze(
       failureMode: 'FAIL_CLOSED',
       description: 'How long a patient has to pay after an Instant Booking request is accepted.',
       catalog: { slug: 'instant-booking-payment-window-minutes', displayName: 'Instant payment completion window', displayNameAr: 'مهلة إتمام الدفع بعد قبول طلب الجلسة الفورية', description: 'Minutes a patient has to complete payment after acceptance.', descriptionAr: 'عدد الدقائق المتاحة للمريض لإتمام الدفع بعد قبول الطلب.', configKind: ConfigKind.POLICY },
-      seed: { createInitialValue: true, value: 5, priority: 100 },
+      seed: { createInitialValue: true, value: 10, priority: 100 },
       uiMetadata: { control: 'integer', impactTextKey: 'impacts.immediate' },
     },
     {

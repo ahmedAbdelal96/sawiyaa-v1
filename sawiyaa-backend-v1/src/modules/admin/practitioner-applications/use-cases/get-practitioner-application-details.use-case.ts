@@ -69,7 +69,15 @@ export class GetPractitionerApplicationDetailsUseCase {
         details: {
           applicant: { userId: application.userId, practitionerProfileId: null, displayName: applicant.displayName ?? user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: applicant.locale ?? null, timezone: applicant.timezone ?? null, countryCode: profile.countryCode ?? null },
           liveApplicant: { userId: application.userId, practitionerProfileId: null, displayName: user?.displayName ?? null, avatarUrl: null, accountStatus: 'ACTIVE', email: { address: null, isVerified: false }, phone: { number: null, isVerified: false }, locale: null, timezone: null, countryCode: null },
-          profile: { ...profile, primarySpecialtyCategoryId: snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null, pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } } },
+          profile: {
+            ...profile,
+            primarySpecialtyCategoryId: snapshot.specialtySelection?.primarySpecialtyCategoryId ?? null,
+            pricing: { session30: { egp: null, usd: null }, session60: { egp: null, usd: null } },
+            languages: Array.isArray(profile.languages) ? profile.languages : [],
+            specialties: Array.isArray(snapshot.specialtySelection?.specialties)
+              ? snapshot.specialtySelection.specialties
+              : [],
+          },
           liveProfile: null,
           specialties: snapshot.specialtySelection?.specialties ?? [],
           liveSpecialties: [],

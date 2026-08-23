@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import SessionChatPanel from "./SessionChatPanel";
+
+const mockOpenSessionChat = vi.hoisted(() => vi.fn());
 
 // Mock next-intl
 vi.mock("next-intl", () => ({
@@ -44,6 +46,12 @@ vi.mock("@/features/sessions/hooks/use-sessions", () => ({
 }));
 
 vi.mock("../hooks/use-general-chat", () => ({
+  useOpenSessionGeneralChat: vi.fn(() => ({
+    mutate: mockOpenSessionChat,
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
   useSessionGeneralChatConversation: vi.fn(() => ({
     data: {
       item: {
@@ -149,6 +157,34 @@ describe("SessionChatPanel Component", () => {
     // Should show loading spinner/skeleton/text, NOT empty state
     expect(screen.queryByText("لا توجد رسائل بعد")).toBeNull();
     expect(screen.getByText("جاري التحميل...")).toBeDefined();
+  });
+
+  it("opens the existing session-chat endpoint when an eligible session has no conversation yet", async () => {
+    mockOpenSessionChat.mockClear();
+    (useSessionGeneralChatConversation as any).mockReturnValue({
+      data: {
+        item: null,
+        chatAvailability: { canRead: true, canSend: true, readOnly: false },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    (useGeneralChatMessages as any).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+    });
+
+    renderWithQueryClient(
+      <SessionChatPanel
+        sessionId="session-1"
+        scope="patient"
+        variant="embedded"
+      />,
+    );
+
+    await waitFor(() => expect(mockOpenSessionChat).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("لا توجد رسائل بعد")).toBeNull();
   });
 
   it("renders the backend participant subtitle without selecting an AR/EN field in Web", async () => {

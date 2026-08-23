@@ -981,7 +981,19 @@
         "label": "Instant booking",
         "description": "Allow patients to book immediately without manual confirmation.",
         "enabled": "Patients can book you instantly right now.",
-        "disabled": "Instant booking is currently off."
+        "disabled": "Instant booking is currently off.",
+        "pricingModal": {
+          "title": "Add instant booking prices",
+          "description": "Set your instant session prices to let patients book you instantly.",
+          "cancel": "Cancel",
+          "saveAndEnable": "Save instant booking prices",
+          "fields": {
+            "egp30": "30-minute session (EGP)",
+            "usd30": "30-minute session (USD)",
+            "egp60": "60-minute session (EGP)",
+            "usd60": "60-minute session (USD)"
+          }
+        }
       },
       "saveError": "Could not save. Please try again.",
       "feedback": {

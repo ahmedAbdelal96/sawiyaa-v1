@@ -224,8 +224,14 @@
     },
     "more": {
       "rows": {
-        "academy": { "title": "Academy", "subtitle": "Browse learning content and health guidance" },
-        "packages": { "title": "Session packages", "subtitle": "Review available and purchased packages" }
+        "academy": {
+          "title": "Academy",
+          "subtitle": "Browse learning content and health guidance"
+        },
+        "packages": {
+          "title": "Session packages",
+          "subtitle": "Review available and purchased packages"
+        }
       }
     },
     "wallet": {
@@ -303,46 +309,46 @@
         "en": "English"
       }
     },
-  "notifications": {
+    "notifications": {
       "title": "Notifications",
       "subtitle": "Session reminders and account alerts",
       "unavailableSubtitle": "Notification preferences are not available for this account yet",
       "modalTitle": "Notification preferences",
-    "screenTitle": "Notification settings",
-    "categoryLabels": {
-      "sessions": "Sessions",
-      "messages": "Messages",
-      "payments": "Payments",
-      "account": "Account",
-      "general": "Other updates"
-    },
-    "events": {
-      "sessionConfirmed": "Session confirmed",
-      "sessionJoinAvailable": "Session ready to join",
-      "sessionStarted": "Session started",
-      "sessionCompleted": "Session completed",
-      "sessionCancelled": "Session cancelled",
-      "sessionReminder": "Session reminder",
-      "sessionRescheduled": "Session rescheduled",
-      "sessionMessageReceived": "Session message",
-      "supportMessageReceived": "Support message",
-      "followUpMessageReceived": "Follow-up message",
-      "paymentSuccess": "Payment successful",
-      "paymentCaptured": "Payment received",
-      "paymentFailed": "Payment issue",
-      "refundProcessed": "Refund processed",
-      "securityAlert": "Security alert",
-      "profileUpdated": "Profile updated",
-      "accountUpdate": "Account update",
-      "generalUpdate": "General update"
-    },
-    "errorTitle": "Could not load notification settings",
-    "errorBody": "Try again later to manage the notifications available for your account.",
-    "emptyTitle": "No notification settings yet",
-    "emptyBody": "Notification choices will appear here when they are available for your account.",
-    "save": "Save settings",
-    "saving": "Saving...",
-    "saveFailedTitle": "Could not save settings",
+      "screenTitle": "Notification settings",
+      "categoryLabels": {
+        "sessions": "Sessions",
+        "messages": "Messages",
+        "payments": "Payments",
+        "account": "Account",
+        "general": "Other updates"
+      },
+      "events": {
+        "sessionConfirmed": "Session confirmed",
+        "sessionJoinAvailable": "Session ready to join",
+        "sessionStarted": "Session started",
+        "sessionCompleted": "Session completed",
+        "sessionCancelled": "Session cancelled",
+        "sessionReminder": "Session reminder",
+        "sessionRescheduled": "Session rescheduled",
+        "sessionMessageReceived": "Session message",
+        "supportMessageReceived": "Support message",
+        "followUpMessageReceived": "Follow-up message",
+        "paymentSuccess": "Payment successful",
+        "paymentCaptured": "Payment received",
+        "paymentFailed": "Payment issue",
+        "refundProcessed": "Refund processed",
+        "securityAlert": "Security alert",
+        "profileUpdated": "Profile updated",
+        "accountUpdate": "Account update",
+        "generalUpdate": "General update"
+      },
+      "errorTitle": "Could not load notification settings",
+      "errorBody": "Try again later to manage the notifications available for your account.",
+      "emptyTitle": "No notification settings yet",
+      "emptyBody": "Notification choices will appear here when they are available for your account.",
+      "save": "Save settings",
+      "saving": "Saving...",
+      "saveFailedTitle": "Could not save settings",
       "centerTitle": "Notification center",
       "centerBody": "Open your live alert feed and unread items.",
       "preferencesTitle": "Alert controls",
@@ -354,12 +360,12 @@
       "savedBody": "Your notification preferences were updated successfully.",
       "saveFailedBody": "Could not update notification preferences right now.",
       "channels": {
-      "IN_APP": "In-app",
-      "EMAIL": "Email",
-      "PUSH": "Push notifications",
-      "inApp": "In-app",
-      "push": "Push notifications",
-      "email": "Email"
+        "IN_APP": "In-app",
+        "EMAIL": "Email",
+        "PUSH": "Push notifications",
+        "inApp": "In-app",
+        "push": "Push notifications",
+        "email": "Email"
       }
     },
     "common": {
@@ -622,6 +628,8 @@
       "eyebrow": "Patient sign in",
       "title": "Continue your care journey",
       "subtitle": "This screen uses the real patient auth contract from the backend and mirrors the patient path used on web.",
+      "secureHintTitle": "Secure access to your account",
+      "secureHintDescription": "Use your email and password to continue to your care.",
       "submit": "Sign in as patient",
       "googleButton": "Continue with Google",
       "googleHelper": "Google sign in sends the native ID token to the backend patient Google endpoint.",
@@ -634,6 +642,8 @@
       "eyebrow": "Practitioner sign in",
       "title": "Access your practitioner workspace",
       "subtitle": "Credentials create the OTP challenge. OTP verification issues the real session tokens.",
+      "secureHintTitle": "Secure access to your workspace",
+      "secureHintDescription": "An additional verification code will protect your account.",
       "submit": "Continue to OTP",
       "verifyOtp": "Verify OTP",
       "changeCredentials": "Use different credentials",
@@ -647,6 +657,7 @@
     },
     "practitionerApprovalStatus": {
       "header": "Practitioner application status",
+      "tab": "Application status",
       "errorTitle": "Could not load application status",
       "errorBody": "Please try again in a moment.",
       "rejectionReason": "Review reason",
@@ -1284,7 +1295,10 @@
     "list": {
       "title": "Sessions",
       "subtitle": "Track your upcoming and past sessions in one place.",
-      "sections": { "upcoming": "Upcoming", "history": "History" },
+      "sections": {
+        "upcoming": "Upcoming",
+        "history": "History"
+      },
       "upcoming": "Upcoming",
       "past": "Past",
       "noUpcoming": "No upcoming sessions",
@@ -1941,7 +1955,8 @@
     "notSet": "Not set",
     "none": "None",
     "notAvailable": "Not available",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "retry": "Retry"
   },
   "messages": {
     "common": {
@@ -2128,7 +2143,7 @@
         "help": "Help",
         "accountAction": "Account action"
       },
-       "dailySubtitle": "Notifications and secondary work tools in one place.",
+      "dailySubtitle": "Notifications and secondary work tools in one place.",
       "workToolsSubtitle": "Quick tools for daily tasks and notifications.",
       "financeSubtitle": "Access your earnings without clutter.",
       "accountSupportSubtitle": "Account, support, and sign-out in one place.",
@@ -2137,19 +2152,58 @@
       "helpSubtitle": "Get help through your existing support conversations.",
       "accountActionSubtitle": "Account actions",
       "rows": {
-        "sessions": { "title": "Sessions", "subtitle": "Review upcoming, current, and recent sessions" },
-        "messages": { "title": "Messages", "subtitle": "All session, support, and follow-up conversations in one place" },
-        "availability": { "title": "Schedule", "subtitle": "Edit your weekly schedule and temporary states" },
-        "notifications": { "title": "Notifications", "subtitle": "Review recent alerts and notifications" },
-        "finance": { "title": "Earnings", "subtitle": "Your earnings summary and activity overview" },
-        "wallet": { "title": "Earnings", "subtitle": "Your current balance and earnings overview" },
-        "ledger": { "title": "Transactions", "subtitle": "Your financial activity ordered by newest" },
-        "settlements": { "title": "Transfers", "subtitle": "Your transfers and their statuses" },
-        "promoCodes": { "title": "Promo codes", "subtitle": "Create and review your promo codes" },
-        "account": { "title": "Profile", "subtitle": "Professional identity and profile details" },
-        "support": { "title": "Support", "subtitle": "Request help or continue support conversations" },
-        "logout": { "title": "Log out", "subtitle": "End the session on this device" },
-        "instantBookingPricing": { "title": "Instant booking", "subtitle": "Manage prices used for instant sessions." }
+        "sessions": {
+          "title": "Sessions",
+          "subtitle": "Review upcoming, current, and recent sessions"
+        },
+        "messages": {
+          "title": "Messages",
+          "subtitle": "All session, support, and follow-up conversations in one place"
+        },
+        "availability": {
+          "title": "Schedule",
+          "subtitle": "Edit your weekly schedule and temporary states"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "subtitle": "Review recent alerts and notifications"
+        },
+        "finance": {
+          "title": "Earnings",
+          "subtitle": "Your earnings summary and activity overview"
+        },
+        "wallet": {
+          "title": "Earnings",
+          "subtitle": "Your current balance and earnings overview"
+        },
+        "ledger": {
+          "title": "Transactions",
+          "subtitle": "Your financial activity ordered by newest"
+        },
+        "settlements": {
+          "title": "Transfers",
+          "subtitle": "Your transfers and their statuses"
+        },
+        "promoCodes": {
+          "title": "Promo codes",
+          "subtitle": "Create and review your promo codes"
+        },
+        "account": {
+          "title": "Profile",
+          "subtitle": "Professional identity and profile details"
+        },
+        "support": {
+          "title": "Support",
+          "subtitle": "Request help or continue support conversations"
+        },
+        "logout": {
+          "title": "Log out",
+          "subtitle": "End the session on this device"
+        },
+        "instantBookingPricing": {
+          "title": "Instant booking",
+          "subtitle": "Manage prices used for instant sessions."
+        }
       }
     },
     "common": {
@@ -2374,7 +2428,45 @@
       "upcomingCount_two": "{{count}} upcoming sessions",
       "upcomingCount_few": "{{count}} upcoming sessions",
       "upcomingCount_many": "{{count}} upcoming sessions",
-      "upcomingCount_other": "{{count}} upcoming sessions"
+      "upcomingCount_other": "{{count}} upcoming sessions",
+      "stats": {
+        "today": "Today's Sessions",
+        "todaySubtitle": "Scheduled today",
+        "upcoming": "Upcoming Sessions",
+        "upcomingSubtitle": "Confirmed bookings",
+        "wallet": "Wallet & Earnings",
+        "walletSubtitle": "Available balance",
+        "schedule": "Availability",
+        "scheduleSubtitle": "Active slots"
+      },
+      "presenceStatus": {
+        "online": "Online & Available",
+        "away": "Away",
+        "busy": "Busy",
+        "offline": "Offline",
+        "instantOn": "Instant Booking On",
+        "instantOff": "Instant Booking Off"
+      },
+      "shortcuts": {
+        "title": "Quick Actions",
+        "schedule": "Schedule",
+        "scheduleSub": "Manage availability slots",
+        "messages": "Messages",
+        "messagesSub": "Patient communications",
+        "finance": "Finance & Earnings",
+        "financeSub": "Transactions & settlements",
+        "instant": "Instant Booking",
+        "instantSub": "Pricing & readiness",
+        "promoCodes": "Promo Codes",
+        "promoCodesSub": "Coupons & discounts",
+        "support": "Support",
+        "supportSub": "Help & support tickets"
+      },
+      "emptyState": {
+        "title": "No upcoming sessions",
+        "action": "Manage Schedule",
+        "secondaryAction": "View Profile"
+      }
     },
     "onboarding": {
       "title": "Onboarding workspace",
@@ -2785,7 +2877,9 @@
       "joining": "Opening session...",
       "joinError": "We couldn't open the session right now.",
       "joinBlocked": "You can't join yet: {{reason}}",
-      "blocked": { "SESSION_NOT_JOINABLE_STATUS": "The current session state does not allow joining." },
+      "blocked": {
+        "SESSION_NOT_JOINABLE_STATUS": "The current session state does not allow joining."
+      },
       "viewDetailsWithName": "View session details for {{name}}",
       "loadErrorTitle": "Sessions are unavailable",
       "loadErrorBody": "We couldn't load your sessions right now.",
@@ -2794,8 +2888,16 @@
       "loadingMore": "Loading more sessions...",
       "loadMoreError": "Could not load more sessions.",
       "endOfList": "You have reached the end of the list.",
-      "sections": { "upcoming": "Upcoming", "history": "History" },
-      "actions": { "join": "Join session", "prepare": "Prepare session", "review": "Review session", "view": "View session" },
+      "sections": {
+        "upcoming": "Upcoming",
+        "history": "History"
+      },
+      "actions": {
+        "join": "Join session",
+        "prepare": "Prepare session",
+        "review": "Review session",
+        "view": "View session"
+      },
       "status": {
         "actionRequired": "Action needed",
         "readyToJoin": "Ready to join",
@@ -2808,8 +2910,15 @@
         "unavailable": "Unavailable"
       },
       "empty": {
-        "upcoming": { "title": "No upcoming sessions", "body": "Your next sessions will appear here once bookings are confirmed.", "action": "Open schedule" },
-        "history": { "title": "No session history yet", "body": "Completed and closed sessions will appear here." }
+        "upcoming": {
+          "title": "No upcoming sessions",
+          "body": "Your next sessions will appear here once bookings are confirmed.",
+          "action": "Open schedule"
+        },
+        "history": {
+          "title": "No session history yet",
+          "body": "Completed and closed sessions will appear here."
+        }
       },
       "emptyTitle": "No sessions",
       "emptyBody": "Upcoming and recent sessions will appear here once bookings are created.",
@@ -2876,7 +2985,11 @@
       "messages": "Session messages",
       "messagesReadOnly": "You can review the session messages when they are available.",
       "openMessagesError": "Session messages could not be opened right now.",
-      "roomClose": { "action": "Close room", "success": "The session room was closed.", "alreadyClosed": "The session room was already closed." },
+      "roomClose": {
+        "action": "Close room",
+        "success": "The session room was closed.",
+        "alreadyClosed": "The session room was already closed."
+      },
       "blocked": {
         "SESSION_NOT_JOINABLE_STATUS": "The current session status does not allow joining.",
         "SESSION_NOT_VIDEO_MODE": "This session is not in video mode.",
@@ -2964,7 +3077,13 @@
       "enabledLabel": "Instant Booking is enabled.",
       "disabledLabel": "Instant Booking is disabled.",
       "enableError": "Instant Booking could not be updated right now.",
-      "enablePricingRequired": "Save all four Instant Booking prices before enabling it."
+      "enablePricingRequired": "Save all four Instant Booking prices before enabling it.",
+      "setupModal": {
+        "title": "Add instant booking prices",
+        "description": "Set your instant session prices to let patients book you instantly.",
+        "cancel": "Cancel",
+        "saveAndEnable": "Save instant booking prices"
+      }
     },
     "availability": {
       "title": "Availability and presence",
@@ -3056,34 +3175,34 @@
       "editorTitle": "Edit week",
       "addTimesTitle": "Add times",
       "editDayTitle": "Edit day times",
-    "editorBody": "Choose independent 30- or 60-minute times for each day. Protected times cannot be changed.",
-    "editorContext": "Selected date: {{date}}",
-    "duration": "{{count}} minutes",
-    "availablePeriodsTitle": "Available periods for this day",
-    "availablePeriodsBody": "Set the periods when you can accept appointments.",
-    "availablePeriodsEmpty": "No periods added for this day yet.",
-    "addPeriod": "Add period",
-    "editPeriod": "Edit",
-    "removePeriod": "Remove",
-    "addPeriodTitle": "Add period",
-    "editPeriodTitle": "Edit period",
-    "periodTimes": "{{count}} appointment times • {{duration}} min",
-    "periodProtected": "Protected or booked time",
-    "periodPreview": "{{count}} appointment times will be added at {{duration}} minutes each",
-    "periodPreviewEmpty": "Choose a start and end time to preview appointments.",
-    "confirmPeriod": "Apply period",
-    "periodAdded": "Period added.",
-    "periodUpdated": "Period updated.",
-    "periodRemoved": "Period removed.",
-    "periodConflictProtected": "This period includes protected or booked time. Choose a different range.",
-    "removePeriodConfirmTitle": "Remove this period?",
-    "removePeriodConfirmBody": "Only editable times in this period will be removed.",
-    "individualTimes": "Choose individual times",
-    "individualTimesOptional": "Optional",
-    "hideIndividualTimes": "Hide individual times",
-    "availableCount": "{{count}} available times",
-    "availableCountEmpty": "No available times yet",
-    "protectedSlot": "Protected",
+      "editorBody": "Choose independent 30- or 60-minute times for each day. Protected times cannot be changed.",
+      "editorContext": "Selected date: {{date}}",
+      "duration": "{{count}} minutes",
+      "availablePeriodsTitle": "Available periods for this day",
+      "availablePeriodsBody": "Set the periods when you can accept appointments.",
+      "availablePeriodsEmpty": "No periods added for this day yet.",
+      "addPeriod": "Add period",
+      "editPeriod": "Edit",
+      "removePeriod": "Remove",
+      "addPeriodTitle": "Add period",
+      "editPeriodTitle": "Edit period",
+      "periodTimes": "{{count}} appointment times • {{duration}} min",
+      "periodProtected": "Protected or booked time",
+      "periodPreview": "{{count}} appointment times will be added at {{duration}} minutes each",
+      "periodPreviewEmpty": "Choose a start and end time to preview appointments.",
+      "confirmPeriod": "Apply period",
+      "periodAdded": "Period added.",
+      "periodUpdated": "Period updated.",
+      "periodRemoved": "Period removed.",
+      "periodConflictProtected": "This period includes protected or booked time. Choose a different range.",
+      "removePeriodConfirmTitle": "Remove this period?",
+      "removePeriodConfirmBody": "Only editable times in this period will be removed.",
+      "individualTimes": "Choose individual times",
+      "individualTimesOptional": "Optional",
+      "hideIndividualTimes": "Hide individual times",
+      "availableCount": "{{count}} available times",
+      "availableCountEmpty": "No available times yet",
+      "protectedSlot": "Protected",
       "periods": {
         "morning": "Morning",
         "afternoon": "Afternoon",
@@ -3464,7 +3583,9 @@
         "unknownPatient": "Unknown patient",
         "duration": "{{minutes}} minutes",
         "detailsLine": "{{duration}} · {{mode}}",
-        "fields": { "expiresAt": "Expires at" },
+        "fields": {
+          "expiresAt": "Expires at"
+        },
         "hasReason": "Reason provided",
         "acceptAction": "Accept",
         "rejectAction": "Reject",
@@ -3525,7 +3646,12 @@
   "publicHome": {
     "signIn": "Sign In",
     "brandName": "Sawiyaa",
-    "header": { "signIn": "Sign In", "practitionerSignIn": "Practitioner Sign In", "languageEnglish": "Switch to English", "languageArabic": "Switch to Arabic" },
+    "header": {
+      "signIn": "Sign In",
+      "practitionerSignIn": "Practitioner Sign In",
+      "languageEnglish": "Switch to English",
+      "languageArabic": "Switch to Arabic"
+    },
     "hero": {
       "title": "The right support starts with a simple step",
       "subtitle": "Find the right specialist and begin with clarity and comfort.",
@@ -3540,7 +3666,11 @@
       "simpleBooking": "Simple booking",
       "privacyPriority": "Privacy-conscious"
     },
-    "practitioner": { "label": "Are you a practitioner?", "button": "Practitioner Sign In", "viewAll": "Explore all specialists" },
+    "practitioner": {
+      "label": "Are you a practitioner?",
+      "button": "Practitioner Sign In",
+      "viewAll": "Explore all specialists"
+    },
     "placeholders": {
       "comingSoon": "Coming Soon",
       "comingSoonDesc": "This feature will be available in the next phase. Stay tuned!",

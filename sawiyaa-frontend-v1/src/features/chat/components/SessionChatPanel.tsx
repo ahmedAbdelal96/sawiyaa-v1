@@ -33,6 +33,7 @@ import {
 import {
   useCloseGeneralChatConversation,
   useGeneralChatMessages,
+  useOpenSessionGeneralChat,
   useSessionGeneralChatConversation,
   useSendGeneralChatMessage,
   useUploadGeneralChatAttachment,
@@ -123,13 +124,39 @@ export default function SessionChatPanel({
     sessionConversationQuery.data?.chatAvailability ??
     session?.chatAvailability ??
     null;
+  const openSessionChatMutation = useOpenSessionGeneralChat(
+    chatAllowed ? sessionId : null,
+  );
+
+  // Session chat is lazily created by the existing Backend open endpoint. Open
+  // it automatically for an eligible participant so an empty thread still has
+  // a composer; users never need to create a conversation manually.
+  const shouldOpenSessionChat =
+    chatAllowed &&
+    sessionChatAvailability?.canSend === true &&
+    !sessionConversationQuery.isLoading &&
+    !sessionConversationQuery.isError &&
+    !sessionConversationQuery.data?.item &&
+    !openSessionChatMutation.isPending &&
+    !openSessionChatMutation.isSuccess &&
+    !openSessionChatMutation.isError;
+
+  useEffect(() => {
+    if (!shouldOpenSessionChat) return;
+    openSessionChatMutation.mutate();
+  }, [openSessionChatMutation.mutate, shouldOpenSessionChat]);
 
   const errorObj = sessionConversationQuery.error
     ? toAppError(sessionConversationQuery.error)
     : null;
+  const openMutationErrorObj = openSessionChatMutation.error
+    ? toAppError(openSessionChatMutation.error)
+    : null;
   const isForbidden =
     errorObj?.status === 403 ||
-    errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
+    errorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN" ||
+    openMutationErrorObj?.status === 403 ||
+    openMutationErrorObj?.code === "GENERAL_CHAT_LINKED_SESSION_FORBIDDEN";
   const openErrorTitle = isForbidden
     ? t("detail.chat.states.accessDenied.heading")
     : t("detail.chat.states.openError.heading");
@@ -225,7 +252,9 @@ export default function SessionChatPanel({
     sessionChatAvailability?.canSend === true &&
     sessionChatAvailability?.readOnly !== true;
   const showAvailabilityLoading =
-    sessionChatAvailability == null || sessionConversationQuery.isLoading;
+    sessionChatAvailability == null ||
+    sessionConversationQuery.isLoading ||
+    openSessionChatMutation.isPending;
   const showReadOnlyNotice =
     !showAvailabilityLoading &&
     (sessionChatAvailability?.canSend !== true ||
@@ -444,16 +473,16 @@ export default function SessionChatPanel({
           ) : null
         }
       >
-        {sessionConversationQuery.isError || messagesQuery.isError ? (
+        {sessionConversationQuery.isError || openSessionChatMutation.isError || messagesQuery.isError ? (
           <div className="p-4 text-center">
             <p className="mb-2 text-xs text-rose-500">
-              {sessionConversationQuery.isError
+              {sessionConversationQuery.isError || openSessionChatMutation.isError
                 ? openErrorTitle
                 : t("detail.chat.states.messagesError.heading")}
             </p>
             {!isForbidden && (
               <p className="text-text-secondary text-xs">
-                {sessionConversationQuery.isError
+                {sessionConversationQuery.isError || openSessionChatMutation.isError
                   ? openErrorNote
                   : t("detail.chat.states.messagesError.note")}
               </p>
@@ -608,7 +637,7 @@ export default function SessionChatPanel({
         </div>
 
         <div className="custom-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:px-4">
-          {sessionConversationQuery.isError ? (
+          {sessionConversationQuery.isError || openSessionChatMutation.isError ? (
             <StateCard
               title={openErrorTitle}
               note={openErrorNote}

@@ -29,7 +29,10 @@ import type {
 import { useTheme } from "../../../src/providers/ThemeProvider";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { getSessionGeneralChatConversation } from "../../../src/features/messages/api";
+import {
+  getSessionGeneralChatConversation,
+  openSessionGeneralChat,
+} from "../../../src/features/messages/api";
 import { getAppDirection, getDirectionalIcon } from "../../../src/i18n/direction";
 import {
   formatPractitionerDateTime,
@@ -280,6 +283,17 @@ export default function PractitionerSessionDetailScreen() {
       const payload = await getSessionGeneralChatConversation(session.id);
       if (payload.item?.conversationId) {
         router.push(`/(practitioner)/messages/${payload.item.conversationId}` as any);
+      } else if (payload.chatAvailability.canSend) {
+        const opened = await openSessionGeneralChat(session.id);
+        if (opened.item?.conversationId) {
+          router.push(`/(practitioner)/messages/${opened.item.conversationId}` as any);
+        } else {
+          setFeedback(
+            isRTL
+              ? "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø³Ø§Ø¦Ù„ Ø³Ø§Ø¨Ù‚Ø© Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø¬Ù„Ø³Ø©."
+              : "No previous messages for this session.",
+          );
+        }
       } else {
         setFeedback(
           isRTL

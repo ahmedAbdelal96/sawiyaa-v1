@@ -92,6 +92,14 @@ const ISSUE_SEVERITY_OPTIONS: AccountingReconciliationSeverity[] = [
   "INFO",
 ];
 
+const PHASE1_ISSUE_CODES = [
+  "PAYMENT_PENDING_TOO_LONG",
+  "PAYMENT_CAPTURED_EVENT_MISSING",
+  "PAYMENT_WEBHOOK_RECEIPT_MISSING",
+  "PAYMENT_SESSION_STATUS_MISMATCH",
+  "PAYMENT_WALLET_CAPTURE_MISSING",
+] as const;
+
 function normalizeLocale(locale: string) {
   return locale === "ar" ? "ar-EG" : "en-US";
 }
@@ -229,6 +237,56 @@ function safeEntries(value: Record<string, unknown> | null | undefined) {
       .join(", ");
     return { key, value: preview || "—" };
   });
+}
+
+type StructuredIssueEvidence = {
+  expectedState: unknown;
+  actualState: unknown;
+  detectedAt: string | null;
+  entityIds: {
+    paymentId: string | null;
+    sessionId: string | null;
+    walletReservationId: string | null;
+    receiptId: string | null;
+  };
+  safeMetadata: Record<string, unknown>;
+};
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function asNullableString(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function displayEvidenceValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return "—";
+}
+
+function readStructuredIssueEvidence(metadataJson: Record<string, unknown> | null | undefined): StructuredIssueEvidence | null {
+  const metadata = asRecord(metadataJson);
+  const entityIds = asRecord(metadata?.entityIds);
+  const safeMetadata = asRecord(metadata?.safeMetadata);
+  if (!metadata || !entityIds) return null;
+
+  return {
+    expectedState: metadata.expectedState ?? null,
+    actualState: metadata.actualState ?? null,
+    detectedAt: asNullableString(metadata.detectedAt),
+    entityIds: {
+      paymentId: asNullableString(entityIds.paymentId),
+      sessionId: asNullableString(entityIds.sessionId),
+      walletReservationId: asNullableString(entityIds.walletReservationId),
+      receiptId: asNullableString(entityIds.receiptId),
+    },
+    safeMetadata: safeMetadata ?? {},
+  };
 }
 
 function runStatusTone(status: AccountingReconciliationRunStatus) {
@@ -655,6 +713,10 @@ export default function FinancialReconciliationScreen() {
     () => getReconciliationIssueCopy(selectedIssue?.issueCode),
     [selectedIssue?.issueCode],
   );
+  const selectedIssueEvidence = useMemo(
+    () => readStructuredIssueEvidence(selectedIssue?.metadataJson),
+    [selectedIssue],
+  );
   const selectedIssueCurrencyLabel = getLocalizedCurrencyLabel(selectedIssue?.currencyCode);
   const selectedIssueReferences = toSafeReferencePairs(selectedIssue?.metadataJson);
   const selectedIssueExpectedActualDifference = formatExpectedActualDifference(
@@ -958,6 +1020,43 @@ export default function FinancialReconciliationScreen() {
                   value={issueFilters.issueFrom ?? ""}
                   onChange={(value) => updateQuery({ issueFrom: value || null, issuePage: 1 })}
                 />
+              </div>
+
+              <div className="rounded-2xl border border-border-light bg-surface-secondary/60 p-3 dark:border-white/8 dark:bg-white/[0.03]">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
+                    {t("filters.phase1Title")}
+                  </p>
+                  {issueFilters.issueCode ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => updateQuery({ issueCode: null, issuePage: 1 })}
+                    >
+                      {t("filters.clearPhase1Filter")}
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {PHASE1_ISSUE_CODES.map((code) => {
+                    const copy = getReconciliationIssueCopy(code);
+                    const label = locale === "ar" ? copy.titleAr : copy.titleEn;
+                    const active = issueFilters.issueCode === code;
+                    return (
+                      <Button
+                        key={code}
+                        type="button"
+                        variant={active ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => updateQuery({ issueCode: active ? null : code, issuePage: 1 })}
+                        aria-pressed={active}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
 
               <details className="rounded-2xl border border-border-light bg-surface-secondary/70 px-4 py-3 dark:border-white/8 dark:bg-white/[0.03]">
@@ -1334,31 +1433,83 @@ export default function FinancialReconciliationScreen() {
                       <InfoBlock label={t("issueDetail.differenceLabel")} value={selectedIssueExpectedActualDifference ?? t("common.notAvailable")} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-text-primary">{t("issueDetail.metadataTitle")}</p>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {selectedIssueReferences.length === 0 ? (
-                        <p className="text-sm text-text-secondary">{t("common.none")}</p>
-                      ) : (
-                        selectedIssueReferences.map((item) => (
-                          <InfoBlock key={item.key} label={item.key} value={item.value} mono />
-                        ))
-                      )}
+                  <div className="space-y-3 rounded-3xl border border-border-light bg-surface-secondary/60 p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary dark:text-white/95">
+                        {t("issueDetail.evidenceTitle")}
+                      </p>
+                      <p className="mt-1 text-xs text-text-secondary">
+                        {t("issueDetail.metadataTitle")}
+                      </p>
                     </div>
-                    <details className="rounded-2xl border border-border-light bg-white/70 p-4 dark:bg-white/[0.03]">
-                      <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
-                        {t("issueDetail.technicalData")}
-                      </summary>
-                      <div className="mt-3 space-y-2">
-                        {safeEntries(selectedIssue.metadataJson).length === 0 ? (
-                          <p className="text-sm text-text-secondary">{t("common.none")}</p>
-                        ) : (
-                          safeEntries(selectedIssue.metadataJson).map((item) => (
+                    {selectedIssueEvidence ? (
+                      <>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <InfoBlock
+                            label={t("issueDetail.fields.expectedState")}
+                            value={displayEvidenceValue(selectedIssueEvidence.expectedState)}
+                          />
+                          <InfoBlock
+                            label={t("issueDetail.fields.actualState")}
+                            value={displayEvidenceValue(selectedIssueEvidence.actualState)}
+                          />
+                          <InfoBlock
+                            label={t("issueDetail.fields.detectedAt")}
+                            value={formatDateTime(locale, selectedIssueEvidence.detectedAt)}
+                          />
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {([
+                            ["paymentId", selectedIssueEvidence.entityIds.paymentId],
+                            ["sessionId", selectedIssueEvidence.entityIds.sessionId],
+                            ["walletReservationId", selectedIssueEvidence.entityIds.walletReservationId],
+                            ["receiptId", selectedIssueEvidence.entityIds.receiptId],
+                          ] as const).map(([key, value]) => (
+                            <CopyableInfoBlock
+                              key={key}
+                              label={t(`issueDetail.fields.${key}`)}
+                              value={value ?? "—"}
+                              copyLabel={t("common.copy")}
+                              onCopy={() => (value ? void handleCopyValue(value) : undefined)}
+                              mono
+                            />
+                          ))}
+                        </div>
+                        <details className="rounded-2xl border border-border-light bg-white/70 p-4 dark:bg-white/[0.03]">
+                          <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
+                            {t("issueDetail.fields.safeMetadata")}
+                          </summary>
+                          <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            {safeEntries(selectedIssueEvidence.safeMetadata).length === 0 ? (
+                              <p className="text-sm text-text-secondary">{t("common.none")}</p>
+                            ) : (
+                              safeEntries(selectedIssueEvidence.safeMetadata).map((item) => (
+                                <InfoBlock key={item.key} label={item.key} value={item.value} mono />
+                              ))
+                            )}
+                          </div>
+                        </details>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-text-secondary">{t("issueDetail.evidenceUnavailable")}</p>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {selectedIssueReferences.map((item) => (
                             <InfoBlock key={item.key} label={item.key} value={item.value} mono />
-                          ))
-                        )}
-                      </div>
-                    </details>
+                          ))}
+                        </div>
+                        <details className="rounded-2xl border border-border-light bg-white/70 p-4 dark:bg-white/[0.03]">
+                          <summary className="cursor-pointer text-sm font-semibold text-text-primary dark:text-white/95">
+                            {t("issueDetail.technicalData")}
+                          </summary>
+                          <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            {safeEntries(selectedIssue.metadataJson).map((item) => (
+                              <InfoBlock key={item.key} label={item.key} value={item.value} mono />
+                            ))}
+                          </div>
+                        </details>
+                      </>
+                    )}
                   </div>
                   {canWrite ? (
                     <div className="space-y-3 rounded-3xl border border-border-light bg-surface-secondary/60 p-4">

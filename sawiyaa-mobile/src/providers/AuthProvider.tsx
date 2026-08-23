@@ -209,6 +209,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const sessionRef = useRef<PersistedAuthSession | null>(null);
   const pendingRedirectRef = useRef<string | null>(null);
   const lastHandledNotificationIdentifierRef = useRef<string | null>(null);
+  const startupRouteHandledRef = useRef(false);
 
   useEffect(() => {
     configureForegroundNotifications();
@@ -557,6 +558,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const group = segments[0];
     if (!group) {
       return; // Still at the root route (index.tsx), let index.tsx handle bootstrap routing!
+    }
+
+    // Expo Router may restore the last native route instead of mounting
+    // index.tsx. Normalize that cold-start state once, after auth is known,
+    // without affecting normal in-app navigation afterward.
+    if (!startupRouteHandledRef.current) {
+      startupRouteHandledRef.current = true;
+
+      if (!session) {
+        if (group !== "(onboarding)" && group !== "(public)") {
+          router.replace("/(public)");
+        }
+        return;
+      }
+
+      const homeRoute =
+        session.role === "patient"
+          ? "/(patient)"
+          : session.role === "practitioner"
+            ? "/(practitioner)"
+            : "/(trainee)";
+      router.replace(homeRoute as any);
+      return;
     }
 
     const inAuthGroup = group === "(auth)";

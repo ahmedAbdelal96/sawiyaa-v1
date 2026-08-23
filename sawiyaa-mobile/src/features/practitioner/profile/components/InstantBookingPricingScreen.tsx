@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Card, ErrorState, Header, Input, LoadingState, Screen, Text } from "../../../../components/ui";
 import { useTheme } from "../../../../providers/ThemeProvider";
 import { extractApiErrorCode } from "../../../../lib/api";
 import { usePractitionerProfile, useUpdatePractitionerProfile } from "../hooks";
 import { useMyPresence, useSetInstantBooking } from "../../presence/hooks";
-import { instantBookingPricingToForm, instantBookingPricingToPayload, missingInstantBookingPriceFields, type InstantBookingPriceForm } from "../instant-booking-pricing";
+import { instantBookingPricingToForm, instantBookingPricingToPayload, missingInstantBookingPriceFields, shouldOpenInstantPricingSetup, type InstantBookingPriceForm } from "../instant-booking-pricing";
 
 const emptyForm = (): InstantBookingPriceForm => ({ instantBookingPrice30Egp: "", instantBookingPrice30Usd: "", instantBookingPrice60Egp: "", instantBookingPrice60Usd: "" });
 
@@ -19,7 +20,9 @@ export default function InstantBookingPricingScreen() {
   const instantBookingToggle = useSetInstantBooking();
   const [form, setForm] = useState<InstantBookingPriceForm>(emptyForm);
   const [initializedFor, setInitializedFor] = useState<string | null>(null);
+  const [pricingModalVisible, setPricingModalVisible] = useState(false);
   const isArabic = i18n.language?.startsWith("ar") ?? false;
+  const insets = useSafeAreaInsets();
 
   const profile = profileQuery.data?.profile;
   useEffect(() => {
@@ -32,10 +35,32 @@ export default function InstantBookingPricingScreen() {
   const missingFields = useMemo(() => missingInstantBookingPriceFields(form), [form]);
 
   const toggleInstantBooking = async (isInstantBookingEnabled: boolean) => {
-    if (instantBookingToggle.isPending || missingFields.length > 0) return;
+    if (instantBookingToggle.isPending) return;
+    if (shouldOpenInstantPricingSetup(isInstantBookingEnabled, missingFields.length)) {
+      setPricingModalVisible(true);
+      return;
+    }
     try {
       await instantBookingToggle.mutateAsync({ isInstantBookingEnabled });
       await presenceQuery.refetch();
+    } catch (error) {
+      const code = extractApiErrorCode(error);
+      Alert.alert(
+        t("common.error"),
+        code === "PRESENCE_INSTANT_BOOKING_PRICING_REQUIRED"
+          ? t("practitioner.instantBookingPricing.enablePricingRequired")
+          : t("practitioner.instantBookingPricing.enableError"),
+      );
+    }
+  };
+
+  const savePricingAndEnable = async () => {
+    if (update.isPending || instantBookingToggle.isPending || missingFields.length > 0) return;
+    try {
+      await update.mutateAsync(instantBookingPricingToPayload(form));
+      await instantBookingToggle.mutateAsync({ isInstantBookingEnabled: true });
+      await Promise.all([profileQuery.refetch(), presenceQuery.refetch()]);
+      setPricingModalVisible(false);
     } catch (error) {
       const code = extractApiErrorCode(error);
       Alert.alert(
@@ -88,11 +113,53 @@ export default function InstantBookingPricingScreen() {
         <Switch
           value={Boolean(presenceQuery.data?.presence?.isInstantBookingEnabled)}
           onValueChange={(value) => void toggleInstantBooking(value)}
-          disabled={presenceQuery.isLoading || instantBookingToggle.isPending || missingFields.length > 0}
+          disabled={presenceQuery.isLoading || instantBookingToggle.isPending}
         />
       </View>
     </Card>
-  </ScrollView></Screen>;
+  </ScrollView>
+  <Modal
+    visible={pricingModalVisible}
+    transparent
+    animationType="slide"
+    statusBarTranslucent
+    onRequestClose={() => setPricingModalVisible(false)}
+  >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.modalKeyboard}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={[styles.modalCard, { backgroundColor: theme.colors.surface, paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text weight="700" color={theme.colors.textPrimary} style={styles.modalTitle}>
+              {t("practitioner.instantBookingPricing.setupModal.title")}
+            </Text>
+            <Text color={theme.colors.textSecondary} style={styles.body}>
+              {t("practitioner.instantBookingPricing.setupModal.description")}
+            </Text>
+            <Input label={t("practitioner.instantBookingPricing.fields.egp30")} value={form.instantBookingPrice30Egp} onChangeText={(value) => setForm((current) => ({ ...current, instantBookingPrice30Egp: value }))} keyboardType="decimal-pad" placeholder="0" />
+            <Input label={t("practitioner.instantBookingPricing.fields.usd30")} value={form.instantBookingPrice30Usd} onChangeText={(value) => setForm((current) => ({ ...current, instantBookingPrice30Usd: value }))} keyboardType="decimal-pad" placeholder="0" />
+            <Input label={t("practitioner.instantBookingPricing.fields.egp60")} value={form.instantBookingPrice60Egp} onChangeText={(value) => setForm((current) => ({ ...current, instantBookingPrice60Egp: value }))} keyboardType="decimal-pad" placeholder="0" />
+            <Input label={t("practitioner.instantBookingPricing.fields.usd60")} value={form.instantBookingPrice60Usd} onChangeText={(value) => setForm((current) => ({ ...current, instantBookingPrice60Usd: value }))} keyboardType="decimal-pad" placeholder="0" />
+          </ScrollView>
+          <View style={styles.modalActions}>
+            <View style={styles.modalActionButton}>
+              <Button title={t("practitioner.instantBookingPricing.setupModal.cancel")} variant="secondary" onPress={() => setPricingModalVisible(false)} disabled={update.isPending || instantBookingToggle.isPending} />
+            </View>
+            <View style={styles.modalActionButton}>
+              <Button title={t("practitioner.instantBookingPricing.setupModal.saveAndEnable")} onPress={() => void savePricingAndEnable()} loading={update.isPending || instantBookingToggle.isPending} disabled={missingFields.length > 0} />
+            </View>
+          </View>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>
+  </Screen>;
 }
 
 const styles = StyleSheet.create({
@@ -102,4 +169,11 @@ const styles = StyleSheet.create({
   note: { marginBottom: 12, textAlign: "center" },
   toggleRow: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: 16, paddingTop: 14, flexDirection: "row", alignItems: "center", gap: 12 },
   toggleCopy: { flex: 1, gap: 3 },
+  modalBackdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" },
+  modalKeyboard: { flex: 1 },
+  modalCard: { maxHeight: "92%", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  modalScrollContent: { gap: 10, paddingBottom: 8 },
+  modalTitle: { fontSize: 18, marginBottom: 2 },
+  modalActions: { flexDirection: "row", gap: 10, marginTop: 8 },
+  modalActionButton: { flex: 1 },
 });

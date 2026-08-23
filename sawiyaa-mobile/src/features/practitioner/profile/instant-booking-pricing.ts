@@ -32,3 +32,7 @@ export function instantBookingPricingToPayload(form: InstantBookingPriceForm): P
     instantBookingPrice60Usd: Number(form.instantBookingPrice60Usd),
   };
 }
+
+export function shouldOpenInstantPricingSetup(isEnabling: boolean, missingFields: number) {
+  return isEnabling && missingFields > 0;
+}

@@ -1135,7 +1135,7 @@
           "OTHER": "Other"
         },
         "ownerWarning": "Enter the account holder's name exactly as registered. A mismatch may cause the external transfer to fail."
-        },
+      },
       "credentialType": {
         "LICENSE": "Professional practice license",
         "DEGREE": "Degree",
@@ -1149,86 +1149,86 @@
       "upload": {
         "hint": "Accepted formats: PDF, JPG, PNG, WebP up to 5 MB.",
         "submit": "Upload document"
-        }
-      },
-      "upload": {
-        "hint": "Accepted formats: PDF, JPG, PNG, WebP up to 5 MB.",
-        "submit": "Upload document",
-        "submitting": "Uploading document...",
-        "submitError": "Could not upload the document. Check the file and try again.",
-        "forbidden": "You do not have permission to upload practitioner creation documents."
-      },
-      "submitForbidden": "You do not have permission to create practitioners from the admin panel.",
-      "validation": {
-        "fixStepErrors": "Complete the highlighted fields before continuing.",
-        "emailRequired": "Email is required.",
-        "emailInvalid": "Enter a valid email address.",
-        "passwordRequired": "Temporary password is required.",
-        "passwordStrength": "Use at least 8 characters including uppercase, lowercase, and a number.",
-        "displayNameRequired": "Display name is required.",
-        "phoneCountryRequired": "Select the phone country.",
-        "phoneRequired": "Mobile phone number is required.",
-        "professionalAuthorizationRequired": "Upload a syndicate card or professional practice license before approval.",
-        "countryRequired": "Country is required.",
-        "typeRequired": "Practitioner type is required.",
-        "titleRequired": "Professional title is required.",
-        "bioRequired": "Professional bio is required.",
-        "bioShort": "Professional bio should be clear and not too short.",
-        "yearsRequired": "Years of experience is required.",
-        "yearsPositive": "Years of experience must be greater than zero.",
-        "languagesRequired": "Select at least one language.",
-        "payoutMethodRequired": "Choose a payout method.",
-        "accountHolderRequired": "Account holder name is required.",
-        "accountHolderInvalid": "Enter a valid account-holder name.",
-        "bankNameRequired": "Bank name is required.",
-        "bankAccountRequired": "Bank account number is required.",
-        "ibanRequired": "IBAN is required.",
-        "IBAN_INVALID_CHARACTERS": "IBAN contains unsupported characters.",
-        "IBAN_COUNTRY_MISMATCH": "The IBAN country does not match the selected country.",
-        "IBAN_INVALID_LENGTH": "IBAN length is incorrect for the selected country.",
-        "IBAN_INVALID_BBAN_FORMAT": "IBAN structure is incorrect for the selected country.",
-        "IBAN_INVALID_CHECKSUM": "IBAN check digits are incorrect.",
-        "walletProviderRequired": "Wallet provider is required.",
-        "walletIdentifierRequired": "Wallet number is required.",
-        "otherPayoutRequired": "Add the payout details for this method.",
-        "pricePositive": "Price must be greater than zero when provided.",
-        "degreeRequired": "Upload an academic degree before creating the practitioner.",
-        "identityRequired": "Upload a passport or both national ID sides before creating the practitioner.",
-        "uploadFileRequired": "Choose a document file before uploading.",
-        "duplicateCredentialType": "A document of this type has already been uploaded. Remove it before uploading another one."
-      },
-      "validationCategoryRequired": "Select a primary specialty category first.",
-      "validationSpecialtiesRequired": "Select at least one specialty from the selected category.",
-      "credentialType": {
-        "LICENSE": "Professional practice license",
-        "DEGREE": "Degree",
-        "CERTIFICATION": "Certification",
-        "NATIONAL_ID_FRONT": "National ID (front)",
-        "NATIONAL_ID_BACK": "National ID (back)",
-        "PASSPORT": "Passport",
-        "MEMBERSHIP": "Syndicate card",
-        "OTHER": "Other"
-      },
-      "success": {
-        "eyebrow": "Practitioner created",
-        "title": "The practitioner account is ready",
-        "note": "Share the temporary credentials through a safe channel, then ask the practitioner to sign in and update the password as soon as possible.",
-        "practitionerHeading": "Practitioner summary",
-        "profileId": "Practitioner profile ID",
-        "passwordHeading": "Temporary password",
-        "nextHeading": "Safe handoff",
-        "copyPassword": "Copy password",
-        "copyEmail": "Copy email",
-        "openPractitioners": "Open practitioners directory",
-        "backToApplications": "Back to applications",
-        "createAnother": "Create another practitioner",
-        "nextSteps": {
-          "credentialShare": "Share the email and temporary password only through a trusted admin-to-practitioner channel.",
-          "passwordRotation": "Ask the practitioner to rotate the temporary password after the first successful sign-in.",
-          "profileReady": "The practitioner can now sign in and continue normal platform work."
-        }
       }
     },
+    "upload": {
+      "hint": "Accepted formats: PDF, JPG, PNG, WebP up to 5 MB.",
+      "submit": "Upload document",
+      "submitting": "Uploading document...",
+      "submitError": "Could not upload the document. Check the file and try again.",
+      "forbidden": "You do not have permission to upload practitioner creation documents."
+    },
+    "submitForbidden": "You do not have permission to create practitioners from the admin panel.",
+    "validation": {
+      "fixStepErrors": "Complete the highlighted fields before continuing.",
+      "emailRequired": "Email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Temporary password is required.",
+      "passwordStrength": "Use at least 8 characters including uppercase, lowercase, and a number.",
+      "displayNameRequired": "Display name is required.",
+      "phoneCountryRequired": "Select the phone country.",
+      "phoneRequired": "Mobile phone number is required.",
+      "professionalAuthorizationRequired": "Upload a syndicate card or professional practice license before approval.",
+      "countryRequired": "Country is required.",
+      "typeRequired": "Practitioner type is required.",
+      "titleRequired": "Professional title is required.",
+      "bioRequired": "Professional bio is required.",
+      "bioShort": "Professional bio should be clear and not too short.",
+      "yearsRequired": "Years of experience is required.",
+      "yearsPositive": "Years of experience must be greater than zero.",
+      "languagesRequired": "Select at least one language.",
+      "payoutMethodRequired": "Choose a payout method.",
+      "accountHolderRequired": "Account holder name is required.",
+      "accountHolderInvalid": "Enter a valid account-holder name.",
+      "bankNameRequired": "Bank name is required.",
+      "bankAccountRequired": "Bank account number is required.",
+      "ibanRequired": "IBAN is required.",
+      "IBAN_INVALID_CHARACTERS": "IBAN contains unsupported characters.",
+      "IBAN_COUNTRY_MISMATCH": "The IBAN country does not match the selected country.",
+      "IBAN_INVALID_LENGTH": "IBAN length is incorrect for the selected country.",
+      "IBAN_INVALID_BBAN_FORMAT": "IBAN structure is incorrect for the selected country.",
+      "IBAN_INVALID_CHECKSUM": "IBAN check digits are incorrect.",
+      "walletProviderRequired": "Wallet provider is required.",
+      "walletIdentifierRequired": "Wallet number is required.",
+      "otherPayoutRequired": "Add the payout details for this method.",
+      "pricePositive": "Price must be greater than zero when provided.",
+      "degreeRequired": "Upload an academic degree before creating the practitioner.",
+      "identityRequired": "Upload a passport or both national ID sides before creating the practitioner.",
+      "uploadFileRequired": "Choose a document file before uploading.",
+      "duplicateCredentialType": "A document of this type has already been uploaded. Remove it before uploading another one."
+    },
+    "validationCategoryRequired": "Select a primary specialty category first.",
+    "validationSpecialtiesRequired": "Select at least one specialty from the selected category.",
+    "credentialType": {
+      "LICENSE": "Professional practice license",
+      "DEGREE": "Degree",
+      "CERTIFICATION": "Certification",
+      "NATIONAL_ID_FRONT": "National ID (front)",
+      "NATIONAL_ID_BACK": "National ID (back)",
+      "PASSPORT": "Passport",
+      "MEMBERSHIP": "Syndicate card",
+      "OTHER": "Other"
+    },
+    "success": {
+      "eyebrow": "Practitioner created",
+      "title": "The practitioner account is ready",
+      "note": "Share the temporary credentials through a safe channel, then ask the practitioner to sign in and update the password as soon as possible.",
+      "practitionerHeading": "Practitioner summary",
+      "profileId": "Practitioner profile ID",
+      "passwordHeading": "Temporary password",
+      "nextHeading": "Safe handoff",
+      "copyPassword": "Copy password",
+      "copyEmail": "Copy email",
+      "openPractitioners": "Open practitioners directory",
+      "backToApplications": "Back to applications",
+      "createAnother": "Create another practitioner",
+      "nextSteps": {
+        "credentialShare": "Share the email and temporary password only through a trusted admin-to-practitioner channel.",
+        "passwordRotation": "Ask the practitioner to rotate the temporary password after the first successful sign-in.",
+        "profileReady": "The practitioner can now sign in and continue normal platform work."
+      }
+    }
+  },
   "practitionersDirectory": {
     "publication": {
       "approval": "Approval",
@@ -1253,7 +1253,8 @@
         "DISPLAY_NAME_REQUIRED": "A display name is required.",
         "PROFESSIONAL_TITLE_REQUIRED": "A professional title is required.",
         "BIO_REQUIRED": "A professional biography is required.",
-        "ACTIVE_SPECIALTY_REQUIRED": "At least one active specialty is required."
+        "ACTIVE_SPECIALTY_REQUIRED": "At least one active specialty is required.",
+        "REQUIRED_PRICING_MISSING": "Standard session pricing must be configured before publishing."
       },
       "impact": "Current booking impact",
       "activeBookings": "Active or upcoming bookings",
@@ -1296,7 +1297,12 @@
         "updateError": "Could not update practitioner photo right now.",
         "removeSuccess": "Practitioner photo removed successfully.",
         "removeError": "Could not remove practitioner photo right now."
-      }
+      },
+      "urlLabel": "Photo URL",
+      "urlPlaceholder": "https://cdn.example.com/practitioner-avatar.jpg",
+      "removeButton": "Remove photo",
+      "cancelButton": "Cancel",
+      "saveButton": "Save photo"
     }
   },
   "applicationDetails": {

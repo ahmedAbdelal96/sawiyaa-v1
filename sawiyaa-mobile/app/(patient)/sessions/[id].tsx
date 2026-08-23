@@ -34,7 +34,10 @@ import {
 } from "../../../src/features/patient/sessions/slot-utils";
 import { normalizeAllowedExternalUrl } from "../../../src/lib/external-url";
 import { trackAnalyticsEvent } from "../../../src/lib/analytics";
-import { getSessionGeneralChatConversation } from "../../../src/features/messages/api";
+import {
+  getSessionGeneralChatConversation,
+  openSessionGeneralChat,
+} from "../../../src/features/messages/api";
 import { operationalCanCancel, operationalJoinAllowed, operationalState } from "../../../src/features/sessions/operational";
 import { getTimeZoneDisplayLabel } from "../../../src/features/timezone/timezone-options";
 
@@ -188,6 +191,13 @@ export default function SessionDetailScreen() {
       const payload = await getSessionGeneralChatConversation(session.id);
       if (payload.item?.conversationId) {
         router.push(`/(patient)/messages/${payload.item.conversationId}` as any);
+      } else if (payload.chatAvailability.canSend) {
+        const opened = await openSessionGeneralChat(session.id);
+        if (opened.item?.conversationId) {
+          router.push(`/(patient)/messages/${opened.item.conversationId}` as any);
+        } else {
+          setMessagesError(t("patientSessionsFlow.detail.noMessages"));
+        }
       } else {
         setMessagesError(t("patientSessionsFlow.detail.noMessages"));
       }

@@ -20,15 +20,16 @@ function validateEmail(email: string) {
   return /\S+@\S+\.\S+/.test(email.trim());
 }
 
-const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> = __DEV__
-  ? [
-      {
-        label: "👤 مريض تجريبي",
-        email: "ahmed.patient@hesba.local",
-        password: "Patient@12345",
-      },
-    ]
-  : [];
+const DEV_ACCOUNTS: Array<{ label: string; email: string; password: string }> =
+  __DEV__
+    ? [
+        {
+          label: "👤 مريض تجريبي",
+          email: "ahmed.patient@hesba.local",
+          password: "Patient@12345",
+        },
+      ]
+    : [];
 
 export default function PatientSignInScreen() {
   const router = useRouter();
@@ -88,18 +89,53 @@ export default function PatientSignInScreen() {
       title={title}
       subtitle={subtitle}
       onBackPress={() => router.push("/(public)")}
-      footer={
-        <TouchableOpacity onPress={() => router.replace("/(auth)")}>
-          <Text color={publicTheme.secondaryText} style={styles.backText}>
-            {t("auth.common.backToEntry", {
+    >
+      <View
+        style={[
+          styles.securityHint,
+          {
+            backgroundColor: publicTheme.accentMint,
+            borderColor: publicTheme.subtleBorder,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.securityIcon,
+            { backgroundColor: publicTheme.raisedSurface },
+          ]}
+        >
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={18}
+            color={publicTheme.primaryText}
+          />
+        </View>
+        <View style={styles.securityCopy}>
+          <Text
+            color={publicTheme.primaryText}
+            weight="700"
+            style={styles.securityTitle}
+          >
+            {t("auth.patientSignIn.secureHintTitle", {
               defaultValue: isArabic
-                ? "الرجوع لاختيار مسار الدخول"
-                : "Back to sign in options",
+                ? "دخول آمن إلى حسابك"
+                : "Secure access to your account",
             })}
           </Text>
-        </TouchableOpacity>
-      }
-    >
+          <Text
+            color={publicTheme.secondaryText}
+            style={styles.securityDescription}
+          >
+            {t("auth.patientSignIn.secureHintDescription", {
+              defaultValue: isArabic
+                ? "استخدم بريدك الإلكتروني وكلمة المرور للمتابعة إلى رعايتك."
+                : "Use your email and password to continue to your care.",
+            })}
+          </Text>
+        </View>
+      </View>
+
       {/* Email Input */}
       <Input
         autoCapitalize="none"
@@ -170,9 +206,7 @@ export default function PatientSignInScreen() {
           { alignSelf: isRTL ? "flex-start" : "flex-end" },
         ]}
       >
-        <Text
-          style={[styles.forgotText, { color: publicTheme.primaryText }]}
-        >
+        <Text style={[styles.forgotText, { color: publicTheme.primaryText }]}>
           {t("auth.patientSignIn.forgotPassword", {
             defaultValue: isArabic ? "نسيت كلمة المرور؟" : "Forgot password?",
           })}
@@ -259,9 +293,7 @@ export default function PatientSignInScreen() {
               : "Don't have an account?",
           })}
         </Text>
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/signup/patient")}
-        >
+        <TouchableOpacity onPress={() => router.push("/(auth)/signup/patient")}>
           <Text style={[styles.signupLink, { color: publicTheme.primaryText }]}>
             {t("auth.patientSignIn.createAccount", {
               defaultValue: isArabic
@@ -447,10 +479,33 @@ const styles = StyleSheet.create({
   devChipText: {
     fontSize: 11.5,
   },
-  backText: {
-    fontSize: 13,
-    textAlign: "center",
-    textDecorationLine: "underline",
+  securityHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 18,
+    gap: 10,
+  },
+  securityIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  securityCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  securityTitle: {
+    fontSize: 12.5,
+  },
+  securityDescription: {
+    fontSize: 11.5,
+    lineHeight: 17,
   },
   loader: {
     marginTop: 8,

@@ -1,4 +1,4 @@
-import { instantBookingPricingToForm, instantBookingPricingToPayload, missingInstantBookingPriceFields } from "../../src/features/practitioner/profile/instant-booking-pricing";
+import { instantBookingPricingToForm, instantBookingPricingToPayload, missingInstantBookingPriceFields, shouldOpenInstantPricingSetup } from "../../src/features/practitioner/profile/instant-booking-pricing";
 import type { PractitionerProfile } from "../../src/features/practitioner/profile/types";
 
 const profile = {
@@ -10,6 +10,12 @@ const profile = {
 } as PractitionerProfile;
 
 describe("instant booking pricing settings contract", () => {
+  it("opens pricing setup only when enabling with missing prices", () => {
+    expect(shouldOpenInstantPricingSetup(true, 1)).toBe(true);
+    expect(shouldOpenInstantPricingSetup(true, 0)).toBe(false);
+    expect(shouldOpenInstantPricingSetup(false, 4)).toBe(false);
+  });
+
   it("loads the four canonical independent values without normal session pricing", () => {
     expect(instantBookingPricingToForm(profile)).toEqual({
       instantBookingPrice30Egp: "300",

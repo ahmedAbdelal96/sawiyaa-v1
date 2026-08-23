@@ -31,8 +31,38 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
 
   const isInstantAvailable = isProfileInstantBookingAvailable(currentAvailability);
 
+  const handleScrollToAvailability = () => {
+    const el = document.getElementById("weekly-availability");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   if (!isInstantAvailable && !isModalOpen) {
-    return null;
+    return (
+      <div className="rounded-[24px] border border-border-light/70 bg-surface-secondary/60 p-4 sm:p-5 dark:border-white/10 dark:bg-white/5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border-light/80 bg-white/70 px-2.5 py-0.5 text-xs font-bold text-text-secondary dark:border-white/10 dark:bg-white/5 dark:text-white/75">
+              <Zap size={14} />
+              <span>{t("booking.instant.unavailable")}</span>
+            </div>
+            <p className="text-xs font-medium text-text-secondary">
+              {t("booking.instant.unavailableNote")}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleScrollToAvailability}
+            className="sawiyaa-btn-press inline-flex items-center gap-2 rounded-xl border border-border-light bg-white px-4 py-2.5 text-xs font-bold text-text-primary transition-all hover:bg-surface-secondary shadow-sm cursor-pointer dark:border-white/10 dark:bg-white/5 dark:text-white"
+          >
+            <span>{t("booking.jumpToAvailability")}</span>
+            <ArrowRight size={14} className="rtl:rotate-180" />
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const refreshAvailability = async () => {
@@ -40,13 +70,6 @@ export default function ProfileInstantActionCard({ profile, instantBookingAvaila
       setCurrentAvailability(await getPublicPractitionerInstantBookingAvailability(profile.slug));
     } catch {
       setCurrentAvailability({ availableNow: false, durations: { 30: false, 60: false }, checkedAt: new Date().toISOString() });
-    }
-  };
-
-  const handleScrollToAvailability = () => {
-    const el = document.getElementById("weekly-availability");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
     }
   };
 

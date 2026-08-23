@@ -44,6 +44,7 @@ describe('MarkPaymentSucceededUseCase', () => {
     const paymentRepository = {
       findById: jest.fn().mockResolvedValue(basePayment),
       createEvent: jest.fn().mockResolvedValue({}),
+      createWebhookReceipt: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
         ...basePayment,
         status: PaymentStatus.CAPTURED,
@@ -323,6 +324,24 @@ describe('MarkPaymentSucceededUseCase', () => {
         setup.orchestrateSessionPaymentStatusService
           .markSessionConfirmedFromPayment,
       ).not.toHaveBeenCalled();
+    });
+
+    it('rolls back receipt processing when capture transaction fails', async () => {
+      const setup = buildUseCase();
+      setup.paymentRepository.createWebhookReceipt.mockRejectedValueOnce(
+        new Error('capture failed'),
+      );
+
+      await expect(
+        setup.useCase.execute({
+          paymentId: 'payment_1',
+          providerEventRef: 'evt_rollback',
+          payload: {},
+        }),
+      ).rejects.toThrow('capture failed');
+
+      expect(setup.paymentRepository.updateStatus).not.toHaveBeenCalled();
+      expect(setup.paymentRepository.createEvent).not.toHaveBeenCalled();
     });
   });
 });

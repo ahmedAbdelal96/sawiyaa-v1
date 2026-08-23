@@ -207,6 +207,23 @@ exports.Prisma.RefundPolicyAcceptanceScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.StoredFileScalarFieldEnum = {
+  id: 'id',
+  storageKey: 'storageKey',
+  originalFileName: 'originalFileName',
+  mimeType: 'mimeType',
+  extension: 'extension',
+  sizeBytes: 'sizeBytes',
+  sha256: 'sha256',
+  purpose: 'purpose',
+  status: 'status',
+  uploadedByUserId: 'uploadedByUserId',
+  chatConversationId: 'chatConversationId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deletedAt: 'deletedAt'
+};
+
 exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   displayName: 'displayName',
@@ -214,6 +231,7 @@ exports.Prisma.UserScalarFieldEnum = {
   tokenVersion: 'tokenVersion',
   defaultLocale: 'defaultLocale',
   timezone: 'timezone',
+  avatarFileId: 'avatarFileId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -362,6 +380,7 @@ exports.Prisma.LanguageScalarFieldEnum = {
 exports.Prisma.PatientProfileScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  avatarFileId: 'avatarFileId',
   countryId: 'countryId',
   displayName: 'displayName',
   gender: 'gender',
@@ -417,6 +436,7 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   publicSlug: 'publicSlug',
   professionalTitle: 'professionalTitle',
   bio: 'bio',
+  primaryContentLocale: 'primaryContentLocale',
   yearsOfExperience: 'yearsOfExperience',
   sessionPrice30: 'sessionPrice30',
   sessionPrice60: 'sessionPrice60',
@@ -429,6 +449,7 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   instantBookingPrice60Egp: 'instantBookingPrice60Egp',
   instantBookingPrice60Usd: 'instantBookingPrice60Usd',
   avatarUrl: 'avatarUrl',
+  avatarFileId: 'avatarFileId',
   coverImageUrl: 'coverImageUrl',
   isPublicProfilePublished: 'isPublicProfilePublished',
   status: 'status',
@@ -439,6 +460,16 @@ exports.Prisma.PractitionerProfileScalarFieldEnum = {
   acceptsNormalBookings: 'acceptsNormalBookings',
   acceptsPackages: 'acceptsPackages',
   preferredPayoutCurrencyCode: 'preferredPayoutCurrencyCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PractitionerProfileTranslationScalarFieldEnum = {
+  id: 'id',
+  practitionerProfileId: 'practitionerProfileId',
+  locale: 'locale',
+  professionalTitle: 'professionalTitle',
+  bio: 'bio',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -758,6 +789,7 @@ exports.Prisma.PractitionerSpecialtyScalarFieldEnum = {
 
 exports.Prisma.PractitionerApplicationScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
   practitionerId: 'practitionerId',
   status: 'status',
   submittedAt: 'submittedAt',
@@ -772,6 +804,8 @@ exports.Prisma.PractitionerApplicationScalarFieldEnum = {
 
 exports.Prisma.PractitionerReviewCaseScalarFieldEnum = {
   id: 'id',
+  userId: 'userId',
+  applicationId: 'applicationId',
   practitionerId: 'practitionerId',
   caseType: 'caseType',
   status: 'status',
@@ -822,9 +856,11 @@ exports.Prisma.PractitionerReviewRequirementScalarFieldEnum = {
 
 exports.Prisma.PractitionerCredentialScalarFieldEnum = {
   id: 'id',
+  applicationId: 'applicationId',
   practitionerId: 'practitionerId',
   credentialType: 'credentialType',
   fileUrl: 'fileUrl',
+  storedFileId: 'storedFileId',
   reviewStatus: 'reviewStatus',
   lifecycleState: 'lifecycleState',
   reviewedAt: 'reviewedAt',
@@ -846,6 +882,8 @@ exports.Prisma.PractitionerPayoutDestinationScalarFieldEnum = {
   iban: 'iban',
   walletProvider: 'walletProvider',
   walletIdentifier: 'walletIdentifier',
+  instapayIdentifier: 'instapayIdentifier',
+  paypalEmail: 'paypalEmail',
   otherDetails: 'otherDetails',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1283,6 +1321,15 @@ exports.Prisma.PaymentScalarFieldEnum = {
   metadataJson: 'metadataJson',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PaymentWebhookReceiptScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  providerEventRef: 'providerEventRef',
+  paymentId: 'paymentId',
+  receivedAt: 'receivedAt',
+  processedAt: 'processedAt'
 };
 
 exports.Prisma.PaymentEventScalarFieldEnum = {
@@ -1758,6 +1805,7 @@ exports.Prisma.PractitionerSettlementPayoutProofScalarFieldEnum = {
   mimeType: 'mimeType',
   fileSizeBytes: 'fileSizeBytes',
   originalFileName: 'originalFileName',
+  storedFileId: 'storedFileId',
   uploadedAt: 'uploadedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1860,6 +1908,7 @@ exports.Prisma.ArticleScalarFieldEnum = {
   status: 'status',
   visibility: 'visibility',
   coverImageUrl: 'coverImageUrl',
+  coverStoredFileId: 'coverStoredFileId',
   featuredImageAlt: 'featuredImageAlt',
   currentRevisionNumber: 'currentRevisionNumber',
   lastSubmittedAt: 'lastSubmittedAt',
@@ -2010,6 +2059,7 @@ exports.Prisma.MessageAttachmentScalarFieldEnum = {
   fileSize: 'fileSize',
   originalName: 'originalName',
   storageProvider: 'storageProvider',
+  storedFileId: 'storedFileId',
   uploadedAt: 'uploadedAt'
 };
 
@@ -2513,6 +2563,7 @@ exports.Prisma.AcademyProgramScalarFieldEnum = {
   descriptionAr: 'descriptionAr',
   descriptionEn: 'descriptionEn',
   coverImageUrl: 'coverImageUrl',
+  coverStoredFileId: 'coverStoredFileId',
   categoryId: 'categoryId',
   priceEgp: 'priceEgp',
   priceUsd: 'priceUsd',
@@ -2567,6 +2618,7 @@ exports.Prisma.AcademyProgramEnrollmentScalarFieldEnum = {
   completedAt: 'completedAt',
   certificateIssuedAt: 'certificateIssuedAt',
   certificateFileStoragePath: 'certificateFileStoragePath',
+  certificateStoredFileId: 'certificateStoredFileId',
   certificateFileName: 'certificateFileName',
   certificateUploadedAt: 'certificateUploadedAt',
   certificateUploadedByUserId: 'certificateUploadedByUserId',
@@ -2818,6 +2870,23 @@ exports.RefundPolicyVersionStatus = exports.$Enums.RefundPolicyVersionStatus = {
   ARCHIVED: 'ARCHIVED'
 };
 
+exports.StoredFilePurpose = exports.$Enums.StoredFilePurpose = {
+  USER_AVATAR: 'USER_AVATAR',
+  PATIENT_AVATAR: 'PATIENT_AVATAR',
+  PRACTITIONER_AVATAR: 'PRACTITIONER_AVATAR',
+  PRACTITIONER_CREDENTIAL: 'PRACTITIONER_CREDENTIAL',
+  CHAT_ATTACHMENT: 'CHAT_ATTACHMENT',
+  PAYOUT_PROOF: 'PAYOUT_PROOF',
+  ARTICLE_COVER: 'ARTICLE_COVER',
+  ACADEMY_PROGRAM_COVER: 'ACADEMY_PROGRAM_COVER',
+  ACADEMY_CERTIFICATE: 'ACADEMY_CERTIFICATE'
+};
+
+exports.StoredFileStatus = exports.$Enums.StoredFileStatus = {
+  ACTIVE: 'ACTIVE',
+  DELETED: 'DELETED'
+};
+
 exports.UserStatus = exports.$Enums.UserStatus = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',
@@ -2835,6 +2904,7 @@ exports.AuthProvider = exports.$Enums.AuthProvider = {
 
 exports.UserRoleType = exports.$Enums.UserRoleType = {
   PATIENT: 'PATIENT',
+  TRAINEE: 'TRAINEE',
   PRACTITIONER: 'PRACTITIONER',
   ADMIN: 'ADMIN',
   FINANCE_STAFF: 'FINANCE_STAFF',
@@ -3154,6 +3224,8 @@ exports.PractitionerPayoutMethodType = exports.$Enums.PractitionerPayoutMethodTy
   BANK_ACCOUNT: 'BANK_ACCOUNT',
   IBAN: 'IBAN',
   WALLET: 'WALLET',
+  INSTAPAY: 'INSTAPAY',
+  PAYPAL: 'PAYPAL',
   OTHER: 'OTHER'
 };
 
@@ -4148,6 +4220,7 @@ exports.Prisma.ModelName = {
   RefundPolicyClause: 'RefundPolicyClause',
   RefundPolicyVersion: 'RefundPolicyVersion',
   RefundPolicyAcceptance: 'RefundPolicyAcceptance',
+  StoredFile: 'StoredFile',
   User: 'User',
   UserEmail: 'UserEmail',
   UserPhone: 'UserPhone',
@@ -4167,6 +4240,7 @@ exports.Prisma.ModelName = {
   SpecialtyCategory: 'SpecialtyCategory',
   SpecialtyTranslation: 'SpecialtyTranslation',
   PractitionerProfile: 'PractitionerProfile',
+  PractitionerProfileTranslation: 'PractitionerProfileTranslation',
   PatientPractitionerView: 'PatientPractitionerView',
   PractitionerMarketingPlacement: 'PractitionerMarketingPlacement',
   PractitionerMarketingPlacementHistory: 'PractitionerMarketingPlacementHistory',
@@ -4214,6 +4288,7 @@ exports.Prisma.ModelName = {
   SessionAdminDecision: 'SessionAdminDecision',
   InstantBookingRequest: 'InstantBookingRequest',
   Payment: 'Payment',
+  PaymentWebhookReceipt: 'PaymentWebhookReceipt',
   PaymentEvent: 'PaymentEvent',
   Refund: 'Refund',
   CustomerWallet: 'CustomerWallet',

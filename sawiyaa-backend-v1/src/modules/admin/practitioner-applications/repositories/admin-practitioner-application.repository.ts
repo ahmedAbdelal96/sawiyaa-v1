@@ -283,6 +283,7 @@ export class AdminPractitionerApplicationRepository {
     id: string,
     input: {
       status: PractitionerApplicationStatus;
+      practitionerId?: string | null;
       reviewedAt: Date;
       reviewedByUserId: string | null;
       reviewDecisionReason: string | null;
@@ -295,6 +296,9 @@ export class AdminPractitionerApplicationRepository {
       where: { id },
       data: {
         status: input.status,
+        ...(input.practitionerId !== undefined
+          ? { practitionerId: input.practitionerId }
+          : {}),
         reviewedAt: input.reviewedAt,
         reviewedByUserId: input.reviewedByUserId,
         reviewDecisionReason: input.reviewDecisionReason,

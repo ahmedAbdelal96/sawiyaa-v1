@@ -124,7 +124,9 @@ export class ApprovePractitionerApplicationUseCase {
     const note = input.note?.trim() || null;
     const updated = await this.prisma.$transaction(async (tx) => {
       const latest = await this.applicationRepository.findById(input.id, tx);
-      if (!latest || latest.practitioner) throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_STATE_CHANGED' });
+      if (!latest) throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_STATE_CHANGED' });
+      this.transitionPolicy.assertCanApprove(latest.status);
+      if (latest.practitioner) throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_STATE_CHANGED' });
       const snapshot = (latest.submissionSnapshot ?? {}) as any;
       const reviewCase = await tx.practitionerReviewCase.findFirst({ where: { applicationId: latest.id, status: { in: ['PENDING_REVIEW', 'UNDER_REVIEW', 'RESUBMITTED'] } }, include: { requirements: true } });
       if (reviewCase?.requirements.some((requirement) => requirement.status === 'OPEN' && requirement.severity === 'BLOCKING')) {
@@ -164,11 +166,15 @@ export class ApprovePractitionerApplicationUseCase {
       await tx.practitionerReviewCase.updateMany({ where: { applicationId: latest.id }, data: { applicationId: null, practitionerId: profile.id, userId: latest.userId } });
       const decision = await this.applicationRepository.updateDecision(input.id, {
         status: PractitionerApplicationStatus.APPROVED,
+        practitionerId: profile.id,
         reviewedAt,
         reviewedByUserId: input.adminUserId,
         reviewDecisionReason: reason,
         reviewNotes: note,
       }, tx);
+      if (!decision.practitioner) {
+        throw new BadRequestException({ error: 'PRACTITIONER_APPLICATION_INVALID_RELATION' });
+      }
       await this.securityAuditService.recordRequired(tx, {
         action: 'security.practitioner.application.approve',
         outcome: SecurityAuditOutcome.SUCCESS,
@@ -217,21 +223,6 @@ export class ApprovePractitionerApplicationUseCase {
       });
     }
 
-    if (existing.status === PractitionerApplicationStatus.APPROVED && existing.practitioner) {
-      return {
-        message: this.i18nService.t('admin.practitionerApplications.success.applicationApproved', input.locale),
-        application: this.mapper.toDecision({
-          applicationId: existing.id,
-          practitionerProfileId: existing.practitioner.id,
-          userId: existing.practitioner.userId ?? existing.userId,
-          status: existing.status,
-          reviewedAt: existing.reviewedAt,
-          reviewedByUserId: existing.reviewedByUserId ?? null,
-          reviewDecisionReason: existing.reviewDecisionReason ?? null,
-          reviewNotes: existing.reviewNotes ?? null,
-        }),
-      };
-    }
     this.transitionPolicy.assertCanApprove(existing.status);
 
     if (!existing.practitioner) {
@@ -567,6 +558,13 @@ export class ApprovePractitionerApplicationUseCase {
           },
           tx,
         );
+        if (!decision.practitioner) {
+          throw new BadRequestException({
+            messageKey:
+              'admin.practitionerApplications.errors.invalidApplicationState',
+            error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_RELATION',
+          });
+        }
 
         await this.profileRepository.updateStatusAndPublish(
           decision.practitioner.id,

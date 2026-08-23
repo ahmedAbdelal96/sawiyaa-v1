@@ -124,6 +124,10 @@ export interface PractitionerReadiness {
   canSubmitApplication: boolean;
   missingRequirements: string[];
   checks: PractitionerReadinessChecks;
+  isApproved?: boolean;
+  hasRequiredNormalPricing?: boolean;
+  canPublish?: boolean;
+  publicationMissingRequirements?: string[];
 }
 
 export interface PractitionerReadinessResponse {

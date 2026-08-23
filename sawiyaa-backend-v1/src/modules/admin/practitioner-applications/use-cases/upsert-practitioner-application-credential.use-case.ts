@@ -245,7 +245,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
           return applicantCredential;
         }
 
-        const [user, profile, specialtyLinks, credentials] = await Promise.all([
+        const [user, profile, specialtyLinks] = await Promise.all([
           tx.user.findUnique({
             where: { id: application.practitioner.userId },
             select: {
@@ -279,10 +279,6 @@ export class UpsertPractitionerApplicationCredentialUseCase {
               isPrimary: true,
             },
           }),
-          tx.practitionerCredential.findMany({
-            where: { practitionerId: application.practitionerId },
-            orderBy: { createdAt: 'desc' },
-          }),
         ]);
 
         if (!user || !profile) {
@@ -292,6 +288,11 @@ export class UpsertPractitionerApplicationCredentialUseCase {
             error: 'ADMIN_PRACTITIONER_APPLICATION_INVALID_RELATION',
           });
         }
+
+        const currentCredentials = await tx.practitionerCredential.findMany({
+          where: { practitionerId: application.practitionerId },
+          orderBy: { createdAt: 'desc' },
+        });
 
         const specialtyIds = specialtyLinks.map((item) => item.specialtyId);
         const specialties = await this.specialtyRepository.listByIds(
@@ -333,7 +334,7 @@ export class UpsertPractitionerApplicationCredentialUseCase {
                 categoryId: specialty?.categoryId ?? null,
               };
             }),
-            credentials: credentials.map((item) => ({
+            credentials: currentCredentials.map((item) => ({
               credentialId: item.id,
               credentialType: item.credentialType,
               fileUrl: item.fileUrl,
@@ -370,8 +371,8 @@ export class UpsertPractitionerApplicationCredentialUseCase {
         );
 
         const refreshedCredential =
-          credentials.find((item) => item.id === input.credentialId) ??
-          credentials[0];
+          currentCredentials.find((item) => item.id === input.credentialId) ??
+          currentCredentials[0];
 
         if (!refreshedCredential) {
           throw new NotFoundException({

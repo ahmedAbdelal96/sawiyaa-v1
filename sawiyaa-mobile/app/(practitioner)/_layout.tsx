@@ -145,6 +145,10 @@ export default function PractitionerLayout() {
         name="application-status"
         options={{
           href: isApprovedPractitioner ? null : undefined,
+          title: t("auth.practitionerApprovalStatus.tab"),
+          tabBarIcon: ({ color }) => (
+            <TabIcon name="person-circle-outline" color={color} />
+          ),
         }}
       />
       <Tabs.Screen

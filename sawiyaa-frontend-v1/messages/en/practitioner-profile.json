@@ -74,7 +74,10 @@
     "localTimeLabel": "Your local time",
     "timezoneNote": "Times shown in your local timezone.",
     "browseNextWeek": "Show next week",
-    "browseOtherPractitioners": "Choose another practitioner"
+    "browseOtherPractitioners": "Choose another practitioner",
+    "selectDatePrompt": "Select a date to view available time slots",
+    "noSlotsOnSelectedDay": "No available times on this day.",
+    "jumpToNextAvailable": "Jump to next available day"
   },
   "booking": {
     "panelTitle": "Book a session",
@@ -83,8 +86,10 @@
     "backToSlots": "Back to slots",
     "selectedSlot": "Selected slot",
     "selectDuration": "Session duration",
+    "durationAll": "All",
     "duration30": "30 min",
     "duration60": "60 min",
+    "selectDayTitle": "Available times for {day}",
     "sessionFees": "Session fees",
     "selectedPrice": "Selected price: {price}",
     "selectedPriceLabel": "Selected price",
@@ -105,7 +110,9 @@
     "instant": {
       "availableNow": "Available now for an instant session",
       "note": "Start a video session in minutes after specialist approval.",
-      "cta": "Request an instant session"
+      "cta": "Request an instant session",
+      "unavailable": "Instant booking is not available right now",
+      "unavailableNote": "You can choose a suitable time from the available session schedule."
     }
   },
   "packages": {

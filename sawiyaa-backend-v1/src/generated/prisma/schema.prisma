@@ -40,6 +40,7 @@ enum AuthProvider {
 
 enum UserRoleType {
   PATIENT
+  TRAINEE
   PRACTITIONER
   ADMIN
   FINANCE_STAFF
@@ -133,6 +134,8 @@ enum PractitionerPayoutMethodType {
   BANK_ACCOUNT
   IBAN
   WALLET
+  INSTAPAY
+  PAYPAL
   OTHER
 }
 
@@ -1369,6 +1372,23 @@ enum ConfigScopeType {
   ENVIRONMENT
 }
 
+enum StoredFileStatus {
+  ACTIVE
+  DELETED
+}
+
+enum StoredFilePurpose {
+  USER_AVATAR
+  PATIENT_AVATAR
+  PRACTITIONER_AVATAR
+  PRACTITIONER_CREDENTIAL
+  CHAT_ATTACHMENT
+  PAYOUT_PROOF
+  ARTICLE_COVER
+  ACADEMY_PROGRAM_COVER
+  ACADEMY_CERTIFICATE
+}
+
 enum ConfigChangeAction {
   CREATED
   UPDATED
@@ -1481,6 +1501,39 @@ enum AcademyProgramSessionAttendanceStatus {
 // Foundation / Identity
 //////////////////////////////
 
+model StoredFile {
+  id                 String            @id @default(uuid()) @db.Uuid
+  storageKey         String            @unique @db.VarChar(500)
+  originalFileName   String?           @db.VarChar(255)
+  mimeType           String            @db.VarChar(100)
+  extension          String            @db.VarChar(20)
+  sizeBytes          Int
+  sha256             String            @db.Char(64)
+  purpose            StoredFilePurpose
+  status             StoredFileStatus  @default(ACTIVE)
+  uploadedByUserId   String?           @db.Uuid
+  chatConversationId String?           @db.Uuid
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  deletedAt          DateTime?
+
+  uploadedByUser         User?                              @relation("StoredFileUploadedByUser", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  chatConversation       Conversation?                      @relation("StoredChatAttachmentConversation", fields: [chatConversationId], references: [id], onDelete: SetNull)
+  userAvatar             User?                              @relation("UserAvatarFile")
+  patientAvatar          PatientProfile?                    @relation("PatientAvatarFile")
+  practitionerAvatar     PractitionerProfile?               @relation("PractitionerAvatarFile")
+  practitionerCredential PractitionerCredential?            @relation("PractitionerCredentialFile")
+  messageAttachment      MessageAttachment?                 @relation("MessageAttachmentFile")
+  payoutProof            PractitionerSettlementPayoutProof? @relation("SettlementPayoutProofFile")
+  articleCover           Article?                           @relation("ArticleCoverFile")
+  academyProgramCover    AcademyProgram?                    @relation("AcademyProgramCoverFile")
+  academyCertificate     AcademyProgramEnrollment?          @relation("AcademyProgramCertificateFile")
+
+  @@index([purpose, status])
+  @@index([uploadedByUserId, createdAt])
+  @@index([chatConversationId, purpose, status])
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   displayName   String?    @db.VarChar(191)
@@ -1488,6 +1541,7 @@ model User {
   tokenVersion  Int        @default(0)
   defaultLocale String?    @db.VarChar(10)
   timezone      String?    @db.VarChar(50)
+  avatarFileId  String?    @unique @db.Uuid
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -1502,6 +1556,10 @@ model User {
   twoFactorSettings                      TwoFactorSetting?
   patientProfile                         PatientProfile?
   practitionerProfile                    PractitionerProfile?
+  practitionerApplications               PractitionerApplication[]
+  practitionerReviewCases                PractitionerReviewCase[]            @relation("PractitionerReviewCaseApplicant")
+  avatarFile                             StoredFile?                         @relation("UserAvatarFile", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  uploadedFiles                          StoredFile[]                        @relation("StoredFileUploadedByUser")
   academyLearner                         AcademyLearner?
   academyProgramEnrollments              AcademyProgramEnrollment[]
   academyProgramCertificatesUploaded     AcademyProgramEnrollment[]          @relation("AcademyProgramEnrollmentCertificateUploadedByUser")
@@ -1767,6 +1825,7 @@ model Language {
 model PatientProfile {
   id                    String    @id @default(uuid()) @db.Uuid
   userId                String    @unique @db.Uuid
+  avatarFileId          String?   @unique @db.Uuid
   countryId             String?   @db.Uuid
   displayName           String?   @db.VarChar(191)
   gender                String?   @db.VarChar(50)
@@ -1775,8 +1834,9 @@ model PatientProfile {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  country Country? @relation(fields: [countryId], references: [id], onDelete: SetNull)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarFile StoredFile? @relation("PatientAvatarFile", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  country    Country?    @relation(fields: [countryId], references: [id], onDelete: SetNull)
 
   sessions                    Session[]
   instantBookingRequests      InstantBookingRequest[]
@@ -1865,6 +1925,7 @@ model PractitionerProfile {
   publicSlug                  String                        @unique @db.VarChar(191)
   professionalTitle           String?                       @db.VarChar(191)
   bio                         String?                       @db.VarChar(4000)
+  primaryContentLocale        ContentLocale?
   yearsOfExperience           Int?
   sessionPrice30              Decimal?                      @db.Decimal(18, 2)
   sessionPrice60              Decimal?                      @db.Decimal(18, 2)
@@ -1877,6 +1938,7 @@ model PractitionerProfile {
   instantBookingPrice60Egp    Decimal?                      @db.Decimal(18, 2)
   instantBookingPrice60Usd    Decimal?                      @db.Decimal(18, 2)
   avatarUrl                   String?                       @db.Text
+  avatarFileId                String?                       @unique @db.Uuid
   coverImageUrl               String?                       @db.VarChar(500)
   isPublicProfilePublished    Boolean                       @default(false)
   status                      PractitionerStatus            @default(DRAFT)
@@ -1891,47 +1953,64 @@ model PractitionerProfile {
   updatedAt                   DateTime                      @updatedAt
 
   user                     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarFile               StoredFile?        @relation("PractitionerAvatarFile", fields: [avatarFileId], references: [id], onDelete: SetNull)
   country                  Country?           @relation(fields: [countryId], references: [id], onDelete: SetNull)
   primarySpecialtyCategory SpecialtyCategory? @relation(fields: [primarySpecialtyCategoryId], references: [id], onDelete: SetNull)
 
-  languages                    PractitionerProfileLanguage[]
-  specialties                  PractitionerSpecialty[]
-  applications                 PractitionerApplication[]
-  reviewCases                  PractitionerReviewCase[]
-  credentials                  PractitionerCredential[]
-  payoutDestination            PractitionerPayoutDestination?
-  availabilityExceptions       AvailabilityException[]
-  availabilityWeeks            PractitionerAvailabilityWeek[]
-  availabilityRepeatOperations AvailabilityScheduleRepeatOperation[]
-  presence                     PractitionerPresence?
-  sessions                     Session[]
-  instantBookingRequests       InstantBookingRequest[]
-  payments                     Payment[]
-  packagePurchases             PatientPackagePurchase[]
-  packageEntitlementDecisions  SessionPackageEntitlementDecision[]
-  packageSettlements           PackageSettlement[]
-  wallets                      PractitionerWallet[]
-  ledgerEntries                LedgerEntry[]
-  settlements                  PractitionerSettlement[]
-  settlementPayouts            PractitionerSettlementPayout[]
-  manualPayouts                PractitionerManualPayout[]
-  practitionerRecoveries       PractitionerRecovery[]
-  coupons                      Coupon[]
-  articles                     Article[]                             @relation("ArticleAuthorPractitioner")
-  conversations                Conversation[]                        @relation("ConversationPractitioner")
-  supportTickets               SupportTicket[]                       @relation("SupportTicketPractitioner")
-  chatApprovalRequests         ChatApprovalRequest[]
-  couponRedemptions            CouponRedemption[]
-  sessionReviews               SessionReview[]
-  matchingRecommendations      MatchingRecommendation[]
-  corporateBenefitPlans        CorporateBenefitPlanPractitioner[]
-  patientViews                 PatientPractitionerView[]
-  marketingPlacements          PractitionerMarketingPlacement[]
+  languages                       PractitionerProfileLanguage[]
+  professionalContentTranslations PractitionerProfileTranslation[]
+  specialties                     PractitionerSpecialty[]
+  applications                    PractitionerApplication[]
+  reviewCases                     PractitionerReviewCase[]
+  credentials                     PractitionerCredential[]
+  payoutDestination               PractitionerPayoutDestination?
+  availabilityExceptions          AvailabilityException[]
+  availabilityWeeks               PractitionerAvailabilityWeek[]
+  availabilityRepeatOperations    AvailabilityScheduleRepeatOperation[]
+  presence                        PractitionerPresence?
+  sessions                        Session[]
+  instantBookingRequests          InstantBookingRequest[]
+  payments                        Payment[]
+  packagePurchases                PatientPackagePurchase[]
+  packageEntitlementDecisions     SessionPackageEntitlementDecision[]
+  packageSettlements              PackageSettlement[]
+  wallets                         PractitionerWallet[]
+  ledgerEntries                   LedgerEntry[]
+  settlements                     PractitionerSettlement[]
+  settlementPayouts               PractitionerSettlementPayout[]
+  manualPayouts                   PractitionerManualPayout[]
+  practitionerRecoveries          PractitionerRecovery[]
+  coupons                         Coupon[]
+  articles                        Article[]                             @relation("ArticleAuthorPractitioner")
+  conversations                   Conversation[]                        @relation("ConversationPractitioner")
+  supportTickets                  SupportTicket[]                       @relation("SupportTicketPractitioner")
+  chatApprovalRequests            ChatApprovalRequest[]
+  couponRedemptions               CouponRedemption[]
+  sessionReviews                  SessionReview[]
+  matchingRecommendations         MatchingRecommendation[]
+  corporateBenefitPlans           CorporateBenefitPlanPractitioner[]
+  patientViews                    PatientPractitionerView[]
+  marketingPlacements             PractitionerMarketingPlacement[]
 
   @@index([status, practitionerType])
   @@index([practitionerGender, status])
   @@index([countryId, status])
   @@index([primarySpecialtyCategoryId, status])
+}
+
+model PractitionerProfileTranslation {
+  id                    String        @id @default(uuid()) @db.Uuid
+  practitionerProfileId String        @db.Uuid
+  locale                ContentLocale
+  professionalTitle     String?       @db.VarChar(191)
+  bio                   String?       @db.VarChar(4000)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  practitionerProfile PractitionerProfile @relation(fields: [practitionerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([practitionerProfileId, locale])
+  @@index([locale, practitionerProfileId])
 }
 
 model PatientPractitionerView {
@@ -2402,7 +2481,8 @@ model PractitionerSpecialty {
 
 model PractitionerApplication {
   id                   String                        @id @default(uuid()) @db.Uuid
-  practitionerId       String                        @db.Uuid
+  userId               String                        @db.Uuid
+  practitionerId       String?                       @db.Uuid
   status               PractitionerApplicationStatus @default(DRAFT)
   submittedAt          DateTime?
   reviewedAt           DateTime?
@@ -2413,15 +2493,21 @@ model PractitionerApplication {
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 
-  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  user         User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile?     @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  reviewCases  PractitionerReviewCase[]
+  credentials  PractitionerCredential[]
 
+  @@index([userId, status, updatedAt])
   @@index([practitionerId, status])
   @@index([reviewedByUserId, reviewedAt])
 }
 
 model PractitionerReviewCase {
   id               String           @id @default(uuid()) @db.Uuid
-  practitionerId   String           @db.Uuid
+  userId           String?          @db.Uuid
+  applicationId    String?          @db.Uuid
+  practitionerId   String?          @db.Uuid
   caseType         ReviewCaseType
   status           ReviewCaseStatus @default(DRAFT)
   proposedSnapshot Json?
@@ -2434,7 +2520,9 @@ model PractitionerReviewCase {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
-  practitioner PractitionerProfile             @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  user         User?                           @relation("PractitionerReviewCaseApplicant", fields: [userId], references: [id], onDelete: SetNull)
+  application  PractitionerApplication?        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile?            @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
   sections     PractitionerReviewSection[]
   requirements PractitionerReviewRequirement[]
 
@@ -2489,9 +2577,11 @@ model PractitionerReviewRequirement {
 
 model PractitionerCredential {
   id               String                   @id @default(uuid()) @db.Uuid
-  practitionerId   String                   @db.Uuid
+  applicationId    String?                  @db.Uuid
+  practitionerId   String?                  @db.Uuid
   credentialType   CredentialType
   fileUrl          String                   @db.VarChar(500)
+  storedFileId     String?                  @unique @db.Uuid
   reviewStatus     CredentialReviewStatus   @default(PENDING)
   lifecycleState   CredentialLifecycleState @default(ACTIVE)
   reviewedAt       DateTime?
@@ -2501,27 +2591,32 @@ model PractitionerCredential {
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
 
-  practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
+  application  PractitionerApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  practitioner PractitionerProfile?     @relation(fields: [practitionerId], references: [id], onDelete: SetNull)
+  storedFile   StoredFile?              @relation("PractitionerCredentialFile", fields: [storedFileId], references: [id], onDelete: SetNull)
 
+  @@index([applicationId, reviewStatus])
   @@index([practitionerId, reviewStatus])
   @@index([reviewedByUserId, reviewedAt])
   @@index([expiresAt])
 }
 
 model PractitionerPayoutDestination {
-  id                String                       @id @default(uuid()) @db.Uuid
-  practitionerId    String                       @unique @db.Uuid
-  methodType        PractitionerPayoutMethodType
-  countryCode       String?                      @db.VarChar(2)
-  accountHolderName String?                      @db.VarChar(191)
-  bankName          String?                      @db.VarChar(191)
-  bankAccountNumber String?                      @db.VarChar(191)
-  iban              String?                      @db.VarChar(191)
-  walletProvider    String?                      @db.VarChar(191)
-  walletIdentifier  String?                      @db.VarChar(191)
-  otherDetails      String?                      @db.VarChar(500)
-  createdAt         DateTime                     @default(now())
-  updatedAt         DateTime                     @updatedAt
+  id                 String                       @id @default(uuid()) @db.Uuid
+  practitionerId     String                       @unique @db.Uuid
+  methodType         PractitionerPayoutMethodType
+  countryCode        String?                      @db.VarChar(2)
+  accountHolderName  String?                      @db.VarChar(191)
+  bankName           String?                      @db.VarChar(191)
+  bankAccountNumber  String?                      @db.VarChar(191)
+  iban               String?                      @db.VarChar(191)
+  walletProvider     String?                      @db.VarChar(191)
+  walletIdentifier   String?                      @db.VarChar(191)
+  instapayIdentifier String?                      @db.VarChar(191)
+  paypalEmail        String?                      @db.VarChar(191)
+  otherDetails       String?                      @db.VarChar(500)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
 
   practitioner PractitionerProfile @relation(fields: [practitionerId], references: [id], onDelete: Cascade)
 
@@ -3182,6 +3277,7 @@ model Payment {
   coupon         Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   events                       PaymentEvent[]
+  webhookReceipts              PaymentWebhookReceipt[]
   refunds                      Refund[]
   refundEvents                 RefundEvent[]
   walletEntries                CustomerWalletEntry[]
@@ -3200,6 +3296,20 @@ model Payment {
   @@index([practitionerId, status])
   @@index([provider, status, createdAt])
   @@index([currencyCode, status])
+}
+
+model PaymentWebhookReceipt {
+  id               String          @id @default(uuid()) @db.Uuid
+  provider         PaymentProvider
+  providerEventRef String          @db.VarChar(191)
+  paymentId        String          @db.Uuid
+  receivedAt       DateTime        @default(now())
+  processedAt      DateTime        @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerEventRef], map: "uq_payment_webhook_receipt_provider_event")
+  @@index([paymentId])
 }
 
 model PaymentEvent {
@@ -3916,11 +4026,13 @@ model PractitionerSettlementPayoutProof {
   mimeType         String   @db.VarChar(100)
   fileSizeBytes    Int
   originalFileName String?  @db.VarChar(255)
+  storedFileId     String?  @unique @db.Uuid
   uploadedAt       DateTime @default(now())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  payout PractitionerSettlementPayout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  payout     PractitionerSettlementPayout @relation(fields: [payoutId], references: [id], onDelete: Restrict)
+  storedFile StoredFile?                  @relation("SettlementPayoutProofFile", fields: [storedFileId], references: [id], onDelete: SetNull)
 
   @@index([uploadedAt])
 }
@@ -4084,6 +4196,7 @@ model Article {
   visibility ArticleVisibility @default(PUBLIC)
 
   coverImageUrl         String? @db.VarChar(500)
+  coverStoredFileId     String? @unique @db.Uuid
   featuredImageAlt      String? @db.VarChar(191)
   currentRevisionNumber Int     @default(1)
 
@@ -4100,6 +4213,7 @@ model Article {
   authorUser         User                 @relation("ArticleAuthorUser", fields: [authorUserId], references: [id], onDelete: Restrict)
   authorPractitioner PractitionerProfile? @relation("ArticleAuthorPractitioner", fields: [authorPractitionerId], references: [id], onDelete: SetNull)
   primaryCategory    ArticleCategory?     @relation("ArticlePrimaryCategory", fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  coverStoredFile    StoredFile?          @relation("ArticleCoverFile", fields: [coverStoredFileId], references: [id], onDelete: SetNull)
 
   translations        ArticleTranslation[]
   categoryAssignments ArticleCategoryAssignment[]
@@ -4272,6 +4386,7 @@ model Conversation {
   moderationReportsEvidence ModerationReport[]         @relation("ModerationReportConversation")
   supportTicket             SupportTicket?
   chatApprovalRequest       ChatApprovalRequest?
+  storedChatFiles           StoredFile[]               @relation("StoredChatAttachmentConversation")
 
   @@index([conversationType, status, startedAt])
   @@index([conversationType, status, updatedAt])
@@ -4348,9 +4463,11 @@ model MessageAttachment {
   fileSize        Int?
   originalName    String?  @db.VarChar(191)
   storageProvider String?  @db.VarChar(100)
+  storedFileId    String?  @unique @db.Uuid
   uploadedAt      DateTime @default(now())
 
-  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message    Message     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  storedFile StoredFile? @relation("MessageAttachmentFile", fields: [storedFileId], references: [id], onDelete: SetNull)
 
   @@index([messageId])
 }
@@ -5173,28 +5290,30 @@ model AcademyLearner {
 }
 
 model AcademyProgram {
-  id               String               @id @default(uuid()) @db.Uuid
-  slug             String               @unique @db.VarChar(191)
-  titleAr          String               @db.VarChar(191)
-  titleEn          String               @db.VarChar(191)
-  descriptionAr    String?
-  descriptionEn    String?
-  coverImageUrl    String?              @db.VarChar(500)
-  categoryId       String?              @db.Uuid
-  priceEgp         Decimal?             @db.Decimal(18, 2)
-  priceUsd         Decimal?             @db.Decimal(18, 2)
-  registrationOpen Boolean              @default(false)
-  maxSeats         Int?
-  startAt          DateTime?
-  endAt            DateTime?
-  status           AcademyProgramStatus @default(DRAFT)
-  createdByUserId  String?              @db.Uuid
-  publishedAt      DateTime?
-  archivedAt       DateTime?
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  id                String               @id @default(uuid()) @db.Uuid
+  slug              String               @unique @db.VarChar(191)
+  titleAr           String               @db.VarChar(191)
+  titleEn           String               @db.VarChar(191)
+  descriptionAr     String?
+  descriptionEn     String?
+  coverImageUrl     String?              @db.VarChar(500)
+  coverStoredFileId String?              @unique @db.Uuid
+  categoryId        String?              @db.Uuid
+  priceEgp          Decimal?             @db.Decimal(18, 2)
+  priceUsd          Decimal?             @db.Decimal(18, 2)
+  registrationOpen  Boolean              @default(false)
+  maxSeats          Int?
+  startAt           DateTime?
+  endAt             DateTime?
+  status            AcademyProgramStatus @default(DRAFT)
+  createdByUserId   String?              @db.Uuid
+  publishedAt       DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   category        CourseCategory?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverStoredFile StoredFile?                    @relation("AcademyProgramCoverFile", fields: [coverStoredFileId], references: [id], onDelete: SetNull)
   createdByUser   User?                          @relation("AcademyProgramCreatedByUser", fields: [createdByUserId], references: [id], onDelete: SetNull)
   sessions        AcademyProgramSession[]
   enrollments     AcademyProgramEnrollment[]
@@ -5255,6 +5374,7 @@ model AcademyProgramEnrollment {
   completedAt                 DateTime?
   certificateIssuedAt         DateTime?
   certificateFileStoragePath  String?                        @db.VarChar(500)
+  certificateStoredFileId     String?                        @unique @db.Uuid
   certificateFileName         String?                        @db.VarChar(255)
   certificateUploadedAt       DateTime?
   certificateUploadedByUserId String?                        @db.Uuid
@@ -5272,6 +5392,8 @@ model AcademyProgramEnrollment {
   attendanceSummarySnapshot   Json?
   createdAt                   DateTime                       @default(now())
   updatedAt                   DateTime                       @updatedAt
+
+  certificateStoredFile StoredFile? @relation("AcademyProgramCertificateFile", fields: [certificateStoredFileId], references: [id], onDelete: SetNull)
 
   academyProgram            AcademyProgram                    @relation(fields: [academyProgramId], references: [id], onDelete: Restrict)
   academyLearner            AcademyLearner                    @relation(fields: [academyLearnerId], references: [id], onDelete: Restrict)

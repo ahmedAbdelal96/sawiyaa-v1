@@ -6,6 +6,7 @@ import {
   selectPractitionerHomeNextSession,
   selectPractitionerHomeSessions,
   selectPractitionerHomeUrgentSession,
+  shouldShowPractitionerHomeAccountAttention,
   shouldShowPractitionerHomeTodaySummary,
 } from "../../src/features/practitioner/home/view-model";
 import type { PractitionerSessionListItem } from "../../src/features/practitioner/sessions/types";
@@ -59,6 +60,27 @@ function session(
 }
 
 describe("practitioner home view model", () => {
+  it("uses publication readiness and does not block on incomplete optional data", () => {
+    expect(
+      shouldShowPractitionerHomeAccountAttention({
+        profileStatus: "APPROVED",
+        canPublish: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowPractitionerHomeAccountAttention({
+        profileStatus: "APPROVED",
+        canPublish: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowPractitionerHomeAccountAttention({
+        profileStatus: "APPROVED",
+        canPublish: undefined,
+      }),
+    ).toBe(false);
+  });
+
   it("has the touched Home and tab copy in Arabic and English", () => {
     const keys = [
       "practitioner.tab.dashboard",

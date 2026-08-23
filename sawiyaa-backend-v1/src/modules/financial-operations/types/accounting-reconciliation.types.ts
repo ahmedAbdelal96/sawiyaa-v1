@@ -65,6 +65,11 @@ export const ACCOUNTING_RECONCILIATION_ISSUE_CODES = {
   PAYMENT_COUPON_SNAPSHOT_MISMATCH: 'PAYMENT_COUPON_SNAPSHOT_MISMATCH',
   PAYMENT_COUPON_OWNER_MISMATCH: 'PAYMENT_COUPON_OWNER_MISMATCH',
   PAYMENT_COUPON_SCOPE_MISMATCH: 'PAYMENT_COUPON_SCOPE_MISMATCH',
+  PAYMENT_PENDING_TOO_LONG: 'PAYMENT_PENDING_TOO_LONG',
+  PAYMENT_CAPTURED_EVENT_MISSING: 'PAYMENT_CAPTURED_EVENT_MISSING',
+  PAYMENT_WEBHOOK_RECEIPT_MISSING: 'PAYMENT_WEBHOOK_RECEIPT_MISSING',
+  PAYMENT_SESSION_STATUS_MISMATCH: 'PAYMENT_SESSION_STATUS_MISMATCH',
+  PAYMENT_WALLET_CAPTURE_MISSING: 'PAYMENT_WALLET_CAPTURE_MISSING',
   WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
   WALLET_AVAILABLE_MISMATCH: 'WALLET_AVAILABLE_MISMATCH',
   WALLET_PENDING_MISMATCH: 'WALLET_PENDING_MISMATCH',
@@ -98,6 +103,34 @@ export const ACCOUNTING_RECONCILIATION_ISSUE_CODES = {
 
 export type AccountingReconciliationIssueCode =
   (typeof ACCOUNTING_RECONCILIATION_ISSUE_CODES)[keyof typeof ACCOUNTING_RECONCILIATION_ISSUE_CODES];
+
+export const ACCOUNTING_RECONCILIATION_ISSUE_COPY = {
+  PAYMENT_PENDING_TOO_LONG: {
+    title: { en: 'Payment pending too long', ar: 'الدفع ما زال معلّقًا لفترة طويلة' },
+    shortDescription: { en: 'The payment exceeded the pending review threshold.', ar: 'تجاوز الدفع المدة المحددة للمراجعة وهو ما زال معلّقًا.' },
+    severityExplanation: { en: 'A delayed provider response may require operational review.', ar: 'قد تتطلب استجابة مزود الدفع المتأخرة مراجعة تشغيلية.' },
+  },
+  PAYMENT_CAPTURED_EVENT_MISSING: {
+    title: { en: 'Captured event is missing', ar: 'حدث إتمام الدفع مفقود' },
+    shortDescription: { en: 'The payment is captured but has no PAYMENT_CAPTURED audit event.', ar: 'الدفع مكتمل، لكن لا يوجد حدث تدقيق PAYMENT_CAPTURED.' },
+    severityExplanation: { en: 'The payment audit trail is incomplete.', ar: 'سجل تدقيق الدفع غير مكتمل.' },
+  },
+  PAYMENT_WEBHOOK_RECEIPT_MISSING: {
+    title: { en: 'Webhook receipt is missing', ar: 'إيصال Webhook مفقود' },
+    shortDescription: { en: 'A post-rollout Paymob payment has no stored webhook receipt.', ar: 'لا يوجد إيصال Webhook محفوظ لدفع Paymob بعد تفعيل التتبع.' },
+    severityExplanation: { en: 'The provider notification cannot be proven from the receipt ledger.', ar: 'لا يمكن إثبات وصول إشعار المزود من سجل الإيصالات.' },
+  },
+  PAYMENT_SESSION_STATUS_MISMATCH: {
+    title: { en: 'Payment and session status mismatch', ar: 'تعارض بين حالة الدفع والجلسة' },
+    shortDescription: { en: 'The linked payment and session are in incompatible states.', ar: 'الدفع والجلسة المرتبطان في حالتين غير متوافقتين.' },
+    severityExplanation: { en: 'The session may not reflect the payment outcome.', ar: 'قد لا تعكس الجلسة نتيجة الدفع.' },
+  },
+  PAYMENT_WALLET_CAPTURE_MISSING: {
+    title: { en: 'Wallet capture is missing or mismatched', ar: 'خصم المحفظة مفقود أو غير متطابق' },
+    shortDescription: { en: 'Captured wallet-funded payment lacks the expected capture amount.', ar: 'الدفع الممول من المحفظة لا يحتوي على مبلغ الخصم المتوقع.' },
+    severityExplanation: { en: 'Wallet financial effects require operational review.', ar: 'تحتاج آثار المحفظة المالية إلى مراجعة تشغيلية.' },
+  },
+} as const;
 
 export type ReconciliationOverviewViewModel = {
   generatedAt: string;

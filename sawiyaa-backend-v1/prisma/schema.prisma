@@ -3277,6 +3277,7 @@ model Payment {
   coupon         Coupon?              @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   events                       PaymentEvent[]
+  webhookReceipts              PaymentWebhookReceipt[]
   refunds                      Refund[]
   refundEvents                 RefundEvent[]
   walletEntries                CustomerWalletEntry[]
@@ -3295,6 +3296,20 @@ model Payment {
   @@index([practitionerId, status])
   @@index([provider, status, createdAt])
   @@index([currencyCode, status])
+}
+
+model PaymentWebhookReceipt {
+  id               String          @id @default(uuid()) @db.Uuid
+  provider         PaymentProvider
+  providerEventRef String          @db.VarChar(191)
+  paymentId        String          @db.Uuid
+  receivedAt       DateTime        @default(now())
+  processedAt      DateTime        @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerEventRef], map: "uq_payment_webhook_receipt_provider_event")
+  @@index([paymentId])
 }
 
 model PaymentEvent {

@@ -6,6 +6,13 @@ const UPCOMING_BUCKETS = new Set(["PENDING", "ACTIONABLE"]);
 
 export type PractitionerHomeAction = "join" | "prepare" | "review" | "view";
 
+export function shouldShowPractitionerHomeAccountAttention(input: {
+  profileStatus: string;
+  canPublish: boolean | undefined;
+}): boolean {
+  return input.profileStatus !== "APPROVED" || input.canPublish === false;
+}
+
 export function shouldShowPractitionerHomeTodaySummary(
   todaySessionCount: number,
   upcomingSessionCount: number,

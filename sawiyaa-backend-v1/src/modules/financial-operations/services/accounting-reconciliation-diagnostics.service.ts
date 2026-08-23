@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   CustomerWalletEntryDirection,
   CustomerWalletEntryType,
@@ -8,6 +9,7 @@ import {
   LedgerEntryType,
   PackageSettlementStatus,
   PaymentPurpose,
+  PaymentProvider,
   PaymentStatus,
   Prisma,
   RefundStatus,
@@ -44,6 +46,7 @@ export class AccountingReconciliationDiagnosticsService {
     private readonly ledgerRepository: LedgerRepository,
     private readonly accountingReconciliationService: AccountingReconciliationService,
     private readonly extractPaymentLedgerBreakdownService: ExtractPaymentLedgerBreakdownService,
+    @Optional() private readonly configService?: ConfigService,
   ) {}
 
   async reconcilePayment(paymentId: string): Promise<ReconciliationResult> {
@@ -51,6 +54,7 @@ export class AccountingReconciliationDiagnosticsService {
       where: { id: paymentId },
       select: {
         id: true,
+        provider: true,
         status: true,
         paymentPurpose: true,
         sessionId: true,
@@ -73,6 +77,26 @@ export class AccountingReconciliationDiagnosticsService {
         commissionPlatformRatePercent: true,
         commissionPractitionerRatePercent: true,
         metadataJson: true,
+        initiatedAt: true,
+        createdAt: true,
+        events: {
+          select: {
+            eventType: true,
+            providerEventRef: true,
+            occurredAt: true,
+          },
+        },
+        webhookReceipts: {
+          select: { id: true, providerEventRef: true, receivedAt: true },
+        },
+        session: { select: { id: true, status: true } },
+        walletReservation: {
+          select: { id: true, status: true, amount: true, capturedAt: true },
+        },
+        walletEntries: {
+          where: { entryType: CustomerWalletEntryType.SESSION_PAYMENT_CAPTURE },
+          select: { id: true, amount: true, entryType: true, occurredAt: true },
+        },
         coupon: {
           select: {
             id: true,
@@ -125,6 +149,111 @@ export class AccountingReconciliationDiagnosticsService {
     ]);
 
     const issues: ReconciliationIssue[] = [];
+    const detectedAt = new Date();
+    const pendingThresholdMinutes = Math.max(
+      1,
+      this.configService?.get<number>(
+        'accountingReconciliation.pendingPaymentThresholdMinutes',
+      ) ?? 30,
+    );
+    const pendingAgeMinutes = payment.initiatedAt
+      ? (detectedAt.getTime() - payment.initiatedAt.getTime()) / 60000
+      : 0;
+
+    if (
+      payment.status === PaymentStatus.PENDING &&
+      payment.initiatedAt &&
+      pendingAgeMinutes >= pendingThresholdMinutes
+    ) {
+      issues.push(this.issue(
+        ACCOUNTING_RECONCILIATION_ISSUE_CODES.PAYMENT_PENDING_TOO_LONG,
+        'WARNING',
+        'Payment has remained pending beyond the reconciliation threshold.',
+        'Payment', payment.id,
+        `pending less than ${pendingThresholdMinutes} minutes`,
+        `pending ${Math.floor(pendingAgeMinutes)} minutes`,
+        payment.currencyCode,
+        { thresholdMinutes: pendingThresholdMinutes },
+      ));
+    }
+
+    const capturedEvent = (payment.events ?? []).find(
+      (event) => event.eventType === 'PAYMENT_CAPTURED',
+    );
+    if (payment.status === PaymentStatus.CAPTURED && !capturedEvent) {
+      issues.push(this.issue(
+        ACCOUNTING_RECONCILIATION_ISSUE_CODES.PAYMENT_CAPTURED_EVENT_MISSING,
+        'CRITICAL',
+        'Captured payment has no PAYMENT_CAPTURED audit event.',
+        'Payment', payment.id, 'PAYMENT_CAPTURED event present', 'missing',
+        payment.currencyCode, { eventCount: (payment.events ?? []).length },
+      ));
+    }
+
+    const rolloutAt = this.resolveWebhookReceiptRolloutAt();
+    if (
+      payment.provider === PaymentProvider.PAYMOB &&
+      payment.status === PaymentStatus.CAPTURED &&
+      rolloutAt && payment.createdAt >= rolloutAt &&
+      (payment.webhookReceipts ?? []).length === 0
+    ) {
+      issues.push(this.issue(
+        ACCOUNTING_RECONCILIATION_ISSUE_CODES.PAYMENT_WEBHOOK_RECEIPT_MISSING,
+        'CRITICAL',
+        'Paymob payment has no webhook receipt after receipt tracking was enabled.',
+        'Payment', payment.id, 'webhook receipt present', 'missing',
+        payment.currencyCode, { rolloutAt: rolloutAt.toISOString() },
+      ));
+    }
+
+    if (
+      payment.sessionId &&
+      payment.session &&
+      (payment.status === PaymentStatus.PENDING ||
+        payment.status === PaymentStatus.CAPTURED)
+    ) {
+      const matches = payment.status === PaymentStatus.CAPTURED
+        ? payment.session.status !== 'PENDING_PAYMENT'
+        : payment.session.status === 'PENDING_PAYMENT';
+      if (!matches) {
+        issues.push(this.issue(
+          ACCOUNTING_RECONCILIATION_ISSUE_CODES.PAYMENT_SESSION_STATUS_MISMATCH,
+          'CRITICAL',
+          'Payment status and linked session status are inconsistent.',
+          'Payment', payment.id,
+          payment.status === PaymentStatus.CAPTURED ? 'not PENDING_PAYMENT' : 'PENDING_PAYMENT',
+          payment.session.status, payment.currencyCode,
+          { sessionId: payment.session.id },
+        ));
+      }
+    }
+
+    const actualWalletCaptureAmount = (payment.walletEntries ?? []).reduce(
+      (total, entry) => total.add(entry.amount),
+      new Prisma.Decimal(0),
+    );
+    if (
+      payment.status === PaymentStatus.CAPTURED &&
+      payment.amountFromWallet.greaterThan(0) &&
+      !actualWalletCaptureAmount.equals(payment.amountFromWallet)
+    ) {
+      issues.push(this.issue(
+        ACCOUNTING_RECONCILIATION_ISSUE_CODES.PAYMENT_WALLET_CAPTURE_MISSING,
+        'CRITICAL',
+        'Payment uses wallet funds but has no wallet capture entry.',
+        'Payment', payment.id,
+        payment.amountFromWallet.toFixed(2),
+        actualWalletCaptureAmount.toFixed(2),
+        payment.currencyCode,
+        {
+          expectedWalletAmount: payment.amountFromWallet.toFixed(2),
+          actualWalletCaptureAmount: actualWalletCaptureAmount.toFixed(2),
+          walletCaptureEntryIds: (payment.walletEntries ?? []).map((entry) => entry.id),
+          walletReservationId: payment.walletReservation?.id ?? null,
+          walletReservationStatus: payment.walletReservation?.status ?? null,
+        },
+      ));
+    }
     if (
       payment.status === PaymentStatus.CAPTURED &&
       payment.paymentPurpose !== PaymentPurpose.SESSION_PACKAGE_PURCHASE
@@ -1613,6 +1742,12 @@ export class AccountingReconciliationDiagnosticsService {
     currencyCode?: string | null,
     metadata?: Record<string, unknown>,
   ): ReconciliationIssue {
+    const metadataRecord = metadata ?? {};
+    const metadataEntityIds = metadataRecord.entityIds;
+    const explicitEntityIds =
+      metadataEntityIds && typeof metadataEntityIds === 'object' && !Array.isArray(metadataEntityIds)
+        ? (metadataEntityIds as Record<string, unknown>)
+        : {};
     return {
       code,
       severity,
@@ -1622,8 +1757,34 @@ export class AccountingReconciliationDiagnosticsService {
       expected: expected ?? null,
       actual: actual ?? null,
       currencyCode: currencyCode ?? null,
-      metadata,
+      metadata: {
+        expectedState: expected ?? null,
+        actualState: actual ?? null,
+        entityIds: {
+          paymentId: this.stringOrNull(explicitEntityIds.paymentId) ??
+            (entityType === 'Payment' ? entityId : null),
+          sessionId: this.stringOrNull(explicitEntityIds.sessionId) ??
+            (entityType === 'Session' ? entityId : this.stringOrNull(metadataRecord.sessionId)),
+          walletReservationId: this.stringOrNull(explicitEntityIds.walletReservationId) ??
+            this.stringOrNull(metadataRecord.walletReservationId),
+          receiptId: this.stringOrNull(explicitEntityIds.receiptId) ??
+            this.stringOrNull(metadataRecord.receiptId),
+        },
+        detectedAt: new Date().toISOString(),
+        safeMetadata: metadataRecord,
+      },
     };
+  }
+
+  private stringOrNull(value: unknown): string | null {
+    return typeof value === 'string' && value.length > 0 ? value : null;
+  }
+
+  private resolveWebhookReceiptRolloutAt(): Date | null {
+    const raw = process.env.PAYMENT_WEBHOOK_RECEIPT_ROLLOUT_AT?.trim();
+    if (!raw) return null;
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private convertAnomalies(

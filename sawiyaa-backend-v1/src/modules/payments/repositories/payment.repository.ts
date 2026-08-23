@@ -253,6 +253,21 @@ export class PaymentRepository {
     });
   }
 
+  findWebhookReceipt(provider: PaymentProvider, providerEventRef: string) {
+    return this.prisma.paymentWebhookReceipt.findUnique({
+      where: {
+        provider_providerEventRef: { provider, providerEventRef },
+      },
+    });
+  }
+
+  createWebhookReceipt(
+    data: Prisma.PaymentWebhookReceiptUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return this.getDb(tx).paymentWebhookReceipt.create({ data });
+  }
+
   createEvent(
     data: Prisma.PaymentEventUncheckedCreateInput,
     tx?: Prisma.TransactionClient,

@@ -12,6 +12,8 @@ import { Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import "../src/i18n";
 import { NotificationRealtimeBridge } from "../src/features/notifications/NotificationRealtimeBridge";
+import LanguageHydrationGate from "../src/i18n/LanguageHydrationGate";
+import QueryFocusBridge from "../src/providers/QueryFocusBridge";
 
 // Inject global web styles to remove Chrome/Safari autofill blue tint and outline
 if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -47,6 +49,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
+        <QueryFocusBridge />
         <ThemeProvider>
           <AuthProvider>
             <NotificationRealtimeBridge />
@@ -62,7 +65,9 @@ export default function RootLayout() {
                       }
                     }}
                   >
-                    <Slot />
+                    <LanguageHydrationGate>
+                      <Slot />
+                    </LanguageHydrationGate>
                   </RuntimeErrorBoundary>
                 </NavigationHistoryProvider>
               </AuthGatewayProvider>

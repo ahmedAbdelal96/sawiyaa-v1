@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { SurfaceCard, SurfaceHeader } from "@/components/shared/SurfaceShell";
+import { SurfaceCard } from "@/components/shared/SurfaceShell";
 import Button from "@/components/ui/button/Button";
 import { DataTable } from "@/components/ui/data-table";
 import type { ColumnDef } from "@/components/ui/data-table";
-import {
-  DEFAULT_PAGE_LIMIT,
-  DEFAULT_PAGE_SIZE_OPTIONS,
-} from "@/constants/pagination";
+import { DEFAULT_PAGE_LIMIT, DEFAULT_PAGE_SIZE_OPTIONS } from "@/constants/pagination";
 import { cn } from "@/lib/utils";
 import DirectionalArrowIcon from "@/components/ui/navigation/DirectionalArrowIcon";
 import {
@@ -18,22 +15,30 @@ import {
   CreditCard,
   FileText,
   Wallet,
-  Activity,
   Users,
+  Copy,
+  Check,
+  Globe,
+  Mail,
+  Phone,
+  User,
+  AlertCircle,
+  RefreshCw,
+  Video,
+  ShieldCheck,
+  Calendar,
+  KeyRound,
+  Sparkles,
 } from "lucide-react";
 import AvatarText from "@/components/ui/avatar/AvatarText";
-import {
-  useAdminPatientDetails,
-  useAdminCountries,
-} from "../hooks/use-admin-patients";
+import { useAdminPatientDetails, useAdminCountries } from "../hooks/use-admin-patients";
 import {
   useAdminPatientWalletEntries,
   useAdminPatientWalletSummary,
 } from "../hooks/use-admin-patient-wallet";
 import { useAdminSessions } from "@/features/admin/sessions/hooks/use-admin-sessions";
 import type { AdminSessionListItem } from "@/features/admin/sessions/types/admin-sessions.types";
-import type { PaymentItem } from "@/features/payments/types/payments.types";
-import type { CustomerWalletEntryItem } from "@/features/payments/types/payments.types";
+import type { PaymentItem, CustomerWalletEntryItem } from "@/features/payments/types/payments.types";
 import type { PatientAssessmentHistoryItem } from "@/features/assessments/types/assessments.types";
 import {
   useAdminPatientAssessments,
@@ -44,97 +49,60 @@ import {
   formatEffectiveViewerDate,
   formatEffectiveViewerDateTime,
 } from "@/lib/time-formatting";
+import { AdminPatientCountryChangeModal } from "./AdminPatientCountryChangeModal";
 
-type PatientTabKey =
-  "overview" | "wallet" | "sessions" | "payments" | "assessments";
+type PatientTabKey = "profile" | "wallet" | "sessions" | "payments" | "assessments";
 
 const PAGE_SIZE_OPTIONS = DEFAULT_PAGE_SIZE_OPTIONS;
-const OVERVIEW_PREVIEW_LIMIT = 5;
 
-function formatMoney(value: string, currency: string, locale: string) {
+const COMMON_COUNTRY_NAMES_AR: Record<string, string> = {
+  AE: "الإمارات العربية المتحدة",
+  EG: "جمهورية مصر العربية",
+  SA: "المملكة العربية السعودية",
+  KW: "الكويت",
+  QA: "قطر",
+  BH: "البحرين",
+  OM: "سلطنة عمان",
+  JO: "الأردن",
+  LB: "لبنان",
+  US: "الولايات المتحدة",
+  GB: "المملكة المتحدة",
+};
+
+function formatMoney(value: string | number, currency: string, locale: string) {
   const amount = Number(value ?? 0);
   const safeLocale = locale === "ar" ? "ar-EG" : "en-US";
   return new Intl.NumberFormat(safeLocale, {
     style: "currency",
-    currency,
+    currency: currency || "EGP",
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
-function TabButton({
-  active,
-  label,
-  icon,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "inline-flex items-center gap-2 rounded-2xl border px-3.5 py-2 text-sm font-semibold transition",
-        active
-          ? "border-primary/30 bg-primary text-white shadow-[0_14px_26px_-18px_rgba(68,161,148,0.5)]"
-          : "border-border-light text-text-primary hover:bg-brand-25 dark:bg-surface-secondary dark:text-text-primary dark:hover:bg-surface-tertiary bg-white",
-      )}
-    >
-      <span
-        className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-2xl",
-          active
-            ? "bg-white/14 text-white"
-            : "bg-surface-secondary text-text-secondary",
-        )}
-      >
-        {icon}
-      </span>
-      <span className="whitespace-nowrap">{label}</span>
-    </button>
-  );
+function calculateAge(dobString?: string | null): number | null {
+  if (!dobString) return null;
+  const birth = new Date(dobString);
+  if (isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age > 0 ? age : null;
 }
 
-function KeyValueRow({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-      <span className="text-text-muted">{label}</span>
-      <span
-        className={cn(
-          "text-text-primary font-semibold break-words dark:text-white/95",
-          valueClassName,
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-export default function AdminPatient360Screen({
-  patientId,
-}: {
-  patientId: string;
-}) {
+export default function AdminPatient360Screen({ patientId }: { patientId: string }) {
   const t = useTranslations("admin-patients");
   const locale = useLocale();
   const settingsQuery = useMySettings();
   const viewerTimeZone = settingsQuery.data?.item.preferences.timezone;
   const router = useRouter();
 
-  const [tab, setTab] = useState<PatientTabKey>("overview");
+  // Default to "profile" (البيانات الأساسية)
+  const [tab, setTab] = useState<PatientTabKey>("profile");
+  const [copiedId, setCopiedId] = useState(false);
+  const [isCountryModalOpen, setIsCountryModalOpen] = useState(false);
 
   const { data: countries = [] } = useAdminCountries();
   const {
@@ -142,25 +110,16 @@ export default function AdminPatient360Screen({
     isLoading,
     isError,
     refetch,
+    isRefetching,
   } = useAdminPatientDetails(patientId, true);
 
-  useEffect(() => {
-    if (localStorage.getItem("debug.adminPatients") !== "1") return;
-    // eslint-disable-next-line no-console
-    console.debug("[adminPatients] 360 state", {
-      routePatientId: patientId,
-      isLoading,
-      isError,
-      patient,
-      tab,
-    });
-  }, [isError, isLoading, patient, patientId, tab]);
+  // Lazy Fetching: Query is ONLY enabled when the respective tab is open
+  const walletEnabled = tab === "wallet";
+  const sessionsEnabled = tab === "sessions";
+  const paymentsEnabled = tab === "payments";
+  const assessmentsEnabled = tab === "assessments";
 
-  const walletEnabled = tab === "overview" || tab === "wallet";
-  const sessionsEnabled = tab === "overview" || tab === "sessions";
-  const paymentsEnabled = tab === "overview" || tab === "payments";
-  const assessmentsEnabled = tab === "overview" || tab === "assessments";
-
+  // Wallet queries
   const [walletEntriesPage, setWalletEntriesPage] = useState(1);
   const [walletEntriesLimit, setWalletEntriesLimit] = useState(10);
   const {
@@ -169,6 +128,7 @@ export default function AdminPatient360Screen({
     isError: walletSummaryError,
     refetch: refetchWalletSummary,
   } = useAdminPatientWalletSummary(patientId, undefined, walletEnabled);
+
   const {
     data: walletEntriesData,
     isLoading: walletEntriesLoading,
@@ -177,14 +137,16 @@ export default function AdminPatient360Screen({
   } = useAdminPatientWalletEntries(
     patientId,
     {
-      page: tab === "overview" ? 1 : walletEntriesPage,
-      limit: tab === "overview" ? OVERVIEW_PREVIEW_LIMIT : walletEntriesLimit,
+      page: walletEntriesPage,
+      limit: walletEntriesLimit,
     },
     walletEnabled,
   );
 
   const wallet = walletSummaryData?.item ?? null;
+  const walletCurrency = wallet?.currencyCode ?? "EGP";
 
+  // Sessions queries
   const [sessionsPage, setSessionsPage] = useState(1);
   const [sessionsLimit, setSessionsLimit] = useState(DEFAULT_PAGE_LIMIT);
   const {
@@ -193,12 +155,13 @@ export default function AdminPatient360Screen({
     isError: sessionsError,
     refetch: refetchSessions,
   } = useAdminSessions({
-    page: tab === "overview" ? 1 : sessionsPage,
-    limit: tab === "overview" ? OVERVIEW_PREVIEW_LIMIT : sessionsLimit,
+    page: sessionsPage,
+    limit: sessionsLimit,
     patientId,
     sort: "newest",
   });
 
+  // Payments queries
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [paymentsLimit, setPaymentsLimit] = useState(DEFAULT_PAGE_LIMIT);
   const {
@@ -209,12 +172,13 @@ export default function AdminPatient360Screen({
   } = useAdminPatientPayments(
     patientId,
     {
-      page: tab === "overview" ? 1 : paymentsPage,
-      limit: tab === "overview" ? OVERVIEW_PREVIEW_LIMIT : paymentsLimit,
+      page: paymentsPage,
+      limit: paymentsLimit,
     },
     paymentsEnabled,
   );
 
+  // Assessments queries
   const [assessmentsPage, setAssessmentsPage] = useState(1);
   const [assessmentsLimit, setAssessmentsLimit] = useState(DEFAULT_PAGE_LIMIT);
   const {
@@ -225,76 +189,138 @@ export default function AdminPatient360Screen({
   } = useAdminPatientAssessments(
     patientId,
     {
-      page: tab === "overview" ? 1 : assessmentsPage,
-      limit: tab === "overview" ? OVERVIEW_PREVIEW_LIMIT : assessmentsLimit,
+      page: assessmentsPage,
+      limit: assessmentsLimit,
     },
     assessmentsEnabled,
   );
 
-  const pageTitle = patient?.displayName ?? t("details.unknownName");
-  const subtitle =
-    patient?.primaryEmail ?? patient?.primaryPhone ?? patient?.userId ?? "-";
+  const handleCopyId = (id: string) => {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(id);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  };
 
+  const handleRefreshActiveTab = () => {
+    void refetch();
+    if (tab === "wallet") {
+      void refetchWalletSummary();
+      void refetchWalletEntries();
+    } else if (tab === "sessions") {
+      void refetchSessions();
+    } else if (tab === "payments") {
+      void refetchPayments();
+    } else if (tab === "assessments") {
+      void refetchAssessments();
+    }
+  };
+
+  // Friendly status badge helpers
+  const getSessionStatusBadge = (status: string) => {
+    const normalized = (status || "").toUpperCase();
+    let tone = "bg-surface-secondary text-text-secondary border-border-light";
+    let label = t(`patient360.sessionStatus.${normalized}` as any, { defaultValue: status });
+
+    if (normalized === "COMPLETED") {
+      tone = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+    } else if (normalized === "CONFIRMED" || normalized === "SCHEDULED") {
+      tone = "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
+    } else if (normalized === "IN_PROGRESS" || normalized === "AWAITING_COMPLETION_CONFIRMATION") {
+      tone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+    } else if (normalized === "CANCELLED" || normalized === "EXPIRED") {
+      tone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+    }
+
+    return (
+      <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", tone)}>
+        {label}
+      </span>
+    );
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    const normalized = (status || "").toUpperCase();
+    let tone = "bg-surface-secondary text-text-secondary border-border-light";
+    let label = t(`patient360.paymentStatus.${normalized}` as any, { defaultValue: status });
+
+    if (normalized === "CAPTURED" || normalized === "SUCCEEDED" || normalized === "PAID") {
+      tone = "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60";
+    } else if (normalized === "REFUNDED") {
+      tone = "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60";
+    } else if (normalized === "PENDING") {
+      tone = "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60";
+    } else if (normalized === "FAILED" || normalized === "EXPIRED") {
+      tone = "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60";
+    }
+
+    return (
+      <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold whitespace-nowrap", tone)}>
+        {label}
+      </span>
+    );
+  };
+
+  const pageTitle = patient?.displayName ?? t("details.unknownName");
+  const age = calculateAge(patient?.dateOfBirth);
+
+  const matchedCountry = useMemo(() => {
+    if (!patient?.countryCode) return null;
+    const code = patient.countryCode.toUpperCase();
+    return countries.find((c) => c.isoCode.toUpperCase() === code);
+  }, [countries, patient?.countryCode]);
+
+  const countryDisplayName = useMemo(() => {
+    const code = (patient?.countryCode || "").toUpperCase();
+    if (!code) return "-";
+    if (locale === "ar") {
+      if (COMMON_COUNTRY_NAMES_AR[code]) {
+        return COMMON_COUNTRY_NAMES_AR[code];
+      }
+      if (matchedCountry?.nativeName) {
+        return matchedCountry.nativeName;
+      }
+    }
+    if (matchedCountry?.name) {
+      return matchedCountry.name;
+    }
+    return code;
+  }, [matchedCountry, locale, patient?.countryCode]);
+
+  // Tabs Configuration (Pure Domains)
   const tabs = useMemo(
-    () =>
-      [
-        {
-          key: "overview" as const,
-          label: t("patient360.tabs.overview"),
-          icon: <Activity className="h-4 w-4" />,
-        },
-        {
-          key: "wallet" as const,
-          label: t("patient360.tabs.wallet"),
-          icon: <Wallet className="h-4 w-4" />,
-        },
-        {
-          key: "sessions" as const,
-          label: t("patient360.tabs.sessions"),
-          icon: <Users className="h-4 w-4" />,
-        },
-        {
-          key: "payments" as const,
-          label: t("patient360.tabs.payments"),
-          icon: <CreditCard className="h-4 w-4" />,
-        },
-        {
-          key: "assessments" as const,
-          label: t("patient360.tabs.assessments"),
-          icon: <FileText className="h-4 w-4" />,
-        },
-      ] as const,
+    () => [
+      {
+        key: "profile" as const,
+        label: t("patient360.tabs.profile"),
+        icon: <User className="h-4 w-4" />,
+      },
+      {
+        key: "wallet" as const,
+        label: t("patient360.tabs.wallet"),
+        icon: <Wallet className="h-4 w-4" />,
+      },
+      {
+        key: "sessions" as const,
+        label: t("patient360.tabs.sessions"),
+        icon: <Users className="h-4 w-4" />,
+      },
+      {
+        key: "payments" as const,
+        label: t("patient360.tabs.payments"),
+        icon: <CreditCard className="h-4 w-4" />,
+      },
+      {
+        key: "assessments" as const,
+        label: t("patient360.tabs.assessments"),
+        icon: <FileText className="h-4 w-4" />,
+      },
+    ],
     [t],
   );
 
-  const walletCurrency = wallet?.currencyCode ?? "EGP";
-
-  const walletSummaryCards = (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("wallet.available")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {formatMoney(wallet?.availableBalance ?? "0", walletCurrency, locale)}
-        </p>
-        {!wallet ? (
-          <p className="text-text-muted mt-2 text-xs">
-            {t("patient360.wallet.noWalletHint")}
-          </p>
-        ) : null}
-      </div>
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("wallet.reserved")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {formatMoney(wallet?.reservedBalance ?? "0", walletCurrency, locale)}
-        </p>
-      </div>
-    </div>
-  );
-
+  // Table Columns Definitions
   const walletEntryColumns = useMemo<ColumnDef<CustomerWalletEntryItem>[]>(
     () => [
       {
@@ -302,7 +328,7 @@ export default function AdminPatient360Screen({
         header: t("patient360.wallet.entryType"),
         accessor: (row) => row.entryType,
         cell: (row) => (
-          <span className="text-text-primary text-sm font-semibold dark:text-white/95">
+          <span className="font-semibold text-text-primary text-sm dark:text-white/95">
             {row.entryType}
           </span>
         ),
@@ -314,8 +340,10 @@ export default function AdminPatient360Screen({
         cell: (row) => (
           <span
             className={cn(
-              "text-xs font-semibold",
-              row.direction === "CREDIT" ? "text-emerald-700" : "text-rose-700",
+              "rounded-md px-2 py-0.5 text-xs font-bold",
+              row.direction === "CREDIT"
+                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                : "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300",
             )}
           >
             {row.direction}
@@ -328,7 +356,7 @@ export default function AdminPatient360Screen({
         header: t("patient360.wallet.amount"),
         accessor: (row) => row.amount,
         cell: (row) => (
-          <span className="text-text-primary text-sm font-semibold tabular-nums dark:text-white/95">
+          <span className="font-mono text-sm font-bold text-text-primary tabular-nums dark:text-white/95">
             {row.direction === "CREDIT" ? "+" : "-"}{" "}
             {formatMoney(row.amount, row.currencyCode, locale)}
           </span>
@@ -340,9 +368,7 @@ export default function AdminPatient360Screen({
         accessor: (row) => row.effectiveAt,
         cell: (row) => (
           <span className="text-text-secondary text-sm">
-            {formatEffectiveViewerDateTime(row.effectiveAt, viewerTimeZone, {
-              locale,
-            })}
+            {formatEffectiveViewerDateTime(row.effectiveAt, viewerTimeZone, { locale })}
           </span>
         ),
         hideOnMobile: true,
@@ -358,8 +384,18 @@ export default function AdminPatient360Screen({
         header: t("patient360.sessions.code"),
         accessor: (row) => row.sessionCode,
         cell: (row) => (
-          <span className="text-text-primary text-sm font-semibold dark:text-white/95">
+          <span className="font-mono text-xs font-bold text-text-primary dark:text-white/95">
             {row.sessionCode}
+          </span>
+        ),
+      },
+      {
+        id: "practitioner",
+        header: t("patient360.sessions.practitioner"),
+        accessor: (row) => row.practitioner.displayName ?? row.practitioner.slug,
+        cell: (row) => (
+          <span className="text-sm font-semibold text-text-primary dark:text-white/95">
+            {row.practitioner.displayName ?? row.practitioner.slug}
           </span>
         ),
       },
@@ -367,46 +403,30 @@ export default function AdminPatient360Screen({
         id: "status",
         header: t("patient360.sessions.status"),
         accessor: (row) => row.status,
-        cell: (row) => (
-          <span className="text-text-secondary text-xs font-semibold">
-            {row.status}
-          </span>
-        ),
+        cell: (row) => getSessionStatusBadge(row.status),
       },
       {
         id: "scheduledStartAt",
         header: t("patient360.sessions.start"),
         accessor: (row) => row.scheduledStartAt ?? "",
         cell: (row) => (
-          <span className="text-text-secondary text-sm">
+          <span className="text-sm text-text-secondary">
             {row.scheduledStartAt
-              ? formatEffectiveViewerDateTime(
-                  row.scheduledStartAt,
-                  viewerTimeZone,
-                  { locale },
-                )
+              ? formatEffectiveViewerDateTime(row.scheduledStartAt, viewerTimeZone, { locale })
               : "-"}
           </span>
         ),
         hideOnMobile: true,
       },
       {
-        id: "practitioner",
-        header: t("patient360.sessions.practitioner"),
-        accessor: (row) =>
-          row.practitioner.displayName ?? row.practitioner.slug,
-        cell: (row) => (
-          <span className="text-text-secondary text-sm">
-            {row.practitioner.displayName ?? row.practitioner.slug}
-          </span>
-        ),
-      },
-      {
         id: "mode",
         header: t("patient360.sessions.mode"),
         accessor: (row) => row.sessionMode,
         cell: (row) => (
-          <span className="text-text-secondary text-sm">{row.sessionMode}</span>
+          <div className="flex items-center gap-1.5 text-sm text-text-secondary">
+            <Video className="h-3.5 w-3.5 text-primary" />
+            <span>{row.sessionMode}</span>
+          </div>
         ),
         hideOnMobile: true,
       },
@@ -417,31 +437,38 @@ export default function AdminPatient360Screen({
   const paymentColumns = useMemo<ColumnDef<PaymentItem>[]>(
     () => [
       {
-        id: "status",
-        header: t("patient360.payments.status"),
-        accessor: (row) => row.status,
-        cell: (row) => (
-          <span className="text-text-secondary text-xs font-semibold">
-            {row.status}
-          </span>
-        ),
-      },
-      {
         id: "amountTotal",
         header: t("patient360.payments.total"),
         accessor: (row) => row.amountTotal,
         cell: (row) => (
-          <span className="text-text-primary text-sm font-semibold tabular-nums dark:text-white/95">
+          <span className="font-mono text-sm font-bold text-text-primary tabular-nums dark:text-white/95">
             {formatMoney(row.amountTotal, row.currency, locale)}
           </span>
         ),
+      },
+      {
+        id: "status",
+        header: t("patient360.payments.status"),
+        accessor: (row) => row.status,
+        cell: (row) => getPaymentStatusBadge(row.status),
+      },
+      {
+        id: "provider",
+        header: t("patient360.payments.provider"),
+        accessor: (row) => row.provider,
+        cell: (row) => (
+          <span className="rounded-md bg-surface-secondary px-2 py-0.5 text-xs font-bold text-text-secondary">
+            {row.provider}
+          </span>
+        ),
+        hideOnMobile: true,
       },
       {
         id: "split",
         header: t("patient360.payments.split"),
         accessor: (row) => `${row.amountFromWallet}-${row.amountFromGateway}`,
         cell: (row) => (
-          <div className="text-text-secondary text-xs">
+          <div className="text-xs text-text-secondary space-y-0.5">
             <p>
               {t("patient360.payments.fromWallet")}:{" "}
               {formatMoney(row.amountFromWallet, row.currency, locale)}
@@ -455,23 +482,12 @@ export default function AdminPatient360Screen({
         hideOnMobile: true,
       },
       {
-        id: "provider",
-        header: t("patient360.payments.provider"),
-        accessor: (row) => row.provider,
-        cell: (row) => (
-          <span className="text-text-secondary text-sm">{row.provider}</span>
-        ),
-        hideOnMobile: true,
-      },
-      {
         id: "createdAt",
         header: t("patient360.payments.createdAt"),
         accessor: (row) => row.createdAt,
         cell: (row) => (
-          <span className="text-text-secondary text-sm">
-            {formatEffectiveViewerDateTime(row.createdAt, viewerTimeZone, {
-              locale,
-            })}
+          <span className="text-sm text-text-secondary">
+            {formatEffectiveViewerDateTime(row.createdAt, viewerTimeZone, { locale })}
           </span>
         ),
         hideOnMobile: true,
@@ -488,12 +504,10 @@ export default function AdminPatient360Screen({
         accessor: (row) => row.assessmentTitle,
         cell: (row) => (
           <div className="min-w-0">
-            <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
+            <p className="truncate text-sm font-bold text-text-primary dark:text-white/95">
               {row.assessmentTitle}
             </p>
-            <p className="text-text-muted mt-1 truncate text-xs">
-              {row.assessmentSlug}
-            </p>
+            <p className="truncate text-xs text-text-muted">{row.assessmentSlug}</p>
           </div>
         ),
       },
@@ -502,7 +516,7 @@ export default function AdminPatient360Screen({
         header: t("patient360.assessments.status"),
         accessor: (row) => row.status,
         cell: (row) => (
-          <span className="text-text-secondary text-xs font-semibold">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
             {row.status}
           </span>
         ),
@@ -512,7 +526,7 @@ export default function AdminPatient360Screen({
         header: t("patient360.assessments.result"),
         accessor: (row) => row.resultBand ?? "",
         cell: (row) => (
-          <span className="text-text-secondary text-sm">
+          <span className="text-sm font-semibold text-text-secondary">
             {row.resultBand ?? "-"}
           </span>
         ),
@@ -523,25 +537,10 @@ export default function AdminPatient360Screen({
         header: t("patient360.assessments.completedAt"),
         accessor: (row) => row.completedAt ?? "",
         cell: (row) => (
-          <span className="text-text-secondary text-sm">
+          <span className="text-sm text-text-secondary">
             {row.completedAt
-              ? formatEffectiveViewerDateTime(row.completedAt, viewerTimeZone, {
-                  locale,
-                })
+              ? formatEffectiveViewerDateTime(row.completedAt, viewerTimeZone, { locale })
               : "-"}
-          </span>
-        ),
-        hideOnMobile: true,
-      },
-      {
-        id: "createdAt",
-        header: t("patient360.assessments.createdAt"),
-        accessor: (row) => row.createdAt,
-        cell: (row) => (
-          <span className="text-text-secondary text-sm">
-            {formatEffectiveViewerDateTime(row.createdAt, viewerTimeZone, {
-              locale,
-            })}
           </span>
         ),
         hideOnMobile: true,
@@ -550,407 +549,333 @@ export default function AdminPatient360Screen({
     [locale, t, viewerTimeZone],
   );
 
-  const overviewCards = (
-    <div className="grid gap-3 md:grid-cols-4">
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("patient360.overview.walletAvailable")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {walletSummaryLoading
-            ? t("states.loading")
-            : formatMoney(
-                wallet?.availableBalance ?? "0",
-                walletCurrency,
-                locale,
-              )}
-        </p>
-      </div>
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("patient360.overview.sessionsCount")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {sessionsLoading
-            ? t("states.loading")
-            : String(sessionsData?.pagination.totalItems ?? 0)}
-        </p>
-      </div>
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("patient360.overview.paymentsCount")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {paymentsLoading
-            ? t("states.loading")
-            : String(paymentsData?.pagination.totalItems ?? 0)}
-        </p>
-      </div>
-      <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-        <p className="text-text-muted text-xs font-semibold">
-          {t("patient360.overview.assessmentsCount")}
-        </p>
-        <p className="text-text-primary mt-2 text-lg font-semibold tabular-nums dark:text-white/95">
-          {assessmentsLoading
-            ? t("states.loading")
-            : String(assessmentsData?.pagination.totalItems ?? 0)}
-        </p>
-      </div>
-    </div>
-  );
-
-  const statusTone =
-    patient?.status === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-      : patient?.status === "SUSPENDED"
-        ? "bg-rose-50 text-rose-700 border-rose-200"
-        : patient?.status?.startsWith("PENDING")
-          ? "bg-amber-50 text-amber-800 border-amber-200"
-          : "bg-surface-secondary text-text-secondary border-border-light";
-
-  const overviewRow = (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="space-y-3 lg:col-span-1">
-        <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-          <p className="text-text-muted text-xs font-semibold">
-            {t("patient360.profile.sectionTitle")}
-          </p>
-          <div className="mt-3 space-y-2 text-sm">
-            <KeyValueRow
-              label={t("fields.userId")}
-              value={patient?.userId ?? "-"}
-              valueClassName="break-all"
-            />
-            <KeyValueRow
-              label={t("fields.email")}
-              value={patient?.primaryEmail ?? "-"}
-              valueClassName="break-all"
-            />
-            <KeyValueRow
-              label={t("fields.phone")}
-              value={patient?.primaryPhone ?? "-"}
-              valueClassName="break-all"
-            />
-            <KeyValueRow
-              label={t("patient360.profile.country")}
-              value={(() => {
-                const code = patient?.countryCode;
-                if (!code) return "-";
-                const match = countries.find(
-                  (c) => c.isoCode.toUpperCase() === code.toUpperCase(),
-                );
-                if (match) {
-                  return locale === "ar"
-                    ? match.nativeName || match.name
-                    : match.name;
-                }
-                return code.toUpperCase();
-              })()}
-            />
-            <KeyValueRow
-              label={t("patient360.profile.gender")}
-              value={patient?.gender ?? "-"}
-            />
-            <KeyValueRow
-              label={t("patient360.profile.dob")}
-              value={patient?.dateOfBirth ?? "-"}
-            />
-            <KeyValueRow
-              label={t("patient360.profile.onboarding")}
-              value={
-                patient?.onboardingCompletedAt
-                  ? t("states.completed")
-                  : t("states.incomplete")
-              }
-            />
-          </div>
-        </div>
-
-        <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-text-muted text-xs font-semibold">
-              {t("patient360.overview.walletSectionTitle")}
-            </p>
-            <button
-              type="button"
-              className="text-primary text-xs font-semibold hover:underline"
-              onClick={() => setTab("wallet")}
-            >
-              {t("patient360.overview.viewAll")}
-            </button>
-          </div>
-          <div className="mt-3">{walletSummaryCards}</div>
-        </div>
-      </div>
-
-      <div className="space-y-3 lg:col-span-2">
-        <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-text-muted text-xs font-semibold">
-              {t("patient360.overview.recentSessionsTitle")}
-            </p>
-            <button
-              type="button"
-              className="text-primary text-xs font-semibold hover:underline"
-              onClick={() => setTab("sessions")}
-            >
-              {t("patient360.overview.viewAll")}
-            </button>
-          </div>
-          <div className="mt-3 space-y-2">
-            {(sessionsData?.items ?? [])
-              .slice(0, OVERVIEW_PREVIEW_LIMIT)
-              .map((s) => (
-                <div
-                  key={s.id}
-                  className="border-border-light dark:bg-surface-secondary flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
-                      {s.practitioner.displayName ?? s.practitioner.slug}
-                    </p>
-                    <p className="text-text-muted mt-1 text-xs">
-                      {s.scheduledStartAt
-                        ? formatEffectiveViewerDateTime(
-                            s.scheduledStartAt,
-                            viewerTimeZone,
-                            { locale },
-                          )
-                        : "-"}
-                    </p>
-                  </div>
-                  <span className="text-text-secondary shrink-0 text-xs font-semibold">
-                    {s.status}
-                  </span>
-                </div>
-              ))}
-            {sessionsLoading ? (
-              <p className="text-text-muted text-sm">{t("states.loading")}</p>
-            ) : null}
-            {!sessionsLoading && (sessionsData?.items?.length ?? 0) === 0 ? (
-              <p className="text-text-secondary text-sm">
-                {t("patient360.sessions.emptyDescription")}
-              </p>
-            ) : null}
-            {sessionsError ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchSessions()}
-              >
-                {t("actions.retry")}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="app-panel-soft rounded-[22px] p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-text-muted text-xs font-semibold">
-              {t("patient360.overview.recentPaymentsTitle")}
-            </p>
-            <button
-              type="button"
-              className="text-primary text-xs font-semibold hover:underline"
-              onClick={() => setTab("payments")}
-            >
-              {t("patient360.overview.viewAll")}
-            </button>
-          </div>
-          <div className="mt-3 space-y-2">
-            {(paymentsData?.items ?? [])
-              .slice(0, OVERVIEW_PREVIEW_LIMIT)
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="border-border-light dark:bg-surface-secondary flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-text-primary truncate text-sm font-semibold dark:text-white/95">
-                      {formatMoney(p.amountTotal, p.currency, locale)}
-                    </p>
-                    <p className="text-text-muted mt-1 text-xs">
-                      {formatEffectiveViewerDateTime(
-                        p.createdAt,
-                        viewerTimeZone,
-                        { locale },
-                      )}
-                    </p>
-                  </div>
-                  <span className="text-text-secondary shrink-0 text-xs font-semibold">
-                    {p.status}
-                  </span>
-                </div>
-              ))}
-            {paymentsLoading ? (
-              <p className="text-text-muted text-sm">{t("states.loading")}</p>
-            ) : null}
-            {!paymentsLoading && (paymentsData?.items?.length ?? 0) === 0 ? (
-              <p className="text-text-secondary text-sm">
-                {t("patient360.payments.emptyDescription")}
-              </p>
-            ) : null}
-            {paymentsError ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchPayments()}
-              >
-                {t("actions.retry")}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="space-y-4 sm:space-y-5">
-      <SurfaceCard variant="page">
-        <SurfaceHeader
-          eyebrow={t("patient360.eyebrow")}
-          title={pageTitle}
-          description={t("patient360.subtitle")}
-          actions={
-            <Button
-              variant="outline"
-              // next-intl router auto-prefixes the active locale (localePrefix: 'always')
-              onClick={() => router.push(`/admin/patients` as any)}
-              className="gap-2"
+    <div className="space-y-4">
+      {/* ── 1. Top Bar & Navigation ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => router.push(`/admin/patients` as any)}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-text-muted transition hover:text-primary"
+        >
+          <DirectionalArrowIcon direction="back" className="h-4 w-4" />
+          <span>{t("patient360.back")}</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          {patient && (
+            <button
+              type="button"
+              onClick={() => setIsCountryModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-primary active:scale-95"
             >
-              <DirectionalArrowIcon direction="back" className="h-4 w-4" />
-              {t("patient360.back")}
+              <Globe className="h-3.5 w-3.5 text-primary" />
+              <span>{t("patient360.quickActions.changeCountry")}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={handleRefreshActiveTab}
+            disabled={isRefetching}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface px-3 py-1.5 text-xs font-bold text-text-secondary shadow-2xs transition hover:border-primary/40 hover:text-primary active:scale-95 disabled:opacity-50"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 text-text-muted", isRefetching && "animate-spin")} />
+            <span>{t("actions.retry")}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2. Unified Profile Shell ── */}
+      <SurfaceCard variant="page" className="overflow-hidden p-0 shadow-xs">
+        {isLoading ? (
+          <div className="p-6 text-center text-sm font-bold text-text-muted">
+            {t("states.loading")}
+          </div>
+        ) : isError || !patient ? (
+          <div className="flex items-center justify-between p-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-rose-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>{t("patient360.states.loadError")}</span>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              {t("actions.retry")}
             </Button>
-          }
-          meta={
-            <div className="text-text-secondary flex flex-wrap items-center gap-3 text-xs">
-              <div className="border-border-light dark:bg-surface-secondary flex items-center gap-3 rounded-2xl border bg-white px-3 py-2">
-                <AvatarText name={pageTitle} />
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-text-primary text-sm font-semibold dark:text-white/95">
-                    {pageTitle}
-                  </p>
-                  <p className="text-text-muted text-xs break-all">
-                    {subtitle}
-                  </p>
+          </div>
+        ) : (
+          <div>
+            {/* Identity Hero Header */}
+            <div className="border-b border-border-light bg-surface px-5 py-4 dark:bg-surface-secondary/40">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                {/* Left: Avatar & Identity */}
+                <div className="flex items-center gap-3.5">
+                  <div className="relative">
+                    <AvatarText name={pageTitle} className="h-12 w-12 rounded-2xl text-sm font-black shadow-xs ring-1 ring-border-light" />
+                    <span
+                      className={cn(
+                        "absolute -bottom-0.5 -end-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface shadow-xs",
+                        patient.status === "ACTIVE" ? "bg-emerald-500" : "bg-amber-500",
+                      )}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-base font-extrabold text-text-primary dark:text-white/95">
+                        {pageTitle}
+                      </h1>
+
+                      {/* Status Badge */}
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-0.5 text-xs font-bold",
+                          patient.status === "ACTIVE"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                            : "border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+                        )}
+                      >
+                        {patient.status === "ACTIVE"
+                          ? t("filters.statusActive")
+                          : t("filters.statusPending")}
+                      </span>
+
+                      {/* Onboarding Badge */}
+                      <span
+                        className={cn(
+                          "rounded-full border px-2.5 py-0.5 text-xs font-bold",
+                          patient.onboardingCompletedAt
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : "border-border-light bg-surface-secondary text-text-muted",
+                        )}
+                      >
+                        {patient.onboardingCompletedAt
+                          ? t("states.completed")
+                          : t("states.incomplete")}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-text-secondary">
+                      {t("patient360.subtitle")}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {patient?.status ? (
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-semibold",
-                    statusTone,
-                  )}
-                >
-                  {(() => {
-                    const normalized = patient.status.toUpperCase();
-                    if (normalized === "ACTIVE")
-                      return t("filters.statusActive");
-                    if (normalized === "INACTIVE")
-                      return t("filters.statusInactive");
-                    if (normalized === "SUSPENDED" || normalized === "BLOCKED")
-                      return t("filters.statusSuspended");
-                    if (normalized.startsWith("PENDING"))
-                      return t("filters.statusPending");
-                    return patient.status;
-                  })()}
-                </span>
-              ) : null}
-
-              {patient?.createdAt ? (
-                <span className="border-border-light dark:bg-surface-secondary inline-flex items-center gap-2 rounded-2xl border bg-white px-3 py-2">
-                  <CalendarClock className="h-4 w-4" aria-hidden="true" />
-                  <span className="font-semibold">{t("fields.createdAt")}</span>
-                  <span className="text-text-muted">
-                    {formatEffectiveViewerDate(
-                      patient.createdAt,
-                      viewerTimeZone,
-                      { locale },
+                {/* Right: ID Chip & Join Date */}
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyId(patient.userId)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface-secondary/40 px-2.5 py-1.5 text-xs font-mono text-text-secondary transition hover:border-primary/40 hover:text-text-primary"
+                    title={patient.userId}
+                  >
+                    {copiedId ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">{t("patient360.quickActions.copied")}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 text-text-muted" />
+                        <span>{patient.userId.slice(0, 10)}...</span>
+                      </>
                     )}
-                  </span>
-                </span>
-              ) : null}
-            </div>
-          }
-        />
+                  </button>
 
-        <div className="mt-5 space-y-4">
-          {isLoading ? (
-            <p className="text-text-muted text-sm">{t("states.loading")}</p>
-          ) : isError ? (
-            <div className="border-border-light bg-surface-primary flex items-center justify-between gap-3 rounded-2xl border px-4 py-3">
-              <p className="text-text-primary text-sm font-semibold dark:text-white/95">
-                {t("patient360.states.loadError")}
-              </p>
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                {t("actions.retry")}
-              </Button>
-            </div>
-          ) : patient ? (
-            <>
-              <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-1">
-                {tabs.map((item) => (
-                  <TabButton
-                    key={item.key}
-                    active={tab === item.key}
-                    label={item.label}
-                    icon={item.icon}
-                    onClick={() => setTab(item.key)}
-                  />
-                ))}
-              </div>
-
-              {tab === "overview" ? (
-                <div className="space-y-4">
-                  {overviewCards}
-                  {overviewRow}
+                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-border-light bg-surface-secondary/40 px-2.5 py-1.5 text-xs text-text-muted">
+                    <CalendarClock className="h-3.5 w-3.5 text-text-muted" />
+                    <span>
+                      {formatEffectiveViewerDate(patient.createdAt, viewerTimeZone, { locale })}
+                    </span>
+                  </div>
                 </div>
-              ) : null}
+              </div>
+            </div>
 
-              {tab === "wallet" ? (
+            {/* ── 3. High-Capacity Scalable Tabs Bar ── */}
+            <div className="border-b border-border-light bg-surface-secondary/20 px-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto py-2">
+                {tabs.map((item) => {
+                  const isActive = tab === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setTab(item.key)}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-150 active:scale-95 whitespace-nowrap",
+                        isActive
+                          ? "bg-primary text-white shadow-2xs"
+                          : "text-text-secondary hover:bg-surface hover:text-text-primary",
+                      )}
+                    >
+                      <span className={cn(isActive ? "text-white" : "text-text-muted")}>
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── 4. Tab Content Panels ── */}
+            <div className="p-4 sm:p-5">
+              {/* TAB 1: PROFILE DETAILS (البيانات الأساسية - بدون أي تكرار) */}
+              {tab === "profile" && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Card 1: معلومات التواصل والإقامة */}
+                  <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
+                    <div className="flex items-center justify-between border-b border-border-light pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-bold text-text-primary dark:text-white/95">
+                          {t("details.section.profile")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 space-y-3 text-xs">
+                      {/* Name */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("fields.displayName")}</span>
+                        <span className="font-bold text-text-primary dark:text-white/95">
+                          {pageTitle}
+                        </span>
+                      </div>
+
+                      {/* Email */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("fields.email")}</span>
+                        <span className="font-semibold text-text-primary dark:text-white/90">
+                          {patient.primaryEmail || "-"}
+                        </span>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("fields.phone")}</span>
+                        <span className="font-mono font-semibold text-text-primary dark:text-white/90" dir="ltr">
+                          {patient.primaryPhone || "-"}
+                        </span>
+                      </div>
+
+                      {/* Country */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("patient360.profile.country")}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-text-primary dark:text-white/90">
+                            {countryDisplayName}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsCountryModalOpen(true)}
+                            className="text-xs font-bold text-primary hover:underline"
+                          >
+                            ({t("patient360.quickActions.changeCountry")})
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: البيانات الشخصية والنظام */}
+                  <div className="rounded-2xl border border-border-light bg-surface p-4 shadow-2xs dark:bg-surface-secondary/40">
+                    <div className="flex items-center justify-between border-b border-border-light pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-bold text-text-primary dark:text-white/95">
+                          {t("patient360.profile.sectionTitle")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 space-y-3 text-xs">
+                      {/* Gender */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("patient360.profile.gender")}</span>
+                        <span className="font-semibold text-text-primary dark:text-white/90">
+                          {patient.gender ? (
+                            patient.gender === "MALE"
+                              ? t("patient360.gender.MALE")
+                              : patient.gender === "FEMALE"
+                              ? t("patient360.gender.FEMALE")
+                              : patient.gender
+                          ) : "-"}
+                        </span>
+                      </div>
+
+                      {/* Date of Birth & Age */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("patient360.profile.dob")}</span>
+                        <span className="font-mono font-semibold text-text-primary dark:text-white/90">
+                          {patient.dateOfBirth
+                            ? `${patient.dateOfBirth}${age ? ` (${t("patient360.quickActions.yearsOld", { age })})` : ""}`
+                            : "-"}
+                        </span>
+                      </div>
+
+                      {/* User ID */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("fields.userId")}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyId(patient.userId)}
+                          className="font-mono text-xs font-bold text-text-secondary hover:text-primary"
+                        >
+                          {patient.userId}
+                        </button>
+                      </div>
+
+                      {/* Created At */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-text-muted">{t("fields.createdAt")}</span>
+                        <span className="text-text-primary dark:text-white/90">
+                          {formatEffectiveViewerDateTime(patient.createdAt, viewerTimeZone, { locale })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: WALLET */}
+              {tab === "wallet" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-text-primary text-sm font-semibold dark:text-white/95">
+                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
+                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
                       {t("patient360.tabs.wallet")}
                     </h2>
-                    {walletSummaryError ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refetchWalletSummary()}
-                      >
+                    {walletSummaryError && (
+                      <Button variant="outline" size="sm" onClick={() => refetchWalletSummary()}>
                         {t("actions.retry")}
                       </Button>
-                    ) : null}
+                    )}
                   </div>
 
-                  {walletSummaryLoading ? (
-                    <p className="text-text-muted text-sm">
-                      {t("states.loading")}
-                    </p>
-                  ) : walletSummaryError ? (
-                    <p className="text-text-secondary text-sm">
-                      {t("states.walletError")}
-                    </p>
-                  ) : (
-                    walletSummaryCards
-                  )}
+                  <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+                    <div className="rounded-2xl border border-border-light bg-surface p-3.5 shadow-2xs">
+                      <span className="text-xs font-bold text-text-muted">{t("wallet.available")}</span>
+                      <p className="mt-1 font-mono text-base font-black text-text-primary">
+                        {walletSummaryLoading ? "..." : formatMoney(wallet?.availableBalance ?? "0", walletCurrency, locale)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-border-light bg-surface p-3.5 shadow-2xs">
+                      <span className="text-xs font-bold text-text-muted">{t("wallet.reserved")}</span>
+                      <p className="mt-1 font-mono text-base font-black text-text-primary">
+                        {walletSummaryLoading ? "..." : formatMoney(wallet?.reservedBalance ?? "0", walletCurrency, locale)}
+                      </p>
+                    </div>
+                  </div>
 
                   <DataTable
                     data={walletEntriesData?.items ?? []}
                     columns={walletEntryColumns}
                     getRowId={(row) => row.id}
                     loading={walletEntriesLoading}
-                    error={
-                      walletEntriesError ? t("states.walletEntriesError") : null
-                    }
+                    error={walletEntriesError ? t("states.walletEntriesError") : null}
                     emptyState={{
                       title: t("patient360.wallet.entriesEmptyTitle"),
-                      description: t(
-                        "patient360.wallet.entriesEmptyDescription",
-                      ),
+                      description: t("patient360.wallet.entriesEmptyDescription"),
                     }}
                     pagination={walletEntriesData?.pagination}
                     onPageChange={(next) => setWalletEntriesPage(next)}
@@ -962,23 +887,20 @@ export default function AdminPatient360Screen({
                     hoverable
                   />
                 </div>
-              ) : null}
+              )}
 
-              {tab === "sessions" ? (
+              {/* TAB 3: SESSIONS */}
+              {tab === "sessions" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-text-primary text-sm font-semibold dark:text-white/95">
+                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
+                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
                       {t("patient360.tabs.sessions")}
                     </h2>
-                    {sessionsError ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refetchSessions()}
-                      >
+                    {sessionsError && (
+                      <Button variant="outline" size="sm" onClick={() => refetchSessions()}>
                         {t("actions.retry")}
                       </Button>
-                    ) : null}
+                    )}
                   </div>
 
                   <DataTable
@@ -986,9 +908,7 @@ export default function AdminPatient360Screen({
                     columns={sessionColumns}
                     getRowId={(row) => row.id}
                     loading={sessionsLoading}
-                    error={
-                      sessionsError ? t("patient360.sessions.loadError") : null
-                    }
+                    error={sessionsError ? t("patient360.sessions.loadError") : null}
                     emptyState={{
                       title: t("patient360.sessions.emptyTitle"),
                       description: t("patient360.sessions.emptyDescription"),
@@ -1003,23 +923,20 @@ export default function AdminPatient360Screen({
                     hoverable
                   />
                 </div>
-              ) : null}
+              )}
 
-              {tab === "payments" ? (
+              {/* TAB 4: PAYMENTS */}
+              {tab === "payments" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-text-primary text-sm font-semibold dark:text-white/95">
+                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
+                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
                       {t("patient360.tabs.payments")}
                     </h2>
-                    {paymentsError ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refetchPayments()}
-                      >
+                    {paymentsError && (
+                      <Button variant="outline" size="sm" onClick={() => refetchPayments()}>
                         {t("actions.retry")}
                       </Button>
-                    ) : null}
+                    )}
                   </div>
 
                   <DataTable
@@ -1027,9 +944,7 @@ export default function AdminPatient360Screen({
                     columns={paymentColumns}
                     getRowId={(row) => row.id}
                     loading={paymentsLoading}
-                    error={
-                      paymentsError ? t("patient360.payments.loadError") : null
-                    }
+                    error={paymentsError ? t("patient360.payments.loadError") : null}
                     emptyState={{
                       title: t("patient360.payments.emptyTitle"),
                       description: t("patient360.payments.emptyDescription"),
@@ -1044,23 +959,20 @@ export default function AdminPatient360Screen({
                     hoverable
                   />
                 </div>
-              ) : null}
+              )}
 
-              {tab === "assessments" ? (
+              {/* TAB 5: ASSESSMENTS */}
+              {tab === "assessments" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="text-text-primary text-sm font-semibold dark:text-white/95">
+                  <div className="flex items-center justify-between gap-2 border-b border-border-light pb-2">
+                    <h2 className="text-xs font-extrabold text-text-primary dark:text-white/95">
                       {t("patient360.tabs.assessments")}
                     </h2>
-                    {assessmentsError ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => refetchAssessments()}
-                      >
+                    {assessmentsError && (
+                      <Button variant="outline" size="sm" onClick={() => refetchAssessments()}>
                         {t("actions.retry")}
                       </Button>
-                    ) : null}
+                    )}
                   </div>
 
                   <DataTable
@@ -1068,11 +980,7 @@ export default function AdminPatient360Screen({
                     columns={assessmentColumns}
                     getRowId={(row) => row.submissionId}
                     loading={assessmentsLoading}
-                    error={
-                      assessmentsError
-                        ? t("patient360.assessments.loadError")
-                        : null
-                    }
+                    error={assessmentsError ? t("patient360.assessments.loadError") : null}
                     emptyState={{
                       title: t("patient360.assessments.emptyTitle"),
                       description: t("patient360.assessments.emptyDescription"),
@@ -1087,17 +995,20 @@ export default function AdminPatient360Screen({
                     hoverable
                   />
                 </div>
-              ) : null}
-            </>
-          ) : (
-            <div className="border-border-light bg-surface-primary rounded-2xl border px-4 py-3">
-              <p className="text-text-primary text-sm font-semibold dark:text-white/95">
-                {t("patient360.states.notFound")}
-              </p>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </SurfaceCard>
+
+      {/* Country Change Modal */}
+      {patient && (
+        <AdminPatientCountryChangeModal
+          patient={patient as any}
+          isOpen={isCountryModalOpen}
+          onClose={() => setIsCountryModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

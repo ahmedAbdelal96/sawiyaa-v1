@@ -21,6 +21,7 @@ describe('ExpirePaymentUseCase', () => {
         },
       }),
       createEvent: jest.fn().mockResolvedValue({}),
+      createWebhookReceipt: jest.fn().mockResolvedValue({}),
       updateStatus: jest.fn().mockResolvedValue({
         id: 'payment_1',
         paymentPurpose: input?.paymentPurpose ?? PaymentPurpose.SESSION_BOOKING,
