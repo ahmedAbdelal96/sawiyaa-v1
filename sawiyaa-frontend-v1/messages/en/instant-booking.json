@@ -2,26 +2,36 @@
   "hero": {
     "eyebrow": "Instant booking",
     "title": "Book a session today with an available specialist",
+    "note": "Choose an available specialist, select a duration, and send your request. Payment starts only after acceptance.",
     "secondaryAction": "Browse specialists",
     "chips": {
       "onlineNow": "Available now",
-      "durationOptions": "30 or 60 minute options"
+      "durationOptions": "30 or 60 minute options",
+      "backendPricing": "Price shown before sending"
     }
   },
   "entry": {
     "eyebrow": "Start here",
     "title": "Open instant booking",
+    "note": "A simple path to a video session with a specialist who is available now.",
     "cta": "Start instant booking",
     "chips": {
       "availableNow": "Specialists available now",
       "duration": "Session length",
       "durationNote": "Choose 30 or 60 minutes when supported",
-      "pricing": "Pricing"
+      "pricing": "Pricing",
+      "pricingNote": "You will see the price before sending"
+    },
+    "steps": {
+      "choose": { "title": "Choose a specialist", "note": "Browse the specialists who are available now." },
+      "request": { "title": "Send your request", "note": "Choose 30 or 60 minutes and send the request." },
+      "confirm": { "title": "Confirm the session", "note": "Pay only after the specialist accepts." }
     }
   },
   "list": {
     "eyebrow": "Available now",
-      "title": "Specialists available for instant booking"
+      "title": "Specialists available for instant booking",
+      "note": "Prices and durations come from each specialist's current settings."
   },
   "card": {
     "availableNow": "Available now",

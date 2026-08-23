@@ -39,32 +39,38 @@ type PaymobCreateIntentionResponse = {
 };
 
 type PaymobWebhookEvent = {
-  id?: number;
+  id?: number | string;
   success?: boolean;
   pending?: boolean;
   order?: {
-    id?: number;
-    merchant_order_id?: string;
+    id?: number | string;
+    merchant_order_id?: string | number;
   };
-  amount_cents?: number;
+  amount_cents?: number | string;
   created_at?: string;
   currency?: string;
   error_occured?: boolean;
   has_parent_transaction?: boolean;
-  integration_id?: number;
+  integration_id?: number | string;
   is_3d_secure?: boolean;
   is_auth?: boolean;
   is_capture?: boolean;
   is_refunded?: boolean;
   is_standalone_payment?: boolean;
   is_voided?: boolean;
-  owner?: number;
+  owner?: number | string;
   source_data?: {
     pan?: string;
     sub_type?: string;
     type?: string;
   };
 };
+
+type PaymobWebhookBody = {
+  type?: string;
+  obj?: PaymobWebhookEvent;
+  hmac?: string;
+} & PaymobWebhookEvent;
 
 type PaymobRefundResponse = {
   id?: number;
@@ -262,7 +268,9 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       });
     }
 
-    const event = this.parseWebhookPayload(input.rawBody);
+    const body = this.parseWebhookBody(input.rawBody);
+    const transaction = body.obj ?? body;
+    const event = transaction;
     const expectedHmac = this.buildWebhookHmac(event);
 
     if (!this.constantTimeEqual(expectedHmac, receivedHmac.toLowerCase())) {
@@ -274,7 +282,10 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
 
     const providerPaymentRef = event.order?.id
       ? String(event.order.id)
-      : event.order?.merchant_order_id?.trim() || null;
+      : event.order?.merchant_order_id !== undefined &&
+          event.order?.merchant_order_id !== null
+        ? String(event.order.merchant_order_id).trim() || null
+        : null;
 
     if (!providerPaymentRef || !event.id) {
       return { handled: false };
@@ -291,8 +302,7 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
       providerEventRef: `paymob:${event.id}`,
       providerPaymentRef,
       outcome,
-      amountMinor:
-        typeof event.amount_cents === 'number' ? event.amount_cents : null,
+      amountMinor: this.parseAmountMinor(event.amount_cents),
       currencyCode: event.currency ?? null,
       payload: event as unknown as Record<string, unknown>,
     };
@@ -548,9 +558,14 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     };
   }
 
-  private parseWebhookPayload(rawBody: Buffer): PaymobWebhookEvent {
+  private parseWebhookBody(rawBody: Buffer): PaymobWebhookBody {
     try {
-      return JSON.parse(rawBody.toString('utf8')) as PaymobWebhookEvent;
+      const body = JSON.parse(rawBody.toString('utf8')) as unknown;
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new Error('Paymob webhook body must be an object');
+      }
+
+      return body as PaymobWebhookBody;
     } catch {
       throw new BadRequestException({
         messageKey: 'payments.errors.invalidWebhookPayload',
@@ -662,6 +677,19 @@ export class PaymobPaymentProviderAdapter implements PaymentProviderAdapter {
     }
 
     return '';
+  }
+
+  private parseAmountMinor(value: number | string | undefined): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
   }
 
   private toBooleanString(value: unknown): string {

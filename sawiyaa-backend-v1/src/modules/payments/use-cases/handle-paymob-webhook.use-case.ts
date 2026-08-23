@@ -29,6 +29,8 @@ export class HandlePaymobWebhookUseCase {
     headers: Record<string, string | string[] | undefined>;
     query?: Record<string, unknown>;
   }) {
+    this.logWebhookShape(input);
+
     const adapter = this.paymentProviderRegistryService.get(
       PaymentProvider.PAYMOB,
     );
@@ -156,5 +158,50 @@ export class HandlePaymobWebhookUseCase {
       default:
         return PaymentStatus.FAILED;
     }
+  }
+
+  private logWebhookShape(input: {
+    rawBody: Buffer;
+    headers: Record<string, string | string[] | undefined>;
+    query?: Record<string, unknown>;
+  }): void {
+    let body: unknown;
+    try {
+      body = JSON.parse(input.rawBody.toString('utf8')) as unknown;
+    } catch {
+      this.logger.debug(
+        { message: 'Paymob webhook received with invalid JSON shape' },
+        'Payments',
+      );
+      return;
+    }
+
+    const record =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const transaction =
+      record.obj && typeof record.obj === 'object' && !Array.isArray(record.obj)
+        ? (record.obj as Record<string, unknown>)
+        : record;
+    const hmacHeader = ['x-paymob-hmac', 'hmac', 'x-hmac'].some((key) => {
+      const value = input.headers[key];
+      return Array.isArray(value) ? Boolean(value[0]?.trim()) : Boolean(value?.trim());
+    });
+    const hmacQuery = typeof input.query?.hmac === 'string' && Boolean(input.query.hmac.trim());
+
+    this.logger.debug(
+      {
+        message: 'Paymob webhook shape received',
+        hasObj: Boolean(record.obj),
+        type: typeof record.type === 'string' ? record.type : null,
+        hasHmac: hmacHeader || hmacQuery,
+        transactionId:
+          typeof transaction.id === 'string' || typeof transaction.id === 'number'
+            ? String(transaction.id)
+            : null,
+      },
+      'Payments',
+    );
   }
 }

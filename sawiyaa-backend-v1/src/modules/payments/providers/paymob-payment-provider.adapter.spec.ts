@@ -290,6 +290,33 @@ describe('PaymobPaymentProviderAdapter', () => {
     }
   });
 
+  it('normalizes the official transaction envelope with obj', () => {
+    const adapter = buildAdapter();
+    const transaction = buildWebhookEvent({
+      id: 9002,
+      orderId: 778,
+      success: true,
+      pending: false,
+    });
+    const body = { type: 'TRANSACTION', obj: transaction };
+    const hmac = buildPaymobHmac(transaction, baseConfig.hmacSecret);
+
+    const webhook = adapter.parseAndVerifyWebhook({
+      rawBody: Buffer.from(JSON.stringify(body)),
+      headers: {},
+      query: { hmac },
+    });
+
+    expect(webhook.handled).toBe(true);
+    if (webhook.handled) {
+      expect(webhook.providerEventRef).toBe('paymob:9002');
+      expect(webhook.providerPaymentRef).toBe('778');
+      expect(webhook.amountMinor).toBe(150000);
+      expect(webhook.currencyCode).toBe('EGP');
+      expect(webhook.outcome).toBe('SUCCEEDED');
+    }
+  });
+
   it('rejects unsupported requested checkout methods', async () => {
     const adapter = buildAdapter({
       integrationIdWallet: null,

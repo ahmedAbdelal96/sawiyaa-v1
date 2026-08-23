@@ -11,6 +11,9 @@ MIN_FREE_MB="${SAWIYAA_MIN_FREE_MB:-2048}"
 LOCK_PATH="${SAWIYAA_DEPLOY_LOCK:-/tmp/sawiyaa-production-deploy.lock}"
 MOCK=0; CHECK_LOCK_ONLY=0; SKIP_LOCK=0; BOOTSTRAP_ONLY=0; TARGET_ONLY=0; BLOCKERS=0; WARNINGS=0; TEMP_DIR=""; COMPOSE_MODEL_OK=0
 BACKEND_IMAGE=""; FRONTEND_IMAGE=""; PROVIDER_STATE_FILE=""
+RUNTIME_UID="${SAWIYAA_RUNTIME_UID:-10001}"
+RUNTIME_GID="${SAWIYAA_RUNTIME_GID:-10001}"
+RUNTIME_INIT_IMAGE="${SAWIYAA_RUNTIME_INIT_IMAGE:-busybox:1.36.1}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -65,6 +68,23 @@ if (( ! SKIP_LOCK )); then
   fi
 fi
 if [[ "$CHECK_LOCK_ONLY" == 1 ]]; then (( BLOCKERS == 0 )); exit; fi
+
+# The backend uses a non-root UID and the log directory is a host bind mount.
+# Validate the actual container identity rather than host user records.
+if (( MOCK )); then
+  warn RUNTIME_DIRECTORY_CHECK_MOCKED
+elif [[ -d "$PROJECT_DIR/logs/backend" ]]; then
+  if docker run --rm --user "$RUNTIME_UID:$RUNTIME_GID" \
+    --mount "type=bind,src=$PROJECT_DIR/logs/backend,dst=/target" \
+    "$RUNTIME_INIT_IMAGE" sh -c \
+    'touch /target/.sawiyaa-preflight-write-test && rm -f /target/.sawiyaa-preflight-write-test' >/dev/null 2>&1; then
+    pass RUNTIME_LOG_DIRECTORY_WRITABLE
+  else
+    block RUNTIME_LOG_DIRECTORY_NOT_WRITABLE
+  fi
+else
+  block RUNTIME_LOG_DIRECTORY_MISSING
+fi
 
 # 2-5. Project, repository, branch/commit and Git cleanliness.
 if [[ -d "$PROJECT_DIR" ]]; then pass PROJECT_DIRECTORY; else block PROJECT_DIRECTORY; fi

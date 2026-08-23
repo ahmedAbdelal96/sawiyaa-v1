@@ -18,12 +18,19 @@ validator image. Database dump structure verification runs inside the
 PostgreSQL container.
 
 The backend runtime image runs as UID/GID `10001:10001` (`sawiyaa`) with no
-shell. Deployment creates `/opt/sawiyaa/logs/backend` with ownership
-`10001:10001` and mode `0750` before startup. The
+shell. Deployment runs `prepare-runtime-directories.sh` before the image
+build. That helper creates `/opt/sawiyaa/logs/backend`, uses a temporary
+Docker helper container to assign ownership `10001:10001`, and applies mode
+`0750` before startup. The
 `backend_volume_init` one-shot Compose service runs as root, preserves all
 existing named-volume data, and initializes `/app/storage` and `/app/uploads`
 for the backend UID/GID before the backend starts. Logs remain the canonical
 host bind mount.
+
+Runtime preparation never deletes existing data and never uses world-writable
+permissions. Do not manually create runtime directories with `deploy` or
+`root` ownership without running the preparation helper afterward. A failed
+preparation or preflight write test stops deployment before containers start.
 
 ## Branch workflow
 
@@ -38,6 +45,7 @@ host bind mount.
 - `docker-compose.prod.yml`
 - `deploy/nginx/sawiyaa.conf`
 - `deploy/scripts/deploy-production.sh`
+- `deploy/scripts/prepare-runtime-directories.sh`
 - `deploy/scripts/backup-db.sh`
 - `.github/workflows/ci-development.yml`
 - `.github/workflows/deploy-production.yml`
@@ -95,7 +103,8 @@ Use this safe first-deploy order:
 Before running the server scripts, make them executable and ensure they use LF line endings:
 
 ```bash
-chmod +x deploy/scripts/deploy-production.sh deploy/scripts/backup-db.sh
+chmod +x deploy/scripts/deploy-production.sh deploy/scripts/backup-db.sh \
+  deploy/scripts/prepare-runtime-directories.sh
 ```
 
 If the scripts were transferred from Windows, verify they still have LF endings before execution.

@@ -76,15 +76,12 @@ fi
 BACKUP_BRANCH="backup-before-deploy-$(date -u +%Y%m%d%H%M%S)"
 git branch "$BACKUP_BRANCH" "$ACTIVE_HEAD" >/dev/null
 
-# Keep the host log bind mount writable by the explicit non-root backend
-# runtime user. Storage and uploads are named Docker volumes; their ownership
-# is initialized by the backend_volume_init Compose service.
-install -d -o "$RUNTIME_UID" -g "$RUNTIME_GID" -m 0750 -- \
-  "$PROJECT_DIR/logs/backend"
-[[ -d "$PROJECT_DIR/logs/backend" ]] || {
-  echo "Backend log bind-mount directory is missing: $PROJECT_DIR/logs/backend" >&2
-  exit 1
-}
+# Prepare the host bind mount through Docker so deployment works even when the
+# deploy account cannot chown a directory from one numeric UID to another.
+bash "$PROJECT_DIR/deploy/scripts/prepare-runtime-directories.sh" \
+  --project-dir "$PROJECT_DIR" \
+  --runtime-uid "$RUNTIME_UID" \
+  --runtime-gid "$RUNTIME_GID"
 
 cleanup_validation_worktree() {
   if (( WORKTREE_CREATED )); then

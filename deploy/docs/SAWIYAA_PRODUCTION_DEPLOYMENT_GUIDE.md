@@ -218,6 +218,19 @@ Check:
 docker compose -f docker-compose.prod.yml logs --tail=100 backend
 ```
 
+For an `EACCES` error under `/app/logs`, the backend runtime UID is
+`10001:10001` and the host bind mount must be writable by that identity. The
+deployment prepares this path automatically. For a manual server-preparation
+check:
+
+```bash
+bash /opt/sawiyaa/deploy/scripts/prepare-runtime-directories.sh \
+  --project-dir /opt/sawiyaa
+```
+
+The helper changes ownership only on `/opt/sawiyaa/logs/backend`, preserves
+existing log files, and applies `0750`. Never use `chmod 777`.
+
 Possible causes:
 - Missing env variable
 - Database connection

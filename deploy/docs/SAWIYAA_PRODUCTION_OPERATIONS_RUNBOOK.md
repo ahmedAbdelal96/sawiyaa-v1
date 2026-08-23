@@ -394,6 +394,18 @@ Docker mount:
 /opt/sawiyaa/logs/backend:/app/logs
 ```
 
+The deployment validates this bind mount as the actual backend runtime UID
+before startup. If that check fails, correct ownership with:
+
+```bash
+bash /opt/sawiyaa/deploy/scripts/prepare-runtime-directories.sh \
+  --project-dir /opt/sawiyaa
+```
+
+Do not create the directory manually as `deploy` or `root` and continue, and
+do not use `chmod 777`. Rollback must not delete the logs directory or named
+volumes; they contain persistent operational data.
+
 Expected:
 
 ```

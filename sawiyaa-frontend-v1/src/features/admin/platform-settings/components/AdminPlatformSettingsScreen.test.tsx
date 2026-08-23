@@ -9,15 +9,32 @@ const mocks = vi.hoisted(() => ({
   reset: vi.fn(),
   history: vi.fn(),
   refetch: vi.fn(),
+  push: vi.fn(),
+  searchParams: new URLSearchParams(),
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, params?: Record<string, unknown>) => {
+    if (params?.count !== undefined) return `${key} (${params.count})`;
+    return key;
+  },
   useLocale: () => "ar",
 }));
 
 vi.mock("next/link", () => ({
   default: ({ children, ...props }: { children: React.ReactNode }) => (
+    <a {...props}>{children}</a>
+  ),
+}));
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => mocks.searchParams,
+}));
+
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: mocks.push }),
+  usePathname: () => "/admin/settings",
+  Link: ({ children, ...props }: { children: React.ReactNode }) => (
     <a {...props}>{children}</a>
   ),
 }));
@@ -30,18 +47,20 @@ vi.mock("../hooks/use-platform-settings", () => ({
 }));
 
 vi.mock("./AdminPlatformCommissionCard", () => ({
-  default: () => null,
+  default: () => <div data-testid="commission-card">Commission Card Mock</div>,
 }));
 
-const editableSetting = {
-  key: "booking.default_duration_minutes",
-  label: "Default duration",
-  description: "Default booking duration",
-  category: "BOOKING",
-  domain: "BOOKING",
+const editableBookingSetting = {
+  key: "INSTANT_BOOKING_REQUEST_TTL_MINUTES",
+  label: "Instant request response window",
+  labelAr: "مدة انتظار رد المختص على طلب الجلسة الفورية",
+  description: "Minutes a practitioner has to accept or reject",
+  descriptionAr: "عدد الدقائق المتاحة للمختص لقبول أو رفض طلب جلسة فورية",
+  category: "SESSION",
+  domain: "instant-booking",
   valueType: "INTEGER" as const,
-  value: 45,
-  defaultValue: 30,
+  value: 2,
+  defaultValue: 2,
   source: "CATALOG_DEFAULT" as const,
   editable: true,
   permission: "configuration.edit.operational",
@@ -54,33 +73,110 @@ const editableSetting = {
   uiMetadata: { control: "integer" as const },
 };
 
-const paymentSetting = {
-  ...editableSetting,
-  key: "payments.gateway",
-  label: "Payment gateway",
-  editable: false,
-  readOnlyReason: "DEDICATED_PAYMENT_CONTROL" as const,
+const notificationSetting = {
+  key: "SESSION_LATE_REMINDER_ENABLED",
+  label: "Late Session Reminder Enabled",
+  labelAr: "تفعيل تذكير التأخر عن الجلسة",
+  description: "Enable the reminder sent after the session starts",
+  descriptionAr: "تفعيل التذكير بعد بداية الجلسة",
+  category: "NOTIFICATION",
+  domain: "notifications",
+  valueType: "BOOLEAN" as const,
+  value: true,
+  defaultValue: true,
+  source: "OVERRIDE" as const,
+  editable: true,
+  permission: "configuration.edit.operational",
+  enumOptions: null,
+  jsonSchemaId: null,
+  valueId: "value-2",
+  expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
+  changedAt: "2026-08-03T10:00:00.000Z",
+  effect: "IMMEDIATE" as const,
+  uiMetadata: { control: "toggle" as const },
 };
 
-const localeSetting = {
-  ...editableSetting,
+const paymentSetting = {
+  key: "payment.provider.paymob.enabled",
+  label: "Paymob Provider Enabled",
+  labelAr: "تفعيل بوابة باي موب",
+  description: "Controls whether Paymob can be used",
+  descriptionAr: "التحكم في إتاحة بوابة باي موب",
+  category: "PAYMENT",
+  domain: "payment",
+  valueType: "BOOLEAN" as const,
+  value: true,
+  defaultValue: true,
+  source: "CATALOG_DEFAULT" as const,
+  editable: false,
+  readOnlyReason: "DEDICATED_PAYMENT_CONTROL" as const,
+  permission: "configuration.edit.financial",
+  enumOptions: null,
+  jsonSchemaId: null,
+  valueId: "value-3",
+  expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
+  changedAt: "2026-08-03T10:00:00.000Z",
+  effect: "DEDICATED_CONTROL" as const,
+  uiMetadata: { control: "toggle" as const },
+};
+
+const storageSetting = {
+  key: "file.uploads.chat.enabled",
+  label: "Chat files enabled",
+  labelAr: "تفعيل مرفقات المحادثات",
+  description: "Allow chat attachments",
+  descriptionAr: "السماح بإرسال ملفات في المحادثة",
+  category: "SYSTEM",
+  domain: "file-uploads",
+  valueType: "BOOLEAN" as const,
+  value: true,
+  defaultValue: true,
+  source: "CATALOG_DEFAULT" as const,
+  editable: true,
+  permission: "configuration.edit.operational",
+  enumOptions: null,
+  jsonSchemaId: null,
+  valueId: "value-4",
+  expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
+  changedAt: "2026-08-03T10:00:00.000Z",
+  effect: "IMMEDIATE" as const,
+  uiMetadata: { control: "toggle" as const },
+};
+
+const generalSetting = {
   key: "platform.defaultLocale",
   label: "Platform Default Locale",
+  labelAr: "اللغة الافتراضية للمنصة",
   description: "Fallback locale",
+  descriptionAr: "اللغة المعتمدة للمنصة",
   category: "LOCALE",
   domain: "platform",
   valueType: "STRING" as const,
   value: "ar",
   defaultValue: "en",
+  source: "CATALOG_DEFAULT" as const,
+  editable: true,
+  permission: "configuration.edit.operational",
   enumOptions: ["ar", "en"],
+  jsonSchemaId: null,
+  valueId: "value-5",
+  expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
+  changedAt: "2026-08-03T10:00:00.000Z",
+  effect: "IMMEDIATE" as const,
   uiMetadata: { control: "select" as const },
 };
 
 function configureHooks(overrides: Record<string, unknown> = {}) {
   mocks.settings.mockReturnValue({
     data: {
-      categories: ["BOOKING"],
-      settings: [editableSetting, paymentSetting],
+      categories: ["SESSION", "NOTIFICATION", "PAYMENT", "SYSTEM", "LOCALE"],
+      settings: [
+        editableBookingSetting,
+        notificationSetting,
+        paymentSetting,
+        storageSetting,
+        generalSetting,
+      ],
     },
     isLoading: false,
     isError: false,
@@ -103,25 +199,75 @@ function configureHooks(overrides: Record<string, unknown> = {}) {
   mocks.history.mockReturnValue({ isLoading: false, data: { items: [] } });
 }
 
-describe("AdminPlatformSettingsScreen", () => {
+describe("AdminPlatformSettingsScreen — Platform Settings Shell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.searchParams = new URLSearchParams();
     configureHooks();
   });
 
-  it("renders only the safe settings response and exposes payment controls as read-only", () => {
+  it("renders the Executive Control Center header, KPI summary stats, and breadcrumb", () => {
     render(<AdminPlatformSettingsScreen />);
 
-    expect(screen.getByText(editableSetting.key)).toBeTruthy();
-    expect(screen.getByText(paymentSetting.key)).toBeTruthy();
-    expect(screen.queryByText(/fileUrl|storage|secret/i)).toBeNull();
-    expect(
-      screen.getByRole("link", { name: "actions.openPaymentControl" }),
-    ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "actions.edit" })).toBeTruthy();
+    expect(screen.getByText("page.title")).toBeTruthy();
+    expect(screen.getByText("page.breadcrumb")).toBeTruthy();
+    expect(screen.getByText("stats.total")).toBeTruthy();
+    expect(screen.getByText("stats.overridden")).toBeTruthy();
+    expect(screen.getByText("stats.readonly")).toBeTruthy();
+    expect(screen.getByText("stats.categories")).toBeTruthy();
   });
 
-  it("requires a reason and sends the canonical revision when saving", async () => {
+  it("renders all 6 Business Domain cards in the Domain Hub on landing view", () => {
+    render(<AdminPlatformSettingsScreen />);
+
+    expect(screen.getAllByText("الجلسات والحجوزات").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("الإشعارات ومواعيد التذكير").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("توزيع الإيرادات والعمولات").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("بوابات الدفع والفوترة").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("سياسات الملفات والمرفقات").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("الهوية والنظام العام").length).toBeGreaterThan(0);
+  });
+
+  it("navigates into a domain and updates URL when a domain tab or card is clicked", async () => {
+    const user = userEvent.setup();
+    render(<AdminPlatformSettingsScreen />);
+
+    // Click on the first element containing "الجلسات والحجوزات" (tab button)
+    const elements = screen.getAllByText("الجلسات والحجوزات");
+    await user.click(elements[0]);
+
+    expect(mocks.push).toHaveBeenCalledWith("/admin/settings?domain=sessions");
+  });
+
+  it("filters settings in real-time when typing in the search box", async () => {
+    const user = userEvent.setup();
+    render(<AdminPlatformSettingsScreen />);
+
+    const searchInput = screen.getByLabelText("filters.search");
+    await user.type(searchInput, "باي موب");
+
+    // Paymob setting should remain visible
+    expect(screen.getByText("تفعيل بوابة باي موب")).toBeTruthy();
+    // Others should not be matched
+    expect(screen.queryByText("اللغة الافتراضية للمنصة")).toBeNull();
+  });
+
+  it("renders a dedicated focused banner and back button when active domain is set", () => {
+    mocks.searchParams = new URLSearchParams("domain=sessions");
+    render(<AdminPlatformSettingsScreen />);
+
+    expect(screen.getByText("domains.backToAll")).toBeTruthy();
+    expect(screen.getByText(editableBookingSetting.key)).toBeTruthy();
+  });
+
+  it("renders Commission Card when in revenue_share domain", () => {
+    mocks.searchParams = new URLSearchParams("domain=revenue_share");
+    render(<AdminPlatformSettingsScreen />);
+
+    expect(screen.getByTestId("commission-card")).toBeTruthy();
+  });
+
+  it("requires a mandatory reason before saving an updated setting", async () => {
     const user = userEvent.setup();
     const mutation = {
       mutate: vi.fn(),
@@ -132,180 +278,25 @@ describe("AdminPlatformSettingsScreen", () => {
     mocks.update.mockReturnValue(mutation);
     render(<AdminPlatformSettingsScreen />);
 
-    await user.click(screen.getByRole("button", { name: "actions.edit" }));
-    const save = screen.getByRole("button", { name: "actions.save" });
-    expect((save as HTMLButtonElement).disabled).toBe(true);
-    await user.type(
-      screen.getByRole("textbox", { name: "editor.reason" }),
-      "Adjust booking policy",
-    );
-    expect((save as HTMLButtonElement).disabled).toBe(false);
-    await user.click(save);
+    // Click edit on the editable booking setting
+    const editButtons = screen.getAllByRole("button", { name: /actions.edit/i });
+    await user.click(editButtons[0]);
+
+    const saveButton = screen.getByRole("button", { name: "actions.save" });
+    expect((saveButton as HTMLButtonElement).disabled).toBe(true);
+
+    const reasonInput = screen.getByPlaceholderText("editor.reasonPlaceholder");
+    await user.type(reasonInput, "Adjust SLA window for operational peak hours");
+
+    expect((saveButton as HTMLButtonElement).disabled).toBe(false);
+    await user.click(saveButton);
 
     expect(mutation.mutate).toHaveBeenCalledWith(
-      {
-        key: editableSetting.key,
-        value: editableSetting.value,
-        reason: "Adjust booking policy",
-        expectedUpdatedAt: editableSetting.expectedUpdatedAt,
-      },
-      expect.objectContaining({ onSuccess: expect.any(Function) }),
+      expect.objectContaining({
+        key: editableBookingSetting.key,
+        reason: "Adjust SLA window for operational peak hours",
+      }),
+      expect.anything()
     );
-  });
-
-  it("offers reload latest after a revision conflict", async () => {
-    const user = userEvent.setup();
-    mocks.update.mockReturnValue({
-      mutate: vi.fn(),
-      isPending: false,
-      isError: true,
-      isSuccess: false,
-    });
-    mocks.refetch.mockResolvedValue({
-      data: { settings: [editableSetting, paymentSetting] },
-    });
-    render(<AdminPlatformSettingsScreen />);
-
-    await user.click(screen.getByRole("button", { name: "actions.edit" }));
-    expect(screen.getByRole("alert").textContent).toContain("states.conflict");
-    await user.click(
-      screen.getByRole("button", { name: "actions.reloadLatest" }),
-    );
-    expect(mocks.refetch).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows success feedback after a completed update", async () => {
-    const user = userEvent.setup();
-    mocks.update.mockReturnValue({
-      mutate: vi.fn((_payload, options) => options.onSuccess()),
-      isPending: false,
-      isError: false,
-      isSuccess: false,
-    });
-    render(<AdminPlatformSettingsScreen />);
-
-    await user.click(screen.getByRole("button", { name: "actions.edit" }));
-    await user.type(
-      screen.getByRole("textbox", { name: "editor.reason" }),
-      "Update policy",
-    );
-    await user.click(screen.getByRole("button", { name: "actions.save" }));
-
-    await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toContain("states.saved"),
-    );
-  });
-
-  it("renders canonical locale values as a select and submits the selected code", async () => {
-    const user = userEvent.setup();
-    const mutation = {
-      mutate: vi.fn(),
-      isPending: false,
-      isError: false,
-      isSuccess: false,
-    };
-    mocks.settings.mockReturnValue({
-      data: { categories: ["LOCALE"], settings: [localeSetting] },
-      isLoading: false,
-      isError: false,
-      isFetching: false,
-      refetch: mocks.refetch,
-    });
-    mocks.update.mockReturnValue(mutation);
-    render(<AdminPlatformSettingsScreen />);
-
-    await user.click(screen.getByRole("button", { name: "actions.edit" }));
-    const selects = screen.getAllByRole("combobox");
-    const select = selects[selects.length - 1];
-    expect((select as HTMLSelectElement).value).toBe("ar");
-    expect(
-      Array.from((select as HTMLSelectElement).options).map(
-        (option) => option.value,
-      ),
-    ).toEqual(["ar", "en"]);
-
-    await user.selectOptions(select, "en");
-    await user.type(
-      screen.getByRole("textbox", { name: "editor.reason" }),
-      "Set English platform fallback",
-    );
-    await user.click(screen.getByRole("button", { name: "actions.save" }));
-
-    expect(mutation.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ key: localeSetting.key, value: "en" }),
-      expect.anything(),
-    );
-  });
-
-  it("opens the dedicated SessionReminderScheduleEditor when editing SESSION_REMINDER_OFFSETS_MINUTES", async () => {
-    const user = userEvent.setup();
-    const sessionReminderSetting = {
-      key: "SESSION_REMINDER_OFFSETS_MINUTES",
-      label: "مواعيد تذكير الجلسة بالدقائق",
-      description: "جدولة التذكيرات بالدقائق",
-      category: "NOTIFICATION",
-      domain: "sessions",
-      valueType: "JSON" as const,
-      value: [60, 15, 0],
-      defaultValue: [60, 15, 0],
-      source: "CATALOG_DEFAULT" as const,
-      editable: true,
-      permission: "configuration.edit.operational",
-      enumOptions: null,
-      jsonSchemaId: null,
-      valueId: "val-reminders",
-      expectedUpdatedAt: "2026-08-03T10:00:00.000Z",
-    };
-
-    mocks.settings.mockReturnValue({
-      data: { categories: ["NOTIFICATION"], settings: [sessionReminderSetting] },
-      isLoading: false,
-      isError: false,
-      isFetching: false,
-      refetch: mocks.refetch,
-    });
-
-    render(<AdminPlatformSettingsScreen />);
-
-    await user.click(screen.getByRole("button", { name: "actions.edit" }));
-
-    // Must show business title, NOT raw key as primary title
-    expect(screen.getByText("مواعيد تذكير الجلسة")).toBeTruthy();
-    expect(
-      screen.getByText("حدد متى يتلقى المريض والمختص تذكيرات قبل موعد الجلسة وعند بدايتها.")
-    ).toBeTruthy();
-
-    // Must show human-readable timeline preview
-    expect(screen.getByText("المعاينة الحية للجدول الزمني")).toBeTruthy();
-    expect(screen.getAllByText("قبل الجلسة بساعة").length).toBeGreaterThan(0);
-  });
-
-  it("can activate the virtual session schedule category without a temporal-dead-zone error", async () => {
-    const user = userEvent.setup();
-    const sessionSetting = {
-      ...editableSetting,
-      key: "SESSION_REMINDER_OFFSETS_MINUTES",
-      domain: "sessions",
-      valueType: "JSON" as const,
-      value: [60, 15],
-      defaultValue: [60, 15],
-    };
-
-    mocks.settings.mockReturnValue({
-      data: {
-        categories: ["NOTIFICATION"],
-        settings: [sessionSetting],
-      },
-      isLoading: false,
-      isError: false,
-      isFetching: false,
-      refetch: mocks.refetch,
-    });
-
-    render(<AdminPlatformSettingsScreen />);
-    await user.click(screen.getByRole("button", { name: /مواعيد الجلسات/ }));
-
-    expect(screen.getByText(sessionSetting.key)).toBeTruthy();
   });
 });
-

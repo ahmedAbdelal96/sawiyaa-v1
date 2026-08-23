@@ -5,18 +5,328 @@
   },
   "page": {
     "eyebrow": "Administration",
-    "title": "Platform Operational Settings",
-    "description": "Review and customize platform operational parameters. Every modification requires an audit reason. Sensitive keys and payment configurations remain isolated in dedicated control centers."
+    "breadcrumb": "Platform Settings",
+    "title": "Platform Settings Control Center",
+    "description": "Review and customize platform operational parameters and general policies. Every modification requires an audit reason. Sensitive keys and payment configurations remain isolated in dedicated control centers."
   },
   "stats": {
     "total": "Total Settings",
     "totalSub": "Platform system parameters",
     "overridden": "Custom Overrides",
     "overriddenSub": "Modified from defaults",
-    "readonly": "Read Only",
+    "readonly": "Protected / System",
     "readonlySub": "Protected system settings",
-    "categories": "Categories",
-    "categoriesSub": "Configuration domains"
+    "categories": "Business Domains",
+    "categoriesSub": "6 functional domains"
+  },
+  "domains": {
+    "all": "All Domains",
+    "allDesc": "High-level overview across all six platform configuration and operational domains.",
+    "sessions": "Sessions & Booking",
+    "sessionsDesc": "Instant booking SLAs, session join and reconnect buffers, and package plans.",
+    "notifications": "Notifications & Alerts",
+    "notificationsDesc": "Session reminder countdown timeline, late arrival alerts, and delivery channels.",
+    "revenue_share": "Revenue Share & Commission",
+    "revenue_shareDesc": "Unified platform commission rate and practitioner session earnings split.",
+    "payments": "Payments & Gateways",
+    "paymentsDesc": "Paymob and Stripe providers, maintenance modes, and currency routing summary.",
+    "storage": "Media & Storage Policies",
+    "storageDesc": "Attachment size limits for chat, profile avatars, practitioner credentials, and certificates.",
+    "general": "General & Platform",
+    "generalDesc": "Default language, practitioner review governance, and security policies overview.",
+    "backToAll": "Back to all domains",
+    "viewDomain": "Open Control Domain",
+    "settingsCount": "{count} settings",
+    "overridesCount": "{count} overrides",
+    "allDefault": "All default"
+  },
+  "sessionsDomain": {
+    "header": {
+      "eyebrow": "Session Policies & Rules",
+      "title": "Sessions & Booking Settings",
+      "description": "Manage instant booking response deadlines, virtual room entry and reconnection grace windows, and session package plan availability."
+    },
+    "sections": {
+      "instantBooking": {
+        "title": "Instant Booking SLAs & Thresholds",
+        "description": "Determines platform and practitioner response speed for on-demand Instant Booking requests."
+      },
+      "roomAccess": {
+        "title": "Session Room Access & Reconnect Buffers",
+        "description": "Control pre-start check-in windows and post-session reconnection grace periods."
+      },
+      "packages": {
+        "title": "Session Package Plans",
+        "description": "Control visibility and checkout purchasing for standardized multi-session packages."
+      }
+    },
+    "items": {
+      "instantRequestTtl": {
+        "title": "Practitioner Instant Request Response Window",
+        "description": "Maximum minutes a practitioner has to accept or reject an instant booking request before automatic expiration.",
+        "unit": "min",
+        "impact": "Applies to new instant requests only",
+        "risk": "High Risk (SLA)"
+      },
+      "instantPaymentWindow": {
+        "title": "Patient Instant Payment Completion Window",
+        "description": "Minutes allowed for the patient to complete checkout after practitioner acceptance before slot release.",
+        "unit": "min",
+        "impact": "Applies to new instant requests only",
+        "risk": "High Risk (SLA)"
+      },
+      "earlyJoin": {
+        "title": "Early Session Room Join Window",
+        "description": "Minutes before scheduled start when participants can enter the virtual room to verify camera and audio.",
+        "unit": "min",
+        "impact": "Applies to new scheduled sessions only",
+        "risk": "Medium"
+      },
+      "afterEndGrace": {
+        "title": "Post-Session Reconnect Grace Period",
+        "description": "Additional grace window after scheduled end during which room link remains available to resume if disconnected.",
+        "unit": "min",
+        "impact": "Applies to new scheduled sessions only",
+        "risk": "Medium"
+      },
+      "packagesEnabled": {
+        "title": "Enable Package Plans Visibility",
+        "description": "Show standardized session packages across patient discovery and practitioner matching pages.",
+        "impact": "Immediate effect on public patient discovery"
+      },
+      "packagesPurchaseEnabled": {
+        "title": "Allow Package Purchases",
+        "description": "Allow patients to purchase package bundles and generate billing invoices.",
+        "impact": "Immediate effect on package checkout flows"
+      }
+    },
+    "confirmModal": {
+      "title": "Confirm Session Setting Modification",
+      "subtitle": "Review previous and proposed values and provide a mandatory audit reason before saving.",
+      "previousValue": "Previous Value:",
+      "newValue": "New Value:",
+      "impactScope": "Impact Scope:",
+      "highRiskWarning": "High Risk Operational Alert: Modifying Instant Booking SLAs directly impacts practitioner response rates and fast-booking fulfillment.",
+      "reasonLabel": "Operational Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Explain the operational justification for this change...",
+      "saveBtn": "Confirm & Save Setting",
+      "cancelBtn": "Cancel"
+    }
+  },
+  "revenueShareDomain": {
+    "header": {
+      "eyebrow": "Financial Governance & Payouts",
+      "title": "Revenue Share & Commission Split",
+      "description": "Configure platform commission and practitioner payout splits for local and cross-border sessions with live payment calculation simulations."
+    },
+    "sections": {
+      "local": {
+        "title": "Local Sessions Revenue Share (Same Country)",
+        "description": "Determines platform commission and practitioner share when patient and practitioner reside in the same country (Default: Platform 30% / Practitioner 70%)."
+      },
+      "crossBorder": {
+        "title": "Cross-Border Sessions Revenue Share (Cross Country)",
+        "description": "Determines platform commission and practitioner share when patient and practitioner are in different countries (Default: Platform 50% / Practitioner 50%)."
+      },
+      "simulation": {
+        "title": "Live Payment Split Simulation",
+        "exampleAmount": "Example Session Payment: 1000 EGP",
+        "platformCut": "Platform Cut",
+        "practitionerCut": "Practitioner Cut",
+        "sumFormula": "Total Split Sum = 100%"
+      }
+    },
+    "labels": {
+      "platformShare": "Platform Commission",
+      "practitionerShare": "Practitioner Share",
+      "derivedNotice": "Automatically derived (100% - Platform Commission)",
+      "highRiskBadge": "High Financial Risk"
+    },
+    "confirmModal": {
+      "title": "Confirm Revenue Share Modification",
+      "warning": "High Financial Sensitivity Warning: Modifying revenue share percentages applies exclusively to future sessions and transactions. Existing transactions and ledger snapshots are immutable.",
+      "previousValue": "Previous Rate:",
+      "newValue": "New Rate:",
+      "impactScope": "Impact Scope:",
+      "impactText": "Applies only to new financial transactions. Existing payments are not changed.",
+      "reasonLabel": "Financial Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Provide operational or commercial justification for this percentage update...",
+      "saveBtn": "Confirm & Save Financial Split",
+      "cancelBtn": "Cancel"
+    }
+  },
+  "paymentsDomain": {
+    "header": {
+      "eyebrow": "Payment Infrastructure & Gateways",
+      "title": "Payments & Gateway Orchestration",
+      "description": "Manage active payment gateways, maintenance modes, default checkout methods, supported currencies, and secure key encryption."
+    },
+    "providers": {
+      "paymob": {
+        "name": "Paymob Gateway",
+        "description": "Primary card and digital wallet payment processor for Egyptian Pound (EGP) transactions.",
+        "supportedMethods": "Bank Cards, Mobile Wallets (Vodafone Cash, Orange, etc.)",
+        "currencies": "EGP (Egyptian Pound)"
+      },
+      "stripe": {
+        "name": "Stripe Gateway",
+        "description": "Global payment processor for international cards and GCC currencies.",
+        "supportedMethods": "International Credit/Debit Cards, Apple Pay, Google Pay",
+        "currencies": "SAR, USD, AED, EUR"
+      }
+    },
+    "readiness": {
+      "ready": "Operational / Ready",
+      "disabled": "Disabled / Inactive",
+      "maintenance": "Maintenance Mode Active",
+      "missingConfig": "Configuration Incomplete",
+      "readinessNote": "Payment activation requires completing provider configuration and environment secrets."
+    },
+    "controls": {
+      "enabled": "Enable Gateway Routing",
+      "enabledDesc": "Controls whether this gateway is active for patient checkout flows.",
+      "maintenanceMode": "Operational Maintenance Mode",
+      "maintenanceModeDesc": "Temporarily pauses new checkout sessions through this gateway during maintenance without affecting other providers.",
+      "checkoutFlow": "Checkout Flow Mode",
+      "checkoutFlowDesc": "Integration method used to present the payment window to patients.",
+      "defaultMethod": "Default Payment Method",
+      "defaultMethodDesc": "Preferred checkout method presented by default to the patient.",
+      "allowedCountries": "Allowed Countries",
+      "allowedCountriesDesc": "Country ISO codes authorized to process payments via this gateway."
+    },
+    "secrets": {
+      "title": "Encrypted Credentials & Secrets",
+      "description": "Gateway API keys and secrets are securely encrypted in the platform vault and never exposed in plaintext.",
+      "apiKey": "Public API Key",
+      "secretKey": "Encrypted Secret Key",
+      "hmacSecret": "Webhook HMAC Secret",
+      "masked": "••••••••••••••••••••••••",
+      "updateSecret": "Update Encrypted Key",
+      "rotateSecret": "Rotate Secret",
+      "vaultNotice": "Secured by Platform Vault & Zero-Knowledge Encryption."
+    },
+    "confirmModal": {
+      "title": "Confirm Payment Gateway Setting Modification",
+      "warning": "High Operational Risk Alert: Modifying gateway routing or maintenance states directly impacts checkout availability for new patient sessions.",
+      "previousValue": "Previous Setting:",
+      "newValue": "Proposed Setting:",
+      "impactScope": "Impact Scope:",
+      "impactText": "Changes affect new payment attempts only.",
+      "reasonLabel": "Operational Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Explain the operational justification for updating payment gateway settings...",
+      "saveBtn": "Confirm & Save Setting",
+      "cancelBtn": "Cancel"
+    }
+  },
+  "notificationsDomain": {
+    "header": {
+      "eyebrow": "Communication Channels & Alerts",
+      "title": "Notifications & Operational Alerts",
+      "description": "Manage scheduled session reminder timelines, late attendance alerts, and delivery channels across in-app push and email."
+    },
+    "sections": {
+      "channels": {
+        "title": "Delivery Channels Matrix",
+        "description": "Enable or disable real-time delivery channels for patients and practitioners."
+      },
+      "schedule": {
+        "title": "Scheduled Session Reminders (Reminder Offsets)",
+        "description": "Configure pre-start reminder time intervals prior to session start."
+      },
+      "lateAlerts": {
+        "title": "Late Attendance Alerts",
+        "description": "Automated alert sent to participants who have not joined after scheduled session start."
+      }
+    },
+    "labels": {
+      "inApp": "In-App Notifications (In-App Push)",
+      "inAppDesc": "Deliver instant notifications in patient and practitioner app notification centers.",
+      "email": "Transactional Email Notifications",
+      "emailDesc": "Send automated transactional emails with session calendar invites and reminders.",
+      "lateEnabled": "Enable Late Join Reminder",
+      "lateEnabledDesc": "Trigger reminders when participants have not joined the session room after start.",
+      "lateDelay": "Late Reminder Delay After Start",
+      "lateDelayDesc": "Minutes after scheduled session start before dispatching late join alert.",
+      "scheduleTimeline": "Active reminder schedule offsets:",
+      "minutesUnit": "min"
+    },
+    "confirmModal": {
+      "title": "Confirm Notification & Alert Modification",
+      "warning": "Operational Alert: Modifying reminder schedules and channels directly impacts session attendance reminders and participant engagement.",
+      "previousValue": "Previous Setting:",
+      "newValue": "Proposed Setting:",
+      "impactScope": "Impact Scope:",
+      "impactText": "Applies immediately to all upcoming scheduled sessions and reminders.",
+      "reasonLabel": "Operational Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Explain the operational reason for modifying notification rules...",
+      "saveBtn": "Confirm & Save Setting",
+      "cancelBtn": "Cancel"
+    }
+  },
+  "storageDomain": {
+    "header": {
+      "eyebrow": "Storage Policies & Media Assets",
+      "title": "Media & Storage Limits Control",
+      "description": "Manage attachment size quotas, avatar and credential upload policies, and authorized file extension formats."
+    },
+    "sections": {
+      "chat": {
+        "title": "Chat Attachments & Media Messages",
+        "description": "Control attachment toggles and maximum single image/document file size quotas in private consultations."
+      },
+      "profiles": {
+        "title": "Profile Avatars & Identity Images",
+        "description": "Maximum image upload limits for patient and practitioner profile photos."
+      },
+      "documents": {
+        "title": "Practitioner Credentials & Verification Proofs",
+        "description": "Maximum file size limits for medical licenses, accreditation documents, and payout receipts."
+      },
+      "academy": {
+        "title": "Content Publishing & Academy Assets",
+        "description": "Maximum image and certificate file size limits for articles and academy programs."
+      }
+    },
+    "labels": {
+      "enableChatUploads": "Allow Chat File Attachments",
+      "enableChatUploadsDesc": "Controls whether patients and practitioners can upload files inside active session chat rooms.",
+      "chatMaxImageSize": "Maximum Chat Image Size",
+      "chatMaxImageSizeDesc": "Maximum allowed size per individual image attachment in chat.",
+      "chatMaxDocSize": "Maximum Chat Document Size",
+      "chatMaxDocSizeDesc": "Maximum allowed size per individual document attachment (PDF, DOCX, etc.).",
+      "chatMaxFilesPerMsg": "Maximum Files per Message",
+      "chatMaxFilesPerMsgDesc": "Number of file attachments allowed in a single chat message.",
+      "allowedImageTypes": "Allowed Image Formats",
+      "allowedDocTypes": "Allowed Document Formats",
+      "patientAvatarSize": "Patient Profile Photo Size Limit",
+      "patientAvatarSizeDesc": "Maximum file size for patient avatar uploads.",
+      "practitionerAvatarSize": "Practitioner Profile Photo Size Limit",
+      "practitionerAvatarSizeDesc": "Maximum file size for practitioner avatar uploads.",
+      "practitionerCredSize": "Practitioner Credential Document Limit",
+      "practitionerCredSizeDesc": "Maximum file size for licensing certificates and credentials.",
+      "payoutProofSize": "Payout Transfer Receipt Limit",
+      "payoutProofSizeDesc": "Maximum file size for payout confirmation documents.",
+      "articleCoverSize": "Article Cover Image Limit",
+      "academyCoverSize": "Academy Program Cover Limit",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "mbUnit": "MB",
+      "filesUnit": "files",
+      "impactScope": "Applies to new file uploads only. Existing files remain unaffected."
+    },
+    "confirmModal": {
+      "title": "Confirm Storage & Media Policy Modification",
+      "warningMedium": "Operational Alert: Modifying maximum upload limits affects storage consumption and bandwidth quotas.",
+      "warningHigh": "High Risk Alert: Disabling file uploads will immediately block user document and image submission workflows.",
+      "previousValue": "Previous Setting:",
+      "newValue": "Proposed Setting:",
+      "impactScope": "Impact Scope:",
+      "impactText": "Applies to new file uploads only. Existing stored files remain unaffected.",
+      "reasonLabel": "Operational Change Reason (Mandatory for Audit Log)",
+      "reasonPlaceholder": "Explain the operational justification for updating storage policy or limits...",
+      "saveBtn": "Confirm & Save Setting",
+      "cancelBtn": "Cancel"
+    }
   },
   "categories": {
     "all": "All Categories",
