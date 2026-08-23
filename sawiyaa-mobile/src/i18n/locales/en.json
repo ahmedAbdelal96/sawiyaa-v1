@@ -2101,9 +2101,10 @@
         "all": "All",
         "minutes": "{{count}} min"
       },
-      "sectionTitle": "Times",
-      "periodMeta_one": "{{duration}} min",
-      "periodMeta_other": "{{count}} times • {{duration}} min",
+      "sectionTitle": "Selected appointments",
+      "helpText": "Each row is one appointment you selected. Review its start time, end time, and status before saving.",
+      "periodMeta_one": "1 session • {{duration}} minutes each",
+      "periodMeta_other": "{{count}} sessions • {{duration}} minutes each",
       "summary": {
         "available": "{{count}} available",
         "booked": "{{count}} booked",

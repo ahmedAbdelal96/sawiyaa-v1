@@ -1273,6 +1273,24 @@
       "error": "تعذر تحديث حالة النشر حالياً.",
       "status": "الحالة"
     },
+    "lifecycle": {
+      "NO_APPLICATION": "بدون طلب انضمام",
+      "DRAFT": "مسودة",
+      "SUBMITTED": "تم الإرسال",
+      "UNDER_REVIEW": "قيد المراجعة",
+      "CHANGES_REQUESTED": "مطلوب تعديلات",
+      "APPROVED": "معتمد",
+      "PUBLISHED": "منشور",
+      "NOT_READY_FOR_PUBLICATION": "غير جاهز للنشر",
+      "REJECTED": "مرفوض",
+      "ARCHIVED": "مؤرشف"
+    },
+    "success": {
+      "incompleteAccountDeleted": "تم حذف حساب المختص غير المكتمل بنجاح."
+    },
+    "errors": {
+      "deleteForbidden": "لا يمكن حذف الحساب لوجود نشاط أو سجل محمي مرتبط به."
+    },
     "avatar": {
       "openModal": "تعديل الصورة الشخصية",
       "title": "تحديث صورة الممارس",

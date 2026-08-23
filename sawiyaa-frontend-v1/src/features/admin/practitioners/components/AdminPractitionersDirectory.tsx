@@ -39,6 +39,7 @@ import {
   useUpdateAdminPractitionerAvatar,
   useAdminPractitionerPublication,
   useUpdateAdminPractitionerPublication,
+  useDeleteIncompleteAdminPractitioner,
 } from "../hooks/use-admin-practitioners";
 import { useAdminCountries } from "@/features/admin/patients/hooks/use-admin-patients";
 import { resolveCountryLabel } from "@/features/admin/shared/utils/resolve-country-label";
@@ -71,13 +72,16 @@ export default function AdminPractitionersDirectory() {
   const [country, setCountry] = useState("");
   const [onlineOnly, setOnlineOnly] = useState(false);
   const [minRating, setMinRating] = useState<"" | "3" | "4" | "4.5">("");
+  const [applicationStatus, setApplicationStatus] = useState("");
+  const [publicationStatus, setPublicationStatus] = useState<"" | "PUBLISHED" | "UNPUBLISHED">("");
+  const [readinessStatus, setReadinessStatus] = useState<"" | "READY" | "BLOCKED">("");
   const [sort, setSort] = useState<
     "recommended" | "experience" | "rating" | "newest" | "oldest"
   >("newest");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_LIMIT);
   const hasAdvancedFilters =
-    Boolean(gender) || Boolean(country);
+    Boolean(gender) || Boolean(country) || Boolean(applicationStatus) || Boolean(publicationStatus) || Boolean(readinessStatus);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedPractitioner, setSelectedPractitioner] =
     useState<AdminPractitionerListItem | null>(null);
@@ -92,6 +96,7 @@ export default function AdminPractitionersDirectory() {
   const removeAvatarMutation = useRemoveAdminPractitionerAvatar();
   const publicationQuery = useAdminPractitionerPublication(publicationPractitioner?.id ?? null);
   const publicationMutation = useUpdateAdminPractitionerPublication();
+  const deleteIncompleteMutation = useDeleteIncompleteAdminPractitioner();
 
   const { data, isLoading, isError, refetch } = useAdminPractitioners({
     search: debouncedSearch.trim() || undefined,
@@ -100,6 +105,9 @@ export default function AdminPractitionersDirectory() {
     country: country || undefined,
     onlineNow: onlineOnly || undefined,
     minRating: minRating ? Number(minRating) : undefined,
+    applicationStatus: applicationStatus || undefined,
+    publicationStatus: publicationStatus || undefined,
+    readinessStatus: readinessStatus || undefined,
     sort,
     page,
     limit: pageSize,
@@ -236,16 +244,12 @@ export default function AdminPractitionersDirectory() {
       },
       {
         id: "approval",
-        header: tAdmin("practitionersDirectory.publication.approval"),
-        accessor: (row) => row.status,
+        header: locale === "ar" ? "دورة الطلب" : "Application lifecycle",
+        accessor: (row) => row.lifecycleStatus,
         align: "center",
         cell: (row) => (
-          <AdminStatusBadge tone={row.status === "APPROVED" ? "success" : row.status === "REJECTED" ? "danger" : "warning"}>
-            {row.status === "APPROVED"
-              ? tAdmin("practitionersDirectory.publication.approved")
-              : row.status === "REJECTED"
-                ? tAdmin("practitionersDirectory.publication.rejected")
-                : tAdmin("practitionersDirectory.publication.pending")}
+          <AdminStatusBadge tone={row.lifecycleStatus === "PUBLISHED" ? "success" : row.lifecycleStatus === "NOT_READY_FOR_PUBLICATION" ? "danger" : row.lifecycleStatus === "APPROVED" ? "info" : "warning"}>
+            {tAdmin(`practitionersDirectory.lifecycle.${row.lifecycleStatus}`)}
           </AdminStatusBadge>
         ),
       },
@@ -293,6 +297,26 @@ export default function AdminPractitionersDirectory() {
     { value: "experience", label: tListing("sort.experience") },
   ], [tListing]);
 
+  const applicationStatusOptions = useMemo(() => [
+    { value: "", label: locale === "ar" ? "كل حالات الطلب" : "All application statuses" },
+    ...["DRAFT", "SUBMITTED", "UNDER_REVIEW", "CHANGES_REQUESTED", "APPROVED", "REJECTED", "ARCHIVED", "NO_APPLICATION"].map((value) => ({
+      value,
+      label: tAdmin(`practitionersDirectory.lifecycle.${value}`),
+    })),
+  ], [locale, tAdmin]);
+
+  const publicationStatusOptions = useMemo(() => [
+    { value: "", label: locale === "ar" ? "كل حالات النشر" : "All publication statuses" },
+    { value: "PUBLISHED", label: tAdmin("practitionersDirectory.publication.published") },
+    { value: "UNPUBLISHED", label: tAdmin("practitionersDirectory.publication.unpublished") },
+  ], [locale, tAdmin]);
+
+  const readinessStatusOptions = useMemo(() => [
+    { value: "", label: locale === "ar" ? "كل حالات الجاهزية" : "All readiness statuses" },
+    { value: "READY", label: locale === "ar" ? "جاهز" : "Ready" },
+    { value: "BLOCKED", label: locale === "ar" ? "به موانع" : "Blocked" },
+  ], [locale]);
+
   const genderOptions = useMemo(() => [
     { value: "", label: tListing("filter.allGenders") },
     { value: "male", label: tListing("filter.genderMale") },
@@ -311,6 +335,9 @@ export default function AdminPractitionersDirectory() {
     setCountry("");
     setOnlineOnly(false);
     setMinRating("");
+    setApplicationStatus("");
+    setPublicationStatus("");
+    setReadinessStatus("");
     setSort("newest");
     setPage(1);
   };
@@ -504,7 +531,52 @@ export default function AdminPractitionersDirectory() {
             />
 
             {showAdvancedFilters ? (
-              <div className="grid gap-3 rounded-xl border border-border-light bg-surface-secondary/40 p-3 md:grid-cols-2">
+              <div className="grid gap-3 rounded-xl border border-border-light bg-surface-secondary/40 p-3 md:grid-cols-2 lg:grid-cols-3">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-bold text-text-secondary">
+                    {locale === "ar" ? "حالة الطلب" : "Application status"}
+                  </span>
+                  <Select
+                    key={`applicationStatus-${applicationStatus}`}
+                    defaultValue={applicationStatus}
+                    onChange={(value) => {
+                      setApplicationStatus(value);
+                      setPage(1);
+                    }}
+                    options={applicationStatusOptions}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-xs font-bold text-text-secondary">
+                    {locale === "ar" ? "حالة النشر" : "Publication status"}
+                  </span>
+                  <Select
+                    key={`publicationStatus-${publicationStatus}`}
+                    defaultValue={publicationStatus}
+                    onChange={(value) => {
+                      setPublicationStatus(value as "" | "PUBLISHED" | "UNPUBLISHED");
+                      setPage(1);
+                    }}
+                    options={publicationStatusOptions}
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-1 block text-xs font-bold text-text-secondary">
+                    {locale === "ar" ? "حالة الجاهزية" : "Readiness status"}
+                  </span>
+                  <Select
+                    key={`readinessStatus-${readinessStatus}`}
+                    defaultValue={readinessStatus}
+                    onChange={(value) => {
+                      setReadinessStatus(value as "" | "READY" | "BLOCKED");
+                      setPage(1);
+                    }}
+                    options={readinessStatusOptions}
+                  />
+                </label>
+
                 <label className="block">
                   <span className="mb-1 block text-xs font-bold text-text-secondary">
                     {tListing("filter.gender")}
@@ -627,6 +699,24 @@ export default function AdminPractitionersDirectory() {
                   setAvatarSuccess(null);
                 }}
               />
+
+              {(["NO_APPLICATION", "DRAFT"] as string[]).includes(row.applicationStatus) && (
+                <ActionIconButton
+                  intent="delete"
+                  label={locale === "ar" ? "حذف الحساب غير المكتمل" : "Delete incomplete account"}
+                  icon={<Trash2 className="h-4 w-4" />}
+                  disabled={deleteIncompleteMutation.isPending}
+                  onClick={async () => {
+                    const confirmed = window.confirm(
+                      locale === "ar"
+                        ? "سيتم حذف الحساب نهائياً إذا لم توجد جلسات أو مدفوعات أو سجلات محمية. هل تريد المتابعة؟"
+                        : "This permanently deletes the account only when no sessions, payments, or protected records exist. Continue?",
+                    );
+                    if (!confirmed) return;
+                    await deleteIncompleteMutation.mutateAsync(row.id);
+                  }}
+                />
+              )}
             </div>
           )}
           pagination={

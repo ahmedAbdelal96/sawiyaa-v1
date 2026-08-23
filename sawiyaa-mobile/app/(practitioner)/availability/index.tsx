@@ -167,6 +167,12 @@ export default function PractitionerScheduleScreen() {
 
         <ScheduleDurationFilterControl value={durationFilter} options={durationOptions} onChange={setDurationFilter} />
 
+        <View style={[styles.explanation, { backgroundColor: theme.colors.primarySoft, borderColor: theme.colors.divider }]}>
+          <Text variant="caption" color={theme.colors.textSecondary} style={styles.center}>
+            {t("practitioner.schedule.helpText")}
+          </Text>
+        </View>
+
         {repeatSuccess === "1" ? (
           <View style={[styles.successNotice, { borderColor: theme.colors.success, backgroundColor: theme.colors.primarySoft }]}>
             <Text variant="caption" color={theme.colors.success} weight="700" style={styles.center}>
@@ -234,6 +240,7 @@ const styles = StyleSheet.create({
   addAction: { gap: 6, marginTop: -2 },
   repeatAction: { minHeight: 44, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
   successNotice: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  explanation: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
   timezone: { textAlign: "center", marginTop: -2, fontSize: 11 },
   noWeek: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 24 },
 });

@@ -59,6 +59,7 @@ import { PractitionerProfessionalContentAuthoringService } from '@modules/practi
 import { PractitionerProfessionalContentResolver } from '@modules/practitioners/services/practitioner-professional-content-resolver.service';
 import { AdminPractitionerProfessionalContentReadinessService } from './services/admin-practitioner-professional-content-readiness.service';
 import { ManagePractitionerRequirementUseCase } from './use-cases/manage-practitioner-requirement.use-case';
+import { DeleteIncompletePractitionerAccountUseCase } from './use-cases/delete-incomplete-practitioner-account.use-case';
 
 /**
  * This sub-module isolates admin-only practitioner review/application-management concerns.
@@ -126,6 +127,7 @@ import { ManagePractitionerRequirementUseCase } from './use-cases/manage-practit
     PractitionerProfessionalContentResolver,
     AdminPractitionerProfessionalContentReadinessService,
     ManagePractitionerRequirementUseCase,
+    DeleteIncompletePractitionerAccountUseCase,
   ],
 })
 export class PractitionerApplicationsAdminModule {}

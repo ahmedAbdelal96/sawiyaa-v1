@@ -71,3 +71,10 @@ export async function getAdminPractitionerDetails(practitionerId: string) {
   );
   return extractData(response.data);
 }
+
+export async function deleteIncompleteAdminPractitioner(practitionerId: string) {
+  const response = await httpClient.delete<ApiPayload<{ message: string }>>(
+    `/admin/practitioners/${practitionerId}`,
+  );
+  return extractData(response.data);
+}

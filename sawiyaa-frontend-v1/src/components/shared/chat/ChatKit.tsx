@@ -42,6 +42,8 @@ export type ChatMessageViewModel = {
     id: string;
     originalName?: string | null;
     mimeType: string;
+    fileUrl?: string;
+    fileSize?: number;
   }>;
 };
 
@@ -309,9 +311,27 @@ export function ChatMessageBubble({
                 className="flex items-center gap-2 rounded-xl border border-current/15 bg-black/5 px-2.5 py-2 text-[11px]"
               >
                 <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                <span className="min-w-0 truncate">
+                <span className="min-w-0 flex-1 truncate">
                   {attachment.originalName || attachment.mimeType}
                 </span>
+                {attachment.fileSize ? (
+                  <span className="shrink-0 opacity-70">
+                    {attachment.fileSize >= 1024 * 1024
+                      ? `${(attachment.fileSize / (1024 * 1024)).toFixed(1)} MB`
+                      : `${Math.round(attachment.fileSize / 1024)} KB`}
+                  </span>
+                ) : null}
+                {attachment.fileUrl ? (
+                  <a
+                    href={attachment.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={attachment.originalName || undefined}
+                    className="shrink-0 font-bold underline underline-offset-2"
+                  >
+                    Open
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>
@@ -360,6 +380,12 @@ export function ChatComposer({
   isSubmitting?: boolean;
   disabled?: boolean;
 }) {
+  const [emojiOpen, setEmojiOpen] = React.useState(false);
+  const appendEmoji = (emoji: string) => {
+    onChange(`${value}${emoji}`);
+    setEmojiOpen(false);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -387,10 +413,27 @@ export function ChatComposer({
           </button>
           <button
             type="button"
+            onClick={() => setEmojiOpen((open) => !open)}
             className="text-text-muted hover:text-text-primary flex items-center justify-center rounded-xl border border-transparent p-2.5 transition hover:border-slate-100 hover:bg-slate-50 dark:hover:border-white/10 dark:hover:bg-white/5 dark:hover:text-white"
+            aria-label="Add emoji"
           >
             <Smile className="h-5 w-5" />
           </button>
+          {emojiOpen ? (
+            <div className="absolute bottom-16 start-14 z-20 grid grid-cols-6 gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-white/10 dark:bg-slate-800">
+              {["😊", "😂", "👍", "❤️", "🙏", "🎉", "😅", "🤍", "👏", "✨", "🙂", "😢"].map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => appendEmoji(emoji)}
+                  className="rounded-lg p-1.5 text-lg hover:bg-slate-100 dark:hover:bg-white/10"
+                  aria-label={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-1">

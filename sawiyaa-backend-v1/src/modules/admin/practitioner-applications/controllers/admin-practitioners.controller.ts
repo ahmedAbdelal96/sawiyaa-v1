@@ -56,6 +56,7 @@ import { AuthenticatedUser } from '@common/interfaces/authenticated-user.interfa
 import { Permissions } from '@common/decorators/permissions.decorator';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { ManagePractitionerRequirementUseCase } from '../use-cases/manage-practitioner-requirement.use-case';
+import { DeleteIncompletePractitionerAccountUseCase } from '../use-cases/delete-incomplete-practitioner-account.use-case';
 import { UpdatePractitionerRequirementDto } from '../dto/update-practitioner-requirement.dto';
 
 /**
@@ -77,6 +78,7 @@ export class AdminPractitionersController {
     private readonly managePractitionerPublicationUseCase: ManagePractitionerPublicationUseCase,
     private readonly getAdminPractitionerDetailsUseCase: GetAdminPractitionerDetailsUseCase,
     @Optional() private readonly managePractitionerRequirementUseCase: ManagePractitionerRequirementUseCase,
+    private readonly deleteIncompletePractitionerAccountUseCase: DeleteIncompletePractitionerAccountUseCase,
   ) {}
 
   @Get(':id')
@@ -157,6 +159,9 @@ export class AdminPractitionersController {
   @ApiQuery({ name: 'country', required: false })
   @ApiQuery({ name: 'onlineNow', required: false })
   @ApiQuery({ name: 'minRating', required: false })
+  @ApiQuery({ name: 'applicationStatus', required: false })
+  @ApiQuery({ name: 'publicationStatus', required: false })
+  @ApiQuery({ name: 'readinessStatus', required: false })
   @ApiQuery({ name: 'sort', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
@@ -179,6 +184,9 @@ export class AdminPractitionersController {
       country: query.country,
       onlineNow: query.onlineNow,
       minRating: query.minRating,
+      applicationStatus: query.applicationStatus,
+      publicationStatus: query.publicationStatus,
+      readinessStatus: query.readinessStatus,
       sort: query.sort,
       page: query.page,
       limit: query.limit,
@@ -245,6 +253,16 @@ export class AdminPractitionersController {
       practitionerId: id,
       locale,
     });
+  }
+
+  @Delete(':id')
+  @Permissions(PermissionKey.PRACTITIONER_APPLICATIONS_APPROVE)
+  @ApiOperation({ summary: 'Permanently delete an incomplete practitioner account' })
+  async deleteIncomplete(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentLocale() locale: SupportedLocale,
+  ) {
+    return this.deleteIncompletePractitionerAccountUseCase.execute({ id, locale });
   }
 
   @Post(':id/auth-lockout/clear')

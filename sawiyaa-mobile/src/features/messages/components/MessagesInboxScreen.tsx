@@ -269,9 +269,21 @@ function ConversationRow({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={t("messages.inbox.openConversationHint")}
-      style={[styles.conversationRow, { flexDirection: rowDirection }]}
+      style={[
+        styles.conversationRow,
+        {
+          flexDirection: rowDirection,
+          backgroundColor: theme.colors.surface,
+          borderColor: isUnread ? theme.colors.primary : theme.colors.borderLight,
+        },
+      ]}
     >
-      <View style={[styles.conversationAvatar, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight }]}>
+      <View
+        style={[
+          styles.conversationAvatar,
+          { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.borderLight },
+        ]}
+      >
         {avatarUrl && !imageFailed ? (
           <Image
             source={{ uri: avatarUrl }}
@@ -279,7 +291,7 @@ function ConversationRow({
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <Ionicons name="person-outline" size={20} color={theme.colors.primary} />
+          <Ionicons name="person" size={20} color={theme.colors.primary} />
         )}
       </View>
 
@@ -305,10 +317,15 @@ function ConversationRow({
           {preview}
         </Text>
         <View style={[styles.conversationMeta, { flexDirection: rowDirection }]}>
-          <Text color={theme.colors.textMuted} style={[styles.conversationContext, { textAlign: isRtl ? "right" : "left" }]}>
+          <Text
+            color={theme.colors.textMuted}
+            style={[styles.conversationContext, { textAlign: isRtl ? "right" : "left" }]}
+          >
             {item.subtitle}
           </Text>
-          {status && status.tone !== "active" ? <StatusPill conversation={conversation} locale={locale} /> : null}
+          {status && status.tone !== "active" ? (
+            <StatusPill conversation={conversation} locale={locale} />
+          ) : null}
           {isUnread ? (
             <View
               style={[styles.badge, { backgroundColor: theme.colors.primary }]}
@@ -323,7 +340,7 @@ function ConversationRow({
         </View>
       </View>
 
-      <Ionicons name={chevronForward as any} size={17} color={theme.colors.textMuted} />
+      <Ionicons name={chevronForward as any} size={16} color={theme.colors.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -403,18 +420,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   conversationRow: {
-    minHeight: 84,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    minHeight: 76,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     alignItems: "center",
     gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E8DED0",
+    borderWidth: 1,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   conversationAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",

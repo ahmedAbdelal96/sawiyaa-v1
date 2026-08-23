@@ -389,7 +389,11 @@
     "confirmed": {
       "heading": "تم تأكيد الحجز",
       "note": "تم استلام دفعتك وتم تأكيد الجلسة.",
-      "sessionWith": "الجلسة مع {practitioner}"
+      "sessionWith": "الجلسة مع {practitioner}",
+      "sessionDetails": "تفاصيل الموعد والمختص",
+      "viewSessionDetail": "عرض تفاصيل الجلسة والاستعداد",
+      "paymentReceipt": "إيصال وتفاصيل الدفع",
+      "statusPaid": "مدفوع ومؤكد"
     },
     "verifying": {
       "heading": "جارٍ التحقق من الدفع...",
@@ -454,6 +458,10 @@
           "label": "أين تؤكد",
           "value": "سجل المدفوعات",
           "helper": "ستُظهر المحفظة والسجل أي حركة مالية لاحقة."
+        },
+        "patientPaid": {
+          "label": "المبلغ المدفوع",
+          "helper": "المبلغ المسجل لهذا الحجز."
         }
       },
       "actions": {

@@ -5,6 +5,9 @@ import { isPresenceEffectivelyOnline } from '@modules/presence/utils/presence-li
 import {
   AdminPractitionerGenderDto,
   AdminPractitionerKindDto,
+  AdminPractitionerApplicationStatusDto,
+  AdminPractitionerPublicationStatusDto,
+  AdminPractitionerReadinessStatusDto,
   AdminPractitionerSortByDto,
 } from '../dto/list-admin-practitioners.dto';
 import { AdminPractitionerDirectoryRepository } from '../repositories/admin-practitioner-directory.repository';
@@ -43,6 +46,12 @@ type AdminPractitionerDirectoryRow = {
     averageRating: number | null;
     publishedReviewsCount: number;
   } | null;
+  applications: Array<{
+    id: string;
+    status: string;
+    submittedAt: Date | null;
+    updatedAt: Date;
+  }>;
 };
 
 @Injectable()
@@ -61,6 +70,9 @@ export class ListAdminPractitionersDirectoryUseCase {
     country?: string;
     onlineNow?: boolean;
     minRating?: number;
+    applicationStatus?: AdminPractitionerApplicationStatusDto;
+    publicationStatus?: AdminPractitionerPublicationStatusDto;
+    readinessStatus?: AdminPractitionerReadinessStatusDto;
     sort?: AdminPractitionerSortByDto;
     page?: number;
     limit?: number;
@@ -76,6 +88,9 @@ export class ListAdminPractitionersDirectoryUseCase {
       country: input.country,
       onlineNow: input.onlineNow,
       minRating: input.minRating,
+      applicationStatus: input.applicationStatus,
+      publicationStatus: input.publicationStatus,
+      readinessStatus: input.readinessStatus,
       sort: input.sort,
       skip,
       take: limit,
@@ -127,6 +142,17 @@ export class ListAdminPractitionersDirectoryUseCase {
               : Number(row.ratingSummary.averageRating),
           totalReviews: row.ratingSummary?.publishedReviewsCount ?? 0,
         },
+        application: row.applications[0]
+          ? {
+              id: row.applications[0].id,
+              status: row.applications[0].status,
+              submittedAt: row.applications[0].submittedAt,
+              updatedAt: row.applications[0].updatedAt,
+            }
+          : null,
+        applicationStatus: row.applications[0]?.status ?? 'NO_APPLICATION',
+        lifecycleStatus: this.getLifecycleStatus(row),
+        readinessStatus: this.getReadinessStatus(row),
       })),
       pagination: {
         page,
@@ -135,5 +161,32 @@ export class ListAdminPractitionersDirectoryUseCase {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  private getReadinessStatus(row: AdminPractitionerDirectoryRow) {
+    const blockers = this.visibilityPolicy.getBlockers({
+      practitionerStatus: row.status as PractitionerStatus,
+      userStatus: row.user.status as UserStatus,
+      isPublicProfilePublished: row.isPublicProfilePublished,
+      hasPublicSlug: Boolean(row.publicSlug?.trim()),
+      hasDisplayName: Boolean(row.user.displayName?.trim()),
+      hasProfessionalTitle: Boolean(row.professionalTitle?.trim()),
+      hasBio: Boolean(row.bio?.trim()),
+      hasAtLeastOneActiveSpecialty: row.specialties.length > 0,
+      sessionPrice30Egp: row.sessionPrice30Egp,
+      sessionPrice30Usd: row.sessionPrice30Usd,
+      sessionPrice60Egp: row.sessionPrice60Egp,
+      sessionPrice60Usd: row.sessionPrice60Usd,
+    });
+    return blockers.length === 0 ? 'READY' : 'BLOCKED';
+  }
+
+  private getLifecycleStatus(row: AdminPractitionerDirectoryRow) {
+    const applicationStatus = row.applications[0]?.status ?? 'NO_APPLICATION';
+    if (row.isPublicProfilePublished) return 'PUBLISHED';
+    if (applicationStatus === 'APPROVED' && this.getReadinessStatus(row) === 'BLOCKED') {
+      return 'NOT_READY_FOR_PUBLICATION';
+    }
+    return applicationStatus;
   }
 }

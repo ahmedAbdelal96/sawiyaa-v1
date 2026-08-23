@@ -21,6 +21,7 @@ describe('GetPractitionerWalletUseCase', () => {
   } as unknown as FinancialOperationsPractitionerRepository;
   const walletRepository = {
     findByPractitionerId: findByPractitionerIdMock,
+    ensureActiveWallet: jest.fn(),
   } as unknown as WalletRepository;
   const balanceService = {
     getBalance: getBalanceMock,
@@ -40,16 +41,31 @@ describe('GetPractitionerWalletUseCase', () => {
     jest.clearAllMocks();
   });
 
-  it('fails closed when no active wallet exists', async () => {
+  it('creates the missing active wallet using the practitioner country currency', async () => {
     findByUserIdMock.mockResolvedValue({
       id: 'pract_1',
+      country: { isoCode: 'EG' },
     });
     findByPractitionerIdMock.mockResolvedValue([]);
+    walletRepository.ensureActiveWallet = jest.fn().mockResolvedValue({
+      status: 'ACTIVE',
+      currencyCode: 'EGP',
+      pendingBalance: '0.00',
+      availableBalance: '0.00',
+      reservedBalance: '0.00',
+      lifetimeEarned: '0.00',
+      lifetimePaidOut: '0.00',
+      lastLedgerEntryAt: null,
+      updatedAt: null,
+    });
 
-    await expect(useCase.execute({ userId: 'user_1' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-    expect(getBalanceMock).not.toHaveBeenCalled();
+    const result = await useCase.execute({ userId: 'user_1' });
+    expect(result.item.currency).toBe('EGP');
+    expect(walletRepository.ensureActiveWallet).toHaveBeenCalledWith('pract_1', 'EGP');
+    expect(getBalanceMock).toHaveBeenCalledWith({
+      practitionerId: 'pract_1',
+      currencyCode: 'EGP',
+    });
   });
 
   it('rejects when practitioner profile is missing in self-scope resolution', async () => {

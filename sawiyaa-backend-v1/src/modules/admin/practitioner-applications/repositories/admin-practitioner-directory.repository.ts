@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import {
   PresenceStatus,
   PractitionerGender,
+  PractitionerStatus,
   PractitionerType,
   Prisma,
+  UserStatus,
   UserRoleType,
 } from '@prisma/client';
 import { PrismaService } from '@common/prisma/prisma.service';
@@ -12,9 +14,13 @@ import {
   type SessionReviewRatingSummary,
 } from '@modules/reviews/services/session-review-rating-aggregation.service';
 import { getPresenceFreshnessCutoff } from '@modules/presence/utils/presence-liveness';
+import { PublicPractitionerVisibilityPolicy } from '@modules/practitioners/policies/public-practitioner-visibility.policy';
 import {
   AdminPractitionerGenderDto,
   AdminPractitionerKindDto,
+  AdminPractitionerApplicationStatusDto,
+  AdminPractitionerPublicationStatusDto,
+  AdminPractitionerReadinessStatusDto,
   AdminPractitionerSortByDto,
 } from '../dto/list-admin-practitioners.dto';
 
@@ -27,6 +33,7 @@ export class AdminPractitionerDirectoryRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessionReviewRatingAggregationService: SessionReviewRatingAggregationService,
+    private readonly visibilityPolicy: PublicPractitionerVisibilityPolicy,
   ) {}
 
   private buildWhere(input: {
@@ -36,6 +43,9 @@ export class AdminPractitionerDirectoryRepository {
     country?: string;
     onlineNow?: boolean;
     minRating?: number;
+    applicationStatus?: AdminPractitionerApplicationStatusDto;
+    publicationStatus?: AdminPractitionerPublicationStatusDto;
+    readinessStatus?: AdminPractitionerReadinessStatusDto;
   }): Prisma.PractitionerProfileWhereInput {
     const search = input.search?.trim();
     const countryCode = input.country?.trim().toUpperCase();
@@ -65,7 +75,13 @@ export class AdminPractitionerDirectoryRepository {
           ? { practitionerGender: PractitionerGender.FEMALE }
           : undefined;
 
+    const applicationFilter =
+      input.applicationStatus === AdminPractitionerApplicationStatusDto.NO_APPLICATION
+        ? { applications: { none: {} } }
+        : { applications: { some: {} } };
+
     return {
+      ...applicationFilter,
       user: {
         status: 'ACTIVE',
         roles: {
@@ -76,6 +92,11 @@ export class AdminPractitionerDirectoryRepository {
       },
       ...(practitionerTypeFilter ?? {}),
       ...(genderFilter ?? {}),
+      ...(input.publicationStatus === AdminPractitionerPublicationStatusDto.PUBLISHED
+        ? { isPublicProfilePublished: true }
+        : input.publicationStatus === AdminPractitionerPublicationStatusDto.UNPUBLISHED
+          ? { isPublicProfilePublished: false }
+          : {}),
       country: countryCode
         ? {
             isoCode: {
@@ -167,6 +188,9 @@ export class AdminPractitionerDirectoryRepository {
     country?: string;
     onlineNow?: boolean;
     minRating?: number;
+    applicationStatus?: AdminPractitionerApplicationStatusDto;
+    publicationStatus?: AdminPractitionerPublicationStatusDto;
+    readinessStatus?: AdminPractitionerReadinessStatusDto;
     sort?: AdminPractitionerSortByDto;
     skip: number;
     take: number;
@@ -216,6 +240,16 @@ export class AdminPractitionerDirectoryRepository {
             lastSeenAtUtc: true,
           },
         },
+        applications: {
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            submittedAt: true,
+            updatedAt: true,
+          },
+        },
       },
     });
 
@@ -238,6 +272,21 @@ export class AdminPractitionerDirectoryRepository {
             const rating = row.ratingSummary.averageRating;
             return rating !== null && rating >= input.minRating!;
           });
+
+    const applicationFilteredRows =
+      input.applicationStatus === undefined ||
+      input.applicationStatus === AdminPractitionerApplicationStatusDto.NO_APPLICATION
+        ? filteredRows
+        : filteredRows.filter(
+            (row) => row.applications[0]?.status === input.applicationStatus,
+          );
+
+    const readinessFilteredRows =
+      input.readinessStatus === undefined
+        ? applicationFilteredRows
+        : applicationFilteredRows.filter((row) =>
+            this.getReadinessStatus(row) === input.readinessStatus,
+          );
 
     const sortMode = input.sort ?? AdminPractitionerSortByDto.NEWEST;
     filteredRows.sort((left, right) => {
@@ -281,10 +330,40 @@ export class AdminPractitionerDirectoryRepository {
       );
     });
 
-    const total = filteredRows.length;
-    const pagedRows = filteredRows.slice(input.skip, input.skip + input.take);
+    const total = readinessFilteredRows.length;
+    const pagedRows = readinessFilteredRows.slice(input.skip, input.skip + input.take);
 
     return { rows: pagedRows, total };
+  }
+
+  private getReadinessStatus(row: {
+    status: string;
+    isPublicProfilePublished: boolean;
+    publicSlug: string | null;
+    professionalTitle: string | null;
+    bio: string | null;
+    sessionPrice30Egp: unknown;
+    sessionPrice30Usd: unknown;
+    sessionPrice60Egp: unknown;
+    sessionPrice60Usd: unknown;
+    specialties: { id: string }[];
+    user: { displayName: string | null; status: string };
+  }) {
+    const blockers = this.visibilityPolicy.getBlockers({
+      practitionerStatus: row.status as PractitionerStatus,
+      userStatus: row.user.status as UserStatus,
+      isPublicProfilePublished: row.isPublicProfilePublished,
+      hasPublicSlug: Boolean(row.publicSlug?.trim()),
+      hasDisplayName: Boolean(row.user.displayName?.trim()),
+      hasProfessionalTitle: Boolean(row.professionalTitle?.trim()),
+      hasBio: Boolean(row.bio?.trim()),
+      hasAtLeastOneActiveSpecialty: row.specialties.length > 0,
+      sessionPrice30Egp: row.sessionPrice30Egp,
+      sessionPrice30Usd: row.sessionPrice30Usd,
+      sessionPrice60Egp: row.sessionPrice60Egp,
+      sessionPrice60Usd: row.sessionPrice60Usd,
+    });
+    return blockers.length === 0 ? 'READY' : 'BLOCKED';
   }
 
   private toLegacyRatingSummary(

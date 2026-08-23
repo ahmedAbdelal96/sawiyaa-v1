@@ -16,6 +16,7 @@ import { PermissionResolverService } from '@common/guards/authorization/permissi
 import { SecurityAuditService } from '@common/security-audit/security-audit.service';
 import { PermissionKey } from '@common/enums/permission-key.enum';
 import { AppRole } from '@common/enums/app-role.enum';
+import { DeleteIncompletePractitionerAccountUseCase } from '../use-cases/delete-incomplete-practitioner-account.use-case';
 
 describe('AdminPractitionersController (Authorization and Routing)', () => {
   let controller: AdminPractitionersController;
@@ -55,6 +56,10 @@ describe('AdminPractitionersController (Authorization and Routing)', () => {
         },
         {
           provide: ManagePractitionerPublicationUseCase,
+          useValue: {},
+        },
+        {
+          provide: DeleteIncompletePractitionerAccountUseCase,
           useValue: {},
         },
         {

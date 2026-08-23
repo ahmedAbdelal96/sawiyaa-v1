@@ -140,7 +140,11 @@
     "confirmed": {
       "heading": "Booking Confirmed",
       "note": "Your payment was received and your session is confirmed.",
-      "sessionWith": "Session with {practitioner}"
+      "sessionWith": "Session with {practitioner}",
+      "sessionDetails": "Appointment Details",
+      "viewSessionDetail": "View Session Details",
+      "paymentReceipt": "Payment Receipt",
+      "statusPaid": "Paid & Confirmed"
     },
     "verifying": {
       "heading": "Verifying Payment...",
@@ -205,6 +209,10 @@
           "label": "Where to confirm",
           "value": "Payment history",
           "helper": "Wallet and history will show any later money movement."
+        },
+        "patientPaid": {
+          "label": "Amount paid",
+          "helper": "The amount recorded for this booking."
         }
       },
       "actions": {
@@ -437,11 +445,11 @@
     },
     "sidebar": {
       "heading": "What this page means",
-    "note": "This page is for patients who want a simple view of wallet balances and recent transaction activity.",
+      "note": "This page is for patients who want a simple view of wallet balances and recent transaction activity.",
       "currency": "Wallet currency",
       "currencyNote": "Your wallet uses the currency that matches your account market.",
       "updateLabel": "Latest update",
-    "updateNote": "The balance here is synced from your wallet records.",
+      "updateNote": "The balance here is synced from your wallet records.",
       "lastEntry": "Last activity:",
       "noActivity": "No wallet activity has been recorded yet.",
       "openPayments": "Open payment history",
